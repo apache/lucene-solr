@@ -2,6 +2,11 @@ Analysis Module Change Log
 
 ======================= Trunk (not yet released) =======================
 
+Bug fixes
+
+ * LUCENE-2732: Fix charset problems in XML loading in
+   HyphenationCompoundWordTokenFilter.  (Uwe Schinder)
+   
 API Changes
 
  * LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 

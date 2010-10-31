@@ -17,10 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.CompoundWordTokenFilterBase;
@@ -33,6 +29,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.util.Map;
+import java.io.InputStream;
+import org.xml.sax.InputSource;
 
 /**
  * Factory for {@link HyphenationCompoundWordTokenFilter}
@@ -57,7 +55,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFa
   private HyphenationTree hyphenator;
   private String dictFile;
   private String hypFile;
-  private String encoding = "UTF-8"; // default to UTF-8 encoding
+  private String encoding;
   private int minWordSize;
   private int minSubwordSize;
   private int maxSubwordSize;
@@ -82,18 +80,21 @@ public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFa
   }
   
   public void inform(ResourceLoader loader) {
-    Reader reader = null;
+    InputStream stream = null;
     try {
       if (dictFile != null) // the dictionary can be empty.
         dictionary = getWordSet(loader, dictFile, false);
-      
-      InputStream hyph = loader.openResource(hypFile);
-      reader = new InputStreamReader(hyph, encoding);
-      hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(reader);
-    } catch (Exception e) { // TODO: getHyphenationTree really shouldnt throw "Exception"
+      // TODO: Broken, because we cannot resolve real system id
+      // ResourceLoader should also supply method like ClassLoader to get resource URL
+      stream = loader.openResource(hypFile);
+      final InputSource is = new InputSource(stream);
+      is.setEncoding(encoding); // if it's null let xml parser decide
+      is.setSystemId(hypFile);
+      hyphenator = HyphenationCompoundWordTokenFilter.getHyphenationTree(is);
+    } catch (Exception e) { // TODO: getHyphenationTree really shouldn't throw "Exception"
       throw new RuntimeException(e);
     } finally {
-      IOUtils.closeQuietly(reader);
+      IOUtils.closeQuietly(stream);
     }
   }
   

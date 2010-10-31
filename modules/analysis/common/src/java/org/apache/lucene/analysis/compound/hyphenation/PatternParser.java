@@ -91,7 +91,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
    * @throws HyphenationException In case of an exception while parsing
    */
   public void parse(String filename) throws HyphenationException {
-    parse(new File(filename));
+    parse(new InputSource(filename));
   }
 
   /**
@@ -266,7 +266,15 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   //
   @Override
   public InputSource resolveEntity(String publicId, String systemId) {
-    return HyphenationDTDGenerator.generateDTD();
+    // supply the internal hyphenation.dtd if possible
+    if (
+      (systemId != null && systemId.matches("(?i).*\\bhyphenation.dtd\\b.*")) ||
+      ("hyphenation-info".equals(publicId))
+    ) {
+      // System.out.println(this.getClass().getResource("hyphenation.dtd").toExternalForm());
+      return new InputSource(this.getClass().getResource("hyphenation.dtd").toExternalForm());
+    }
+    return null;
   }
 
   //
@@ -373,35 +381,6 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
 
   }
 
-  //
-  // ErrorHandler methods
-  //
-
-  /**
-   * @see org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
-   */
-  @Override
-  public void warning(SAXParseException ex) {
-    errMsg = "[Warning] " + getLocationString(ex) + ": " + ex.getMessage();
-  }
-
-  /**
-   * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
-   */
-  @Override
-  public void error(SAXParseException ex) {
-    errMsg = "[Error] " + getLocationString(ex) + ": " + ex.getMessage();
-  }
-
-  /**
-   * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
-   */
-  @Override
-  public void fatalError(SAXParseException ex) throws SAXException {
-    errMsg = "[Fatal Error] " + getLocationString(ex) + ": " + ex.getMessage();
-    throw ex;
-  }
-
   /**
    * Returns a string of the location.
    */
@@ -444,81 +423,5 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
       pp.setConsumer(pp);
       pp.parse(args[0]);
     }
-  }
-}
-
-class HyphenationDTDGenerator {
-  public static final String DTD_STRING=
-    "<?xml version=\"1.0\" encoding=\"US-ASCII\"?>\n"+
-    "<!--\n"+
-    "  Copyright 1999-2004 The Apache Software Foundation\n"+
-    "\n"+
-    "  Licensed under the Apache License, Version 2.0 (the \"License\");\n"+
-    "  you may not use this file except in compliance with the License.\n"+
-    "  You may obtain a copy of the License at\n"+
-    "\n"+
-    "       http://www.apache.org/licenses/LICENSE-2.0\n"+
-    "\n"+
-    "  Unless required by applicable law or agreed to in writing, software\n"+
-    "  distributed under the License is distributed on an \"AS IS\" BASIS,\n"+
-    "  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"+
-    "  See the License for the specific language governing permissions and\n"+
-    "  limitations under the License.\n"+
-    "-->\n"+
-    "<!-- $Id: hyphenation.dtd,v 1.3 2004/02/27 18:34:59 jeremias Exp $ -->\n"+
-    "\n"+
-    "<!ELEMENT hyphenation-info (hyphen-char?, hyphen-min?,\n"+
-    "                           classes, exceptions?, patterns)>\n"+
-    "\n"+
-    "<!-- Hyphen character to be used in the exception list as shortcut for\n"+
-    "     <hyphen pre-break=\"-\"/>. Defaults to '-'\n"+
-    "-->\n"+
-    "<!ELEMENT hyphen-char EMPTY>\n"+
-    "<!ATTLIST hyphen-char value CDATA #REQUIRED>\n"+
-    "\n"+
-    "<!-- Default minimun length in characters of hyphenated word fragments\n"+
-    "     before and after the line break. For some languages this is not\n"+
-    "     only for aesthetic purposes, wrong hyphens may be generated if this\n"+
-    "     is not accounted for.\n"+
-    "-->\n"+
-    "<!ELEMENT hyphen-min EMPTY>\n"+
-    "<!ATTLIST hyphen-min before CDATA #REQUIRED>\n"+
-    "<!ATTLIST hyphen-min after CDATA #REQUIRED>\n"+
-    "\n"+
-    "<!-- Character equivalent classes: space separated list of character groups, all\n"+
-    "     characters in a group are to be treated equivalent as far as\n"+
-    "     the hyphenation algorithm is concerned. The first character in a group\n"+
-    "     is the group's equivalent character. Patterns should only contain\n"+
-    "     first characters. It also defines word characters, i.e. a word that\n"+
-    "     contains characters not present in any of the classes is not hyphenated.\n"+
-    "-->\n"+
-    "<!ELEMENT classes (#PCDATA)>\n"+
-    "\n"+
-    "<!-- Hyphenation exceptions: space separated list of hyphenated words.\n"+
-    "     A hyphen is indicated by the hyphen tag, but you can use the\n"+
-    "     hyphen-char defined previously as shortcut. This is in cases\n"+
-    "     when the algorithm procedure finds wrong hyphens or you want\n"+
-    "     to provide your own hyphenation for some words.\n"+
-    "-->\n"+
-    "<!ELEMENT exceptions (#PCDATA|hyphen)* >\n"+
-    "\n"+
-    "<!-- The hyphenation patterns, space separated. A pattern is made of 'equivalent'\n"+
-    "     characters as described before, between any two word characters a digit\n"+
-    "     in the range 0 to 9 may be specified. The absence of a digit is equivalent\n"+
-    "     to zero. The '.' character is reserved to indicate begining or ending\n"+
-    "     of words. -->\n"+
-    "<!ELEMENT patterns (#PCDATA)>\n"+
-    "\n"+
-    "<!-- A \"full hyphen\" equivalent to TeX's \\discretionary\n"+
-    "     with pre-break, post-break and no-break attributes.\n"+
-    "     To be used in the exceptions list, the hyphen character is not\n"+
-    "     automatically added -->\n"+
-    "<!ELEMENT hyphen EMPTY>\n"+
-    "<!ATTLIST hyphen pre CDATA #IMPLIED>\n"+
-    "<!ATTLIST hyphen no CDATA #IMPLIED>\n"+
-    "<!ATTLIST hyphen post CDATA #IMPLIED>\n";
-  
- public static InputSource generateDTD() {
-    return new InputSource(new StringReader(DTD_STRING));
   }
 }
