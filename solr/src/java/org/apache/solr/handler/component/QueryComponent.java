@@ -311,6 +311,7 @@ public class QueryComponent extends SearchComponent
         Sort groupSort = groupSortStr != null ? QueryParsing.parseSort(groupSortStr, req) : null;
 
         int limitDefault = cmd.getLen(); // this is normally from "rows"
+        int groupOffsetDefault = params.getInt(GroupParams.GROUP_OFFSET, 0);
         int docsPerGroupDefault = params.getInt(GroupParams.GROUP_LIMIT, 1);
 
         // temporary: implement all group-by-field as group-by-func
@@ -340,6 +341,8 @@ public class QueryComponent extends SearchComponent
             gc.key = groupByStr;
             gc.numGroups = limitDefault;
             gc.docsPerGroup = docsPerGroupDefault;
+            gc.groupOffset = groupOffsetDefault;
+            gc.offset = cmd.getOffset();
 
             cmd.groupCommands.add(gc);
           }
@@ -355,6 +358,7 @@ public class QueryComponent extends SearchComponent
             gc.key = groupByStr;
             gc.numGroups = limitDefault;
             gc.docsPerGroup = docsPerGroupDefault;
+            gc.groupOffset = groupOffsetDefault;
 
             cmd.groupCommands.add(gc);
           }

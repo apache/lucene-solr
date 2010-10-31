@@ -997,8 +997,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
 
-    int last = cmd.getOffset() + cmd.getLen();
-    if (last < 0 || last > maxDoc()) last=maxDoc();
+    int maxDoc = maxDoc();
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     boolean getDocSet = (cmd.getFlags() & GET_DOCSET) != 0;
@@ -1018,10 +1017,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         Map context = ValueSource.newContext();
         gc.groupBy.createWeight(context, this);
         TopGroupCollector collector;
+
+        int groupsToCollect = gc.numGroups<0 ? maxDoc : gc.offset + gc.numGroups;
+        if (groupsToCollect < 0 || groupsToCollect > maxDoc) groupsToCollect = maxDoc;
+
         if (gc.groupSort != null && gc.groupSort != sort) {
-          collector = new TopGroupSortCollector(gc.groupBy, context, sort, gc.groupSort, last);
+          collector = new TopGroupSortCollector(gc.groupBy, context, sort, gc.groupSort, groupsToCollect);
         } else {
-          collector = new TopGroupCollector(gc.groupBy, context, sort, last);
+          collector = new TopGroupCollector(gc.groupBy, context, sort, groupsToCollect);
         }
         collectors.add(collector);
 
@@ -1031,8 +1034,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
 
       if (groupCommand instanceof Grouping.CommandQuery) {
+        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
+        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
+
         DocSet groupFilt = getDocSet(((Grouping.CommandQuery)groupCommand).query);
-        TopFieldCollector collector = TopFieldCollector.create(groupCommand.groupSort==null ? sort : groupCommand.groupSort, groupCommand.docsPerGroup, false, needScores, needScores, true);
+        TopFieldCollector collector = TopFieldCollector.create(groupCommand.groupSort==null ? sort : groupCommand.groupSort, docsToCollect, false, needScores, needScores, true);
         collectors.add(new FilterCollector(groupFilt, collector));
       }
     }
@@ -1058,7 +1064,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if (groupCommand instanceof Grouping.CommandFunc) {
         Grouping.CommandFunc gc = (Grouping.CommandFunc)groupCommand;
         Sort collectorSort = gc.groupSort == null ? sort : gc.groupSort;
-        Phase2GroupCollector collector = new Phase2GroupCollector((TopGroupCollector)gc.collector, gc.groupBy, gc.context, collectorSort, gc.docsPerGroup, needScores);
+
+        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
+        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
+
+        Phase2GroupCollector collector = new Phase2GroupCollector((TopGroupCollector)gc.collector, gc.groupBy, gc.context, collectorSort, docsToCollect, needScores, groupCommand.offset);
         phase2Collectors.add(collector);
         numPhase2++;
       } else if (groupCommand instanceof Grouping.CommandQuery) {
@@ -1090,7 +1100,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
       // TODO: refactor this
       if (groupCommand instanceof Grouping.CommandQuery) {
-        TopDocs topDocs = ((FilterCollector)gcollector).getTopFieldCollector().topDocs(0, groupCommand.docsPerGroup);
+
+        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
+        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
+
+        TopDocs topDocs = ((FilterCollector)gcollector).getTopFieldCollector().topDocs(0, docsToCollect);
 
         // TODO: refactor
 
@@ -1105,12 +1119,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
         float score = topDocs.getMaxScore();
         maxScore = Math.max(maxScore, score);
-        DocSlice docs = new DocSlice(0, ids.length, ids, scores, topDocs.totalHits, score);
+        DocSlice docs = new DocSlice(groupCommand.groupOffset, Math.max(0, ids.length - groupCommand.groupOffset), ids, scores, topDocs.totalHits, score);
         groupResult.add("doclist", docs);
 
         if (getDocList) {
-          for (int id : ids)
-            idSet.add(id);
+          DocIterator iter = docs.iterator();
+          while (iter.hasNext())
+            idSet.add(iter.nextDoc());
         }
 
         continue;
@@ -1125,7 +1140,12 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       List groupList = new ArrayList();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
 
+      int skipCount = groupCommand.offset;
       for (SearchGroup group : collector.orderedGroups) {
+        if (skipCount > 0) {
+          skipCount--;
+          continue;
+        }
         NamedList nl = new SimpleOrderedMap();
         groupList.add(nl);                         // grouped={ key={ groups=[ {
 
@@ -1134,7 +1154,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         SearchGroupDocs groupDocs = collector2.groupMap.get(group.groupValue);
         // nl.add("matches", groupDocs.matches);  // redundant with doclist.numFound from the doc list
 
-        TopDocs topDocs = groupDocs.collector.topDocs(0, groupCommandFunc.docsPerGroup);
+        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
+        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
+
+        TopDocs topDocs = groupDocs.collector.topDocs(0, docsToCollect);
         //topDocs.totalHits
         int ids[] = new int[topDocs.scoreDocs.length];
         float[] scores = needScores ? new float[topDocs.scoreDocs.length] : null;
@@ -1146,14 +1169,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
         float score = topDocs.getMaxScore();
         maxScore = Math.max(maxScore, score);
-        DocSlice docs = new DocSlice(0, ids.length, ids, scores, topDocs.totalHits, score);
+        DocSlice docs = new DocSlice(groupCommand.groupOffset, Math.max(0, ids.length - groupCommand.groupOffset), ids, scores, topDocs.totalHits, score);
         nl.add("doclist", docs);
 
         if (getDocList) {
-          for (int id : ids)
-            idSet.add(id);
+          DocIterator iter = docs.iterator();
+          while (iter.hasNext())
+            idSet.add(iter.nextDoc());
         }
-
         /*** values from stage 1
          DocSlice docs = new DocSlice(0, 1, new int[] {group.topDoc}, null, 1, 0);
          nl.add("docs", docs);

@@ -31,7 +31,9 @@ public class Grouping {
     public String key;  // the name to use for this group in the response
     public Sort groupSort;  // the sort of the documents *within* a single group.
     public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
+    public int groupOffset; // the offset within each group (for paging within each group)
     public int numGroups;   // how many groups - defaults to the "rows" parameter
+    public int offset;   // offset into the list of groups
   }
 
   public static class CommandQuery extends Command {
@@ -511,11 +513,18 @@ class Phase2GroupCollector extends Collector {
   int docBase;
 
   // TODO: may want to decouple from the phase1 collector
-  public Phase2GroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores) throws IOException {
+  public Phase2GroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores, int offset) throws IOException {
     boolean getSortFields = false;
 
+    if (topGroups.orderedGroups == null)
+      topGroups.buildSet();
+
     groupMap = new HashMap<MutableValue, SearchGroupDocs>(topGroups.groupMap.size());
-    for (SearchGroup group : topGroups.groupMap.values()) {
+    for (SearchGroup group : topGroups.orderedGroups) {
+      if (offset > 0) {
+        offset--;
+        continue;
+      }
       SearchGroupDocs groupDocs = new SearchGroupDocs();
       groupDocs.groupValue = group.groupValue;
       groupDocs.collector = TopFieldCollector.create(sort, docsPerGroup, getSortFields, getScores, getScores, true);
