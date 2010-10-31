@@ -841,7 +841,7 @@ public class DocBuilder {
     }
     // identifying the modified rows for this entity
 
-    Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
+    Map<String, Map<String, Object>> deltaSet = new HashMap<String, Map<String, Object>>();
     LOG.info("Running ModifiedRowKey() for Entity: " + entity.name);
     //get the modified rows in this entity
     while (true) {
@@ -850,7 +850,7 @@ public class DocBuilder {
       if (row == null)
         break;
 
-      deltaSet.add(row);
+      deltaSet.put(row.get(entity.getPk()).toString(), row);
       importStatistics.rowsCount.incrementAndGet();
       // check for abort
       if (stop.get())
@@ -858,33 +858,29 @@ public class DocBuilder {
     }
     //get the deleted rows for this entity
     Set<Map<String, Object>> deletedSet = new HashSet<Map<String, Object>>();
-    Set<Map<String, Object>> deltaRemoveSet = new HashSet<Map<String, Object>>();
     while (true) {
       Map<String, Object> row = entityProcessor.nextDeletedRowKey();
       if (row == null)
         break;
 
-      //Check to see if this delete is in the current delta set
-      for (Map<String, Object> modifiedRow : deltaSet) {
-        if (modifiedRow.get(entity.getPk()).equals(row.get(entity.getPk()))) {
-          deltaRemoveSet.add(modifiedRow);
-        }
+      deletedSet.add(row);
+      
+      // Remove deleted rows from the delta rows
+      String deletedRowPk = row.get(entity.getPk()).toString();
+      if (deltaSet.containsKey(deletedRowPk)) {
+        deltaSet.remove(deletedRowPk);
       }
 
-      deletedSet.add(row);
       importStatistics.rowsCount.incrementAndGet();
       // check for abort
       if (stop.get())
         return new HashSet();
     }
 
-    //asymmetric Set difference
-    deltaSet.removeAll(deltaRemoveSet);
-
     LOG.info("Completed ModifiedRowKey for Entity: " + entity.name + " rows obtained : " + deltaSet.size());
     LOG.info("Completed DeletedRowKey for Entity: " + entity.name + " rows obtained : " + deletedSet.size());
 
-    myModifiedPks.addAll(deltaSet);
+    myModifiedPks.addAll(deltaSet.values());
     Set<Map<String, Object>> parentKeyList = new HashSet<Map<String, Object>>();
     //all that we have captured is useless (in a sub-entity) if no rows in the parent is modified because of these
     //propogate up the changes in the chain

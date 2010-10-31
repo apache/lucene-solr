@@ -337,7 +337,8 @@ Optimizations
   improvement is 5%, but can be much greater (up to 10x faster) when facet.offset
   is very large (deep paging). (yonik)
 
-
+* SOLR-2200: Improve the performance of DataImportHandler for large delta-import
+  updates. (Mark Waddle via rmuir)
 
 Bug Fixes
 ----------------------
