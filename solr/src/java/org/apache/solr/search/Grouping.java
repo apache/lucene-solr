@@ -142,9 +142,9 @@ public class Grouping {
       maxGroupToFind = getMax(offset, numGroups, maxDoc);
 
       if (compareSorts(sort, groupSort)) {
-        collector = new TopGroupSortCollector(groupBy, context, normalizeSort(sort), normalizeSort(groupSort), maxGroupToFind);
-      } else {
         collector = new TopGroupCollector(groupBy, context, normalizeSort(sort), maxGroupToFind);
+      } else {
+        collector = new TopGroupSortCollector(groupBy, context, normalizeSort(sort), normalizeSort(groupSort), maxGroupToFind);
       }
       return collector;
     }
