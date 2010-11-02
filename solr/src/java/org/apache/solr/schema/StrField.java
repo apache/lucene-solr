@@ -90,6 +90,14 @@ class StrFieldSource extends FieldCacheSource {
         return (double)intVal(doc);
       }
 
+      public int ordVal(int doc) {
+        return termsIndex.getOrd(doc);
+      }
+
+      public int numOrd() {
+        return termsIndex.numOrd();
+      }
+
       public String strVal(int doc) {
         int ord=termsIndex.getOrd(doc);
         if (ord == 0) {
