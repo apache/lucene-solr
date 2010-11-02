@@ -241,6 +241,8 @@ New Features
 * SOLR-2010: Added ability to verify that spell checking collations have
    actual results in the index.  (James Dyer via gsingers)
 
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
 Optimizations
 ----------------------
 
