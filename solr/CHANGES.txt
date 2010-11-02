@@ -540,6 +540,9 @@ Bug Fixes
 * SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
 
 * SOLR-1962: SolrCore#initIndex should not use a mix of indexPath and newIndexPath (Mark Miller)
+
+* SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
+  (Drew Farris via koji)
   
 Other Changes
 ----------------------

@@ -385,7 +385,7 @@
     <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
     -->
   </requestHandler>
-  
+
   <!-- config for the admin interface --> 
   <admin>
     <defaultQuery>*:*</defaultQuery>
@@ -394,6 +394,12 @@
     <healthcheck type="file">server-enabled</healthcheck>
     -->
   </admin>
+
+  <updateRequestProcessorChain key="contentstream" default="true">
+    <processor class="org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase$TestUpdateRequestProcessorFactory"/>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+    <processor class="solr.LogUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
 
 </config>
 

@@ -391,5 +391,11 @@
     -->
   </admin>
 
+  <updateRequestProcessorChain key="dataimport" default="true">
+    <processor class="org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase$TestUpdateRequestProcessorFactory"/>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+    <processor class="solr.LogUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
 </config>
 
