@@ -6,9 +6,9 @@ analyzers for Chinese and Polish.
 
 Relies upon the following lucene components (in lucene-libs/):
 
- * lucene-analyzers-icu-X.Y.jar
- * lucene-analyzers-smartcn-X.Y.jar
- * lucene-analyzers-stempel-X.Y.jar
+ * lucene-icu-X.Y.jar
+ * lucene-smartcn-X.Y.jar
+ * lucene-stempel-X.Y.jar
  
 And the ICU library (in lib/):
 
