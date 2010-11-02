@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.icu.segmentation.ICUTokenizer;
 /** Factory for {@link ICUTokenizer} */
 public class ICUTokenizerFactory extends BaseTokenizerFactory {
   // TODO: add support for custom configs
-  @Override
   public Tokenizer create(Reader input) {
     return new ICUTokenizer(input);
   }
