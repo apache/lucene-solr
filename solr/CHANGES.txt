@@ -299,6 +299,9 @@ New Features
 
 * SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
 
+* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
+  tokenizer and filters to contrib/analysis-extras (rmuir)
+
 Optimizations
 ----------------------
 
