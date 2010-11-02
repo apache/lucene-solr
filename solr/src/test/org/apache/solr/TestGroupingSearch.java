@@ -105,27 +105,6 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             );
   }
 
-  @Test
-  public void testGroupingGroupSortingName() {
-    assertU(add(doc("id", "1","name", "author1", "title", "a book title")));
-    assertU(add(doc("id", "2","name", "author1", "title", "the title")));
-    assertU(add(doc("id", "3","name", "author2", "title", "book title")));
-    assertU(add(doc("id", "4","name", "author2", "title", "the title")));
-    assertU(commit());
-
-    assertQ(req("q","title:title", "group", "true", "group.field","name", "group.sort", "title asc")
-            ,"*[count(//arr[@name='groups']/lst) = 2]"
-            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author2']"
-    //       ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
-            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='3']"
-
-            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author1']"
-    //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
-            ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
-            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='1']"
-            );
-  }
 
   @Test
   public void testGroupingGroupSortingWeight() {

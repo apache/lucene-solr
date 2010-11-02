@@ -300,8 +300,8 @@ public class QueryComponent extends SearchComponent
     boolean doGroup = params.getBool(GroupParams.GROUP, false);
     if (doGroup) {
       try {
-        cmd.groupCommands = new ArrayList<Grouping.Command>();
-        
+        Grouping grouping = new Grouping(searcher, result, cmd);
+
         String[] fields = params.getParams(GroupParams.GROUP_FIELD);
         String[] funcs = params.getParams(GroupParams.GROUP_FUNC);
         String[] queries = params.getParams(GroupParams.GROUP_QUERY);
@@ -330,7 +330,7 @@ public class QueryComponent extends SearchComponent
           for (String groupByStr : funcs) {
             QParser parser = QParser.getParser(groupByStr, "func", rb.req);
             Query q = parser.getQuery();
-            Grouping.CommandFunc gc = new Grouping.CommandFunc();
+            Grouping.CommandFunc gc = grouping.new CommandFunc();
             gc.groupSort = groupSort;
 
             if (q instanceof FunctionQuery) {
@@ -343,8 +343,9 @@ public class QueryComponent extends SearchComponent
             gc.docsPerGroup = docsPerGroupDefault;
             gc.groupOffset = groupOffsetDefault;
             gc.offset = cmd.getOffset();
+            gc.sort = cmd.getSort();
 
-            cmd.groupCommands.add(gc);
+            grouping.add(gc);
           }
         }
 
@@ -352,7 +353,7 @@ public class QueryComponent extends SearchComponent
           for (String groupByStr : queries) {
             QParser parser = QParser.getParser(groupByStr, null, rb.req);
             Query gq = parser.getQuery();
-            Grouping.CommandQuery gc = new Grouping.CommandQuery();
+            Grouping.CommandQuery gc = grouping.new CommandQuery();
             gc.query = gq;
             gc.groupSort = groupSort;
             gc.key = groupByStr;
@@ -360,26 +361,23 @@ public class QueryComponent extends SearchComponent
             gc.docsPerGroup = docsPerGroupDefault;
             gc.groupOffset = groupOffsetDefault;
 
-            cmd.groupCommands.add(gc);
+            grouping.add(gc);
           }
         }
 
 
-        if (cmd.groupCommands.size() == 0)
-          cmd.groupCommands = null;
-
-        if (cmd.groupCommands != null) {
-          if (rb.doHighlights || rb.isDebug()) {
-            // we need a single list of the returned docs
-            cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
-          }
-
-          searcher.search(result,cmd);
-          rb.setResult( result );
-          rsp.add("grouped", result.groupedResults);
-          // TODO: get "hits" a different way to log
-          return;
+        if (rb.doHighlights || rb.isDebug()) {
+          // we need a single list of the returned docs
+          cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
         }
+
+        // searcher.search(result,cmd);
+        grouping.execute();
+        rb.setResult( result );
+        rsp.add("grouped", result.groupedResults);
+        // TODO: get "hits" a different way to log
+        return;
+
       } catch (ParseException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

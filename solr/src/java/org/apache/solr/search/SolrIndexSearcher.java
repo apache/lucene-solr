@@ -983,238 +983,19 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return qr.getDocList();
   }
 
-  private static final int NO_CHECK_QCACHE       = 0x80000000;
-  private static final int GET_DOCSET            = 0x40000000;
-  private static final int NO_CHECK_FILTERCACHE  = 0x20000000;
+  static final int NO_CHECK_QCACHE       = 0x80000000;
+  static final int GET_DOCSET            = 0x40000000;
+  static final int NO_CHECK_FILTERCACHE  = 0x20000000;
   
   public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
 
-
-  private void groupBy(QueryResult qr, QueryCommand cmd) throws IOException {
-    DocListAndSet out = new DocListAndSet();
-    qr.setDocListAndSet(out);
-
-    DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
-
-    int maxDoc = maxDoc();
-
-    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
-    boolean getDocSet = (cmd.getFlags() & GET_DOCSET) != 0;
-    boolean getDocList = (cmd.getFlags() & GET_DOCLIST) != 0; // doclist needed for debugging or highlighting
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
-
-    final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
-
-    Sort sort = cmd.getSort();
-    if (sort == null) sort = new Sort();
-
-    List<GroupCollector> collectors = new ArrayList<GroupCollector>(cmd.groupCommands.size());
-    for (Grouping.Command groupCommand : cmd.groupCommands) {
-      // TODO: perhaps use some methods rather than instanceof
-      if (groupCommand instanceof Grouping.CommandFunc) {
-        Grouping.CommandFunc gc = (Grouping.CommandFunc)groupCommand;
-        Map context = ValueSource.newContext();
-        gc.groupBy.createWeight(context, this);
-        TopGroupCollector collector;
-
-        int groupsToCollect = gc.numGroups<0 ? maxDoc : gc.offset + gc.numGroups;
-        if (groupsToCollect < 0 || groupsToCollect > maxDoc) groupsToCollect = maxDoc;
-
-        if (gc.groupSort != null && gc.groupSort != sort) {
-          collector = new TopGroupSortCollector(gc.groupBy, context, sort, gc.groupSort, groupsToCollect);
-        } else {
-          collector = new TopGroupCollector(gc.groupBy, context, sort, groupsToCollect);
-        }
-        collectors.add(collector);
-
-        // for next phase
-        gc.context = context;
-        gc.collector = collector;
-      }
-
-      if (groupCommand instanceof Grouping.CommandQuery) {
-        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
-        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
-
-        DocSet groupFilt = getDocSet(((Grouping.CommandQuery)groupCommand).query);
-        TopFieldCollector collector = TopFieldCollector.create(groupCommand.groupSort==null ? sort : groupCommand.groupSort, docsToCollect, false, needScores, needScores, true);
-        collectors.add(new FilterCollector(groupFilt, collector));
-      }
-    }
-
-    Collector allCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
-    DocSetCollector setCollector = null;
-    if (getDocSet) {
-      // TODO: can callCollectors be zero length?
-      setCollector = new DocSetDelegateCollector(maxDoc()>>6, maxDoc(), allCollectors);
-      allCollectors = setCollector;
-    }
-
-    search(query, luceneFilter, allCollectors);
-
-    if (getDocSet) {
-      qr.docListAndSet.docSet = setCollector.getDocSet();
-    }
-
-    // TODO: make this a generic collector list
-    int numPhase2 = 0;
-    List<Phase2GroupCollector> phase2Collectors = new ArrayList<Phase2GroupCollector>(cmd.groupCommands.size());
-    for (Grouping.Command groupCommand : cmd.groupCommands) {
-      if (groupCommand instanceof Grouping.CommandFunc) {
-        Grouping.CommandFunc gc = (Grouping.CommandFunc)groupCommand;
-        Sort collectorSort = gc.groupSort == null ? sort : gc.groupSort;
-
-        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
-        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
-
-        Phase2GroupCollector collector = new Phase2GroupCollector((TopGroupCollector)gc.collector, gc.groupBy, gc.context, collectorSort, docsToCollect, needScores, groupCommand.offset);
-        phase2Collectors.add(collector);
-        numPhase2++;
-      } else if (groupCommand instanceof Grouping.CommandQuery) {
-        phase2Collectors.add(null);
-      } else {
-        phase2Collectors.add(null);        
-      }
-    }
-
-    // TODO: optionally cache docs and feed them back through rather than re-searching
-    if (numPhase2 > 0)
-      search(query, luceneFilter, MultiCollector.wrap(phase2Collectors.toArray(new Collector[phase2Collectors.size()])));
-
-    Set<Integer> idSet = new LinkedHashSet<Integer>();  // used for tracking unique docs when we need a doclist
-    int maxMatches = 0;
-    float maxScore = Float.NEGATIVE_INFINITY;
-
-    NamedList grouped = new SimpleOrderedMap();
-    for (int cmdnum=0; cmdnum<cmd.groupCommands.size(); cmdnum++) {
-      Grouping.Command groupCommand = cmd.groupCommands.get(cmdnum);
-      GroupCollector gcollector = collectors.get(cmdnum);
-
-      NamedList groupResult = new SimpleOrderedMap();
-      grouped.add(groupCommand.key, groupResult);  // grouped={ key={
-
-      int this_matches = gcollector.getMatches();
-      groupResult.add("matches", this_matches);
-      maxMatches = Math.max(maxMatches, this_matches);
-
-      // TODO: refactor this
-      if (groupCommand instanceof Grouping.CommandQuery) {
-
-        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
-        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
-
-        TopDocs topDocs = ((FilterCollector)gcollector).getTopFieldCollector().topDocs(0, docsToCollect);
-
-        // TODO: refactor
-
-        //topDocs.totalHits
-        int ids[] = new int[topDocs.scoreDocs.length];
-        float[] scores = needScores ? new float[topDocs.scoreDocs.length] : null;
-        for (int i=0; i<ids.length; i++) {
-          ids[i] = topDocs.scoreDocs[i].doc;
-          if (scores != null)
-            scores[i] = topDocs.scoreDocs[i].score;
-        }
-
-        float score = topDocs.getMaxScore();
-        maxScore = Math.max(maxScore, score);
-        DocSlice docs = new DocSlice(groupCommand.groupOffset, Math.max(0, ids.length - groupCommand.groupOffset), ids, scores, topDocs.totalHits, score);
-        groupResult.add("doclist", docs);
-
-        if (getDocList) {
-          DocIterator iter = docs.iterator();
-          while (iter.hasNext())
-            idSet.add(iter.nextDoc());
-        }
-
-        continue;
-      }
-
-      Grouping.CommandFunc groupCommandFunc = (Grouping.CommandFunc)groupCommand;
-      TopGroupCollector collector = (TopGroupCollector)gcollector;
-      Phase2GroupCollector collector2 = phase2Collectors.get(cmdnum);
-
-      if (collector.orderedGroups == null) collector.buildSet();
-
-      List groupList = new ArrayList();
-      groupResult.add("groups", groupList);        // grouped={ key={ groups=[
-
-      int skipCount = groupCommand.offset;
-      for (SearchGroup group : collector.orderedGroups) {
-        if (skipCount > 0) {
-          skipCount--;
-          continue;
-        }
-        NamedList nl = new SimpleOrderedMap();
-        groupList.add(nl);                         // grouped={ key={ groups=[ {
-
-        nl.add("groupValue", group.groupValue.toObject());
-
-        SearchGroupDocs groupDocs = collector2.groupMap.get(group.groupValue);
-        // nl.add("matches", groupDocs.matches);  // redundant with doclist.numFound from the doc list
-
-        int docsToCollect = groupCommand.docsPerGroup<0 ? maxDoc : groupCommand.groupOffset + groupCommand.docsPerGroup;
-        if (docsToCollect < 0 || docsToCollect > maxDoc) docsToCollect = maxDoc;
-
-        TopDocs topDocs = groupDocs.collector.topDocs(0, docsToCollect);
-        //topDocs.totalHits
-        int ids[] = new int[topDocs.scoreDocs.length];
-        float[] scores = needScores ? new float[topDocs.scoreDocs.length] : null;
-        for (int i=0; i<ids.length; i++) {
-          ids[i] = topDocs.scoreDocs[i].doc;
-          if (scores != null)
-            scores[i] = topDocs.scoreDocs[i].score;
-        }
-
-        float score = topDocs.getMaxScore();
-        maxScore = Math.max(maxScore, score);
-        DocSlice docs = new DocSlice(groupCommand.groupOffset, Math.max(0, ids.length - groupCommand.groupOffset), ids, scores, topDocs.totalHits, score);
-        nl.add("doclist", docs);
-
-        if (getDocList) {
-          DocIterator iter = docs.iterator();
-          while (iter.hasNext())
-            idSet.add(iter.nextDoc());
-        }
-        /*** values from stage 1
-         DocSlice docs = new DocSlice(0, 1, new int[] {group.topDoc}, null, 1, 0);
-         nl.add("docs", docs);
-
-         Object[] vals = new Object[collector.comparators.length];
-         for (int i=0; i<vals.length; i++) {
-         vals[i] = collector.comparators[i].value(group.comparatorSlot);
-         }
-         nl.add("groupSortValue", vals);
-         groupResult.add(nl);
-         ***/
-      }
-    }
-
-    qr.groupedResults = grouped;    
-
-    if (getDocList) {
-      int sz = idSet.size();
-      int[] ids = new int[sz];
-      int idx = 0;
-      for (int val : idSet) {
-        ids[idx++] = val;
-      }
-      qr.docListAndSet.docList = new DocSlice(0, sz, ids, null, maxMatches, maxScore);
-    }
-
-  }
 
   /**
    * getDocList version that uses+populates query and filter caches.
    * In the event of a timeout, the cache is not populated.
    */
   private void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
-    if (cmd.groupCommands != null) {
-      groupBy(qr, cmd);
-      return;
-    }
-
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
     QueryResultKey key=null;
@@ -2025,7 +1806,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     private int flags;
     private long timeAllowed = -1;
 
-    public List<Grouping.Command> groupCommands;
+    // public List<Grouping.Command> groupCommands;
 
     public Query getQuery() { return query; }
     public QueryCommand setQuery(Query query) {
