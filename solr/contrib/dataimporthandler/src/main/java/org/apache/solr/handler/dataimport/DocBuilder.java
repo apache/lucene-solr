@@ -205,6 +205,11 @@ public class DocBuilder {
         // Finished operation normally, commit now
         finish(lastIndexTimeProps);
       }
+      
+      if (writer != null) {
+        writer.finish();
+      }
+      
       if (document.onImportEnd != null) {
         invokeEventListener(document.onImportEnd);
       }
