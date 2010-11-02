@@ -297,6 +297,8 @@ New Features
   built-in load balancing, and infrastructure for future SolrCloud work. 
   (yonik, Mark Miller)
 
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
 Optimizations
 ----------------------
 

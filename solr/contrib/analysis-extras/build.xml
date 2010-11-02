@@ -1,0 +1,203 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-extraAnalyzers" default="build">
+
+  <property name="solr-path" value="../.."/>
+
+  <import file="../../common-build.xml"/>
+
+  <description>
+    Additional analysis components
+  </description>
+
+  <property name="example.local" value="example"/>
+  
+  <!-- support for the additional analyzers modules -->
+  <path id="modules.classpath">
+    <pathelement location="${common-solr.dir}/../modules/analysis/build/icu/classes/java" />
+    <pathelement location="${common-solr.dir}/../modules/analysis/build/smartcn/classes/java" />
+  	<pathelement location="${common-solr.dir}/../modules/analysis/build/stempel/classes/java" />
+  </path>
+	
+  <target name="prep-module-jars">
+    <subant target="jar" inheritall="false" failonerror="true">
+      <fileset dir="${common-solr.dir}/../modules/analysis/icu" includes="build.xml" />
+      <fileset dir="${common-solr.dir}/../modules/analysis/smartcn" includes="build.xml" />
+      <fileset dir="${common-solr.dir}/../modules/analysis/stempel" includes="build.xml" />
+    </subant>
+  </target>
+
+  <target name="module-jars-to-solr" depends="prep-module-jars">
+    <mkdir dir="${lucene-libs}"/>
+    <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <fileset dir="${common-solr.dir}/../modules/analysis/build/icu">
+        <include name="lucene-analyzers-icu-${version}.jar" />
+      </fileset>
+      <fileset dir="${common-solr.dir}/../modules/analysis/build/smartcn">
+          <include name="lucene-analyzers-smartcn-${version}.jar" />
+  	  </fileset>
+      <fileset dir="${common-solr.dir}/../modules/analysis/build/stempel">
+        <include name="lucene-analyzers-stempel-${version}.jar" />
+	  </fileset>
+    </copy>
+  </target>
+	 
+  <path id="common.classpath">
+    <fileset dir="lib"/>
+    <pathelement location="${solr-path}/build/solr"/>
+    <pathelement location="${solr-path}/build/solrj"/>
+    <path refid="lucene.classpath"/>
+  	<path refid="modules.classpath"/>
+    <fileset dir="${solr-path}/lib" includes="*.jar"/>
+  </path>
+
+  <path id="test.classpath">
+    <pathelement path="${dest}/classes"/>
+    <pathelement path="${dest}/test-classes"/>
+    <pathelement path="${java.class.path}"/>
+    <pathelement location="${common-solr.dir}/build/tests"/> <!-- include solr test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <path refid="common.classpath"/>
+  </path>
+
+  <target name="clean">
+    <delete failonerror="false" dir="${dest}"/>
+
+    <!-- example doesn't create this anymore, but clean it up
+         if it's still there from an old build
+      -->
+    <delete dir="example/lib" />
+  	<delete dir="${lucene-libs}" />
+  </target>
+
+
+  <target name="init" depends="module-jars-to-solr">
+    <mkdir dir="${dest}/classes"/>
+    
+    <mkdir dir="${build.javadoc}"/>
+    <subant target="compileTests">
+      <fileset dir="${solr-path}" includes="build.xml"/>
+    </subant>
+    <subant target="make-manifest">
+      <fileset dir="${solr-path}" includes="build.xml"/>
+    </subant>
+  </target>
+
+
+  <target name="compile" depends="init">
+    <solr-javac destdir="${dest}/classes"
+                classpathref="common.classpath">
+      <src path="src/java"/>
+    </solr-javac>
+  </target>
+
+  <target name="build" depends="compile">
+    <solr-jar destfile="${dest}/${fullnamever}.jar" basedir="${dest}/classes"
+              manifest="../../${dest}/META-INF/MANIFEST.MF"/>
+  </target>
+
+  <target name="compileTests" depends="compile">
+    <solr-javac destdir="${dest}/test-classes"
+                classpathref="test.classpath">
+      <src path="src/test"/>
+    </solr-javac>
+  </target>
+
+  <target name="example" depends="build,dist">
+    <!-- this task use to copy lib's but that's no longer needed because
+         ../lib and ../lib/downloads are now included explicitly by
+         example/conf/solrconfig.xml
+      -->
+  </target>
+
+
+  <target name="test" depends="compileTests">
+    <mkdir dir="${junit.output.dir}"/>
+
+    <junit printsummary="no"
+           haltonfailure="no"
+           maxmemory="512M"
+           errorProperty="tests.failed"
+           failureProperty="tests.failed"
+           dir="src/test/test-files/"
+           tempdir="${junit.output.dir}"
+           forkmode="perBatch"
+            >
+      <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
+      <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
+      <sysproperty key="tests.codec" value="${tests.codec}"/>
+      <sysproperty key="tests.locale" value="${tests.locale}"/>
+      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
+      <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
+      <sysproperty key="tests.seed" value="${tests.seed}"/>
+      <sysproperty key="tests.iter" value="${tests.iter}"/>
+      <sysproperty key="jetty.testMode" value="1"/>
+      <sysproperty key="tempDir" file="${junit.output.dir}"/>
+      <sysproperty key="testmethod" value="${testmethod}"/>
+      <jvmarg line="${args}"/>
+      <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>
+      <classpath refid="test.classpath"/>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+        <enable package="org.apache.solr"/>
+      </assertions>
+      <formatter type="${junit.formatter}"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+        <fileset dir="src/test" includes="${junit.includes}"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
+        <fileset dir="src/test" includes="**/${testcase}.java"/>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
+  </target>
+
+  <target name="dist" depends="build">
+    <!--
+      <copy file="${dest}/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"/>
+      <copy todir="${solr-path}/build/web/WEB-INF/lib" flatten="true">
+        <fileset dir="lib">
+          <include name="**/*.jar"/>
+        </fileset>
+      </copy>
+    -->
+    <copy file="${dest}/${fullnamever}.jar" todir="${solr-path}/dist"/>
+  </target>
+
+  <target name="javadoc">
+    <sequential>
+      <mkdir dir="${build.javadoc}/contrib-${name}"/>
+
+      <path id="javadoc.classpath">
+        <path refid="common.classpath"/>
+      </path>
+
+      <invoke-javadoc
+              destdir="${build.javadoc}/contrib-${name}"
+              title="${Name} ${version} contrib-${fullnamever} API">
+        <sources>
+          <packageset dir="src/java"/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
+
+</project>

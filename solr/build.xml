@@ -34,9 +34,6 @@
   <property name="clover.db.dir" location="${dest}/tests/clover/db"/>
   <property name="clover.report.dir" location="${dest}/tests/clover/reports"/>
   
-  <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
-  <property name="tests.luceneMatchVersion" value="4.0"/>
-
     <available
             property="clover.present"
             classname="com.cenqua.clover.tasks.CloverReportTask"
@@ -221,6 +218,7 @@
           <packageset dir="contrib/dataimporthandler/src/main/java" />
           <!--<packageset dir="contrib/clustering/src/main/java" />-->
           <packageset dir="contrib/extraction/src/main/java" />
+          <packageset dir="contrib/analysis-extras/src/java" />
           <group title="Core" packages="org.apache.*" />
           <group title="Common" packages="org.apache.solr.common.*" />
           <group title="SolrJ" packages="org.apache.solr.client.solrj*" />
@@ -509,6 +507,7 @@
       <fileset dir="contrib/dataimporthandler/src/main/java" />
       <fileset dir="contrib/clustering/src/main/java" />
       <fileset dir="contrib/extraction/src/main/java" />
+      <fileset dir="contrib/analysis-extras/src/java" />
     </clover-setup>
   </target>
 
@@ -609,6 +608,8 @@
               basedir="contrib/extraction/src" />
     <!--<solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
               basedir="contrib/clustering/src" />-->
+    <solr-jar destfile="${dist}/apache-solr-analysis-extras-src-${version}.jar"
+              basedir="contrib/analysis-extras/src" />
   </target>
 
   <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
@@ -625,6 +626,8 @@
               basedir="${build.javadoc}/contrib-solr-clustering" />-->
     <solr-jar destfile="${dist}/apache-solr-cell-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-cell" />
+    <solr-jar destfile="${dist}/apache-solr-analysis-extras-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-analysis-extras" />
   </target>
 
   <!-- Creates the solr jar. -->
@@ -721,7 +724,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lucene-libs/** lib/** src/** example/** client/** contrib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/**" />
+        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/**" />
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="src/test/test-files/solr/lib/classes/empty-file-main-lib.txt" />
@@ -952,6 +955,8 @@
       <fileset dir="contrib/clustering/src/test/java"/>
       <fileset dir="contrib/extraction/src/main/java"/>
       <fileset dir="contrib/extraction/src/test/java"/>
+      <fileset dir="contrib/analysis-extras/src/test"/>
+      <fileset dir="contrib/analysis-extras/src/test"/>
     </rat:report>
   </target>
 
