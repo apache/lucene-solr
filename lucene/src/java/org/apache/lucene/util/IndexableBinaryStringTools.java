@@ -53,7 +53,7 @@ import java.nio.ByteBuffer;
  *
  * @lucene.experimental
  */
-public class IndexableBinaryStringTools {
+public final class IndexableBinaryStringTools {
 
   private static final CodingCase[] CODING_CASES = {
     // CodingCase(int initialShift, int finalShift)

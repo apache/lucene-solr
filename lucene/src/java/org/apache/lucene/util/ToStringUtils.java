@@ -20,7 +20,10 @@ package org.apache.lucene.util;
 /**
  * Helper methods to ease implementing {@link Object#toString()}.
  */
-public class ToStringUtils {
+public final class ToStringUtils {
+
+  private ToStringUtils() {} // no instance
+
   /**
    * for printing boost only if not 1.0
    */

@@ -27,7 +27,9 @@ import org.apache.lucene.index.IndexReader;
  *
  * @lucene.internal
  */
-public class ReaderUtil {
+public final class ReaderUtil {
+
+  private ReaderUtil() {} // no instance
 
   /**
    * Gathers sub-readers from reader into a List.
