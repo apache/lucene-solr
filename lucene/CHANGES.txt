@@ -380,7 +380,10 @@ Changes in backwards compatibility policy
   CREATE*, IndexWriter would make a first empty commit. If you need that 
   behavior you can call writer.commit()/close() immediately after you create it.
   (Shai Erera, Mike McCandless)
-  
+
+* LUCENE-2733: Removed public constructors of utility classes with only static
+  methods to prevent instantiation.  (Uwe Schindler)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
