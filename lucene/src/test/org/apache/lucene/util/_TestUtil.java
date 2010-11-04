@@ -69,11 +69,17 @@ public class _TestUtil {
    *  issues are hit, a RuntimeException is thrown; else,
    *  true is returned. */
   public static CheckIndex.Status checkIndex(Directory dir) throws IOException {
+    return checkIndex(dir, CodecProvider.getDefault());
+  }
+  
+  /** This runs the CheckIndex tool on the index in.  If any
+   *  issues are hit, a RuntimeException is thrown; else,
+   *  true is returned. */
+  public static CheckIndex.Status checkIndex(Directory dir, CodecProvider codecs) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-
     CheckIndex checker = new CheckIndex(dir);
     checker.setInfoStream(new PrintStream(bos));
-    CheckIndex.Status indexStatus = checker.checkIndex();
+    CheckIndex.Status indexStatus = checker.checkIndex(null, codecs);
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
       System.out.println(bos.toString());

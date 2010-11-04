@@ -341,8 +341,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     // IndexWriter.prepareCommit has been called (but not
     // yet commit), then the reader will still see itself as
     // current:
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(directory);
+    SegmentInfos sis = new SegmentInfos(codecs);
+    sis.read(directory, codecs);
     return sis.version;
   }
 
@@ -353,7 +353,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    */
   public static Map<String,String> readCurrentUserData(Directory directory, CodecProvider codecs)
     throws CorruptIndexException, IOException {
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(codecs);
     sis.read(directory, codecs);
     return sis.getUserData();
   }
@@ -694,7 +694,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * is last-first.
    */
   public SegmentInfos range(int first, int last) {
-    SegmentInfos infos = new SegmentInfos();
+    SegmentInfos infos = new SegmentInfos(codecs);
     infos.addAll(super.subList(first, last));
     return infos;
   }

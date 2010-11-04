@@ -304,7 +304,7 @@ public class CheckIndex {
    *  writer. */
   public Status checkIndex(List<String> onlySegments, CodecProvider codecs) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(codecs);
     Status result = new Status();
     result.dir = dir;
     try {

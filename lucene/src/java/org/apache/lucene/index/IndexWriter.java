@@ -279,7 +279,7 @@ public class IndexWriter implements Closeable {
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
 
-  private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  private final SegmentInfos segmentInfos;       // the segments
 
   private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
@@ -1069,7 +1069,7 @@ public class IndexWriter implements Closeable {
     // instead of later when merge, applyDeletes, getReader
     // is attempted.  I think to do this we should store the
     // oldest segment's version in segments_N.
-
+    segmentInfos = new SegmentInfos(codecs);
     try {
       if (create) {
         // Try to read first.  This is to allow create
@@ -1098,7 +1098,7 @@ public class IndexWriter implements Closeable {
           // points.
           if (commit.getDirectory() != directory)
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
-          SegmentInfos oldInfos = new SegmentInfos();
+          SegmentInfos oldInfos = new SegmentInfos(codecs);
           oldInfos.read(directory, commit.getSegmentsFileName(), codecs);
           segmentInfos.replace(oldInfos);
           changeCount++;
@@ -1117,7 +1117,7 @@ public class IndexWriter implements Closeable {
       // KeepOnlyLastCommitDeleter:
       deleter = new IndexFileDeleter(directory,
                                      conf.getIndexDeletionPolicy(),
-                                     segmentInfos, infoStream, docWriter, this.codecs);
+                                     segmentInfos, infoStream, docWriter, codecs);
 
       if (deleter.startingCommitDeleted)
         // Deletion policy deleted the "head" commit point.
@@ -2900,8 +2900,8 @@ public class IndexWriter implements Closeable {
         if (infoStream != null) {
           message("process directory " + dir);
         }
-        SegmentInfos sis = new SegmentInfos(); // read infos from dir
-        sis.read(dir);
+        SegmentInfos sis = new SegmentInfos(codecs); // read infos from dir
+        sis.read(dir, codecs);
         Map<String, String> dsNames = new HashMap<String, String>();
         for (SegmentInfo info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;

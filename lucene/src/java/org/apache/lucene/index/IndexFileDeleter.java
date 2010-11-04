@@ -173,7 +173,7 @@ final class IndexFileDeleter {
           if (infoStream != null) {
             message("init: load commit \"" + fileName + "\"");
           }
-          SegmentInfos sis = new SegmentInfos();
+          SegmentInfos sis = new SegmentInfos(codecs);
           try {
             sis.read(directory, fileName, codecs);
           } catch (FileNotFoundException e) {
@@ -222,7 +222,7 @@ final class IndexFileDeleter {
       // listing was stale (eg when index accessed via NFS
       // client with stale directory listing cache).  So we
       // try now to explicitly open this commit point:
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = new SegmentInfos(codecs);
       try {
         sis.read(directory, currentSegmentsFile, codecs);
       } catch (IOException e) {
