@@ -29,19 +29,45 @@ import java.io.Reader;
  * Analyzer for testing
  */
 public final class MockAnalyzer extends Analyzer {
-
+  private boolean lowerCase;
+  private boolean payloads;
+  public static final int KEYWORD = 0;
+  public static final int WHITESPACE = 1;
+  public static final int SIMPLE = 2;
+  private int tokenizer;
+  
   public MockAnalyzer() {
+    this(WHITESPACE, true);
+  }
+  
+  public MockAnalyzer(int tokenizer, boolean lowercase) {
+    this(tokenizer, lowercase, true);
+  }
+  
+  public MockAnalyzer(int tokenizer, boolean lowercase, boolean payloads) {
+    this.tokenizer = tokenizer;
+    this.lowerCase = lowercase;
+    this.payloads = payloads;
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new LowerCaseTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-    result = new SimplePayloadFilter(result, fieldName);
+    TokenStream result;
+    if (tokenizer == KEYWORD)
+      result = new KeywordTokenizer(reader);
+    else if (tokenizer == SIMPLE)
+      result = new LetterTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
+    else
+      result = new WhitespaceTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
+    if (lowerCase)
+      result = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, result);
+    if (payloads)
+      result = new SimplePayloadFilter(result, fieldName);
     return result;
   }
 
   private class SavedStreams {
     Tokenizer upstream;
-    TokenFilter filter;
+    TokenStream filter;
   }
 
   @Override
@@ -49,8 +75,17 @@ public final class MockAnalyzer extends Analyzer {
     SavedStreams saved = (SavedStreams) getPreviousTokenStream();
     if (saved == null){
       saved = new SavedStreams();
-      saved.upstream = new LowerCaseTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-      saved.filter = new SimplePayloadFilter(saved.upstream, fieldName);
+      if (tokenizer == KEYWORD)
+        saved.upstream = new KeywordTokenizer(reader);
+      else if (tokenizer == SIMPLE)
+        saved.upstream = new LetterTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
+      else
+        saved.upstream = new WhitespaceTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
+      saved.filter = saved.upstream;
+      if (lowerCase)
+        saved.filter = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, saved.filter);
+      if (payloads)
+        saved.filter = new SimplePayloadFilter(saved.filter, fieldName);
       setPreviousTokenStream(saved);
       return saved.filter;
     } else {

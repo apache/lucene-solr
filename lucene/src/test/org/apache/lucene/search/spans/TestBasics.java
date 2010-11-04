@@ -69,7 +69,7 @@ public class TestBasics extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockAnalyzer.SIMPLE, true, true))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
