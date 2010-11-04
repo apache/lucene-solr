@@ -23,8 +23,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.util.Version;
-
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import java.io.IOException;
 
 
@@ -62,11 +61,7 @@ public class OpenIndexTask extends PerfTask {
       ic = null;
     }
     
-    IndexWriter writer = new IndexWriter(runData.getDirectory(),
-        new IndexWriterConfig(Version.LUCENE_CURRENT, runData.getAnalyzer())
-            .setIndexDeletionPolicy(CreateIndexTask.getIndexDeletionPolicy(config))
-            .setIndexCommit(ic));
-    CreateIndexTask.setIndexWriterConfig(writer, config);
+    final IndexWriter writer = CreateIndexTask.configureWriter(config, runData, OpenMode.APPEND, ic);
     runData.setIndexWriter(writer);
     return 1;
   }
