@@ -70,6 +70,11 @@ public class HTMLDocument {
     // Add the tag-stripped contents as a Reader-valued Text field so it will
     // get tokenized and indexed.
     doc.add(new Field("contents", parser.getReader()));
+    
+    // add any document keywords if they exist
+    String keywords = parser.getMetaTags().getProperty("keywords");
+    if (keywords != null)
+      doc.add(new Field("contents", keywords, Field.Store.NO, Field.Index.ANALYZED));
 
     // Add the summary as a field that is stored and returned with
     // hit documents for display.
