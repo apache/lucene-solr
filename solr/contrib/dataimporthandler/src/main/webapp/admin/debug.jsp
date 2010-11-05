@@ -20,10 +20,10 @@
 <html>
 <head>
 <title>DataImportHandler Interactive Development</title>
-<link rel="stylesheet" type="text/css" href="solr-admin.css">
-<link rel="icon" href="favicon.ico" type="image/ico"></link>
-<link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>
-<script src="jquery-1.2.3.min.js"></script>
+<link rel="stylesheet" type="text/css" href="solr-admin.css"/>
+<link rel="icon" href="favicon.ico" type="image/ico"/>
+<link rel="shortcut icon" href="favicon.ico" type="image/ico"/>
+<script src="jquery-1.4.3.min.js"></script>
 </head>
 <body>
 <h1>DataImportHandler Development Console</h1>

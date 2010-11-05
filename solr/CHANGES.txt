@@ -645,6 +645,9 @@ Other Changes
 
 * SOLR-2013: Add mapping-FoldToASCII.txt to example conf directory.
   (Steven Rowe via koji)
+  
+* SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
+
 
 Build
 ----------------------

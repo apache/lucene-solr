@@ -18,7 +18,7 @@ This product includes tests written with EasyMock Copyright 2001-2007
 Tammo Freese (http://www.easymock.org/)
 
 This product includes the JQuery JavaScript library created by John Resig.
-Copyright (c) 2008 John Resig, http://jquery.com/
+Copyright (c) 2010 John Resig, http://jquery.com/
 
 This product includes the stax-utils jar: https://stax-utils.dev.java.net/
 Copyright (c) 2004, Christian Niles, unit12.net
