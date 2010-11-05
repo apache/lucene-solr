@@ -28,6 +28,7 @@ import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.solr.search.QParser;
+import org.apache.solr.util.ByteUtils;
 
 import java.util.Map;
 import java.io.IOException;
@@ -54,72 +55,11 @@ public class StrField extends FieldType {
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return new StrFieldSource(field.getName());
   }
+
+  @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    return ByteUtils.UTF8toUTF16(term);
+  }
 }
 
 
-class StrFieldSource extends FieldCacheSource {
-
-  public StrFieldSource(String field) {
-    super(field);
-  }
-
-  public String description() {
-    return "str(" + field + ')';
-  }
-
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new StringIndexDocValues(this, reader, field) {
-      protected String toTerm(String readableValue) {
-        return readableValue;
-      }
-
-      public float floatVal(int doc) {
-        return (float)intVal(doc);
-      }
-
-      public int intVal(int doc) {
-        int ord=termsIndex.getOrd(doc);
-        return ord;
-      }
-
-      public long longVal(int doc) {
-        return (long)intVal(doc);
-      }
-
-      public double doubleVal(int doc) {
-        return (double)intVal(doc);
-      }
-
-      public int ordVal(int doc) {
-        return termsIndex.getOrd(doc);
-      }
-
-      public int numOrd() {
-        return termsIndex.numOrd();
-      }
-
-      public String strVal(int doc) {
-        int ord=termsIndex.getOrd(doc);
-        if (ord == 0) {
-          return null;
-        } else {
-          return termsIndex.lookup(ord, new BytesRef()).utf8ToString();
-        }
-      }
-
-      public String toString(int doc) {
-        return description() + '=' + strVal(doc);
-      }
-    };
-  }
-
-  public boolean equals(Object o) {
-    return o instanceof StrFieldSource
-            && super.equals(o);
-  }
-
-  private static int hcode = SortableFloatFieldSource.class.hashCode();
-  public int hashCode() {
-    return hcode + super.hashCode();
-  };
-}

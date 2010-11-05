@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.common.SolrException;
@@ -95,10 +97,8 @@ public class PivotFacetHelper
   {
     SolrIndexSearcher searcher = rb.req.getSearcher();
     // TODO: optimize to avoid converting to an external string and then having to convert back to internal below
-    FieldType ftype = searcher.getSchema().getField(field).getType();
-    
-    // Required to translate back to an object
-    Field f = new Field( field, "X", Store.YES, Index.ANALYZED );
+    SchemaField sfield = searcher.getSchema().getField(field);
+    FieldType ftype = sfield.getType();
 
     String nextField = fnames.poll();
 
@@ -106,19 +106,21 @@ public class PivotFacetHelper
     for (Map.Entry<String, Integer> kv : superFacets) {
       // Only sub-facet if parent facet has positive count - still may not be any values for the sub-field though
       if (kv.getValue() > minMatch ) {
-        String internal = ftype.toInternal( kv.getKey() );
-        f.setValue( internal );
+        // don't reuse the same BytesRef  each time since we will be constructing Term
+        // objects that will most likely be cached.
+        BytesRef termval = new BytesRef();
+        ftype.readableToIndexed(kv.getKey(), termval);
         
         SimpleOrderedMap<Object> pivot = new SimpleOrderedMap<Object>();
         pivot.add( "field", field );
-        pivot.add( "value", ftype.toObject( f ) );
+        pivot.add( "value", ftype.toObject(sfield, termval) );
         pivot.add( "count", kv.getValue() );
         
         if( subField == null ) {
           values.add( pivot );
         }
         else {
-          Query query = new TermQuery(new Term(field, internal));
+          Query query = new TermQuery(new Term(field, termval));
           DocSet subset = searcher.getDocSet(query, docs);
           SimpleFacets sf = getFacetImplementation(rb.req, subset, rb.req.getParams());
           
