@@ -614,6 +614,10 @@ Bug fixes
   fields could lead to invalid ArrayIndexOutOfBoundsExceptions.
   (Robert Muir, Mike McCandless)
 
+* LUCENE-2744: CheckIndex was stating total number of fields,
+  not the number that have norms enabled, on the "test: field
+  norms..." output.  (Mark Kristensson via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
