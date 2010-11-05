@@ -20,7 +20,7 @@
 <%-- $Source: /cvs/main/searching/SolrServer/resources/admin/index.jsp,v $ --%>
 <%-- $Name:  $ --%>
   
-<script src="jquery-1.2.3.min.js"></script>
+<script src="jquery-1.4.3.min.js"></script>
 <script>
 
 (function($, libName) {
