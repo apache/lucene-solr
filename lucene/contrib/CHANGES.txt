@@ -134,6 +134,12 @@ Bug fixes
 
 * LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
   empty in multiValued field (Koji Sekiguchi)
+  
+* LUCENE-589: Fix contrib/demo for international documents. 
+  (Curtis d'Entremont via Robert Muir)
+  
+* LUCENE-2246: Fix contrib/demo for Turkish html documents.
+  (Selim Nadi via Robert Muir)  
    
 API Changes
 
