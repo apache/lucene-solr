@@ -92,6 +92,12 @@ Bug fixes
  * LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
    always the case. If the dictionary is unavailable, the filter will now throw 
    UnsupportedOperationException in the constructor.  (Robert Muir)
+  
+* LUCENE-589: Fix contrib/demo for international documents. 
+  (Curtis d'Entremont via Robert Muir)
+  
+* LUCENE-2246: Fix contrib/demo for Turkish html documents.
+  (Selim Nadi via Robert Muir)  
    
  * LUCENE-2732: Fix charset problems in XML loading in
    HyphenationCompoundWordTokenFilter.  (Uwe Schinder)

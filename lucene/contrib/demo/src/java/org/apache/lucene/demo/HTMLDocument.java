@@ -64,7 +64,8 @@ public class HTMLDocument {
     doc.add(new Field("uid", uid(f), Field.Store.NO, Field.Index.NOT_ANALYZED));
 
     FileInputStream fis = new FileInputStream(f);
-    HTMLParser parser = new HTMLParser(fis);
+    InputStreamReader reader = new InputStreamReader(fis, "UTF-8");
+    HTMLParser parser = new HTMLParser(reader);
       
     // Add the tag-stripped contents as a Reader-valued Text field so it will
     // get tokenized and indexed.

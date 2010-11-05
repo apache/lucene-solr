@@ -19,9 +19,9 @@
 
 options {
   STATIC = false;
-  OPTIMIZE_TOKEN_MANAGER = true;
   //DEBUG_LOOKAHEAD = true;
   //DEBUG_TOKEN_MANAGER = true;
+  UNICODE_INPUT = true;
 }
 
 PARSER_BEGIN(HTMLParser)
@@ -29,6 +29,7 @@ PARSER_BEGIN(HTMLParser)
 package org.apache.lucene.demo.html;
 
 import java.io.*;
+import java.util.Locale;
 import java.util.Properties;
 
 public class HTMLParser {
@@ -65,14 +66,6 @@ public class HTMLParser {
     public boolean full() throws IOException{
       return this.available() >= PipedInputStream.PIPE_SIZE;
     }
-  }
-
-  /**
-   * @deprecated Use HTMLParser(FileInputStream) instead
-   */
-  @Deprecated
-  public HTMLParser(File file) throws FileNotFoundException {
-    this(new FileInputStream(file));
   }
 
   public String getTitle() throws IOException, InterruptedException {
@@ -231,7 +224,7 @@ void Tag() throws IOException :
 }
 {
   t1=<TagName> {
-   String tagName = t1.image.toLowerCase();
+   String tagName = t1.image.toLowerCase(Locale.ENGLISH);
    if(Tags.WS_ELEMS.contains(tagName) ) {
       addSpace();
     }
@@ -253,7 +246,7 @@ void Tag() throws IOException :
 			)
 	   && t2 != null)
 	{
-		currentMetaTag=t2.image.toLowerCase();
+		currentMetaTag=t2.image.toLowerCase(Locale.ENGLISH);
 		if(currentMetaTag != null && currentMetaContent != null) {
         	addMetaTag();
 		}
@@ -261,7 +254,7 @@ void Tag() throws IOException :
     	if(inMetaTag && t1.image.equalsIgnoreCase("content") && t2 !=
 null)
 	{
-		currentMetaContent=t2.image.toLowerCase();
+		currentMetaContent=t2.image.toLowerCase(Locale.ENGLISH);
 		if(currentMetaTag != null && currentMetaContent != null) {
         	addMetaTag();
 		}
