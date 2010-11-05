@@ -3229,6 +3229,14 @@ public class IndexWriter implements Closeable {
    *  be flushed
    */
   protected final void flush(boolean triggerMerge, boolean flushDocStores, boolean flushDeletes) throws CorruptIndexException, IOException {
+
+    // NOTE: this method cannot be sync'd because
+    // maybeMerge() in turn calls mergeScheduler.merge which
+    // in turn can take a long time to run and we don't want
+    // to hold the lock for that.  In the case of
+    // ConcurrentMergeScheduler this can lead to deadlock
+    // when it stalls due to too many running merges.
+
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
     if (doFlush(flushDocStores, flushDeletes) && triggerMerge)
