@@ -552,8 +552,8 @@ public class CheckIndex {
       for (final String fieldName : fieldNames) {
         if (reader.hasNorms(fieldName)) {
           reader.norms(fieldName, b, 0);
+          ++status.totFields;
         }
-        ++status.totFields;
       }
 
       msg("OK [" + status.totFields + " fields]");
