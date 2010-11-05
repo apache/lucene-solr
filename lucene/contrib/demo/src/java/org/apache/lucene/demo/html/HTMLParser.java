@@ -84,7 +84,7 @@ InterruptedException {
 
     String sum = summary.toString().trim();
     String tit = getTitle();
-    if (sum.startsWith(tit) || sum.equals(""))
+    if (sum.equals(""))
       return tit;
     else
       return sum;
