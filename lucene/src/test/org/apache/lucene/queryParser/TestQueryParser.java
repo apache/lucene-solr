@@ -770,11 +770,11 @@ public class TestQueryParser extends LuceneTestCase {
 
     assertQueryEquals("a:b\\\\c*", a, "a:b\\c*");
 
-    assertQueryEquals("a:b\\-?c", a, "a:b-?c");
-    assertQueryEquals("a:b\\+?c", a, "a:b+?c");
-    assertQueryEquals("a:b\\:?c", a, "a:b:?c");
+    assertQueryEquals("a:b\\-?c", a, "a:b\\-?c");
+    assertQueryEquals("a:b\\+?c", a, "a:b\\+?c");
+    assertQueryEquals("a:b\\:?c", a, "a:b\\:?c");
 
-    assertQueryEquals("a:b\\\\?c", a, "a:b\\?c");
+    assertQueryEquals("a:b\\\\?c", a, "a:b\\\\?c");
 
     assertQueryEquals("a:b\\-c~", a, "a:b-c~2.0");
     assertQueryEquals("a:b\\+c~", a, "a:b+c~2.0");
@@ -1062,6 +1062,12 @@ public class TestQueryParser extends LuceneTestCase {
 
   }
 
+  public void testEscapedWildcard() throws Exception {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    WildcardQuery q = new WildcardQuery(new Term("field", "foo\\?ba?r"));
+    assertEquals(q, qp.parse("foo\\?ba?r"));
+  }
+  
   public void testRegexps() throws Exception {
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
     RegexpQuery q = new RegexpQuery(new Term("field", "[a-z][123]"));

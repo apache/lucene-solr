@@ -113,6 +113,12 @@ Changes in backwards compatibility policy
 * LUCENE-2674: MultiTermQuery.TermCollector.collect now accepts the
   TermsEnum as well.  (Robert Muir, Mike McCandless)
 
+* LUCENE-588: WildcardQuery and QueryParser now allows escaping with 
+  the '\' character. Previously this was impossible (you could not escape */?,
+  for example).  If your code somehow depends on the old behavior, you will
+  need to change it (e.g. using "\\" to escape '\' itself).  
+  (Sunil Kamath, Terry Yang via Robert Muir)
+ 
 Changes in Runtime Behavior
 
 * LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit
