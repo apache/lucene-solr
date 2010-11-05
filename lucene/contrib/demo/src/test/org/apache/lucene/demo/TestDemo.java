@@ -43,4 +43,24 @@ public class TestDemo extends LuceneTestCase {
       System.setOut(outSave);
     }
   }
+  
+  // LUCENE-591
+  public void testIndexKeywords() throws Exception {
+    File dir = getDataFile("test-files/html");
+    File indexDir = new File(TEMP_DIR, "demoIndex2");
+    IndexHTML.main(new String[] { "-create", "-index", indexDir.getPath(), dir.getPath() });
+    File queries = getDataFile("test-files/queries2.txt");
+    PrintStream outSave = System.out;
+    try {
+      ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+      PrintStream fakeSystemOut = new PrintStream(bytes);
+      System.setOut(fakeSystemOut);
+      SearchFiles.main(new String[] { "-index", indexDir.getPath(), "-queries", queries.getPath()});
+      fakeSystemOut.flush();
+      String output = bytes.toString(); // intentionally use default encoding
+      assertTrue(output.contains("1 total matching documents"));
+    } finally {
+      System.setOut(outSave);
+    }
+  }
 }

@@ -143,6 +143,9 @@ Bug fixes
   
 * LUCENE-590: Demo HTML parser gives incorrect summaries when title is repeated as a heading
   (Curtis d'Entremont via Robert Muir)
+
+* LUCENE-591: The demo indexer now indexes meta keywords.
+  (Curtis d'Entremont via Robert Muir)
    
 API Changes
 
