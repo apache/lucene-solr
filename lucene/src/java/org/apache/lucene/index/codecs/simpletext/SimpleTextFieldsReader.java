@@ -33,11 +33,7 @@ import org.apache.lucene.util.StringHelper;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
 import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.SortedMap;
-import java.util.Iterator;
 
 class SimpleTextFieldsReader extends FieldsProducer {
 
@@ -82,7 +78,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private class SimpleTextFieldsEnum extends FieldsEnum {
     private final IndexInput in;
     private final BytesRef scratch = new BytesRef(10);
-    private String current;
+    private boolean omitTF;
 
     public SimpleTextFieldsEnum() {
       this.in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
@@ -93,12 +89,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
       while(true) {
         readLine(in, scratch);
         if (scratch.equals(END)) {
-          current = null;
           return null;
         }
         if (scratch.startsWith(FIELD)) {
           String field = StringHelper.intern(new String(scratch.bytes, scratch.offset + FIELD.length, scratch.length - FIELD.length, "UTF-8"));
-          current = field;
+          omitTF = fieldInfos.fieldInfo(field).omitTermFreqAndPositions;
           return field;
         }
       }
@@ -106,7 +101,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public TermsEnum terms() throws IOException {
-      return SimpleTextFieldsReader.this.terms(current).iterator();
+      return new SimpleTextTermsEnum(in.getFilePointer(), omitTF);
     }
   }
 
@@ -114,42 +109,21 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final IndexInput in;
     private final boolean omitTF;
     private BytesRef current;
+    private final long fieldStart;
+    private final BytesRef scratch = new BytesRef(10);
+    private final BytesRef scratch2 = new BytesRef(10);
     private int docFreq;
     private long docsStart;
     private boolean ended;
-    private final TreeMap<BytesRef,TermData> allTerms;
-    private Iterator<Map.Entry<BytesRef,TermData>> iter;
 
-    public SimpleTextTermsEnum(TreeMap<BytesRef,TermData> allTerms, boolean omitTF) throws IOException {
+    public SimpleTextTermsEnum(long offset, boolean omitTF) throws IOException {
       this.in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
-      this.allTerms = allTerms;
+      this.in.seek(offset);
       this.omitTF = omitTF;
-      iter = allTerms.entrySet().iterator();
+      fieldStart = offset;
     }
 
     public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
-      
-      final SortedMap<BytesRef,TermData> tailMap = allTerms.tailMap(text);
-
-      if (tailMap.isEmpty()) {
-        current = null;
-        return SeekStatus.END;
-      } else {
-        current = tailMap.firstKey();
-        final TermData td = tailMap.get(current);
-        docsStart = td.docsStart;
-        docFreq = td.docFreq;
-        iter = tailMap.entrySet().iterator();
-        assert iter.hasNext();
-        iter.next();
-        if (current.equals(text)) {
-          return SeekStatus.FOUND;
-        } else {
-          return SeekStatus.NOT_FOUND;
-        }
-      }
-
-      /*
       if (current != null) {
         final int cmp = current.compareTo(text);
         if (cmp == 0) {
@@ -179,7 +153,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       current = null;
       ended = true;
       return SeekStatus.END;
-      */
     }
 
     @Override
@@ -189,20 +162,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public BytesRef next() throws IOException {
       assert !ended;
-
-      if (iter.hasNext()) {
-        Map.Entry<BytesRef,TermData> ent = iter.next();
-        current = ent.getKey();
-        TermData td = ent.getValue();
-        docFreq = td.docFreq;
-        docsStart = td.docsStart;
-        return current;
-      } else {
-        current = null;
-        return null;
-      }
-
-      /*
       readLine(in, scratch);
       if (scratch.equals(END) || scratch.startsWith(FIELD)) {
         ended = true;
@@ -233,7 +192,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
         in.seek(lineStart);
         return current;
       }
-      */
     }
 
     @Override
@@ -489,70 +447,20 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
-  static class TermData {
-    public long docsStart;
-    public int docFreq;
-
-    public TermData(long docsStart, int docFreq) {
-      this.docsStart = docsStart;
-      this.docFreq = docFreq;
-    }
-  }
-
   private class SimpleTextTerms extends Terms {
     private final String field;
     private final long termsStart;
     private final boolean omitTF;
 
-    // NOTE: horribly, horribly RAM consuming, but then
-    // SimpleText should never be used in production
-    private final TreeMap<BytesRef,TermData> allTerms = new TreeMap<BytesRef,TermData>();
-
-    private final BytesRef scratch = new BytesRef(10);
-
-    public SimpleTextTerms(String field, long termsStart) throws IOException {
+    public SimpleTextTerms(String field, long termsStart) {
       this.field = StringHelper.intern(field);
       this.termsStart = termsStart;
       omitTF = fieldInfos.fieldInfo(field).omitTermFreqAndPositions;
-      loadTerms();
-    }
-
-    private void loadTerms() throws IOException {
-      IndexInput in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
-      in.seek(termsStart);
-      final BytesRef lastTerm = new BytesRef(10);
-      long lastDocsStart = -1;
-      int docFreq = 0;
-      while(true) {
-        readLine(in, scratch);
-        if (scratch.equals(END) || scratch.startsWith(FIELD)) {
-          if (lastDocsStart != -1) {
-            allTerms.put(new BytesRef(lastTerm),
-                         new TermData(lastDocsStart, docFreq));
-          }
-          break;
-        } else if (scratch.startsWith(DOC)) {
-          docFreq++;
-        } else if (scratch.startsWith(TERM)) {
-          if (lastDocsStart != -1) {
-            allTerms.put(new BytesRef(lastTerm),
-                         new TermData(lastDocsStart, docFreq));
-          }
-          lastDocsStart = in.getFilePointer();
-          final int len = scratch.length - TERM.length;
-          if (len > lastTerm.length) {
-            lastTerm.grow(len);
-          }
-          System.arraycopy(scratch.bytes, TERM.length, lastTerm.bytes, 0, len);
-          lastTerm.length = len;
-          docFreq = 0;
-        }
-      }
     }
 
     @Override
     public TermsEnum iterator() throws IOException {
-      return new SimpleTextTermsEnum(allTerms, omitTF);
+      return new SimpleTextTermsEnum(termsStart, omitTF);
     }
 
     @Override
