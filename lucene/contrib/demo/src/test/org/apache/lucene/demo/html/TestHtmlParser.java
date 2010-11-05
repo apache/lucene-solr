@@ -105,6 +105,13 @@ public class TestHtmlParser extends LuceneTestCase {
     assertEquals(200, parser.getSummary().length());
   }
   
+  // LUCENE-590
+  public void testSummaryTitle() throws Exception {
+    String text = "<html><head><title>Summary</title></head><body>Summary of the document</body></html>";
+    HTMLParser parser = new HTMLParser(new StringReader(text));
+    assertEquals("Summary of the document", parser.getSummary());
+  }
+  
   // LUCENE-2246
   public void testTurkish() throws Exception {
     String text = "<html><body>" +
