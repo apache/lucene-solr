@@ -172,6 +172,13 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "]}}"
     );
 
+    // test that filtering cuts down the result set
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "fq",f+":2")
+      ,"/grouped=={'"+f+"':{'matches':3,'groups':[" +
+            "{'groupValue':2,'doclist':{'numFound':3,'start':0,'docs':[{'id':'4'}]}}" +
+            "]}}"
+    );
+
     // test limiting the number of groups returned
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2")
       ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
