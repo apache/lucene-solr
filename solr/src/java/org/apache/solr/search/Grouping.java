@@ -249,6 +249,7 @@ public class Grouping {
     qr.setDocListAndSet(out);
 
     filter = cmd.getFilter()!=null ? cmd.getFilter() : searcher.getDocSet(cmd.getFilterList());
+    luceneFilter = filter == null ? null : filter.getTopFilter();
 
     maxDoc = searcher.maxDoc();
 
