@@ -92,7 +92,7 @@ public class AutomatonTestUtil {
     } else if (t.min >= UnicodeUtil.UNI_SUR_HIGH_START) {
       if (t.max > UnicodeUtil.UNI_SUR_LOW_END) {
         // after surrogates
-        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(t.max-UnicodeUtil.UNI_SUR_LOW_END+1);
+        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(t.max-UnicodeUtil.UNI_SUR_LOW_END);
       } else {
         throw new IllegalArgumentException("transition accepts only surrogates: " + t);
       }
