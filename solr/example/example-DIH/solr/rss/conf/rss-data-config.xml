@@ -1,5 +1,5 @@
 <dataConfig>
-    <dataSource type="HttpDataSource" />
+    <dataSource type="URLDataSource" />
     <document>
         <entity name="slashdot"
                 pk="link"
