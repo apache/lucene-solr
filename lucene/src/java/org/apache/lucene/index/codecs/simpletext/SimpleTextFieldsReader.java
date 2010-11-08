@@ -386,6 +386,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final BytesRef scratch = new BytesRef(10);
     private final BytesRef scratch2 = new BytesRef(10);
     private final UnicodeUtil.UTF16Result scratchUTF16 = new UnicodeUtil.UTF16Result();
+    private final UnicodeUtil.UTF16Result scratchUTF16_2 = new UnicodeUtil.UTF16Result();
     private BytesRef payload;
     private long nextDocStart;
 
@@ -460,7 +461,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     public int nextPosition() throws IOException {
       readLine(in, scratch);
       assert scratch.startsWith(POS): "got line=" + scratch.utf8ToString();
-      final int pos = Integer.parseInt(new String(scratch.bytes, scratch.offset+POS.length, scratch.length-POS.length));
+      UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+POS.length, scratch.length-POS.length, scratchUTF16_2);
+      final int pos = ArrayUtil.parseInt(scratchUTF16_2.result, 0, scratchUTF16_2.length);
       final long fp = in.getFilePointer();
       readLine(in, scratch);
       if (scratch.startsWith(PAYLOAD)) {
