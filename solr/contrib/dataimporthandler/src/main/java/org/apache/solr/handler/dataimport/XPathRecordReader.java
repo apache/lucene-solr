@@ -277,7 +277,7 @@ public class XPathRecordReader {
           if (event == END_ELEMENT) {
             if (flattenedStarts > 0) flattenedStarts--;
             else {
-              if (text.length() > 0 && valuesAddedinThisFrame != null) {
+              if (hasText && valuesAddedinThisFrame != null) {
                 valuesAddedinThisFrame.add(fieldName);
                 putText(values, text.toString(), fieldName, multiValued);
               }
