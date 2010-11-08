@@ -545,6 +545,10 @@ Bug Fixes
   (Drew Farris via koji)
 
 * SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. (koji)
+
+* SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
+  true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
+  (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
   
 Other Changes
 ----------------------

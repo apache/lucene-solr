@@ -239,6 +239,24 @@ public class StrUtils {
   }
 
   /**
+   * {@link NullPointerException} and {@link SolrException} free version of {@link #parseBool(String)}
+   * @param s
+   * @param def
+   * @return
+   */
+  public static boolean parseBool(String s, boolean def) {
+    if( s != null ) {
+      if( s.startsWith("true") || s.startsWith("on") || s.startsWith("yes") ) {
+        return true;
+      }
+      if( s.startsWith("false") || s.startsWith("off") || s.equals("no") ) {
+        return false;
+      }
+    }
+    return def;
+  }
+  
+  /**
    * URLEncodes a value, replacing only enough chars so that
    * the URL may be unambiguously pasted back into a browser.
    * <p>

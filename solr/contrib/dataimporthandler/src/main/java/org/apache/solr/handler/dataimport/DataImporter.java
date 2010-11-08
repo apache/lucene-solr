@@ -22,6 +22,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.StrUtils;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
@@ -498,29 +499,28 @@ public class DataImporter {
       if (requestParams.containsKey("command"))
         command = (String) requestParams.get("command");
 
-      if ("on".equals(requestParams.get("debug"))) {
+      if (StrUtils.parseBool((String)requestParams.get("debug"),false)) {
         debug = true;
         rows = 10;
         // Set default values suitable for debug mode
         commit = false;
         clean = false;
-        verbose = "true".equals(requestParams.get("verbose"))
-                || "on".equals(requestParams.get("verbose"));
+        verbose = StrUtils.parseBool((String)requestParams.get("verbose"),false);
       }
-      syncMode = "true".equals(requestParams.get("synchronous"));
+      syncMode = StrUtils.parseBool((String)requestParams.get("synchronous"),false);
       if (DELTA_IMPORT_CMD.equals(command) || IMPORT_CMD.equals(command)) {
         clean = false;
       }
       if (requestParams.containsKey("commit"))
-        commit = Boolean.parseBoolean((String) requestParams.get("commit"));
+        commit = StrUtils.parseBool((String) requestParams.get("commit"),true);
       if (requestParams.containsKey("start"))
         start = Integer.parseInt((String) requestParams.get("start"));
       if (requestParams.containsKey("rows"))
         rows = Integer.parseInt((String) requestParams.get("rows"));
       if (requestParams.containsKey("clean"))
-        clean = Boolean.parseBoolean((String) requestParams.get("clean"));
+        clean = StrUtils.parseBool((String) requestParams.get("clean"),true);
       if (requestParams.containsKey("optimize")) {
-        optimize = Boolean.parseBoolean((String) requestParams.get("optimize"));
+        optimize = StrUtils.parseBool((String) requestParams.get("optimize"),true);
         if (optimize)
           commit = true;
       }
