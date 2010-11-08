@@ -302,6 +302,9 @@ New Features
 * SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
   tokenizer and filters to contrib/analysis-extras (rmuir)
 
+* SOLR-2211: Added UAX29TokenizerFactory, which implements UAX#29, a unicode algorithm 
+  with good results for most languages.  (Tom Burton-West via rmuir)
+
 Optimizations
 ----------------------
 
