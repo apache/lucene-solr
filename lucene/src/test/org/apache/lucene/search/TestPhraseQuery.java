@@ -596,8 +596,6 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testRandomPhrases() throws Exception {
-    assumeFalse("test runs extremely slow (minutes) with SimpleText", 
-        CodecProvider.getDefaultCodec().equals("SimpleText"));
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
 
