@@ -452,6 +452,8 @@ Bug Fixes
 
 * SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
   (Drew Farris via koji)
+
+* SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. (koji)
   
 Other Changes
 ----------------------
