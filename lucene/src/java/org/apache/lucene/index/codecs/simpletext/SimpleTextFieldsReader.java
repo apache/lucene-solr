@@ -27,8 +27,10 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -296,7 +298,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private int tf;
     private Bits skipDocs;
     private final BytesRef scratch = new BytesRef(10);
-
+    private final UnicodeUtil.UTF16Result scratchUTF16 = new UnicodeUtil.UTF16Result();
+    
     public SimpleTextDocsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
       this.in = (IndexInput) this.inStart.clone();
@@ -344,7 +347,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
             }
             return docID;
           }
-          docID = Integer.parseInt(new String(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length));
+          UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
+          docID = ArrayUtil.parseInt(scratchUTF16.result, 0, scratchUTF16.length);
           termFreq = 0;
           first = false;
         } else if (scratch.startsWith(POS)) {
@@ -381,6 +385,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private Bits skipDocs;
     private final BytesRef scratch = new BytesRef(10);
     private final BytesRef scratch2 = new BytesRef(10);
+    private final UnicodeUtil.UTF16Result scratchUTF16 = new UnicodeUtil.UTF16Result();
     private BytesRef payload;
     private long nextDocStart;
 
@@ -423,7 +428,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
             in.seek(posStart);
             return docID;
           }
-          docID = Integer.parseInt(new String(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length));
+          UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
+          docID = ArrayUtil.parseInt(scratchUTF16.result, 0, scratchUTF16.length);
           tf = 0;
           posStart = in.getFilePointer();
           first = false;
