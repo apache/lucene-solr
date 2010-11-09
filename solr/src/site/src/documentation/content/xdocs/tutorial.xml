@@ -45,14 +45,14 @@ To follow along with this tutorial, you will need...
 </p>
 
 <ol>
-  <li>Java 1.5 or greater.  Some places you can get it are from
+  <li>Java 1.6 or greater.  Some places you can get it are from
   <a href="http://java.sun.com/j2se/downloads.html">OpenJDK</a>,
   <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
   <a href="http://www.ibm.com/developerworks/java/jdk/">IBM</a>, or
   <a href="http://www.oracle.com/technology/products/jrockit/index.html">Oracle</a>.
   <br/>
   Running <code>java -version</code> at the command line should indicate a version
-  number starting with 1.5.  Gnu's GCJ is not supported and does not work with Solr.
+  number starting with 1.6.  Gnu's GCJ is not supported and does not work with Solr.
   </li>
   <li>A <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Solr release</a>.
   </li>
