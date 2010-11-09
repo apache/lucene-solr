@@ -55,7 +55,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
   
   private final MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt;
-  private final Priv.LevenshteinAutomataAttribute dfaAtt;
+  private final LevenshteinAutomataAttribute dfaAtt;
   
   private float bottom;
   private BytesRef bottomTerm;
@@ -110,7 +110,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp))
            termText[j++] = cp = utf16.codePointAt(i);
     this.termLength = termText.length;
-    this.dfaAtt = atts.addAttribute(Priv.LevenshteinAutomataAttribute.class);
+    this.dfaAtt = atts.addAttribute(LevenshteinAutomataAttribute.class);
 
     //The prefix could be longer than the word.
     //It's kind of silly though.  It means we must match the entire word.
@@ -552,49 +552,44 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return scale_factor;
   }
   
-  // Wrapper class to hide the attribute from outside!
-  private static final class Priv {
-  
-    /** @lucene.internal */
-    public static interface LevenshteinAutomataAttribute extends Attribute {
-      public List<ByteRunAutomaton> automata();
-    }
+  /** @lucene.internal */
+  public static interface LevenshteinAutomataAttribute extends Attribute {
+    public List<ByteRunAutomaton> automata();
+  }
     
-    /** @lucene.internal */
-    public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
-      private final List<ByteRunAutomaton> automata = new ArrayList<ByteRunAutomaton>();
+  /** @lucene.internal */
+  public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
+    private final List<ByteRunAutomaton> automata = new ArrayList<ByteRunAutomaton>();
       
-      public List<ByteRunAutomaton> automata() {
-        return automata;
-      }
-
-      @Override
-      public void clear() {
-        automata.clear();
-      }
-
-      @Override
-      public int hashCode() {
-        return automata.hashCode();
-      }
-
-      @Override
-      public boolean equals(Object other) {
-        if (this == other)
-          return true;
-        if (!(other instanceof LevenshteinAutomataAttributeImpl))
-          return false;
-        return automata.equals(((LevenshteinAutomataAttributeImpl) other).automata);
-      }
-
-      @Override
-      public void copyTo(AttributeImpl target) {
-        final List<ByteRunAutomaton> targetAutomata =
-          ((LevenshteinAutomataAttribute) target).automata();
-        targetAutomata.clear();
-        targetAutomata.addAll(automata);
-      }
+    public List<ByteRunAutomaton> automata() {
+      return automata;
     }
-    
+
+    @Override
+    public void clear() {
+      automata.clear();
+    }
+
+    @Override
+    public int hashCode() {
+      return automata.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (this == other)
+        return true;
+      if (!(other instanceof LevenshteinAutomataAttributeImpl))
+        return false;
+      return automata.equals(((LevenshteinAutomataAttributeImpl) other).automata);
+    }
+
+    @Override
+    public void copyTo(AttributeImpl target) {
+      final List<ByteRunAutomaton> targetAutomata =
+        ((LevenshteinAutomataAttribute) target).automata();
+      targetAutomata.clear();
+      targetAutomata.addAll(automata);
+    }
   }
 }
