@@ -71,7 +71,10 @@ public class TestExternalCodecs extends LuceneTestCase {
   //   - good improvement would be to write through to disk,
   //     and then load into ram from disk
   public static class RAMOnlyCodec extends Codec {
-
+    
+    public RAMOnlyCodec() {
+      name = "RamOnly";
+    }
     // Postings state:
     static class RAMPostings extends FieldsProducer {
       final Map<String,RAMField> fieldToTerms = new TreeMap<String,RAMField>();
@@ -468,6 +471,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState readState)
       throws IOException {
+    
       return state.get(readState.segmentInfo.name);
     }
 
@@ -481,20 +485,10 @@ public class TestExternalCodecs extends LuceneTestCase {
   }
 
   public static class MyCodecs extends CodecProvider {
-    PerFieldCodecWrapper perField;
-
     MyCodecs() {
       Codec ram = new RAMOnlyCodec();
-      Codec pulsing = new PulsingReverseTermsCodec();
-      perField = new PerFieldCodecWrapper(ram);
-      perField.add("field2", pulsing);
-      perField.add("id", pulsing);
-      register(perField);
-    }
-    
-    @Override
-    public Codec getWriter(SegmentWriteState state) {
-      return perField;
+      register(ram);
+      setDefaultFieldCodec(ram.name);
     }
   }
 
@@ -617,20 +611,28 @@ public class TestExternalCodecs extends LuceneTestCase {
   // whose term sort is backwards unicode code point, and
   // storing "field1" as a custom entirely-in-RAM codec
   public void testPerFieldCodec() throws Exception {
+    CodecProvider provider = new MyCodecs();
+    Codec pulsing = new PulsingReverseTermsCodec();
+    provider.register(pulsing);
+    
     
     final int NUM_DOCS = 173;
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir,
-                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).setCodecProvider(new MyCodecs()));
+                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).setCodecProvider(provider));
 
     w.setMergeFactor(3);
     Document doc = new Document();
     // uses default codec:
     doc.add(newField("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));
     // uses pulsing codec:
-    doc.add(newField("field2", "this field uses the pulsing codec as the test", Field.Store.NO, Field.Index.ANALYZED));
+    Field field2 = newField("field2", "this field uses the pulsing codec as the test", Field.Store.NO, Field.Index.ANALYZED);
+    provider.setFieldCodec(field2.name(), pulsing.name);
+    doc.add(field2);
     
     Field idField = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    provider.setFieldCodec(idField.name(), pulsing.name);
+
     doc.add(idField);
     for(int i=0;i<NUM_DOCS;i++) {
       idField.setValue(""+i);

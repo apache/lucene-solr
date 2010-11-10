@@ -184,7 +184,7 @@ final class SegmentMerger {
         fileSet.add(IndexFileNames.segmentFileName(segment, "", ext));
     }
 
-    codec.files(directory, info, fileSet);
+    segmentWriteState.segmentCodecs.files(directory, info, fileSet);
     
     // Fieldable norm files
     int numFIs = fieldInfos.size();
@@ -278,7 +278,7 @@ final class SegmentMerger {
       final SegmentReader sr = (SegmentReader) readers.get(readers.size()-1);
       fieldInfos = (FieldInfos) sr.core.fieldInfos.clone();
     } else {
-      fieldInfos = new FieldInfos();		  // merge field names
+      fieldInfos = new FieldInfos();// merge field names
     }
 
     for (IndexReader reader : readers) {
@@ -304,6 +304,7 @@ final class SegmentMerger {
         fieldInfos.add(reader.getFieldNames(FieldOption.UNINDEXED), false);
       }
     }
+    final SegmentCodecs codecInfo = SegmentCodecs.build(fieldInfos, this.codecs);
     fieldInfos.write(directory, segment + ".fnm");
 
     int docCount = 0;
@@ -357,8 +358,8 @@ final class SegmentMerger {
       }
     }
 
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, null, docCount, 0, termIndexInterval, codecs);
-
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, null, docCount, 0, termIndexInterval, codecInfo);
+    
     return docCount;
   }
 
@@ -554,15 +555,15 @@ final class SegmentMerger {
     }
   }
 
-  Codec getCodec() {
-    return codec;
+  SegmentCodecs getSegmentCodecs() {
+    assert segmentWriteState != null;
+    return segmentWriteState.segmentCodecs;
   }
 
   private final void mergeTerms() throws CorruptIndexException, IOException {
 
     // Let CodecProvider decide which codec will be used to write
     // the new segment:
-    codec = codecs.getWriter(segmentWriteState);
     
     int docBase = 0;
 
@@ -644,7 +645,7 @@ final class SegmentMerger {
       }
     }
     starts[mergeState.readerCount] = inputDocBase;
-
+    codec = segmentWriteState.segmentCodecs.codec();
     final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
 
     // NOTE: this is silly, yet, necessary -- we create a

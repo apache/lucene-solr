@@ -80,13 +80,12 @@ public final class SegmentInfo {
 
   private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
   
-  private Codec codec;
-
+  private SegmentCodecs segmentCodecs;
 
   private Map<String,String> diagnostics;
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, int docStoreOffset, 
-                     String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx, Codec codec) { 
+                     String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx, SegmentCodecs codecInfo) { 
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -96,7 +95,7 @@ public final class SegmentInfo {
     this.docStoreSegment = docStoreSegment;
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     this.hasProx = hasProx;
-    this.codec = codec;
+    this.segmentCodecs = codecInfo;
     delCount = 0;
     assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
   }
@@ -120,7 +119,7 @@ public final class SegmentInfo {
     }
     isCompoundFile = src.isCompoundFile;
     delCount = src.delCount;
-    codec = src.codec;
+    segmentCodecs = src.segmentCodecs;
   }
 
   void setDiagnostics(Map<String, String> diagnostics) {
@@ -145,7 +144,6 @@ public final class SegmentInfo {
     this.dir = dir;
     name = input.readString();
     docCount = input.readInt();
-    final String codecName;
     delGen = input.readLong();
     docStoreOffset = input.readInt();
     if (docStoreOffset != -1) {
@@ -177,14 +175,15 @@ public final class SegmentInfo {
     hasProx = input.readByte() == YES;
     
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
-    
-    if (format <= DefaultSegmentInfosWriter.FORMAT_4_0)
-      codecName = input.readString();
-    else
-      codecName = "PreFlex";
-    
+    segmentCodecs = new SegmentCodecs(codecs);
+    if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+      segmentCodecs.read(input);
+    } else {
+      // codec ID on FieldInfo is 0 so it will simply use the first codec available
+      // TODO what todo if preflex is not available in the provider? register it or fail?
+      segmentCodecs.codecs = new Codec[] { codecs.lookup("PreFlex")};
+    }
     diagnostics = input.readStringStringMap();
-    codec = codecs.lookup(codecName);
   }
   
   /** Returns total size in bytes of all of files used by
@@ -230,7 +229,7 @@ public final class SegmentInfo {
 
   @Override
   public Object clone() {
-    SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, docStoreOffset, docStoreSegment, docStoreIsCompoundFile, hasProx, codec);
+    SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, docStoreOffset, docStoreSegment, docStoreIsCompoundFile, hasProx, segmentCodecs);
     si.isCompoundFile = isCompoundFile;
     si.delGen = delGen;
     si.delCount = delCount;
@@ -242,7 +241,6 @@ public final class SegmentInfo {
     si.docStoreOffset = docStoreOffset;
     si.docStoreSegment = docStoreSegment;
     si.docStoreIsCompoundFile = docStoreIsCompoundFile;
-    si.codec = codec;
     return si;
   }
 
@@ -400,7 +398,7 @@ public final class SegmentInfo {
     output.writeByte((byte) (isCompoundFile ? YES : NO));
     output.writeInt(delCount);
     output.writeByte((byte) (hasProx ? 1:0));
-    output.writeString(codec.name);
+    segmentCodecs.write(output);
     output.writeStringStringMap(diagnostics);
   }
 
@@ -414,16 +412,16 @@ public final class SegmentInfo {
   }
 
   /** Can only be called once. */
-  public void setCodec(Codec codec) {
-    assert this.codec == null;
-    if (codec == null) {
-      throw new IllegalArgumentException("codec must be non-null");
+  public void setSegmentCodecs(SegmentCodecs segmentCodecs) {
+    assert this.segmentCodecs == null;
+    if (segmentCodecs == null) {
+      throw new IllegalArgumentException("segmentCodecs must be non-null");
     }
-    this.codec = codec;
+    this.segmentCodecs = segmentCodecs;
   }
 
-  Codec getCodec() {
-    return codec;
+  SegmentCodecs getCodecInfo() {
+    return segmentCodecs;
   }
 
   private void addIfExists(Set<String> files, String fileName) throws IOException {
@@ -454,7 +452,7 @@ public final class SegmentInfo {
       for(String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS) {
         addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", ext));
       }
-      codec.files(dir, this, fileSet);
+      segmentCodecs.files(dir, this, fileSet);
     }
 
     if (docStoreOffset != -1) {

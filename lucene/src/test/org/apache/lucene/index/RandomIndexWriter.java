@@ -130,7 +130,7 @@ public class RandomIndexWriter implements Closeable {
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
-    if (!w.codecs.getWriter(null).name.equals("PreFlex") && r.nextBoolean()) {
+    if (!w.codecs.getDefaultFieldCodec().equals("PreFlex") && r.nextBoolean()) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }

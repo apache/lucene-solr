@@ -118,7 +118,7 @@ Changes in backwards compatibility policy
   for example).  If your code somehow depends on the old behavior, you will
   need to change it (e.g. using "\\" to escape '\' itself).  
   (Sunil Kamath, Terry Yang via Robert Muir)
- 
+
 Changes in Runtime Behavior
 
 * LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit
@@ -288,6 +288,12 @@ New features
   queries.  Literal asterisks may be represented by quoting or escaping
   (i.e. \* or "*")  Custom QueryParser sublcasses overriding getRangeQuery()
   will be passed null for any open endpoint. (Adriano Crestani, yonik)
+
+* LUCENE-2742: Add native per-field codec support. CodecProvider lets you now
+  register a codec for each field and which is in turn recorded in the segment
+  and field information. Codecs are maintained on a per-segment basis and be
+  resolved without knowing the actual codec used for writing the segment.
+  (Simon Willnauer)
 
 Optimizations
 

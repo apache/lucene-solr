@@ -623,7 +623,7 @@ public class IndexWriter implements Closeable {
         // TODO: we may want to avoid doing this while
         // synchronized
         // Returns a ref, which we xfer to readerMap:
-        sr = SegmentReader.get(false, info.dir, info, readBufferSize, doOpenStores, termsIndexDivisor, codecs);
+        sr = SegmentReader.get(false, info.dir, info, readBufferSize, doOpenStores, termsIndexDivisor);
 
         if (info.dir == directory) {
           // Only pool if reader is not external
@@ -2997,7 +2997,7 @@ public class IndexWriter implements Closeable {
       SegmentInfo info = null;
       synchronized(this) {
         info = new SegmentInfo(mergedName, docCount, directory, false, -1,
-            null, false, merger.hasProx(), merger.getCodec());
+            null, false, merger.hasProx(), merger.getSegmentCodecs());
         setDiagnostics(info, "addIndexes(IndexReader...)");
         segmentInfos.add(info);
         checkpoint();
@@ -3375,10 +3375,10 @@ public class IndexWriter implements Closeable {
                                      directory, false, docStoreOffset,
                                      docStoreSegment, docStoreIsCompoundFile,
                                      docWriter.hasProx(),    
-                                     docWriter.getCodec());
+                                     docWriter.getSegmentCodecs());
 
         if (infoStream != null) {
-          message("flush codec=" + docWriter.getCodec().name);
+          message("flush codec=" + docWriter.getSegmentCodecs());
         }
         setDiagnostics(newSegment, "flush");
       }
@@ -4068,10 +4068,10 @@ public class IndexWriter implements Closeable {
       mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
 
       // Record which codec was used to write the segment
-      merge.info.setCodec(merger.getCodec());
+      merge.info.setSegmentCodecs(merger.getSegmentCodecs());
 
       if (infoStream != null) {
-        message("merge codec=" + merger.getCodec().name);
+        message("merge segmentCodecs=" + merger.getSegmentCodecs());
       }
       
       assert mergedDocCount == totDocCount;

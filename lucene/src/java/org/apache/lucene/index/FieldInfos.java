@@ -38,9 +38,10 @@ public final class FieldInfos {
 
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
+  public static final int FORMAT_PER_FIELD_CODEC = -3;
 
   // whenever you add a new format, make it 1 smaller (negative version logic)!
-  static final int FORMAT_CURRENT = FORMAT_START;
+  static final int FORMAT_CURRENT = FORMAT_PER_FIELD_CODEC;
   
   static final int FORMAT_MINIMUM = FORMAT_START;
   
@@ -56,7 +57,8 @@ public final class FieldInfos {
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private int format;
 
-  public FieldInfos() { }
+  public FieldInfos() {
+  }
 
   /**
    * Construct a FieldInfos object using the directory and the name of the file
@@ -301,8 +303,8 @@ public final class FieldInfos {
       if (fi.omitNorms) bits |= OMIT_NORMS;
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
       if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-      
       output.writeString(fi.name);
+      output.writeInt(fi.codecId);
       output.writeByte(bits);
     }
   }
@@ -321,6 +323,8 @@ public final class FieldInfos {
 
     for (int i = 0; i < size; i++) {
       String name = StringHelper.intern(input.readString());
+      // if this is a previous format codec 0 will be preflex!
+      final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
@@ -329,8 +333,8 @@ public final class FieldInfos {
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
-      
-      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      final FieldInfo addInternal = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      addInternal.codecId = codecId;
     }
 
     if (input.getFilePointer() != input.length()) {

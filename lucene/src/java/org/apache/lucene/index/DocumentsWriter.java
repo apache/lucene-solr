@@ -28,11 +28,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -604,14 +602,14 @@ final class DocumentsWriter {
 
   synchronized private void initFlushState(boolean onlyDocStore) {
     initSegmentName(onlyDocStore);
+    final SegmentCodecs info = SegmentCodecs.build(docFieldProcessor.fieldInfos, writer.codecs);
     flushState = new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
-                                       docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(),
-                                       writer.codecs);
+                                       docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(), info);
   }
 
-  /** Returns the codec used to flush the last segment */
-  Codec getCodec() {
-    return flushState.codec;
+  /** Returns the SegmentCodecs used to flush the last segment */
+  SegmentCodecs getSegmentCodecs() {
+    return flushState.segmentCodecs;
   }
   
   /** Flush all pending docs to a new segment */
@@ -653,7 +651,7 @@ final class DocumentsWriter {
       if (infoStream != null) {
         SegmentInfo si = new SegmentInfo(flushState.segmentName,
             flushState.numDocs, directory, false, -1, flushState.segmentName,
-            false, hasProx(), flushState.codec);
+            false, hasProx(), flushState.segmentCodecs);
         final long newSegmentSize = si.sizeInBytes();
         String message = "  ramUsed=" + nf.format(startNumBytesUsed/1024./1024.) + " MB" +
           " newFlushedSize=" + newSegmentSize +

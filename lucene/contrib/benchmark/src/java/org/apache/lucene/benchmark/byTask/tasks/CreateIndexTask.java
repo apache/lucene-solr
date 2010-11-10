@@ -134,6 +134,7 @@ public class CreateIndexTask extends PerfTask {
     final String defaultCodec = config.get("default.codec", null);
     if (defaultCodec != null) {
       CodecProvider.setDefaultCodec(defaultCodec);
+      CodecProvider.getDefault().setDefaultFieldCodec(defaultCodec);
     }
 
     final String mergePolicy = config.get("merge.policy",

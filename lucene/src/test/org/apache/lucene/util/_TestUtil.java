@@ -192,12 +192,7 @@ public class _TestUtil {
   }
 
   public static CodecProvider alwaysCodec(final Codec c) {
-    return new CodecProvider() {
-      @Override
-      public Codec getWriter(SegmentWriteState state) {
-        return c;
-      }
-
+    CodecProvider p = new CodecProvider() {
       @Override
       public Codec lookup(String name) {
         // can't do this until we fix PreFlexRW to not
@@ -209,6 +204,8 @@ public class _TestUtil {
         }
       }
     };
+    p.setDefaultFieldCodec(c.name);
+    return p;
   }
 
   /** Return a CodecProvider that can read any of the

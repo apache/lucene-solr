@@ -39,7 +39,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
@@ -90,7 +89,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     final FieldInfos fieldInfos;
 
     final FieldsProducer fields;
-    final CodecProvider codecs;
     
     final Directory dir;
     final Directory cfsDir;
@@ -104,17 +102,14 @@ public class SegmentReader extends IndexReader implements Cloneable {
     CompoundFileReader cfsReader;
     CompoundFileReader storeCFSReader;
 
-    CoreReaders(SegmentReader origInstance, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor, CodecProvider codecs) throws IOException {
+    CoreReaders(SegmentReader origInstance, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
 
       if (termsIndexDivisor == 0) {
         throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
       }
 
       segment = si.name;
-      if (codecs == null) {
-        codecs = CodecProvider.getDefault();
-      }
-      this.codecs = codecs;      
+      final SegmentCodecs codecInfo = si.getCodecInfo();
       this.readBufferSize = readBufferSize;
       this.dir = dir;
 
@@ -129,11 +124,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
         cfsDir = dir0;
 
         fieldInfos = new FieldInfos(cfsDir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELD_INFOS_EXTENSION));
-
+        
         this.termsIndexDivisor = termsIndexDivisor;
-
+        
         // Ask codec for its Fields
-        fields = si.getCodec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
+        fields = codecInfo.codec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
         assert fields != null;
 
         success = true;
@@ -506,7 +501,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, termInfosIndexDivisor, null);
+    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, termInfosIndexDivisor);
   }
 
   /**
@@ -518,12 +513,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
                                   SegmentInfo si,
                                   int readBufferSize,
                                   boolean doOpenStores,
-                                  int termInfosIndexDivisor,
-                                  CodecProvider codecs)
+                                  int termInfosIndexDivisor)
     throws CorruptIndexException, IOException {
-    if (codecs == null)  {
-      codecs = CodecProvider.getDefault();
-    }
     
     SegmentReader instance = new SegmentReader();
     instance.readOnly = readOnly;
@@ -533,7 +524,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     boolean success = false;
 
     try {
-      instance.core = new CoreReaders(instance, dir, si, readBufferSize, termInfosIndexDivisor, codecs);
+      instance.core = new CoreReaders(instance, dir, si, readBufferSize, termInfosIndexDivisor);
       if (doOpenStores) {
         instance.core.openDocStores(si);
       }

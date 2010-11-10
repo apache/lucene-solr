@@ -196,7 +196,6 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
         FieldInfo fi = fieldInfos.add(fieldName, field.isIndexed(), field.isTermVectorStored(),
                                       field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
                                       field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
-
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
         fieldHash[hashPos] = fp;

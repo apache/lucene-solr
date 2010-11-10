@@ -129,8 +129,8 @@ public class CheckIndex {
       /** Name of the segment. */
       public String name;
 
-      /** Name of codec used to read this segment. */
-      public String codec;
+      /** CodecInfo used to read this segment. */
+      public SegmentCodecs codec;
 
       /** Document count (does not take deletions into account). */
       public int docCount;
@@ -408,7 +408,7 @@ public class CheckIndex {
       SegmentReader reader = null;
 
       try {
-        final String codec = info.getCodec().name;
+        final SegmentCodecs codec = info.getCodecInfo();
         msg("    codec=" + codec);
         segInfoStat.codec = codec;
         msg("    compound=" + info.getUseCompoundFile());
@@ -602,7 +602,7 @@ public class CheckIndex {
         }
         
         final TermsEnum terms = fieldsEnum.terms();
-
+        assert terms != null;
         boolean hasOrd = true;
         final long termCountStart = status.termCount;
 

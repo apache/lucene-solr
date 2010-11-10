@@ -21,19 +21,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.PhraseQuery;
 
 public class TestAddIndexes extends LuceneTestCase {
   
@@ -848,4 +851,83 @@ public class TestAddIndexes extends LuceneTestCase {
 
     assertTrue(c.failures.size() == 0);
   }
+  
+  private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("id", "" + i, Field.Store.YES, Field.Index.ANALYZED));
+      writer.addDocument(doc);
+    }
+  }
+
+  public void testSimpleCaseCustomCodecProvider() throws IOException {
+    // main directory
+    Directory dir = newDirectory();
+    // two auxiliary directories
+    Directory aux = newDirectory();
+    Directory aux2 = newDirectory();
+    CodecProvider provider = new MockCodecProvider();
+    IndexWriter writer = null;
+
+    writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(
+        provider));
+    // add 100 documents
+    addDocs3(writer, 100);
+    assertEquals(100, writer.maxDoc());
+    writer.commit();
+    writer.close();
+    _TestUtil.checkIndex(dir, provider);
+
+    writer = newWriter(aux, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(
+        provider));
+    ((LogMergePolicy) writer.getConfig().getMergePolicy())
+        .setUseCompoundFile(false); // use one without a compound file
+    ((LogMergePolicy) writer.getConfig().getMergePolicy())
+        .setUseCompoundDocStore(false); // use one without a compound file
+    // add 40 documents in separate files
+    addDocs(writer, 40);
+    assertEquals(40, writer.maxDoc());
+    writer.commit();
+    writer.close();
+
+    writer = newWriter(aux2, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(
+        provider));
+    // add 40 documents in compound files
+    addDocs2(writer, 50);
+    assertEquals(50, writer.maxDoc());
+    writer.commit();
+    writer.close();
+
+    // test doc count before segments are merged
+    writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setCodecProvider(
+        provider));
+    assertEquals(100, writer.maxDoc());
+    writer.addIndexes(new Directory[] { aux, aux2 });
+    assertEquals(190, writer.maxDoc());
+    writer.close();
+    _TestUtil.checkIndex(dir, provider);
+
+    dir.close();
+    aux.close();
+    aux2.close();
+  }
+
+  public static class MockCodecProvider extends CodecProvider {
+    public MockCodecProvider() {
+      StandardCodec standardCodec = new StandardCodec();
+      SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
+      MockSepCodec mockSepCodec = new MockSepCodec();
+      register(standardCodec);
+      register(mockSepCodec);
+      register(simpleTextCodec);
+      setFieldCodec("id", simpleTextCodec.name);
+      setFieldCodec("content", mockSepCodec.name);
+    }
+  }
+  
 }

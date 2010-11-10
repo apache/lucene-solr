@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,87 +17,67 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.IdentityHashMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
-import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.store.Directory;
 
+/**
+ * Enables native per field codec support. This class selects the codec used to
+ * write a field depending on the provided {@link SegmentCodecs}. For each field
+ * seen it resolves the codec based on the {@link FieldInfo#codecId} which is
+ * only valid during a segment merge. See {@link SegmentCodecs} javadoc for
+ * details.
+ * 
+ * @lucene.internal
+ */
+final class PerFieldCodecWrapper extends Codec {
+  private final SegmentCodecs segmentCodecs;
 
-/** Simple Codec that dispatches field-specific codecs.
- *  You must ensure every field you index has a Codec, or
- *  the defaultCodec is non null.  Also, the separate
- *  codecs cannot conflict on file names.
- *
- * @lucene.experimental */
-public class PerFieldCodecWrapper extends Codec {
-  private final Map<String,Codec> fields = new IdentityHashMap<String,Codec>();
-  private final Codec defaultCodec;
-
-  public PerFieldCodecWrapper(Codec defaultCodec) {
+  PerFieldCodecWrapper(SegmentCodecs segmentCodecs) {
     name = "PerField";
-    this.defaultCodec = defaultCodec;
+    this.segmentCodecs = segmentCodecs;
   }
 
-  public void add(String field, Codec codec) {
-    fields.put(field, codec);
-  }
-
-  public Codec getCodec(String field) {
-    Codec codec = fields.get(field);
-    if (codec != null) {
-      return codec;
-    } else {
-      return defaultCodec;
-    }
-  }
-      
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public FieldsConsumer fieldsConsumer(SegmentWriteState state)
+      throws IOException {
     return new FieldsWriter(state);
   }
 
   private class FieldsWriter extends FieldsConsumer {
-    private final SegmentWriteState state;
-    private final Map<Codec,FieldsConsumer> codecs = new HashMap<Codec,FieldsConsumer>();
-    private final Set<String> fieldsSeen = new TreeSet<String>();
+    private final ArrayList<FieldsConsumer> consumers = new ArrayList<FieldsConsumer>();
 
-    public FieldsWriter(SegmentWriteState state) {
-      this.state = state;
+    public FieldsWriter(SegmentWriteState state) throws IOException {
+      assert segmentCodecs == state.segmentCodecs;
+      final Codec[] codecs = segmentCodecs.codecs;
+      for (int i = 0; i < codecs.length; i++) {
+        state.currentCodecId = i; // actual codec should use that to create its
+                                  // files
+        consumers.add(codecs[i].fieldsConsumer(state));
+      }
     }
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      fieldsSeen.add(field.name);
-      Codec codec = getCodec(field.name);
-
-      FieldsConsumer fields = codecs.get(codec);
-      if (fields == null) {
-        fields = codec.fieldsConsumer(state);
-        codecs.put(codec, fields);
-      }
+      final FieldsConsumer fields = consumers.get(field.codecId);
       return fields.addField(field);
     }
 
     @Override
     public void close() throws IOException {
-      Iterator<FieldsConsumer> it = codecs.values().iterator();
+      Iterator<FieldsConsumer> it = consumers.iterator();
       IOException err = null;
-      while(it.hasNext()) {
+      while (it.hasNext()) {
         try {
           it.next().close();
         } catch (IOException ioe) {
@@ -117,21 +97,23 @@ public class PerFieldCodecWrapper extends Codec {
   private class FieldsReader extends FieldsProducer {
 
     private final Set<String> fields = new TreeSet<String>();
-    private final Map<Codec,FieldsProducer> codecs = new HashMap<Codec,FieldsProducer>();
+    private final Map<String, FieldsProducer> codecs = new HashMap<String, FieldsProducer>();
 
-    public FieldsReader(Directory dir, FieldInfos fieldInfos,
-                        SegmentInfo si, int readBufferSize,
-                        int indexDivisor) throws IOException {
+    public FieldsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
+        int readBufferSize, int indexDivisor) throws IOException {
 
       final int fieldCount = fieldInfos.size();
-      for(int i=0;i<fieldCount;i++) {
+      final Map<Codec, FieldsProducer> producers = new HashMap<Codec, FieldsProducer>();
+      for (int i = 0; i < fieldCount; i++) {
         FieldInfo fi = fieldInfos.fieldInfo(i);
-        if (fi.isIndexed) {
+        if (fi.isIndexed) { // TODO this does not work for non-indexed fields
           fields.add(fi.name);
-          Codec codec = getCodec(fi.name);
-          if (!codecs.containsKey(codec)) {
-            codecs.put(codec, codec.fieldsProducer(new SegmentReadState(dir, si, fieldInfos, readBufferSize, indexDivisor)));
+          Codec codec = segmentCodecs.codecs[fi.codecId];
+          if (!producers.containsKey(codec)) {
+            producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
+                si, fieldInfos, readBufferSize, indexDivisor)));
           }
+          codecs.put(fi.name, producers.get(codec));
         }
       }
     }
@@ -157,15 +139,15 @@ public class PerFieldCodecWrapper extends Codec {
 
       @Override
       public TermsEnum terms() throws IOException {
-        Terms terms = codecs.get(getCodec(current)).terms(current);
+        Terms terms = codecs.get(current).terms(current);
         if (terms != null) {
           return terms.iterator();
         } else {
-          return null;
+          return TermsEnum.EMPTY;
         }
       }
     }
-      
+
     @Override
     public FieldsEnum iterator() throws IOException {
       return new FieldsIterator();
@@ -173,18 +155,15 @@ public class PerFieldCodecWrapper extends Codec {
 
     @Override
     public Terms terms(String field) throws IOException {
-      Codec codec = getCodec(field);
-
-      FieldsProducer fields = codecs.get(codec);
-      assert fields != null;
-      return fields.terms(field);
+      FieldsProducer fields = codecs.get(field);
+      return fields == null ? null : fields.terms(field);
     }
 
     @Override
     public void close() throws IOException {
       Iterator<FieldsProducer> it = codecs.values().iterator();
       IOException err = null;
-      while(it.hasNext()) {
+      while (it.hasNext()) {
         try {
           it.next().close();
         } catch (IOException ioe) {
@@ -203,35 +182,27 @@ public class PerFieldCodecWrapper extends Codec {
     @Override
     public void loadTermsIndex(int indexDivisor) throws IOException {
       Iterator<FieldsProducer> it = codecs.values().iterator();
-      while(it.hasNext()) {
+      while (it.hasNext()) {
         it.next().loadTermsIndex(indexDivisor);
       }
     }
   }
 
   public FieldsProducer fieldsProducer(SegmentReadState state)
-    throws IOException {
-    return new FieldsReader(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor);
+      throws IOException {
+    return new FieldsReader(state.dir, state.fieldInfos, state.segmentInfo,
+        state.readBufferSize, state.termsIndexDivisor);
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files) throws IOException {
-    Iterator<Codec> it = fields.values().iterator();
-    Set<Codec> seen = new HashSet<Codec>();
-    while(it.hasNext()) {
-      final Codec codec = it.next();
-      if (!seen.contains(codec)) {
-        seen.add(codec);
-        codec.files(dir, info, files);
-      }
-    }
+  public void files(Directory dir, SegmentInfo info, Set<String> files)
+      throws IOException {
+    segmentCodecs.files(dir, info, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    Iterator<Codec> it = fields.values().iterator();
-    while(it.hasNext()) {
-      final Codec codec = it.next();
+    for (Codec codec : segmentCodecs.codecs) {
       codec.getExtensions(extensions);
     }
   }
