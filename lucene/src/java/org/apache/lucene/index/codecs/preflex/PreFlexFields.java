@@ -74,39 +74,51 @@ public class PreFlexFields extends FieldsProducer {
     if (indexDivisor < 0) {
       indexDivisor = -indexDivisor;
     }
+    
+    boolean success = false;
+    try {
+      TermInfosReader r = new TermInfosReader(dir, info.name, fieldInfos, readBufferSize, indexDivisor);    
+      if (indexDivisor == -1) {
+        tisNoIndex = r;
+      } else {
+        tisNoIndex = null;
+        tis = r;
+      }
+      this.readBufferSize = readBufferSize;
+      this.fieldInfos = fieldInfos;
 
-    TermInfosReader r = new TermInfosReader(dir, info.name, fieldInfos, readBufferSize, indexDivisor);    
-    if (indexDivisor == -1) {
-      tisNoIndex = r;
-    } else {
-      tisNoIndex = null;
-      tis = r;
-    }
-    this.readBufferSize = readBufferSize;
-    this.fieldInfos = fieldInfos;
-
-    // make sure that all index files have been read or are kept open
-    // so that if an index update removes them we'll still have them
-    freqStream = dir.openInput(info.name + ".frq", readBufferSize);
-    boolean anyProx = false;
-    final int numFields = fieldInfos.size();
-    for(int i=0;i<numFields;i++) {
-      final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
-      if (fieldInfo.isIndexed) {
-        fields.put(fieldInfo.name, fieldInfo);
-        preTerms.put(fieldInfo.name, new PreTerms(fieldInfo));
-        if (!fieldInfo.omitTermFreqAndPositions) {
-          anyProx = true;
+      // make sure that all index files have been read or are kept open
+      // so that if an index update removes them we'll still have them
+      freqStream = dir.openInput(info.name + ".frq", readBufferSize);
+      boolean anyProx = false;
+      final int numFields = fieldInfos.size();
+      for(int i=0;i<numFields;i++) {
+        final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
+        if (fieldInfo.isIndexed) {
+          fields.put(fieldInfo.name, fieldInfo);
+          preTerms.put(fieldInfo.name, new PreTerms(fieldInfo));
+          if (!fieldInfo.omitTermFreqAndPositions) {
+            anyProx = true;
+          }
         }
       }
-    }
 
-    if (anyProx) {
-      proxStream = dir.openInput(info.name + ".prx", readBufferSize);
-    } else {
-      proxStream = null;
+      if (anyProx) {
+        proxStream = dir.openInput(info.name + ".prx", readBufferSize);
+      } else {
+        proxStream = null;
+      }
+      success = true;
+    } finally {
+      // With lock-less commits, it's entirely possible (and
+      // fine) to hit a FileNotFound exception above. In
+      // this case, we want to explicitly close any subset
+      // of things that were opened so that we don't have to
+      // wait for a GC to do so.
+      if (!success) {
+        close();
+      }
     }
-
     this.dir = dir;
   }
 
