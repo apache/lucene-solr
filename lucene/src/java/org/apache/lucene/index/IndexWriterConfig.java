@@ -612,7 +612,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("matchVersion=").append(matchVersion).append("\n");
     sb.append("analyzer=").append(analyzer == null ? "null" : analyzer.getClass().getName()).append("\n");
     sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
-    sb.append("commit=").append(commit == null ? "null" : commit.getClass().getName()).append("\n");
+    sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
     sb.append("openMode=").append(openMode).append("\n");
     sb.append("maxFieldLength=").append(maxFieldLength).append("\n");
     sb.append("similarity=").append(similarity.getClass().getName()).append("\n");

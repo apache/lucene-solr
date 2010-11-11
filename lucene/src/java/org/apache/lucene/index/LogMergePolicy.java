@@ -548,7 +548,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("[");
+    StringBuilder sb = new StringBuilder("[" + getClass().getSimpleName() + ": ");
     sb.append("minMergeSize=").append(minMergeSize).append(", ");
     sb.append("mergeFactor=").append(mergeFactor).append(", ");
     sb.append("maxMergeSize=").append(maxMergeSize).append(", ");

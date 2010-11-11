@@ -320,12 +320,13 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
+    buffer.append(segmentInfos.getCurrentSegmentFileName());
+    if (writer != null) {
+      buffer.append(":nrt");
+    }
     for(int i=0;i<subReaders.length;i++) {
-      if (i > 0) {
-        buffer.append(' ');
-      }
-      buffer.append(subReaders[i]);
       buffer.append(' ');
+      buffer.append(subReaders[i]);
     }
     buffer.append(')');
     return buffer.toString();
@@ -1004,6 +1005,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
       version = infos.getVersion();
       generation = infos.getGeneration();
       isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();
+    }
+
+    @Override
+    public String toString() {
+      return "DirectoryReader.ReaderCommit(" + segmentsFileName + ")";
     }
 
     @Override

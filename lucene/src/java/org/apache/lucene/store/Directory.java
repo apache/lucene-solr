@@ -197,6 +197,11 @@ public abstract class Directory implements Closeable {
       return this.toString();
   }
 
+  @Override
+  public String toString() {
+    return super.toString() + " lockFactory=" + getLockFactory();
+  }
+
   /**
    * Copies the file <i>src</i> to {@link Directory} <i>to</i> under the new
    * file name <i>dest</i>.

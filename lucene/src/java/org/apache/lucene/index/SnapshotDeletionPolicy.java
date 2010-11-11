@@ -76,6 +76,11 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
       this.cp = cp;
     }
 
+    @Override
+    public String toString() {
+      return "SnapshotDeletionPolicy.SnapshotCommitPoint(" + cp + ")";
+    }
+
     /**
      * Returns true if this segment can be deleted. The default implementation
      * returns false if this segment is currently held as snapshot.
