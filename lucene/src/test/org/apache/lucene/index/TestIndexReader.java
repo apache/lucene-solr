@@ -1819,9 +1819,8 @@ public class TestIndexReader extends LuceneTestCase
     writer.commit();
     sdp.snapshot("c3");
     writer.close();
-    List<IndexCommit> commits = IndexReader.listCommits(dir);
     long currentGen = 0;
-    for (IndexCommit ic : commits) {
+    for (IndexCommit ic : IndexReader.listCommits(dir)) {
       assertTrue("currentGen=" + currentGen + " commitGen=" + ic.getGeneration(), currentGen < ic.getGeneration());
       currentGen = ic.getGeneration();
     }

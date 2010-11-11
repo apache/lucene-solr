@@ -1155,7 +1155,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  
    *  @return a sorted list of {@link IndexCommit}s, from oldest 
    *  to latest. */
-  public static List<IndexCommit> listCommits(Directory dir) throws IOException {
+  public static Collection<IndexCommit> listCommits(Directory dir) throws IOException {
     return DirectoryReader.listCommits(dir);
   }
 

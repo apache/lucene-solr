@@ -73,10 +73,6 @@ Changes in backwards compatibility policy
   values in multi-valued field has been changed for some cases in index.
   If you index empty fields and uses positions/offsets information on that
   fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
-
-* LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List
-  instead of a Collection, guaranteeing the commits are sorted from oldest to 
-  latest. (Shai Erera)
   
 Changes in runtime behavior
 
@@ -112,6 +108,9 @@ Changes in runtime behavior
 * LUCENE-2701: maxMergeMB and maxMergeDocs constraints set on LogMergePolicy now
   affect optimize() as well (as opposed to only regular merges). This means that
   you can run optimize() and too large segments won't be merged. (Shai Erera)
+
+* LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List,
+  guaranteeing the commits are sorted from oldest to latest. (Shai Erera)
 
 API Changes
 
