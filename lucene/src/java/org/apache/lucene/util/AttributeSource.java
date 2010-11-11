@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.TokenStream; // for javadocs
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 
 /**
  * An AttributeSource contains a list of different {@link AttributeImpl}s,
@@ -77,11 +79,17 @@ public class AttributeSource {
           Class<? extends AttributeImpl> clazz = (ref == null) ? null : ref.get();
           if (clazz == null) {
             try {
+              // TODO: Remove when TermAttribute is removed!
+              // This is a "sophisticated backwards compatibility hack"
+              // (enforce new impl for this deprecated att):
+              if (TermAttribute.class.equals(attClass)) {
+                clazz = CharTermAttributeImpl.class;
+              } else {
+                clazz = Class.forName(attClass.getName() + "Impl", true, attClass.getClassLoader())
+                  .asSubclass(AttributeImpl.class);
+              }
               attClassImplMap.put(attClass,
-                new WeakReference<Class<? extends AttributeImpl>>(
-                  clazz = Class.forName(attClass.getName() + "Impl", true, attClass.getClassLoader())
-                  .asSubclass(AttributeImpl.class)
-                )
+                new WeakReference<Class<? extends AttributeImpl>>(clazz)
               );
             } catch (ClassNotFoundException e) {
               throw new IllegalArgumentException("Could not find implementing class for " + attClass.getName());

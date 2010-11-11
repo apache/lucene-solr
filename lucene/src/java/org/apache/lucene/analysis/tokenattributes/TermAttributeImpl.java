@@ -19,8 +19,8 @@ package org.apache.lucene.analysis.tokenattributes;
 
 /**
  * The term text of a Token.
- * @deprecated This class is only available for AttributeSource
- * to be able to load an old TermAttribute implementation class.
+ * @deprecated This class is not used anymore. The backwards layer in
+ * AttributeFactory uses the replacement implementation.
  */
 @Deprecated
 public class TermAttributeImpl extends CharTermAttributeImpl {
