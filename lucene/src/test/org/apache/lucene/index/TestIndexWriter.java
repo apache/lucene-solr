@@ -235,7 +235,8 @@ public class TestIndexWriter extends LuceneTestCase {
         for(int i=0;i<19;i++)
           writer.addDocument(doc);
 
-        ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
+        writer.commit();
+        writer.waitForMerges();
         writer.commit();
 
         SegmentInfos sis = new SegmentInfos();
@@ -245,9 +246,9 @@ public class TestIndexWriter extends LuceneTestCase {
 
         writer.optimize(7);
         writer.commit();
+        writer.waitForMerges();
 
         sis = new SegmentInfos();
-        ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
         sis.read(dir);
         final int optSegCount = sis.size();
 
