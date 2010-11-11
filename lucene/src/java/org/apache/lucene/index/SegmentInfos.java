@@ -579,7 +579,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
           // Method 2: open segments.gen and read its
           // contents.  Then we take the larger of the two
-          // gen's.  This way, if either approach is hitting
+          // gens.  This way, if either approach is hitting
           // a stale cache (NFS) we have a better chance of
           // getting the right generation.
           long genB = -1;
