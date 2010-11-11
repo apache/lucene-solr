@@ -128,8 +128,9 @@ public class TestAttributeSource extends LuceneTestCase {
   public void testDefaultAttributeFactory() throws Exception {
     AttributeSource src = new AttributeSource();
     
-    assertTrue("TermAttribute is not implemented by TermAttributeImpl",
-      src.addAttribute(TermAttribute.class) instanceof TermAttributeImpl);
+    // disabled because we enforce CTA in 3.x:
+    //assertTrue("TermAttribute is not implemented by TermAttributeImpl",
+    //  src.addAttribute(TermAttribute.class) instanceof TermAttributeImpl);
     assertTrue("OffsetAttribute is not implemented by OffsetAttributeImpl",
       src.addAttribute(OffsetAttribute.class) instanceof OffsetAttributeImpl);
     assertTrue("FlagsAttribute is not implemented by FlagsAttributeImpl",
