@@ -32,8 +32,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Closeable;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -1341,8 +1341,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  the Directory, else this method throws {@link
    *  IndexNotFoundException}.  Note that if a commit is in
    *  progress while this method is running, that commit
-   *  may or may not be returned array.  */
-  public static Collection<IndexCommit> listCommits(Directory dir) throws IOException {
+   *  may or may not be returned.
+   *  
+   *  @return a sorted list of {@link IndexCommit}s, from oldest 
+   *  to latest. */
+  public static List<IndexCommit> listCommits(Directory dir) throws IOException {
     return DirectoryReader.listCommits(dir);
   }
 

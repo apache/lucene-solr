@@ -396,6 +396,10 @@ Changes in backwards compatibility policy
 * LUCENE-2733: Removed public constructors of utility classes with only static
   methods to prevent instantiation.  (Uwe Schindler)
 
+* LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List
+  instead of a Collection, guaranteeing the commits are sorted from oldest to 
+  latest. (Shai Erera)
+  
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
