@@ -1802,4 +1802,30 @@ public class TestIndexReader extends LuceneTestCase
     r.close();
     dir.close();
   }
+  
+  // LUCENE-2753
+  public void testListCommits() throws Exception {
+    Directory dir = newDirectory();
+    SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(sdp));
+    writer.addDocument(new Document());
+    writer.commit();
+    sdp.snapshot("c1");
+    writer.addDocument(new Document());
+    writer.commit();
+    sdp.snapshot("c2");
+    writer.addDocument(new Document());
+    writer.commit();
+    sdp.snapshot("c3");
+    writer.close();
+    List<IndexCommit> commits = IndexReader.listCommits(dir);
+    long currentGen = 0;
+    for (IndexCommit ic : commits) {
+      assertTrue("currentGen=" + currentGen + " commitGen=" + ic.getGeneration(), currentGen < ic.getGeneration());
+      currentGen = ic.getGeneration();
+    }
+    dir.close();
+  }
+  
 }

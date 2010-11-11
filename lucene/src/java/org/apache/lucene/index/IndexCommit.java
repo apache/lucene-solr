@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.util.Collection;
 import java.util.Map;
 import java.io.IOException;
+
 import org.apache.lucene.store.Directory;
 
 /**
@@ -40,7 +41,7 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
 */
 
-public abstract class IndexCommit {
+public abstract class IndexCommit implements Comparable<IndexCommit> {
 
   /**
    * Get the segments file (<code>segments_N</code>) associated 
@@ -114,4 +115,16 @@ public abstract class IndexCommit {
    *  String -> String. */
   public abstract Map<String,String> getUserData() throws IOException;
   
+  public int compareTo(IndexCommit commit) {
+    long gen = getGeneration();
+    long comgen = commit.getGeneration();
+    if (gen < comgen) {
+      return -1;
+    } else if (gen > comgen) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
 }

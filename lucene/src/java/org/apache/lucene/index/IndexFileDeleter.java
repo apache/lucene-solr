@@ -617,9 +617,8 @@ final class IndexFileDeleter {
    * equals.
    */
 
-  final private static class CommitPoint extends IndexCommit implements Comparable<CommitPoint> {
+  final private static class CommitPoint extends IndexCommit {
 
-    long gen;
     Collection<String> files;
     String segmentsFileName;
     boolean deleted;
@@ -638,7 +637,6 @@ final class IndexFileDeleter {
       version = segmentInfos.getVersion();
       generation = segmentInfos.getGeneration();
       files = Collections.unmodifiableCollection(segmentInfos.files(directory, true));
-      gen = segmentInfos.getGeneration();
       isOptimized = segmentInfos.size() == 1 && !segmentInfos.info(0).hasDeletions();
     }
 
@@ -699,14 +697,5 @@ final class IndexFileDeleter {
       return deleted;
     }
 
-    public int compareTo(CommitPoint commit) {
-      if (gen < commit.gen) {
-        return -1;
-      } else if (gen > commit.gen) {
-        return 1;
-      } else {
-        return 0;
-      }
-    }
   }
 }

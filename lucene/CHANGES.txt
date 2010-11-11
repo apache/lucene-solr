@@ -74,6 +74,10 @@ Changes in backwards compatibility policy
   If you index empty fields and uses positions/offsets information on that
   fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
 
+* LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List
+  instead of a Collection, guaranteeing the commits are sorted from oldest to 
+  latest. (Shai Erera)
+  
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something

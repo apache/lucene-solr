@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 import java.util.Map;
 import java.util.Set;
@@ -914,10 +915,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   /** @see org.apache.lucene.index.IndexReader#listCommits */
-  public static Collection<IndexCommit> listCommits(Directory dir) throws IOException {
+  public static List<IndexCommit> listCommits(Directory dir) throws IOException {
     final String[] files = dir.listAll();
 
-    Collection<IndexCommit> commits = new ArrayList<IndexCommit>();
+    List<IndexCommit> commits = new ArrayList<IndexCommit>();
 
     SegmentInfos latest = new SegmentInfos();
     latest.read(dir);
@@ -953,6 +954,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
           commits.add(new ReaderCommit(sis, dir));
       }
     }
+
+    // Ensure that the commit points are sorted in ascending order.
+    Collections.sort(commits);
 
     return commits;
   }
