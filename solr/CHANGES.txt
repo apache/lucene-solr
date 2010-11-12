@@ -297,6 +297,14 @@ New Features
   built-in load balancing, and infrastructure for future SolrCloud work. 
   (yonik, Mark Miller)
 
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
+  tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-2211: Added UAX29TokenizerFactory, which implements UAX#29, a unicode algorithm 
+  with good results for most languages.  (Tom Burton-West via rmuir)
+
 Optimizations
 ----------------------
 
@@ -337,7 +345,8 @@ Optimizations
   improvement is 5%, but can be much greater (up to 10x faster) when facet.offset
   is very large (deep paging). (yonik)
 
-
+* SOLR-2200: Improve the performance of DataImportHandler for large delta-import
+  updates. (Mark Waddle via rmuir)
 
 Bug Fixes
 ----------------------
@@ -534,6 +543,15 @@ Bug Fixes
 * SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
 
 * SOLR-1962: SolrCore#initIndex should not use a mix of indexPath and newIndexPath (Mark Miller)
+
+* SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
+  (Drew Farris via koji)
+
+* SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. (koji)
+
+* SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
+  true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
+  (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
   
 Other Changes
 ----------------------
@@ -636,6 +654,9 @@ Other Changes
 
 * SOLR-2013: Add mapping-FoldToASCII.txt to example conf directory.
   (Steven Rowe via koji)
+  
+* SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
+
 
 Build
 ----------------------

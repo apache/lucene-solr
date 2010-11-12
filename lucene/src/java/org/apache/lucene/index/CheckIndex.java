@@ -129,8 +129,8 @@ public class CheckIndex {
       /** Name of the segment. */
       public String name;
 
-      /** Name of codec used to read this segment. */
-      public String codec;
+      /** CodecInfo used to read this segment. */
+      public SegmentCodecs codec;
 
       /** Document count (does not take deletions into account). */
       public int docCount;
@@ -304,7 +304,7 @@ public class CheckIndex {
    *  writer. */
   public Status checkIndex(List<String> onlySegments, CodecProvider codecs) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(codecs);
     Status result = new Status();
     result.dir = dir;
     try {
@@ -408,7 +408,7 @@ public class CheckIndex {
       SegmentReader reader = null;
 
       try {
-        final String codec = info.getCodec().name;
+        final SegmentCodecs codec = info.getCodecInfo();
         msg("    codec=" + codec);
         segInfoStat.codec = codec;
         msg("    compound=" + info.getUseCompoundFile());
@@ -550,8 +550,10 @@ public class CheckIndex {
       }
       final byte[] b = new byte[reader.maxDoc()];
       for (final String fieldName : fieldNames) {
-        reader.norms(fieldName, b, 0);
-        ++status.totFields;
+        if (reader.hasNorms(fieldName)) {
+          reader.norms(fieldName, b, 0);
+          ++status.totFields;
+        }
       }
 
       msg("OK [" + status.totFields + " fields]");
@@ -600,7 +602,7 @@ public class CheckIndex {
         }
         
         final TermsEnum terms = fieldsEnum.terms();
-
+        assert terms != null;
         boolean hasOrd = true;
         final long termCountStart = status.termCount;
 

@@ -63,21 +63,19 @@ public class TestIndexValues extends LuceneTestCase {
 
   // TODO test addIndexes
   private static DocValuesCodec docValuesCodec;
-
+  private static CodecProvider provider;
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     LuceneTestCase.beforeClassLuceneTestCaseJ4();
-    final CodecProvider cp = CodecProvider.getDefault();
-    docValuesCodec = new DocValuesCodec(cp.lookup(CodecProvider
+    provider = new CodecProvider();
+    docValuesCodec = new DocValuesCodec(CodecProvider.getDefault().lookup(CodecProvider
         .getDefaultCodec()));
-    cp.register(docValuesCodec);
-    CodecProvider.setDefaultCodec(docValuesCodec.name);
+    provider.register(docValuesCodec);
+    provider.setDefaultFieldCodec(docValuesCodec.name);
   }
 
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    final CodecProvider cp = CodecProvider.getDefault();
-    cp.unregister(docValuesCodec);
     LuceneTestCase.afterClassLuceneTestCaseJ4();
   }
 
@@ -412,6 +410,7 @@ public class TestIndexValues extends LuceneTestCase {
       policy.setUseCompoundFile(useCompoundFile);
       cfg.setMergePolicy(policy);
     }
+    cfg.setCodecProvider(provider);
     return cfg;
   }
 
@@ -434,9 +433,9 @@ public class TestIndexValues extends LuceneTestCase {
       switch (val) {
       case PACKED_INTS:
       case PACKED_INTS_FIXED: {
-        if(val == Values.PACKED_INTS_FIXED)
-          getDocValues(r, val.name());
         DocValues intsReader = getDocValues(r, val.name());
+        assertNotNull(intsReader);
+
         Source ints = getSource(intsReader);
         
         ValuesEnum intsEnum = intsReader.getEnum();

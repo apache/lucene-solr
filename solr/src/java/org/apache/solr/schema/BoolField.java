@@ -109,6 +109,11 @@ public class BoolField extends FieldType {
     return Boolean.valueOf( toExternal(f) );
   }
 
+  @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    return term.bytes[0] == 'T';
+  }
+
   public String indexedToReadable(String indexedForm) {
     char ch = indexedForm.charAt(0);
     return ch=='T' ? "true" : "false";

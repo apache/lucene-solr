@@ -164,7 +164,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       addDoc(writer);
     }
     writer.commit();
-    ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
+    writer.waitForMerges();
     writer.commit();
     checkInvariants(writer);
 
@@ -203,7 +203,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       addDoc(writer);
     }
     writer.commit();
-    ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
+    writer.waitForMerges();
     writer.commit();
     checkInvariants(writer);
     assertEquals(10, writer.maxDoc());

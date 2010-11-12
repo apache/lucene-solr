@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
@@ -32,7 +31,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -54,15 +52,14 @@ public class TestAppendingCodec extends LuceneTestCase {
     Codec appending = new AppendingCodec();
     SegmentInfosWriter infosWriter = new AppendingSegmentInfosWriter();
     SegmentInfosReader infosReader = new AppendingSegmentInfosReader();
-    
+    public AppendingCodecProvider() {
+      setDefaultFieldCodec(appending.name);
+    }
     @Override
     public Codec lookup(String name) {
       return appending;
     }
-    @Override
-    public Codec getWriter(SegmentWriteState state) {
-      return appending;
-    }
+   
     @Override
     public SegmentInfosReader getSegmentInfosReader() {
       return infosReader;

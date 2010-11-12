@@ -23,7 +23,10 @@ import java.io.IOException;
 import org.apache.lucene.store.DataOutput;
 
 /** @lucene.internal */
-public class IOUtils {
+public final class IOUtils {
+
+  private IOUtils() {} // no instance
+
   /**
    * <p>Closes all given <tt>Closeable</tt>s, suppressing all thrown exceptions. Some of the <tt>Closeable</tt>s
    * may be null, they are ignored. After everything is closed, method either throws <tt>priorException</tt>,

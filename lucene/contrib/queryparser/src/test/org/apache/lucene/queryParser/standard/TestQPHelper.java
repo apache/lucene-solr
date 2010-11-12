@@ -76,6 +76,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.Ignore;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -943,6 +944,15 @@ public class TestQPHelper extends LuceneTestCase {
     // LUCENE-881
     assertEscapedQueryEquals("|| abc ||", a, "\\|\\| abc \\|\\|");
     assertEscapedQueryEquals("&& abc &&", a, "\\&\\& abc \\&\\&");
+  }
+
+  @Ignore("contrib queryparser shouldn't escape wildcard terms")
+  public void testEscapedWildcard() throws Exception {
+    StandardQueryParser qp = new StandardQueryParser();
+    qp.setAnalyzer(new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+
+    WildcardQuery q = new WildcardQuery(new Term("field", "foo\\?ba?r"));
+    assertEquals(q, qp.parse("foo\\?ba?r", "field"));
   }
 
   public void testTabNewlineCarriageReturn() throws Exception {

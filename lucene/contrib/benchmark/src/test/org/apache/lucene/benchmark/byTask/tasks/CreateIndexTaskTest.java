@@ -19,21 +19,29 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.Version;
+
 
 /** Tests the functionality of {@link CreateIndexTask}. */
 public class CreateIndexTaskTest extends BenchmarkTestCase {
 
   private PerfRunData createPerfRunData(String infoStreamValue) throws Exception {
     Properties props = new Properties();
+    props.setProperty("writer.version", Version.LUCENE_40.toString());
     props.setProperty("print.props", "false"); // don't print anything
     props.setProperty("directory", "RAMDirectory");
     if (infoStreamValue != null) {
@@ -102,5 +110,4 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
     new CreateIndexTask(runData).doLogic();
     new CloseIndexTask(runData).doLogic();
   }
-  
 }

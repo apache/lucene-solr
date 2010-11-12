@@ -45,6 +45,9 @@ public class WildcardQuery extends AutomatonQuery {
   /** Char equality with support for wildcards */
   public static final char WILDCARD_CHAR = '?';
 
+  /** Escape character */
+  public static final char WILDCARD_ESCAPE = '\\';
+  
   /**
    * Constructs a query for terms matching <code>term</code>. 
    */
@@ -56,6 +59,7 @@ public class WildcardQuery extends AutomatonQuery {
    * Convert Lucene wildcard syntax into an automaton.
    * @lucene.internal
    */
+  @SuppressWarnings("fallthrough")
   public static Automaton toAutomaton(Term wildcardquery) {
     List<Automaton> automata = new ArrayList<Automaton>();
     
@@ -63,6 +67,7 @@ public class WildcardQuery extends AutomatonQuery {
     
     for (int i = 0; i < wildcardText.length();) {
       final int c = wildcardText.codePointAt(i);
+      int length = Character.charCount(c);
       switch(c) {
         case WILDCARD_STRING: 
           automata.add(BasicAutomata.makeAnyString());
@@ -70,10 +75,18 @@ public class WildcardQuery extends AutomatonQuery {
         case WILDCARD_CHAR:
           automata.add(BasicAutomata.makeAnyChar());
           break;
+        case WILDCARD_ESCAPE:
+          // add the next codepoint instead, if it exists
+          if (i + length < wildcardText.length()) {
+            final int nextChar = wildcardText.codePointAt(i + length);
+            length += Character.charCount(nextChar);
+            automata.add(BasicAutomata.makeChar(nextChar));
+            break;
+          } // else fallthru, lenient parsing with a trailing \
         default:
           automata.add(BasicAutomata.makeChar(c));
       }
-      i += Character.charCount(c);
+      i += length;
     }
     
     return BasicOperations.concatenate(automata);

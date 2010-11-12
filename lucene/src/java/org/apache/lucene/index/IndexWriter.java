@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Date;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -279,7 +280,7 @@ public class IndexWriter implements Closeable {
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
 
-  private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  private final SegmentInfos segmentInfos;       // the segments
 
   private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
@@ -623,7 +624,7 @@ public class IndexWriter implements Closeable {
         // TODO: we may want to avoid doing this while
         // synchronized
         // Returns a ref, which we xfer to readerMap:
-        sr = SegmentReader.get(false, info.dir, info, readBufferSize, doOpenStores, termsIndexDivisor, codecs);
+        sr = SegmentReader.get(false, info.dir, info, readBufferSize, doOpenStores, termsIndexDivisor);
 
         if (info.dir == directory) {
           // Only pool if reader is not external
@@ -705,7 +706,7 @@ public class IndexWriter implements Closeable {
    */
   public void message(String message) {
     if (infoStream != null)
-      infoStream.println("IW " + messageID + " [" + Thread.currentThread().getName() + "]: " + message);
+      infoStream.println("IW " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
   }
 
   private synchronized void setMessageID(PrintStream infoStream) {
@@ -1069,7 +1070,7 @@ public class IndexWriter implements Closeable {
     // instead of later when merge, applyDeletes, getReader
     // is attempted.  I think to do this we should store the
     // oldest segment's version in segments_N.
-
+    segmentInfos = new SegmentInfos(codecs);
     try {
       if (create) {
         // Try to read first.  This is to allow create
@@ -1098,7 +1099,7 @@ public class IndexWriter implements Closeable {
           // points.
           if (commit.getDirectory() != directory)
             throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
-          SegmentInfos oldInfos = new SegmentInfos();
+          SegmentInfos oldInfos = new SegmentInfos(codecs);
           oldInfos.read(directory, commit.getSegmentsFileName(), codecs);
           segmentInfos.replace(oldInfos);
           changeCount++;
@@ -1117,7 +1118,7 @@ public class IndexWriter implements Closeable {
       // KeepOnlyLastCommitDeleter:
       deleter = new IndexFileDeleter(directory,
                                      conf.getIndexDeletionPolicy(),
-                                     segmentInfos, infoStream, docWriter, this.codecs);
+                                     segmentInfos, infoStream, docWriter, codecs);
 
       if (deleter.startingCommitDeleted)
         // Deletion policy deleted the "head" commit point.
@@ -2638,6 +2639,10 @@ public class IndexWriter implements Closeable {
 
     boolean success = false;
 
+    if (infoStream != null ) {
+      message("rollback");
+    }
+
     docWriter.pauseAllThreads();
 
     try {
@@ -2900,8 +2905,8 @@ public class IndexWriter implements Closeable {
         if (infoStream != null) {
           message("process directory " + dir);
         }
-        SegmentInfos sis = new SegmentInfos(); // read infos from dir
-        sis.read(dir);
+        SegmentInfos sis = new SegmentInfos(codecs); // read infos from dir
+        sis.read(dir, codecs);
         Map<String, String> dsNames = new HashMap<String, String>();
         for (SegmentInfo info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
@@ -2997,7 +3002,7 @@ public class IndexWriter implements Closeable {
       SegmentInfo info = null;
       synchronized(this) {
         info = new SegmentInfo(mergedName, docCount, directory, false, -1,
-            null, false, merger.hasProx(), merger.getCodec());
+            null, false, merger.hasProx(), merger.getSegmentCodecs());
         setDiagnostics(info, "addIndexes(IndexReader...)");
         segmentInfos.add(info);
         checkpoint();
@@ -3211,11 +3216,13 @@ public class IndexWriter implements Closeable {
         notifyAll();
       }
 
-    } else if (infoStream != null)
-        message("commit: pendingCommit == null; skip");
+    } else if (infoStream != null) {
+      message("commit: pendingCommit == null; skip");
+    }
 
-    if (infoStream != null)
+    if (infoStream != null) {
       message("commit: done");
+    }
   }
 
   /**
@@ -3229,6 +3236,14 @@ public class IndexWriter implements Closeable {
    *  be flushed
    */
   protected final void flush(boolean triggerMerge, boolean flushDocStores, boolean flushDeletes) throws CorruptIndexException, IOException {
+
+    // NOTE: this method cannot be sync'd because
+    // maybeMerge() in turn calls mergeScheduler.merge which
+    // in turn can take a long time to run and we don't want
+    // to hold the lock for that.  In the case of
+    // ConcurrentMergeScheduler this can lead to deadlock
+    // when it stalls due to too many running merges.
+
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
     if (doFlush(flushDocStores, flushDeletes) && triggerMerge)
@@ -3367,10 +3382,10 @@ public class IndexWriter implements Closeable {
                                      directory, false, docStoreOffset,
                                      docStoreSegment, docStoreIsCompoundFile,
                                      docWriter.hasProx(),    
-                                     docWriter.getCodec());
+                                     docWriter.getSegmentCodecs());
 
         if (infoStream != null) {
-          message("flush codec=" + docWriter.getCodec().name);
+          message("flush codec=" + docWriter.getSegmentCodecs());
         }
         setDiagnostics(newSegment, "flush");
       }
@@ -4060,10 +4075,10 @@ public class IndexWriter implements Closeable {
       mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
 
       // Record which codec was used to write the segment
-      merge.info.setCodec(merger.getCodec());
+      merge.info.setSegmentCodecs(merger.getSegmentCodecs());
 
       if (infoStream != null) {
-        message("merge codec=" + merger.getCodec().name);
+        message("merge segmentCodecs=" + merger.getSegmentCodecs());
       }
       
       assert mergedDocCount == totDocCount;

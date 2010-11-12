@@ -308,7 +308,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     SegmentInfos sis = (SegmentInfos) super.clone();
     for(int i=0;i<sis.size();i++) {
       final SegmentInfo info = sis.info(i);
-      assert info.getCodec() != null;
+      assert info.getCodecInfo() != null;
       sis.set(i, (SegmentInfo) info.clone());
     }
     sis.userData = new HashMap<String,String>(userData);
@@ -341,8 +341,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     // IndexWriter.prepareCommit has been called (but not
     // yet commit), then the reader will still see itself as
     // current:
-    SegmentInfos sis = new SegmentInfos();
-    sis.read(directory);
+    SegmentInfos sis = new SegmentInfos(codecs);
+    sis.read(directory, codecs);
     return sis.version;
   }
 
@@ -353,7 +353,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    */
   public static Map<String,String> readCurrentUserData(Directory directory, CodecProvider codecs)
     throws CorruptIndexException, IOException {
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(codecs);
     sis.read(directory, codecs);
     return sis.getUserData();
   }
@@ -513,7 +513,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
           // Method 2: open segments.gen and read its
           // contents.  Then we take the larger of the two
-          // gen's.  This way, if either approach is hitting
+          // gens.  This way, if either approach is hitting
           // a stale cache (NFS) we have a better chance of
           // getting the right generation.
           long genB = -1;
@@ -694,7 +694,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * is last-first.
    */
   public SegmentInfos range(int first, int last) {
-    SegmentInfos infos = new SegmentInfos();
+    SegmentInfos infos = new SegmentInfos(codecs);
     infos.addAll(super.subList(first, last));
     return infos;
   }

@@ -42,6 +42,7 @@ public class RandomIndexWriter implements Closeable {
   private final Random r;
   int docCount;
   int flushAt;
+  private boolean getReaderCalled;
 
   // Randomly calls Thread.yield so we mixup thread scheduling
   private static final class MockIndexWriter extends IndexWriter {
@@ -123,10 +124,13 @@ public class RandomIndexWriter implements Closeable {
   }
 
   public IndexReader getReader() throws IOException {
+    getReaderCalled = true;
+    if (r.nextInt(4) == 2)
+      w.optimize();
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
-    if (!w.codecs.getWriter(null).name.equals("PreFlex") && r.nextBoolean()) {
+    if (!w.codecs.getDefaultFieldCodec().equals("PreFlex") && r.nextBoolean()) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
@@ -141,7 +145,9 @@ public class RandomIndexWriter implements Closeable {
   }
 
   public void close() throws IOException {
-    if (r.nextInt(4) == 2) {
+    // if someone isn't using getReader() API, we want to be sure to
+    // maybeOptimize since presumably they might open a reader on the dir.
+    if (getReaderCalled == false && r.nextInt(4) == 2) {
       w.optimize();
     }
     w.close();

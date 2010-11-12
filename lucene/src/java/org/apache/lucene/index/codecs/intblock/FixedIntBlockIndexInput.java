@@ -168,6 +168,25 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
+    public void read(final IntIndexInput.Reader indexIn, final boolean absolute) throws IOException {
+      if (absolute) {
+        fp = indexIn.readVLong();
+        upto = indexIn.next();
+      } else {
+        final long delta = indexIn.readVLong();
+        if (delta == 0) {
+          // same block
+          upto += indexIn.next();
+        } else {
+          // new block
+          fp += delta;
+          upto = indexIn.next();
+        }
+      }
+      assert upto < blockSize;
+    }
+
+    @Override
     public void seek(final IntIndexInput.Reader other) throws IOException {
       ((Reader) other).seek(fp, upto);
     }

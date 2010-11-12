@@ -471,7 +471,7 @@ public abstract class LogMergePolicy extends MergePolicy {
       // Now search backwards for the rightmost segment that
       // falls into this level:
       float levelBottom;
-      if (maxLevel < levelFloor)
+      if (maxLevel <= levelFloor)
         // All remaining segments fall into the min level
         levelBottom = -1.0F;
       else {
@@ -548,7 +548,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder("[");
+    StringBuilder sb = new StringBuilder("[" + getClass().getSimpleName() + ": ");
     sb.append("minMergeSize=").append(minMergeSize).append(", ");
     sb.append("mergeFactor=").append(mergeFactor).append(", ");
     sb.append("maxMergeSize=").append(maxMergeSize).append(", ");

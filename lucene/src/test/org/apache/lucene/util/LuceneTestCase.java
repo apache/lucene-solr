@@ -230,6 +230,7 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     CodecProvider.setDefaultCodec(codec);
+    cp.setDefaultFieldCodec(codec);
 
     if (codec.equals("PreFlex")) {
       // If we're running w/ PreFlex codec we must swap in the
@@ -262,6 +263,8 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockVariableIntBlock"));
     swapCodec(new PulsingCodec(1));
     CodecProvider.setDefaultCodec(savedDefaultCodec);
+    cp.setDefaultFieldCodec(savedDefaultCodec);
+
   }
 
   // randomly picks from core and test codecs

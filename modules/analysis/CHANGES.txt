@@ -1,7 +1,7 @@
 Analysis Module Change Log
 
 ======================= Trunk (not yet released) =======================
-
+   
 API Changes
 
  * LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 

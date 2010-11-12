@@ -73,6 +73,11 @@ public class TrieDateField extends DateField {
   }
 
   @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    return new Date(NumericUtils.prefixCodedToLong(term));
+  }
+
+  @Override
   public SortField getSortField(SchemaField field, boolean top) {
     return new SortField(new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ), top);
   }

@@ -113,6 +113,12 @@ Changes in backwards compatibility policy
 * LUCENE-2674: MultiTermQuery.TermCollector.collect now accepts the
   TermsEnum as well.  (Robert Muir, Mike McCandless)
 
+* LUCENE-588: WildcardQuery and QueryParser now allows escaping with 
+  the '\' character. Previously this was impossible (you could not escape */?,
+  for example).  If your code somehow depends on the old behavior, you will
+  need to change it (e.g. using "\\" to escape '\' itself).  
+  (Sunil Kamath, Terry Yang via Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit
@@ -283,6 +289,12 @@ New features
   (i.e. \* or "*")  Custom QueryParser sublcasses overriding getRangeQuery()
   will be passed null for any open endpoint. (Adriano Crestani, yonik)
 
+* LUCENE-2742: Add native per-field codec support. CodecProvider lets you now
+  register a codec for each field and which is in turn recorded in the segment
+  and field information. Codecs are maintained on a per-segment basis and be
+  resolved without knowing the actual codec used for writing the segment.
+  (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
@@ -312,7 +324,7 @@ Documentation
   methods.  (Santiago M. Mola via Mike McCandless)
   
 * LUCENE-2239: Documented limitations in NIOFSDirectory and MMapDirectory due to
-  Java NOI behavior when a Thread is interrupted while blocking on IO.
+  Java NIO behavior when a Thread is interrupted while blocking on IO.
   (Simon Willnauer, Robert Muir)
 
 Bug fixes
@@ -380,6 +392,13 @@ Changes in backwards compatibility policy
   CREATE*, IndexWriter would make a first empty commit. If you need that 
   behavior you can call writer.commit()/close() immediately after you create it.
   (Shai Erera, Mike McCandless)
+
+* LUCENE-2733: Removed public constructors of utility classes with only static
+  methods to prevent instantiation.  (Uwe Schindler)
+
+* LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List
+  instead of a Collection, guaranteeing the commits are sorted from oldest to 
+  latest. (Shai Erera)
   
 Changes in runtime behavior
 
@@ -610,6 +629,10 @@ Bug fixes
 * LUCENE-2658: Exceptions while processing term vectors enabled for multiple
   fields could lead to invalid ArrayIndexOutOfBoundsExceptions.
   (Robert Muir, Mike McCandless)
+
+* LUCENE-2744: CheckIndex was stating total number of fields,
+  not the number that have norms enabled, on the "test: field
+  norms..." output.  (Mark Kristensson via Mike McCandless)
 
 New features
 

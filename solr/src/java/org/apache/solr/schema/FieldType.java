@@ -346,6 +346,13 @@ public abstract class FieldType extends FieldProperties {
     return toExternal(f); // by default use the string
   }
 
+  public Object toObject(SchemaField sf, BytesRef term) {
+    CharArr ext = new CharArr(term.length);
+    indexedToReadable(term, ext);
+    Field f = createField(sf, ext.toString(), 1.0f);
+    return toObject(f);
+  }
+
   /** Given an indexed term, return the human readable representation */
   public String indexedToReadable(String indexedForm) {
     return indexedForm;

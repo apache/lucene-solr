@@ -27,7 +27,7 @@ import org.apache.lucene.store.Directory;
 
 /** @lucene.experimental */
 public abstract class Codec {
-
+  public static final Codec[] EMPTY = new Codec[0];
   /** Unique name that's used to retrieve this codec when
    *  reading the index */
   public String name;

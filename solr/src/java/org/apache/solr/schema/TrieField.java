@@ -480,6 +480,24 @@ public class TrieField extends FieldType {
   }
 
   @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    switch (type) {
+      case INTEGER:
+        return NumericUtils.prefixCodedToInt(term);
+      case FLOAT:
+        return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(term));
+      case LONG:
+        return NumericUtils.prefixCodedToLong(term);
+      case DOUBLE:
+        return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term));
+      case DATE:
+        return new Date(NumericUtils.prefixCodedToLong(term));
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
+    }
+  }
+
+  @Override
   public String storedToIndexed(Fieldable f) {
     // TODO: optimize to remove redundant string conversion
     return readableToIndexed(storedToReadable(f));

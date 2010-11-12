@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.*;
@@ -32,8 +33,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Closeable;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -643,7 +644,22 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentVersion(directory, CodecProvider.getDefault());
+    return getCurrentVersion(directory, CodecProvider.getDefault());
+  }
+  
+  /**
+   * Reads version number from segments files. The version number is
+   * initialized with a timestamp and then increased by one for each change of
+   * the index.
+   * 
+   * @param directory where the index resides.
+   * @param codecs the {@link CodecProvider} holding all {@link Codec}s required to open the index
+   * @return version number.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static long getCurrentVersion(Directory directory, CodecProvider codecs) throws CorruptIndexException, IOException {
+    return SegmentInfos.readCurrentVersion(directory, codecs);
   }
 
   /**
@@ -661,7 +677,27 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #getCommitUserData()
    */
   public static Map<String,String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentUserData(directory, CodecProvider.getDefault());
+    return getCommitUserData(directory,  CodecProvider.getDefault());
+  }
+  
+  
+  /**
+   * Reads commitUserData, previously passed to {@link
+   * IndexWriter#commit(Map)}, from current index
+   * segments file.  This will return null if {@link
+   * IndexWriter#commit(Map)} has never been called for
+   * this index.
+   * 
+   * @param directory where the index resides.
+   * @param codecs the {@link CodecProvider} provider holding all {@link Codec}s required to open the index
+   * @return commit userData.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @see #getCommitUserData()
+   */
+  public static Map<String, String> getCommitUserData(Directory directory, CodecProvider codecs) throws CorruptIndexException, IOException {
+    return SegmentInfos.readCurrentUserData(directory, codecs);
   }
 
   /**
@@ -1309,8 +1345,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  the Directory, else this method throws {@link
    *  IndexNotFoundException}.  Note that if a commit is in
    *  progress while this method is running, that commit
-   *  may or may not be returned array.  */
-  public static Collection<IndexCommit> listCommits(Directory dir) throws IOException {
+   *  may or may not be returned.
+   *  
+   *  @return a sorted list of {@link IndexCommit}s, from oldest 
+   *  to latest. */
+  public static List<IndexCommit> listCommits(Directory dir) throws IOException {
     return DirectoryReader.listCommits(dir);
   }
 

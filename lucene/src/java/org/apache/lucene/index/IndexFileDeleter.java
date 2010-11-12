@@ -24,6 +24,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 
 import java.util.List;
@@ -116,7 +117,7 @@ final class IndexFileDeleter {
   }
   
   private void message(String message) {
-    infoStream.println("IFD [" + Thread.currentThread().getName() + "]: " + message);
+    infoStream.println("IFD [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
   }
 
   private final FilenameFilter indexFilenameFilter;
@@ -173,7 +174,7 @@ final class IndexFileDeleter {
           if (infoStream != null) {
             message("init: load commit \"" + fileName + "\"");
           }
-          SegmentInfos sis = new SegmentInfos();
+          SegmentInfos sis = new SegmentInfos(codecs);
           try {
             sis.read(directory, fileName, codecs);
           } catch (FileNotFoundException e) {
@@ -222,7 +223,7 @@ final class IndexFileDeleter {
       // listing was stale (eg when index accessed via NFS
       // client with stale directory listing cache).  So we
       // try now to explicitly open this commit point:
-      SegmentInfos sis = new SegmentInfos();
+      SegmentInfos sis = new SegmentInfos(codecs);
       try {
         sis.read(directory, currentSegmentsFile, codecs);
       } catch (IOException e) {
@@ -546,8 +547,12 @@ final class IndexFileDeleter {
    *  (have not yet been incref'd). */
   void deleteNewFiles(Collection<String> files) throws IOException {
     for (final String fileName: files) {
-      if (!refCounts.containsKey(fileName))
+      if (!refCounts.containsKey(fileName)) {
+        if (infoStream != null) {
+          message("delete new file \"" + fileName + "\"");
+        }
         deleteFile(fileName);
+      }
     }
   }
 
@@ -615,9 +620,8 @@ final class IndexFileDeleter {
    * equals.
    */
 
-  final private static class CommitPoint extends IndexCommit implements Comparable<CommitPoint> {
+  final private static class CommitPoint extends IndexCommit {
 
-    long gen;
     Collection<String> files;
     String segmentsFileName;
     boolean deleted;
@@ -636,8 +640,12 @@ final class IndexFileDeleter {
       version = segmentInfos.getVersion();
       generation = segmentInfos.getGeneration();
       files = Collections.unmodifiableCollection(segmentInfos.files(directory, true));
-      gen = segmentInfos.getGeneration();
       isOptimized = segmentInfos.size() == 1 && !segmentInfos.info(0).hasDeletions();
+    }
+
+    @Override
+    public String toString() {
+      return "IndexFileDeleter.CommitPoint(" + segmentsFileName + ")";
     }
 
     @Override
@@ -692,14 +700,5 @@ final class IndexFileDeleter {
       return deleted;
     }
 
-    public int compareTo(CommitPoint commit) {
-      if (gen < commit.gen) {
-        return -1;
-      } else if (gen > commit.gen) {
-        return 1;
-      } else {
-        return 0;
-      }
-    }
   }
 }

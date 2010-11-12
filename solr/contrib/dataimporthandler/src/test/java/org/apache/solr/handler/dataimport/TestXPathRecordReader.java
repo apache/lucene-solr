@@ -195,6 +195,29 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  public void testElems2LevelEmpty() {
+    String xml="<root>\n"
+             + "\t<a>\n"
+             + "\t   <b>\n\t  <x>x0</x>\n"
+             + "\t            <y>y0</y>\n"
+             + "\t   </b>\n"
+             + "\t   <b>\n\t  <x></x>\n"    // empty
+             + "\t            <y>y1</y>\n"
+             + "\t   </b>\n"
+             + "\t</a>\n"
+             + "</root>";
+    XPathRecordReader rr = new XPathRecordReader("/root/a");
+    rr.addField("a", "/root/a/b/x", true);
+    rr.addField("b", "/root/a/b/y", true);
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    assertEquals(1, l.size());
+    assertEquals("x0",((List) l.get(0).get("a")).get(0));
+    assertEquals("y0",((List) l.get(0).get("b")).get(0));
+    assertEquals("",((List) l.get(0).get("a")).get(1));
+    assertEquals("y1",((List) l.get(0).get("b")).get(1));
+  }
+
+  @Test
   public void testMixedContent() {
     String xml = "<xhtml:p xmlns:xhtml=\"http://xhtml.com/\" >This text is \n" +
             "  <xhtml:b>bold</xhtml:b> and this text is \n" +
@@ -236,11 +259,15 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
   public void testElems2LevelWithAttrib() {
     String xml = "<root>\n\t<a>\n\t   <b k=\"x\">\n"
             + "\t                        <x>x0</x>\n"
-            + "\t                        <y>y0</y>\n"
+            + "\t                        <y></y>\n"  // empty
             + "\t                        </b>\n"
             + "\t                     <b k=\"y\">\n"
-            + "\t                        <x>x1</x>\n"
+            + "\t                        <x></x>\n"  // empty
             + "\t                        <y>y1</y>\n"
+            + "\t                        </b>\n"
+            + "\t                     <b k=\"z\">\n"
+            + "\t                        <x>x2</x>\n"
+            + "\t                        <y>y2</y>\n"
             + "\t                        </b>\n"
             + "\t                </a>\n"
             + "\t           <a>\n\t   <b>\n"
@@ -256,8 +283,14 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
     rr.addField("y", "/root/a/b[@k]/y", true);
     List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
     assertEquals(2, l.size());
-    assertEquals(2, ((List) l.get(0).get("x")).size());
-    assertEquals(2, ((List) l.get(0).get("y")).size());
+    assertEquals(3, ((List) l.get(0).get("x")).size());
+    assertEquals(3, ((List) l.get(0).get("y")).size());
+    assertEquals("x0", ((List) l.get(0).get("x")).get(0));
+    assertEquals("", ((List) l.get(0).get("y")).get(0));
+    assertEquals("", ((List) l.get(0).get("x")).get(1));
+    assertEquals("y1", ((List) l.get(0).get("y")).get(1));
+    assertEquals("x2", ((List) l.get(0).get("x")).get(2));
+    assertEquals("y2", ((List) l.get(0).get("y")).get(2));
     assertEquals(0, l.get(1).size());
   }
 

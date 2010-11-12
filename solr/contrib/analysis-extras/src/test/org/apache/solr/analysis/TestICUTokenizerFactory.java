@@ -1,3 +1,5 @@
+package org.apache.solr.analysis;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,13 +17,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+import java.io.Reader;
+import java.io.StringReader;
 
-/**  A variety of high efficiencly bit twiddling routines.
- * @deprecated Use {@link org.apache.lucene.util.BitUtil} directly
- * @version $Id$
- */
-@Deprecated
-public class BitUtil extends org.apache.lucene.util.BitUtil {
-  // just inherit for backwards-compatibility reasons
+import org.apache.lucene.analysis.TokenStream;
+
+/** basic tests for {@link ICUTokenizerFactory} **/
+public class TestICUTokenizerFactory extends BaseTokenTestCase {
+  public void testMixedText() throws Exception {
+    Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี  This is a test ກວ່າດອກ");
+    ICUTokenizerFactory factory = new ICUTokenizerFactory();
+    TokenStream stream = factory.create(reader);
+    assertTokenStreamContents(stream,
+        new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี",
+        "This", "is", "a", "test", "ກວ່າ", "ດອກ"});
+  }
 }

@@ -1045,7 +1045,7 @@ public abstract class QueryParserBase {
 
     String termImage=discardEscapeChar(term.image);
     if (wildcard) {
-      q = getWildcardQuery(qfield, termImage);
+      q = getWildcardQuery(qfield, term.image);
     } else if (prefix) {
       q = getPrefixQuery(qfield,
           discardEscapeChar(term.image.substring

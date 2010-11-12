@@ -93,7 +93,9 @@ package org.apache.lucene.util;
  * @lucene.internal
  */
 
-final public class UnicodeUtil {
+public final class UnicodeUtil {
+
+  private UnicodeUtil() {} // no instance
 
   public static final int UNI_SUR_HIGH_START = 0xD800;
   public static final int UNI_SUR_HIGH_END = 0xDBFF;

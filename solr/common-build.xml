@@ -23,6 +23,9 @@
 
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
+  <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
+  <property name="tests.luceneMatchVersion" value="4.0"/>
+
   <!-- Initialize property values: allow easy customization via build.properties -->
   <property file="build.properties" />
 

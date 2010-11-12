@@ -77,8 +77,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     // Sort by field name
     CollectionUtil.quickSort(allFields);
 
-    // TODO: allow Lucene user to customize this codec:
-    final FieldsConsumer consumer = state.codec.fieldsConsumer(state);
+    final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
 
     /*
     Current writer chain:

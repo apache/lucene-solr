@@ -31,6 +31,8 @@ import java.io.IOException;
  */
 
 public final class CodecUtil {
+  private CodecUtil() {} // no instance
+
   private final static int CODEC_MAGIC = 0x3fd76c17;
 
   public static IndexOutput writeHeader(IndexOutput out, String codec, int version)

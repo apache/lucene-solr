@@ -38,7 +38,7 @@ import org.apache.lucene.store.Directory;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocumentsWriter docWriter;
-  final FieldInfos fieldInfos = new FieldInfos();
+  final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
   final private Map<String,DocValuesConsumer> docValues = new HashMap<String,DocValuesConsumer>();
@@ -58,7 +58,7 @@ final class DocFieldProcessor extends DocConsumer {
          * to support docvalues and later on stored fields too.  
          */
       SegmentWriteState state = docWriter.segWriteState();
-      fieldsConsumer = state.codec.fieldsConsumer(state);
+      fieldsConsumer = state.segmentCodecs.codec().fieldsConsumer(state);
       }
       valuesConsumer = fieldsConsumer.addValuesField(fieldInfo);
       docValues.put(name, valuesConsumer);
@@ -69,6 +69,7 @@ final class DocFieldProcessor extends DocConsumer {
 
  
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
+    this.fieldInfos = new FieldInfos();
     this.docWriter = docWriter;
     this.consumer = consumer;
     consumer.setFieldInfos(fieldInfos);

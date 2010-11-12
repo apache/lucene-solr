@@ -205,6 +205,38 @@ public class TestWildcard
     indexStore.close();
   }
 
+  /**
+   * Tests if wildcard escaping works
+   */
+  public void testEscapes() throws Exception {
+    Directory indexStore = getIndexStore("field", 
+        new String[]{"foo*bar", "foo??bar", "fooCDbar", "fooSOMETHINGbar", "foo\\"});
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+
+    // without escape: matches foo??bar, fooCDbar, foo*bar, and fooSOMETHINGbar
+    WildcardQuery unescaped = new WildcardQuery(new Term("field", "foo*bar"));
+    assertMatches(searcher, unescaped, 4);
+    
+    // with escape: only matches foo*bar
+    WildcardQuery escaped = new WildcardQuery(new Term("field", "foo\\*bar"));
+    assertMatches(searcher, escaped, 1);
+    
+    // without escape: matches foo??bar and fooCDbar
+    unescaped = new WildcardQuery(new Term("field", "foo??bar"));
+    assertMatches(searcher, unescaped, 2);
+    
+    // with escape: matches foo??bar only
+    escaped = new WildcardQuery(new Term("field", "foo\\?\\?bar"));
+    assertMatches(searcher, escaped, 1);
+    
+    // check escaping at end: lenient parse yields "foo\"
+    WildcardQuery atEnd = new WildcardQuery(new Term("field", "foo\\"));
+    assertMatches(searcher, atEnd, 1);
+    
+    searcher.close();
+    indexStore.close();
+  }
+  
   private Directory getIndexStore(String field, String[] contents)
       throws IOException {
     Directory indexStore = newDirectory();

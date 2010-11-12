@@ -19,6 +19,15 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -269,5 +278,70 @@ public abstract class AbstractDataImportHandlerTestCase extends
     public String replaceTokens(String template) {
       return delegate.replaceTokens(template);
     }
+  }
+
+  public static class TestUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
+
+    @Override
+    public UpdateRequestProcessor getInstance(SolrQueryRequest req,
+        SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      return new TestUpdateRequestProcessor(next);
+    }
+    
+  }
+  
+  public static class TestUpdateRequestProcessor extends UpdateRequestProcessor {
+  
+    public static boolean finishCalled = false;
+    public static boolean processAddCalled = false;
+    public static boolean processCommitCalled = false;
+    public static boolean processDeleteCalled = false;
+    public static boolean mergeIndexesCalled = false;
+    public static boolean rollbackCalled = false;
+  
+    public static void reset() {
+      finishCalled = false;
+      processAddCalled = false;
+      processCommitCalled = false;
+      processDeleteCalled = false;
+      mergeIndexesCalled = false;
+      rollbackCalled = false;
+    }
+    
+    public TestUpdateRequestProcessor(UpdateRequestProcessor next) {
+      super(next);
+      reset();
+    }
+
+    public void finish() throws IOException {
+      finishCalled = true;
+      super.finish();
+    }
+
+    public void processAdd(AddUpdateCommand cmd) throws IOException {
+      processAddCalled = true;
+      super.processAdd(cmd);
+    }
+
+    public void processCommit(CommitUpdateCommand cmd) throws IOException {
+      processCommitCalled = true;
+      super.processCommit(cmd);
+    }
+
+    public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+      processDeleteCalled = true;
+      super.processDelete(cmd);
+    }
+
+    public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
+      mergeIndexesCalled = true;
+      super.processMergeIndexes(cmd);
+    }
+
+    public void processRollback(RollbackUpdateCommand cmd) throws IOException {
+      rollbackCalled = true;
+      super.processRollback(cmd);
+    }
+    
   }
 }

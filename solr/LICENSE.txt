@@ -560,7 +560,7 @@ SOFTWARE.
 ==========================================================================
 The following license applies to the JQuery JavaScript library
 --------------------------------------------------------------------------
-Copyright (c) 2008 John Resig, http://jquery.com/
+Copyright (c) 2010 John Resig, http://jquery.com/
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
