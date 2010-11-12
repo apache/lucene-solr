@@ -41,7 +41,7 @@ final class DocFieldProcessor extends DocConsumer {
   final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
-  final private Map<String,DocValuesConsumer> docValues = new HashMap<String,DocValuesConsumer>();
+  final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
   private FieldsConsumer fieldsConsumer; // TODO this should be encapsulated in DocumentsWriter
 
   synchronized DocValuesConsumer docValuesConsumer(Directory dir,

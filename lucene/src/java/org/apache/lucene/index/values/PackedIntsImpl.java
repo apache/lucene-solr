@@ -41,7 +41,7 @@ class PackedIntsImpl {
   static class IntsWriter extends Writer {
    
 
-    // nocommit - can we bulkcopy this on a merge?
+    // TODO: can we bulkcopy this on a merge?
     private LongsRef intsRef;
     private long[] docToValue;
     private long minValue;

@@ -19,8 +19,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Exposes writer/reader for floating point values. You can specify 4 (java
  * float) or 8 (java double) byte precision.
  */
-//nocommit - add mmap version
-//nocommti - add bulk copy where possible
+//TODO - add bulk copy where possible
 public class Floats {
   private static final String CODEC_NAME = "SimpleFloats";
   static final int VERSION_START = 0;

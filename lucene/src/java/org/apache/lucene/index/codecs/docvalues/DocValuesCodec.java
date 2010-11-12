@@ -129,7 +129,8 @@ public class DocValuesCodec extends Codec {
       throws IOException {
     Set<String> otherFiles = new HashSet<String>();
     other.files(dir, segmentInfo, otherFiles);
-    for (String string : otherFiles) {
+    for (String string : otherFiles) { // under some circumstances we only write DocValues
+                                       // so other files will be added even if they don't exist
       if (dir.fileExists(string))
         files.add(string);
     }
@@ -141,10 +142,6 @@ public class DocValuesCodec extends Codec {
         files.add(file);
       }
     }
-    // files.add(IndexFileNames.segmentFileName(segmentInfo.name, "",
-    // Writer.DATA_EXTENSION));
-    // files.add(IndexFileNames.segmentFileName(segmentInfo.name, "",
-    // Writer.INDEX_EXTENSION));
 
   }
 

@@ -21,7 +21,6 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -59,7 +58,7 @@ public final class Bytes {
   };
 
   
-  // nocommit -- i shouldn't have to specify fixed? can
+  // TODO -- i shouldn't have to specify fixed? can
   // track itself & do the write thing at write time?
   public static Writer getWriter(Directory dir, String id, Mode mode,
       Comparator<BytesRef> comp, boolean fixedSize) throws IOException {
@@ -240,11 +239,12 @@ public final class Bytes {
 
     @Override
     public void files(Collection<String> files) throws IOException {
+      assert datOut != null;
       files.add(IndexFileNames.segmentFileName(id, "",
           IndexFileNames.CSF_DATA_EXTENSION));
-      final String idxFile = IndexFileNames.segmentFileName(id, "",
+      if(idxOut != null) { // called after flush - so this must be initialized if needed or present
+        final String idxFile = IndexFileNames.segmentFileName(id, "",
           IndexFileNames.CSF_INDEX_EXTENSION);
-      if (dir.fileExists(idxFile)) { // TODO is this correct? could be initialized lazy
         files.add(idxFile);
       }
     }
@@ -279,11 +279,11 @@ public final class Bytes {
     }
 
     protected final IndexInput cloneData() {
-      // is never NULL
+      assert datIn != null;
       return (IndexInput) datIn.clone();
     }
 
-    protected final IndexInput cloneIndex() {
+    protected final IndexInput cloneIndex() { // TODO assert here for null rather than return null
       return idxIn == null ? null : (IndexInput) idxIn.clone();
     }
 
