@@ -155,16 +155,24 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     SolrCore core = container1.create(dcore);
     container1.register(core, false);
     
-    // slight pause - TODO: takes an oddly long amount of time to schedule tasks
-    // with almost no delay ...
-    Thread.sleep(5000);
-
     ZkController zkController2 = container2.getZkController();
 
     String host = zkController2.getHostName();
-
-    CloudState cloudState2 = zkController2.getCloudState();
-    Map<String,Slice> slices = cloudState2.getSlices("testcore");
+    
+    // slight pause - TODO: takes an oddly long amount of time to schedule tasks
+    // with almost no delay ...
+    Thread.sleep(5000);
+    CloudState cloudState2 = null;
+    Map<String,Slice> slices = null;
+    for (int i = 30; i > 0; i--) {
+      cloudState2 = zkController2.getCloudState();
+      slices = cloudState2.getSlices("testcore");
+      
+      if (slices.containsKey(host + ":1661_solr_testcore")) {
+        break;
+      }
+      Thread.sleep(500);
+    }
 
     assertNotNull(slices);
     assertTrue(slices.containsKey(host + ":1661_solr_testcore"));
