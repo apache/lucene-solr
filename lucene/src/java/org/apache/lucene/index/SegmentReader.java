@@ -109,7 +109,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       }
 
       segment = si.name;
-      final SegmentCodecs codecInfo = si.getCodecInfo();
+      final SegmentCodecs segmentCodecs = si.getSegmentCodecs();
       this.readBufferSize = readBufferSize;
       this.dir = dir;
 
@@ -128,7 +128,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         this.termsIndexDivisor = termsIndexDivisor;
         
         // Ask codec for its Fields
-        fields = codecInfo.codec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
+        fields = segmentCodecs.codec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
         assert fields != null;
 
         success = true;

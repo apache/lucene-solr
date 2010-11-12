@@ -308,7 +308,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     SegmentInfos sis = (SegmentInfos) super.clone();
     for(int i=0;i<sis.size();i++) {
       final SegmentInfo info = sis.info(i);
-      assert info.getCodecInfo() != null;
+      assert info.getSegmentCodecs() != null;
       sis.set(i, (SegmentInfo) info.clone());
     }
     sis.userData = new HashMap<String,String>(userData);
