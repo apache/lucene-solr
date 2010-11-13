@@ -199,7 +199,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     container3.shutdown();
 
     // slight pause for watch to trigger
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < 30; i++) {
       if(zkController2.getCloudState().getLiveNodes().size() == 2) {
         break;
       }
