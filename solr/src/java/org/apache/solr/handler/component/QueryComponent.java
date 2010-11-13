@@ -307,8 +307,8 @@ public class QueryComponent extends SearchComponent
         String[] queries = params.getParams(GroupParams.GROUP_QUERY);
         String groupSortStr = params.get(GroupParams.GROUP_SORT);
 
-        // TODO: don't use groupSort==null to test for the presense of a sort since "score desc" will normalize to null
-        Sort groupSort = groupSortStr != null ? QueryParsing.parseSort(groupSortStr, req) : null;
+        // groupSort defaults to sort
+        Sort groupSort = groupSortStr == null ? cmd.getSort() : QueryParsing.parseSort(groupSortStr, req);
 
         int limitDefault = cmd.getLen(); // this is normally from "rows"
         int groupOffsetDefault = params.getInt(GroupParams.GROUP_OFFSET, 0);
