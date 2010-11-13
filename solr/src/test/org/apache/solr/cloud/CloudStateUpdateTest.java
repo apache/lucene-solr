@@ -215,13 +215,14 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     container2.shutdown();
 
     container2 = init2.initialize();
-
-    Thread.sleep(2000);
     
-    if (!container1.getZkController().getCloudState().liveNodesContain(
-        container2.getZkController().getNodeName())) {
-      // pause some more
-      Thread.sleep(5000);
+    // pause for watch to trigger
+    for(int i = 0; i < 100; i++) {
+      if (container1.getZkController().getCloudState().liveNodesContain(
+          container2.getZkController().getNodeName())) {
+        break;
+      }
+      Thread.sleep(100);
     }
 
     assertTrue(container1.getZkController().getCloudState().liveNodesContain(
