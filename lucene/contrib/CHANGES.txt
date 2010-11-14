@@ -177,6 +177,10 @@ API Changes
    QueryNodeProcessorPipeline now implements the List interface, this is useful
    if you want to extend or modify an existing pipeline. (Adriano Crestani via Robert Muir)
     
+ * LUCENE-2754, LUCENE-2757: Deprecated SpanRegexQuery. Use
+   new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery()) instead.
+   (Robert Muir, Uwe Schindler)
+
 New features
 
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.

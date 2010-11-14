@@ -147,8 +147,8 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
       @Override
       protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
         return new TermRangeTermsEnum(reader, field, "2", "7", true, true, null) {
-          final MultiTermQuery.BoostAttribute boostAtt =
-            attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+          final BoostAttribute boostAtt =
+            attributes().addAttribute(BoostAttribute.class);
         
           @Override
           protected AcceptStatus accept(BytesRef term) {

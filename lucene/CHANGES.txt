@@ -716,6 +716,10 @@ New features
 * LUCENE-2671: Add SortField.setMissingValue( v ) to enable sorting
   behavior for documents that do not include the given field. (ryan)
 
+* LUCENE-2754, LUCENE-2757: Added a wrapper around MultiTermQueries
+  to add span support: SpanMultiTermQueryWrapper<Q extends MultiTermQuery>.
+  Using this wrapper its easy to add fuzzy/wildcard to e.g. a SpanNearQuery.
+  (Robert Muir, Uwe Schindler)
   
 Optimizations
 
