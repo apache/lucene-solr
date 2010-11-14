@@ -20,6 +20,10 @@ package org.apache.solr;
 
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.apache.noggit.CharArr;
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -27,9 +31,20 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.JsonUpdateRequestHandler;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.BinaryQueryResponseWriter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -40,10 +55,9 @@ import org.xml.sax.SAXException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -476,7 +490,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see #doc
    */
   public static String adoc(String... fieldsAndValues) {
-    Doc d = doc(fieldsAndValues);
+    XmlDoc d = doc(fieldsAndValues);
     return add(d);
   }
 
@@ -504,7 +518,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see #add
    * @see #doc
    */
-  public static String add(Doc doc, String... args) {
+  public static String add(XmlDoc doc, String... args) {
     try {
       StringWriter r = new StringWriter();
 
@@ -547,8 +561,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @param fieldsAndValues 0th and Even numbered args are fields names, Odds are field values.
    * @see TestHarness#makeSimpleDoc
    */
-  public static Doc doc(String... fieldsAndValues) {
-    Doc d = new Doc();
+  public static XmlDoc doc(String... fieldsAndValues) {
+    XmlDoc d = new XmlDoc();
     d.xml = h.makeSimpleDoc(fieldsAndValues).toString();
     return d;
   }
@@ -597,7 +611,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /** Neccessary to make method signatures un-ambiguous */
-  public static class Doc {
+  public static class XmlDoc {
     public String xml;
     public String toString() { return xml; }
   }
@@ -617,4 +631,394 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public void clearIndex() {
     assertU(delQ("*:*"));
   }
+
+  /** Send JSON update commands */
+  public static String updateJ(String json, SolrParams args) throws Exception {
+    SolrCore core = h.getCore();
+    DirectSolrConnection connection = new DirectSolrConnection(core);
+    SolrRequestHandler handler = core.getRequestHandler("/udate/json");
+    if (handler == null) {
+      handler = new JsonUpdateRequestHandler();
+      handler.init(null);
+    }
+    return connection.request(handler, args, json);
+  }
+
+
+  /////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////// random document / index creation ///////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////
+  
+  public abstract static class Vals {
+    public abstract Comparable get();
+    public String toJSON(Comparable val) {
+      return JSONUtil.toJSON(val);
+    }
+
+    protected int between(int min, int max) {
+      return min != max ? random.nextInt(max-min+1) + min : min;
+    }
+  }
+
+  public abstract static class IVals extends Vals {
+    public abstract int getInt();
+  }
+
+  public static class IRange extends IVals {
+    final int min;
+    final int max;
+    public IRange(int min, int max) {
+      this.min = min;
+      this.max = max;
+    }
+
+    @Override
+    public int getInt() {
+      return between(min,max);
+    }
+
+    @Override
+    public Comparable get() {
+      return getInt();
+    }
+  }
+
+  public static class FVal extends Vals {
+    final float min;
+    final float max;
+    public FVal(float min, float max) {
+      this.min = min;
+      this.max = max;
+    }
+
+    public float getFloat() {
+      if (min >= max) return min;
+      return min + random.nextFloat() *  (max - min);
+    }
+
+    @Override
+    public Comparable get() {
+      return getFloat();
+    }
+  }  
+
+  public static class SVal extends Vals {
+    char start;
+    char end;
+    int minLength;
+    int maxLength;
+
+    public SVal() {
+      this('a','z',1,10);
+    }
+
+    public SVal(char start, char end, int minLength, int maxLength) {
+      this.start = start;
+      this.end = end;
+      this.minLength = minLength;
+      this.maxLength = maxLength;
+    }
+
+    @Override
+    public Comparable get() {
+      char[] arr = new char[between(minLength,maxLength)];
+      for (int i=0; i<arr.length; i++) {
+        arr[i] = (char)between(start, end);
+      }
+      return new String(arr);
+    }
+  }
+
+  public static final IRange ZERO_ONE = new IRange(0,1);
+  public static final IRange ONE_ONE = new IRange(1,1);
+
+  public static class Doc implements Comparable{
+    public Comparable id;
+    public List<Fld> fields;
+    public int order; // the order this document was added to the index
+
+
+    public String toString() {
+      return "Doc("+order+"):"+fields.toString();
+    }
+
+    @Override
+    public int hashCode() {
+      return id.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof Doc)) return false;
+      Doc other = (Doc)o;
+      return this==other || id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int compareTo(Object o) {
+      if (!(o instanceof Doc)) return this.getClass().hashCode() - o.getClass().hashCode();
+      Doc other = (Doc)o;
+      return this.id.compareTo(other.id);
+    }
+
+    public List<Comparable> getValues(String field) {
+      for (Fld fld : fields) {
+        if (fld.ftype.fname.equals(field)) return fld.vals;
+      }
+      return null;
+    }
+
+    public Comparable getFirstValue(String field) {
+      List<Comparable> vals = getValues(field);
+      return vals==null || vals.size()==0 ? null : vals.get(0);
+    }
+
+    public Map<String,Object> toObject(IndexSchema schema) {
+      Map<String,Object> result = new HashMap<String,Object>();
+      for (Fld fld : fields) {
+        SchemaField sf = schema.getField(fld.ftype.fname);
+        if (!sf.multiValued()) {
+          result.put(fld.ftype.fname, fld.vals.get(0));
+        } else {
+          result.put(fld.ftype.fname, fld.vals);
+        }
+      }
+      return result;
+    }
+
+  }
+
+  public static class Fld {
+    public FldType ftype;
+    public List<Comparable> vals;
+    public String toString() {
+      return ftype.fname + "=" + (vals.size()==1 ? vals.get(0).toString() : vals.toString());
+    }
+  }
+
+  class FldType {
+    public String fname;
+    public IRange numValues;
+    public Vals vals;
+
+    public FldType(String fname, Vals vals) {
+      this(fname, ZERO_ONE, vals);
+    }
+
+    public FldType(String fname, IRange numValues, Vals vals) {
+      this.fname = fname;
+      this.numValues = numValues;
+      this.vals = vals;      
+    }
+
+    public Comparable createValue() {
+      return vals.get();
+    }
+
+    public List<Comparable> createValues() {
+      int nVals = numValues.getInt();
+      if (nVals <= 0) return null;
+      List<Comparable> vals = new ArrayList<Comparable>(nVals);
+      for (int i=0; i<nVals; i++)
+        vals.add(createValue());
+      return vals;
+    }
+
+    public Fld createField() {
+      List<Comparable> vals = createValues();
+      if (vals == null) return null;
+
+      Fld fld = new Fld();
+      fld.ftype = this;
+      fld.vals = vals;
+      return fld;          
+    }
+
+  }
+
+
+  public Map<Comparable,Doc> indexDocs(List<FldType> descriptor, Map<Comparable,Doc> model, int nDocs) throws Exception {
+    if (model == null) {
+      model = new LinkedHashMap<Comparable,Doc>();
+    }
+
+    // commit an average of 10 times for large sets, or 10% of the time for small sets
+    int commitOneOutOf = Math.max(nDocs/10, 10);
+
+
+    // find the max order (docid) and start from there
+    int order = -1;
+    for (Doc doc : model.values()) {
+      order = Math.max(order, doc.order);
+    }
+    order++;
+
+    for (int i=0; i<nDocs; i++) {
+      Doc doc = createDoc(descriptor);
+      doc.order = order++;
+      updateJ(toJSON(doc), null);
+      model.put(doc.id, doc);
+
+      // commit 10% of the time
+      if (random.nextInt(commitOneOutOf)==0) {
+        assertU(commit());
+      }
+
+      // duplicate 10% of the docs
+      if (random.nextInt(10)==0) {
+        updateJ(toJSON(doc), null);
+        model.put(doc.id, doc);        
+      }
+    }
+
+    // optimize 10% of the time
+    if (random.nextInt(10)==0) {
+      assertU(optimize());
+    } else {
+      assertU(commit());
+    }
+
+    return model;
+  }
+
+  public static Doc createDoc(List<FldType> descriptor) {
+    Doc doc = new Doc();
+    doc.fields = new ArrayList<Fld>();
+    for (FldType ftype : descriptor) {
+      Fld fld = ftype.createField();
+      if (fld != null) {
+        doc.fields.add(fld);
+        if ("id".equals(ftype.fname))
+          doc.id = fld.vals.get(0);
+      }
+    }
+    return doc;
+  }
+
+  public static Comparator<Doc> createSort(IndexSchema schema, List<FldType> fieldTypes, String[] out) {
+    StringBuilder sortSpec = new StringBuilder();
+    int nSorts = random.nextInt(4);
+    List<Comparator<Doc>> comparators = new ArrayList<Comparator<Doc>>();
+    for (int i=0; i<nSorts; i++) {
+      if (i>0) sortSpec.append(',');
+
+      int which = random.nextInt(fieldTypes.size()+2);
+      boolean asc = random.nextBoolean();
+      if (which == fieldTypes.size()) {
+        // sort by score
+        sortSpec.append("score").append(asc ? " asc" : " desc");
+        comparators.add(createComparator("score", asc, false, false));
+      } else if (which == fieldTypes.size() + 1) {
+        // sort by docid
+        sortSpec.append("_docid_").append(asc ? " asc" : " desc");
+        comparators.add(createComparator("_docid_", asc, false, false));
+      } else {
+        String field = fieldTypes.get(which).fname;
+        sortSpec.append(field).append(asc ? " asc" : " desc");
+        SchemaField sf = schema.getField(field);
+        comparators.add(createComparator(field, asc, sf.sortMissingLast(), sf.sortMissingFirst()));
+      }
+    }
+
+    out[0] = sortSpec.length() > 0 ? sortSpec.toString() : null;
+
+    if (comparators.size() == 0) {
+      // default sort is by score desc
+      comparators.add(createComparator("score", false, false, false));      
+    }
+
+    return createComparator(comparators);
+  }
+
+  public static Comparator<Doc> createComparator(final String field, final boolean asc, final boolean sortMissingLast, final boolean sortMissingFirst) {
+    final int mul = asc ? 1 : -1;
+
+    if (field.equals("_docid_")) {
+     return new Comparator<Doc>() {
+      @Override
+      public int compare(Doc o1, Doc o2) {
+        return (o1.order - o2.order) * mul;
+      }
+     };
+    }
+
+    if (field.equals("score")) {
+      return createComparator("score_f", asc, sortMissingLast, sortMissingFirst);
+    }
+
+    return new Comparator<Doc>() {
+      @Override
+      public int compare(Doc o1, Doc o2) {
+        Comparable v1 = o1.getFirstValue(field);
+        Comparable v2 = o2.getFirstValue(field);
+
+        int c = 0;
+        if (v1 == v2) {
+          c = 0;
+        } else if (v1 == null) {
+          if (sortMissingLast) c = mul;
+          else if (sortMissingFirst) c = -mul;
+          else c = -1;
+        } else if (v2 == null) {
+          if (sortMissingLast) c = -mul;
+          else if (sortMissingFirst) c = mul;
+          else c = 1;
+        } else {
+          c = v1.compareTo(v2);
+        }
+
+        c = c * mul;
+
+        return c;
+      }
+    };
+  }
+
+  public static Comparator<Doc> createComparator(final List<Comparator<Doc>> comparators) {
+    return new Comparator<Doc>() {
+      @Override
+      public int compare(Doc o1, Doc o2) {
+        int c = 0;
+        for (Comparator<Doc> comparator : comparators) {
+          c = comparator.compare(o1, o2);
+          if (c!=0) return c;
+        }
+        return o1.order - o2.order;
+      }
+    };
+  }
+
+
+  public static String toJSON(Doc doc) {
+    CharArr out = new CharArr();
+    try {
+      out.append("{\"add\":{\"doc\":{");
+      boolean firstField = true;
+      for (Fld fld : doc.fields) {
+        if (firstField) firstField=false;
+        else out.append(',');
+        JSONUtil.writeString(fld.ftype.fname, 0, fld.ftype.fname.length(), out);
+        out.append(':');
+        if (fld.vals.size() > 1) {
+          out.append('[');
+        }
+        boolean firstVal = true;
+        for (Comparable val : fld.vals) {
+          if (firstVal) firstVal=false;
+          else out.append(',');
+          out.append(JSONUtil.toJSON(val));
+        }
+        if (fld.vals.size() > 1) {
+          out.append(']');
+        }
+      }
+      out.append("}}}");
+    } catch (IOException e) {
+      // should never happen
+    }
+    return out.toString();
+  }
+
+
+
 }

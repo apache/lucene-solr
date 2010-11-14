@@ -121,8 +121,12 @@ class CollectionTester {
   }
 
   boolean match() {
-    if (expected == null && val == null) {
+    if (expected == val) {
       return true;
+    }
+    if (expected == null || val == null) {
+      setErr("mismatch: '" + expected + "'!='" + val + "'");
+      return false;
     }
     if (expected instanceof List) {
       return matchList();
@@ -133,8 +137,20 @@ class CollectionTester {
 
     // generic fallback
     if (!expected.equals(val)) {
-      setErr("mismatch: '" + expected + "'!='" + val + "'");
-      return false;
+
+      // make an exception for some numerics
+      if (expected instanceof Integer && val instanceof Long || expected instanceof Long && val instanceof Integer
+          && ((Number)expected).longValue() == ((Number)val).longValue())
+      {
+        // OK
+      } else if (expected instanceof Float && val instanceof Double || expected instanceof Double && val instanceof Float
+          && ((Number)expected).doubleValue() == ((Number)val).doubleValue())
+      {
+        // OK
+      } else {
+        setErr("mismatch: '" + expected + "'!='" + val + "'");
+        return false;
+      }
     }
 
     // setErr("unknown expected type " + expected.getClass().getName());
