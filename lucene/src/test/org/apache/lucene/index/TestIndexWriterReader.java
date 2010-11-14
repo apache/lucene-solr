@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -37,7 +38,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -833,6 +833,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   public void testSegmentWarmer() throws Exception {
     Directory dir = newDirectory();
+    final AtomicBoolean didWarm = new AtomicBoolean();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
                                     .setMaxBufferedDocs(2).setReaderPooling(true));
     ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(10);
@@ -841,6 +842,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
           final IndexSearcher s = new IndexSearcher(r);
           final TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);
           assertEquals(20, hits.totalHits);
+          didWarm.set(true);
         }
       });
     
@@ -852,5 +854,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.waitForMerges();
     w.close();
     dir.close();
+    assertTrue(didWarm.get());
   }
 }

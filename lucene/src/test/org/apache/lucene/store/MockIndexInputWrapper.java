@@ -27,7 +27,7 @@ import java.util.Map;
 
 public class MockIndexInputWrapper extends IndexInput {
   private MockDirectoryWrapper dir;
-  private String name;
+  final String name;
   private IndexInput delegate;
   private boolean isClone;
 
@@ -52,12 +52,13 @@ public class MockIndexInputWrapper extends IndexInput {
         if (v != null) {
           if (v.intValue() == 1) {
             dir.openFiles.remove(name);
+            dir.openFilesDeleted.remove(name);
           } else {
             v = Integer.valueOf(v.intValue()-1);
             dir.openFiles.put(name, v);
           }
         }
-        dir.files.remove(this);
+        dir.openFileHandles.remove(this);
       }
     }
   }

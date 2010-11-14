@@ -2392,6 +2392,11 @@ public class TestIndexWriter extends LuceneTestCase {
     final Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
+    if (lmp.getMergeFactor() > 5) {
+      // reduce risk of too many open files
+      lmp.setMergeFactor(5);
+    }
     w.commit();
     final AtomicBoolean failed = new AtomicBoolean();
     Thread[] threads = new Thread[NUM_THREADS];

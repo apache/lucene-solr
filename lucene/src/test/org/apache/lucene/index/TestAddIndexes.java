@@ -765,19 +765,34 @@ public class TestAddIndexes extends LuceneTestCase {
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch(j%5) {
       case 0:
+        if (VERBOSE) {
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": addIndexes + optimize");
+        }
         writer2.addIndexes(dirs);
         writer2.optimize();
         break;
       case 1:
+        if (VERBOSE) {
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": addIndexes");
+        }
         writer2.addIndexes(dirs);
         break;
       case 2:
+        if (VERBOSE) {
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": addIndexes(IR[])");
+        }
         writer2.addIndexes(readers);
         break;
       case 3:
+        if (VERBOSE) {
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": optimize");
+        }
         writer2.optimize();
         break;
       case 4:
+        if (VERBOSE) {
+          System.out.println("TEST: " + Thread.currentThread().getName() + ": commit");
+        }
         writer2.commit();
       }
     }
@@ -808,15 +823,24 @@ public class TestAddIndexes extends LuceneTestCase {
 
     final int NUM_COPY = 50;
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
+    if (VERBOSE) {
+      c.writer2.setInfoStream(System.out);
+    }
     c.launchThreads(-1);
 
     Thread.sleep(500);
 
     // Close w/o first stopping/joining the threads
+    if (VERBOSE) {
+      System.out.println("TEST: now close(false)");
+    }
     c.close(false);
 
     c.joinThreads();
 
+    if (VERBOSE) {
+      System.out.println("TEST: done join threads");
+    }
     _TestUtil.checkIndex(c.dir2);
 
     c.closeDir();
