@@ -18,9 +18,16 @@
 package org.apache.solr;
 
 import org.apache.lucene.search.FieldCache;
+import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.*;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
@@ -301,4 +308,184 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
 
 
+  @Test
+  public void testRandomGrouping() throws Exception {
+    /**
+     updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
+     assertJQ(req("q","id:77"), "/response/numFound==1");
+
+     Doc doc = createDocObj(types);
+     updateJ(toJSON(doc), params("commit","true"));
+
+     assertJQ(req("q","id:"+doc.id), "/response/numFound==1");
+    **/
+
+    int indexIter=0;  // make >0 to enable test
+    int queryIter=1000;
+
+    while (--indexIter >= 0) {
+
+      List<FldType> types = new ArrayList<FldType>();
+      types.add(new FldType("id",ONE_ONE, new SVal('A','Z',2,2)));
+      types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));  // field used to score
+      types.add(new FldType("foo_i",ONE_ONE, new IRange(0,10)));
+      types.add(new FldType("foo_s",ONE_ONE, new SVal('a','z',1,2)));
+
+      Map<Comparable, Doc> model = indexDocs(types, null, 2);
+      System.out.println("############### model=" + model);
+
+
+      for (int qiter=0; qiter<queryIter; qiter++) {
+        String groupField = types.get(random.nextInt(types.size())).fname;
+
+        Map<Comparable, Grp> groups = groupBy(model.values(), groupField);
+        int rows = random.nextInt(11)-1;
+        int start = random.nextInt(5)==0 ? random.nextInt(model.size()+2) : random.nextInt(5); // pick a small start normally for better coverage
+        int group_limit = random.nextInt(11)-1;
+group_limit = random.nextInt(10)+1;
+        int group_offset = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(2); // pick a small start normally for better coverage
+
+        // sort each group
+        String[] stringSortA = new String[1];
+        Comparator<Doc> groupComparator = createSort(h.getCore().getSchema(), types, stringSortA);
+        String groupSortStr = stringSortA[0];
+
+        // Test specific sort
+        /***
+         groupComparator = createComparator("_docid_", false, false, false);
+         stringSort = "_docid_ desc";
+         ***/
+
+        // first sort the docs in each group
+        for (Grp grp : groups.values()) {
+          Collections.sort(grp.docs, groupComparator);
+        }
+
+        // now sort the groups by the first doc in that group
+        Comparator<Doc> sortComparator = random.nextBoolean() ? groupComparator : createSort(h.getCore().getSchema(), types, stringSortA);
+        String sortStr = stringSortA[0];
+
+        List<Grp> sortedGroups = new ArrayList(groups.values());
+        Collections.sort(sortedGroups, createFirstDocComparator(sortComparator));
+
+        Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit);
+
+        // TODO: create a random filter too
+
+        SolrQueryRequest req = req("group","true","wt","json","indent","true", "q","{!func}score_f", "group.field",groupField
+            ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr
+            ,(groupSortStr==null || groupSortStr==sortStr) ? "nosort":"group.sort", groupSortStr==null ? "": groupSortStr
+            ,"rows",""+rows, "start",""+start, "group.offset",""+group_offset, "group.limit",""+group_limit
+        );
+
+        String strResponse = h.query(req);
+
+        Object realResponse = ObjectBuilder.fromJSON(strResponse);
+        String err = JSONTestUtil.matchObj("/grouped/"+groupField, realResponse, modelResponse);
+        if (err != null) {
+          log.error("GROUPING MISMATCH: " + err
+           + "\n\tresult="+strResponse
+           + "\n\texpected="+ JSONUtil.toJSON(modelResponse)
+           + "\n\tsorted_model="+ sortedGroups
+          );
+
+          fail(err);
+        }
+      } // end query iter
+    } // end index iter
+
+  }
+
+  public static Object buildGroupedResult(IndexSchema schema, List<Grp> sortedGroups, int start, int rows, int group_offset, int group_limit) {
+    Map<String,Object> result = new LinkedHashMap<String,Object>();
+
+    long matches = 0;
+    for (Grp grp : sortedGroups) {
+      matches += grp.docs.size();
+    }
+    result.put("matches", matches);
+    List groupList = new ArrayList();
+    result.put("groups", groupList);
+
+    for (int i=start; i<sortedGroups.size(); i++) {
+      if (rows != -1 && groupList.size() >= rows) break;  // directly test rather than calculating, so we can catch any calc errors in the real code
+      Map<String,Object> group = new LinkedHashMap<String,Object>();
+      groupList.add(group);
+
+      Grp grp = sortedGroups.get(i);
+      group.put("groupValue", grp.groupValue);
+
+      Map<String,Object> resultSet = new LinkedHashMap<String,Object>();
+      group.put("doclist", resultSet);
+      resultSet.put("numFound", grp.docs.size());
+      resultSet.put("start", start);
+
+      List docs = new ArrayList();
+      resultSet.put("docs", docs);
+      for (int j=group_offset; j<grp.docs.size(); j++) {
+        if (group_offset != -1 && docs.size() >= group_limit) break;
+        docs.add( grp.docs.get(j).toObject(schema) );
+      }
+    }
+
+    return result;
+  }
+
+
+  public static Comparator<Grp> createFirstDocComparator(final Comparator<Doc> docComparator) {
+    return new Comparator<Grp>() {
+      @Override
+      public int compare(Grp o1, Grp o2) {
+        // all groups should have at least one doc
+        Doc d1 = o1.docs.get(0);
+        Doc d2 = o2.docs.get(0);
+        return docComparator.compare(d1, d2);
+      }
+    };
+  }
+
+
+
+  public static Map<Comparable, Grp> groupBy(Collection<Doc> docs, String field) {
+    Map<Comparable, Grp> groups = new HashMap<Comparable, Grp>();
+    for (Doc doc : docs) {
+      List<Comparable> vals = doc.getValues(field);
+      if (vals == null) {
+        Grp grp = groups.get(null);
+        if (grp == null) {
+          grp = new Grp();
+          grp.groupValue = null;
+          grp.docs = new ArrayList<Doc>();
+          groups.put(null, grp);
+        }
+        grp.docs.add(doc);
+      } else {
+        for (Comparable val : vals) {
+
+          Grp grp = groups.get(val);
+          if (grp == null) {
+            grp = new Grp();
+            grp.groupValue = val;
+            grp.docs = new ArrayList<Doc>();
+            groups.put(grp.groupValue, grp);
+          }
+          grp.docs.add(doc);
+        }
+      }
+    }
+    return groups;
+  }
+
+
+  public static class Grp {
+    public Comparable groupValue;
+    public List<SolrTestCaseJ4.Doc> docs;
+
+    @Override
+    public String toString() {
+      return "{groupValue="+groupValue+",docs="+docs+"}";
+    }
+  }
 }
+
+
