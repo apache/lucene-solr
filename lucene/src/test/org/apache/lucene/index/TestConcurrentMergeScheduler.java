@@ -46,12 +46,20 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail && (Thread.currentThread().getName().equals("main") 
           || Thread.currentThread().getName().equals("Main Thread"))) {
+        boolean isDoFlush = false;
+        boolean isClose = false;
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
           if ("doFlush".equals(trace[i].getMethodName())) {
-            hitExc = true;
-            throw new IOException("now failing during flush");
+            isDoFlush = true;
           }
+          if ("close".equals(trace[i].getMethodName())) {
+            isClose = true;
+          }
+        }
+        if (isDoFlush && !isClose) {
+          hitExc = true;
+          throw new IOException("now failing during flush");
         }
       }
     }

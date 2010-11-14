@@ -30,7 +30,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
   private MockDirectoryWrapper dir;
   private final IndexOutput delegate;
   private boolean first=true;
-  private final String name;
+  final String name;
   
   byte[] singleByte = new byte[1];
 
@@ -53,7 +53,10 @@ public class MockIndexOutputWrapper extends IndexOutput {
         dir.maxUsedSize = size;
       }
     }
-    dir.files.remove(this);
+    synchronized(dir) {
+      dir.openFileHandles.remove(this);
+      dir.openFilesForWrite.remove(name);
+    }
   }
 
   @Override

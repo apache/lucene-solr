@@ -298,15 +298,23 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
+        boolean sawAbortOrFlushDoc = false;
+        boolean sawClose = false;
         for (int i = 0; i < trace.length; i++) {
           if ("abort".equals(trace[i].getMethodName()) ||
               "flushDocument".equals(trace[i].getMethodName())) {
-            if (onlyOnce)
-              doFail = false;
-            //System.out.println(Thread.currentThread().getName() + ": now fail");
-            //new Throwable().printStackTrace(System.out);
-            throw new IOException("now failing on purpose");
+            sawAbortOrFlushDoc = true;
           }
+          if ("close".equals(trace[i].getMethodName())) {
+            sawClose = true;
+          }
+        }
+        if (sawAbortOrFlushDoc && !sawClose) {
+          if (onlyOnce)
+            doFail = false;
+          //System.out.println(Thread.currentThread().getName() + ": now fail");
+          //new Throwable().printStackTrace(System.out);
+          throw new IOException("now failing on purpose");
         }
       }
     }
