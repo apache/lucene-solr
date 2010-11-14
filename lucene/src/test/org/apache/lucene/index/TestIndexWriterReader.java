@@ -67,6 +67,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    // test relies on no merges happening below:
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
 
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
