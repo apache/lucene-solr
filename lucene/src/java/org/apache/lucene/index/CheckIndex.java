@@ -408,7 +408,7 @@ public class CheckIndex {
       SegmentReader reader = null;
 
       try {
-        final SegmentCodecs codec = info.getCodecInfo();
+        final SegmentCodecs codec = info.getSegmentCodecs();
         msg("    codec=" + codec);
         segInfoStat.codec = codec;
         msg("    compound=" + info.getUseCompoundFile());

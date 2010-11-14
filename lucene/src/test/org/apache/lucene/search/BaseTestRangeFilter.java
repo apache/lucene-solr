@@ -20,18 +20,20 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 public class BaseTestRangeFilter extends LuceneTestCase {
@@ -117,6 +119,12 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
     .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+
+    LogMergePolicy lmp = (LogMergePolicy) writer.w.getMergePolicy();
+    if (lmp.getMergeFactor() > 5) {
+      // reduce risk of too many open files
+      lmp.setMergeFactor(5);
+    }
     
     Document doc = new Document();
     Field idField = newField(random, "id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);

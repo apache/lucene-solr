@@ -320,7 +320,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
-    buffer.append(segmentInfos.getCurrentSegmentFileName());
+    final String segmentsFile = segmentInfos.getCurrentSegmentFileName();
+    if (segmentsFile != null) {
+      buffer.append(segmentsFile);
+    }
     if (writer != null) {
       buffer.append(":nrt");
     }

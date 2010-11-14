@@ -114,9 +114,11 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     Directory dir = newDirectory();
     CodecProvider provider = new MockCodecProvider();
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(
-        provider);
+             new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(provider);
+    iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+    ((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     IndexWriter writer = newWriter(dir, iwconf);
+
     addDocs(writer, 10);
     writer.commit();
     assertQuery(new Term("content", "aaa"), dir, 10, provider);
@@ -133,6 +135,8 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setCodecProvider(provider);
     ((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
     ((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundDocStore(false);
+    ((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
+    iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
     provider = new MockCodecProvider2(); // uses standard for field content
     iwconf.setCodecProvider(provider);

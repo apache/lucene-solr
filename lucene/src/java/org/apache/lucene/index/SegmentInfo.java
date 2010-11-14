@@ -87,7 +87,7 @@ public final class SegmentInfo {
   private Map<String,String> diagnostics;
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, int docStoreOffset, 
-                     String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx, SegmentCodecs codecInfo) { 
+                     String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx, SegmentCodecs segmentCodecs) { 
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -97,7 +97,7 @@ public final class SegmentInfo {
     this.docStoreSegment = docStoreSegment;
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     this.hasProx = hasProx;
-    this.segmentCodecs = codecInfo;
+    this.segmentCodecs = segmentCodecs;
     delCount = 0;
     assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
   }
@@ -422,7 +422,7 @@ public final class SegmentInfo {
     this.segmentCodecs = segmentCodecs;
   }
 
-  SegmentCodecs getCodecInfo() {
+  SegmentCodecs getSegmentCodecs() {
     return segmentCodecs;
   }
 
