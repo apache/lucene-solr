@@ -148,6 +148,11 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
       }
 
       @Override
+      protected void checkMaxClauseCount(int count) {
+        // we accept all terms as SpanOrQuery has no limits
+      }
+    
+      @Override
       protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost) {
         final SpanTermQuery q = new SpanTermQuery(term);
         q.setBoost(boost);

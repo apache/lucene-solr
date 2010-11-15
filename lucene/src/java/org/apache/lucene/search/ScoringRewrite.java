@@ -68,6 +68,12 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       topLevel.add(tq, BooleanClause.Occur.SHOULD);
     }
     
+    @Override
+    protected void checkMaxClauseCount(int count) {
+      if (count > BooleanQuery.getMaxClauseCount())
+        throw new BooleanQuery.TooManyClauses();
+    }
+    
     // Make sure we are still a singleton even after deserializing
     protected Object readResolve() {
       return SCORING_BOOLEAN_QUERY_REWRITE;
@@ -104,10 +110,14 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     }
   };
 
+  /** This method is called after every new term to check if the number of max clauses
+   * (e.g. in BooleanQuery) is not exceeded. Throws the corresponding {@link RuntimeException}. */
+  protected abstract void checkMaxClauseCount(int count) throws IOException;
+  
   @Override
   public final Q rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
     final Q result = getTopLevelQuery();
-    final ParallelArraysTermCollector col = new ParallelArraysTermCollector(result instanceof BooleanQuery);
+    final ParallelArraysTermCollector col = new ParallelArraysTermCollector();
     collectTerms(reader, query, col);
     
     final Term placeholderTerm = new Term(query.field);
@@ -127,18 +137,13 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     return result;
   }
 
-  static final class ParallelArraysTermCollector extends TermCollector {
-    private final boolean checkMaxClauseCount;
+  final class ParallelArraysTermCollector extends TermCollector {
     final TermFreqBoostByteStart array = new TermFreqBoostByteStart(16);
     final BytesRefHash terms = new BytesRefHash(new ByteBlockPool(new ByteBlockPool.DirectAllocator()), 16, array);
     TermsEnum termsEnum;
 
     private BoostAttribute boostAtt;
     
-    public ParallelArraysTermCollector(boolean checkMaxClauseCount) {
-      this.checkMaxClauseCount = checkMaxClauseCount;
-    }
-  
     @Override
     public void setNextEnum(TermsEnum termsEnum) throws IOException {
       this.termsEnum = termsEnum;
@@ -146,7 +151,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     }
   
     @Override
-    public boolean collect(BytesRef bytes) {
+    public boolean collect(BytesRef bytes) throws IOException {
       final int e = terms.add(bytes);
       if (e < 0 ) {
         // duplicate term: update docFreq
@@ -157,10 +162,8 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
         // new entry: we populate the entry initially
         array.docFreq[e] = termsEnum.docFreq();
         array.boost[e] = boostAtt.getBoost();
+        ScoringRewrite.this.checkMaxClauseCount(terms.size());
       }
-      // if the new entry reaches the max clause count, we exit early
-      if (checkMaxClauseCount && e >= BooleanQuery.getMaxClauseCount())
-        throw new BooleanQuery.TooManyClauses();
       return true;
     }
   }
