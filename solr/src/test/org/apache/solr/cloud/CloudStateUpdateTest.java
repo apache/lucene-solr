@@ -167,7 +167,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
       cloudState2 = zkController2.getCloudState();
       slices = cloudState2.getSlices("testcore");
       
-      if (slices.containsKey(host + ":1661_solr_testcore")) {
+      if (slices != null && slices.containsKey(host + ":1661_solr_testcore")) {
         break;
       }
       Thread.sleep(500);
