@@ -54,7 +54,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       while(true) {
         if (VERBOSE)
           System.out.println("TEST: cycle: diskFree=" + diskFree);
-        MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory());
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
@@ -213,7 +213,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       while(!done) {
         
         // Make a new dir that will enforce disk usage:
-        MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(startDir));
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
         IOException err = null;
         
@@ -263,7 +263,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           
           dir.setTrackDiskUsage(true);
           dir.setMaxSizeInBytes(thisDiskFree);
-          dir.setRandomIOExceptionRate(rate, diskFree);
+          dir.setRandomIOExceptionRate(rate);
           
           try {
             
@@ -390,7 +390,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         // Make sure we don't hit disk full during close below:
         dir.setMaxSizeInBytes(0);
-        dir.setRandomIOExceptionRate(0.0, 0);
+        dir.setRandomIOExceptionRate(0.0);
         
         writer.close();
         

@@ -66,13 +66,13 @@ public class TestBoolean2 extends LuceneTestCase {
     searcher = new IndexSearcher(directory, true);
 
     // Make big index
-    dir2 = new MockDirectoryWrapper(new RAMDirectory(directory));
+    dir2 = new MockDirectoryWrapper(random, new RAMDirectory(directory));
 
     // First multiply small test index:
     mulFactor = 1;
     int docCount = 0;
     do {
-      final Directory copy = new MockDirectoryWrapper(new RAMDirectory(dir2));
+      final Directory copy = new MockDirectoryWrapper(random, new RAMDirectory(dir2));
       RandomIndexWriter w = new RandomIndexWriter(random, dir2);
       w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();
@@ -243,7 +243,7 @@ public class TestBoolean2 extends LuceneTestCase {
         // match up.
         Sort sort = Sort.INDEXORDER;
 
-        QueryUtils.check(q1,searcher);
+        QueryUtils.check(random, q1,searcher);
 
         TopFieldCollector collector = TopFieldCollector.create(sort, 1000,
             false, true, true, true);

@@ -24,11 +24,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 
 public class TestBooleanOr extends LuceneTestCase {
@@ -47,7 +42,7 @@ public class TestBooleanOr extends LuceneTestCase {
   
 
   private int search(Query q) throws IOException {
-    QueryUtils.check(q,searcher);
+    QueryUtils.check(random, q,searcher);
     return searcher.search(q, null, 1000).totalHits;
   }
 

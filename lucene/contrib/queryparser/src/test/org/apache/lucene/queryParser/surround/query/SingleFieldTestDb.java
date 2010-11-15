@@ -17,6 +17,8 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -32,9 +34,9 @@ public class SingleFieldTestDb {
   private String[] docs;
   private String fieldName;
   
-  public SingleFieldTestDb(String[] documents, String fName) {
+  public SingleFieldTestDb(Random random, String[] documents, String fName) {
     try {
-      db = new MockDirectoryWrapper(new RAMDirectory());
+      db = new MockDirectoryWrapper(random, new RAMDirectory());
       docs = documents;
       fieldName = fName;
       IndexWriter writer = new IndexWriter(db, new IndexWriterConfig(

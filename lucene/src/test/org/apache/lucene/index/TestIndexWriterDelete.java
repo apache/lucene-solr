@@ -439,7 +439,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Iterate w/ ever increasing free disk space:
     while (!done) {
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(startDir));
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
       dir.setPreventDoubleWrite(false);
       IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(1000)
@@ -485,7 +485,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
 
         dir.setMaxSizeInBytes(thisDiskFree);
-        dir.setRandomIOExceptionRate(rate, diskFree);
+        dir.setRandomIOExceptionRate(rate);
 
         try {
           if (0 == x) {

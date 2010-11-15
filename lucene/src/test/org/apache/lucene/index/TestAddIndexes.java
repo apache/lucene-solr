@@ -361,7 +361,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(new RAMDirectory(aux)) });
+    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)) });
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -393,7 +393,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(4));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(new RAMDirectory(aux)) });
+    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)) });
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -586,7 +586,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     public RunAddIndexesThreads(int numCopy) throws Throwable {
       NUM_COPY = numCopy;
-      dir = new MockDirectoryWrapper(new RAMDirectory());
+      dir = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setMaxBufferedDocs(2));
@@ -594,7 +594,7 @@ public class TestAddIndexes extends LuceneTestCase {
         addDoc(writer);
       writer.close();
 
-      dir2 = new MockDirectoryWrapper(new RAMDirectory());
+      dir2 = new MockDirectoryWrapper(random, new RAMDirectory());
       writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
       writer2.commit();
 
@@ -613,7 +613,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
                 final Directory[] dirs = new Directory[NUM_COPY];
                 for(int k=0;k<NUM_COPY;k++)
-                  dirs[k] = new MockDirectoryWrapper(new RAMDirectory(dir));
+                  dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(dir));
 
                 int j=0;
 

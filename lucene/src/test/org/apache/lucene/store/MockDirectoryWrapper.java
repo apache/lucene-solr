@@ -78,8 +78,9 @@ public class MockDirectoryWrapper extends Directory {
       unSyncedFiles = new HashSet<String>();
   }
 
-  public MockDirectoryWrapper(Directory delegate) {
+  public MockDirectoryWrapper(Random random, Directory delegate) {
     this.delegate = delegate;
+    this.randomState = random;
     init();
   }
 
@@ -96,6 +97,7 @@ public class MockDirectoryWrapper extends Directory {
   @Deprecated
   @Override
   public void sync(String name) throws IOException {
+    maybeYield();
     maybeThrowDeterministicException();
     if (crashed)
       throw new IOException("cannot sync after crash");
@@ -105,6 +107,7 @@ public class MockDirectoryWrapper extends Directory {
 
   @Override
   public synchronized void sync(Collection<String> names) throws IOException {
+    maybeYield();
     for (String name : names)
       maybeThrowDeterministicException();
     if (crashed)
@@ -115,6 +118,7 @@ public class MockDirectoryWrapper extends Directory {
   
   @Override
   public String toString() {
+    maybeYield();
     return "MockDirWrapper(" + delegate + ")";
   }
 
@@ -213,10 +217,8 @@ public class MockDirectoryWrapper extends Directory {
    * IOException on the first write to an OutputStream based
    * on this probability.
    */
-  public void setRandomIOExceptionRate(double rate, long seed) {
+  public void setRandomIOExceptionRate(double rate) {
     randomIOExceptionRate = rate;
-    // seed so we have deterministic behaviour:
-    randomState = new Random(seed);
   }
   public double getRandomIOExceptionRate() {
     return randomIOExceptionRate;
@@ -233,6 +235,7 @@ public class MockDirectoryWrapper extends Directory {
 
   @Override
   public synchronized void deleteFile(String name) throws IOException {
+    maybeYield();
     deleteFile(name, false);
   }
 
@@ -251,7 +254,14 @@ public class MockDirectoryWrapper extends Directory {
     return ioe;
   }
 
+  private void maybeYield() {
+    if (randomState.nextBoolean()) {
+      Thread.yield();
+    }
+  }
+
   private synchronized void deleteFile(String name, boolean forced) throws IOException {
+    maybeYield();
 
     maybeThrowDeterministicException();
 
@@ -277,6 +287,7 @@ public class MockDirectoryWrapper extends Directory {
 
   @Override
   public synchronized IndexOutput createOutput(String name) throws IOException {
+    maybeYield();
     if (crashed)
       throw new IOException("cannot createOutput after crash");
     init();
@@ -317,6 +328,7 @@ public class MockDirectoryWrapper extends Directory {
 
   @Override
   public synchronized IndexInput openInput(String name) throws IOException {
+    maybeYield();
     if (!delegate.fileExists(name))
       throw new FileNotFoundException(name);
 
@@ -367,6 +379,7 @@ public class MockDirectoryWrapper extends Directory {
 
   @Override
   public synchronized void close() throws IOException {
+    maybeYield();
     if (openFiles == null) {
       openFiles = new HashMap<String,Integer>();
       openFilesDeleted = new HashSet<String>();
@@ -456,56 +469,67 @@ public class MockDirectoryWrapper extends Directory {
 
   @Override
   public synchronized String[] listAll() throws IOException {
+    maybeYield();
     return delegate.listAll();
   }
 
   @Override
   public synchronized boolean fileExists(String name) throws IOException {
+    maybeYield();
     return delegate.fileExists(name);
   }
 
   @Override
   public synchronized long fileModified(String name) throws IOException {
+    maybeYield();
     return delegate.fileModified(name);
   }
 
   @Override
   public synchronized void touchFile(String name) throws IOException {
+    maybeYield();
     delegate.touchFile(name);
   }
 
   @Override
   public synchronized long fileLength(String name) throws IOException {
+    maybeYield();
     return delegate.fileLength(name);
   }
 
   @Override
   public synchronized Lock makeLock(String name) {
+    maybeYield();
     return delegate.makeLock(name);
   }
 
   @Override
   public synchronized void clearLock(String name) throws IOException {
+    maybeYield();
     delegate.clearLock(name);
   }
 
   @Override
   public synchronized void setLockFactory(LockFactory lockFactory) {
+    maybeYield();
     delegate.setLockFactory(lockFactory);
   }
 
   @Override
   public synchronized LockFactory getLockFactory() {
+    maybeYield();
     return delegate.getLockFactory();
   }
 
   @Override
   public synchronized String getLockID() {
+    maybeYield();
     return delegate.getLockID();
   }
 
   @Override
   public synchronized void copy(Directory to, String src, String dest) throws IOException {
+    maybeYield();
     delegate.copy(to, src, dest);
   }
 }

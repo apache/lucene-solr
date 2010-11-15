@@ -324,7 +324,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
           .setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(
               new LogDocMergePolicy()));
 
-      Directory[] indexDirs = {new MockDirectoryWrapper(new RAMDirectory(dir))};
+      Directory[] indexDirs = {new MockDirectoryWrapper(random, new RAMDirectory(dir))};
       writer.addIndexes(indexDirs);
       writer.optimize();
       writer.close();

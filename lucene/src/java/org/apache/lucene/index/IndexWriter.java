@@ -283,6 +283,7 @@ public class IndexWriter implements Closeable {
   private IndexFileDeleter deleter;
 
   private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
+  private int optimizeMaxNumSegments;
 
   private Lock writeLock;
 
@@ -2412,6 +2413,7 @@ public class IndexWriter implements Closeable {
     synchronized(this) {
       resetMergeExceptions();
       segmentsToOptimize = new HashSet<SegmentInfo>(segmentInfos);
+      optimizeMaxNumSegments = maxNumSegments;
       
       // Now mark all pending & running merges as optimize
       // merge:
@@ -2612,8 +2614,9 @@ public class IndexWriter implements Closeable {
     throws CorruptIndexException, IOException {
     assert !optimize || maxNumSegmentsOptimize > 0;
 
-    if (stopMerges)
+    if (stopMerges) {
       return;
+    }
 
     // Do not start new merges if we've hit OOME
     if (hitOOM) {
@@ -2627,19 +2630,21 @@ public class IndexWriter implements Closeable {
       if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++) {
-          final MergePolicy.OneMerge merge = ( spec.merges.get(i));
+          final MergePolicy.OneMerge merge = spec.merges.get(i);
           merge.optimize = true;
           merge.maxNumSegmentsOptimize = maxNumSegmentsOptimize;
         }
       }
 
-    } else
+    } else {
       spec = mergePolicy.findMerges(segmentInfos);
+    }
 
     if (spec != null) {
       final int numMerges = spec.merges.size();
-      for(int i=0;i<numMerges;i++)
+      for(int i=0;i<numMerges;i++) {
         registerMerge(spec.merges.get(i));
+      }
     }
   }
 
@@ -3657,8 +3662,10 @@ public class IndexWriter implements Closeable {
     // disk, updating SegmentInfo, etc.:
     readerPool.clear(merge.segments);
 
-    if (merge.optimize)
+    if (merge.optimize) {
+      // cascade the optimize:
       segmentsToOptimize.add(merge.info);
+    }
     return true;
   }
   
@@ -3776,12 +3783,19 @@ public class IndexWriter implements Closeable {
     boolean isExternal = false;
     for(int i=0;i<count;i++) {
       final SegmentInfo info = merge.segments.info(i);
-      if (mergingSegments.contains(info))
+      if (mergingSegments.contains(info)) {
         return false;
-      if (segmentInfos.indexOf(info) == -1)
+      }
+      if (segmentInfos.indexOf(info) == -1) {
         return false;
-      if (info.dir != directory)
+      }
+      if (info.dir != directory) {
         isExternal = true;
+      }
+      if (segmentsToOptimize.contains(info)) {
+        merge.optimize = true;
+        merge.maxNumSegmentsOptimize = optimizeMaxNumSegments;
+      }
     }
 
     ensureContiguousMerge(merge);

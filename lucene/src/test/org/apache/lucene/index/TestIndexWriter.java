@@ -957,7 +957,7 @@ public class TestIndexWriter extends LuceneTestCase {
       final class MyRAMDirectory extends MockDirectoryWrapper {
         private LockFactory myLockFactory;
         MyRAMDirectory(Directory delegate) {
-          super(delegate);
+          super(random, delegate);
           lockFactory = null;
           myLockFactory = new SingleInstanceLockFactory();
         }
@@ -2090,7 +2090,7 @@ public class TestIndexWriter extends LuceneTestCase {
       assertTrue(dir.fileExists("myrandomfile"));
 
       // Make sure this does not copy myrandomfile:
-      Directory dir2 = new MockDirectoryWrapper(new RAMDirectory(dir));
+      Directory dir2 = new MockDirectoryWrapper(random, new RAMDirectory(dir));
       assertTrue(!dir2.fileExists("myrandomfile"));
       dir2.close();
     } finally {
@@ -2141,7 +2141,7 @@ public class TestIndexWriter extends LuceneTestCase {
     @Override
     public void run() {
       // LUCENE-2239: won't work with NIOFS/MMAP
-      Directory dir = new MockDirectoryWrapper(new RAMDirectory()); 
+      Directory dir = new MockDirectoryWrapper(random, new RAMDirectory()); 
       IndexWriter w = null;
       while(!finish) {
         try {
