@@ -190,6 +190,7 @@ class TermOrdValComparator_SML extends FieldComparator {
             // exact value match
             bottomSameReader = true;
           }
+          ords[bottomSlot] = bottomOrd;
         }
       }
       if (bottomSameReader) {
