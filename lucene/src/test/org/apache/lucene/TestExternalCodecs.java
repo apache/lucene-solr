@@ -480,7 +480,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) {
+    public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
     }
   }
 
@@ -549,7 +549,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-      PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize);
+      PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
       PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
 
       // Terms dict index reader
@@ -561,7 +561,8 @@ public class TestExternalCodecs extends LuceneTestCase {
                                                          state.fieldInfos,
                                                          state.segmentInfo.name,
                                                          state.termsIndexDivisor,
-                                                         reverseUnicodeComparator);
+                                                         reverseUnicodeComparator,
+                                                         state.codecId);
         success = true;
       } finally {
         if (!success) {
@@ -579,7 +580,8 @@ public class TestExternalCodecs extends LuceneTestCase {
                                                          pulsingReader,
                                                          state.readBufferSize,
                                                          reverseUnicodeComparator,
-                                                         StandardCodec.TERMS_CACHE_SIZE);
+                                                         StandardCodec.TERMS_CACHE_SIZE,
+                                                         state.codecId);
         success = true;
         return ret;
       } finally {
@@ -594,10 +596,10 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-      StandardPostingsReader.files(dir, segmentInfo, files);
-      PrefixCodedTermsReader.files(dir, segmentInfo, files);
-      FixedGapTermsIndexReader.files(dir, segmentInfo, files);
+    public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
+      StandardPostingsReader.files(dir, segmentInfo, codecId, files);
+      PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+      FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     }
 
     @Override

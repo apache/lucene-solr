@@ -84,7 +84,7 @@ public class StandardCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize);
+    PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
@@ -93,7 +93,8 @@ public class StandardCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator());
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
+                                                       state.codecId);
       success = true;
     } finally {
       if (!success) {
@@ -110,7 +111,8 @@ public class StandardCodec extends Codec {
                                                        postings,
                                                        state.readBufferSize,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       TERMS_CACHE_SIZE);
+                                                       TERMS_CACHE_SIZE,
+                                                       state.codecId);
       success = true;
       return ret;
     } finally {
@@ -131,10 +133,10 @@ public class StandardCodec extends Codec {
   static final String PROX_EXTENSION = "prx";
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, files);
-    PrefixCodedTermsReader.files(dir, segmentInfo, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException {
+    StandardPostingsReader.files(dir, segmentInfo, id, files);
+    PrefixCodedTermsReader.files(dir, segmentInfo, id, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
   }
 
   @Override

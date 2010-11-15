@@ -61,9 +61,7 @@ final class PerFieldCodecWrapper extends Codec {
       assert segmentCodecs == state.segmentCodecs;
       final Codec[] codecs = segmentCodecs.codecs;
       for (int i = 0; i < codecs.length; i++) {
-        state.currentCodecId = i; // actual codec should use that to create its
-                                  // files
-        consumers.add(codecs[i].fieldsConsumer(state));
+        consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, "" + i)));
       }
     }
 
@@ -111,7 +109,7 @@ final class PerFieldCodecWrapper extends Codec {
           Codec codec = segmentCodecs.codecs[fi.codecId];
           if (!producers.containsKey(codec)) {
             producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                si, fieldInfos, readBufferSize, indexDivisor)));
+                si, fieldInfos, readBufferSize, indexDivisor, ""+fi.codecId)));
           }
           codecs.put(fi.name, producers.get(codec));
         }
@@ -195,8 +193,9 @@ final class PerFieldCodecWrapper extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, Set<String> files)
+  public void files(Directory dir, SegmentInfo info, String codecId, Set<String> files)
       throws IOException {
+    // ignore codecid sicne segmentCodec will assign it per codec
     segmentCodecs.files(dir, info, files);
   }
 

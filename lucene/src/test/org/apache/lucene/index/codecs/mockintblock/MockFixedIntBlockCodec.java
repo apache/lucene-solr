@@ -139,7 +139,7 @@ public class MockFixedIntBlockCodec extends Codec {
     PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
                                                                       state.segmentInfo,
                                                                       state.readBufferSize,
-                                                                      new MockIntFactory());
+                                                                      new MockIntFactory(), state.codecId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
@@ -148,7 +148,7 @@ public class MockFixedIntBlockCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator());
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(), state.codecId);
       success = true;
     } finally {
       if (!success) {
@@ -165,7 +165,8 @@ public class MockFixedIntBlockCodec extends Codec {
                                                        postingsReader,
                                                        state.readBufferSize,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       StandardCodec.TERMS_CACHE_SIZE);
+                                                       StandardCodec.TERMS_CACHE_SIZE,
+                                                       state.codecId);
       success = true;
       return ret;
     } finally {
@@ -180,10 +181,10 @@ public class MockFixedIntBlockCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) {
-    SepPostingsReaderImpl.files(segmentInfo, files);
-    PrefixCodedTermsReader.files(dir, segmentInfo, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
+    SepPostingsReaderImpl.files(segmentInfo, codecId, files);
+    PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
   }
 
   @Override

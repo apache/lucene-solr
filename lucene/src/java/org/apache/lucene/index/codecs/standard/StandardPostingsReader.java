@@ -45,13 +45,13 @@ public class StandardPostingsReader extends PostingsReaderBase {
   int skipInterval;
   int maxSkipLevels;
 
-  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.FREQ_EXTENSION),
+  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize, String codecId) throws IOException {
+    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
                            readBufferSize);
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
-        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.PROX_EXTENSION),
+        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.PROX_EXTENSION),
                                readBufferSize);
         success = true;
       } finally {
@@ -64,10 +64,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.FREQ_EXTENSION));
+  public static void files(Directory dir, SegmentInfo segmentInfo, String id, Collection<String> files) throws IOException {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.PROX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.PROX_EXTENSION));
     }
   }
 

@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -120,14 +119,11 @@ final class SegmentCodecs implements Cloneable {
 
   void files(Directory dir, SegmentInfo info, Set<String> files)
       throws IOException {
-    final Set<Codec> seen = new HashSet<Codec>();
     final Codec[] codecArray = codecs;
-    for (Codec codec : codecArray) {
-      if (!seen.contains(codec)) {
-        seen.add(codec);
-        codec.files(dir, info, files);
-      }
-    }
+    for (int i = 0; i < codecArray.length; i++) {
+      codecArray[i].files(dir, info, ""+i, files);
+    }      
+      
   }
 
   @Override

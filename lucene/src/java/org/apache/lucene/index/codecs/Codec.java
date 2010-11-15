@@ -51,8 +51,15 @@ public abstract class Codec {
    *  use; else, those files may be deleted. */
   public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
 
-  /** Gathers files associated with this segment */
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException;
+  /**
+   * Gathers files associated with this segment
+   * 
+   * @param dir the {@link Directory} this segment was written to
+   * @param segmentInfo the {@link SegmentInfo} for this segment 
+   * @param id the codec id within this segment
+   * @param files the of files to add the codec files to.
+   */
+  public abstract void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException;
 
   /** Records all file extensions this codec uses */
   public abstract void getExtensions(Set<String> extensions);

@@ -37,7 +37,7 @@ public class SegmentWriteState {
   public final Collection<String> flushedFiles;
 
   final SegmentCodecs segmentCodecs;
-  public int currentCodecId;
+  public final String codecId;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
    * in RAM.  Smaller values use more memory, but make searching slightly
@@ -73,5 +73,23 @@ public class SegmentWriteState {
     this.termIndexInterval = termIndexInterval;
     this.segmentCodecs = segmentCodecs;
     flushedFiles = new HashSet<String>();
+    codecId = "";
+  }
+  
+  /**
+   * Create a shallow {@link SegmentWriteState} copy final a codec ID
+   */
+  SegmentWriteState(SegmentWriteState state, String codecId) {
+    infoStream = state.infoStream;
+    directory = state.directory;
+    segmentName = state.segmentName;
+    fieldInfos = state.fieldInfos;
+    docStoreSegmentName = state.docStoreSegmentName;
+    numDocs = state.numDocs;
+    numDocsInStore = state.numDocsInStore;
+    termIndexInterval = state.termIndexInterval;
+    segmentCodecs = state.segmentCodecs;
+    flushedFiles = state.flushedFiles;
+    this.codecId = codecId;
   }
 }
