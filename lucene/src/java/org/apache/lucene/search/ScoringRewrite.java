@@ -47,7 +47,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
    *  @see #setRewriteMethod */
-  public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = new ScoringRewrite<BooleanQuery>() {
+  public final static ScoringRewrite<BooleanQuery> SCORING_BOOLEAN_QUERY_REWRITE = new ScoringRewrite<BooleanQuery>() {
     @Override
     protected BooleanQuery getTopLevelQuery() {
       return new BooleanQuery(true);
@@ -79,14 +79,13 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
   public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      Query result = SCORING_BOOLEAN_QUERY_REWRITE.rewrite(reader, query);
-      assert result instanceof BooleanQuery;
+      final BooleanQuery bq = SCORING_BOOLEAN_QUERY_REWRITE.rewrite(reader, query);
       // TODO: if empty boolean query return NullQuery?
-      if (!((BooleanQuery) result).clauses().isEmpty()) {
-        // strip the scores off
-        result = new ConstantScoreQuery(new QueryWrapperFilter(result));
-        result.setBoost(query.getBoost());
-      }
+      if (bq.clauses().isEmpty())
+        return bq;
+      // strip the scores off
+      final Query result = new ConstantScoreQuery(new QueryWrapperFilter(bq));
+      result.setBoost(query.getBoost());
       return result;
     }
 
