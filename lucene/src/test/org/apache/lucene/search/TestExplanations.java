@@ -98,7 +98,7 @@ public class TestExplanations extends LuceneTestCase {
   
   /** check the expDocNrs first, then check the query (and the explanations) */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
-    CheckHits.checkHitCollector(q, FIELD, searcher, expDocNrs);
+    CheckHits.checkHitCollector(random, q, FIELD, searcher, expDocNrs);
   }
 
   /**

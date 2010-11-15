@@ -137,7 +137,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
   protected static void assertHits(Searcher s, Query query,
       final String description, final String[] expectedIds,
       final float[] expectedScores) throws IOException {
-    QueryUtils.check(query, s);
+    QueryUtils.check(random, query, s);
     
     final float tolerance = 1e-5f;
     

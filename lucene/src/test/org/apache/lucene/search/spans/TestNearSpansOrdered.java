@@ -88,7 +88,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   
   public void testSpanNearQuery() throws Exception {
     SpanNearQuery q = makeQuery();
-    CheckHits.checkHits(q, FIELD, searcher, new int[] {0,1});
+    CheckHits.checkHits(random, q, FIELD, searcher, new int[] {0,1});
   }
 
   public String s(Spans span) {

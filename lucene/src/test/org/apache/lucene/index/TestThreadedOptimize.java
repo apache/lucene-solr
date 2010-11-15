@@ -41,12 +41,10 @@ public class TestThreadedOptimize extends LuceneTestCase {
   //private final static int NUM_THREADS = 5;
 
   private final static int NUM_ITER = 1;
-  //private final static int NUM_ITER = 10;
 
   private final static int NUM_ITER2 = 1;
-  //private final static int NUM_ITER2 = 5;
 
-  private boolean failed;
+  private volatile boolean failed;
 
   private void setFailed() {
     failed = true;
@@ -116,15 +114,16 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       // System.out.println("TEST: now index=" + writer.segString());
 
-      assertEquals(expectedDocCount, writer.maxDoc());
+      assertEquals("index=" + writer.segString() + " numDocs" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.numDocs());
+      assertEquals("index=" + writer.segString() + " numDocs" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.maxDoc());
 
       writer.close();
       writer = new IndexWriter(directory, newIndexWriterConfig(
           TEST_VERSION_CURRENT, ANALYZER).setOpenMode(
           OpenMode.APPEND).setMaxBufferedDocs(2));
-
+      
       IndexReader reader = IndexReader.open(directory, true);
-      assertTrue(reader.isOptimized());
+      assertTrue("reader=" + reader, reader.isOptimized());
       assertEquals(expectedDocCount, reader.numDocs());
       reader.close();
     }

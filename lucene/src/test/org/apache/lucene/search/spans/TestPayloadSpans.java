@@ -60,7 +60,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     PayloadHelper helper = new PayloadHelper();
-    searcher = helper.setUp(similarity, 1000);
+    searcher = helper.setUp(random, similarity, 1000);
     indexReader = searcher.getIndexReader();
   }
 

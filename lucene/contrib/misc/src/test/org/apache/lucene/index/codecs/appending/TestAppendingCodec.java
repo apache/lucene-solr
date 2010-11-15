@@ -18,6 +18,7 @@ package org.apache.lucene.index.codecs.appending;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -118,8 +119,8 @@ public class TestAppendingCodec extends LuceneTestCase {
   @SuppressWarnings("serial")
   private static class AppendingRAMDirectory extends MockDirectoryWrapper {
 
-    public AppendingRAMDirectory(Directory delegate) {
-      super(delegate);
+    public AppendingRAMDirectory(Random random, Directory delegate) {
+      super(random, delegate);
     }
 
     @Override
@@ -132,7 +133,7 @@ public class TestAppendingCodec extends LuceneTestCase {
   private static final String text = "the quick brown fox jumped over the lazy dog";
 
   public void testCodec() throws Exception {
-    Directory dir = new AppendingRAMDirectory(new RAMDirectory());
+    Directory dir = new AppendingRAMDirectory(random, new RAMDirectory());
     IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer());
     
     cfg.setCodecProvider(new AppendingCodecProvider());

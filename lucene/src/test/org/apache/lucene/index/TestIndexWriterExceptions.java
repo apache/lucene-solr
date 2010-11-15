@@ -810,18 +810,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     w.close();
 
     for(int i=0;i<200;i++) {
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(startDir));
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
       conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new ConcurrentMergeScheduler());
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
       w = new IndexWriter(dir, conf);
-      dir.setRandomIOExceptionRate(0.5, 100);
+      dir.setRandomIOExceptionRate(0.5);
       try {
         w.optimize();
       } catch (IOException ioe) {
         if (ioe.getCause() == null)
           fail("optimize threw IOException without root cause");
       }
-      dir.setRandomIOExceptionRate(0, 0);
+      dir.setRandomIOExceptionRate(0);
       w.close();
       dir.close();
     }

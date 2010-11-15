@@ -162,7 +162,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("id", "d1"));
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     
-    QueryUtils.check(dq, s);
+    QueryUtils.check(random, dq, s);
     
     final Weight dw = dq.weight(s);
     final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
@@ -178,7 +178,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "albino"));
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     
-    QueryUtils.check(dq, s);
+    QueryUtils.check(random, dq, s);
     
     final Weight dw = dq.weight(s);
     final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
@@ -192,7 +192,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.0f);
     q.add(tq("hed", "albino"));
     q.add(tq("hed", "elephant"));
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     
@@ -216,7 +216,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.0f);
     q.add(tq("dek", "albino"));
     q.add(tq("dek", "elephant"));
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     
@@ -241,7 +241,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     q.add(tq("hed", "elephant"));
     q.add(tq("dek", "albino"));
     q.add(tq("dek", "elephant"));
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     
@@ -264,7 +264,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.01f);
     q.add(tq("dek", "albino"));
     q.add(tq("dek", "elephant"));
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     
@@ -292,7 +292,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q1.add(tq("hed", "albino"));
       q1.add(tq("dek", "albino"));
       q.add(q1, BooleanClause.Occur.MUST);// true,false);
-      QueryUtils.check(q1, s);
+      QueryUtils.check(random, q1, s);
       
     }
     {
@@ -300,10 +300,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q2.add(tq("hed", "elephant"));
       q2.add(tq("dek", "elephant"));
       q.add(q2, BooleanClause.Occur.MUST);// true,false);
-      QueryUtils.check(q2, s);
+      QueryUtils.check(random, q2, s);
     }
     
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     
@@ -335,7 +335,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q2.add(tq("dek", "elephant"));
       q.add(q2, BooleanClause.Occur.SHOULD);// false,false);
     }
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     
@@ -371,7 +371,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q2.add(tq("dek", "elephant"));
       q.add(q2, BooleanClause.Occur.SHOULD);// false,false);
     }
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     
@@ -425,7 +425,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       q2.add(tq("dek", "elephant"));
       q.add(q2, BooleanClause.Occur.SHOULD);// false,false);
     }
-    QueryUtils.check(q, s);
+    QueryUtils.check(random, q, s);
     
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     

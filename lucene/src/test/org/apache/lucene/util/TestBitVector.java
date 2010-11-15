@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -137,7 +136,7 @@ public class TestBitVector extends LuceneTestCase
     }
 
     private void doTestWriteRead(int n) throws Exception {
-        MockDirectoryWrapper d = new  MockDirectoryWrapper(new RAMDirectory());
+        MockDirectoryWrapper d = new  MockDirectoryWrapper(random, new RAMDirectory());
         d.setPreventDoubleWrite(false);
         BitVector bv = new BitVector(n);
         // test count when incrementally setting bits
@@ -168,7 +167,7 @@ public class TestBitVector extends LuceneTestCase
     }
     
     private void doTestDgaps(int size, int count1, int count2) throws IOException {
-      MockDirectoryWrapper d = new  MockDirectoryWrapper(new RAMDirectory());
+      MockDirectoryWrapper d = new  MockDirectoryWrapper(random, new RAMDirectory());
       d.setPreventDoubleWrite(false);
       BitVector bv = new BitVector(size);
       for (int i=0; i<count1; i++) {

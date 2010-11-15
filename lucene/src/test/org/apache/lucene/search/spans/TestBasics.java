@@ -562,6 +562,6 @@ public class TestBasics extends LuceneTestCase {
   }
 
   private void checkHits(Query query, int[] results) throws IOException {
-    CheckHits.checkHits(query, "field", searcher, results);
+    CheckHits.checkHits(random, query, "field", searcher, results);
   }
 }

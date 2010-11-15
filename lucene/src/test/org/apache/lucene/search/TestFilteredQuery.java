@@ -110,7 +110,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
-    QueryUtils.check(filteredquery,searcher);
+    QueryUtils.check(random, filteredquery,searcher);
 
     hits = searcher.search (filteredquery, null, 1000, new Sort(new SortField("sorter", SortField.STRING))).scoreDocs;
     assertEquals (1, hits.length);
@@ -119,18 +119,18 @@ public class TestFilteredQuery extends LuceneTestCase {
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "one")), filter);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (2, hits.length);
-    QueryUtils.check(filteredquery,searcher);
+    QueryUtils.check(random, filteredquery,searcher);
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "x")), filter);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (3, hits[0].doc);
-    QueryUtils.check(filteredquery,searcher);
+    QueryUtils.check(random, filteredquery,searcher);
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "y")), filter);
     hits = searcher.search (filteredquery, null, 1000).scoreDocs;
     assertEquals (0, hits.length);
-    QueryUtils.check(filteredquery,searcher);
+    QueryUtils.check(random, filteredquery,searcher);
     
     // test boost
     Filter f = newStaticFilterA();
@@ -190,7 +190,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     Query filteredquery = new FilteredQuery(rq, filter);
     ScoreDoc[] hits = searcher.search(filteredquery, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
-    QueryUtils.check(filteredquery,searcher);
+    QueryUtils.check(random, filteredquery,searcher);
   }
 
   public void testBoolean() throws Exception {
@@ -203,7 +203,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(query, BooleanClause.Occur.MUST);
     ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
-    QueryUtils.check(query,searcher);    
+    QueryUtils.check(random, query,searcher);    
   }
 
   // Make sure BooleanQuery, which does out-of-order
@@ -216,7 +216,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(query,searcher);    
+    QueryUtils.check(random, query,searcher);    
   }
 }
 
