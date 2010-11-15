@@ -801,6 +801,9 @@ Optimizations
   by the improved SorterTemplate class.
   (Uwe Schindler, Robert Muir, Mike McCandless)
 
+* LUCENE-2760: Optimize SpanFirstQuery and SpanPositionRangeQuery.
+  (Robert Muir)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

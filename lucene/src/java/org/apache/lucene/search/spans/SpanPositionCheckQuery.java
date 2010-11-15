@@ -57,6 +57,12 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
 	    match.extractTerms(terms);
   }
 
+  /** Return value if the match should be accepted {@code YES}, rejected {@code NO},
+   * or rejected and enumeration should advance to the next document {@code NO_AND_ADVANCE}.
+   * @see #acceptPosition(Spans)
+   */
+  protected static enum AcceptStatus { YES, NO, NO_AND_ADVANCE };
+  
   /**
    * Implementing classes are required to return whether the current position is a match for the passed in
    * "match" {@link org.apache.lucene.search.spans.SpanQuery}.
@@ -66,36 +72,12 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
    *
    *
    * @param spans The {@link org.apache.lucene.search.spans.Spans} instance, positioned at the spot to check
-   * @return true if it is a match, else false.
+   * @return whether the match is accepted, rejected, or rejected and should move to the next doc.
    *
    * @see org.apache.lucene.search.spans.Spans#next()
    *
    */
-  protected abstract boolean acceptPosition(Spans spans) throws IOException;
-
-  /**
-   * Implementing classes are required to return whether the position at the target is someplace that
-   * can be skipped to.  For instance, the {@link org.apache.lucene.search.spans.SpanFirstQuery} returns
-   * false if the target position is beyond the maximum position allowed or if {@link Spans#next()} is true.
-   * <p/>
-   * Note, this method is only called if the underlying match {@link org.apache.lucene.search.spans.SpanQuery} can
-   * skip to the target.
-   * <p/>
-   * It is safe to assume that the passed in {@link org.apache.lucene.search.spans.Spans} object for the underlying {@link org.apache.lucene.search.spans.SpanQuery} is
-   * positioned at the target.
-   * <p/>
-   * The default implementation is to return true if either {@link #acceptPosition(Spans)} or {@link org.apache.lucene.search.spans.Spans#next()} is true for the
-   * passed in instance of Spans.
-   *<p/>
-   * @param spans The {@link org.apache.lucene.search.spans.Spans} to check
-   * @return true if the instance can skip to this position
-   *
-   * @see Spans#skipTo(int)
-   * @throws java.io.IOException if there is a low-level IO error
-   */
-  protected boolean acceptSkipTo(Spans spans) throws IOException{
-    return acceptPosition(spans) || spans.next();
-  }
+  protected abstract AcceptStatus acceptPosition(Spans spans) throws IOException;
 
   @Override
   public Spans getSpans(final IndexReader reader) throws IOException {
@@ -123,21 +105,16 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   protected class PositionCheckSpan extends Spans {
     private Spans spans;
 
-    private final IndexReader reader;
-
     public PositionCheckSpan(IndexReader reader) throws IOException {
-      this.reader = reader;
       spans = match.getSpans(reader);
     }
 
     @Override
     public boolean next() throws IOException {
-      //TODO: optimize to skip ahead to start
-      while (spans.next()) {                  // scan to next match
-        if (acceptPosition(this))
-          return true;
-      }
-      return false;
+      if (!spans.next())
+        return false;
+      
+      return doNext();
     }
 
     @Override
@@ -145,8 +122,23 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
       if (!spans.skipTo(target))
         return false;
 
-      return acceptSkipTo(this);
-
+      return doNext();
+    }
+    
+    protected boolean doNext() throws IOException {
+      for (;;) {
+        switch(acceptPosition(this)) {
+          case YES: return true;
+          case NO: 
+            if (!spans.next()) 
+              return false;
+            break;
+          case NO_AND_ADVANCE: 
+            if (!spans.skipTo(spans.doc()+1)) 
+              return false;
+            break;
+        }
+      }
     }
 
     @Override

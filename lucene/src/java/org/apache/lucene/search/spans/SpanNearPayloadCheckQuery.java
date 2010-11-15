@@ -43,7 +43,7 @@ public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
   }
 
   @Override
-  protected boolean acceptPosition(Spans spans) throws IOException {
+  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
     boolean result = spans.isPayloadAvailable();
     if (result == true) {
       Collection<byte[]> candidate = spans.getPayload();
@@ -62,15 +62,15 @@ public class SpanNearPayloadCheckQuery extends SpanPositionCheckQuery {
         }
         if (matches == payloadToMatch.size()){
           //we've verified all the bytes
-          return true;
+          return AcceptStatus.YES;
         } else {
-          return false;
+          return AcceptStatus.NO;
         }
       } else {
-        return false;
+        return AcceptStatus.NO;
       }
     }
-    return false;
+    return AcceptStatus.NO;
   }
 
   public String toString(String field) {
