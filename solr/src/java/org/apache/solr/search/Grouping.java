@@ -555,16 +555,27 @@ class TopGroupCollector extends GroupCollector {
 
     // remove before updating the group since lookup is done via comparators
     // TODO: optimize this
-    if (orderedGroups != null)
+
+    SearchGroup prevLast = null;
+    if (orderedGroups != null) {
+      prevLast = orderedGroups.last();
       orderedGroups.remove(group);
+    }
 
     group.topDoc = docBase + doc;
     // group.topDocScore = scorer.score();
     int tmp = spareSlot; spareSlot = group.comparatorSlot; group.comparatorSlot=tmp;  // swap slots
 
     // re-add the changed group
-    if (orderedGroups != null)
+    if (orderedGroups != null) {
       orderedGroups.add(group);
+      SearchGroup newLast = orderedGroups.last();
+      // if we changed the value of the last group, or changed which group was last, then update bottom
+      if (group == newLast || prevLast != newLast) {
+        for (FieldComparator fc : comparators)
+          fc.setBottom(newLast.comparatorSlot);
+      }
+    }
   }
 
   void buildSet() {
