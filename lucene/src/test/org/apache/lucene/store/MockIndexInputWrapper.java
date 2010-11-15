@@ -132,18 +132,8 @@ public class MockIndexInputWrapper extends IndexInput {
   }
 
   @Override
-  public int readVInt() throws IOException {
-    return delegate.readVInt();
-  }
-
-  @Override
   public long readLong() throws IOException {
     return delegate.readLong();
-  }
-
-  @Override
-  public long readVLong() throws IOException {
-    return delegate.readVLong();
   }
 
   @Override

@@ -66,7 +66,7 @@ public abstract class DataOutput {
    * supported.
    * @see DataInput#readVInt()
    */
-  public void writeVInt(int i) throws IOException {
+  public final void writeVInt(int i) throws IOException {
     while ((i & ~0x7F) != 0) {
       writeByte((byte)((i & 0x7f) | 0x80));
       i >>>= 7;
@@ -87,7 +87,7 @@ public abstract class DataOutput {
    * supported.
    * @see DataInput#readVLong()
    */
-  public void writeVLong(long i) throws IOException {
+  public final void writeVLong(long i) throws IOException {
     while ((i & ~0x7F) != 0) {
       writeByte((byte)((i & 0x7f) | 0x80));
       i >>>= 7;

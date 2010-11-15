@@ -175,19 +175,37 @@ public class StandardPostingsReader extends PostingsReaderBase {
     if (fieldInfo.omitTermFreqAndPositions) {
       return null;
     }
-    SegmentDocsAndPositionsEnum docsEnum;
-    if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsEnum)) {
-      docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
-    } else {
-      docsEnum = (SegmentDocsAndPositionsEnum) reuse;
-      if (docsEnum.startFreqIn != freqIn) {
-        // If you are using ParellelReader, and pass in a
-        // reused DocsEnum, it could have come from another
-        // reader also using standard codec
-        docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
+    
+    // TODO: refactor
+    if (fieldInfo.storePayloads) {
+      SegmentDocsAndPositionsAndPayloadsEnum docsEnum;
+      if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsAndPayloadsEnum)) {
+        docsEnum = new SegmentDocsAndPositionsAndPayloadsEnum(freqIn, proxIn);
+      } else {
+        docsEnum = (SegmentDocsAndPositionsAndPayloadsEnum) reuse;
+        if (docsEnum.startFreqIn != freqIn) {
+          // If you are using ParellelReader, and pass in a
+          // reused DocsEnum, it could have come from another
+          // reader also using standard codec
+          docsEnum = new SegmentDocsAndPositionsAndPayloadsEnum(freqIn, proxIn);
+        }
       }
+      return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
+    } else {
+      SegmentDocsAndPositionsEnum docsEnum;
+      if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsEnum)) {
+        docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
+      } else {
+        docsEnum = (SegmentDocsAndPositionsEnum) reuse;
+        if (docsEnum.startFreqIn != freqIn) {
+          // If you are using ParellelReader, and pass in a
+          // reused DocsEnum, it could have come from another
+          // reader also using standard codec
+          docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
+        }
+      }
+      return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
     }
-    return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
   }
 
   // Decodes only docs
@@ -360,13 +378,195 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
   }
 
-  // Decodes docs & positions
+  // Decodes docs & positions. payloads are not present.
   private class SegmentDocsAndPositionsEnum extends DocsAndPositionsEnum {
     final IndexInput startFreqIn;
     private final IndexInput freqIn;
     private final IndexInput proxIn;
 
-    boolean storePayloads;                        // does current field store payloads?
+    int limit;                                    // number of docs in this posting
+    int ord;                                      // how many docs we've read
+    int doc;                                      // doc we last read
+    int freq;                                     // freq we last read
+    int position;
+
+    Bits skipDocs;
+
+    long freqOffset;
+    int skipOffset;
+    long proxOffset;
+
+    int posPendingCount;
+
+    boolean skipped;
+    DefaultSkipListReader skipper;
+    private long lazyProxPointer;
+
+    public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+      startFreqIn = freqIn;
+      this.freqIn = (IndexInput) freqIn.clone();
+      this.proxIn = (IndexInput) proxIn.clone();
+    }
+
+    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, DocTermState termState, Bits skipDocs) throws IOException {
+      assert !fieldInfo.omitTermFreqAndPositions;
+      assert !fieldInfo.storePayloads;
+
+      this.skipDocs = skipDocs;
+
+      // TODO: for full enum case (eg segment merging) this
+      // seek is unnecessary; maybe we can avoid in such
+      // cases
+      freqIn.seek(termState.freqOffset);
+      lazyProxPointer = termState.proxOffset;
+
+      limit = termState.docFreq;
+      ord = 0;
+      doc = 0;
+      position = 0;
+
+      skipped = false;
+      posPendingCount = 0;
+
+      freqOffset = termState.freqOffset;
+      proxOffset = termState.proxOffset;
+      skipOffset = termState.skipOffset;
+
+      return this;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      while(true) {
+        if (ord == limit) {
+          return doc = NO_MORE_DOCS;
+        }
+
+        ord++;
+
+        // Decode next doc/freq pair
+        final int code = freqIn.readVInt();
+
+        doc += code >>> 1;              // shift off low bit
+        if ((code & 1) != 0) {          // if low bit is set
+          freq = 1;                     // freq is one
+        } else {
+          freq = freqIn.readVInt();     // else read freq
+        }
+        posPendingCount += freq;
+
+        if (skipDocs == null || !skipDocs.get(doc)) {
+          break;
+        }
+      }
+
+      position = 0;
+
+      return doc;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int freq() {
+      return freq;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+
+      // TODO: jump right to next() if target is < X away
+      // from where we are now?
+
+      if (skipOffset > 0) {
+
+        // There are enough docs in the posting to have
+        // skip data
+
+        if (skipper == null) {
+          // This is the first time this enum has ever been used for skipping -- do lazy init
+          skipper = new DefaultSkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+        }
+
+        if (!skipped) {
+
+          // This is the first time this posting has
+          // skipped, since reset() was called, so now we
+          // load the skip data for this posting
+
+          skipper.init(freqOffset+skipOffset,
+                       freqOffset, proxOffset,
+                       limit, false);
+
+          skipped = true;
+        }
+
+        final int newOrd = skipper.skipTo(target); 
+
+        if (newOrd > ord) {
+          // Skipper moved
+          ord = newOrd;
+          doc = skipper.getDoc();
+          freqIn.seek(skipper.getFreqPointer());
+          lazyProxPointer = skipper.getProxPointer();
+          posPendingCount = 0;
+          position = 0;
+        }
+      }
+        
+      // Now, linear scan for the rest:
+      do {
+        nextDoc();
+      } while (target > doc);
+
+      return doc;
+    }
+
+    public int nextPosition() throws IOException {
+
+      if (lazyProxPointer != -1) {
+        proxIn.seek(lazyProxPointer);
+        lazyProxPointer = -1;
+      }
+
+      // scan over any docs that were iterated without their positions
+      if (posPendingCount > freq) {
+        position = 0;
+        while(posPendingCount != freq) {
+          if ((proxIn.readByte() & 0x80) == 0) {
+            posPendingCount--;
+          }
+        }
+      }
+
+      position += proxIn.readVInt();
+
+      posPendingCount--;
+
+      assert posPendingCount >= 0: "nextPosition() was called too many times (more than freq() times) posPendingCount=" + posPendingCount;
+
+      return position;
+    }
+
+    /** Returns the payload at this position, or null if no
+     *  payload was indexed. */
+    public BytesRef getPayload() throws IOException {
+      throw new IOException("No payloads exist for this field!");
+    }
+
+    public boolean hasPayload() {
+      return false;
+    }
+  }
+  
+  // Decodes docs & positions & payloads
+  private class SegmentDocsAndPositionsAndPayloadsEnum extends DocsAndPositionsEnum {
+    final IndexInput startFreqIn;
+    private final IndexInput freqIn;
+    private final IndexInput proxIn;
 
     int limit;                                    // number of docs in this posting
     int ord;                                      // how many docs we've read
@@ -389,16 +589,16 @@ public class StandardPostingsReader extends PostingsReaderBase {
     private BytesRef payload;
     private long lazyProxPointer;
 
-    public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+    public SegmentDocsAndPositionsAndPayloadsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
       startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
       this.proxIn = (IndexInput) proxIn.clone();
     }
 
-    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, DocTermState termState, Bits skipDocs) throws IOException {
+    public SegmentDocsAndPositionsAndPayloadsEnum reset(FieldInfo fieldInfo, DocTermState termState, Bits skipDocs) throws IOException {
       assert !fieldInfo.omitTermFreqAndPositions;
-      storePayloads = fieldInfo.storePayloads;
-      if (storePayloads && payload == null) {
+      assert fieldInfo.storePayloads;
+      if (payload == null) {
         payload = new BytesRef();
         payload.bytes = new byte[1];
       }
@@ -491,7 +691,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
           skipper.init(freqOffset+skipOffset,
                        freqOffset, proxOffset,
-                       limit, storePayloads);
+                       limit, true);
 
           skipped = true;
         }
@@ -537,15 +737,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
         final int code = proxIn.readVInt();
 
-        if (storePayloads) {
-          if ((code & 1) != 0) {
-            // new payload length
-            payloadLength = proxIn.readVInt();
-            assert payloadLength >= 0;
-          }
-          assert payloadLength != -1;
-          proxIn.seek(proxIn.getFilePointer() + payloadLength);
+        if ((code & 1) != 0) {
+          // new payload length
+          payloadLength = proxIn.readVInt();
+          assert payloadLength >= 0;
         }
+        
+        assert payloadLength != -1;
+        proxIn.seek(proxIn.getFilePointer() + payloadLength);
 
         posPendingCount--;
         position = 0;
@@ -553,26 +752,21 @@ public class StandardPostingsReader extends PostingsReaderBase {
       }
 
       // read next position
-      if (storePayloads) {
-
-        if (payloadPending && payloadLength > 0) {
-          // payload wasn't retrieved for last position
-          proxIn.seek(proxIn.getFilePointer()+payloadLength);
-        }
-
-        final int code = proxIn.readVInt();
-        if ((code & 1) != 0) {
-          // new payload length
-          payloadLength = proxIn.readVInt();
-          assert payloadLength >= 0;
-        }
-        assert payloadLength != -1;
-          
-        payloadPending = true;
-        position += code >>> 1;
-      } else {
-        position += proxIn.readVInt();
+      if (payloadPending && payloadLength > 0) {
+        // payload wasn't retrieved for last position
+        proxIn.seek(proxIn.getFilePointer()+payloadLength);
       }
+
+      final int code = proxIn.readVInt();
+      if ((code & 1) != 0) {
+        // new payload length
+        payloadLength = proxIn.readVInt();
+        assert payloadLength >= 0;
+      }
+      assert payloadLength != -1;
+          
+      payloadPending = true;
+      position += code >>> 1;
 
       posPendingCount--;
 
