@@ -715,10 +715,9 @@ class TopGroupSortCollector extends TopGroupCollector {
       groupMap.put(smallest.groupValue, smallest);
       orderedGroups.add(smallest);
 
+      int lastSlot = orderedGroups.last().comparatorSlot;
       for (FieldComparator fc : comparators)
-        fc.setBottom(orderedGroups.last().comparatorSlot);
-      for (FieldComparator fc : smallest.sortGroupComparators)
-        fc.setBottom(0);
+        fc.setBottom(lastSlot);
 
       return;
     }
