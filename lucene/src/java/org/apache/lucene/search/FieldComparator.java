@@ -797,6 +797,7 @@ public abstract class FieldComparator {
           ords[bottomSlot] = 0;
           bottomOrd = 0;
           bottomSameReader = true;
+          readerGen[bottomSlot] = currentReaderGen;
         } else {
           final int index = binarySearch(lookup, bottomValue);
           if (index < 0) {
@@ -806,12 +807,10 @@ public abstract class FieldComparator {
             bottomOrd = index;
             // exact value match
             bottomSameReader = true;
+            readerGen[bottomSlot] = currentReaderGen;            
           }
+          ords[bottomSlot] = bottomOrd;
         }
-      }
-
-      if (bottomSameReader) {
-        readerGen[bottomSlot] = currentReaderGen;
       }
     }
 
