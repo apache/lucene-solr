@@ -679,16 +679,16 @@ class TopGroupSortCollector extends TopGroupCollector {
         buildSet();
       }
 
-      SearchGroup leastSignificantGroup = orderedGroups.last();
+      // see if this new group would be competitive if this doc was the top doc
       for (int i = 0;; i++) {
-        final int c = leastSignificantGroup.sortGroupReversed[i] * leastSignificantGroup.sortGroupComparators[i].compareBottom(doc);
+        final int c = reversed[i] * comparators[i].compareBottom(doc);
         if (c < 0) {
-          // Definitely not competitive.
+          // Definitely not competitive. So don't even bother to continue
           return;
         } else if (c > 0) {
           // Definitely competitive.
           break;
-        } else if (i == leastSignificantGroup.sortGroupComparators.length - 1) {
+        } else if (i == comparators.length - 1) {
           // Here c=0. If we're at the last comparator, this doc is not
           // competitive, since docs are visited in doc Id order, which means
           // this doc cannot compete with any other document in the queue.
