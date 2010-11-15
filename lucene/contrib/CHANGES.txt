@@ -143,7 +143,11 @@ API Changes
     
  * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
    can be generated. (Chris Harris via Steven Rowe)
-   
+
+ * LUCENE-2754, LUCENE-2757: Deprecated SpanRegexQuery. Use
+   new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery()) instead.
+   (Robert Muir, Uwe Schindler)
+
 New Features
 
  * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific

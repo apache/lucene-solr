@@ -42,16 +42,20 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     // copy clauses array into an ArrayList
     this.clauses = new ArrayList<SpanQuery>(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
-      SpanQuery clause = clauses[i];
-      if (i == 0) {                               // check field
-        field = clause.getField();
-      } else if (!clause.getField().equals(field)) {
-        throw new IllegalArgumentException("Clauses must have same field.");
-      }
-      this.clauses.add(clause);
+      addClause(clauses[i]);
     }
   }
 
+  /** Adds a clause to this query */
+  public final void addClause(SpanQuery clause) {
+    if (field == null) {
+      field = clause.getField();
+    } else if (!clause.getField().equals(field)) {
+      throw new IllegalArgumentException("Clauses must have same field.");
+    }
+    this.clauses.add(clause);
+  }
+  
   /** Return the clauses whose spans are matched. */
   public SpanQuery[] getClauses() {
     return clauses.toArray(new SpanQuery[clauses.size()]);
