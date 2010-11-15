@@ -161,10 +161,9 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     
     // slight pause - TODO: takes an oddly long amount of time to schedule tasks
     // with almost no delay ...
-    Thread.sleep(5000);
     CloudState cloudState2 = null;
     Map<String,Slice> slices = null;
-    for (int i = 30; i > 0; i--) {
+    for (int i = 60; i > 0; i--) {
       cloudState2 = zkController2.getCloudState();
       slices = cloudState2.getSlices("testcore");
       
