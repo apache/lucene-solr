@@ -32,6 +32,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
@@ -165,39 +166,26 @@ class VarSortedBytesImpl {
     @Override
     public SortedSource loadSorted(Comparator<BytesRef> comp)
         throws IOException {
-      return new Source(cloneData(), cloneIndex(), comp);
+      IndexInput indexIn = cloneIndex();
+      return new Source(cloneData(), indexIn , comp, indexIn.readLong());
     }
 
     private static class Source extends BytesBaseSortedSource {
       // TODO: paged data
-      private final byte[] data;
-      private final BytesRef bytesRef = new BytesRef();
       private final PackedInts.Reader docToOrdIndex;
       private final PackedInts.Reader ordToOffsetIndex; // 0-based
       private final long totBytes;
       private final int valueCount;
-      private final LookupResult lookupResult = new LookupResult();
-      private final Comparator<BytesRef> comp;
 
       public Source(IndexInput datIn, IndexInput idxIn,
-          Comparator<BytesRef> comp) throws IOException {
-        super(datIn, idxIn);
-        totBytes = idxIn.readLong();
-        data = new byte[(int) totBytes];
-        datIn.readBytes(data, 0, (int) totBytes);
+          Comparator<BytesRef> comp,  long dataLength) throws IOException {
+        super(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), dataLength);
+        totBytes = dataLength;
         docToOrdIndex = PackedInts.getReader(idxIn);
         ordToOffsetIndex = PackedInts.getReader(idxIn);
         valueCount = ordToOffsetIndex.size();
-        bytesRef.bytes = data;
         // default byte sort order
-        this.comp = comp == null ? BytesRef.getUTF8SortedAsUnicodeComparator()
-            : comp;
 
-      }
-
-      @Override
-      public BytesRef getByOrd(int ord) {
-        return ord == 0 ? defaultValue : deref(--ord);
       }
 
       @Override
@@ -213,7 +201,7 @@ class VarSortedBytesImpl {
       public long ramBytesUsed() {
         // TODO(simonw): move ram usage to PackedInts?
         return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + data.length
+            + totBytes
             + (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + docToOrdIndex
                 .getBitsPerValue()
                 * docToOrdIndex.getBitsPerValue())
@@ -228,40 +216,21 @@ class VarSortedBytesImpl {
       }
 
       // ord is 0-based
-      private BytesRef deref(int ord) {
-        bytesRef.offset = (int) ordToOffsetIndex.get(ord);
+      @Override
+      protected BytesRef deref(int ord) {
+        
         final long nextOffset;
         if (ord == valueCount - 1) {
           nextOffset = totBytes;
         } else {
           nextOffset = ordToOffsetIndex.get(1 + ord);
         }
-        bytesRef.length = (int) (nextOffset - bytesRef.offset);
+        final long offset = ordToOffsetIndex.get(ord);
+        data.fill(bytesRef, offset , (int)(nextOffset - offset));
         return bytesRef;
       }
 
-      // TODO: share w/ FixedSortedBytesValues?
-      private LookupResult binarySearch(BytesRef b, int low, int high) {
-
-        while (low <= high) {
-          int mid = (low + high) >>> 1;
-          deref(mid);
-          final int cmp = comp.compare(bytesRef, b);
-          if (cmp < 0) {
-            low = mid + 1;
-          } else if (cmp > 0) {
-            high = mid - 1;
-          } else {
-            lookupResult.ord = mid + 1;
-            lookupResult.found = true;
-            return lookupResult;
-          }
-        }
-        assert comp.compare(bytesRef, b) != 0;
-        lookupResult.ord = low;
-        lookupResult.found = false;
-        return lookupResult;
-      }
+      
     }
 
     @Override

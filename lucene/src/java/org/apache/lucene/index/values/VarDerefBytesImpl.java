@@ -33,6 +33,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
@@ -165,44 +166,31 @@ class VarDerefBytesImpl {
 
     @Override
     public Source load() throws IOException {
-      return new Source(cloneData(), cloneIndex());
+      final IndexInput data = cloneData();
+      final IndexInput index = cloneIndex();
+      data.seek(CodecUtil.headerLength(CODEC_NAME));
+      index.seek(CodecUtil.headerLength(CODEC_NAME));
+      final long totalBytes = index.readInt(); // should be long
+      return new Source(data,index, totalBytes);
     }
 
     private static class Source extends BytesBaseSource {
-      // TODO: paged data
-      private final byte[] data;
       private final BytesRef bytesRef = new BytesRef();
       private final PackedInts.Reader index;
 
-      public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
-        super(datIn, idxIn);
-        datIn.seek(CodecUtil.headerLength(CODEC_NAME));
-        idxIn.seek(CodecUtil.headerLength(CODEC_NAME));
-
-        final int totBytes = idxIn.readInt();
-        data = new byte[totBytes];
-        datIn.readBytes(data, 0, totBytes);
-
+      public Source(IndexInput datIn, IndexInput idxIn, long totalBytes) throws IOException {
+        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), totalBytes);
         index = PackedInts.getReader(idxIn);
-        bytesRef.bytes = data;
       }
 
       @Override
       public BytesRef getBytes(int docID) {
-        int address = (int) index.get(docID);
+        long address =  index.get(docID);
         if (address == 0) {
           assert defaultValue.length == 0: " default value manipulated";
           return defaultValue;
         } else {
-          address--;
-          if ((data[address] & 0x80) == 0) {
-            // length is 1 byte
-            bytesRef.length = data[address];
-            bytesRef.offset = address+1;
-          } else {
-            bytesRef.length = (data[address]&0x7f) + ((data[address+1]&0xff)<<7);
-            bytesRef.offset = address+2;
-          }
+          data.fillUsingLengthPrefix2(bytesRef, --address);
           return bytesRef;
         }
       }
@@ -210,12 +198,6 @@ class VarDerefBytesImpl {
       @Override
       public int getValueCount() {
         return index.size();
-      }
-
-      public long ramBytesUsed() {
-        // TODO(simonw): move address ram usage to PackedInts? 
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + data.length + 
-        (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + index.getBitsPerValue() * index.size());
       }
     }
 

@@ -28,6 +28,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -44,8 +45,9 @@ class VarStraightBytesImpl {
     // start at -1 if the first added value is > 0
     private int lastDocID = -1;
     private int[] docToAddress;
-    
-    public Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+
+    public Writer(Directory dir, String id, AtomicLong bytesUsed)
+        throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false, null, bytesUsed);
       docToAddress = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
@@ -60,7 +62,8 @@ class VarStraightBytesImpl {
       if (docID >= docToAddress.length) {
         int oldSize = docToAddress.length;
         docToAddress = ArrayUtil.grow(docToAddress, 1 + docID);
-        bytesUsed.addAndGet(-(docToAddress.length-oldSize)*RamUsageEstimator.NUM_BYTES_INT);
+        bytesUsed.addAndGet(-(docToAddress.length - oldSize)
+            * RamUsageEstimator.NUM_BYTES_INT);
       }
       for (int i = lastDocID + 1; i < docID; i++) {
         docToAddress[i] = address;
@@ -70,7 +73,7 @@ class VarStraightBytesImpl {
 
     @Override
     synchronized public void add(int docID, BytesRef bytes) throws IOException {
-      if(bytes.length == 0)
+      if (bytes.length == 0)
         return; // default
       if (datOut == null)
         initDataOut();
@@ -97,7 +100,8 @@ class VarStraightBytesImpl {
         w.add(docToAddress[i]);
       }
       w.finish();
-      bytesUsed.addAndGet(-(docToAddress.length)*RamUsageEstimator.NUM_BYTES_INT);
+      bytesUsed.addAndGet(-(docToAddress.length)
+          * RamUsageEstimator.NUM_BYTES_INT);
       docToAddress = null;
       super.finish(docCount);
     }
@@ -121,45 +125,28 @@ class VarStraightBytesImpl {
     }
 
     private class Source extends BytesBaseSource {
-      private final int totBytes;
-      // TODO: paged data
-      private final byte[] data;
       private final BytesRef bytesRef = new BytesRef();
       private final PackedInts.Reader addresses;
 
       public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
-        super(datIn, idxIn);
-        totBytes = idxIn.readVInt();
-        data = new byte[totBytes];
-        datIn.readBytes(data, 0, totBytes);
+        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVInt()); // TODO
+                                                                                 // should
+                                                                                 // be
+                                                                                 // long
         addresses = PackedInts.getReader(idxIn);
-        bytesRef.bytes = data;
       }
 
       @Override
       public BytesRef getBytes(int docID) {
         final int address = (int) addresses.get(docID);
-        bytesRef.offset = address;
-        if (docID == maxDoc - 1) {
-          bytesRef.length = totBytes - bytesRef.offset;
-        } else {
-          bytesRef.length = (int) addresses.get(1 + docID) - bytesRef.offset;
-        }
-        return bytesRef;
+        final int length = docID == maxDoc - 1 ? (int) (totalLengthInBytes - address)
+            : (int) (addresses.get(1 + docID) - address);
+        return data.fill(bytesRef, address, length);
       }
 
       @Override
       public int getValueCount() {
         throw new UnsupportedOperationException();
-      }
-
-      public long ramBytesUsed() {
-        // TODO(simonw): move address ram usage to PackedInts?
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + data.length
-            + (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + addresses
-                .getBitsPerValue()
-                * addresses.size());
       }
     }
 
@@ -226,10 +213,10 @@ class VarStraightBytesImpl {
 
       @Override
       public int nextDoc() throws IOException {
-        return advance(pos+1);
+        return advance(pos + 1);
       }
     }
-    
+
     @Override
     public Values type() {
       return Values.BYTES_VAR_STRAIGHT;

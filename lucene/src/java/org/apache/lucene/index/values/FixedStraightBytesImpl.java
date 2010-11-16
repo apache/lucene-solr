@@ -26,7 +26,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.PagedBytes;
 
 // Simplest storage: stores fixed length byte[] per
 // document, with no dedup and no sorting.
@@ -133,30 +133,17 @@ class FixedStraightBytesImpl {
     }
 
     private static class Source extends BytesBaseSource {
-      // TODO: paged data
-      private final byte[] data;
       private final BytesRef bytesRef = new BytesRef();
       private final int size;
 
       public Source(IndexInput datIn, IndexInput idxIn, int size, int maxDoc) throws IOException {
-        super(datIn, idxIn);
+        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size*maxDoc);
         this.size = size;
-        final int sizeInBytes = size*maxDoc;
-        data = new byte[sizeInBytes];
-        assert data.length <= datIn.length() : " file size is less than the expected size diff: " + (data.length - datIn.length()) + " size: " + size + " maxDoc " + maxDoc + " pos: " + datIn.getFilePointer();
-        datIn.readBytes(data, 0, sizeInBytes);
-        bytesRef.bytes = data;
-        bytesRef.length = size;
       }
-
+      
       @Override
-      public BytesRef getBytes(int docID) {
-        bytesRef.offset = docID * size;
-        return bytesRef;
-      }
-
-      public long ramBytesUsed() {
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + data.length;
+      public BytesRef getBytes(int docID) { 
+        return data.fill(bytesRef, docID * size, size);
       }
 
       @Override

@@ -601,7 +601,7 @@ final class DocumentsWriter {
   }
 
   synchronized private void initFlushState(boolean onlyDocStore) {
-    initSegmentName(onlyDocStore); // nocommit - this does not work for docValues
+    initSegmentName(onlyDocStore);
     final SegmentCodecs info = SegmentCodecs.build(docFieldProcessor.fieldInfos, writer.codecs);
     flushState = new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
                                        docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(), info);

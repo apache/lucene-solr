@@ -30,6 +30,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
@@ -133,27 +134,22 @@ class FixedDerefBytesImpl {
 
     @Override
     public Source load() throws IOException {
-      return new Source(cloneData(), cloneIndex(), size);
+      final IndexInput index = cloneIndex();
+      return new Source(cloneData(), index , size, index.readInt());
     }
 
     private static class Source extends BytesBaseSource {
-      // TODO: paged data or mmap?
-      private final byte[] data;
       private final BytesRef bytesRef = new BytesRef();
       private final PackedInts.Reader index;
-      private final int numValue;
       private final int size;
+      private final int numValues;
 
-      protected Source(IndexInput datIn, IndexInput idxIn, int size)
+      protected Source(IndexInput datIn, IndexInput idxIn, int size, int numValues)
           throws IOException {
-        super(datIn, idxIn);
+        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size * numValues);
         this.size = size;
-        numValue = idxIn.readInt();
-        data = new byte[size * numValue];
-        datIn.readBytes(data, 0, size * numValue);
+        this.numValues = numValues;
         index = PackedInts.getReader(idxIn);
-        bytesRef.bytes = data;
-        bytesRef.length = size;
       }
 
       @Override
@@ -162,22 +158,13 @@ class FixedDerefBytesImpl {
         if (id == 0) {
           return defaultValue;
         }
-        bytesRef.offset = ((id - 1) * size);
-        return bytesRef;
+        return data.fill(bytesRef, ((id - 1) * size), size);
       }
 
-      public long ramBytesUsed() {
-        // TODO(simonw): move ram calculation to PackedInts?!
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + data.length
-            + (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + index
-                .getBitsPerValue()
-                * index.size());
-      }
-
+      
       @Override
       public int getValueCount() {
-        return numValue;
+        return numValues;
       }
     }
 

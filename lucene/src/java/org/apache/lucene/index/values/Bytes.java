@@ -32,6 +32,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.PagedBytes;
 
 /**
  * Provides concrete Writer/Reader impls for byte[] value per document. There
@@ -46,7 +47,7 @@ import org.apache.lucene.util.CodecUtil;
  * NOTE: Each byte[] must be <= 32768 bytes in length
  * </p>
  */
-//TODO - add bulk copy where possible
+// TODO - add bulk copy where possible
 public final class Bytes {
 
   // don't instantiate!
@@ -57,7 +58,6 @@ public final class Bytes {
     STRAIGHT, DEREF, SORTED
   };
 
-  
   // TODO -- i shouldn't have to specify fixed? can
   // track itself & do the write thing at write time?
   public static Writer getWriter(Directory dir, String id, Mode mode,
@@ -124,29 +124,65 @@ public final class Bytes {
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
     protected final BytesRef defaultValue = new BytesRef();
+    protected final static int PAGED_BYTES_BITS = 15;
+    private final PagedBytes pagedBytes;
+    protected final PagedBytes.Reader data;
+    protected final long totalLengthInBytes;
 
-    protected BytesBaseSource(IndexInput datIn, IndexInput idxIn) {
+    protected BytesBaseSource(IndexInput datIn, IndexInput idxIn, PagedBytes pagedBytes, long bytesToRead)
+        throws IOException {
+      assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: " + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
       this.datIn = datIn;
+      this.totalLengthInBytes = bytesToRead;
+      this.pagedBytes = pagedBytes;
+      this.pagedBytes.copy(datIn, bytesToRead);
+      data = pagedBytes.freeze(true);
       this.idxIn = idxIn;
     }
 
     public void close() throws IOException {
-      if (datIn != null)
-        datIn.close();
-      if (idxIn != null) // if straight
-        idxIn.close();
-
+      data.close();
+      try {
+        if (datIn != null)
+          datIn.close();
+      } finally {
+        if (idxIn != null) // if straight
+          idxIn.close();
+      }
     }
+    public long ramBytesUsed() {
+      return 0; //TOODO
+    }
+
   }
 
   static abstract class BytesBaseSortedSource extends SortedSource {
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
     protected final BytesRef defaultValue = new BytesRef();
+    protected final static int PAGED_BYTES_BITS = 15;
+    private final PagedBytes pagedBytes;
+    protected final PagedBytes.Reader data;
+    protected final BytesRef bytesRef = new BytesRef();
+    protected final LookupResult lookupResult = new LookupResult();
+    private final Comparator<BytesRef> comp;
 
-    protected BytesBaseSortedSource(IndexInput datIn, IndexInput idxIn) {
+
+    protected BytesBaseSortedSource(IndexInput datIn, IndexInput idxIn, Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead) throws IOException {
+      assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: " + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
       this.datIn = datIn;
+      this.pagedBytes = pagedBytes;
+      this.pagedBytes.copy(datIn, bytesToRead);
+      data = pagedBytes.freeze(true);
       this.idxIn = idxIn;
+      this.comp = comp == null ? BytesRef.getUTF8SortedAsUnicodeComparator()
+          : comp;
+      
+    }
+    
+    @Override
+    public BytesRef getByOrd(int ord) {
+      return ord == 0 ? defaultValue : deref(--ord);
     }
 
     public void close() throws IOException {
@@ -154,12 +190,34 @@ public final class Bytes {
         datIn.close();
       if (idxIn != null) // if straight
         idxIn.close();
+    }
+    
+    protected abstract BytesRef deref(int ord);
 
+    
+    protected LookupResult binarySearch(BytesRef b, int low, int high) {
+      while (low <= high) {
+        int mid = (low + high) >>> 1;
+        deref(mid);
+        final int cmp = comp.compare(bytesRef, b);
+        if (cmp < 0) {
+          low = mid + 1;
+        } else if (cmp > 0) {
+          high = mid - 1;
+        } else {
+          lookupResult.ord = mid + 1;
+          lookupResult.found = true;
+          return lookupResult;
+        }
+      }
+      assert comp.compare(bytesRef, b) != 0;
+      lookupResult.ord = low;
+      lookupResult.found = false;
+      return lookupResult;
     }
   }
 
   static abstract class BytesWriterBase extends Writer {
-
 
     private final Directory dir;
     private final String id;
@@ -172,7 +230,8 @@ public final class Bytes {
     protected final AtomicLong bytesUsed;
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
-        int version, boolean initIndex, boolean initData, ByteBlockPool pool, AtomicLong bytesUsed) throws IOException {
+        int version, boolean initIndex, boolean initData, ByteBlockPool pool,
+        AtomicLong bytesUsed) throws IOException {
       this.dir = dir;
       this.id = id;
       this.codecName = codecName;
@@ -214,7 +273,7 @@ public final class Bytes {
         datOut.close();
       if (idxOut != null)
         idxOut.close();
-      if(pool != null)
+      if (pool != null)
         pool.reset();
     }
 
@@ -228,11 +287,11 @@ public final class Bytes {
       bytesRef = attr.bytes();
       assert bytesRef != null;
     }
-    
+
     @Override
     public void add(int docID, ValuesAttribute attr) throws IOException {
       final BytesRef ref;
-      if((ref = attr.bytes()) != null) {
+      if ((ref = attr.bytes()) != null) {
         add(docID, ref);
       }
     }
@@ -242,9 +301,10 @@ public final class Bytes {
       assert datOut != null;
       files.add(IndexFileNames.segmentFileName(id, "",
           IndexFileNames.CSF_DATA_EXTENSION));
-      if(idxOut != null) { // called after flush - so this must be initialized if needed or present
+      if (idxOut != null) { // called after flush - so this must be initialized
+                            // if needed or present
         final String idxFile = IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_INDEX_EXTENSION);
+            IndexFileNames.CSF_INDEX_EXTENSION);
         files.add(idxFile);
       }
     }
@@ -254,7 +314,7 @@ public final class Bytes {
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-   static abstract class BytesReaderBase extends DocValues {
+  static abstract class BytesReaderBase extends DocValues {
     protected final IndexInput idxIn;
     protected final IndexInput datIn;
     protected final int version;
@@ -276,6 +336,7 @@ public final class Bytes {
       } else {
         idxIn = null;
       }
+
     }
 
     protected final IndexInput cloneData() {
@@ -283,7 +344,8 @@ public final class Bytes {
       return (IndexInput) datIn.clone();
     }
 
-    protected final IndexInput cloneIndex() { // TODO assert here for null rather than return null
+    protected final IndexInput cloneIndex() { // TODO assert here for null
+                                              // rather than return null
       return idxIn == null ? null : (IndexInput) idxIn.clone();
     }
 
