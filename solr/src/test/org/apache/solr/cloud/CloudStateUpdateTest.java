@@ -163,7 +163,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     // with almost no delay ...
     CloudState cloudState2 = null;
     Map<String,Slice> slices = null;
-    for (int i = 60; i > 0; i--) {
+    for (int i = 75; i > 0; i--) {
       cloudState2 = zkController2.getCloudState();
       slices = cloudState2.getSlices("testcore");
       
@@ -197,12 +197,12 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
 
     container3.shutdown();
 
-    // slight pause for watch to trigger
-    for(int i = 0; i < 30; i++) {
+    // slight pause (15s timeout) for watch to trigger
+    for(int i = 0; i < (5 * 15); i++) {
       if(zkController2.getCloudState().getLiveNodes().size() == 2) {
         break;
       }
-      Thread.sleep(50);
+      Thread.sleep(200);
     }
 
     assertEquals(2, zkController2.getCloudState().getLiveNodes().size());
