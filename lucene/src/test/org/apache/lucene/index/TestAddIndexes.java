@@ -671,20 +671,35 @@ public class TestAddIndexes extends LuceneTestCase {
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch(j%5) {
       case 0:
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(Dir[]) then optimize");
+        }
         writer2.addIndexes(dirs);
         writer2.optimize();
         break;
       case 1:
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(Dir[])");
+        }
         writer2.addIndexes(dirs);
         break;
       case 2:
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(IndexReader[])");
+        }
         writer2.addIndexes(readers);
         break;
       case 3:
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": TEST: addIndexes(Dir[]) then maybeMerge");
+        }
         writer2.addIndexes(dirs);
         writer2.maybeMerge();
         break;
       case 4:
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": TEST: commit");
+        }
         writer2.commit();
       }
     }
@@ -697,6 +712,7 @@ public class TestAddIndexes extends LuceneTestCase {
     final int NUM_ITER = 15;
     final int NUM_COPY = 3;
     CommitAndAddIndexes c = new CommitAndAddIndexes(NUM_COPY);
+    c.writer2.setInfoStream(VERBOSE ? System.out : null);
     c.launchThreads(NUM_ITER);
 
     for(int i=0;i<100;i++)

@@ -2969,7 +2969,9 @@ public class IndexWriter implements Closeable {
               checkpoint();
             }
           } finally {
-            deleter.decRef(files);
+            synchronized(this) {
+              deleter.decRef(files);
+            }
           }
         }
       }
@@ -4283,7 +4285,9 @@ public class IndexWriter implements Closeable {
       if (merge.isAborted()) {
         if (infoStream != null)
           message("abort merge after building CFS");
-        deleter.deleteFile(compoundFileName);
+        synchronized(this) {
+          deleter.deleteFile(compoundFileName);
+        }
         return 0;
       }
 
