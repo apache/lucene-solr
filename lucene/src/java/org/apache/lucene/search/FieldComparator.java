@@ -1130,8 +1130,8 @@ public abstract class FieldComparator {
             // exact value match
             bottomSameReader = true;
             readerGen[bottomSlot] = currentReaderGen;            
+            ords[bottomSlot] = bottomOrd;
           }
-          ords[bottomSlot] = bottomOrd;
         }
       }
     }
