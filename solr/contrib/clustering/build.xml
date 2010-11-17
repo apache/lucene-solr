@@ -116,6 +116,8 @@
       <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
       <sysproperty key="tests.seed" value="${tests.seed}"/>
       <sysproperty key="tests.iter" value="${tests.iter}"/>
+      <!-- set whether or not nightly tests should run -->
+      <sysproperty key="tests.nightly" value="${tests.nightly}"/>
       <sysproperty key="jetty.testMode" value="1"/>
       <sysproperty key="tempDir" file="${junit.output.dir}"/>
       <sysproperty key="testmethod" value="${testmethod}"/>

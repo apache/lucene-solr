@@ -63,6 +63,10 @@ import org.junit.runners.model.InitializationError;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -152,6 +156,8 @@ public abstract class LuceneTestCase extends Assert {
   static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
   /** Get the random seed for tests */
   static final String TEST_SEED = System.getProperty("tests.seed", "random");
+  /** whether or not nightly tests should run */
+  static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
   
   private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
 
@@ -843,6 +849,14 @@ public abstract class LuceneTestCase extends Assert {
 
   private String name = "<unknown>";
   
+  /**
+   * Annotation for tests that should only be run during nightly builds.
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Nightly {}
+  
   /** optionally filters the tests to be run by TEST_METHOD */
   public static class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
     private List<FrameworkMethod> testMethods;
@@ -856,7 +870,7 @@ public abstract class LuceneTestCase extends Assert {
       for (Method m : getTestClass().getJavaClass().getMethods()) {
         // check if the current test's class has methods annotated with @Ignore
         final Ignore ignored = m.getAnnotation(Ignore.class);
-        if (ignored != null) {
+        if (ignored != null && !m.getName().equals("alwaysIgnoredTestMethod")) {
           System.err.println("NOTE: Ignoring test method '" + m.getName() + "': " + ignored.value());
         }
         // add methods starting with "test"
@@ -870,6 +884,34 @@ public abstract class LuceneTestCase extends Assert {
           if (Modifier.isStatic(mod))
             throw new RuntimeException("Test methods must not be static.");
           testMethods.add(new FrameworkMethod(m));
+        }
+      }
+      
+      if (testMethods.isEmpty()) {
+        throw new RuntimeException("No runnable methods!");
+      }
+      
+      if (TEST_NIGHTLY == false) {
+        if (getTestClass().getJavaClass().isAnnotationPresent(Nightly.class)) {
+          /* the test class is annotated with nightly, remove all methods */
+          String className = getTestClass().getJavaClass().getSimpleName();
+          System.err.println("NOTE: Ignoring nightly-only test class '" + className + "'");
+          testMethods.clear();
+        } else {
+          /* remove all nightly-only methods */
+          for (int i = 0; i < testMethods.size(); i++) {
+            final FrameworkMethod m = testMethods.get(i);
+            if (m.getAnnotation(Nightly.class) != null) {
+              System.err.println("NOTE: Ignoring nightly-only test method '" + m.getName() + "'");
+              testMethods.remove(i--);
+            }
+          }
+        }
+        /* dodge a possible "no-runnable methods" exception by adding a fake ignored test */
+        if (testMethods.isEmpty()) {
+          try {
+            testMethods.add(new FrameworkMethod(LuceneTestCase.class.getMethod("alwaysIgnoredTestMethod")));
+          } catch (Exception e) { throw new RuntimeException(e); }
         }
       }
       return testMethods;
@@ -901,4 +943,7 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
   }
+  
+  @Ignore("just a hack")
+  public final void alwaysIgnoredTestMethod() {}
 }
