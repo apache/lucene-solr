@@ -20,6 +20,7 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
 
 import org.egothor.stemmer.Diff;
 import org.egothor.stemmer.Trie;
@@ -45,17 +46,7 @@ public class StempelStemmer {
    * @param stemmerTable stemmer table.
    */
   public StempelStemmer(InputStream stemmerTable) throws IOException {
-    if (stemmerTable == null) return;
-    
-    DataInputStream in = new DataInputStream(new BufferedInputStream(
-        stemmerTable));
-    String method = in.readUTF().toUpperCase();
-    if (method.indexOf('M') < 0) {
-      stemmer = new org.egothor.stemmer.Trie(in);
-    } else {
-      stemmer = new org.egothor.stemmer.MultiTrie2(in);
-    }
-    in.close();
+    this(load(stemmerTable));
   }
 
   /**
@@ -65,6 +56,24 @@ public class StempelStemmer {
    */
   public StempelStemmer(Trie stemmer) {
     this.stemmer = stemmer;
+  }
+  
+  /**
+   * Load a stemmer table from an inputstream.
+   */
+  public static Trie load(InputStream stemmerTable) throws IOException {
+    DataInputStream in = null;
+    try {
+      in = new DataInputStream(new BufferedInputStream(stemmerTable));
+      String method = in.readUTF().toUpperCase(Locale.ENGLISH);
+      if (method.indexOf('M') < 0) {
+        return new org.egothor.stemmer.Trie(in);
+      } else {
+        return new org.egothor.stemmer.MultiTrie2(in);
+      }
+    } finally {
+      in.close();
+    }
   }
 
   /**
