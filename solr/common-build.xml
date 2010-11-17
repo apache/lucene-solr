@@ -60,6 +60,7 @@
   <property name="tests.timezone" value="random" />
   <property name="tests.iter" value="1" />
   <property name="tests.seed" value="random" />
+  <property name="tests.nightly" value="false" />
 
   <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
     <isset property="use.fsdir"/>
