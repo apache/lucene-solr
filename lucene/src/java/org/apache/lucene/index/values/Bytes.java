@@ -243,7 +243,7 @@ public final class Bytes {
       if (initIndex)
         initIndexOut();
     }
-
+    
     protected void initDataOut() throws IOException {
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           IndexFileNames.CSF_DATA_EXTENSION));

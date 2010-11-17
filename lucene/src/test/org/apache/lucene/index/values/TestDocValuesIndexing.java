@@ -273,7 +273,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       bytesRef.length = b.length;
       bytesRef.offset = 0;
     }
-    // 
     byte upto = 0;
     for (int i = 0; i < numValues; i++) {
       if (isNumeric) {
@@ -324,7 +323,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void runTestIndexBytes(IndexWriterConfig cfg, boolean withDeletions)
       throws CorruptIndexException, LockObtainFailedException, IOException {
-    Directory d = newDirectory();
+    final Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final List<Values> byteVariantList = new ArrayList<Values>(BYTES);
     // run in random order to test if fill works correctly during merges
@@ -389,7 +388,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       assertEquals(base + numRemainingValues, r.numDocs());
       int v = 0;
       for (int i = base; i < r.numDocs(); i++) {
-
         String msg = " field: " + byteIndexValue.name() + " at index: " + i
             + " base: " + base + " numDocs:" + r.numDocs() + " bytesSize: "
             + bytesSize;

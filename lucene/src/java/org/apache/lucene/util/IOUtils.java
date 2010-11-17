@@ -20,8 +20,6 @@ package org.apache.lucene.util;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.store.DataOutput;
-
 /** @lucene.internal */
 public final class IOUtils {
 
@@ -61,37 +59,10 @@ public final class IOUtils {
       }
     }
 
-    if (priorException != null)
+    if (priorException != null) {
       throw priorException;
-    else if (firstIOE != null)
+    } else if (firstIOE != null) {
       throw firstIOE;
-  }
-  
-  /**
-   * Writes the length of the {@link BytesRef} as either a one or two bytes to
-   * the {@link DataOutput} and returns the number of bytes used.
-   * 
-   * @param datOut
-   *          the output to write to
-   * @param bytes
-   *          the length to write
-   * @return the length of the {@link BytesRef} as either a one or two bytes to
-   *         the {@link DataOutput} and returns the number of bytes used.
-   * @throws IOException
-   *           if datOut throws an {@link IOException}
-   */
-  public static int writeLength(DataOutput datOut, BytesRef bytes)
-      throws IOException {
-    final int length = bytes.length;
-    if (length < 128) {
-      // 1 byte to store length
-      datOut.writeByte((byte) length);
-      return 1;
-    } else {
-      // 2 byte to store length
-      datOut.writeByte((byte) (0x80 | (length & 0x7f)));
-      datOut.writeByte((byte) ((length >> 7) & 0xff));
-      return 2;
     }
   }
 }

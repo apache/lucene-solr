@@ -24,6 +24,7 @@ import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.index.values.FixedDerefBytesImpl.Reader.DerefBytesEnum;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -32,7 +33,6 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
@@ -113,7 +113,7 @@ class VarDerefBytesImpl {
       final int docAddress;
       if (e >= 0) {
         docAddress = array.array.address[e] = address;
-        address += IOUtils.writeLength(datOut, bytes);
+        address += writePrefixLength(datOut, bytes);
         datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
         address += bytes.length;
       } else {
@@ -121,7 +121,18 @@ class VarDerefBytesImpl {
       }
       docToAddress[docID] = docAddress;
     }
-
+    
+    private static int writePrefixLength(DataOutput datOut, BytesRef bytes) throws IOException{
+      if (bytes.length < 128) {
+        datOut.writeByte((byte) bytes.length);
+        return 1;
+      } else {
+        datOut.writeByte((byte) (0x80 | (bytes.length >> 8)));
+        datOut.writeByte((byte) (bytes.length & 0xff));
+        return 2;
+      }
+    }
+    
     public long ramBytesUsed() {
       return bytesUsed.get();
     }
@@ -216,15 +227,14 @@ class VarDerefBytesImpl {
     
       @Override
       protected void fill(long address, BytesRef ref) throws IOException {
-        // TODO(simonw): use pages here
         datIn.seek(fp + --address);
         final byte sizeByte = datIn.readByte();
         final int size;
-        if ((sizeByte & 0x80) == 0) {
+        if ((sizeByte & 128) == 0) {
           // length is 1 byte
           size = sizeByte;
         } else {
-          size = (sizeByte & 0x7f) + ((datIn.readByte() & 0xff) << 7);
+          size = ((sizeByte & 0x7f)<<8) | ((datIn.readByte() & 0xff));
         }
         if(ref.bytes.length < size)
           ref.grow(size);
