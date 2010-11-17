@@ -58,7 +58,7 @@ public class Test03Distance extends LuceneTestCase {
     "a c e a b c"
   };
 
-  SingleFieldTestDb db1 = new SingleFieldTestDb(docs1, fieldName);
+  SingleFieldTestDb db1 = new SingleFieldTestDb(random, docs1, fieldName);
 
   private void distanceTst(String query, int[] expdnrs, SingleFieldTestDb db) throws Exception {
     BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db, fieldName, this,
@@ -179,7 +179,7 @@ public class Test03Distance extends LuceneTestCase {
     ""
   };
 
-  SingleFieldTestDb db2 = new SingleFieldTestDb(docs2, fieldName);
+  SingleFieldTestDb db2 = new SingleFieldTestDb(random, docs2, fieldName);
   
   public void distanceTest2(String query, int[] expdnrs) throws Exception {
     distanceTst(query, expdnrs, db2);
@@ -227,7 +227,7 @@ public class Test03Distance extends LuceneTestCase {
     ""
   };
 
-  SingleFieldTestDb db3 = new SingleFieldTestDb(docs3, fieldName);
+  SingleFieldTestDb db3 = new SingleFieldTestDb(random, docs3, fieldName);
 
   public void distanceTest3(String query, int[] expdnrs) throws Exception {
     distanceTst(query, expdnrs, db3);

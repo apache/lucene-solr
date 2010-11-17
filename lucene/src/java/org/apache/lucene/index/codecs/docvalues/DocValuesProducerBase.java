@@ -36,8 +36,8 @@ public abstract class DocValuesProducerBase extends FieldsProducer{
   
   protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();
 
-  protected DocValuesProducerBase(SegmentInfo si, Directory dir, FieldInfos fieldInfo) throws IOException {
-    load(fieldInfo, si.name, si.docCount, dir);
+  protected DocValuesProducerBase(SegmentInfo si, Directory dir, FieldInfos fieldInfo, String codecId) throws IOException {
+    load(fieldInfo, si.name, si.docCount, dir, codecId);
   }
 
   @Override
@@ -47,14 +47,14 @@ public abstract class DocValuesProducerBase extends FieldsProducer{
 
   // Only opens files... doesn't actually load any values
   protected void load(FieldInfos fieldInfos, String segment, int docCount,
-      Directory dir) throws IOException {
+      Directory dir, String codecId) throws IOException {
     final int numFields = fieldInfos.size();
     for (int i = 0; i < numFields; i++) {
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
       final Values v = fieldInfo.getDocValues();
       final String field = fieldInfo.name;
-      final String id = IndexFileNames.segmentFileName(segment, Integer
-          .toString(fieldInfo.number),"");
+      //TODO can we have a compound file  per segment and codec for docvalues?
+      final String id = IndexFileNames.segmentFileName(segment, codecId+"-"+fieldInfo.number, "");
       if (v != null && dir.fileExists(id + "." +  Writer.DATA_EXTENSION)) {
         docValues.put(field, loadDocValues(docCount, dir, id, v));
       } 

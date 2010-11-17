@@ -38,8 +38,8 @@ import java.io.IOException;
 public class TestMultiTermQueryRewrites extends LuceneTestCase {
 
   static Directory dir, sdir1, sdir2;
-  static IndexReader reader, multiReader;
-  static IndexSearcher searcher, multiSearcher;
+  static IndexReader reader, multiReader, multiReaderDupls;
+  static IndexSearcher searcher, multiSearcher, multiSearcherDupls;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -61,19 +61,26 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     
     reader = IndexReader.open(dir, true);
     searcher = new IndexSearcher(reader);
+    
     multiReader = new MultiReader(new IndexReader[] {
       IndexReader.open(sdir1, true), IndexReader.open(sdir2, true) 
     }, true);
     multiSearcher = new IndexSearcher(multiReader);
+    
+    multiReaderDupls = new MultiReader(new IndexReader[] {
+      IndexReader.open(sdir1, true), IndexReader.open(dir, true) 
+    }, true);
+    multiSearcherDupls = new IndexSearcher(multiReaderDupls);
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
     multiReader.close();
+    multiReaderDupls.close();
     dir.close(); sdir1.close(); sdir2.close();
-    reader = multiReader = null;
-    searcher = multiSearcher = null;
+    reader = multiReader = multiReaderDupls = null;
+    searcher = multiSearcher = multiSearcherDupls = null;
     dir = sdir1 = sdir2 = null;
   }
   
@@ -108,14 +115,18 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     mtq.setRewriteMethod(method);
     final Query q1 = searcher.rewrite(mtq);
     final Query q2 = multiSearcher.rewrite(mtq);
+    final Query q3 = multiSearcherDupls.rewrite(mtq);
     if (VERBOSE) {
       System.out.println();
       System.out.println("single segment: " + q1);
-      System.out.println(" multi segment: " + q2);
+      System.out.println("multi segment: " + q2);
+      System.out.println("multi segment with duplicates: " + q3);
     }
     assertEquals("The multi-segment case must produce same rewritten query", q1, q2);
+    assertEquals("The multi-segment case with duplicates must produce same rewritten query", q1, q3);
     checkBooleanQueryOrder(q1);
     checkBooleanQueryOrder(q2);
+    checkBooleanQueryOrder(q3);
   }
   
   public void testRewritesWithDuplicateTerms() throws Exception {
@@ -147,8 +158,8 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
       @Override
       protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
         return new TermRangeTermsEnum(reader, field, "2", "7", true, true, null) {
-          final MultiTermQuery.BoostAttribute boostAtt =
-            attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+          final BoostAttribute boostAtt =
+            attributes().addAttribute(BoostAttribute.class);
         
           @Override
           protected AcceptStatus accept(BytesRef term) {
@@ -166,14 +177,18 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     mtq.setRewriteMethod(method);
     final Query q1 = searcher.rewrite(mtq);
     final Query q2 = multiSearcher.rewrite(mtq);
+    final Query q3 = multiSearcherDupls.rewrite(mtq);
     if (VERBOSE) {
       System.out.println();
       System.out.println("single segment: " + q1);
-      System.out.println(" multi segment: " + q2);
+      System.out.println("multi segment: " + q2);
+      System.out.println("multi segment with duplicates: " + q3);
     }
     assertEquals("The multi-segment case must produce same rewritten query", q1, q2);
+    assertEquals("The multi-segment case with duplicates must produce same rewritten query", q1, q3);
     checkBooleanQueryBoosts((BooleanQuery) q1);
     checkBooleanQueryBoosts((BooleanQuery) q2);
+    checkBooleanQueryBoosts((BooleanQuery) q3);
   }
   
   public void testBoosts() throws Exception {
@@ -181,6 +196,41 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
 
     // use a large PQ here to only test boosts and dont mix up when all scores are equal
     checkBoosts(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(1024));
+  }
+  
+  private void checkMaxClauseLimitation(MultiTermQuery.RewriteMethod method) throws Exception {
+    // default gets restored automatically by LuceneTestCase:
+    BooleanQuery.setMaxClauseCount(3);
+    
+    final MultiTermQuery mtq = new TermRangeQuery("data", "2", "7", true, true);
+    mtq.setRewriteMethod(method);
+    try {
+      multiSearcherDupls.rewrite(mtq);
+      fail("Should throw BooleanQuery.TooManyClauses");
+    } catch (BooleanQuery.TooManyClauses e) {
+      //  Maybe remove this assert in later versions, when internal API changes:
+      assertEquals("Should throw BooleanQuery.TooManyClauses with a stacktrace containing checkMaxClauseCount()",
+        "checkMaxClauseCount", e.getStackTrace()[0].getMethodName());
+    }
+  }
+  
+  private void checkNoMaxClauseLimitation(MultiTermQuery.RewriteMethod method) throws Exception {
+    // default gets restored automatically by LuceneTestCase:
+    BooleanQuery.setMaxClauseCount(3);
+    
+    final MultiTermQuery mtq = new TermRangeQuery("data", "2", "7", true, true);
+    mtq.setRewriteMethod(method);
+    multiSearcherDupls.rewrite(mtq);
+  }
+  
+  public void testMaxClauseLimitations() throws Exception {
+    checkMaxClauseLimitation(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    checkMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    
+    checkNoMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    checkNoMaxClauseLimitation(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    checkNoMaxClauseLimitation(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(1024));
+    checkNoMaxClauseLimitation(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(1024));
   }
   
 }

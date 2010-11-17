@@ -39,10 +39,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * is expanded to many terms during search. 
    */
   public static class TooManyClauses extends RuntimeException {
-    public TooManyClauses() {}
-    @Override
-    public String getMessage() {
-      return "maxClauseCount is set to " + maxClauseCount;
+    public TooManyClauses() {
+      super("maxClauseCount is set to " + maxClauseCount);
     }
   }
 

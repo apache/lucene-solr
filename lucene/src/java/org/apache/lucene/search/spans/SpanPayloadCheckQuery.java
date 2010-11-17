@@ -50,7 +50,7 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery{
   }
 
   @Override
-  protected boolean acceptPosition(Spans spans) throws IOException {
+  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
     boolean result = spans.isPayloadAvailable();
     if (result == true){
       Collection<byte[]> candidate = spans.getPayload();
@@ -62,16 +62,16 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery{
         for (byte[] candBytes : candidate) {
           //if one is a mismatch, then return false
           if (Arrays.equals(candBytes, toMatchIter.next()) == false){
-            return false;
+            return AcceptStatus.NO;
           }
         }
         //we've verified all the bytes
-        return true;
+        return AcceptStatus.YES;
       } else {
-        return false;
+        return AcceptStatus.NO;
       }
     }
-    return result;
+    return AcceptStatus.YES;
   } 
 
   public String toString(String field) {

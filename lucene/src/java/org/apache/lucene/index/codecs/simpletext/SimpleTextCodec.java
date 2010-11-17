@@ -56,13 +56,13 @@ public class SimpleTextCodec extends Codec {
   /** Extension of freq postings file */
   static final String POSTINGS_EXTENSION = "pst";
 
-  static String getPostingsFileName(String segment) {
+  static String getPostingsFileName(String segment, String id) {
     return IndexFileNames.segmentFileName(segment, "", POSTINGS_EXTENSION);
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-    files.add(getPostingsFileName(segmentInfo.name));
+  public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException {
+    files.add(getPostingsFileName(segmentInfo.name, id));
   }
 
   @Override

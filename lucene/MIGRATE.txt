@@ -324,3 +324,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   The other way round MTQ.TopTermsBooleanQueryRewrite supplys a
   global AttributeSource to each segments TermsEnum. The TermsEnum is consumer
   and gets the current minimum competitive boosts (MTQ.MaxNonCompetitiveBoostAttribute).
+
+* LUCENE-2761: DataInput.readVInt/readVLong and DataOutput.writeVInt/writeVLong
+  are final. If you subclassed this code before to encode variable-length
+  integers in some specialized way, use the Codec API instead.

@@ -49,12 +49,12 @@ import java.util.List;
  */
 public final class FuzzyTermsEnum extends TermsEnum {
   private TermsEnum actualEnum;
-  private MultiTermQuery.BoostAttribute actualBoostAtt;
+  private BoostAttribute actualBoostAtt;
   
-  private final MultiTermQuery.BoostAttribute boostAtt =
-    attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+  private final BoostAttribute boostAtt =
+    attributes().addAttribute(BoostAttribute.class);
   
-  private final MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt;
+  private final MaxNonCompetitiveBoostAttribute maxBoostAtt;
   private final LevenshteinAutomataAttribute dfaAtt;
   
   private float bottom;
@@ -128,7 +128,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     }
     this.scale_factor = 1.0f / (1.0f - this.minSimilarity);
 
-    this.maxBoostAtt = atts.addAttribute(MultiTermQuery.MaxNonCompetitiveBoostAttribute.class);
+    this.maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
     bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
     bottomTerm = maxBoostAtt.getCompetitiveTerm();
     bottomChanged(null, true);
@@ -174,8 +174,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
   /** swap in a new actual enum to proxy to */
   private void setEnum(TermsEnum actualEnum) {
     this.actualEnum = actualEnum;
-    this.actualBoostAtt = actualEnum.attributes().addAttribute(
-        MultiTermQuery.BoostAttribute.class);
+    this.actualBoostAtt = actualEnum.attributes().addAttribute(BoostAttribute.class);
   }
   
   /**
@@ -300,8 +299,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
     private final BytesRef termRef;
     
     private final BytesRef lastTerm;
-    private final MultiTermQuery.BoostAttribute boostAtt =
-      attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+    private final BoostAttribute boostAtt =
+      attributes().addAttribute(BoostAttribute.class);
     
     public AutomatonFuzzyTermsEnum(ByteRunAutomaton matchers[], 
         BytesRef lastTerm) throws IOException {
@@ -363,8 +362,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
     // this is the text, minus the prefix
     private final int[] text;
     
-    private final MultiTermQuery.BoostAttribute boostAtt =
-      attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+    private final BoostAttribute boostAtt =
+      attributes().addAttribute(BoostAttribute.class);
     
     /**
      * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of

@@ -90,12 +90,12 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // start of the field info data
   protected long dirOffset;
 
-  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp)
+  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, String codecId)
     throws IOException {
 
     this.termComp = termComp;
 
-    IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, "", FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
+    IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
     
     boolean success = false;
 
@@ -436,8 +436,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     return fields.get(fieldInfo);
   }
 
-  public static void files(Directory dir, SegmentInfo info, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, "", FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
+  public static void files(Directory dir, SegmentInfo info, String id, Collection<String> files) {
+    files.add(IndexFileNames.segmentFileName(info.name, id, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
   public static void getIndexExtensions(Collection<String> extensions) {

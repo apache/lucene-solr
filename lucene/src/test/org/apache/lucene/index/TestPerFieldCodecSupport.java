@@ -28,7 +28,10 @@ import org.apache.lucene.index.CheckIndex.Status.SegmentInfoStatus;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
+import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.search.IndexSearcher;
@@ -255,15 +258,16 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     final int docsPerRound = 97;
     for (int i = 0; i < 5; i++) {
       CodecProvider provider = new CodecProvider();
-      provider.register(new StandardCodec());
-      provider.register(new SimpleTextCodec());
-      // provider.register(new MockSepCodec()); // TODO enable once we have
-      // files per codec
-      // provider.register(new PulsingCodec());
-
+      Codec[] codecs = new Codec[] { new StandardCodec(),
+          new SimpleTextCodec(), new MockSepCodec(),
+          new PulsingCodec(1 + random.nextInt(10)),
+          new MockVariableIntBlockCodec(1 + random.nextInt(10)),
+          new MockFixedIntBlockCodec(1 + random.nextInt(10)) };
+      for (Codec codec : codecs) {
+        provider.register(codec);
+      }
       for (int j = 0; j < 30 * RANDOM_MULTIPLIER; j++) {
-        provider.setFieldCodec("" + j, random.nextBoolean() ? "SimpleText"
-            : "Standard"); // TODO enable other codecs once possible
+        provider.setFieldCodec("" + j, codecs[random.nextInt(codecs.length)].name);
       }
       IndexWriterConfig config = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer());

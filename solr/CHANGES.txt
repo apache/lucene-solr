@@ -305,6 +305,8 @@ New Features
 * SOLR-2211: Added UAX29TokenizerFactory, which implements UAX#29, a unicode algorithm 
   with good results for most languages.  (Tom Burton-West via rmuir)
 
+* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
+
 Optimizations
 ----------------------
 

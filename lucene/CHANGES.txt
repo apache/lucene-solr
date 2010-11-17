@@ -295,6 +295,10 @@ New features
   resolved without knowing the actual codec used for writing the segment.
   (Simon Willnauer)
 
+* LUCENE-2741: Add support for multiple codecs that use the same file
+  extensions within the same segment. Codecs now use their per-segment codec
+  ID in the file names. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
@@ -716,6 +720,10 @@ New features
 * LUCENE-2671: Add SortField.setMissingValue( v ) to enable sorting
   behavior for documents that do not include the given field. (ryan)
 
+* LUCENE-2754, LUCENE-2757: Added a wrapper around MultiTermQueries
+  to add span support: SpanMultiTermQueryWrapper<Q extends MultiTermQuery>.
+  Using this wrapper its easy to add fuzzy/wildcard to e.g. a SpanNearQuery.
+  (Robert Muir, Uwe Schindler)
   
 Optimizations
 
@@ -792,6 +800,9 @@ Optimizations
   every compare call. Also replaced lots of sorting code in Lucene
   by the improved SorterTemplate class.
   (Uwe Schindler, Robert Muir, Mike McCandless)
+
+* LUCENE-2760: Optimize SpanFirstQuery and SpanPositionRangeQuery.
+  (Robert Muir)
 
 Build
 

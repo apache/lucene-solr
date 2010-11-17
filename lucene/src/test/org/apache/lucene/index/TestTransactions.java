@@ -193,8 +193,8 @@ public class TestTransactions extends LuceneTestCase {
 
   public void testTransactions() throws Throwable {
     // we cant use non-ramdir on windows, because this test needs to double-write.
-    MockDirectoryWrapper dir1 = new MockDirectoryWrapper(new RAMDirectory());
-    MockDirectoryWrapper dir2 = new MockDirectoryWrapper(new RAMDirectory());
+    MockDirectoryWrapper dir1 = new MockDirectoryWrapper(random, new RAMDirectory());
+    MockDirectoryWrapper dir2 = new MockDirectoryWrapper(random, new RAMDirectory());
     dir1.setPreventDoubleWrite(false);
     dir2.setPreventDoubleWrite(false);
     dir1.failOn(new RandomFailure());

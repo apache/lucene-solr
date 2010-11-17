@@ -602,13 +602,13 @@ final class IndexFileDeleter {
       if (!initDone) {
         initDone = true;
       } else {
-        assert count > 0: "RefCount is 0 pre-increment for file \"" + fileName + "\"";
+        assert count > 0: Thread.currentThread().getName() + ": RefCount is 0 pre-increment for file \"" + fileName + "\"";
       }
       return ++count;
     }
 
     public int DecRef() {
-      assert count > 0: "RefCount is 0 pre-decrement for file \"" + fileName + "\"";
+      assert count > 0: Thread.currentThread().getName() + ": RefCount is 0 pre-decrement for file \"" + fileName + "\"";
       return --count;
     }
   }

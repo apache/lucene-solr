@@ -35,9 +35,9 @@ public class AppendingTermsDictReader extends PrefixCodedTermsReader {
   public AppendingTermsDictReader(TermsIndexReaderBase indexReader,
           Directory dir, FieldInfos fieldInfos, String segment,
           PostingsReaderBase postingsReader, int readBufferSize,
-          Comparator<BytesRef> termComp, int termsCacheSize) throws IOException {
+          Comparator<BytesRef> termComp, int termsCacheSize, String codecId) throws IOException {
     super(indexReader, dir, fieldInfos, segment, postingsReader, readBufferSize,
-            termComp, termsCacheSize);
+            termComp, termsCacheSize, codecId);
   }
   
   @Override

@@ -108,7 +108,7 @@ public class PulsingCodec extends Codec {
 
     // We wrap StandardPostingsReader, but any StandardPostingsReader
     // will work:
-    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize);
+    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
     PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
 
     // Terms dict index reader
@@ -120,7 +120,8 @@ public class PulsingCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator());
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
+                                                       state.codecId);
       success = true;
     } finally {
       if (!success) {
@@ -136,7 +137,8 @@ public class PulsingCodec extends Codec {
                                                        pulsingReader,
                                                        state.readBufferSize,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       StandardCodec.TERMS_CACHE_SIZE);
+                                                       StandardCodec.TERMS_CACHE_SIZE,
+                                                       state.codecId);
       success = true;
       return ret;
     } finally {
@@ -151,10 +153,10 @@ public class PulsingCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, files);
-    PrefixCodedTermsReader.files(dir, segmentInfo, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException {
+    StandardPostingsReader.files(dir, segmentInfo, id, files);
+    PrefixCodedTermsReader.files(dir, segmentInfo, id, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
   }
 
   @Override

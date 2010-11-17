@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Random;
 
 import junit.framework.Assert;
 
@@ -99,10 +100,10 @@ public class QueryUtils {
    * @see #checkSerialization
    * @see #checkEqual
    */
-  public static void check(Query q1, Searcher s) {
-    check(q1, s, true);
+  public static void check(Random random, Query q1, Searcher s) {
+    check(random, q1, s, true);
   }
-  private static void check(Query q1, Searcher s, boolean wrap) {
+  private static void check(Random random, Query q1, Searcher s, boolean wrap) {
     try {
       check(q1);
       if (s!=null) {
@@ -111,15 +112,15 @@ public class QueryUtils {
           checkFirstSkipTo(q1,is);
           checkSkipTo(q1,is);
           if (wrap) {
-            check(q1, wrapUnderlyingReader(is, -1), false);
-            check(q1, wrapUnderlyingReader(is,  0), false);
-            check(q1, wrapUnderlyingReader(is, +1), false);
+            check(random, q1, wrapUnderlyingReader(random, is, -1), false);
+            check(random, q1, wrapUnderlyingReader(random, is,  0), false);
+            check(random, q1, wrapUnderlyingReader(random, is, +1), false);
           }
         }
         if (wrap) {
-          check(q1, wrapSearcher(s, -1), false);
-          check(q1, wrapSearcher(s,  0), false);
-          check(q1, wrapSearcher(s, +1), false);
+          check(random,q1, wrapSearcher(random, s, -1), false);
+          check(random,q1, wrapSearcher(random, s,  0), false);
+          check(random,q1, wrapSearcher(random, s, +1), false);
         }
         checkExplanations(q1,s);
         checkSerialization(q1,s);
@@ -142,7 +143,7 @@ public class QueryUtils {
    * @param s the searcher to wrap
    * @param edge if negative, s will be the first sub; if 0, s will be in the middle, if positive s will be the last sub
    */
-  public static IndexSearcher wrapUnderlyingReader(final IndexSearcher s, final int edge) 
+  public static IndexSearcher wrapUnderlyingReader(Random random, final IndexSearcher s, final int edge) 
     throws IOException {
 
     IndexReader r = s.getIndexReader();
@@ -150,19 +151,19 @@ public class QueryUtils {
     // we can't put deleted docs before the nested reader, because
     // it will throw off the docIds
     IndexReader[] readers = new IndexReader[] {
-      edge < 0 ? r : IndexReader.open(makeEmptyIndex(0), true),
-      IndexReader.open(makeEmptyIndex(0), true),
+      edge < 0 ? r : IndexReader.open(makeEmptyIndex(random, 0), true),
+      IndexReader.open(makeEmptyIndex(random, 0), true),
       new MultiReader(new IndexReader[] {
-        IndexReader.open(makeEmptyIndex(edge < 0 ? 4 : 0), true),
-        IndexReader.open(makeEmptyIndex(0), true),
-        0 == edge ? r : IndexReader.open(makeEmptyIndex(0), true)
+        IndexReader.open(makeEmptyIndex(random, edge < 0 ? 4 : 0), true),
+        IndexReader.open(makeEmptyIndex(random, 0), true),
+        0 == edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true)
       }),
-      IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 7), true),
-      IndexReader.open(makeEmptyIndex(0), true),
+      IndexReader.open(makeEmptyIndex(random, 0 < edge ? 0 : 7), true),
+      IndexReader.open(makeEmptyIndex(random, 0), true),
       new MultiReader(new IndexReader[] {
-        IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 5), true),
-        IndexReader.open(makeEmptyIndex(0), true),
-        0 < edge ? r : IndexReader.open(makeEmptyIndex(0), true)
+        IndexReader.open(makeEmptyIndex(random, 0 < edge ? 0 : 5), true),
+        IndexReader.open(makeEmptyIndex(random, 0), true),
+        0 < edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true)
       })
     };
     IndexSearcher out = new IndexSearcher(new MultiReader(readers));
@@ -178,24 +179,24 @@ public class QueryUtils {
    * @param s the Searcher to wrap
    * @param edge if negative, s will be the first sub; if 0, s will be in hte middle, if positive s will be the last sub
    */
-  public static MultiSearcher wrapSearcher(final Searcher s, final int edge) 
+  public static MultiSearcher wrapSearcher(Random random, final Searcher s, final int edge) 
     throws IOException {
 
     // we can't put deleted docs before the nested reader, because
     // it will through off the docIds
     Searcher[] searchers = new Searcher[] {
-      edge < 0 ? s : new IndexSearcher(makeEmptyIndex(0), true),
+      edge < 0 ? s : new IndexSearcher(makeEmptyIndex(random, 0), true),
       new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(edge < 0 ? 65 : 0), true),
-        new IndexSearcher(makeEmptyIndex(0), true),
-        0 == edge ? s : new IndexSearcher(makeEmptyIndex(0), true)
+        new IndexSearcher(makeEmptyIndex(random, edge < 0 ? 65 : 0), true),
+        new IndexSearcher(makeEmptyIndex(random, 0), true),
+        0 == edge ? s : new IndexSearcher(makeEmptyIndex(random, 0), true)
       }),
-      new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 3), true),
-      new IndexSearcher(makeEmptyIndex(0), true),
+      new IndexSearcher(makeEmptyIndex(random, 0 < edge ? 0 : 3), true),
+      new IndexSearcher(makeEmptyIndex(random, 0), true),
       new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 5), true),
-        new IndexSearcher(makeEmptyIndex(0), true),
-        0 < edge ? s : new IndexSearcher(makeEmptyIndex(0), true)
+        new IndexSearcher(makeEmptyIndex(random, 0 < edge ? 0 : 5), true),
+        new IndexSearcher(makeEmptyIndex(random, 0), true),
+        0 < edge ? s : new IndexSearcher(makeEmptyIndex(random, 0), true)
       })
     };
     MultiSearcher out = new MultiSearcher(searchers);
@@ -203,9 +204,9 @@ public class QueryUtils {
     return out;
   }
 
-  private static Directory makeEmptyIndex(final int numDeletedDocs) 
+  private static Directory makeEmptyIndex(Random random, final int numDeletedDocs) 
     throws IOException {
-      Directory d = new MockDirectoryWrapper(new RAMDirectory());
+    Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = new IndexWriter(d, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
       for (int i = 0; i < numDeletedDocs; i++) {

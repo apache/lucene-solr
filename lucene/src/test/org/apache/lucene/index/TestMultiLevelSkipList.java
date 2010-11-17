@@ -50,7 +50,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   
   class CountingRAMDirectory extends MockDirectoryWrapper {
     public CountingRAMDirectory(Directory delegate) {
-      super(delegate);
+      super(random, delegate);
     }
 
     public IndexInput openInput(String fileName) throws IOException {

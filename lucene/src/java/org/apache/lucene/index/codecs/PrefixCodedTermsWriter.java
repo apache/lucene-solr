@@ -69,7 +69,7 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
       PostingsWriterBase postingsWriter,
       Comparator<BytesRef> termComp) throws IOException
   {
-    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, "", TERMS_EXTENSION);
+    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
     this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);

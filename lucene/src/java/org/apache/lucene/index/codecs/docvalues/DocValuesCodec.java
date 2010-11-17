@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
@@ -92,7 +91,9 @@ public class DocValuesCodec extends Codec {
     public synchronized DocValuesConsumer addValuesField(FieldInfo field)
         throws IOException {
       DocValuesConsumer consumer = DocValuesConsumer.create(state.segmentName,
-          state.directory, field, null); // TODO: set comparator here
+      // TODO: set comparator here
+      //TODO can we have a compound file per segment and codec for docvalues?
+          state.directory, field, state.codecId +"-"+ field.number, null);
       docValuesConsumers.add(consumer);
       return consumer;
     }
@@ -113,30 +114,30 @@ public class DocValuesCodec extends Codec {
     Directory dir = state.dir;
     Set<String> files = new HashSet<String>();
 
-    other.files(dir, state.segmentInfo, files);
+    other.files(dir, state.segmentInfo, state.codecId, files);
     for (String string : files) {
       if (dir.fileExists(string))
-        return new WrappingFielsdProducer(state.segmentInfo, state.dir,
-            state.fieldInfos, other.fieldsProducer(state));
+        return new WrappingFielsdProducer(state, other.fieldsProducer(state));
     }
-    return new WrappingFielsdProducer(state.segmentInfo, state.dir,
-        state.fieldInfos, FieldsProducer.EMPTY);
+    return new WrappingFielsdProducer(state, FieldsProducer.EMPTY);
 
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files)
-      throws IOException {
+  public void files(Directory dir, SegmentInfo segmentInfo, String codecId,
+      Set<String> files) throws IOException {
     Set<String> otherFiles = new HashSet<String>();
-    other.files(dir, segmentInfo, otherFiles);
-    for (String string : otherFiles) { // under some circumstances we only write DocValues
-                                       // so other files will be added even if they don't exist
+    other.files(dir, segmentInfo, codecId, otherFiles);
+    for (String string : otherFiles) { // under some circumstances we only write
+                                       // DocValues
+                                       // so other files will be added even if
+                                       // they don't exist
       if (dir.fileExists(string))
         files.add(string);
     }
-
+    //TODO can we have a compound file per segment and codec for docvalues?
     for (String file : dir.listAll()) {
-      if (file.startsWith(segmentInfo.name)
+      if (file.startsWith(segmentInfo.name+"_" + codecId)
           && (file.endsWith(Writer.DATA_EXTENSION) || file
               .endsWith(Writer.INDEX_EXTENSION))) {
         files.add(file);
@@ -156,9 +157,9 @@ public class DocValuesCodec extends Codec {
 
     private final FieldsProducer other;
 
-    WrappingFielsdProducer(SegmentInfo si, Directory dir, FieldInfos fieldInfo,
-        FieldsProducer other) throws IOException {
-      super(si, dir, fieldInfo);
+    WrappingFielsdProducer(SegmentReadState state, FieldsProducer other)
+        throws IOException {
+      super(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
       this.other = other;
     }
 

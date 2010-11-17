@@ -50,7 +50,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
 
     private class SeekCountingDirectory extends MockDirectoryWrapper {
       public SeekCountingDirectory(Directory delegate) {
-        super(delegate);
+        super(random, delegate);
       }
 
       @Override

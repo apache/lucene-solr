@@ -41,6 +41,10 @@ public abstract class StringIndexDocValues extends DocValues {
       }
       this.vs = vs;
     }
+
+    public FieldCache.DocTermsIndex getDocTermsIndex() {
+      return termsIndex;
+    }
   
     protected abstract String toTerm(String readableValue);
 

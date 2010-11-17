@@ -67,6 +67,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    // test relies on no merges happening below:
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
 
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
@@ -128,6 +130,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     Directory dir1 = newDirectory();
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    // test relies on no merges happening below:
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+
     writer.setInfoStream(infoStream);
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
@@ -350,7 +355,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             try {
               final Directory[] dirs = new Directory[numDirs];
               for (int k = 0; k < numDirs; k++)
-                dirs[k] = new MockDirectoryWrapper(new RAMDirectory(addDir));
+                dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(addDir));
               //int j = 0;
               //while (true) {
                 // System.out.println(Thread.currentThread().getName() + ": iter
@@ -626,7 +631,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     final Directory[] dirs = new Directory[10];
     for (int i=0;i<10;i++) {
-      dirs[i] = new MockDirectoryWrapper(new RAMDirectory(dir1));
+      dirs[i] = new MockDirectoryWrapper(random, new RAMDirectory(dir1));
     }
 
     IndexReader r = writer.getReader();

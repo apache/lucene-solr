@@ -99,7 +99,14 @@ public class MockIndexOutputWrapper extends IndexOutput {
       }
       throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name);
     } else {
-      delegate.writeBytes(b, offset, len);
+      if (dir.randomState.nextBoolean()) {
+        final int half = len/2;
+        delegate.writeBytes(b, offset, half);
+        Thread.yield();
+        delegate.writeBytes(b, offset+half, len-half);
+      } else {
+        delegate.writeBytes(b, offset, len);
+      }
     }
 
     dir.maybeThrowDeterministicException();

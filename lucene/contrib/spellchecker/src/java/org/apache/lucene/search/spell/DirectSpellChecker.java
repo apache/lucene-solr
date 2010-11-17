@@ -28,7 +28,8 @@ import java.util.PriorityQueue;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FuzzyTermsEnum;
-import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -389,16 +390,16 @@ public class DirectSpellChecker {
       IndexReader ir, int docfreq, int editDistance, float accuracy) throws IOException {
     
     AttributeSource atts = new AttributeSource();
-    MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt =
-      atts.addAttribute(MultiTermQuery.MaxNonCompetitiveBoostAttribute.class);
+    MaxNonCompetitiveBoostAttribute maxBoostAtt =
+      atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
     FuzzyTermsEnum e = new FuzzyTermsEnum(ir, atts, term, editDistance, Math.max(minPrefix, editDistance-1));
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
     
     BytesRef queryTerm = new BytesRef(term.text());
     BytesRef candidateTerm;
     ScoreTerm st = new ScoreTerm();
-    MultiTermQuery.BoostAttribute boostAtt =
-      e.attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+    BoostAttribute boostAtt =
+      e.attributes().addAttribute(BoostAttribute.class);
     while ((candidateTerm = e.next()) != null) {
       final float boost = boostAtt.getBoost();
       // ignore uncompetitive hits

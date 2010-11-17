@@ -113,7 +113,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
   }
   
   public PrefixCodedTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
-                                 Comparator<BytesRef> termComp, int termsCacheSize)
+                                 Comparator<BytesRef> termComp, int termsCacheSize, String codecId)
     throws IOException {
     
     this.postingsReader = postingsReader;
@@ -121,7 +121,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
 
     this.termComp = termComp;
     
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, "", PrefixCodedTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, PrefixCodedTermsWriter.TERMS_EXTENSION),
                        readBufferSize);
 
     boolean success = false;
@@ -204,8 +204,8 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", PrefixCodedTermsWriter.TERMS_EXTENSION));
+  public static void files(Directory dir, SegmentInfo segmentInfo, String id, Collection<String> files) {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, PrefixCodedTermsWriter.TERMS_EXTENSION));
   }
 
   public static void getExtensions(Collection<String> extensions) {

@@ -124,7 +124,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   }
 
   protected void check(SpanQuery q, int[] docs) throws Exception {
-    CheckHits.checkHitCollector(q, null, searcher, docs);
+    CheckHits.checkHitCollector(random, q, null, searcher, docs);
   }
 
   public void testRewrite0() throws Exception {

@@ -201,16 +201,16 @@ public class FuzzyLikeThisQuery extends Query
                   float minScore=0;
                   Term startTerm=internSavingTemplateTerm.createTerm(term);
                   AttributeSource atts = new AttributeSource();
-                  MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt =
-                    atts.addAttribute(MultiTermQuery.MaxNonCompetitiveBoostAttribute.class);
+                  MaxNonCompetitiveBoostAttribute maxBoostAtt =
+                    atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
                   FuzzyTermsEnum fe = new FuzzyTermsEnum(reader, atts, startTerm, f.minSimilarity, f.prefixLength);
                   //store the df so all variants use same idf
                   int df = reader.docFreq(startTerm);
                   int numVariants=0;
                   int totalVariantDocFreqs=0;
                   BytesRef possibleMatch;
-                  MultiTermQuery.BoostAttribute boostAtt =
-                    fe.attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+                  BoostAttribute boostAtt =
+                    fe.attributes().addAttribute(BoostAttribute.class);
                   while ((possibleMatch = fe.next()) != null) {
                       if (possibleMatch!=null) {
                         numVariants++;
