@@ -320,41 +320,98 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
      assertJQ(req("q","id:"+doc.id), "/response/numFound==1");
     **/
 
-    int indexIter=0;  // make >0 to enable test
-    int queryIter=1000;
+    int indexIter=50 * RANDOM_MULTIPLIER;  // make >0 to enable test
+    int queryIter=100 * RANDOM_MULTIPLIER;
 
     while (--indexIter >= 0) {
 
-      List<FldType> types = new ArrayList<FldType>();
-      types.add(new FldType("id",ONE_ONE, new SVal('A','Z',2,2)));
-      types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));  // field used to score
-      types.add(new FldType("foo_i",ONE_ONE, new IRange(0,10)));
-      types.add(new FldType("foo_s",ONE_ONE, new SVal('a','z',1,2)));
+      int indexSize = random.nextInt(25 * RANDOM_MULTIPLIER);
 
-      Map<Comparable, Doc> model = indexDocs(types, null, 2);
-      System.out.println("############### model=" + model);
+      List<FldType> types = new ArrayList<FldType>();
+      types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
+      types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));  // field used to score
+      types.add(new FldType("foo_i",ONE_ONE, new IRange(0,indexSize)));
+      types.add(new FldType("foo_s",ONE_ONE, new SVal('a','z',1,2)));
+      types.add(new FldType("small_s",ONE_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
+      types.add(new FldType("small_i",ONE_ONE, new IRange(0,5+indexSize/10)));
+
+      clearIndex();
+      Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
+      //System.out.println("############### model=" + model);
+
+      // test with specific docs
+      if (false) {
+        clearIndex();
+        model.clear();
+        Doc d1 = createDoc(types);
+        d1.getValues("small_s").set(0,"c");
+        d1.getValues("small_i").set(0,5);
+        d1.order = 0;
+        updateJ(toJSON(d1), params("commit","true"));
+        model.put(d1.id, d1);
+
+        d1 = createDoc(types);
+        d1.getValues("small_s").set(0,"b");
+        d1.getValues("small_i").set(0,5);
+        d1.order = 1;
+        updateJ(toJSON(d1), params("commit","false"));
+        model.put(d1.id, d1);
+
+        d1 = createDoc(types);
+        d1.getValues("small_s").set(0,"c");
+        d1.getValues("small_i").set(0,5);
+        d1.order = 2;
+        updateJ(toJSON(d1), params("commit","false"));
+        model.put(d1.id, d1);
+
+        d1 = createDoc(types);
+        d1.getValues("small_s").set(0,"c");
+        d1.getValues("small_i").set(0,5);
+        d1.order = 3;
+        updateJ(toJSON(d1), params("commit","false"));
+        model.put(d1.id, d1);
+
+        d1 = createDoc(types);
+        d1.getValues("small_s").set(0,"b");
+        d1.getValues("small_i").set(0,2);
+        d1.order = 4;
+        updateJ(toJSON(d1), params("commit","true"));
+        model.put(d1.id, d1);
+      }
 
 
       for (int qiter=0; qiter<queryIter; qiter++) {
         String groupField = types.get(random.nextInt(types.size())).fname;
 
-        Map<Comparable, Grp> groups = groupBy(model.values(), groupField);
-        int rows = random.nextInt(11)-1;
+        int rows = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
         int start = random.nextInt(5)==0 ? random.nextInt(model.size()+2) : random.nextInt(5); // pick a small start normally for better coverage
-        int group_limit = random.nextInt(11)-1;
-group_limit = random.nextInt(10)+1;
+        int group_limit = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
+// TODO: remove restriction on 0
+group_limit = random.nextInt(10)+1;      
         int group_offset = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(2); // pick a small start normally for better coverage
 
-        // sort each group
         String[] stringSortA = new String[1];
-        Comparator<Doc> groupComparator = createSort(h.getCore().getSchema(), types, stringSortA);
+        Comparator<Doc> sortComparator = createSort(h.getCore().getSchema(), types, stringSortA);
+        String sortStr = stringSortA[0];
+        Comparator<Doc> groupComparator = random.nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
         String groupSortStr = stringSortA[0];
 
-        // Test specific sort
-        /***
-         groupComparator = createComparator("_docid_", false, false, false);
-         stringSort = "_docid_ desc";
-         ***/
+// TODO: fix/support different groupComparator
+groupComparator = sortComparator;
+groupSortStr = null;
+// rows=1; start=0; group_offset=1; group_limit=1;
+        
+         // Test specific case
+        if (false) {
+          groupField="small_i";
+          sortComparator=createComparator(Arrays.asList(createComparator("small_s", true, true, false)));
+          sortStr = "small_s asc";
+          groupComparator = createComparator(Arrays.asList(createComparator("small_s", true, true, false)));
+          groupSortStr = "small_s asc";
+          rows=1; start=0; group_offset=1; group_limit=1;
+        }
+
+        Map<Comparable, Grp> groups = groupBy(model.values(), groupField);
 
         // first sort the docs in each group
         for (Grp grp : groups.values()) {
@@ -362,8 +419,6 @@ group_limit = random.nextInt(10)+1;
         }
 
         // now sort the groups by the first doc in that group
-        Comparator<Doc> sortComparator = random.nextBoolean() ? groupComparator : createSort(h.getCore().getSchema(), types, stringSortA);
-        String sortStr = stringSortA[0];
 
         List<Grp> sortedGroups = new ArrayList(groups.values());
         Collections.sort(sortedGroups, createFirstDocComparator(sortComparator));
@@ -372,7 +427,7 @@ group_limit = random.nextInt(10)+1;
 
         // TODO: create a random filter too
 
-        SolrQueryRequest req = req("group","true","wt","json","indent","true", "q","{!func}score_f", "group.field",groupField
+        SolrQueryRequest req = req("group","true","wt","json","indent","true", "echoParams","all", "q","{!func}score_f", "group.field",groupField
             ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr
             ,(groupSortStr==null || groupSortStr==sortStr) ? "nosort":"group.sort", groupSortStr==null ? "": groupSortStr
             ,"rows",""+rows, "start",""+start, "group.offset",""+group_offset, "group.limit",""+group_limit
@@ -384,10 +439,14 @@ group_limit = random.nextInt(10)+1;
         String err = JSONTestUtil.matchObj("/grouped/"+groupField, realResponse, modelResponse);
         if (err != null) {
           log.error("GROUPING MISMATCH: " + err
+           + "\n\trequest="+req
            + "\n\tresult="+strResponse
            + "\n\texpected="+ JSONUtil.toJSON(modelResponse)
            + "\n\tsorted_model="+ sortedGroups
           );
+
+          // re-execute the request... good for putting a breakpoint here for debugging
+          String rsp = h.query(req);
 
           fail(err);
         }
