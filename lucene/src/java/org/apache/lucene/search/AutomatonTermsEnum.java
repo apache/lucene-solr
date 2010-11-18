@@ -26,7 +26,6 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
-import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
 
 /**
@@ -102,12 +101,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     }
 
     // build a cache of sorted transitions for every state
-    allTransitions = new Transition[runAutomaton.getSize()][];
-    for (State state : this.automaton.getNumberedStates()) {
-      state.sortTransitions(Transition.CompareByMinMaxThenDest);
-      state.trimTransitionsArray();
-      allTransitions[state.getNumber()] = state.transitionsArray;
-    }
+    allTransitions = this.automaton.getSortedTransitions();
     // used for path tracking, where each bit is a numbered state.
     visited = new long[runAutomaton.getSize()];
 
