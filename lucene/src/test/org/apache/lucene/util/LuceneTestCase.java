@@ -215,7 +215,7 @@ public abstract class LuceneTestCase extends Assert {
   static Codec installTestCodecs() {
     final CodecProvider cp = CodecProvider.getDefault();
 
-    savedDefaultCodec = CodecProvider.getDefaultCodec();
+    savedDefaultCodec = cp.getDefaultFieldCodec();
     String codec = TEST_CODEC;
 
     final boolean codecHasParam;
@@ -235,7 +235,6 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    CodecProvider.setDefaultCodec(codec);
     cp.setDefaultFieldCodec(codec);
 
     if (codec.equals("PreFlex")) {
@@ -268,7 +267,6 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
     swapCodec(new PulsingCodec(1));
-    CodecProvider.setDefaultCodec(savedDefaultCodec);
     cp.setDefaultFieldCodec(savedDefaultCodec);
 
   }

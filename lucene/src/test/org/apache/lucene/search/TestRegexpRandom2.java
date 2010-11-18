@@ -58,7 +58,6 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
-    
     Document doc = new Document();
     Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(field);
@@ -135,8 +134,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   public void testRegexps() throws Exception {
     // we generate aweful regexps: good for testing.
     // but for preflex codec, the test can be very slow, so use less iterations.
-    String codec = CodecProvider.getDefaultCodec();
-    int num = codec.equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : 1000 * RANDOM_MULTIPLIER;
+    int num = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
       assertSame(reg);
