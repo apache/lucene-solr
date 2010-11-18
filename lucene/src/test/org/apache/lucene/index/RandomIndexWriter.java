@@ -24,7 +24,6 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
@@ -84,7 +83,7 @@ public class RandomIndexWriter implements Closeable {
     flushAt = _TestUtil.nextInt(r, 10, 1000);
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW config=" + w.getConfig());
-      System.out.println("codec default=" + CodecProvider.getDefaultCodec());
+      System.out.println("codec default=" + w.getConfig().getCodecProvider().getDefaultFieldCodec());
     }
   } 
 

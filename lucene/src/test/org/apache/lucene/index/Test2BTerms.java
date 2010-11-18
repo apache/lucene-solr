@@ -123,7 +123,7 @@ public class Test2BTerms extends LuceneTestCase {
   @Ignore("Takes ~4 hours to run on a fast machine!!  And requires that you don't use PreFlex codec.")
   public void test2BTerms() throws IOException {
 
-    if ("PreFlex".equals(CodecProvider.getDefaultCodec())) {
+    if ("PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec())) {
       throw new RuntimeException("thist test cannot run with PreFlex codec");
     }
 

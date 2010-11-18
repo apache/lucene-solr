@@ -39,7 +39,7 @@ import org.apache.lucene.index.codecs.standard.StandardCodec;
 public class CodecProvider {
   private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
   private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
-  private String defaultFieldCodec = defaultCodec;
+  private String defaultFieldCodec = "Standard";
   private final Map<String, String> perFieldMap = new HashMap<String, String>();
 
   
@@ -47,7 +47,6 @@ public class CodecProvider {
 
   private final Set<String> knownExtensions = new HashSet<String>();
 
-  private static String defaultCodec = "Standard";
 
   public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText"};
 
@@ -101,15 +100,6 @@ public class CodecProvider {
 
   public static CodecProvider getDefault() {
     return defaultCodecs;
-  }
-
-  /** Used for testing. @lucene.internal */
-  public synchronized static void setDefaultCodec(String s) {
-    defaultCodec = s;
-  }
-  /** Used for testing. @lucene.internal */
-  public synchronized static String getDefaultCodec() {
-    return defaultCodec;
   }
   
   /**
@@ -175,6 +165,5 @@ class DefaultCodecProvider extends CodecProvider {
     register(new PreFlexCodec());
     register(new PulsingCodec(1));
     register(new SimpleTextCodec());
-    setDefaultFieldCodec(CodecProvider.getDefaultCodec());
   }
 }

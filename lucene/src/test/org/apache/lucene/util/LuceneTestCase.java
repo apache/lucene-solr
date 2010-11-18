@@ -35,6 +35,8 @@ import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -73,6 +75,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -146,6 +149,8 @@ public abstract class LuceneTestCase extends Assert {
   // tests)
   /** Gets the codec to run tests with. */
   static final String TEST_CODEC = System.getProperty("tests.codec", "random");
+  /** Get if a random codec per field should be used */ // only use random per field if no explicit codec is set
+  static final boolean TEST_RANDOM_CODEC_PER_FIELD = "random".equals(TEST_CODEC) && Boolean.parseBoolean(System.getProperty("tests.randomCodecPerField", "true"));
   /** Gets the locale to run tests with */
   static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
   /** Gets the timezone to run tests with */
@@ -215,7 +220,7 @@ public abstract class LuceneTestCase extends Assert {
   static Codec installTestCodecs() {
     final CodecProvider cp = CodecProvider.getDefault();
 
-    savedDefaultCodec = CodecProvider.getDefaultCodec();
+    savedDefaultCodec = cp.getDefaultFieldCodec();
     String codec = TEST_CODEC;
 
     final boolean codecHasParam;
@@ -235,7 +240,6 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    CodecProvider.setDefaultCodec(codec);
     cp.setDefaultFieldCodec(codec);
 
     if (codec.equals("PreFlex")) {
@@ -268,7 +272,6 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
     swapCodec(new PulsingCodec(1));
-    CodecProvider.setDefaultCodec(savedDefaultCodec);
     cp.setDefaultFieldCodec(savedDefaultCodec);
 
   }
@@ -322,6 +325,7 @@ public abstract class LuceneTestCase extends Assert {
     timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
     testsFailed = false;
+    randomCodecProvider = new RandomCodecProvider(random);
   }
   
   @AfterClass
@@ -342,11 +346,11 @@ public abstract class LuceneTestCase extends Assert {
       }
     stores = null;
     // if tests failed, report some information back
-    if (testsFailed)
+    if (testsFailed) {
       System.out.println("NOTE: test params are: codec=" + codec + 
         ", locale=" + locale + 
-        ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
-    if (testsFailed) {
+        ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()) + 
+       (TEST_RANDOM_CODEC_PER_FIELD?", "+randomCodecProvider.toString():""));
       System.err.println("NOTE: all tests run in this JVM:");
       System.err.println(Arrays.toString(testClassesRun.toArray()));
     }
@@ -617,8 +621,9 @@ public abstract class LuceneTestCase extends Assert {
     return newIndexWriterConfig(random, v, a);
   }
   
+  /** create a new index writer config with random defaults */
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
-    IndexWriterConfig c = new IndexWriterConfig(v, a);
+    final IndexWriterConfig c = new IndexWriterConfig(v, a);
     if (r.nextBoolean()) {
       c.setMergePolicy(new LogDocMergePolicy());
     }
@@ -642,7 +647,9 @@ public abstract class LuceneTestCase extends Assert {
       logmp.setCalibrateSizeByDeletes(r.nextBoolean());
       logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
     }
-    
+    if (TEST_RANDOM_CODEC_PER_FIELD) {
+      c.setCodecProvider(randomCodecProvider);
+    }
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
@@ -844,6 +851,8 @@ public abstract class LuceneTestCase extends Assert {
   // seed for individual test methods, changed in @before
   private long seed;
   
+  protected static CodecProvider randomCodecProvider;
+  
   private static final Random seedRand = new Random();
   protected static final Random random = new Random();
 
@@ -941,6 +950,61 @@ public abstract class LuceneTestCase extends Assert {
       } catch (NoTestsRemainException e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+  
+  /** Returns the codec for the given field uses in this testcase */
+  public static String getRandomFieldCodec(String field) {
+    final CodecProvider provider = TEST_RANDOM_CODEC_PER_FIELD ? randomCodecProvider : CodecProvider.getDefault();
+    return provider.getFieldCodec(field);
+  }
+  
+  static class RandomCodecProvider extends CodecProvider {
+
+    private final Codec[] codecs;
+    private final Map<String, String> perFieldMap = new HashMap<String, String>();
+    private final Random random;
+
+    RandomCodecProvider(Random random) {
+      if (random.nextInt(5) == 0) {
+        /*
+         * We randomly swap in a exclusive PreFlexCodec to provide random test coverage
+         * for preFlex indexes. In realistic a PreFlex-Environment newer codecs don't occur.    
+         */
+        this.codecs = new Codec[] { new PreFlexRWCodec() };
+      } else {
+        this.codecs = new Codec[] { new StandardCodec(), new SimpleTextCodec(),
+            new MockSepCodec(), new PulsingCodec(1 + random.nextInt(10)),
+            new MockVariableIntBlockCodec(1 + random.nextInt(10)),
+            new MockFixedIntBlockCodec(1 + random.nextInt(10)), };
+        register(new PreFlexCodec()); // register this for read support
+      }
+      for (int i = 0; i < codecs.length; i++) {
+        register(codecs[i]);
+      }
+
+      this.random = random;
+    }
+
+    @Override
+    public synchronized String getFieldCodec(String name) {
+      if (!perFieldMap.containsKey(name)) { // select a codec at random
+        setFieldCodec(name, codecs[random.nextInt(codecs.length)].name);
+      }
+      return super.getFieldCodec(name);
+    }
+
+    @Override
+    public synchronized void setFieldCodec(String field, String codec) {
+      if (!perFieldMap.containsKey(field)) {
+        perFieldMap.put(field, codec);
+      }
+      super.setFieldCodec(field, codec);
+    }
+
+    @Override
+    public String toString() {
+      return "RandomCodecProvider [perFieldMap=" + perFieldMap + "]";
     }
   }
   
