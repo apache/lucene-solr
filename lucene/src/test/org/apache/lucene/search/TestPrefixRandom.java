@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -56,7 +57,7 @@ public class TestPrefixRandom extends LuceneTestCase {
 
     // we generate aweful prefixes: good for testing.
     // but for preflex codec, the test can be very slow, so use less iterations.
-    final String codec = getRandomFieldCodec("field");
+    String codec = CodecProvider.getDefaultCodec();
     int num = codec.equals("PreFlex") ? 200 * RANDOM_MULTIPLIER : 2000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       field.setValue(_TestUtil.randomUnicodeString(random, 10));
