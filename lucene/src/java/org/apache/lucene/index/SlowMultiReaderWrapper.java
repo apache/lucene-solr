@@ -82,4 +82,9 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   public void doClose() throws IOException {
     throw new UnsupportedOperationException("please call close on the original reader instead");
   }
+
+  @Override
+  public IndexReader[] getSequentialSubReaders() {
+    return null;
+  } 
 }

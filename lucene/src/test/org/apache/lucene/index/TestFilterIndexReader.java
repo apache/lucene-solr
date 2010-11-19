@@ -149,7 +149,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     //IndexReader reader = new TestReader(IndexReader.open(directory, true));
     Directory target = newDirectory();
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexReader reader = new TestReader(IndexReader.open(directory, true));
+    IndexReader reader = new TestReader(SlowMultiReaderWrapper.wrap(IndexReader.open(directory, true)));
     writer.addIndexes(reader);
     writer.close();
     reader.close();
