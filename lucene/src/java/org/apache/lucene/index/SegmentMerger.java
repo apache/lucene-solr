@@ -698,6 +698,12 @@ final class SegmentMerger {
   }
 
   private void mergeNorms() throws IOException {
+    // get needed buffer size by finding the largest segment
+    int bufferSize = 0;
+    for (IndexReader reader : readers) {
+      bufferSize = Math.max(bufferSize, reader.maxDoc());
+    }
+    
     byte[] normBuffer = null;
     IndexOutput output = null;
     try {
@@ -709,12 +715,11 @@ final class SegmentMerger {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
             output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
           }
+          if (normBuffer == null) {
+            normBuffer = new byte[bufferSize];
+          }
           for (IndexReader reader : readers) {
-            int maxDoc = reader.maxDoc();
-            if (normBuffer == null || normBuffer.length < maxDoc) {
-              // the buffer is too small for the current segment
-              normBuffer = new byte[maxDoc];
-            }
+            final int maxDoc = reader.maxDoc();
             reader.norms(fi.name, normBuffer, 0);
             if (!reader.hasDeletions()) {
               //optimized case for segments without deleted docs
