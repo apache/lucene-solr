@@ -35,7 +35,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.MultiBits;
 
@@ -641,7 +640,13 @@ final class SegmentMerger {
   }
   
   private void mergeNorms() throws IOException {
-    final BytesRef normBuffer = new BytesRef();
+    // get needed buffer size by finding the largest segment
+    int bufferSize = 0;
+    for (IndexReader reader : readers) {
+      bufferSize = Math.max(bufferSize, reader.maxDoc());
+    }
+    
+    byte[] normBuffer = null;
     IndexOutput output = null;
     try {
       for (int i = 0, numFieldInfos = fieldInfos.size(); i < numFieldInfos; i++) {
@@ -651,21 +656,22 @@ final class SegmentMerger {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
             output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
           }
+          if (normBuffer == null) {
+            normBuffer = new byte[bufferSize];
+          }
           for (IndexReader reader : readers) {
             final int maxDoc = reader.maxDoc();
-            normBuffer.grow(maxDoc);
-            final byte[] norms = normBuffer.bytes;
-            reader.norms(fi.name, norms, 0);
+            reader.norms(fi.name, normBuffer, 0);
             if (!reader.hasDeletions()) {
               //optimized case for segments without deleted docs
-              output.writeBytes(norms, maxDoc);
+              output.writeBytes(normBuffer, maxDoc);
             } else {
               // this segment has deleted docs, so we have to
               // check for every doc if it is deleted or not
               final Bits delDocs = reader.getDeletedDocs();
               for (int k = 0; k < maxDoc; k++) {
                 if (!delDocs.get(k)) {
-                  output.writeByte(norms[k]);
+                  output.writeByte(normBuffer[k]);
                 }
               }
             }
