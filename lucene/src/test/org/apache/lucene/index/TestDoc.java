@@ -194,7 +194,8 @@ public class TestDoc extends LuceneTestCase {
       merger.add(r1);
       merger.add(r2);
       merger.merge();
-      merger.closeReaders();
+      r1.close();
+      r2.close();
       
       final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
                                                useCompoundFile, -1, null, false, merger.hasProx(), merger.getSegmentCodecs());

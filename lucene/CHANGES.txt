@@ -804,6 +804,11 @@ Optimizations
 * LUCENE-2760: Optimize SpanFirstQuery and SpanPositionRangeQuery.
   (Robert Muir)
 
+* LUCENE-2770: Make SegmentMerger always work on atomic subreaders,
+  even when IndexWriter.addIndexes(IndexReader...) is used with
+  DirectoryReaders or other MultiReaders. This saves lots of memory
+  during merge of norms.  (Uwe Schindler, Mike McCandless)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
