@@ -183,6 +183,11 @@ public class IndexSorter {
       }
     }
 
+    @Override
+    public IndexReader[] getSequentialSubReaders() {
+      return null;
+    }
+
     public Document document(int n) throws IOException {
       return document(n, null);
     }

@@ -30,14 +30,12 @@ import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ReaderUtil;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
  * into a single Segment.  After adding the appropriate readers, call the merge method to combine the 
  * segments.
- *<P> 
- * If the compoundFile flag is set, then the segments will be merged into a compound file.
- *   
  * 
  * @see #merge
  * @see #add
@@ -113,16 +111,7 @@ final class SegmentMerger {
    * @param reader
    */
   final void add(IndexReader reader) {
-    readers.add(reader);
-  }
-
-  /**
-   * 
-   * @param i The index of the reader to return
-   * @return The ith reader to be merged
-   */
-  final IndexReader segmentReader(int i) {
-    return readers.get(i);
+    ReaderUtil.gatherSubReaders(readers, reader);
   }
 
   /**
@@ -164,17 +153,6 @@ final class SegmentMerger {
       mergeVectors();
 
     return mergedDocs;
-  }
-
-  /**
-   * close all IndexReaders that have been added.
-   * Should not be called before merge().
-   * @throws IOException
-   */
-  final void closeReaders() throws IOException {
-    for (final IndexReader reader : readers) {
-      reader.close();
-    }
   }
 
   final List<String> createCompoundFile(String fileName)
@@ -223,7 +201,7 @@ final class SegmentMerger {
     return files;
   }
 
-  private void addIndexed(IndexReader reader, FieldInfos fInfos,
+  private static void addIndexed(IndexReader reader, FieldInfos fInfos,
       Collection<String> names, boolean storeTermVectors,
       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
       boolean storePayloads, boolean omitTFAndPositions)
@@ -456,7 +434,7 @@ final class SegmentMerger {
         final SegmentReader matchingSegmentReader = matchingSegmentReaders[idx++];
         TermVectorsReader matchingVectorsReader = null;
         if (matchingSegmentReader != null) {
-          TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReaderOrig();
+          TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReader();
 
           // If the TV* files are an older format then they cannot read raw docs:
           if (vectorsReader != null && vectorsReader.canReadRawDocs()) {
@@ -731,7 +709,7 @@ final class SegmentMerger {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
             output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
           }
-          for ( IndexReader reader : readers) {
+          for (IndexReader reader : readers) {
             int maxDoc = reader.maxDoc();
             if (normBuffer == null || normBuffer.length < maxDoc) {
               // the buffer is too small for the current segment

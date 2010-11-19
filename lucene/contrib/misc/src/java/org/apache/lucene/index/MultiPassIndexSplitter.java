@@ -221,6 +221,11 @@ public class MultiPassIndexSplitter {
     }
 
     @Override
+    public IndexReader[] getSequentialSubReaders() {
+      return null;
+    }
+
+    @Override
     public TermPositions termPositions() throws IOException {
       return new FilterTermPositions(in.termPositions()) {
 
