@@ -103,9 +103,9 @@ public class CodecProvider {
   }
   
   /**
-   * Sets the {@link Codec} for a given field. Not that setting a fields code is
-   * write-once. If the fields codec is already set this method will throw an
-   * {@link IllegalArgumentException}
+   * Sets the {@link Codec} for a given field. Not that setting a field's codec is
+   * write-once. If the field's codec is already set this method will throw an
+   * {@link IllegalArgumentException}.
    * 
    * @param field
    *          the name of the field
