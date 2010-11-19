@@ -385,9 +385,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         int rows = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
         int start = random.nextInt(5)==0 ? random.nextInt(model.size()+2) : random.nextInt(5); // pick a small start normally for better coverage
-        int group_limit = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
-// TODO: remove restriction on 0
-group_limit = random.nextInt(10)+1;      
+        int group_limit = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;    
         int group_offset = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(2); // pick a small start normally for better coverage
 
         String[] stringSortA = new String[1];
@@ -482,7 +480,7 @@ groupSortStr = null;
       List docs = new ArrayList();
       resultSet.put("docs", docs);
       for (int j=group_offset; j<grp.docs.size(); j++) {
-        if (group_offset != -1 && docs.size() >= group_limit) break;
+        if (group_limit != -1 && docs.size() >= group_limit) break;
         docs.add( grp.docs.get(j).toObject(schema) );
       }
     }

@@ -64,7 +64,8 @@ public class Grouping {
     }
 
     DocList getDocList(TopDocsCollector collector) {
-      int docsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
+      int max = collector.getTotalHits();
+      int docsToCollect = getMax(groupOffset, docsPerGroup, max);
 
       // TODO: implement a DocList impl that doesn't need to start at offset=0
       TopDocs topDocs = collector.topDocs(0, docsToCollect);
@@ -161,6 +162,7 @@ public class Grouping {
       if (numGroups == 0) return null;
 
       int docsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
+      docsToCollect = Math.max(docsToCollect, 1);
 
       if (false && groupBy instanceof StrFieldSource) {
         collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, offset);
@@ -181,8 +183,6 @@ public class Grouping {
       if (numGroups == 0) return;
 
       if (collector.orderedGroups == null) collector.buildSet();
-
-
 
       int skipCount = offset;
       for (SearchGroup group : collector.orderedGroups) {
@@ -506,6 +506,8 @@ class TopGroupCollector extends GroupCollector {
 
       // remove current smallest group
       SearchGroup smallest = orderedGroups.pollLast();
+      assert orderedGroups.size() == nGroups -1;
+
       groupMap.remove(smallest.groupValue);
 
       // reuse the removed SearchGroup
@@ -518,6 +520,7 @@ class TopGroupCollector extends GroupCollector {
 
       groupMap.put(smallest.groupValue, smallest);
       orderedGroups.add(smallest);
+      assert orderedGroups.size() == nGroups;
 
       for (FieldComparator fc : comparators)
         fc.setBottom(orderedGroups.last().comparatorSlot);
@@ -560,6 +563,7 @@ class TopGroupCollector extends GroupCollector {
     if (orderedGroups != null) {
       prevLast = orderedGroups.last();
       orderedGroups.remove(group);
+      assert orderedGroups.size() == nGroups-1;
     }
 
     group.topDoc = docBase + doc;
@@ -569,6 +573,7 @@ class TopGroupCollector extends GroupCollector {
     // re-add the changed group
     if (orderedGroups != null) {
       orderedGroups.add(group);
+      assert orderedGroups.size() == nGroups;
       SearchGroup newLast = orderedGroups.last();
       // if we changed the value of the last group, or changed which group was last, then update bottom
       if (group == newLast || prevLast != newLast) {
