@@ -17,19 +17,20 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.Directory;
-import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Random;
+
+import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.store.Directory;
 
 public class _TestUtil {
 
@@ -222,5 +223,13 @@ public class _TestUtil {
     } else {
       return false;
     }
+  }
+
+  // just tries to configure things to keep the open file
+  // count lowish
+  public static void reduceOpenFiles(IndexWriter w) {
+    // keep number of open files lowish
+    LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
+    lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
   }
 }
