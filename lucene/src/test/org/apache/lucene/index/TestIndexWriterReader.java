@@ -276,12 +276,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     Directory mainDir = newDirectory();
     IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-
-    // try to keep open file count down:
-    LogMergePolicy lmp = (LogMergePolicy) mainWriter.getMergePolicy();
-    if (lmp.getMergeFactor() > 5) {
-      lmp.setMergeFactor(5);
-    }
+    _TestUtil.reduceOpenFiles(mainWriter);
 
     mainWriter.setInfoStream(infoStream);
     AddDirectoriesThreads addDirThreads = new AddDirectoriesThreads(numIter, mainWriter);
