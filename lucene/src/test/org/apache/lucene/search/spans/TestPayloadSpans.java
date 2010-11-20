@@ -120,7 +120,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    checkSpans(snq.getSpans(SlowMultiReaderWrapper.wrap(reader)), 1,new int[]{2});
+    checkSpans(snq.getSpans(new SlowMultiReaderWrapper(reader)), 1,new int[]{2});
     reader.close();
     directory.close();
   }
@@ -261,8 +261,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     doc.add(new Field("content", new StringReader("a b c d e f g h i j a k")));
     writer.addDocument(doc);
 
-    IndexReader reader = writer.getReader();
-    IndexSearcher is = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
+    IndexSearcher is = new IndexSearcher(reader);
     writer.close();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
@@ -298,8 +298,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("a b a d k f a h i k a k")));
     writer.addDocument(doc);
-    IndexReader reader = writer.getReader();
-    IndexSearcher is = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
+    IndexSearcher is = new IndexSearcher(reader);
     writer.close();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
@@ -334,8 +334,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("j k a l f k k p a t a k l k t a")));
     writer.addDocument(doc);
-    IndexReader reader = writer.getReader();
-    IndexSearcher is = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
+    IndexSearcher is = new IndexSearcher(reader);
     writer.close();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
@@ -376,9 +376,9 @@ public class TestPayloadSpans extends LuceneTestCase {
     doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   
-    IndexReader reader = writer.getReader();
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     PayloadSpanUtil psu = new PayloadSpanUtil(searcher.getIndexReader());
     
@@ -440,10 +440,10 @@ public class TestPayloadSpans extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
-    closeIndexReader = writer.getReader();
+    closeIndexReader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(closeIndexReader));
+    IndexSearcher searcher = new IndexSearcher(closeIndexReader);
     return searcher;
   }
   

@@ -130,17 +130,16 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.addDocument(new Document());
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
-    IndexReader slowReader = SlowMultiReaderWrapper.wrap(reader);
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
 
     // not cacheable:
-    assertDocIdSetCacheable(slowReader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
+    assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
     // returns default empty docidset, always cacheable:
-    assertDocIdSetCacheable(slowReader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
+    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
     // is cacheable:
-    assertDocIdSetCacheable(slowReader, FieldCacheRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), true);
+    assertDocIdSetCacheable(reader, FieldCacheRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), true);
     // a openbitset filter is always cacheable
-    assertDocIdSetCacheable(slowReader, new Filter() {
+    assertDocIdSetCacheable(reader, new Filter() {
       @Override
       public DocIdSet getDocIdSet(IndexReader reader) {
         return new OpenBitSet();

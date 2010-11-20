@@ -196,7 +196,7 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("t3") },
                               slop,
                               ordered);
-    Spans spans = snq.getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
+    Spans spans = snq.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
 
     assertTrue("first range", spans.next());
     assertEquals("first doc", 11, spans.doc());
@@ -222,7 +222,7 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("u2") },
                               0,
                               false);
-    Spans spans = snq.getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
+    Spans spans = snq.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
     assertTrue("Does not have next and it should", spans.next());
     assertEquals("doc", 4, spans.doc());
     assertEquals("start", 1, spans.start());
@@ -258,7 +258,7 @@ public class TestSpans extends LuceneTestCase {
                               },
                               1,
                               false);
-    spans = snq.getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
+    spans = snq.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
     assertTrue("Does not have next and it should", spans.next());
     assertEquals("doc", 4, spans.doc());
     assertEquals("start", 0, spans.start());
@@ -316,7 +316,7 @@ public class TestSpans extends LuceneTestCase {
     for (int i = 0; i < terms.length; i++) {
       sqa[i] = makeSpanTermQuery(terms[i]);
     }
-    return (new SpanOrQuery(sqa)).getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
+    return (new SpanOrQuery(sqa)).getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
   }
 
   private void tstNextSpans(Spans spans, int doc, int start, int end)
@@ -421,7 +421,7 @@ public class TestSpans extends LuceneTestCase {
       }
     };
 
-    Scorer spanScorer = snq.weight(searcher).scorer(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()), true, false);
+    Scorer spanScorer = snq.weight(searcher).scorer(new SlowMultiReaderWrapper(searcher.getIndexReader()), true, false);
 
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);

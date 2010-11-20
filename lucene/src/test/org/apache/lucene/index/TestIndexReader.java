@@ -1151,22 +1151,20 @@ public class TestIndexReader extends LuceneTestCase
       w.commit();
       doc.add(newField("f", "who", Field.Store.NO, Field.Index.NOT_ANALYZED));
       w.addDocument(doc);
-      IndexReader r = w.getReader();
-      IndexReader wr = SlowMultiReaderWrapper.wrap(r);
+      IndexReader r = new SlowMultiReaderWrapper(w.getReader());
       w.close();
 
-      assertNull(wr.getDeletedDocs());
+      assertNull(r.getDeletedDocs());
       r.close();
 
-      r = IndexReader.open(dir, false);
-      wr = SlowMultiReaderWrapper.wrap(r);
+      r = new SlowMultiReaderWrapper(IndexReader.open(dir, false));
 
-      assertNull(wr.getDeletedDocs());
+      assertNull(r.getDeletedDocs());
       assertEquals(1, r.deleteDocuments(new Term("f", "doctor")));
-      assertNotNull(wr.getDeletedDocs());
-      assertTrue(wr.getDeletedDocs().get(0));
+      assertNotNull(r.getDeletedDocs());
+      assertTrue(r.getDeletedDocs().get(0));
       assertEquals(1, r.deleteDocuments(new Term("f", "who")));
-      assertTrue(wr.getDeletedDocs().get(1));
+      assertTrue(r.getDeletedDocs().get(1));
       r.close();
       dir.close();
     }

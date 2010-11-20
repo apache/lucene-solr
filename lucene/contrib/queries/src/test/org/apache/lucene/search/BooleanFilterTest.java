@@ -32,7 +32,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class BooleanFilterTest extends LuceneTestCase {
 	private Directory directory;
-	private IndexReader mainReader;
 	private IndexReader reader;
 
 	@Override
@@ -47,14 +46,13 @@ public class BooleanFilterTest extends LuceneTestCase {
 		addDoc(writer, "guest", "020", "20050101","Y");
 		addDoc(writer, "admin", "020", "20050101","Maybe");
 		addDoc(writer, "admin guest", "030", "20050101","N");
-		mainReader = writer.getReader();
-		reader = SlowMultiReaderWrapper.wrap(mainReader);
+		reader = new SlowMultiReaderWrapper(writer.getReader());
 		writer.close();	
 	}
 	
 	@Override
 	public void tearDown() throws Exception {
-	  mainReader.close();
+	  reader.close();
 	  directory.close();
 	  super.tearDown();
 	}

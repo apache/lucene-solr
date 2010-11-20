@@ -121,10 +121,10 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = writer.getReader();
+    reader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
 
-    searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    searcher = new IndexSearcher(reader);
     searcher.setSimilarity(similarity);
   }
 

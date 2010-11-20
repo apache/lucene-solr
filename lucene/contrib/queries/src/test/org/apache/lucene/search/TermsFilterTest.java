@@ -60,10 +60,8 @@ public class TermsFilterTest extends LuceneTestCase {
 			doc.add(newField(fieldName,""+term,Field.Store.YES,Field.Index.NOT_ANALYZED));
 			w.addDocument(doc);			
 		}
-		IndexReader mainReader = w.getReader();
+		IndexReader reader = new SlowMultiReaderWrapper(w.getReader());
 		w.close();
-
-                IndexReader reader = SlowMultiReaderWrapper.wrap(mainReader);
 		
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(fieldName,"19"));
@@ -82,7 +80,7 @@ public class TermsFilterTest extends LuceneTestCase {
 		bits = (OpenBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 2", 2, bits.cardinality());
 		
-		mainReader.close();
+		reader.close();
 		rd.close();
 	}
 }

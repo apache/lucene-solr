@@ -79,8 +79,8 @@ public class TestBasics extends LuceneTestCase {
       doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = writer.getReader();
-    searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    reader = new SlowMultiReaderWrapper(writer.getReader());
+    searcher = new IndexSearcher(reader);
     writer.close();
   }
 

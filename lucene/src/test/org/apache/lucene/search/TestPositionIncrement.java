@@ -243,12 +243,11 @@ public class TestPositionIncrement extends LuceneTestCase {
         "a a b c d e a f g h i j a b k k")));
     writer.addDocument(doc);
 
-    IndexReader r = writer.getReader();
+    IndexReader r = new SlowMultiReaderWrapper(writer.getReader());
 
-    DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(r,
-                                                               MultiFields.getDeletedDocs(r),
-                                                               "content",
-                                                               new BytesRef("a"));
+    DocsAndPositionsEnum tp = r.termPositionsEnum(r.getDeletedDocs(),
+                                                     "content",
+                                                     new BytesRef("a"));
     
     int count = 0;
     assertTrue(tp.nextDoc() != tp.NO_MORE_DOCS);
@@ -263,7 +262,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     // only one doc has "a"
     assertEquals(tp.NO_MORE_DOCS, tp.nextDoc());
 
-    IndexSearcher is = new IndexSearcher(SlowMultiReaderWrapper.wrap(r));
+    IndexSearcher is = new IndexSearcher(r);
   
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));

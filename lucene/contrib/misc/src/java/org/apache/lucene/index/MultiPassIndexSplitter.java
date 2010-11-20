@@ -177,8 +177,8 @@ public class MultiPassIndexSplitter {
     OpenBitSet dels;
     OpenBitSet oldDels = null;
 
-    public FakeDeleteIndexReader(IndexReader in) throws IOException {
-      super(SlowMultiReaderWrapper.wrap(in));
+    public FakeDeleteIndexReader(IndexReader in) {
+      super(new SlowMultiReaderWrapper(in));
       dels = new OpenBitSet(in.maxDoc());
       if (in.hasDeletions()) {
         oldDels = new OpenBitSet(in.maxDoc());

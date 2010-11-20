@@ -110,9 +110,9 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("gender", "male"),
                                          field("first",  "bubba"),
                                          field("last",   "jones")     }));
-    reader = writer.getReader();
+    reader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
-    searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    searcher = new IndexSearcher(reader);
   }
 
   @Override
