@@ -24,7 +24,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -219,7 +218,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   }
 
   private void checkInvariants(IndexWriter writer) throws IOException {
-    _TestUtil.syncConcurrentMerges(writer);
+    writer.waitForMerges();
     int maxBufferedDocs = writer.getConfig().getMaxBufferedDocs();
     int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
     int maxMergeDocs = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMaxMergeDocs();
@@ -261,7 +260,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         segmentCfsCount++;
       }
     }
-    assertEquals(segmentCount, segmentCfsCount);
+    assertEquals("index=" + writer.segString(), segmentCount, segmentCfsCount);
   }
 
   /*

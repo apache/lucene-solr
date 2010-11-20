@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import java.util.List;
 
@@ -155,13 +157,8 @@ final class SegmentMerger {
     return mergedDocs;
   }
 
-  final List<String> createCompoundFile(String fileName)
-          throws IOException {
-    CompoundFileWriter cfsWriter =
-      new CompoundFileWriter(directory, fileName, checkAbort);
-
-    List<String> files =
-      new ArrayList<String>(IndexFileNames.COMPOUND_EXTENSIONS.length + 1);    
+  final Collection<String> getMergedFiles() throws IOException {
+    Set<String> fileSet = new HashSet<String>();
     
     // Basic files
     for (String ext : IndexFileNames.COMPOUND_EXTENSIONS) {
@@ -170,7 +167,7 @@ final class SegmentMerger {
 
       if (mergeDocStores || (!ext.equals(IndexFileNames.FIELDS_EXTENSION) &&
                             !ext.equals(IndexFileNames.FIELDS_INDEX_EXTENSION)))
-        files.add(IndexFileNames.segmentFileName(segment, ext));
+        fileSet.add(IndexFileNames.segmentFileName(segment, ext));
     }
 
     // Fieldable norm files
@@ -178,7 +175,7 @@ final class SegmentMerger {
     for (int i = 0; i < numFIs; i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {
-        files.add(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
+        fileSet.add(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
         break;
       }
     }
@@ -186,11 +183,19 @@ final class SegmentMerger {
     // Vector files
     if (fieldInfos.hasVectors() && mergeDocStores) {
       for (String ext : IndexFileNames.VECTOR_EXTENSIONS) {
-        files.add(IndexFileNames.segmentFileName(segment, ext));
+        fileSet.add(IndexFileNames.segmentFileName(segment, ext));
       }
     }
 
+    return fileSet;
+  }
+
+  final Collection<String> createCompoundFile(String fileName)
+          throws IOException {
+
     // Now merge all added files
+    Collection<String> files = getMergedFiles();
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
     for (String file : files) {
       cfsWriter.addFile(file);
     }

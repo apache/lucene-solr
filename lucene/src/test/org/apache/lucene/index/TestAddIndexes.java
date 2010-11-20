@@ -844,7 +844,7 @@ public class TestAddIndexes extends LuceneTestCase {
     }
     c.launchThreads(-1);
 
-    Thread.sleep(500);
+    Thread.sleep(_TestUtil.nextInt(random, 10, 500));
 
     // Close w/o first stopping/joining the threads
     if (VERBOSE) {

@@ -112,6 +112,13 @@ Changes in runtime behavior
 * LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List,
   guaranteeing the commits are sorted from oldest to latest. (Shai Erera)
 
+* LUCENE-2762: Fixed bug in IndexWriter causing it to hold open file
+  handles against deleted files when compound-file was enabled (the
+  default) and readers are pooled.  As a result of this the peak
+  worst-case free disk space required during optimize is now 3X the
+  index size, when compound file is enabled (else 2X).  (Mike
+  McCandless)
+  
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
@@ -122,7 +129,7 @@ API Changes
   custom Similarity can alter how norms are encoded, though they must
   still be encoded as a single byte (Johan Kindgren via Mike
   McCandless)
-  
+
 * LUCENE-2103: NoLockFactory should have a private constructor;
   until Lucene 4.0 the default one will be deprecated.
   (Shai Erera via Uwe Schindler) 
@@ -321,6 +328,13 @@ Bug fixes
 * LUCENE-2744: CheckIndex was stating total number of fields,
   not the number that have norms enabled, on the "test: field
   norms..." output.  (Mark Kristensson via Mike McCandless)
+
+* LUCENE-2762: Fixed bug in IndexWriter causing it to hold open file
+  handles against deleted files when compound-file was enabled (the
+  default) and readers are pooled.  As a result of this the peak
+  worst-case free disk space required during optimize is now 3X the
+  index size, when compound file is enabled (else 2X).  (Mike
+  McCandless)
 
 New features
 

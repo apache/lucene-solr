@@ -61,9 +61,17 @@ public class TestIndexWriterReader extends LuceneTestCase {
     boolean optimize = true;
 
     Directory dir1 = newDirectory();
-    IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    // test relies on no merges happening below:
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    if (iwc.getMaxBufferedDocs() < 20) {
+      iwc.setMaxBufferedDocs(20);
+    }
+    // no merging
+    if (random.nextBoolean()) {
+      iwc.setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES);
+    } else {
+      iwc.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    }
+    IndexWriter writer = new IndexWriter(dir1, iwc);
 
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
@@ -124,9 +132,17 @@ public class TestIndexWriterReader extends LuceneTestCase {
     boolean optimize = false;
 
     Directory dir1 = newDirectory();
-    IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    // test relies on no merges happening below:
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    if (iwc.getMaxBufferedDocs() < 20) {
+      iwc.setMaxBufferedDocs(20);
+    }
+    // no merging
+    if (random.nextBoolean()) {
+      iwc.setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES);
+    } else {
+      iwc.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    }
+    IndexWriter writer = new IndexWriter(dir1, iwc);
 
     writer.setInfoStream(infoStream);
     // create the index
@@ -260,6 +276,13 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     Directory mainDir = newDirectory();
     IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+
+    // try to keep open file count down:
+    LogMergePolicy lmp = (LogMergePolicy) mainWriter.getMergePolicy();
+    if (lmp.getMergeFactor() > 5) {
+      lmp.setMergeFactor(5);
+    }
+
     mainWriter.setInfoStream(infoStream);
     AddDirectoriesThreads addDirThreads = new AddDirectoriesThreads(numIter, mainWriter);
     addDirThreads.launchThreads(numDirs);
@@ -615,7 +638,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   // Stress test reopen during addIndexes
   public void testDuringAddIndexes() throws Exception {
-    Directory dir1 = newDirectory();
+    MockDirectoryWrapper dir1 = newDirectory();
     final IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     writer.setInfoStream(infoStream);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
@@ -684,10 +707,12 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());
+    r.close();
+    assertEquals(0, dir1.getOpenDeletedFiles().size());
+
     writer.close();
 
     _TestUtil.checkIndex(dir1);
-    r.close();
     dir1.close();
   }
 

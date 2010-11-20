@@ -24,8 +24,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.Collection;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -197,7 +196,7 @@ public class TestDoc extends LuceneTestCase {
       r2.close();
       
       if (useCompoundFile) {
-        List<String> filesToDelete = merger.createCompoundFile(merged + ".cfs");
+        Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs");
         for (final String fileToDelete : filesToDelete) 
           si1.dir.deleteFile(fileToDelete);
       }
