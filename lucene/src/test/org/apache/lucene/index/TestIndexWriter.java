@@ -259,31 +259,48 @@ public class TestIndexWriter extends LuceneTestCase {
      * required.
      */
     public void testOptimizeTempSpaceUsage() throws IOException {
-    
+
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
-
+      if (VERBOSE) {
+        System.out.println("TEST: config1=" + writer.getConfig());
+      }
+      
       for(int j=0;j<500;j++) {
         addDocWithIndex(writer, j);
       }
+      final int termIndexInterval = writer.getConfig().getTermIndexInterval();
+      // force one extra segment w/ different doc store so
+      // we see the doc stores get merged
+      writer.commit();
+      addDocWithIndex(writer, 500);
       writer.close();
 
+      if (VERBOSE) {
+        System.out.println("TEST: start disk usage");
+      }
       long startDiskUsage = 0;
       String[] files = dir.listAll();
       for(int i=0;i<files.length;i++) {
         startDiskUsage += dir.fileLength(files[i]);
+        if (VERBOSE) {
+          System.out.println(files[i] + ": " + dir.fileLength(files[i]));
+        }
       }
 
       dir.resetMaxUsedSizeInBytes();
       dir.setTrackDiskUsage(true);
 
-      writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+      // Import to use same term index interval else a
+      // smaller one here could increase the disk usage and
+      // cause a false failure:
+      writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setTermIndexInterval(termIndexInterval));
+      writer.setInfoStream(VERBOSE ? System.out : null);
       writer.optimize();
       writer.close();
       long maxDiskUsage = dir.getMaxUsedSizeInBytes();
-
-      assertTrue("optimized used too much temporary space: starting usage was " + startDiskUsage + " bytes; max temp usage was " + maxDiskUsage + " but should have been " + (3*startDiskUsage) + " (= 3X starting usage)",
-                 maxDiskUsage <= 3*startDiskUsage);
+      assertTrue("optimize used too much temporary space: starting usage was " + startDiskUsage + " bytes; max temp usage was " + maxDiskUsage + " but should have been " + (4*startDiskUsage) + " (= 4X starting usage)",
+                 maxDiskUsage <= 4*startDiskUsage);
       dir.close();
     }
 
@@ -505,15 +522,15 @@ public class TestIndexWriter extends LuceneTestCase {
       long endDiskUsage = dir.getMaxUsedSizeInBytes();
 
       // Ending index is 50X as large as starting index; due
-      // to 2X disk usage normally we allow 100X max
+      // to 3X disk usage normally we allow 150X max
       // transient usage.  If something is wrong w/ deleter
       // and it doesn't delete intermediate segments then it
-      // will exceed this 100X:
+      // will exceed this 150X:
       // System.out.println("start " + startDiskUsage + "; mid " + midDiskUsage + ";end " + endDiskUsage);
-      assertTrue("writer used too much space while adding documents: mid=" + midDiskUsage + " start=" + startDiskUsage + " end=" + endDiskUsage,
-                 midDiskUsage < 100*startDiskUsage);
-      assertTrue("writer used too much space after close: endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage,
-                 endDiskUsage < 100*startDiskUsage);
+      assertTrue("writer used too much space while adding documents: mid=" + midDiskUsage + " start=" + startDiskUsage + " end=" + endDiskUsage + " max=" + (startDiskUsage*150),
+                 midDiskUsage < 150*startDiskUsage);
+      assertTrue("writer used too much space after close: endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage + " max=" + (startDiskUsage*150),
+                 endDiskUsage < 150*startDiskUsage);
       dir.close();
     }
 
@@ -539,6 +556,10 @@ public class TestIndexWriter extends LuceneTestCase {
       writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
       writer.optimize();
 
+      if (VERBOSE) {
+        writer.setInfoStream(System.out);
+      }
+
       // Open a reader before closing (commiting) the writer:
       IndexReader reader = IndexReader.open(dir, true);
 
@@ -558,9 +579,19 @@ public class TestIndexWriter extends LuceneTestCase {
       assertFalse("Reader incorrectly sees that the index is optimized", reader.isOptimized());
       reader.close();
 
-      writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+      if (VERBOSE) {
+        System.out.println("TEST: do real optimize");
+      }
+      writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+      if (VERBOSE) {
+        writer.setInfoStream(System.out);
+      }
       writer.optimize();
       writer.close();
+
+      if (VERBOSE) {
+        System.out.println("TEST: writer closed");
+      }
       assertNoUnreferencedFiles(dir, "aborted writer after optimize");
 
       // Open a reader after aborting writer:

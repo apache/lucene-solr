@@ -1822,6 +1822,9 @@ public class IndexWriter implements Closeable {
     }
 
     boolean useCompoundDocStore = false;
+    if (infoStream != null) {
+      message("closeDocStores segment=" + docWriter.getDocStoreSegment());
+    }
 
     String docStoreSegment;
 
@@ -2277,11 +2280,12 @@ public class IndexWriter implements Closeable {
    * calling optimize. </p>
    *
    * <p>Note that optimize requires 2X the index size free
-   * space in your Directory.  For example, if your index
-   * size is 10 MB then you need 20 MB free for optimize to
-   * complete.  Also, it's best to call {@link #commit()}
-   * after the optimize completes to allow IndexWriter to
-   * free up disk space.</p>
+   * space in your Directory (3X if you're using compound
+   * file format).  For example, if your index size is 10 MB
+   * then you need 20 MB free for optimize to complete (30
+   * MB if you're using compound file format).  Also,
+   * it's best to call {@link #commit()} after the optimize
+   * completes to allow IndexWriter to free up disk space.</p>
    *
    * <p>If some but not all readers re-open while an
    * optimize is underway, this will cause > 2X temporary
@@ -3594,8 +3598,6 @@ public class IndexWriter implements Closeable {
     if (merge.isAborted()) {
       if (infoStream != null)
         message("commitMerge: skipping merge " + merge.segString(directory) + ": it was aborted");
-
-      deleter.refresh(merge.info.name);
       return false;
     }
 
@@ -3604,12 +3606,19 @@ public class IndexWriter implements Closeable {
     commitMergedDeletes(merge, mergedReader);
     docWriter.remapDeletes(segmentInfos, merger.getDocMaps(), merger.getDelCounts(), merge, mergedDocCount);
       
+    // If the doc store we are using has been closed and
+    // is in now compound format (but wasn't when we
+    // started), then we will switch to the compound
+    // format as well:
     setMergeDocStoreIsCompoundFile(merge);
+
     merge.info.setHasProx(merger.hasProx());
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
     assert !segmentInfos.contains(merge.info);
     segmentInfos.add(start, merge.info);
+
+    closeMergeReaders(merge, false);
 
     // Must note the change to segmentInfos so any commits
     // in-flight don't lose it:
@@ -3627,11 +3636,6 @@ public class IndexWriter implements Closeable {
     return true;
   }
   
-  private synchronized void decrefMergeSegments(MergePolicy.OneMerge merge) throws IOException {
-    assert merge.increfDone;
-    merge.increfDone = false;
-  }
-
   final private void handleMergeException(Throwable t, MergePolicy.OneMerge merge) throws IOException {
 
     if (infoStream != null) {
@@ -3912,8 +3916,6 @@ public class IndexWriter implements Closeable {
       updatePendingMerges(1, false);
     }
 
-    merge.increfDone = true;
-
     merge.mergeDocStores = mergeDocStores;
 
     // Bind a new segment name here so even with
@@ -3967,14 +3969,6 @@ public class IndexWriter implements Closeable {
     // on merges to finish.
     notifyAll();
 
-    if (merge.increfDone)
-      decrefMergeSegments(merge);
-
-    if (merge.mergeFiles != null) {
-      deleter.decRef(merge.mergeFiles);
-      merge.mergeFiles = null;
-    }
-
     // It's possible we are called twice, eg if there was an
     // exception inside mergeInit
     if (merge.registerDone) {
@@ -4004,7 +3998,49 @@ public class IndexWriter implements Closeable {
         }
       }
     }
-  }        
+  }
+
+  private final synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
+    final int numSegments = merge.segments.size();
+    if (suppressExceptions) {
+      // Suppress any new exceptions so we throw the
+      // original cause
+      for (int i=0;i<numSegments;i++) {
+        if (merge.readers[i] != null) {
+          try {
+            readerPool.release(merge.readers[i], false);
+          } catch (Throwable t) {
+          }
+          merge.readers[i] = null;
+        }
+
+        if (merge.readersClone[i] != null) {
+          try {
+            merge.readersClone[i].close();
+          } catch (Throwable t) {
+          }
+          // This was a private clone and we had the
+          // only reference
+          assert merge.readersClone[i].getRefCount() == 0: "refCount should be 0 but is " + merge.readersClone[i].getRefCount();
+          merge.readersClone[i] = null;
+        }
+      }
+    } else {
+      for (int i=0;i<numSegments;i++) {
+        if (merge.readers[i] != null) {
+          readerPool.release(merge.readers[i], true);
+          merge.readers[i] = null;
+        }
+
+        if (merge.readersClone[i] != null) {
+          merge.readersClone[i].close();
+          // This was a private clone and we had the only reference
+          assert merge.readersClone[i].getRefCount() == 0;
+          merge.readersClone[i] = null;
+        }
+      }
+    }
+  }
 
   /** Does the actual (time-consuming) work of the merge,
    *  but without holding synchronized lock on IndexWriter
@@ -4033,8 +4069,13 @@ public class IndexWriter implements Closeable {
 
     boolean mergeDocStores = false;
 
-    final Set<String> dss = new HashSet<String>();
-    
+    final String currentDocStoreSegment;
+    synchronized(this) {
+      currentDocStoreSegment = docWriter.getDocStoreSegment();
+    }
+
+    boolean currentDSSMerged = false;
+      
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
@@ -4042,7 +4083,6 @@ public class IndexWriter implements Closeable {
       int totDocCount = 0;
 
       for (int i = 0; i < numSegments; i++) {
-
         final SegmentInfo info = sourceSegments.info(i);
 
         // Hold onto the "live" reader; we will use this to
@@ -4061,8 +4101,8 @@ public class IndexWriter implements Closeable {
           mergeDocStores = true;
         }
         
-        if (info.getDocStoreOffset() != -1) {
-          dss.add(info.getDocStoreSegment());
+        if (info.getDocStoreOffset() != -1 && currentDocStoreSegment != null) {
+          currentDSSMerged |= currentDocStoreSegment.equals(info.getDocStoreSegment());
         }
 
         totDocCount += clone.numDocs();
@@ -4088,9 +4128,10 @@ public class IndexWriter implements Closeable {
           // readers will attempt to open an IndexInput
           // on files that have still-open IndexOutputs
           // against them:
-          if (dss.contains(docWriter.getDocStoreSegment())) {
-            if (infoStream != null)
+          if (currentDSSMerged) {
+            if (infoStream != null) {
               message("now flush at mergeMiddle");
+            }
             doFlush(true, false);
             updatePendingMerges(1, false);
           }
@@ -4101,9 +4142,7 @@ public class IndexWriter implements Closeable {
         }
 
         // Clear DSS
-        synchronized(this) {
-          merge.info.setDocStore(-1, null, false);
-        }
+        merge.info.setDocStore(-1, null, false);
       }
 
       // This is where all the work happens:
@@ -4124,26 +4163,65 @@ public class IndexWriter implements Closeable {
       //System.out.println("merger set hasProx=" + merger.hasProx() + " seg=" + merge.info.name);
       merge.info.setHasProx(merger.hasProx());
 
-      // TODO: in the non-realtime case, we may want to only
-      // keep deletes (it's costly to open entire reader
-      // when we just need deletes)
+      if (merge.useCompoundFile) {
+
+        success = false;
+        final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+
+        try {
+          if (infoStream != null) {
+            message("create compound file " + compoundFileName);
+          }
+          merger.createCompoundFile(compoundFileName, merge.info);
+          success = true;
+        } catch (IOException ioe) {
+          synchronized(this) {
+            if (merge.isAborted()) {
+              // This can happen if rollback or close(false)
+              // is called -- fall through to logic below to
+              // remove the partially created CFS:
+            } else {
+              handleMergeException(ioe, merge);
+            }
+          }
+        } catch (Throwable t) {
+          handleMergeException(t, merge);
+        } finally {
+          if (!success) {
+            if (infoStream != null) {
+              message("hit exception creating compound file during merge");
+            }
+
+            synchronized(this) {
+              deleter.deleteFile(compoundFileName);
+              deleter.deleteNewFiles(merger.getMergedFiles(merge.info));
+            }
+          }
+        }
+
+        success = false;
+
+        synchronized(this) {
+
+          // delete new non cfs files directly: they were never
+          // registered with IFD
+          deleter.deleteNewFiles(merger.getMergedFiles(merge.info));
+
+          if (merge.isAborted()) {
+            if (infoStream != null) {
+              message("abort merge after building CFS");
+            }
+            deleter.deleteFile(compoundFileName);
+            return 0;
+          }
+        }
+
+        merge.info.setUseCompoundFile(true);
+      }
 
       final int termsIndexDivisor;
       final boolean loadDocStores;
 
-      synchronized(this) {
-        // If the doc store we are using has been closed and
-        // is in now compound format (but wasn't when we
-        // started), then we will switch to the compound
-        // format as well:
-        setMergeDocStoreIsCompoundFile(merge);
-        assert merge.mergeFiles == null;
-        merge.mergeFiles = merge.info.files();
-        deleter.incRef(merge.mergeFiles);
-      }
-
-      final String currentDocStoreSegment = docWriter.getDocStoreSegment();
-      
       // if the merged segment warmer was not installed when
       // this merge was started, causing us to not force
       // the docStores to close, we can't warm it now
@@ -4160,117 +4238,32 @@ public class IndexWriter implements Closeable {
         loadDocStores = false;
       }
 
+      // TODO: in the non-realtime case, we may want to only
+      // keep deletes (it's costly to open entire reader
+      // when we just need deletes)
+
       final SegmentReader mergedReader = readerPool.get(merge.info, loadDocStores, BufferedIndexInput.BUFFER_SIZE, termsIndexDivisor);
       try {
         if (poolReaders && mergedSegmentWarmer != null) {
           mergedSegmentWarmer.warm(mergedReader);
         }
-        if (!commitMerge(merge, merger, mergedDocCount, mergedReader))
+
+        if (!commitMerge(merge, merger, mergedDocCount, mergedReader)) {
           // commitMerge will return false if this merge was aborted
           return 0;
+        }
       } finally {
         synchronized(this) {
           readerPool.release(mergedReader);
         }
       }
-
       success = true;
+
     } finally {
-      synchronized(this) {
-        if (!success) {
-          // Suppress any new exceptions so we throw the
-          // original cause
-          for (int i=0;i<numSegments;i++) {
-            if (merge.readers[i] != null) {
-              try {
-                readerPool.release(merge.readers[i], false);
-              } catch (Throwable t) {
-              }
-            }
-
-            if (merge.readersClone[i] != null) {
-              try {
-                merge.readersClone[i].close();
-              } catch (Throwable t) {
-              }
-              // This was a private clone and we had the
-              // only reference
-              assert merge.readersClone[i].getRefCount() == 0: "refCount should be 0 but is " + merge.readersClone[i].getRefCount();
-            }
-          }
-        } else {
-          for (int i=0;i<numSegments;i++) {
-            if (merge.readers[i] != null) {
-              readerPool.release(merge.readers[i], true);
-            }
-
-            if (merge.readersClone[i] != null) {
-              merge.readersClone[i].close();
-              // This was a private clone and we had the only reference
-              assert merge.readersClone[i].getRefCount() == 0;
-            }
-          }
-        }
-      }
-    }
-
-    // Must checkpoint before decrefing so any newly
-    // referenced files in the new merge.info are incref'd
-    // first:
-    synchronized(this) {
-      deleter.checkpoint(segmentInfos, false);
-    }
-    decrefMergeSegments(merge);
-
-    if (merge.useCompoundFile) {
-
-      success = false;
-      final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-
-      try {
-        merger.createCompoundFile(compoundFileName, merge.info);
-        success = true;
-      } catch (IOException ioe) {
-        synchronized(this) {
-          if (merge.isAborted()) {
-            // This can happen if rollback or close(false)
-            // is called -- fall through to logic below to
-            // remove the partially created CFS:
-            success = true;
-          } else
-            handleMergeException(ioe, merge);
-        }
-      } catch (Throwable t) {
-        handleMergeException(t, merge);
-      } finally {
-        if (!success) {
-          if (infoStream != null)
-            message("hit exception creating compound file during merge");
-          synchronized(this) {
-            deleter.deleteFile(compoundFileName);
-          }
-        }
-      }
-
-      if (merge.isAborted()) {
-        if (infoStream != null)
-          message("abort merge after building CFS");
-        synchronized(this) {
-          deleter.deleteFile(compoundFileName);
-        }
-        return 0;
-      }
-
-      synchronized(this) {
-        if (segmentInfos.indexOf(merge.info) == -1 || merge.isAborted()) {
-          // Our segment (committed in non-compound
-          // format) got merged away while we were
-          // building the compound format.
-          deleter.deleteFile(compoundFileName);
-        } else {
-          merge.info.setUseCompoundFile(true);
-          checkpoint();
-        }
+      // Readers are already closed in commitMerge if we didn't hit
+      // an exc:
+      if (!success) {
+        closeMergeReaders(merge, true);
       }
     }
 

@@ -148,10 +148,7 @@ final class SegmentMerger {
     return mergedDocs;
   }
 
-  final List<String> createCompoundFile(String fileName, final SegmentInfo info)
-          throws IOException {
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
-
+  final Collection<String> getMergedFiles(final SegmentInfo info) throws IOException {
     Set<String> fileSet = new HashSet<String>();
 
     // Basic files
@@ -180,15 +177,23 @@ final class SegmentMerger {
       }
     }
 
+    return fileSet;
+  }
+
+  final Collection<String> createCompoundFile(String fileName, final SegmentInfo info)
+          throws IOException {
+
     // Now merge all added files
-    for (String file : fileSet) {
+    Collection<String> files = getMergedFiles(info);
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
+    for (String file : files) {
       cfsWriter.addFile(file);
     }
     
     // Perform the merge
     cfsWriter.close();
    
-    return new ArrayList<String>(fileSet);
+    return files;
   }
 
   private static void addIndexed(IndexReader reader, FieldInfos fInfos,

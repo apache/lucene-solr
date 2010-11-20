@@ -112,10 +112,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       final int expectedDocCount = (int) ((1+iter)*(200+8*NUM_ITER2*(NUM_THREADS/2.0)*(1+NUM_THREADS)));
 
-      // System.out.println("TEST: now index=" + writer.segString());
-
-      assertEquals("index=" + writer.segString() + " numDocs" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.numDocs());
-      assertEquals("index=" + writer.segString() + " numDocs" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.maxDoc());
+      assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.numDocs());
+      assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.maxDoc());
 
       writer.close();
       writer = new IndexWriter(directory, newIndexWriterConfig(
