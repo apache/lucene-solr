@@ -96,10 +96,16 @@ public class CodecProvider {
     return infosReader;
   }
 
-  static private final CodecProvider defaultCodecs = new DefaultCodecProvider();
+  static private CodecProvider defaultCodecs = new DefaultCodecProvider();
 
   public static CodecProvider getDefault() {
     return defaultCodecs;
+  }
+
+  /** For testing only
+   *  @lucene.internal */
+  public static void setDefault(CodecProvider cp) {
+    defaultCodecs = cp;
   }
   
   /**

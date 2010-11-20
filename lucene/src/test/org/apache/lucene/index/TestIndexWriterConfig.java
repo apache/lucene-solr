@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
@@ -81,7 +80,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
     assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
-    assertEquals(IndexWriterConfig.DEFAULT_CODEC_PROVIDER, CodecProvider.getDefault());
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());

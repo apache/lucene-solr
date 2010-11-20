@@ -79,9 +79,6 @@ public final class IndexWriterConfig implements Cloneable {
    */
   public static long WRITE_LOCK_TIMEOUT = 1000;
 
-  /** Default {@link CodecProvider}. */
-  public final static CodecProvider DEFAULT_CODEC_PROVIDER = CodecProvider.getDefault();
-
   /** The maximum number of simultaneous threads that may be
    *  indexing documents at once in IndexWriter; if more
    *  than this many threads arrive they will wait for
@@ -158,7 +155,7 @@ public final class IndexWriterConfig implements Cloneable {
     maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
     indexingChain = DocumentsWriter.defaultIndexingChain;
     mergedSegmentWarmer = null;
-    codecProvider = DEFAULT_CODEC_PROVIDER;
+    codecProvider = CodecProvider.getDefault();
     mergePolicy = new LogByteSizeMergePolicy();
     maxThreadStates = DEFAULT_MAX_THREAD_STATES;
     readerPooling = DEFAULT_READER_POOLING;

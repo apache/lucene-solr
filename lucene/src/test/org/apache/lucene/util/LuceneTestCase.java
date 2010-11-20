@@ -35,6 +35,8 @@ import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -73,6 +75,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -145,7 +148,7 @@ public abstract class LuceneTestCase extends Assert {
   // each test case (non-J4 tests) and each test class (J4
   // tests)
   /** Gets the codec to run tests with. */
-  static final String TEST_CODEC = System.getProperty("tests.codec", "random");
+  static final String TEST_CODEC = System.getProperty("tests.codec", "randomPerField");
   /** Gets the locale to run tests with */
   static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
   /** Gets the timezone to run tests with */
@@ -187,7 +190,10 @@ public abstract class LuceneTestCase extends Assert {
   
   // saves default codec: we do this statically as many build indexes in @beforeClass
   private static String savedDefaultCodec;
+  // default codec: not set when we use a per-field provider.
   private static Codec codec;
+  // default codec provider
+  private static CodecProvider savedCodecProvider;
   
   private static Locale locale;
   private static Locale savedLocale;
@@ -198,8 +204,7 @@ public abstract class LuceneTestCase extends Assert {
   
   private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock"};
 
-  private static void swapCodec(Codec c) {
-    final CodecProvider cp = CodecProvider.getDefault();
+  private static void swapCodec(Codec c, CodecProvider cp) {
     Codec prior = null;
     try {
       prior = cp.lookup(c.name);
@@ -212,15 +217,16 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   // returns current default codec
-  static Codec installTestCodecs() {
-    final CodecProvider cp = CodecProvider.getDefault();
-
+  static Codec installTestCodecs(String codec, CodecProvider cp) {
     savedDefaultCodec = cp.getDefaultFieldCodec();
-    String codec = TEST_CODEC;
 
     final boolean codecHasParam;
     int codecParam = 0;
-    if (codec.equals("random")) {
+    if (codec.equals("randomPerField")) {
+      // lie
+      codec = "Standard";
+      codecHasParam = false;
+    } else if (codec.equals("random")) {
       codec = pickRandomCodec(random);
       codecHasParam = false;
     } else {
@@ -241,21 +247,20 @@ public abstract class LuceneTestCase extends Assert {
       // If we're running w/ PreFlex codec we must swap in the
       // test-only PreFlexRW codec (since core PreFlex can
       // only read segments):
-      swapCodec(new PreFlexRWCodec());
+      swapCodec(new PreFlexRWCodec(), cp);
     }
 
-    swapCodec(new MockSepCodec());
-    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 20)));
-    swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)));
+    swapCodec(new MockSepCodec(), cp);
+    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 20)), cp);
+    swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
-    swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)));
+    swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
 
     return cp.lookup(codec);
   }
 
   // returns current PreFlex codec
-  static void removeTestCodecs(Codec codec) {
-    final CodecProvider cp = CodecProvider.getDefault();
+  static void removeTestCodecs(Codec codec, CodecProvider cp) {
     if (codec.name.equals("PreFlex")) {
       final Codec preFlex = cp.lookup("PreFlex");
       if (preFlex != null) {
@@ -266,7 +271,7 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockSep"));
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
-    swapCodec(new PulsingCodec(1));
+    swapCodec(new PulsingCodec(1), cp);
     cp.setDefaultFieldCodec(savedDefaultCodec);
 
   }
@@ -312,7 +317,17 @@ public abstract class LuceneTestCase extends Assert {
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
-    codec = installTestCodecs();
+    savedCodecProvider = CodecProvider.getDefault();
+    if ("randomPerField".equals(TEST_CODEC)) {
+      if (random.nextInt(4) == 0) { // preflex-only setup
+        codec = installTestCodecs("PreFlex", CodecProvider.getDefault());
+      } else { // per-field setup
+        CodecProvider.setDefault(new RandomCodecProvider());
+        codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
+      }
+    } else { // ordinary setup
+      codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
+    }
     savedLocale = Locale.getDefault();
     locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
@@ -324,7 +339,21 @@ public abstract class LuceneTestCase extends Assert {
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    removeTestCodecs(codec);
+    String codecDescription;
+    CodecProvider cp = CodecProvider.getDefault();
+
+    if ("randomPerField".equals(TEST_CODEC)) {
+      if (cp instanceof RandomCodecProvider)
+        codecDescription = cp.toString();
+      else 
+        codecDescription = "PreFlex";
+    } else {
+      codecDescription = codec.toString();
+    }
+    
+    if (CodecProvider.getDefault() == savedCodecProvider)
+      removeTestCodecs(codec, CodecProvider.getDefault());
+    CodecProvider.setDefault(savedCodecProvider);
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
     System.clearProperty("solr.solr.home");
@@ -341,7 +370,7 @@ public abstract class LuceneTestCase extends Assert {
     stores = null;
     // if tests failed, report some information back
     if (testsFailed)
-      System.out.println("NOTE: test params are: codec=" + codec + 
+      System.out.println("NOTE: test params are: codec=" + codecDescription + 
         ", locale=" + locale + 
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
     if (testsFailed) {
@@ -939,6 +968,42 @@ public abstract class LuceneTestCase extends Assert {
       } catch (NoTestsRemainException e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+  
+  private static class RandomCodecProvider extends CodecProvider {
+    private List<Codec> knownCodecs = new ArrayList<Codec>();
+    private Map<String,Codec> previousMappings = new HashMap<String,Codec>();
+    
+    RandomCodecProvider() {
+      register(new StandardCodec());
+      register(new PreFlexCodec());
+      register(new PulsingCodec(1));
+      register(new SimpleTextCodec());
+    }
+
+    public synchronized void register(Codec codec) {
+      if (!codec.name.equals("PreFlex"))
+        knownCodecs.add(codec);
+      super.register(codec);
+    }
+
+    public synchronized void unregister(Codec codec) {
+      knownCodecs.remove(codec);
+      super.unregister(codec);
+    }
+
+    public synchronized String getFieldCodec(String name) {
+      Codec codec = previousMappings.get(name);
+      if (codec == null) {
+        codec = knownCodecs.get(random.nextInt(knownCodecs.size()));
+        previousMappings.put(name, codec);
+      }
+      return codec.name;
+    }
+    
+    public String toString() {
+      return "RandomCodecProvider: " + previousMappings.toString();
     }
   }
   
