@@ -90,14 +90,19 @@ public class MockIndexOutputWrapper extends IndexOutput {
     }
 
     if (dir.maxSize != 0 && freeSpace <= len) {
-      if (freeSpace > 0 && freeSpace < len) {
+      if (freeSpace > 0) {
         realUsage += freeSpace;
         delegate.writeBytes(b, offset, (int) freeSpace);
       }
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
-      throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name);
+      String message = "fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.length();
+      if (freeSpace > 0) {
+        message += "; wrote " + freeSpace + " of " + len + " bytes";
+      }
+      message += ")";
+      throw new IOException(message);
     } else {
       if (dir.randomState.nextBoolean()) {
         final int half = len/2;
