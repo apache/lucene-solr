@@ -98,6 +98,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
       Map<String, Integer> strings = new HashMap<String, Integer>();
+      int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
         String str;
         do {
@@ -108,7 +109,8 @@ public class TestBytesRefHash extends LuceneTestCase {
         int key = hash.add(ref);
         if (key >= 0) {
           assertNull(strings.put(str, Integer.valueOf(key)));
-          assertEquals(i, key);
+          assertEquals(uniqueCount, key);
+          uniqueCount++;
           assertEquals(hash.size(), count + 1);
         } else {
           assertTrue((-key)-1 < count);
@@ -202,6 +204,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
       Set<String> strings = new HashSet<String>();
+      int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
         String str;
         do {
@@ -213,8 +216,9 @@ public class TestBytesRefHash extends LuceneTestCase {
 
         if (key >=0) {
           assertTrue(strings.add(str));
-          assertEquals(i, key);
+          assertEquals(uniqueCount, key);
           assertEquals(hash.size(), count + 1);
+          uniqueCount++;
         } else {
           assertFalse(strings.add(str));
           assertTrue((-key)-1 < count);
@@ -262,6 +266,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRefHash offsetHash = newHash(pool);
     for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
       Set<String> strings = new HashSet<String>();
+      int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
         String str;
         do {
@@ -273,11 +278,12 @@ public class TestBytesRefHash extends LuceneTestCase {
 
         if (key >= 0) {
           assertTrue(strings.add(str));
-          assertEquals(i, key);
+          assertEquals(uniqueCount, key);
           assertEquals(hash.size(), count + 1);
           int offsetKey = offsetHash.addByPoolOffset(hash.byteStart(key));
-          assertEquals(i, offsetKey);
+          assertEquals(uniqueCount, offsetKey);
           assertEquals(offsetHash.size(), count + 1);
+          uniqueCount++;
         } else {
           assertFalse(strings.add(str));
           assertTrue((-key)-1 < count);
