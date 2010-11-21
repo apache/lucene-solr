@@ -506,9 +506,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
 
     for(int i=0;i<2;i++) {
+      if (VERBOSE) {
+        System.out.println("TEST: cycle i=" + i);
+      }
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
-      //writer.setInfoStream(System.out);
+      writer.setInfoStream(VERBOSE ? System.out : null);
+
+      // don't allow a sudden merge to clean up the deleted
+      // doc below:
+      LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
+      lmp.setMergeFactor(Math.max(lmp.getMergeFactor(), 5));
+
       Document doc = new Document();
       doc.add(newField("contents", "here are some contents", Field.Store.YES,
                         Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -522,6 +531,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         writer.addDocument(doc);
         fail("did not hit expected exception");
       } catch (IOException ioe) {
+        if (VERBOSE) {
+          System.out.println("TEST: hit expected exception");
+          ioe.printStackTrace(System.out);
+        }
       }
 
       if (0 == i) {
@@ -533,6 +546,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       writer.close();
 
+      if (VERBOSE) {
+        System.out.println("TEST: open reader");
+      }
       IndexReader reader = IndexReader.open(dir, true);
       int expected = 3+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
