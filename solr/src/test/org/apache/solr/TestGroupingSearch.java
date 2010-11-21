@@ -394,10 +394,11 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         Comparator<Doc> groupComparator = random.nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
         String groupSortStr = stringSortA[0];
 
-// TODO: fix/support different groupComparator
-groupComparator = sortComparator;
-groupSortStr = null;
-// rows=1; start=0; group_offset=1; group_limit=1;
+        // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
+        // sortStr != null.
+        if (groupSortStr == null && groupSortStr != sortStr) {
+          groupSortStr = "score desc";
+        }
         
          // Test specific case
         if (false) {
@@ -416,10 +417,15 @@ groupSortStr = null;
           Collections.sort(grp.docs, groupComparator);
         }
 
-        // now sort the groups by the first doc in that group
+        // now sort the groups
+
+        // if sort != group.sort, we need to find the max doc by "sort"
+        if (groupComparator != sortComparator) {
+          for (Grp grp : groups.values()) grp.setMaxDoc(sortComparator); 
+        }
 
         List<Grp> sortedGroups = new ArrayList(groups.values());
-        Collections.sort(sortedGroups, createFirstDocComparator(sortComparator));
+        Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
 
         Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit);
 
@@ -489,6 +495,18 @@ groupSortStr = null;
   }
 
 
+  public static Comparator<Grp> createMaxDocComparator(final Comparator<Doc> docComparator) {
+    return new Comparator<Grp>() {
+      @Override
+      public int compare(Grp o1, Grp o2) {
+        // all groups should have at least one doc
+        Doc d1 = o1.maxDoc;
+        Doc d2 = o2.maxDoc;
+        return docComparator.compare(d1, d2);
+      }
+    };
+  }
+
   public static Comparator<Grp> createFirstDocComparator(final Comparator<Doc> docComparator) {
     return new Comparator<Grp>() {
       @Override
@@ -500,8 +518,6 @@ groupSortStr = null;
       }
     };
   }
-
-
 
   public static Map<Comparable, Grp> groupBy(Collection<Doc> docs, String field) {
     Map<Comparable, Grp> groups = new HashMap<Comparable, Grp>();
@@ -536,7 +552,15 @@ groupSortStr = null;
 
   public static class Grp {
     public Comparable groupValue;
-    public List<SolrTestCaseJ4.Doc> docs;
+    public List<Doc> docs;
+    public Doc maxDoc;  // the document highest according to the "sort" param
+
+
+    public void setMaxDoc(Comparator<Doc> comparator) {
+      Doc[] arr = docs.toArray(new Doc[docs.size()]);
+      Arrays.sort(arr, comparator);
+      maxDoc = arr.length > 0 ? arr[0] : null;
+    }
 
     @Override
     public String toString() {
