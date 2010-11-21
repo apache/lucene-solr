@@ -707,9 +707,9 @@ class SearchGroupDocs {
 
 class Phase2StringGroupCollector extends Phase2GroupCollector {
   FieldCache.DocTermsIndex index;
-  SentinelIntSet ordSet;
-  SearchGroupDocs[] groups;
-  BytesRef spare;
+  final SentinelIntSet ordSet;
+  final SearchGroupDocs[] groups;
+  final BytesRef spare = new BytesRef();
 
   public Phase2StringGroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores, int offset) throws IOException {
     super(topGroups, groupByVS, vsContext,sort,docsPerGroup,getScores,offset);
