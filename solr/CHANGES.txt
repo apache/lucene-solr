@@ -554,6 +554,10 @@ Bug Fixes
 * SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
   true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
   (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
+
+* SOLR-2081: BaseResponseWriter.isStreamingDocs causes
+  SingleResponseWriter.end to be called 2x 
+  (Chris A. Mattmann via hossman) 
   
 Other Changes
 ----------------------
