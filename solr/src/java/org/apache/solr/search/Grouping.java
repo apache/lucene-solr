@@ -168,7 +168,7 @@ public class Grouping {
       int docsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       docsToCollect = Math.max(docsToCollect, 1);
 
-      if (false && groupBy instanceof StrFieldSource) {
+      if (groupBy instanceof StrFieldSource) {
         collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, offset);
       } else {
         collector2 = new Phase2GroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, offset);
@@ -739,8 +739,12 @@ class Phase2StringGroupCollector extends Phase2GroupCollector {
 
     ordSet.clear();
     for (SearchGroupDocs group : groupMap.values()) {
-      int ord = index.binarySearchLookup(((MutableValueStr)group.groupValue).value, spare);
-      if (ord > 0) {
+      MutableValueStr gv = (MutableValueStr)group.groupValue;
+      int ord = 0;
+      if (gv.exists) {
+        ord = index.binarySearchLookup(((MutableValueStr)group.groupValue).value, spare);
+      }
+      if (ord >= 0) {
         int slot = ordSet.put(ord);
         groups[slot] = group;
       }
