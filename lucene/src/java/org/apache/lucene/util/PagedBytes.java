@@ -90,7 +90,7 @@ public final class PagedBytes {
       }
       return b;
     }
-
+    
     /** Reads length as 1 or 2 byte vInt prefix, starting @ start */
     public BytesRef fillUsingLengthPrefix(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
@@ -144,6 +144,49 @@ public final class PagedBytes {
         assert b.length > 0;
       }
       return start;
+    }
+    
+    /**
+     * Reads length as 1 or 2 byte vInt prefix, starting @ start and fill the
+     * given {@link BytesRef} with the byte slice starting after the length
+     * prefix.
+     * @lucene.internal
+     **/
+    public BytesRef fillUsingLengthPrefix4(BytesRef b, long start) {
+      final int index = (int) (start >> blockBits);
+      int offset = (int) (start & blockMask);
+      final byte[] block = blocks[index];
+      final int length;
+      if ((block[offset] & 128) == 0) {
+        length = block[offset];
+        offset = offset+1;
+      } else {
+        length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
+        offset = offset+2;
+        assert length > 0;
+      }
+      assert length >= 0: "length=" + length;
+      b.length = length;
+      if (blockSize - offset >= length) {
+        // Within block
+        b.offset = offset;
+        b.bytes = blocks[index];
+      } else {
+        // Split
+        byte[] buffer = threadBuffers.get();
+        if (buffer == null) {
+          buffer = new byte[length];
+          threadBuffers.set(buffer);
+        } else if (buffer.length < length) {
+          buffer = ArrayUtil.grow(buffer, length);
+          threadBuffers.set(buffer);
+        }
+        b.bytes = buffer;
+        b.offset = 0;
+        System.arraycopy(blocks[index], offset, buffer, 0, blockSize-offset);
+        System.arraycopy(blocks[1+index], 0, buffer, blockSize-offset, length-(blockSize-offset));
+      }
+      return b;
     }
 
     /** @lucene.internal */

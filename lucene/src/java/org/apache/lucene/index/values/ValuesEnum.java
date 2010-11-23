@@ -21,14 +21,16 @@ import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FloatsRef;
+import org.apache.lucene.util.LongsRef;
 
-public abstract class ValuesEnum extends DocIdSetIterator{
+public abstract class ValuesEnum extends DocIdSetIterator {
   private AttributeSource source;
   protected final ValuesAttribute attr;
 
- 
   protected ValuesEnum(Values enumType) {
-     this(null, enumType);
+    this(null, enumType);
   }
 
   protected ValuesEnum(AttributeSource source, Values enumType) {
@@ -37,6 +39,22 @@ public abstract class ValuesEnum extends DocIdSetIterator{
     attr = addAttribute(ValuesAttribute.class);
     if (setType)
       attr.setType(enumType);
+  }
+
+  public Values type() {
+    return attr.type();
+  }
+
+  public BytesRef bytes() {
+    return attr.bytes();
+  }
+
+  public FloatsRef getFloat() {
+    return attr.floats();
+  }
+
+  public LongsRef getInt() {
+    return attr.ints();
   }
 
   public AttributeSource attributes() {
@@ -58,5 +76,29 @@ public abstract class ValuesEnum extends DocIdSetIterator{
   }
 
   public abstract void close() throws IOException;
+
+  public static ValuesEnum emptyEnum(Values type) {
+    return new ValuesEnum(type) {
+      @Override
+      public int nextDoc() throws IOException {
+        return NO_MORE_DOCS;
+      }
+      
+      @Override
+      public int docID() {
+        return NO_MORE_DOCS;
+      }
+      
+      @Override
+      public int advance(int target) throws IOException {
+        return NO_MORE_DOCS;
+      }
+      
+      @Override
+      public void close() throws IOException {
+        
+      }
+    };
+  }
 
 }

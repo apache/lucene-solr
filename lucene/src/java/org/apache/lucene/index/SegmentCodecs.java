@@ -92,7 +92,6 @@ final class SegmentCodecs implements Cloneable {
       }
     }
     return new SegmentCodecs(provider, codecs.toArray(Codec.EMPTY));
-
   }
 
   Codec codec() {

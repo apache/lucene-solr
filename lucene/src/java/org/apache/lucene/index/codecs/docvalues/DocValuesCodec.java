@@ -17,12 +17,9 @@ package org.apache.lucene.index.codecs.docvalues;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
@@ -41,28 +38,32 @@ import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * A codec that adds DocValues support to a given codec transparently.
  */
 public class DocValuesCodec extends Codec {
-  private final Map<String, WrappingFieldsConsumer> consumers = new HashMap<String, WrappingFieldsConsumer>();
   private final Codec other;
+  private final Comparator<BytesRef> comparator;
 
-  public DocValuesCodec(Codec other) {
+  public DocValuesCodec(Codec other, Comparator<BytesRef> comparator) {
     this.name = "docvalues_" + other.name;
     this.other = other;
+    this.comparator = comparator;
+  }
+
+  public DocValuesCodec(Codec other) {
+    this(other, null);
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
-    WrappingFieldsConsumer consumer;
-    if ((consumer = consumers.get(state.segmentName)) == null) {
-      consumer = new WrappingFieldsConsumer(other);
-    }
-    consumer.state = state; // nocommit this is a hack and only necessary since
-                            // we want to initialized the wrapped
+    final WrappingFieldsConsumer consumer;
+      consumer = new WrappingFieldsConsumer(other, comparator, state);
+    // nocommit this is a hack and only necessary since
+    // we want to initialized the wrapped
     // fieldsConsumer lazily with a SegmentWriteState created after the docvalue
     // ones is. We should fix this in DocumentWriter I guess. See
     // DocFieldProcessor too!
@@ -70,31 +71,44 @@ public class DocValuesCodec extends Codec {
   }
 
   private static class WrappingFieldsConsumer extends FieldsConsumer {
-    SegmentWriteState state;
-    private final List<DocValuesConsumer> docValuesConsumers = new ArrayList<DocValuesConsumer>();
+    private final SegmentWriteState state;
     private FieldsConsumer wrappedConsumer;
     private final Codec other;
+    private final Comparator<BytesRef> comparator;
+    private DocValuesCodecInfo info;
 
-    public WrappingFieldsConsumer(Codec other) {
+    public WrappingFieldsConsumer(Codec other, Comparator<BytesRef> comparator, SegmentWriteState state) {
       this.other = other;
+      this.comparator = comparator;
+      this.state = state;
     }
 
     @Override
     public void close() throws IOException {
       synchronized (this) {
-        if (wrappedConsumer != null)
+        if (info != null) {
+          info.write(state);
+          info = null;
+        }
+        if (wrappedConsumer != null) {
           wrappedConsumer.close();
+        } 
       }
+    
     }
 
     @Override
     public synchronized DocValuesConsumer addValuesField(FieldInfo field)
         throws IOException {
-      DocValuesConsumer consumer = DocValuesConsumer.create(state.segmentName,
-      // TODO: set comparator here
-      //TODO can we have a compound file per segment and codec for docvalues?
-          state.directory, field, state.codecId +"-"+ field.number, null);
-      docValuesConsumers.add(consumer);
+      if(info == null) {
+        info = new DocValuesCodecInfo();
+      }
+      final DocValuesConsumer consumer = DocValuesConsumer.create(info.docValuesId(state.segmentName, state.codecId, ""
+          + field.number),
+      // TODO can we have a compound file per segment and codec for
+          // docvalues?
+          state.directory, field, comparator);
+      info.add(field.number);
       return consumer;
     }
 
@@ -115,35 +129,23 @@ public class DocValuesCodec extends Codec {
     Set<String> files = new HashSet<String>();
 
     other.files(dir, state.segmentInfo, state.codecId, files);
-    for (String string : files) {
+    for (String string : files) { // for now we just check if one of the files
+                                  // exists and open the producer
       if (dir.fileExists(string))
         return new WrappingFielsdProducer(state, other.fieldsProducer(state));
     }
     return new WrappingFielsdProducer(state, FieldsProducer.EMPTY);
-
   }
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, String codecId,
       Set<String> files) throws IOException {
-    Set<String> otherFiles = new HashSet<String>();
-    other.files(dir, segmentInfo, codecId, otherFiles);
-    for (String string : otherFiles) { // under some circumstances we only write
-                                       // DocValues
-                                       // so other files will be added even if
-                                       // they don't exist
-      if (dir.fileExists(string))
-        files.add(string);
-    }
-    //TODO can we have a compound file per segment and codec for docvalues?
-    for (String file : dir.listAll()) {
-      if (file.startsWith(segmentInfo.name+"_" + codecId)
-          && (file.endsWith(Writer.DATA_EXTENSION) || file
-              .endsWith(Writer.INDEX_EXTENSION))) {
-        files.add(file);
-      }
-    }
-
+    other.files(dir, segmentInfo, codecId, files);
+    // TODO can we have a compound file per segment and codec for docvalues?
+    DocValuesCodecInfo info = new DocValuesCodecInfo(); // TODO can we do that
+                                                        // only once?
+    info.read(dir, segmentInfo, codecId);
+    info.files(dir, segmentInfo, codecId, files);
   }
 
   @Override
@@ -151,6 +153,7 @@ public class DocValuesCodec extends Codec {
     other.getExtensions(extensions);
     extensions.add(Writer.DATA_EXTENSION);
     extensions.add(Writer.INDEX_EXTENSION);
+    extensions.add(DocValuesCodecInfo.INFO_FILE_EXT);
   }
 
   static class WrappingFielsdProducer extends DocValuesProducerBase {
@@ -219,7 +222,6 @@ public class DocValuesCodec extends Codec {
       name = value.next();
       return this;
     }
-
   }
 
   static class DocValueNameValue extends NameValue<DocValues> {
@@ -236,7 +238,6 @@ public class DocValuesCodec extends Codec {
       }
       return this;
     }
-
   }
 
   static class WrappingFieldsEnum extends FieldsEnum {
@@ -254,7 +255,6 @@ public class DocValuesCodec extends Codec {
       this.docValues.iter = docValues;
       this.fieldsEnum.value = wrapped;
       coordinator = null;
-
     }
 
     @Override
@@ -268,7 +268,6 @@ public class DocValuesCodec extends Codec {
     public String next() throws IOException {
       if (coordinator == null) {
         coordinator = fieldsEnum.next().smaller(docValues.next());
-        // old = coordinator.name;
       } else {
         String current = coordinator.name;
         if (current == docValues.name) {
@@ -281,16 +280,15 @@ public class DocValuesCodec extends Codec {
 
       }
       return coordinator == null ? null : coordinator.name;
-
     }
 
     @Override
     public TermsEnum terms() throws IOException {
-      if (fieldsEnum.name == coordinator.name)
+      if (fieldsEnum.name == coordinator.name) {
         return fieldsEnum.value.terms();
+      }
       return null;
     }
-
   }
 
 }

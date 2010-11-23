@@ -47,7 +47,7 @@ class FixedStraightBytesImpl {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false, null, null);
     }
     
-    // nocommit - impl bulk copy here!
+    // TODO - impl bulk copy here!
 
     @Override
     synchronized public void add(int docID, BytesRef bytes) throws IOException {
@@ -133,22 +133,34 @@ class FixedStraightBytesImpl {
     }
 
     private static class Source extends BytesBaseSource {
-      private final BytesRef bytesRef = new BytesRef();
       private final int size;
+      private final int maxDoc;
 
       public Source(IndexInput datIn, IndexInput idxIn, int size, int maxDoc) throws IOException {
         super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size*maxDoc);
         this.size = size;
+        this.missingValues.bytesValue = new BytesRef(size);
+        this.maxDoc = maxDoc;
       }
       
       @Override
-      public BytesRef getBytes(int docID) { 
+      public BytesRef getBytes(int docID, BytesRef bytesRef) { 
         return data.fill(bytesRef, docID * size, size);
       }
 
       @Override
       public int getValueCount() {
         throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Values type() {
+        return Values.BYTES_FIXED_STRAIGHT;
+      }
+
+      @Override
+      protected int maxDoc() {
+        return maxDoc;
       }
     }
 
@@ -184,8 +196,6 @@ class FixedStraightBytesImpl {
       @Override
       public int advance(int target) throws IOException {
         if(target >= maxDoc){
-          ref.length = 0;
-          ref.offset = 0;
           return pos = NO_MORE_DOCS;
         }
         if((target-1) != pos) // pos inc == 1
@@ -201,6 +211,9 @@ class FixedStraightBytesImpl {
       
       @Override
       public int nextDoc() throws IOException {
+        if(pos >= maxDoc){
+          return pos = NO_MORE_DOCS;
+        }
         return advance(pos+1);
       }
     }

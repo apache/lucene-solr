@@ -344,9 +344,6 @@ public final class FieldInfos {
         case BYTES_VAR_SORTED:
           b = 9;
           break;
-        case PACKED_INTS_FIXED:
-          b = 10;
-          break;
         default:
           throw new IllegalStateException("unhandled indexValues type " + fi.docValues);
         }
@@ -412,9 +409,6 @@ public final class FieldInfos {
           break;
         case 9:
           fi.docValues = Values.BYTES_VAR_SORTED;
-          break;
-        case 10:
-          fi.docValues = Values.PACKED_INTS_FIXED;
           break;
         default:
           throw new IllegalStateException("unhandled indexValues type " + b);

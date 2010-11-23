@@ -16,7 +16,6 @@ package org.apache.lucene.document;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Comparator;
 
@@ -118,7 +117,6 @@ public class ValuesField extends AbstractField {
       valField.setBytes(ref, type);
       break;
     case PACKED_INTS:
-    case PACKED_INTS_FIXED:
       valField.setInt(Long.parseLong(field.stringValue()));
       break;
     case SIMPLE_FLOAT_4BYTE:

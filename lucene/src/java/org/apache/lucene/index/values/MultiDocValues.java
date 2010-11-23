@@ -21,8 +21,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FloatsRef;
-import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.ReaderUtil;
 
 public class MultiDocValues extends DocValues {
@@ -78,27 +76,26 @@ public class MultiDocValues extends DocValues {
 
   public static class DummyDocValues extends DocValues {
     final int maxDoc;
-    final Values type;
-    static final Source DUMMY = new DummySource();
+    final Source emptySoruce;
 
     public DummyDocValues(int maxDoc, Values type) {
-      this.type = type;
       this.maxDoc = maxDoc;
+      this.emptySoruce = new EmptySource(type);
     }
 
     @Override
     public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      return new DummyEnum(attrSource, maxDoc, type);
+      return emptySoruce.getEnum(attrSource);
     }
 
     @Override
     public Source load() throws IOException {
-      return DUMMY;
+      return emptySoruce;
     }
-   
+
     @Override
     public Values type() {
-      return type;
+      return emptySoruce.type();
     }
 
     public void close() throws IOException {
@@ -177,6 +174,7 @@ public class MultiDocValues extends DocValues {
     public MultiSource(DocValuesIndex[] docValuesIdx, int[] starts) {
       this.docValuesIdx = docValuesIdx;
       this.starts = starts;
+      assert docValuesIdx.length != 0;
 
     }
 
@@ -193,7 +191,8 @@ public class MultiDocValues extends DocValues {
             + " for doc id: " + docID + " slices : " + Arrays.toString(starts);
         assert docValuesIdx[idx] != null;
         try {
-          current = docValuesIdx[idx].docValues.load();
+          current = docValuesIdx[idx].docValues.getSource();
+          missingValues.copy(current.getMissing());
         } catch (IOException e) {
           throw new RuntimeException("load failed", e); // TODO how should we
           // handle this
@@ -211,92 +210,62 @@ public class MultiDocValues extends DocValues {
       return current.getFloat(doc);
     }
 
-    public BytesRef getBytes(int docID) {
+    public BytesRef getBytes(int docID, BytesRef bytesRef) {
       final int doc = ensureSource(docID);
-      return current.getBytes(doc);
+      return current.getBytes(doc, bytesRef);
     }
 
     public long ramBytesUsed() {
       return current.ramBytesUsed();
     }
 
-  }
-
-  private static class DummySource extends Source {
-    private final BytesRef ref = new BytesRef();
+    @Override
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      throw new UnsupportedOperationException(); // TODO
+    }
 
     @Override
-    public BytesRef getBytes(int docID) {
-      return ref;
+    public Values type() {
+      return docValuesIdx[0].docValues.type();
+    }
+
+  }
+
+  private static class EmptySource extends Source {
+    private final Values type;
+
+    public EmptySource(Values type) {
+      this.type = type;
+    }
+
+    @Override
+    public BytesRef getBytes(int docID, BytesRef ref) {
+      return this.missingValues.bytesValue;
+
     }
 
     @Override
     public double getFloat(int docID) {
-      return 0.0d;
+      return missingValues.doubleValue;
     }
 
     @Override
     public long getInt(int docID) {
-      return 0;
+      return missingValues.longValue;
     }
 
     public long ramBytesUsed() {
       return 0;
     }
-  }
 
-  private static class DummyEnum extends ValuesEnum {
-    private int pos = -1;
-    private final int maxDoc;
-
-    public DummyEnum(AttributeSource source, int maxDoc, Values type) {
-      super(source, type);
-      this.maxDoc = maxDoc;
-      switch (type) {
-      case BYTES_VAR_STRAIGHT:
-      case BYTES_FIXED_STRAIGHT:
-      case BYTES_FIXED_DEREF:
-      case BYTES_FIXED_SORTED:
-      case BYTES_VAR_DEREF:
-      case BYTES_VAR_SORTED:
-        // nocommit - this is not correct for Fixed_straight
-        BytesRef bytes = attr.bytes();
-        bytes.length = 0;
-        bytes.offset = 0;
-        break;
-      case PACKED_INTS:
-      case PACKED_INTS_FIXED:
-        LongsRef ints = attr.ints();
-        ints.set(0);
-        break;
-
-      case SIMPLE_FLOAT_4BYTE:
-      case SIMPLE_FLOAT_8BYTE:
-        FloatsRef floats = attr.floats();
-        floats.set(0d);
-        break;
-      default:
-        throw new IllegalArgumentException("unknown Values type: " + type);
-      }
+    @Override
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      return ValuesEnum.emptyEnum(type);
     }
 
     @Override
-    public void close() throws IOException {
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return pos = (pos < maxDoc ? target : NO_MORE_DOCS);
-    }
-
-    @Override
-    public int docID() {
-      return pos;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return advance(pos + 1);
+    public Values type() {
+      return type;
     }
   }
 

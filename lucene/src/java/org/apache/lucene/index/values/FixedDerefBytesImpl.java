@@ -49,7 +49,7 @@ class FixedDerefBytesImpl {
     private int size = -1;
     private int[] docToID;
     private final BytesRefHash hash = new BytesRefHash(pool);
-    
+
     public Writer(Directory dir, String id) throws IOException {
       this(dir, id, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
           new AtomicLong());
@@ -65,7 +65,7 @@ class FixedDerefBytesImpl {
 
     @Override
     synchronized public void add(int docID, BytesRef bytes) throws IOException {
-      if(bytes.length == 0) // default value - skip it
+      if (bytes.length == 0) // default value - skip it
         return;
       if (size == -1) {
         size = bytes.length;
@@ -81,17 +81,17 @@ class FixedDerefBytesImpl {
         // new added entry
         datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
       } else {
-        ord = (-ord)-1;
+        ord = (-ord) - 1;
       }
 
       if (docID >= docToID.length) {
         int size = docToID.length;
         docToID = ArrayUtil.grow(docToID, 1 + docID);
-        bytesUsed.addAndGet((docToID.length - size) * RamUsageEstimator.NUM_BYTES_INT);
+        bytesUsed.addAndGet((docToID.length - size)
+            * RamUsageEstimator.NUM_BYTES_INT);
       }
-      docToID[docID] = 1+ord;
+      docToID[docID] = 1 + ord;
     }
-
 
     // Important that we get docCount, in case there were
     // some last docs that we didn't see
@@ -100,7 +100,7 @@ class FixedDerefBytesImpl {
       if (datOut == null) // no added data
         return;
       initIndexOut();
-      final int count = 1+hash.size();
+      final int count = 1 + hash.size();
       idxOut.writeInt(count - 1);
       // write index
       final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
@@ -135,17 +135,16 @@ class FixedDerefBytesImpl {
     @Override
     public Source load() throws IOException {
       final IndexInput index = cloneIndex();
-      return new Source(cloneData(), index , size, index.readInt());
+      return new Source(cloneData(), index, size, index.readInt());
     }
 
     private static class Source extends BytesBaseSource {
-      private final BytesRef bytesRef = new BytesRef();
       private final PackedInts.Reader index;
       private final int size;
       private final int numValues;
 
-      protected Source(IndexInput datIn, IndexInput idxIn, int size, int numValues)
-          throws IOException {
+      protected Source(IndexInput datIn, IndexInput idxIn, int size,
+          int numValues) throws IOException {
         super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size * numValues);
         this.size = size;
         this.numValues = numValues;
@@ -153,24 +152,33 @@ class FixedDerefBytesImpl {
       }
 
       @Override
-      public BytesRef getBytes(int docID) {
+      public BytesRef getBytes(int docID, BytesRef bytesRef) {
         final int id = (int) index.get(docID);
         if (id == 0) {
-          return defaultValue;
+          return null;
         }
         return data.fill(bytesRef, ((id - 1) * size), size);
       }
 
-      
       @Override
       public int getValueCount() {
         return numValues;
+      }
+
+      @Override
+      public Values type() {
+        return Values.BYTES_FIXED_DEREF;
+      }
+
+      @Override
+      protected int maxDoc() {
+        return index.size();
       }
     }
 
     @Override
     public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      return new DerefBytesEnum(source, cloneData(), cloneIndex(), CODEC_NAME,
+      return new DerefBytesEnum(source, cloneData(), cloneIndex(),
           size);
     }
 
@@ -184,12 +192,12 @@ class FixedDerefBytesImpl {
       private int pos = -1;
 
       public DerefBytesEnum(AttributeSource source, IndexInput datIn,
-          IndexInput idxIn, String codecName, int size) throws IOException {
-        this(source, datIn, idxIn, codecName, size, Values.BYTES_FIXED_DEREF);
+          IndexInput idxIn, int size) throws IOException {
+        this(source, datIn, idxIn, size, Values.BYTES_FIXED_DEREF);
       }
 
       protected DerefBytesEnum(AttributeSource source, IndexInput datIn,
-          IndexInput idxIn, String codecName, int size, Values enumType)
+          IndexInput idxIn, int size, Values enumType)
           throws IOException {
         super(source, enumType);
         ref = attr.bytes();
@@ -207,14 +215,13 @@ class FixedDerefBytesImpl {
       @Override
       public int advance(int target) throws IOException {
         if (target < valueCount) {
-          final long address = idx.advance(target);
-          pos = idx.ord();
-          if(address == 0) {
-            // default is empty
-            ref.length = 0;
-            ref.offset = 0;
-            return pos;
+          long address;
+          while ((address = idx.advance(target)) == 0) {
+            if (++target >= valueCount) {
+              return pos = NO_MORE_DOCS;
+            }
           }
+          pos = idx.ord();
           fill(address, ref);
           return pos;
         }
@@ -223,6 +230,9 @@ class FixedDerefBytesImpl {
 
       @Override
       public int nextDoc() throws IOException {
+        if (pos < valueCount) {
+          return pos = NO_MORE_DOCS;
+        }
         return advance(pos + 1);
       }
 

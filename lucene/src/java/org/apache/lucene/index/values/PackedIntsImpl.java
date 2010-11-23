@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.values.DocValues.MissingValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -27,6 +28,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.LongsRef;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -39,7 +41,6 @@ class PackedIntsImpl {
   static final int VERSION_CURRENT = VERSION_START;
 
   static class IntsWriter extends Writer {
-   
 
     // TODO: can we bulkcopy this on a merge?
     private LongsRef intsRef;
@@ -49,8 +50,8 @@ class PackedIntsImpl {
     private boolean started;
     private final Directory dir;
     private final String id;
-    private int maxDocID;
-    private int minDocID;
+    private OpenBitSet defaultValues = new OpenBitSet(1);
+    private int lastDocId = -1;
 
     protected IntsWriter(Directory dir, String id) throws IOException {
       this.dir = dir;
@@ -59,54 +60,58 @@ class PackedIntsImpl {
     }
 
     @Override
-    synchronized public void add(int docID, long v) throws IOException {
-
+    public synchronized void add(int docID, long v) throws IOException {
+      assert lastDocId < docID;
       if (!started) {
-        minValue = maxValue = v;
-        minDocID = maxDocID = docID;
         started = true;
-
+        minValue = maxValue = v;
       } else {
         if (v < minValue) {
           minValue = v;
         } else if (v > maxValue) {
           maxValue = v;
         }
-        if (docID < minDocID) {
-          minDocID = docID;
-        } else if (docID > maxDocID) {
-          maxDocID = docID;
-        }
       }
+      defaultValues.set(docID);
+      lastDocId = docID;
+
       if (docID >= docToValue.length) {
         docToValue = ArrayUtil.grow(docToValue, 1 + docID);
+        defaultValues.ensureCapacity(docToValue.length);
+
       }
       docToValue[docID] = v;
     }
 
     @Override
-    synchronized public void finish(int docCount) throws IOException {
-      if(!started)
+    public synchronized void finish(int docCount) throws IOException {
+      if (!started)
         return;
       final IndexOutput datOut = dir.createOutput(IndexFileNames
-          .segmentFileName(id, "", IndexFileNames.CSF_DATA_EXTENSION));
+          .segmentFileName(id, "", DATA_EXTENSION));
       CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
 
-      // nocommit -- long can't work right since it's signed
+      // TODO -- long can't work right since it's signed
       datOut.writeLong(minValue);
       // write a default value to recognize docs without a value for that field
       final long defaultValue = ++maxValue - minValue;
       datOut.writeLong(defaultValue);
-      PackedInts.Writer w = PackedInts.getWriter(datOut, docCount, PackedInts.bitsRequired(maxValue-minValue));
-         
-      final int limit = maxDocID + 1;
-      for (int i = 0; i < minDocID; i++) {
-        w.add(defaultValue);
+      PackedInts.Writer w = PackedInts.getWriter(datOut, docCount, PackedInts
+          .bitsRequired(maxValue - minValue));
+      final int firstDoc = defaultValues.nextSetBit(0);
+      assert firstDoc >= 0; // we have at lest one value!
+      for (int i = 0; i < firstDoc; i++) {
+        w.add(defaultValue); // fill with defaults until first bit set
       }
-      for (int i = minDocID; i < limit; i++) {
+      lastDocId++;
+      for (int i = firstDoc; i < lastDocId;) {
         w.add(docToValue[i] - minValue);
+        final int nextValue = defaultValues.nextSetBit(i);
+        for (i++; i < nextValue; i++) {
+          w.add(defaultValue); // fill all gaps
+        }
       }
-      for (int i = limit; i < docCount; i++) {
+      for (int i = lastDocId; i < docCount; i++) {
         w.add(defaultValue);
       }
       w.finish();
@@ -128,19 +133,18 @@ class PackedIntsImpl {
     protected void setNextAttribute(ValuesAttribute attr) {
       intsRef = attr.ints();
     }
-    
+
     @Override
     public void add(int docID, ValuesAttribute attr) throws IOException {
       final LongsRef ref;
-      if((ref = attr.ints()) != null) {
+      if ((ref = attr.ints()) != null) {
         add(docID, ref.get());
       }
     }
 
     @Override
     public void files(Collection<String> files) throws IOException {
-      files.add(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));      
+      files.add(IndexFileNames.segmentFileName(id, "", DATA_EXTENSION));
     }
   }
 
@@ -153,7 +157,7 @@ class PackedIntsImpl {
 
     protected IntsReader(Directory dir, String id) throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));
+          Writer.DATA_EXTENSION));
       CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
     }
 
@@ -176,6 +180,7 @@ class PackedIntsImpl {
         minValue = dataIn.readLong();
         defaultValue = dataIn.readLong();
         values = PackedInts.getReader(dataIn);
+        missingValues.longValue = minValue + defaultValue;
       }
 
       @Override
@@ -183,15 +188,38 @@ class PackedIntsImpl {
         // TODO -- can we somehow avoid 2X method calls
         // on each get? must push minValue down, and make
         // PackedInts implement Ints.Source
-        final long val = values.get(docID);
-        // docs not having a value for that field must return a default value
-        return val == defaultValue ? 0 : minValue + val;
+        return minValue + values.get(docID);
       }
 
       public long ramBytesUsed() {
         // TODO(simonw): move that to PackedInts?
         return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
             + values.getBitsPerValue() * values.size();
+      }
+
+      @Override
+      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+        final MissingValues missing = getMissing();
+        return new SourceEnum(attrSource, type(), this, values.size()) {
+          private final LongsRef ref = attr.ints();
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= numDocs)
+              return pos = NO_MORE_DOCS;
+            while (source.getInt(target) == missing.longValue) {
+              if (++target >= numDocs) {
+                return pos = NO_MORE_DOCS;
+              }
+            }
+            ref.ints[ref.offset] = source.getInt(target);
+            return pos = target;
+          }
+        };
+      }
+
+      @Override
+      public Values type() {
+        return Values.PACKED_INTS;
       }
     }
 
@@ -205,7 +233,7 @@ class PackedIntsImpl {
     public ValuesEnum getEnum(AttributeSource source) throws IOException {
       return new IntsEnumImpl(source, (IndexInput) datIn.clone());
     }
-    
+
     @Override
     public Values type() {
       return Values.PACKED_INTS;
@@ -243,10 +271,17 @@ class PackedIntsImpl {
 
     @Override
     public int advance(int target) throws IOException {
-      if (target >= maxDoc)
+      if (target >= maxDoc) {
         return pos = NO_MORE_DOCS;
-      final long val = ints.advance(target);
-      ref.ints[0] = val == defaultValue? 0:minValue + val;
+      }
+      long val = ints.advance(target);
+      while (val == defaultValue) {
+        if (++target >= maxDoc) {
+          return pos = NO_MORE_DOCS;
+        }
+        val = ints.advance(target);
+      }
+      ref.ints[0] = minValue + val;
       ref.offset = 0; // can we skip this?
       return pos = target;
     }
@@ -258,7 +293,10 @@ class PackedIntsImpl {
 
     @Override
     public int nextDoc() throws IOException {
-      return advance(pos+1);
+      if (pos >= maxDoc) {
+        return pos = NO_MORE_DOCS;
+      }
+      return advance(pos + 1);
     }
   }
 }

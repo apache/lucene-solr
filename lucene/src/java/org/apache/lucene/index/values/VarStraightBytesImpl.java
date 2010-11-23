@@ -41,15 +41,15 @@ class VarStraightBytesImpl {
   static final int VERSION_CURRENT = VERSION_START;
 
   static class Writer extends BytesWriterBase {
-    private int address;
+    private long address;
     // start at -1 if the first added value is > 0
     private int lastDocID = -1;
-    private int[] docToAddress;
+    private long[] docToAddress;
 
     public Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false, null, bytesUsed);
-      docToAddress = new int[1];
+      docToAddress = new long[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
 
@@ -89,11 +89,8 @@ class VarStraightBytesImpl {
         return;
       }
       initIndexOut();
-      // write all lengths to index
-      // write index
       fill(docCount);
-      idxOut.writeVInt(address);
-      // TODO(simonw): allow not -1
+      idxOut.writeVLong(address);
       final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
           PackedInts.bitsRequired(address));
       for (int i = 0; i < docCount; i++) {
@@ -125,20 +122,17 @@ class VarStraightBytesImpl {
     }
 
     private class Source extends BytesBaseSource {
-      private final BytesRef bytesRef = new BytesRef();
       private final PackedInts.Reader addresses;
 
       public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
-        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVInt()); // TODO
-                                                                                 // should
-                                                                                 // be
-                                                                                 // long
+        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong()); 
         addresses = PackedInts.getReader(idxIn);
+        missingValues.bytesValue = new BytesRef(0); // empty
       }
 
       @Override
-      public BytesRef getBytes(int docID) {
-        final int address = (int) addresses.get(docID);
+      public BytesRef getBytes(int docID, BytesRef bytesRef) {
+        final long address = addresses.get(docID);
         final int length = docID == maxDoc - 1 ? (int) (totalLengthInBytes - address)
             : (int) (addresses.get(1 + docID) - address);
         return data.fill(bytesRef, address, length);
@@ -148,14 +142,24 @@ class VarStraightBytesImpl {
       public int getValueCount() {
         throw new UnsupportedOperationException();
       }
+
+      @Override
+      public Values type() {
+        return Values.BYTES_VAR_STRAIGHT;
+      }
+
+      @Override
+      protected int maxDoc() {
+        return addresses.size();
+      }
     }
 
     @Override
     public ValuesEnum getEnum(AttributeSource source) throws IOException {
-      return new VarStrainghtBytesEnum(source, cloneData(), cloneIndex());
+      return new VarStraightBytesEnum(source, cloneData(), cloneIndex());
     }
 
-    private class VarStrainghtBytesEnum extends ValuesEnum {
+    private class VarStraightBytesEnum extends ValuesEnum {
       private final PackedInts.Reader addresses;
       private final IndexInput datIn;
       private final IndexInput idxIn;
@@ -164,7 +168,7 @@ class VarStraightBytesImpl {
       private final BytesRef ref;
       private int pos = -1;
 
-      protected VarStrainghtBytesEnum(AttributeSource source, IndexInput datIn,
+      protected VarStraightBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn) throws IOException {
         super(source, Values.BYTES_VAR_STRAIGHT);
         totBytes = idxIn.readVInt();
@@ -185,13 +189,10 @@ class VarStraightBytesImpl {
       @Override
       public int advance(final int target) throws IOException {
         if (target >= maxDoc) {
-          ref.length = 0;
-          ref.offset = 0;
           return pos = NO_MORE_DOCS;
         }
         final long addr = addresses.get(target);
-        if (addr == totBytes) {
-          // nocommit is that a valid default value
+        if (addr == totBytes) { // empty values at the end
           ref.length = 0;
           ref.offset = 0;
           return pos = target;

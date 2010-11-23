@@ -6,7 +6,6 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
-import org.apache.lucene.util.SetOnce;
 
 public class ValuesAttributeImpl extends AttributeImpl implements ValuesAttribute {
   private Values type;
@@ -45,7 +44,6 @@ public class ValuesAttributeImpl extends AttributeImpl implements ValuesAttribut
       floats = null;
       break;
     case PACKED_INTS:
-    case PACKED_INTS_FIXED:
       ints = new LongsRef(new long[1], 0, 1);
       bytes = null;
       floats = null;
@@ -84,7 +82,6 @@ public class ValuesAttributeImpl extends AttributeImpl implements ValuesAttribut
       other.bytes.copy(bytes);
       break;
     case PACKED_INTS:
-    case PACKED_INTS_FIXED:
       other.ints.copy(ints);
       break;
     case SIMPLE_FLOAT_4BYTE:

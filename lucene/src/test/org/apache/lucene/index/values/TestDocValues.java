@@ -117,14 +117,15 @@ public class TestDocValues extends LuceneTestCase {
         s = getSource(r);
         ss = null;
       }
-
       for (int i = 0; i < 100; i++) {
         final int idx = 2 * i;
-        assertNotNull("doc " + idx + "; value=" + values[idx], s.getBytes(idx));
-        assertEquals("doc " + idx, values[idx], s.getBytes(idx).utf8ToString());
+        assertNotNull("doc " + idx + "; value=" + values[idx], s.getBytes(idx,
+            bytesRef));
+        assertEquals("doc " + idx, values[idx], s.getBytes(idx, bytesRef)
+            .utf8ToString());
         if (ss != null) {
-          assertEquals("doc " + idx, values[idx], ss.getByOrd(ss.ord(idx))
-              .utf8ToString());
+          assertEquals("doc " + idx, values[idx], ss.getByOrd(ss.ord(idx),
+              bytesRef).utf8ToString());
           DocValues.SortedSource.LookupResult result = ss
               .getByValue(new BytesRef(values[idx]));
           assertTrue(result.found);
@@ -141,7 +142,8 @@ public class TestDocValues extends LuceneTestCase {
           SortedSource.LookupResult result = ss.getByValue(bytesValue);
           if (result.found) {
             assert result.ord > 0;
-            assertTrue(bytesValue.bytesEquals(ss.getByOrd(result.ord)));
+            assertTrue(bytesValue
+                .bytesEquals(ss.getByOrd(result.ord, bytesRef)));
             int count = 0;
             for (int k = 0; k < 100; k++) {
               if (bytesValue.utf8ToString().equals(values[2 * k])) {
@@ -153,18 +155,18 @@ public class TestDocValues extends LuceneTestCase {
           } else {
             assert result.ord >= 0;
             if (result.ord == 0) {
-              final BytesRef firstRef = ss.getByOrd(1);
+              final BytesRef firstRef = ss.getByOrd(1, bytesRef);
               // random string was before our first
               assertTrue(firstRef.compareTo(bytesValue) > 0);
             } else if (result.ord == numValues) {
-              final BytesRef lastRef = ss.getByOrd(numValues);
+              final BytesRef lastRef = ss.getByOrd(numValues, bytesRef);
               // random string was after our last
               assertTrue(lastRef.compareTo(bytesValue) < 0);
             } else {
               // random string fell between two of our values
-              final BytesRef before = (BytesRef) ss.getByOrd(result.ord)
-                  .clone();
-              final BytesRef after = ss.getByOrd(result.ord + 1);
+              final BytesRef before = (BytesRef) ss.getByOrd(result.ord,
+                  bytesRef).clone();
+              final BytesRef after = ss.getByOrd(result.ord + 1, bytesRef);
               assertTrue(before.compareTo(bytesValue) < 0);
               assertTrue(bytesValue.compareTo(after) < 0);
 
@@ -180,64 +182,65 @@ public class TestDocValues extends LuceneTestCase {
 
   public void testInts() throws IOException {
     long maxV = 1;
-    final int NUM_VALUES = 1000;
+    final int NUM_VALUES = 777 + random.nextInt(777);
     final long[] values = new long[NUM_VALUES];
     for (int rx = 1; rx < 63; rx++, maxV *= 2) {
-      for (int b = 0; b < 2; b++) {
-        Directory dir = newDirectory();
-        boolean useFixedArrays = b == 0;
-        Writer w = Ints.getWriter(dir, "test", useFixedArrays);
-        for (int i = 0; i < NUM_VALUES; i++) {
-          final long v = random.nextLong() % (1 + maxV);
-          values[i] = v;
-          w.add(i, v);
-        }
-        final int additionalDocs = 1 + random.nextInt(9);
-        w.finish(NUM_VALUES + additionalDocs);
-
-        DocValues r = Ints.getValues(dir, "test", useFixedArrays);
-        for (int iter = 0; iter < 2; iter++) {
-          Source s = getSource(r);
-          for (int i = 0; i < NUM_VALUES; i++) {
-            final long v = s.getInt(i);
-            assertEquals("index " + i + " b: " + b, values[i], v);
-          }
-        }
-
-        for (int iter = 0; iter < 2; iter++) {
-          ValuesEnum iEnum = r.getEnum();
-          ValuesAttribute attr = iEnum.addAttribute(ValuesAttribute.class);
-          LongsRef ints = attr.ints();
-          for (int i = 0; i < NUM_VALUES; i++) {
-            assertEquals(i, iEnum.nextDoc());
-            assertEquals(values[i], ints.get());
-          }
-          for (int i = NUM_VALUES; i < NUM_VALUES + additionalDocs; i++) {
-            assertEquals(i, iEnum.nextDoc());
-            assertEquals("" + i, 0, ints.get());
-          }
-
-          iEnum.close();
-        }
-
-        for (int iter = 0; iter < 2; iter++) {
-          ValuesEnum iEnum = r.getEnum();
-          ValuesAttribute attr = iEnum.addAttribute(ValuesAttribute.class);
-          LongsRef ints = attr.ints();
-          for (int i = 0; i < NUM_VALUES; i += 1 + random.nextInt(25)) {
-            assertEquals(i, iEnum.advance(i));
-            assertEquals(values[i], ints.get());
-          }
-          for (int i = NUM_VALUES; i < NUM_VALUES + additionalDocs; i++) {
-            assertEquals(i, iEnum.advance(i));
-            assertEquals("" + i, 0, ints.get());
-          }
-
-          iEnum.close();
-        }
-        r.close();
-        dir.close();
+      Directory dir = newDirectory();
+      Writer w = Ints.getWriter(dir, "test", false);
+      for (int i = 0; i < NUM_VALUES; i++) {
+        final long v = random.nextLong() % (1 + maxV);
+        values[i] = v;
+        w.add(i, v);
       }
+      final int additionalDocs = 1 + random.nextInt(9);
+      w.finish(NUM_VALUES + additionalDocs);
+
+      DocValues r = Ints.getValues(dir, "test", false);
+      for (int iter = 0; iter < 2; iter++) {
+        Source s = getSource(r);
+        for (int i = 0; i < NUM_VALUES; i++) {
+          final long v = s.getInt(i);
+          assertEquals("index " + i, values[i], v);
+        }
+      }
+
+      for (int iter = 0; iter < 2; iter++) {
+        ValuesEnum iEnum = r.getEnum();
+        ValuesAttribute attr = iEnum.addAttribute(ValuesAttribute.class);
+        LongsRef ints = attr.ints();
+        for (int i = 0; i < NUM_VALUES; i++) {
+          assertEquals(i, iEnum.nextDoc());
+          assertEquals(values[i], ints.get());
+        }
+        if (iEnum.docID() < NUM_VALUES - 1) {
+          assertEquals(NUM_VALUES - 1, iEnum.advance(NUM_VALUES - 1));
+        }
+        for (int i = NUM_VALUES; i < NUM_VALUES + additionalDocs; i++) {
+          assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
+        }
+
+        iEnum.close();
+      }
+
+      for (int iter = 0; iter < 2; iter++) {
+        ValuesEnum iEnum = r.getEnum();
+        ValuesAttribute attr = iEnum.addAttribute(ValuesAttribute.class);
+        LongsRef ints = attr.ints();
+        for (int i = 0; i < NUM_VALUES; i += 1 + random.nextInt(25)) {
+          assertEquals(i, iEnum.advance(i));
+          assertEquals(values[i], ints.get());
+        }
+        if (iEnum.docID() < NUM_VALUES - 1) {
+          assertEquals(NUM_VALUES - 1, iEnum.advance(NUM_VALUES - 1));
+        }
+        for (int i = NUM_VALUES; i < NUM_VALUES + additionalDocs; i++) {
+          assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
+        }
+
+        iEnum.close();
+      }
+      r.close();
+      dir.close();
     }
   }
 
@@ -248,7 +251,7 @@ public class TestDocValues extends LuceneTestCase {
   private void runTestFloats(int precision, double delta) throws IOException {
     Directory dir = newDirectory();
     Writer w = Floats.getWriter(dir, "test", precision);
-    final int NUM_VALUES = 1000;
+    final int NUM_VALUES = 777 + random.nextInt(777);;
     final double[] values = new double[NUM_VALUES];
     for (int i = 0; i < NUM_VALUES; i++) {
       final double v = precision == 4 ? random.nextFloat() : random
@@ -269,29 +272,25 @@ public class TestDocValues extends LuceneTestCase {
 
     for (int iter = 0; iter < 2; iter++) {
       ValuesEnum fEnum = r.getEnum();
-      ValuesAttribute attr = fEnum.addAttribute(ValuesAttribute.class);
-      FloatsRef floats = attr.floats();
+      FloatsRef floats = fEnum.getFloat();
       for (int i = 0; i < NUM_VALUES; i++) {
         assertEquals(i, fEnum.nextDoc());
         assertEquals(values[i], floats.get(), delta);
       }
       for (int i = NUM_VALUES; i < NUM_VALUES + additionalValues; i++) {
-        assertEquals(i, fEnum.nextDoc());
-        assertEquals(0.0, floats.get(), delta);
+        assertEquals(ValuesEnum.NO_MORE_DOCS, fEnum.nextDoc());
       }
       fEnum.close();
     }
     for (int iter = 0; iter < 2; iter++) {
       ValuesEnum fEnum = r.getEnum();
-      ValuesAttribute attr = fEnum.addAttribute(ValuesAttribute.class);
-      FloatsRef floats = attr.floats();
+      FloatsRef floats = fEnum.getFloat();
       for (int i = 0; i < NUM_VALUES; i += 1 + random.nextInt(25)) {
         assertEquals(i, fEnum.advance(i));
         assertEquals(values[i], floats.get(), delta);
       }
       for (int i = NUM_VALUES; i < NUM_VALUES + additionalValues; i++) {
-        assertEquals(i, fEnum.advance(i));
-        assertEquals(0.0, floats.get(), delta);
+        assertEquals(ValuesEnum.NO_MORE_DOCS, fEnum.advance(i));
       }
       fEnum.close();
     }

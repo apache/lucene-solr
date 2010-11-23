@@ -40,8 +40,9 @@ public abstract class DocValues implements Closeable {
   public Source getSource() throws IOException {
     return cache.load(this);
   }
-  
-  public SortedSource getSortedSorted(Comparator<BytesRef> comparator)  throws IOException {
+
+  public SortedSource getSortedSorted(Comparator<BytesRef> comparator)
+      throws IOException {
     return cache.laodSorted(this, comparator);
   }
 
@@ -51,7 +52,7 @@ public abstract class DocValues implements Closeable {
   }
 
   public abstract Values type();
-  
+
   public void close() throws IOException {
     this.cache.close(this);
   }
@@ -69,6 +70,7 @@ public abstract class DocValues implements Closeable {
    * used since it can handle all precisions.
    */
   public static abstract class Source {
+    protected final MissingValues missingValues = new MissingValues();
 
     public long getInt(int docID) {
       throw new UnsupportedOperationException("ints are not supported");
@@ -78,7 +80,7 @@ public abstract class DocValues implements Closeable {
       throw new UnsupportedOperationException("floats are not supported");
     }
 
-    public BytesRef getBytes(int docID) {
+    public BytesRef getBytes(int docID, BytesRef ref) {
       throw new UnsupportedOperationException("bytes are not supported");
     }
 
@@ -91,24 +93,56 @@ public abstract class DocValues implements Closeable {
     }
 
     public ValuesEnum getEnum() throws IOException {
-      return getEnum(null);
+      return getEnum(new AttributeSource());
     }
+    
+    public MissingValues getMissing() {
+      return missingValues;
+    }
+    
+    public abstract Values type();
 
-    // nocommit - enable obtaining enum from source since this is already in
-    // memory
-    public/* abstract */ValuesEnum getEnum(AttributeSource attrSource)
-        throws IOException {
-      throw new UnsupportedOperationException();
-    }
+    public abstract ValuesEnum getEnum(AttributeSource attrSource)
+        throws IOException;
 
     public abstract long ramBytesUsed();
+    
+  }
+
+  abstract static class SourceEnum extends ValuesEnum {
+    protected final Source source;
+    protected final int numDocs;
+    protected int pos = -1;
+
+    SourceEnum(AttributeSource attrs, Values type, Source source, int numDocs) {
+      super(attrs, type);
+      
+      this.source = source;
+      this.numDocs = numDocs;
+    }
+
+    @Override
+    public void close() throws IOException {
+    }
+
+    @Override
+    public int docID() {
+      return pos;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      if(pos == NO_MORE_DOCS)
+        return NO_MORE_DOCS;
+      return advance(pos + 1);
+    }
   }
 
   public static abstract class SortedSource extends Source {
 
     @Override
-    public BytesRef getBytes(int docID) {
-      return getByOrd(ord(docID));
+    public BytesRef getBytes(int docID, BytesRef bytesRef) {
+      return getByOrd(ord(docID), bytesRef);
     }
 
     /**
@@ -119,7 +153,7 @@ public abstract class DocValues implements Closeable {
     public abstract int ord(int docID);
 
     /** Returns value for specified ord. */
-    public abstract BytesRef getByOrd(int ord);
+    public abstract BytesRef getByOrd(int ord, BytesRef bytesRef);
 
     public static class LookupResult {
       public boolean found;
@@ -131,7 +165,22 @@ public abstract class DocValues implements Closeable {
      * {@link LookupResult#found} is true, then ord is an exact match. The
      * returned {@link LookupResult} may be reused across calls.
      */
-    public abstract LookupResult getByValue(BytesRef value);
+    public final LookupResult getByValue(BytesRef value) {
+      return getByValue(value, new BytesRef());
+    }
+    public abstract LookupResult getByValue(BytesRef value, BytesRef tmpRef);
   }
   
+  public final static class MissingValues {
+    public long longValue;
+    public double doubleValue;
+    public BytesRef bytesValue;
+    
+    public final void copy(MissingValues values) {
+      longValue = values.longValue;
+      doubleValue = values.doubleValue;
+      bytesValue = values.bytesValue;
+    }
+  }
+
 }

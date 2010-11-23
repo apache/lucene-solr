@@ -31,12 +31,15 @@ import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.Values;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IntsRef;
 
 public abstract class DocValuesProducerBase extends FieldsProducer{
   
   protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();
+  private final DocValuesCodecInfo info = new DocValuesCodecInfo();
 
   protected DocValuesProducerBase(SegmentInfo si, Directory dir, FieldInfos fieldInfo, String codecId) throws IOException {
+    info.read(dir, si, codecId);
     load(fieldInfo, si.name, si.docCount, dir, codecId);
   }
 
@@ -48,16 +51,15 @@ public abstract class DocValuesProducerBase extends FieldsProducer{
   // Only opens files... doesn't actually load any values
   protected void load(FieldInfos fieldInfos, String segment, int docCount,
       Directory dir, String codecId) throws IOException {
-    final int numFields = fieldInfos.size();
-    for (int i = 0; i < numFields; i++) {
-      final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
-      final Values v = fieldInfo.getDocValues();
+    final IntsRef valueFields = info.fieldIDs();
+    for (int i = valueFields.offset; i < valueFields.length; i++) {
+      final int fieldNumber = valueFields.ints[i];
+      final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
+      assert fieldInfo.hasDocValues();
       final String field = fieldInfo.name;
       //TODO can we have a compound file  per segment and codec for docvalues?
-      final String id = IndexFileNames.segmentFileName(segment, codecId+"-"+fieldInfo.number, "");
-      if (v != null && dir.fileExists(id + "." +  Writer.DATA_EXTENSION)) {
-        docValues.put(field, loadDocValues(docCount, dir, id, v));
-      } 
+      final String id = info.docValuesId( segment, codecId, fieldNumber+"");
+      docValues.put(field, loadDocValues(docCount, dir, id, fieldInfo.getDocValues()));
     }
   }
 
@@ -66,8 +68,6 @@ public abstract class DocValuesProducerBase extends FieldsProducer{
     switch (v) {
     case PACKED_INTS:
       return Ints.getValues(dir, id, false);
-    case PACKED_INTS_FIXED:
-      return Ints.getValues(dir, id, true);
     case SIMPLE_FLOAT_4BYTE:
       return Floats.getValues(dir, id, docCount);
     case SIMPLE_FLOAT_8BYTE:

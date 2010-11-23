@@ -30,7 +30,6 @@ public enum Values {
    *  precision is fixed across the segment, and
    *  determined by the min/max values in the field. */
   PACKED_INTS,
-  PACKED_INTS_FIXED,
   SIMPLE_FLOAT_4BYTE,
   SIMPLE_FLOAT_8BYTE,
 

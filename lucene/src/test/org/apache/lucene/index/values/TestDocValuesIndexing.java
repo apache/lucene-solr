@@ -43,6 +43,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.docvalues.DocValuesCodec;
+import org.apache.lucene.index.values.DocValues.MissingValues;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -86,49 +87,40 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * Tests complete indexing of {@link Values} including deletions, merging and
    * sparse value fields on Compound-File
    */
-  public void testCFSIndex() throws IOException {
-    // without deletions
-    IndexWriterConfig cfg = writerConfig(true);
-    // primitives - no deletes
-    runTestNumerics(cfg, false);
+  public void testIndexBytesNoDeletesCFS() throws IOException {
+    runTestIndexBytes(writerConfig(true), false);
+  }
 
-    cfg = writerConfig(true);
-    // bytes - no deletes
-    runTestIndexBytes(cfg, false);
+  public void testIndexBytesDeletesCFS() throws IOException {
+    runTestIndexBytes(writerConfig(true), true);
+  }
 
-    // with deletions
-    cfg = writerConfig(true);
-    // primitives
-    runTestNumerics(cfg, true);
+  public void testIndexNumericsNoDeletesCFS() throws IOException {
+    runTestNumerics(writerConfig(true), false);
+  }
 
-    cfg = writerConfig(true);
-    // bytes
-    runTestIndexBytes(cfg, true);
+  public void testIndexNumericsDeletesCFS() throws IOException {
+    runTestNumerics(writerConfig(true), true);
   }
 
   /**
    * Tests complete indexing of {@link Values} including deletions, merging and
    * sparse value fields on None-Compound-File
    */
-  public void testIndex() throws IOException {
-    //
-    // without deletions
-    IndexWriterConfig cfg = writerConfig(false);
-    // primitives - no deletes
-    runTestNumerics(cfg, false);
+  public void testIndexBytesNoDeletes() throws IOException {
+    runTestIndexBytes(writerConfig(false), false);
+  }
 
-    cfg = writerConfig(false);
-    // bytes - no deletes
-    runTestIndexBytes(cfg, false);
+  public void testIndexBytesDeletes() throws IOException {
+    runTestIndexBytes(writerConfig(false), true);
+  }
 
-    // with deletions
-    cfg = writerConfig(false);
-    // primitives
-    runTestNumerics(cfg, true);
+  public void testIndexNumericsNoDeletes() throws IOException {
+    runTestNumerics(writerConfig(false), false);
+  }
 
-    cfg = writerConfig(false);
-    // bytes
-    runTestIndexBytes(cfg, true);
+  public void testIndexNumericsDeletes() throws IOException {
+    runTestNumerics(writerConfig(false), true);
   }
 
   private IndexWriterConfig writerConfig(boolean useCompoundFile) {
@@ -150,7 +142,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       throws IOException {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
-    final int numValues = 350;
+    final int numValues = 179 + random.nextInt(151);
     final List<Values> numVariantList = new ArrayList<Values>(NUMERICS);
 
     // run in random order to test if fill works correctly during merges
@@ -163,22 +155,24 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       final int numRemainingValues = (int) (numValues - deleted.cardinality());
       final int base = r.numDocs() - numRemainingValues;
       switch (val) {
-      case PACKED_INTS:
-      case PACKED_INTS_FIXED: {
+      case PACKED_INTS: {
         DocValues intsReader = getDocValues(r, val.name());
         assertNotNull(intsReader);
 
         Source ints = getSource(intsReader);
+        MissingValues missing = ints.getMissing();
 
-        ValuesEnum intsEnum = intsReader.getEnum();
-        assertNotNull(intsEnum);
-        LongsRef enumRef = intsEnum.addAttribute(ValuesAttribute.class).ints();
         for (int i = 0; i < base; i++) {
-          assertEquals("index " + i, 0, ints.getInt(i));
-          assertEquals(val.name() + " base: " + base + " index: " + i, i,
-              random.nextBoolean() ? intsEnum.advance(i) : intsEnum.nextDoc());
-          assertEquals(0, enumRef.get());
+          long value = ints.getInt(i);
+          assertEquals("index " + i, missing.longValue, value);
         }
+
+        ValuesEnum intsEnum = getValuesEnum(intsReader);
+        assertTrue(intsEnum.advance(0) >= base);
+
+        intsEnum = getValuesEnum(intsReader);
+        LongsRef enumRef = intsEnum.getInt();
+
         int expected = 0;
         for (int i = base; i < r.numDocs(); i++, expected++) {
           while (deleted.get(expected)) {
@@ -197,18 +191,18 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         DocValues floatReader = getDocValues(r, val.name());
         assertNotNull(floatReader);
         Source floats = getSource(floatReader);
-        ValuesEnum floatEnum = floatReader.getEnum();
-        assertNotNull(floatEnum);
-        FloatsRef enumRef = floatEnum.addAttribute(ValuesAttribute.class)
-            .floats();
+        MissingValues missing = floats.getMissing();
 
         for (int i = 0; i < base; i++) {
-          assertEquals(" floats failed for doc: " + i + " base: " + base, 0.0d,
-              floats.getFloat(i), 0.0d);
-          assertEquals(i, random.nextBoolean() ? floatEnum.advance(i)
-              : floatEnum.nextDoc());
-          assertEquals("index " + i, 0.0, enumRef.get(), 0.0);
+          double value = floats.getFloat(i);
+          assertEquals(" floats failed for doc: " + i + " base: " + base,
+              missing.doubleValue, value, 0.0d);
         }
+        ValuesEnum floatEnum = getValuesEnum(floatReader);
+        assertTrue(floatEnum.advance(0) >= base);
+
+        floatEnum = getValuesEnum(floatReader);
+        FloatsRef enumRef = floatEnum.getFloat();
         int expected = 0;
         for (int i = base; i < r.numDocs(); i++, expected++) {
           while (deleted.get(expected)) {
@@ -235,92 +229,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     d.close();
   }
 
-  private static EnumSet<Values> BYTES = EnumSet.of(Values.BYTES_FIXED_DEREF,
-      Values.BYTES_FIXED_SORTED, Values.BYTES_FIXED_STRAIGHT,
-      Values.BYTES_VAR_DEREF, Values.BYTES_VAR_SORTED,
-      Values.BYTES_VAR_STRAIGHT);
-
-  private static EnumSet<Values> NUMERICS = EnumSet.of(Values.PACKED_INTS,
-      Values.PACKED_INTS_FIXED, Values.SIMPLE_FLOAT_4BYTE,
-      Values.SIMPLE_FLOAT_8BYTE);
-
-  private static Index[] IDX_VALUES = new Index[] { Index.ANALYZED,
-      Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
-      Index.NO };
-
-  private OpenBitSet indexValues(IndexWriter w, int numValues, Values value,
-      List<Values> valueVarList, boolean withDeletions, int multOfSeven)
-      throws CorruptIndexException, IOException {
-    final boolean isNumeric = NUMERICS.contains(value);
-    OpenBitSet deleted = new OpenBitSet(numValues);
-    Document doc = new Document();
-    Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
-    Fieldable field = random.nextBoolean() ? new ValuesField(value.name())
-        : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
-            10), idx == Index.NO ? Store.YES : Store.NO, idx);
-    doc.add(field);
-
-    ValuesAttribute valuesAttribute = ValuesField.values(field);
-    valuesAttribute.setType(value);
-    final LongsRef intsRef = valuesAttribute.ints();
-    final FloatsRef floatsRef = valuesAttribute.floats();
-    final BytesRef bytesRef = valuesAttribute.bytes();
-
-    final String idBase = value.name() + "_";
-    final byte[] b = new byte[multOfSeven];
-    if (bytesRef != null) {
-      bytesRef.bytes = b;
-      bytesRef.length = b.length;
-      bytesRef.offset = 0;
-    }
-    byte upto = 0;
-    for (int i = 0; i < numValues; i++) {
-      if (isNumeric) {
-        switch (value) {
-        case PACKED_INTS:
-        case PACKED_INTS_FIXED:
-          intsRef.set(i);
-          break;
-        case SIMPLE_FLOAT_4BYTE:
-        case SIMPLE_FLOAT_8BYTE:
-          floatsRef.set(2.0f * i);
-          break;
-        default:
-          fail("unexpected value " + value);
-        }
-      } else {
-        for (int j = 0; j < b.length; j++) {
-          b[j] = upto++;
-        }
-      }
-      doc.removeFields("id");
-      doc.add(new Field("id", idBase + i, Store.YES,
-          Index.NOT_ANALYZED_NO_NORMS));
-      w.addDocument(doc);
-
-      if (i % 7 == 0) {
-        if (withDeletions && random.nextBoolean()) {
-          Values val = valueVarList.get(random.nextInt(1 + valueVarList
-              .indexOf(value)));
-          final int randInt = val == value ? random.nextInt(1 + i) : random
-              .nextInt(numValues);
-          w.deleteDocuments(new Term("id", val.name() + "_" + randInt));
-          if (val == value) {
-            deleted.set(randInt);
-          }
-        }
-        w.commit();
-
-      }
-    }
-    w.commit();
-
-    // TODO test unoptimized with deletions
-    if (withDeletions || random.nextBoolean())
-      w.optimize();
-    return deleted;
-  }
-
   public void runTestIndexBytes(IndexWriterConfig cfg, boolean withDeletions)
       throws CorruptIndexException, LockObtainFailedException, IOException {
     final Directory d = newDirectory();
@@ -343,30 +251,32 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       assertNotNull("field " + byteIndexValue.name()
           + " returned null reader - maybe merged failed", bytesReader);
       Source bytes = getSource(bytesReader);
-      ValuesEnum bytesEnum = bytesReader.getEnum();
-      assertNotNull(bytesEnum);
-      final ValuesAttribute attr = bytesEnum
-          .addAttribute(ValuesAttribute.class);
       byte upto = 0;
+
       // test the filled up slots for correctness
+      MissingValues missing = bytes.getMissing();
       for (int i = 0; i < base; i++) {
-        final BytesRef br = bytes.getBytes(i);
+
+        BytesRef br = bytes.getBytes(i, new BytesRef());
         String msg = " field: " + byteIndexValue.name() + " at index: " + i
             + " base: " + base + " numDocs:" + r.numDocs();
         switch (byteIndexValue) {
         case BYTES_VAR_STRAIGHT:
         case BYTES_FIXED_STRAIGHT:
-          assertEquals(i, bytesEnum.advance(i));
           // fixed straight returns bytesref with zero bytes all of fixed
           // length
-          assertNotNull("expected none null - " + msg, br);
-          if (br.length != 0) {
-            assertEquals("expected zero bytes of length " + bytesSize + " - "
-                + msg, bytesSize, br.length);
-            for (int j = 0; j < br.length; j++) {
-              assertEquals("Byte at index " + j + " doesn't match - " + msg, 0,
-                  br.bytes[br.offset + j]);
+          if (missing.bytesValue != null) {
+            assertNotNull("expected none null - " + msg, br);
+            if (br.length != 0) {
+              assertEquals("expected zero bytes of length " + bytesSize + " - "
+                  + msg, bytesSize, br.length);
+              for (int j = 0; j < br.length; j++) {
+                assertEquals("Byte at index " + j + " doesn't match - " + msg,
+                    0, br.bytes[br.offset + j]);
+              }
             }
+          } else {
+            assertNull("expected null - " + msg + " " + br, br);
           }
           break;
         case BYTES_VAR_SORTED:
@@ -374,16 +284,18 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         case BYTES_VAR_DEREF:
         case BYTES_FIXED_DEREF:
         default:
-          assertNotNull("expected none null - " + msg, br);
-          if (br.length != 0) {
-            bytes.getBytes(i);
-          }
-          assertEquals("expected empty bytes - " + br.utf8ToString() + msg, 0,
-              br.length);
+          assertNull("expected null - " + msg + " " + br, br);
+          // make sure we advance at least until base
+          ValuesEnum bytesEnum = getValuesEnum(bytesReader);
+          final int advancedTo = bytesEnum.advance(0);
+          assertTrue(byteIndexValue.name() + " advanced failed base:" + base
+              + " advancedTo: " + advancedTo, base <= advancedTo);
+
         }
       }
-      final BytesRef enumRef = attr.bytes();
 
+      ValuesEnum bytesEnum = getValuesEnum(bytesReader);
+      final BytesRef enumRef = bytesEnum.bytes();
       // test the actual doc values added in this iteration
       assertEquals(base + numRemainingValues, r.numDocs());
       int v = 0;
@@ -395,14 +307,20 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           upto += bytesSize;
         }
 
-        BytesRef br = bytes.getBytes(i);
-        if (bytesEnum.docID() != i)
+        BytesRef br = bytes.getBytes(i, new BytesRef());
+        if (bytesEnum.docID() != i) {
           assertEquals("seek failed for index " + i + " " + msg, i, bytesEnum
               .advance(i));
+        }
         for (int j = 0; j < br.length; j++, upto++) {
           assertEquals(
               "EnumRef Byte at index " + j + " doesn't match - " + msg, upto,
               enumRef.bytes[enumRef.offset + j]);
+          if (!(br.bytes.length > br.offset + j))
+            br = bytes.getBytes(i, new BytesRef());
+          assertTrue("BytesRef index exceeded [" + msg + "] offset: "
+              + br.offset + " length: " + br.length + " index: "
+              + (br.offset + j), br.bytes.length > br.offset + j);
           assertEquals("SourceRef Byte at index " + j + " doesn't match - "
               + msg, upto, br.bytes[br.offset + j]);
         }
@@ -442,8 +360,113 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   private Source getSource(DocValues values) throws IOException {
-    // getSource uses cache internally
-    return random.nextBoolean() ? values.load() : values.getSource();
+    Source source;
+    if (random.nextInt(10) == 0) {
+      source = values.load();
+    } else {
+      // getSource uses cache internally
+      source = values.getSource();
+    }
+    assertNotNull(source);
+    return source;
+  }
+
+  private ValuesEnum getValuesEnum(DocValues values) throws IOException {
+    ValuesEnum valuesEnum;
+    if (!(values instanceof MultiDocValues) && random.nextInt(10) == 0) {
+      // TODO not supported by MultiDocValues yet!
+      valuesEnum = getSource(values).getEnum();
+    } else {
+      valuesEnum = values.getEnum();
+
+    }
+    assertNotNull(valuesEnum);
+    return valuesEnum;
+  }
+
+  private static EnumSet<Values> BYTES = EnumSet.of(Values.BYTES_FIXED_DEREF,
+      Values.BYTES_FIXED_SORTED, Values.BYTES_FIXED_STRAIGHT,
+      Values.BYTES_VAR_DEREF, Values.BYTES_VAR_SORTED,
+      Values.BYTES_VAR_STRAIGHT);
+
+  private static EnumSet<Values> NUMERICS = EnumSet.of(Values.PACKED_INTS,
+      Values.SIMPLE_FLOAT_4BYTE, Values.SIMPLE_FLOAT_8BYTE);
+
+  private static Index[] IDX_VALUES = new Index[] { Index.ANALYZED,
+      Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
+      Index.NO };
+
+  private OpenBitSet indexValues(IndexWriter w, int numValues, Values value,
+      List<Values> valueVarList, boolean withDeletions, int multOfSeven)
+      throws CorruptIndexException, IOException {
+    final boolean isNumeric = NUMERICS.contains(value);
+    OpenBitSet deleted = new OpenBitSet(numValues);
+    Document doc = new Document();
+    Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
+    Fieldable field = random.nextBoolean() ? new ValuesField(value.name())
+        : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
+            10), idx == Index.NO ? Store.YES : Store.NO, idx);
+    doc.add(field);
+
+    ValuesAttribute valuesAttribute = ValuesField.values(field);
+    valuesAttribute.setType(value);
+    final LongsRef intsRef = valuesAttribute.ints();
+    final FloatsRef floatsRef = valuesAttribute.floats();
+    final BytesRef bytesRef = valuesAttribute.bytes();
+
+    final String idBase = value.name() + "_";
+    final byte[] b = new byte[multOfSeven];
+    if (bytesRef != null) {
+      bytesRef.bytes = b;
+      bytesRef.length = b.length;
+      bytesRef.offset = 0;
+    }
+    byte upto = 0;
+    for (int i = 0; i < numValues; i++) {
+      if (isNumeric) {
+        switch (value) {
+        case PACKED_INTS:
+          intsRef.set(i);
+          break;
+        case SIMPLE_FLOAT_4BYTE:
+        case SIMPLE_FLOAT_8BYTE:
+          floatsRef.set(2.0f * i);
+          break;
+        default:
+          fail("unexpected value " + value);
+        }
+      } else {
+        for (int j = 0; j < b.length; j++) {
+          b[j] = upto++;
+        }
+      }
+      doc.removeFields("id");
+      doc.add(new Field("id", idBase + i, Store.YES,
+          Index.NOT_ANALYZED_NO_NORMS));
+      w.addDocument(doc);
+
+      if (i % 7 == 0) {
+        if (withDeletions && random.nextBoolean()) {
+          Values val = valueVarList.get(random.nextInt(1 + valueVarList
+              .indexOf(value)));
+          final int randInt = val == value ? random.nextInt(1 + i) : random
+              .nextInt(numValues);
+          w.deleteDocuments(new Term("id", val.name() + "_" + randInt));
+          if (val == value) {
+            deleted.set(randInt);
+          }
+        }
+        if (random.nextInt(10) == 0) {
+          w.commit();
+        }
+      }
+    }
+    w.commit();
+
+    // TODO test unoptimized with deletions
+    if (withDeletions || random.nextBoolean())
+      w.optimize();
+    return deleted;
   }
 
 }

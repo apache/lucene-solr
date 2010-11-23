@@ -19,13 +19,15 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Exposes writer/reader for floating point values. You can specify 4 (java
  * float) or 8 (java double) byte precision.
  */
-//TODO - add bulk copy where possible
+// TODO - add bulk copy where possible
 public class Floats {
   private static final String CODEC_NAME = "SimpleFloats";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
-  private static final int INT_ZERO = Float.floatToRawIntBits(0.0f);
-  private static final long LONG_ZERO = Double.doubleToRawLongBits(0.0);
+  private static final int INT_DEFAULT = Float
+      .floatToRawIntBits(Float.NEGATIVE_INFINITY);
+  private static final long LONG_DEFAULT = Double
+      .doubleToRawLongBits(Double.NEGATIVE_INFINITY);
 
   public static Writer getWriter(Directory dir, String id, int precisionBytes)
       throws IOException {
@@ -47,7 +49,6 @@ public class Floats {
 
   abstract static class FloatsWriter extends Writer {
 
-
     private final Directory dir;
     private final String id;
     private FloatsRef floatsRef;
@@ -64,7 +65,7 @@ public class Floats {
 
     protected void initDatOut() throws IOException {
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));
+          Writer.DATA_EXTENSION));
       CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
       assert datOut.getFilePointer() == CodecUtil.headerLength(CODEC_NAME);
       datOut.writeByte(precision);
@@ -78,12 +79,12 @@ public class Floats {
     protected void add(int docID) throws IOException {
       add(docID, floatsRef.get());
     }
-    
+
     @Override
     public void add(int docID, ValuesAttribute attr) throws IOException {
       final FloatsRef ref;
-      if((ref = attr.floats()) != null)
-      add(docID, ref.get());
+      if ((ref = attr.floats()) != null)
+        add(docID, ref.get());
     }
 
     @Override
@@ -113,13 +114,11 @@ public class Floats {
       } else
         super.merge(state);
     }
-    
+
     @Override
     public void files(Collection<String> files) throws IOException {
-      files.add(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(id, "", Writer.DATA_EXTENSION));
     }
-
 
   }
 
@@ -153,7 +152,7 @@ public class Floats {
         return; // no data added - don't create file!
       if (docCount > lastDocId + 1)
         for (int i = lastDocId; i < docCount; i++) {
-          datOut.writeInt(INT_ZERO); // default value
+          datOut.writeInt(INT_DEFAULT); // default value
         }
       datOut.close();
     }
@@ -161,7 +160,7 @@ public class Floats {
     @Override
     protected int fillDefault(int numValues) throws IOException {
       for (int i = 0; i < numValues; i++) {
-        datOut.writeInt(INT_ZERO);
+        datOut.writeInt(INT_DEFAULT);
       }
       return numValues;
     }
@@ -196,7 +195,7 @@ public class Floats {
         return; // no data added - don't create file!
       if (docCount > lastDocId + 1)
         for (int i = lastDocId; i < docCount; i++) {
-          datOut.writeLong(LONG_ZERO); // default value
+          datOut.writeLong(LONG_DEFAULT); // default value
         }
       datOut.close();
     }
@@ -204,7 +203,7 @@ public class Floats {
     @Override
     protected int fillDefault(int numValues) throws IOException {
       for (int i = 0; i < numValues; i++) {
-        datOut.writeLong(LONG_ZERO);
+        datOut.writeLong(LONG_DEFAULT);
       }
       return numValues;
     }
@@ -224,7 +223,7 @@ public class Floats {
     protected FloatsReader(Directory dir, String id, int maxDoc)
         throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));
+          Writer.DATA_EXTENSION));
       CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
       precisionBytes = datIn.readByte();
       assert precisionBytes == 4 || precisionBytes == 8;
@@ -266,18 +265,42 @@ public class Floats {
 
       Source4(ByteBuffer buffer) {
         values = buffer.asFloatBuffer();
+        missingValues.doubleValue = Float.NEGATIVE_INFINITY;
       }
 
       @Override
       public double getFloat(int docID) {
-        final float f = values.get(docID);
-        // nocommit should we return NaN as default instead of 0.0?
-        return Float.isNaN(f) ? 0.0f : f;
+        return values.get(docID);
       }
 
       public long ramBytesUsed() {
         return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + values.limit()
             * RamUsageEstimator.NUM_BYTES_FLOAT;
+      }
+
+      @Override
+      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+        final MissingValues missing = getMissing();
+        return new SourceEnum(attrSource, Values.SIMPLE_FLOAT_4BYTE, this, maxDoc) {
+          private final FloatsRef ref = attr.floats();
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= numDocs)
+              return pos = NO_MORE_DOCS;
+            while (missing.doubleValue == source.getFloat(target)) {
+              if (++target >= numDocs) {
+                return pos = NO_MORE_DOCS;
+              }
+            }
+            ref.floats[ref.offset] = source.getFloat(target);
+            return pos = target;
+          }
+        };
+      }
+
+      @Override
+      public Values type() {
+        return Values.SIMPLE_FLOAT_4BYTE;
       }
     }
 
@@ -286,18 +309,43 @@ public class Floats {
 
       Source8(ByteBuffer buffer) {
         values = buffer.asDoubleBuffer();
+        missingValues.doubleValue = Double.NEGATIVE_INFINITY;
+
       }
 
       @Override
       public double getFloat(int docID) {
-        final double d = values.get(docID);
-        // TODO should we return NaN as default instead of 0.0?
-        return Double.isNaN(d) ? 0.0d : d;
+        return values.get(docID);
       }
 
       public long ramBytesUsed() {
         return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + values.limit()
             * RamUsageEstimator.NUM_BYTES_DOUBLE;
+      }
+
+      @Override
+      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+        final MissingValues missing = getMissing();
+        return new SourceEnum(attrSource, type(), this, maxDoc) {
+          private final FloatsRef ref = attr.floats();
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= numDocs)
+              return pos = NO_MORE_DOCS;
+            while (missing.doubleValue == source.getFloat(target)) {
+              if (++target >= numDocs) {
+                return pos = NO_MORE_DOCS;
+              }
+            }
+            ref.floats[ref.offset] = source.getFloat(target);
+            return pos = target;
+          }
+        };
+      }
+
+      @Override
+      public Values type() {
+        return Values.SIMPLE_FLOAT_8BYTE;
       }
     }
 
@@ -316,7 +364,7 @@ public class Floats {
       return precisionBytes == 4 ? new Floats4Enum(source, indexInput, maxDoc)
           : new Floats8EnumImpl(source, indexInput, maxDoc);
     }
-    
+
     @Override
     public Values type() {
       return precisionBytes == 4 ? Values.SIMPLE_FLOAT_4BYTE
@@ -336,8 +384,13 @@ public class Floats {
       if (target >= maxDoc)
         return pos = NO_MORE_DOCS;
       dataIn.seek(fp + (target * precision));
-      ref.floats[0] = Float.intBitsToFloat(dataIn.readInt());
-      ref.offset = 0; // nocommit -- can we igore this?
+      int intBits;
+      while ((intBits = dataIn.readInt()) == INT_DEFAULT) {
+        if (++target >= maxDoc)
+          return pos = NO_MORE_DOCS;
+      }
+      ref.floats[0] = Float.intBitsToFloat(intBits);
+      ref.offset = 0;
       return pos = target;
     }
 
@@ -348,6 +401,9 @@ public class Floats {
 
     @Override
     public int nextDoc() throws IOException {
+      if (pos >= maxDoc) {
+        return pos = NO_MORE_DOCS;
+      }
       return advance(pos + 1);
     }
   }
@@ -361,11 +417,17 @@ public class Floats {
 
     @Override
     public int advance(int target) throws IOException {
-      if (target >= maxDoc)
+      if (target >= maxDoc) {
         return pos = NO_MORE_DOCS;
+      }
       dataIn.seek(fp + (target * precision));
-      ref.floats[0] = Double.longBitsToDouble(dataIn.readLong());
-      ref.offset = 0; // nocommit -- can we igore this?
+      long value;
+      while ((value = dataIn.readLong()) == LONG_DEFAULT) {
+        if (++target >= maxDoc)
+          return pos = NO_MORE_DOCS;
+      }
+      ref.floats[0] = Double.longBitsToDouble(value);
+      ref.offset = 0;
       return pos = target;
     }
 
@@ -376,6 +438,9 @@ public class Floats {
 
     @Override
     public int nextDoc() throws IOException {
+      if (pos >= maxDoc) {
+        return pos = NO_MORE_DOCS;
+      }
       return advance(pos + 1);
     }
   }

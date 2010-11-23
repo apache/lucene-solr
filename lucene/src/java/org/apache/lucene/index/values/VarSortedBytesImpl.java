@@ -171,7 +171,6 @@ class VarSortedBytesImpl {
     }
 
     private static class Source extends BytesBaseSortedSource {
-      // TODO: paged data
       private final PackedInts.Reader docToOrdIndex;
       private final PackedInts.Reader ordToOffsetIndex; // 0-based
       private final long totBytes;
@@ -184,8 +183,6 @@ class VarSortedBytesImpl {
         docToOrdIndex = PackedInts.getReader(idxIn);
         ordToOffsetIndex = PackedInts.getReader(idxIn);
         valueCount = ordToOffsetIndex.size();
-        // default byte sort order
-
       }
 
       @Override
@@ -194,8 +191,8 @@ class VarSortedBytesImpl {
       }
 
       @Override
-      public LookupResult getByValue(BytesRef bytes) {
-        return binarySearch(bytes, 0, valueCount - 1);
+      public LookupResult getByValue(BytesRef bytes, BytesRef tmpRef) {
+        return binarySearch(bytes, tmpRef, 0, valueCount - 1);
       }
 
       public long ramBytesUsed() {
@@ -217,8 +214,7 @@ class VarSortedBytesImpl {
 
       // ord is 0-based
       @Override
-      protected BytesRef deref(int ord) {
-        
+      protected BytesRef deref(int ord, BytesRef bytesRef) {
         final long nextOffset;
         if (ord == valueCount - 1) {
           nextOffset = totBytes;
@@ -230,7 +226,15 @@ class VarSortedBytesImpl {
         return bytesRef;
       }
 
-      
+      @Override
+      public Values type() {
+        return Values.BYTES_VAR_SORTED;
+      }
+
+      @Override
+      protected int maxDoc() {
+        return docToOrdIndex.size();
+      }
     }
 
     @Override
@@ -274,15 +278,16 @@ class VarSortedBytesImpl {
 
       @Override
       public int advance(int target) throws IOException {
-        if (target >= docCount)
+        if (target >= docCount) {
           return pos = NO_MORE_DOCS;
-        final int ord = (int) docToOrdIndex.get(target) - 1;
-        if (ord == -1) {
-          bytesRef.length = 0;
-          bytesRef.offset = 0;
-          return pos = target;
         }
-        final long offset = ordToOffsetIndex.get(ord);
+        int ord;
+        while((ord =(int) docToOrdIndex.get(target)) == 0) {
+          if(++target >= docCount) {
+            return pos = NO_MORE_DOCS;
+          }
+        }
+        final long offset = ordToOffsetIndex.get(--ord);
         final long nextOffset;
         if (ord == valueCount - 1) {
           nextOffset = totBytes;
@@ -306,6 +311,9 @@ class VarSortedBytesImpl {
 
       @Override
       public int nextDoc() throws IOException {
+        if (pos >= docCount) {
+          return pos = NO_MORE_DOCS;
+        }
         return advance(pos + 1);
       }
     }

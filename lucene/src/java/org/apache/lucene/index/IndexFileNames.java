@@ -79,12 +79,6 @@ public final class IndexFileNames {
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
   
-  /** Extension of Column-Stride Filed data files */
-  public static final String CSF_DATA_EXTENSION = "dat";
-  
-  /** Extension of Column-Stride Filed index files */
-  public static final String CSF_INDEX_EXTENSION = "idx";
-
   /**
    * This array contains all filename extensions used by
    * Lucene's index files, with one exception, namely the
@@ -104,8 +98,6 @@ public final class IndexFileNames {
     GEN_EXTENSION,
     NORMS_EXTENSION,
     COMPOUND_FILE_STORE_EXTENSION,
-    CSF_DATA_EXTENSION,
-    CSF_INDEX_EXTENSION
   };
 
   public static final String[] STORE_INDEX_EXTENSIONS = new String[] {

@@ -187,8 +187,6 @@ class FixedSortedBytesImpl {
         this.size = size;
         this.numValue = numValues;
         index = PackedInts.getReader(idxIn);
-
-        bytesRef.length = size;
       }
 
       @Override
@@ -197,8 +195,8 @@ class FixedSortedBytesImpl {
       }
 
       @Override
-      public LookupResult getByValue(BytesRef bytes) {
-        return binarySearch(bytes, 0, numValue - 1);
+      public LookupResult getByValue(BytesRef bytes, BytesRef tmpRef) {
+        return binarySearch(bytes, tmpRef, 0, numValue - 1);
       }
 
       public long ramBytesUsed() {
@@ -216,15 +214,25 @@ class FixedSortedBytesImpl {
         return numValue;
       }
       @Override
-      protected BytesRef deref(int ord) {
+      protected BytesRef deref(int ord, BytesRef bytesRef) {
         return data.fill(bytesRef, (ord* size), size);
+      }
+
+      @Override
+      public Values type() {
+        return Values.BYTES_FIXED_SORTED;
+      }
+
+      @Override
+      protected int maxDoc() {
+        return index.size();
       }
     }
 
     @Override
     public ValuesEnum getEnum(AttributeSource source) throws IOException {
       // do unsorted
-      return new DerefBytesEnum(source, cloneData(), cloneIndex(), CODEC_NAME,
+      return new DerefBytesEnum(source, cloneData(), cloneIndex(),
           size);
     }
 

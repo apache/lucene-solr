@@ -25,7 +25,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 public abstract class Writer extends DocValuesConsumer {
-  
+
   public static final String INDEX_EXTENSION = "idx";
   public static final String DATA_EXTENSION = "dat";
 
@@ -63,23 +63,31 @@ public abstract class Writer extends DocValuesConsumer {
       int docID = state.docBase;
       final Bits bits = state.bits;
       final int docCount = state.docCount;
-      for (int i = 0; i < docCount; i++) {
-        if (bits == null || !bits.get(i)) {
-          if (valEnum.advance(i) == ValuesEnum.NO_MORE_DOCS)
-            break;
-          add(docID++);
+      int currentDocId;
+      if ((currentDocId = valEnum.advance(0)) != ValuesEnum.NO_MORE_DOCS) {
+        for (int i = 0; i < docCount; i++) {
+          if (bits == null || !bits.get(i)) {
+            if (currentDocId < i) {
+              if ((currentDocId = valEnum.advance(i)) == ValuesEnum.NO_MORE_DOCS) {
+                break; // advance can jump over default values
+              }
+            }
+            if (currentDocId == i) { // we are on the doc to merge
+              add(docID);
+            }
+            ++docID;
+          }
         }
       }
     } finally {
       valEnum.close();
     }
   }
-  
-  public static Writer create(Values v, String id,
-      Directory directory, Comparator<BytesRef> comp) throws IOException {
+
+  public static Writer create(Values v, String id, Directory directory,
+      Comparator<BytesRef> comp) throws IOException {
     switch (v) {
     case PACKED_INTS:
-    case PACKED_INTS_FIXED:
       return Ints.getWriter(directory, id, true);
     case SIMPLE_FLOAT_4BYTE:
       return Floats.getWriter(directory, id, 4);

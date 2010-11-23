@@ -43,6 +43,8 @@ final class DocFieldProcessor extends DocConsumer {
   final StoredFieldsWriter fieldsWriter;
   final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
   private FieldsConsumer fieldsConsumer; // TODO this should be encapsulated in DocumentsWriter
+  private SegmentWriteState docValuesConsumerState; // TODO this should be encapsulated in DocumentsWriter
+
 
   synchronized DocValuesConsumer docValuesConsumer(Directory dir,
       String segment, String name, ValuesAttribute attr, FieldInfo fieldInfo)
@@ -57,8 +59,8 @@ final class DocFieldProcessor extends DocConsumer {
          * the SegmentsWriteState passed in right at the moment when the segment is flushed (doccount etc) but we need the consumer earlier 
          * to support docvalues and later on stored fields too.  
          */
-      SegmentWriteState state = docWriter.segWriteState();
-      fieldsConsumer = state.segmentCodecs.codec().fieldsConsumer(state);
+      docValuesConsumerState = docWriter.segWriteState();
+      fieldsConsumer = docValuesConsumerState.segmentCodecs.codec().fieldsConsumer(docValuesConsumerState);
       }
       valuesConsumer = fieldsConsumer.addValuesField(fieldInfo);
       docValues.put(name, valuesConsumer);
@@ -102,7 +104,9 @@ final class DocFieldProcessor extends DocConsumer {
     }
     docValues.clear();
     if(fieldsConsumer != null) {
-      fieldsConsumer.close(); // nocommit this should go away
+      fieldsConsumer.close(); // TODO remove this once docvalues are fully supported by codecs
+      state.flushedFiles.addAll(docValuesConsumerState.flushedFiles);
+      docValuesConsumerState = null;
       fieldsConsumer = null;
     }
 

@@ -24,11 +24,14 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.values.DocValues.MissingValues;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 import org.apache.lucene.index.values.DocValues.Source;
+import org.apache.lucene.index.values.DocValues.SourceEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -88,7 +91,7 @@ public final class Bytes {
     throw new IllegalArgumentException("");
   }
 
-  // nocommit -- I can peek @ header to determing fixed/mode?
+  // TODO -- I can peek @ header to determing fixed/mode?
   public static DocValues getValues(Directory dir, String id, Mode mode,
       boolean fixedSize, int maxDoc) throws IOException {
     if (fixedSize) {
@@ -123,15 +126,15 @@ public final class Bytes {
   static abstract class BytesBaseSource extends Source {
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
-    protected final BytesRef defaultValue = new BytesRef();
     protected final static int PAGED_BYTES_BITS = 15;
     private final PagedBytes pagedBytes;
     protected final PagedBytes.Reader data;
     protected final long totalLengthInBytes;
 
-    protected BytesBaseSource(IndexInput datIn, IndexInput idxIn, PagedBytes pagedBytes, long bytesToRead)
-        throws IOException {
-      assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: " + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
+    protected BytesBaseSource(IndexInput datIn, IndexInput idxIn,
+        PagedBytes pagedBytes, long bytesToRead) throws IOException {
+      assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: "
+          + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
       this.datIn = datIn;
       this.totalLengthInBytes = bytesToRead;
       this.pagedBytes = pagedBytes;
@@ -146,12 +149,36 @@ public final class Bytes {
         if (datIn != null)
           datIn.close();
       } finally {
-        if (idxIn != null) // if straight
+        if (idxIn != null) // if straight - no index needed
           idxIn.close();
       }
     }
+    
+    protected abstract int maxDoc();
+
     public long ramBytesUsed() {
-      return 0; //TOODO
+      return 0; // TODO
+    }
+
+    @Override
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      final MissingValues missing = getMissing();
+      return new SourceEnum(attrSource, type(), this, maxDoc()) {
+        final BytesRef bytesRef = attr.bytes();
+
+        @Override
+        public int advance(int target) throws IOException {
+          if (target >= numDocs) {
+            return pos = NO_MORE_DOCS;
+          }
+          while (source.getBytes(target, bytesRef) == missing.bytesValue) {
+            if (++target >= numDocs) {
+              return pos = NO_MORE_DOCS;
+            }
+          }
+          return pos = target;
+        }
+      };
     }
 
   }
@@ -163,13 +190,14 @@ public final class Bytes {
     protected final static int PAGED_BYTES_BITS = 15;
     private final PagedBytes pagedBytes;
     protected final PagedBytes.Reader data;
-    protected final BytesRef bytesRef = new BytesRef();
     protected final LookupResult lookupResult = new LookupResult();
     private final Comparator<BytesRef> comp;
 
-
-    protected BytesBaseSortedSource(IndexInput datIn, IndexInput idxIn, Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead) throws IOException {
-      assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: " + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
+    protected BytesBaseSortedSource(IndexInput datIn, IndexInput idxIn,
+        Comparator<BytesRef> comp, PagedBytes pagedBytes, long bytesToRead)
+        throws IOException {
+      assert bytesToRead <= datIn.length() : " file size is less than the expected size diff: "
+          + (bytesToRead - datIn.length()) + " pos: " + datIn.getFilePointer();
       this.datIn = datIn;
       this.pagedBytes = pagedBytes;
       this.pagedBytes.copy(datIn, bytesToRead);
@@ -177,12 +205,12 @@ public final class Bytes {
       this.idxIn = idxIn;
       this.comp = comp == null ? BytesRef.getUTF8SortedAsUnicodeComparator()
           : comp;
-      
+
     }
-    
+
     @Override
-    public BytesRef getByOrd(int ord) {
-      return ord == 0 ? defaultValue : deref(--ord);
+    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
+      return ord == 0 ? null : deref(--ord, bytesRef);
     }
 
     public void close() throws IOException {
@@ -191,14 +219,16 @@ public final class Bytes {
       if (idxIn != null) // if straight
         idxIn.close();
     }
-    
-    protected abstract BytesRef deref(int ord);
 
-    
-    protected LookupResult binarySearch(BytesRef b, int low, int high) {
+    protected abstract int maxDoc();
+
+    protected abstract BytesRef deref(int ord, BytesRef bytesRef);
+
+    protected LookupResult binarySearch(BytesRef b, BytesRef bytesRef, int low,
+        int high) {
       while (low <= high) {
         int mid = (low + high) >>> 1;
-        deref(mid);
+        deref(mid, bytesRef);
         final int cmp = comp.compare(bytesRef, b);
         if (cmp < 0) {
           low = mid + 1;
@@ -214,6 +244,27 @@ public final class Bytes {
       lookupResult.ord = low;
       lookupResult.found = false;
       return lookupResult;
+    }
+
+    @Override
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      final MissingValues missing = getMissing();
+      return new SourceEnum(attrSource, type(), this, maxDoc()) {
+        final BytesRef bytesRef = attr.bytes();
+
+        @Override
+        public int advance(int target) throws IOException {
+          if (target >= numDocs) {
+            return pos = NO_MORE_DOCS;
+          }
+          while (source.getBytes(target, bytesRef) == missing.bytesValue) {
+            if (++target >= numDocs) {
+              return pos = NO_MORE_DOCS;
+            }
+          }
+          return pos = target;
+        }
+      };
     }
   }
 
@@ -243,16 +294,16 @@ public final class Bytes {
       if (initIndex)
         initIndexOut();
     }
-    
+
     protected void initDataOut() throws IOException {
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));
+          DATA_EXTENSION));
       CodecUtil.writeHeader(datOut, codecName, version);
     }
 
     protected void initIndexOut() throws IOException {
       idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_INDEX_EXTENSION));
+          INDEX_EXTENSION));
       CodecUtil.writeHeader(idxOut, codecName, version);
     }
 
@@ -299,12 +350,11 @@ public final class Bytes {
     @Override
     public void files(Collection<String> files) throws IOException {
       assert datOut != null;
-      files.add(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(id, "", DATA_EXTENSION));
       if (idxOut != null) { // called after flush - so this must be initialized
-                            // if needed or present
+        // if needed or present
         final String idxFile = IndexFileNames.segmentFileName(id, "",
-            IndexFileNames.CSF_INDEX_EXTENSION);
+            INDEX_EXTENSION);
         files.add(idxFile);
       }
     }
@@ -324,12 +374,12 @@ public final class Bytes {
         int maxVersion, boolean doIndex) throws IOException {
       this.id = id;
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          IndexFileNames.CSF_DATA_EXTENSION));
+          Writer.DATA_EXTENSION));
       version = CodecUtil.checkHeader(datIn, codecName, maxVersion, maxVersion);
 
       if (doIndex) {
         idxIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            IndexFileNames.CSF_INDEX_EXTENSION));
+            Writer.INDEX_EXTENSION));
         final int version2 = CodecUtil.checkHeader(idxIn, codecName,
             maxVersion, maxVersion);
         assert version == version2;
@@ -345,7 +395,7 @@ public final class Bytes {
     }
 
     protected final IndexInput cloneIndex() { // TODO assert here for null
-                                              // rather than return null
+      // rather than return null
       return idxIn == null ? null : (IndexInput) idxIn.clone();
     }
 
