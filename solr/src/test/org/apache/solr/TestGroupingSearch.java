@@ -326,14 +326,14 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     while (--indexIter >= 0) {
 
       int indexSize = random.nextInt(25 * RANDOM_MULTIPLIER);
-
+//indexSize=2;
       List<FldType> types = new ArrayList<FldType>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
       types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));  // field used to score
-      types.add(new FldType("foo_i",ONE_ONE, new IRange(0,indexSize)));
-      types.add(new FldType("foo_s",ONE_ONE, new SVal('a','z',1,2)));
-      types.add(new FldType("small_s",ONE_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
-      types.add(new FldType("small_i",ONE_ONE, new IRange(0,5+indexSize/10)));
+      types.add(new FldType("foo_i",ZERO_ONE, new IRange(0,indexSize)));
+      types.add(new FldType("foo_s",ZERO_ONE, new SVal('a','z',1,2)));
+      types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
+      types.add(new FldType("small_i",ZERO_ONE, new IRange(0,5+indexSize/10)));
 
       clearIndex();
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
@@ -403,9 +403,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
          // Test specific case
         if (false) {
           groupField="small_i";
-          sortComparator=createComparator(Arrays.asList(createComparator("small_s", true, true, false)));
+          sortComparator=createComparator(Arrays.asList(createComparator("small_s", true, true, false, true)));
           sortStr = "small_s asc";
-          groupComparator = createComparator(Arrays.asList(createComparator("small_s", true, true, false)));
+          groupComparator = createComparator(Arrays.asList(createComparator("small_s", true, true, false, false)));
           groupSortStr = "small_s asc";
           rows=1; start=0; group_offset=1; group_limit=1;
         }

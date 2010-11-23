@@ -21,32 +21,38 @@ public class MutableValueLong extends MutableValue {
 
   @Override
   public Object toObject() {
-    return value;
+    return exists ? value : null;
   }
 
   @Override
   public void copy(MutableValue source) {
-    value = ((MutableValueLong)source).value;
+    MutableValueLong s = (MutableValueLong) source;
+    exists = s.exists;
+    value = s.value;
   }
 
   @Override
   public MutableValue duplicate() {
     MutableValueLong v = new MutableValueLong();
     v.value = this.value;
+    v.exists = this.exists;
     return v;
   }
 
   @Override
   public boolean equalsSameType(Object other) {
-    return value == ((MutableValueLong)other).value;
+    MutableValueLong b = (MutableValueLong)other;
+    return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    long b = ((MutableValueLong)other).value;
-    if (value<b) return -1;
-    else if (value>b) return 1;
-    else return 0;
+    MutableValueLong b = (MutableValueLong)other;
+    long bv = b.value;
+    if (value<bv) return -1;
+    if (value>bv) return 1;
+    if (exists == b.exists) return 0;
+    return exists ? 1 : -1;
   }
 
 

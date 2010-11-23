@@ -21,38 +21,46 @@ public class MutableValueInt extends MutableValue {
   
   @Override
   public Object toObject() {
-    return value;
+    return exists ? value : null;
   }
 
   @Override
   public void copy(MutableValue source) {
-    value = ((MutableValueInt)source).value;
+    MutableValueInt s = (MutableValueInt) source;
+    value = s.value;
+    exists = s.exists;
   }
 
   @Override
   public MutableValue duplicate() {
     MutableValueInt v = new MutableValueInt();
     v.value = this.value;
+    v.exists = this.exists;
     return v;
   }
 
   @Override
   public boolean equalsSameType(Object other) {
-    return value == ((MutableValueInt)other).value;
+    MutableValueInt b = (MutableValueInt)other;
+    return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    int a = value;
-    int b = ((MutableValueInt)other).value;
-    return (int)((((long)a) - ((long)b)) >> 32);  // any shift >= 32 should do.
-
+    MutableValueInt b = (MutableValueInt)other;
+    int ai = value;
+    int bi = b.value;
+    int c = (int)((((long)ai) - ((long)bi)) >> 32);  // any shift >= 32 should do.
+    if (c!=0) return c;
     /* is there any pattern that the compiler would recognize as a single native CMP instruction? */
     /***
     if (a<b) return -1;
     else if (a>b) return 1;
     else return 0;
     ***/
+
+    if (exists == b.exists) return 0;
+    return exists ? 1 : -1;
   }
 
 

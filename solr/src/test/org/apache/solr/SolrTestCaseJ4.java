@@ -907,16 +907,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       if (which == fieldTypes.size()) {
         // sort by score
         sortSpec.append("score").append(asc ? " asc" : " desc");
-        comparators.add(createComparator("score", asc, false, false));
+        comparators.add(createComparator("score", asc, false, false, false));
       } else if (which == fieldTypes.size() + 1) {
         // sort by docid
         sortSpec.append("_docid_").append(asc ? " asc" : " desc");
-        comparators.add(createComparator("_docid_", asc, false, false));
+        comparators.add(createComparator("_docid_", asc, false, false, false));
       } else {
         String field = fieldTypes.get(which).fname;
         sortSpec.append(field).append(asc ? " asc" : " desc");
         SchemaField sf = schema.getField(field);
-        comparators.add(createComparator(field, asc, sf.sortMissingLast(), sf.sortMissingFirst()));
+        comparators.add(createComparator(field, asc, sf.sortMissingLast(), sf.sortMissingFirst(), !(sf.sortMissingLast()||sf.sortMissingFirst()) ));
       }
     }
 
@@ -924,13 +924,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
     if (comparators.size() == 0) {
       // default sort is by score desc
-      comparators.add(createComparator("score", false, false, false));      
+      comparators.add(createComparator("score", false, false, false, false));      
     }
 
     return createComparator(comparators);
   }
 
-  public static Comparator<Doc> createComparator(final String field, final boolean asc, final boolean sortMissingLast, final boolean sortMissingFirst) {
+  public static Comparator<Doc> createComparator(final String field, final boolean asc, final boolean sortMissingLast, final boolean sortMissingFirst, final boolean sortMissingAsZero) {
     final int mul = asc ? 1 : -1;
 
     if (field.equals("_docid_")) {
@@ -943,14 +943,30 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     if (field.equals("score")) {
-      return createComparator("score_f", asc, sortMissingLast, sortMissingFirst);
+      return createComparator("score_f", asc, sortMissingLast, sortMissingFirst, sortMissingAsZero);
     }
 
     return new Comparator<Doc>() {
+      private Comparable zeroVal(Comparable template) {
+        if (template == null) return null;
+        if (template instanceof String) return null;  // fast-path for string
+        if (template instanceof Integer) return 0;
+        if (template instanceof Long) return (long)0;
+        if (template instanceof Float) return (float)0;
+        if (template instanceof Double) return (double)0;
+        if (template instanceof Short) return (short)0;
+        if (template instanceof Byte) return (byte)0;
+        if (template instanceof Character) return (char)0;
+        return null;
+      }
+
       @Override
       public int compare(Doc o1, Doc o2) {
         Comparable v1 = o1.getFirstValue(field);
         Comparable v2 = o2.getFirstValue(field);
+
+        v1 = v1 == null ? zeroVal(v2) : v1;
+        v2 = v2 == null ? zeroVal(v1) : v2;
 
         int c = 0;
         if (v1 == v2) {

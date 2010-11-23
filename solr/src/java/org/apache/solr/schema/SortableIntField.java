@@ -111,6 +111,8 @@ class SortableIntFieldSource extends FieldCacheSource {
     final int def = defVal;
 
     return new StringIndexDocValues(this, reader, field) {
+      private final BytesRef spare = new BytesRef();
+
       protected String toTerm(String readableValue) {
         return NumberUtils.int2sortableStr(readableValue);
       }
@@ -121,7 +123,7 @@ class SortableIntFieldSource extends FieldCacheSource {
 
       public int intVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? def  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, new BytesRef()),0,3);
+        return ord==0 ? def  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare),0,3);
       }
 
       public long longVal(int doc) {
@@ -152,7 +154,14 @@ class SortableIntFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = intVal(doc);
+            int ord=termsIndex.getOrd(doc);
+            if (ord == 0) {
+              mval.value = def;
+              mval.exists = false;
+            } else {
+              mval.value = NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare),0,3);
+              mval.exists = true;
+            }
           }
         };
       }

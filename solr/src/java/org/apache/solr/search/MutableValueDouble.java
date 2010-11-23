@@ -21,29 +21,38 @@ public class MutableValueDouble extends MutableValue {
 
   @Override
   public Object toObject() {
-    return value;
+    return exists ? value : null;
   }
 
   @Override
   public void copy(MutableValue source) {
-    value = ((MutableValueDouble)source).value;
+    MutableValueDouble s = (MutableValueDouble) source;
+    value = s.value;
+    exists = s.exists;
   }
 
   @Override
   public MutableValue duplicate() {
     MutableValueDouble v = new MutableValueDouble();
     v.value = this.value;
+    v.exists = this.exists;
     return v;
   }
 
   @Override
   public boolean equalsSameType(Object other) {
-    return value == ((MutableValueDouble)other).value;
+    MutableValueDouble b = (MutableValueDouble)other;
+    return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    return Double.compare(value, ((MutableValueDouble)other).value);  // handles NaN
+    MutableValueDouble b = (MutableValueDouble)other;
+    int c = Double.compare(value, b.value);
+    if (c != 0) return c;
+    if (!exists) return -1;
+    if (!b.exists) return 1;
+    return 0;
   }
 
   @Override

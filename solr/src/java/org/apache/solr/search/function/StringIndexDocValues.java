@@ -104,7 +104,9 @@ public abstract class StringIndexDocValues extends DocValues {
 
       @Override
       public void fillValue(int doc) {
-        mval.value = termsIndex.getTerm(doc, val.value);
+        int ord = termsIndex.getOrd(doc);
+        mval.exists = ord != 0;
+        mval.value = termsIndex.lookup(ord, mval.value);
       }
     };
   }

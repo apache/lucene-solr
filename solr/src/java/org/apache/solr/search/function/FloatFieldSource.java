@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.FloatValues;
 import org.apache.solr.search.MutableValue;
@@ -47,6 +48,7 @@ public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final FloatValues vals = cache.getFloats(reader, field, creator);
     final float[] arr = vals.values;
+	final Bits valid = vals.valid;
     
     return new DocValues() {
       public float floatVal(int doc) {
@@ -87,6 +89,7 @@ public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {
           @Override
           public void fillValue(int doc) {
             mval.value = floatArr[doc];
+            mval.exists = valid.get(doc);
           }
         };
       }

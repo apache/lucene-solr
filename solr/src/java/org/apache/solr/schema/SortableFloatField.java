@@ -107,13 +107,15 @@ class SortableFloatFieldSource extends FieldCacheSource {
     final float def = defVal;
 
     return new StringIndexDocValues(this, reader, field) {
+      private final BytesRef spare = new BytesRef();
+
       protected String toTerm(String readableValue) {
         return NumberUtils.float2sortableStr(readableValue);
       }
 
       public float floatVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? def  : NumberUtils.SortableStr2float(termsIndex.lookup(ord, new BytesRef()));
+        return ord==0 ? def  : NumberUtils.SortableStr2float(termsIndex.lookup(ord, spare));
       }
 
       public int intVal(int doc) {
@@ -148,7 +150,14 @@ class SortableFloatFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = floatVal(doc);
+            int ord=termsIndex.getOrd(doc);
+            if (ord == 0) {
+              mval.value = def;
+              mval.exists = false;
+            } else {
+              mval.value = NumberUtils.SortableStr2float(termsIndex.lookup(ord, spare));
+              mval.exists = true;
+            }
           }
         };
       }

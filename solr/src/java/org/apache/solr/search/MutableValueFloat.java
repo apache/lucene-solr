@@ -21,29 +21,37 @@ public class MutableValueFloat extends MutableValue {
 
   @Override
   public Object toObject() {
-    return value;
+    return exists ? value : null;
   }
 
   @Override
   public void copy(MutableValue source) {
-    value = ((MutableValueFloat)source).value;
+    MutableValueFloat s = (MutableValueFloat) source;
+    value = s.value;
+    exists = s.exists;
   }
 
   @Override
   public MutableValue duplicate() {
     MutableValueFloat v = new MutableValueFloat();
     v.value = this.value;
+    v.exists = this.exists;
     return v;
   }
 
   @Override
   public boolean equalsSameType(Object other) {
-    return value == ((MutableValueFloat)other).value;
+    MutableValueFloat b = (MutableValueFloat)other;
+    return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    return Float.compare(value, ((MutableValueFloat)other).value);  // handles NaN
+    MutableValueFloat b = (MutableValueFloat)other;
+    int c = Float.compare(value, b.value);
+    if (c != 0) return c;
+    if (exists == b.exists) return 0;
+    return exists ? 1 : -1;
   }
 
   @Override
