@@ -306,6 +306,7 @@ public class QueryComponent extends SearchComponent
         String[] funcs = params.getParams(GroupParams.GROUP_FUNC);
         String[] queries = params.getParams(GroupParams.GROUP_QUERY);
         String groupSortStr = params.get(GroupParams.GROUP_SORT);
+        boolean main = params.getBool(GroupParams.GROUP_MAIN, false);
 
         // groupSort defaults to sort
         Sort groupSort = groupSortStr == null ? cmd.getSort() : QueryParsing.parseSort(groupSortStr, req);
@@ -345,6 +346,12 @@ public class QueryComponent extends SearchComponent
             gc.offset = cmd.getOffset();
             gc.sort = cmd.getSort();
 
+            if (main) {
+              gc.main = true;
+              main = false;
+              gc.groupOffset = 0;  // doesn't make sense
+            }
+
             grouping.add(gc);
           }
         }
@@ -361,6 +368,17 @@ public class QueryComponent extends SearchComponent
             gc.docsPerGroup = docsPerGroupDefault;
             gc.groupOffset = groupOffsetDefault;
 
+            // these two params will only be used if this is for the main result set
+            gc.offset = cmd.getOffset();
+            gc.numGroups = limitDefault;
+
+            if (main) {
+              gc.main = true;
+              main = false;
+              gc.docsPerGroup = gc.numGroups;  // doesn't make sense to limit to one
+              gc.groupOffset = gc.offset;
+            }
+
             grouping.add(gc);
           }
         }
@@ -376,6 +394,12 @@ public class QueryComponent extends SearchComponent
         rb.setResult( result );
         rsp.add("grouped", result.groupedResults);
         // TODO: get "hits" a different way to log
+
+        if (grouping.mainResult != null) {
+          rsp.add("response",grouping.mainResult);
+          rsp.getToLog().add("hits", grouping.mainResult.matches());
+        }
+
         return;
 
       } catch (ParseException e) {

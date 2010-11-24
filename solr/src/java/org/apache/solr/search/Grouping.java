@@ -33,6 +33,7 @@ import java.util.*;
 
 public class Grouping {
 
+  public enum Format {Grouped, Simple}
 
   public abstract class Command {
     public String key;       // the name to use for this group in the response
@@ -42,6 +43,8 @@ public class Grouping {
     public int groupOffset;  // the offset within each group (for paging within each group)
     public int numGroups;    // how many groups - defaults to the "rows" parameter
     public int offset;       // offset into the list of groups
+    public Format format;
+    public boolean main;     // use as the main result in simple format (grouped.main=true param)
 
 
     abstract void prepare() throws IOException;
@@ -65,7 +68,13 @@ public class Grouping {
 
     DocList getDocList(TopDocsCollector collector) {
       int max = collector.getTotalHits();
-      int docsToCollect = getMax(groupOffset, docsPerGroup, max);
+      int off = groupOffset;
+      int len = docsPerGroup;
+      if (main) {
+        off = offset;
+        len = numGroups;
+      }
+      int docsToCollect = getMax(off, len, max);
 
       // TODO: implement a DocList impl that doesn't need to start at offset=0
       TopDocs topDocs = collector.topDocs(0, docsToCollect);
@@ -80,7 +89,7 @@ public class Grouping {
 
       float score = topDocs.getMaxScore();
       maxScore = Math.max(maxScore, score);
-      DocSlice docs = new DocSlice(groupOffset, Math.max(0, ids.length - groupOffset), ids, scores, topDocs.totalHits, score);
+      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, topDocs.totalHits, score);
 
       if (getDocList) {
         DocIterator iter = docs.iterator();
@@ -116,8 +125,12 @@ public class Grouping {
 
     @Override
     void finish() throws IOException {
-      NamedList rsp = commonResponse();
-      addDocList(rsp, (TopDocsCollector)collector.getCollector());
+      if (main) {
+        mainResult = getDocList((TopDocsCollector)collector.getCollector());
+      } else {
+        NamedList rsp = commonResponse();
+        addDocList(rsp, (TopDocsCollector)collector.getCollector());
+      }
     }
 
     @Override
@@ -168,16 +181,24 @@ public class Grouping {
       int docsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       docsToCollect = Math.max(docsToCollect, 1);
 
+      // if this for the main result, don't skip groups (since we are counting docs, not groups)
+      int collectorOffset = main ? 0 : offset;
+
       if (groupBy instanceof StrFieldSource) {
-        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, offset);
+        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
       } else {
-        collector2 = new Phase2GroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, offset);
+        collector2 = new Phase2GroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
       }
       return collector2;
     }
 
     @Override
     void finish() throws IOException {
+      if (main) {
+        createMainResponse();
+        return;
+      }
+
       NamedList groupResult = commonResponse();
 
       List groupList = new ArrayList();
@@ -202,6 +223,57 @@ public class Grouping {
         SearchGroupDocs groupDocs = collector2.groupMap.get(group.groupValue);
         addDocList(nl, groupDocs.collector);
       }
+    }
+
+    private void createMainResponse() {
+      int docCount = numGroups;
+      int docOffset = offset;    
+      int docsToGather = getMax(docOffset, docCount, maxDoc);
+
+      float maxScore = Float.NEGATIVE_INFINITY; 
+      List<TopDocs> topDocsList = new ArrayList<TopDocs>();
+      int numDocs = 0;
+      for (SearchGroup group : collector.orderedGroups) {
+        SearchGroupDocs groupDocs = collector2.groupMap.get(group.groupValue);
+        
+        TopDocsCollector collector = groupDocs.collector;
+        int hits = collector.getTotalHits();
+
+        int num = Math.min(docsPerGroup, hits - groupOffset); // how many docs are in this group
+        if (num <= 0) continue;
+
+        TopDocs topDocs = collector.topDocs(groupOffset, Math.min(docsPerGroup,docsToGather-numDocs));
+        topDocsList.add(topDocs);
+        numDocs += topDocs.scoreDocs.length;
+
+        float score = topDocs.getMaxScore();
+        maxScore = Math.max(maxScore, score);
+
+        if (numDocs >= docsToGather) break;
+      }
+      assert numDocs <= docCount; // make sure we didn't gather too many
+      
+      int[] ids = new int[numDocs];
+      float[] scores = needScores ? new float[numDocs] : null;
+      int pos = 0;
+
+      for (TopDocs topDocs : topDocsList) {
+        for (ScoreDoc sd : topDocs.scoreDocs) {
+          ids[pos] = sd.doc;
+          if (scores != null) scores[pos] = sd.score;
+          pos++;
+        }
+      }
+
+      DocSlice docs = new DocSlice(docOffset, Math.max(0, ids.length - docOffset), ids, scores, getMatches(), maxScore);
+
+      if (getDocList) {
+        DocIterator iter = docs.iterator();
+        while (iter.hasNext())
+          idSet.add(iter.nextDoc());
+      }
+
+      mainResult = docs;
     }
 
     @Override
@@ -242,6 +314,8 @@ public class Grouping {
   final SolrIndexSearcher.QueryResult qr;
   final SolrIndexSearcher.QueryCommand cmd;
   final List<Command> commands = new ArrayList<Command>();
+
+  public DocList mainResult;  // output if one of the grouping commands should be used as the main result.
 
   public Grouping(SolrIndexSearcher searcher, SolrIndexSearcher.QueryResult qr, SolrIndexSearcher.QueryCommand cmd) {
     this.searcher = searcher;
