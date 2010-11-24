@@ -1005,6 +1005,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
       ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
+      ((LogMergePolicy) writer.getMergePolicy()).setNoCFSRatio(1.0);
 
       // add 100 documents
       for (int i = 0; i < 100; i++) {
