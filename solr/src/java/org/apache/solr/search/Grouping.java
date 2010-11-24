@@ -256,7 +256,7 @@ public class Grouping {
 
         if (numDocs >= docsToGather) break;
       }
-      assert numDocs <= docCount; // make sure we didn't gather too many
+      assert numDocs <= docsToGather; // make sure we didn't gather too many
       
       int[] ids = new int[numDocs];
       float[] scores = needScores ? new float[numDocs] : null;
