@@ -344,6 +344,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","3", "start","1", "group.limit","2", "group.main","true")
         ,"/response=={'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}"
     );
+
+    ///////////////////////// group.format == simple
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","3", "start","1", "group.limit","2", "group.format","simple")
+    , "/grouped/foo_i=={'matches':10,'doclist':"
+        +"{'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}}"
+    );
   };
 
 

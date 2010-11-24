@@ -307,6 +307,8 @@ public class QueryComponent extends SearchComponent
         String[] queries = params.getParams(GroupParams.GROUP_QUERY);
         String groupSortStr = params.get(GroupParams.GROUP_SORT);
         boolean main = params.getBool(GroupParams.GROUP_MAIN, false);
+        String format = params.get(GroupParams.GROUP_FORMAT);
+        Grouping.Format defaultFormat = "simple".equals(format) ? Grouping.Format.Simple : Grouping.Format.Grouped; 
 
         // groupSort defaults to sort
         Sort groupSort = groupSortStr == null ? cmd.getSort() : QueryParsing.parseSort(groupSortStr, req);
@@ -345,10 +347,15 @@ public class QueryComponent extends SearchComponent
             gc.groupOffset = groupOffsetDefault;
             gc.offset = cmd.getOffset();
             gc.sort = cmd.getSort();
+            gc.format = defaultFormat;
 
             if (main) {
               gc.main = true;
+              gc.format = Grouping.Format.Simple;
               main = false;
+            }
+
+            if (gc.format == Grouping.Format.Simple) {
               gc.groupOffset = 0;  // doesn't make sense
             }
 
@@ -372,9 +379,14 @@ public class QueryComponent extends SearchComponent
             gc.offset = cmd.getOffset();
             gc.numGroups = limitDefault;
 
+            gc.format = defaultFormat;            
+
             if (main) {
               gc.main = true;
+              gc.format = Grouping.Format.Simple;
               main = false;
+            }
+            if (gc.format == Grouping.Format.Simple) {
               gc.docsPerGroup = gc.numGroups;  // doesn't make sense to limit to one
               gc.groupOffset = gc.offset;
             }

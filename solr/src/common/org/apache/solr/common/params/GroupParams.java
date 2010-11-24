@@ -35,5 +35,8 @@ public interface GroupParams {
 
   /** treat the first group result as the main result.  true/false */
   public static final String GROUP_MAIN = GROUP + ".main";
+
+  /** treat the first group result as the main result.  true/false */
+  public static final String GROUP_FORMAT = GROUP + ".format";
 }
 

@@ -70,7 +70,7 @@ public class Grouping {
       int max = collector.getTotalHits();
       int off = groupOffset;
       int len = docsPerGroup;
-      if (main) {
+      if (format == Format.Simple) {
         off = offset;
         len = numGroups;
       }
@@ -181,8 +181,8 @@ public class Grouping {
       int docsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       docsToCollect = Math.max(docsToCollect, 1);
 
-      // if this for the main result, don't skip groups (since we are counting docs, not groups)
-      int collectorOffset = main ? 0 : offset;
+      // if the format is simple, don't skip groups (since we are counting docs, not groups)
+      int collectorOffset = format==Format.Simple ? 0 : offset;
 
       if (groupBy instanceof StrFieldSource) {
         collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
@@ -195,11 +195,16 @@ public class Grouping {
     @Override
     void finish() throws IOException {
       if (main) {
-        createMainResponse();
+        mainResult = createSimpleResponse();
         return;
       }
 
       NamedList groupResult = commonResponse();
+
+      if (format == Format.Simple) {
+        groupResult.add("doclist", createSimpleResponse());
+        return;
+      }
 
       List groupList = new ArrayList();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
@@ -225,7 +230,7 @@ public class Grouping {
       }
     }
 
-    private void createMainResponse() {
+    private DocList createSimpleResponse() {
       int docCount = numGroups;
       int docOffset = offset;    
       int docsToGather = getMax(docOffset, docCount, maxDoc);
@@ -273,7 +278,7 @@ public class Grouping {
           idSet.add(iter.nextDoc());
       }
 
-      mainResult = docs;
+      return docs;
     }
 
     @Override
