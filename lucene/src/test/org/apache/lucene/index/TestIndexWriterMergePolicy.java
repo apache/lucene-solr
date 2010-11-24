@@ -252,25 +252,5 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     if (upperBound * mergeFactor <= maxMergeDocs) {
       assertTrue(numSegments < mergeFactor);
     }
-
-    String[] files = writer.getDirectory().listAll();
-    int segmentCfsCount = 0;
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].endsWith(".cfs")) {
-        segmentCfsCount++;
-      }
-    }
-    assertEquals("index=" + writer.segString(), segmentCount, segmentCfsCount);
   }
-
-  /*
-  private void printSegmentDocCounts(IndexWriter writer) {
-    int segmentCount = writer.getSegmentCount();
-    System.out.println("" + segmentCount + " segments total");
-    for (int i = 0; i < segmentCount; i++) {
-      System.out.println("  segment " + i + " has " + writer.getDocCount(i)
-          + " docs");
-    }
-  }
-  */
 }

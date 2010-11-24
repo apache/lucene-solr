@@ -17,35 +17,36 @@
 
 package org.apache.lucene.benchmark.byTask;
 
-import java.io.StringReader;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.BufferedReader;
+import java.io.StringReader;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
-import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
-import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
+import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
+import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -768,12 +769,9 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     ir.close();
 
     // Make sure we have 3 segments:
-    final String[] files = benchmark.getRunData().getDirectory().listAll();
-    int cfsCount = 0;
-    for(int i=0;i<files.length;i++)
-      if (files[i].endsWith(".cfs"))
-        cfsCount++;
-    assertEquals(3, cfsCount);
+    SegmentInfos infos = new SegmentInfos();
+    infos.read(benchmark.getRunData().getDirectory());
+    assertEquals(3, infos.size());
   }
   
   /**

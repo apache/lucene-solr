@@ -27,7 +27,6 @@ import java.io.Reader;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.IndexInput;
@@ -1004,6 +1003,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
       ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
+      ((LogMergePolicy) writer.getMergePolicy()).setNoCFSRatio(1.0);
 
       // add 100 documents
       for (int i = 0; i < 100; i++) {
