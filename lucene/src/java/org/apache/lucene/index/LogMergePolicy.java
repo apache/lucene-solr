@@ -231,8 +231,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     return !hasDeletions &&
       !info.hasSeparateNorms() &&
       info.dir == w.getDirectory() &&
-      (info.getUseCompoundFile() == useCompoundFile ||
-       (noCFSRatio != 1.0 && !info.getUseCompoundFile()));
+      (info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0);
   }
 
   /**
