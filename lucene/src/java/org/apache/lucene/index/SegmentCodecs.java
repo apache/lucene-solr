@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -128,6 +129,6 @@ final class SegmentCodecs implements Cloneable {
 
   @Override
   public String toString() {
-    return "CodecInfo [codecs=" + codecs + ", provider=" + provider + "]";
+    return "SegmentCodecs [codecs=" + Arrays.toString(codecs) + ", provider=" + provider + "]";
   }
 }
