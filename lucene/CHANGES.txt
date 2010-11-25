@@ -230,14 +230,8 @@ API Changes
 * LUCENE-2699: Update StandardTokenizer and UAX29Tokenizer to Unicode 6.0.0.
   (Steven Rowe)
    
-* LUCENE-2773: LogMergePolicy accepts a double noCFSRatio (default =
-  0.1), which means any time a merged segment is greater than 10% of
-  the index size, it will be left in non-compound format even if
-  compound format is on.  Also, the default value for maxMergeSize was
-  changed from unlimited to 2GB, meaning segments larger than 2GB will
-  never be merged by default.  These changes were made to reduce peak
-  transient disk usage during optimize which increased due to
-  LUCENE-2762.  (Mike McCandless)
+* LUCENE-2778: RAMDirectory now exposes newRAMFile() which allows to override
+  and return a different RAMFile implementation. (Shai Erera)
   
 Bug fixes
 
