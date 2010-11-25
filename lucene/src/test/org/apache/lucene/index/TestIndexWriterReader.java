@@ -349,6 +349,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     void close(boolean doWait) throws Throwable {
       didClose = true;
+      if (doWait) {
+        mainWriter.waitForMerges();
+      }
       mainWriter.close(doWait);
     }
 

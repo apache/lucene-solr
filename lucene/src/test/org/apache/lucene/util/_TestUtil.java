@@ -231,5 +231,11 @@ public class _TestUtil {
     // keep number of open files lowish
     LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
     lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
+
+    MergeScheduler ms = w.getConfig().getMergeScheduler();
+    if (ms instanceof ConcurrentMergeScheduler) {
+      ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);
+      ((ConcurrentMergeScheduler) ms).setMaxMergeCount(3);
+    }
   }
 }
