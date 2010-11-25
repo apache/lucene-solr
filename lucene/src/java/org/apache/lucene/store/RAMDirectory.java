@@ -35,8 +35,8 @@ public class RAMDirectory extends Directory implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  HashMap<String,RAMFile> fileMap = new HashMap<String,RAMFile>();
-  final AtomicLong sizeInBytes = new AtomicLong();
+  protected HashMap<String,RAMFile> fileMap = new HashMap<String,RAMFile>();
+  protected final AtomicLong sizeInBytes = new AtomicLong();
   
   // *****
   // Lock acquisition sequence:  RAMDirectory, then RAMFile
@@ -169,9 +169,8 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public synchronized void deleteFile(String name) throws IOException {
     ensureOpen();
-    RAMFile file = fileMap.get(name);
+    RAMFile file = fileMap.remove(name);
     if (file!=null) {
-        fileMap.remove(name);
         file.directory = null;
         sizeInBytes.addAndGet(-file.sizeInBytes);
     } else
@@ -182,7 +181,7 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
-    RAMFile file = new RAMFile(this);
+    RAMFile file = newRAMFile();
     synchronized (this) {
       RAMFile existing = fileMap.get(name);
       if (existing!=null) {
@@ -192,6 +191,15 @@ public class RAMDirectory extends Directory implements Serializable {
       fileMap.put(name, file);
     }
     return new RAMOutputStream(file);
+  }
+
+  /**
+   * Returns a new {@link RAMFile} for storing data. This method can be
+   * overridden to return different {@link RAMFile} impls, that e.g. override
+   * {@link RAMFile#newBuffer(int)}.
+   */
+  protected RAMFile newRAMFile() {
+    return new RAMFile(this);
   }
 
   /** Returns a stream reading an existing file. */
