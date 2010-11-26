@@ -213,7 +213,7 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 
     @Override
     public BytesRef lookup(int ord, BytesRef ret) {
-      return bytes.fillUsingLengthPrefix(ret, termOrdToBytesOffset.get(ord));
+      return bytes.fill(ret, termOrdToBytesOffset.get(ord));
     }
 
     @Override
@@ -235,7 +235,7 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
         currentBlockNumber = 0;
         blocks = bytes.getBlocks();
         blockEnds = bytes.getBlockEnds();
-        currentBlockNumber = bytes.fillUsingLengthPrefix2(term, termOrdToBytesOffset.get(0));
+        currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get(0));
         end = blockEnds[currentBlockNumber];
       }
 
@@ -249,7 +249,7 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       public SeekStatus seek(long ord) throws IOException {
         assert(ord >= 0 && ord <= numOrd);
         // TODO: if gap is small, could iterate from current position?  Or let user decide that?
-        currentBlockNumber = bytes.fillUsingLengthPrefix2(term, termOrdToBytesOffset.get((int)ord));
+        currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get((int)ord));
         end = blockEnds[currentBlockNumber];
         currentOrd = (int)ord;
         return SeekStatus.FOUND;

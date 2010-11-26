@@ -29,7 +29,8 @@ import java.io.IOException;
  *  using copy, and then retrieve slices (BytesRef) into it
  *  using fill.
  *
- * <p>@lucene.internal</p>*/
+ * @lucene.internal
+ **/
 public final class PagedBytes {
   private final List<byte[]> blocks = new ArrayList<byte[]>();
   private final List<Integer> blockEnd = new ArrayList<Integer>();
@@ -63,8 +64,16 @@ public final class PagedBytes {
       blockSize = pagedBytes.blockSize;
     }
 
-    /** Get a slice out of the byte array. */
-    public BytesRef fill(BytesRef b, long start, int length) {
+    /**
+     * Gets a slice out of {@link PagedBytes} starting at <i>start</i> with a
+     * given length. Iff the slice spans across a block border this method will
+     * allocate sufficient resources and copy the paged data.
+     * <p>
+     * Slices spanning more than one block are not supported.
+     * </p>
+     * @lucene.internal 
+     **/
+    public BytesRef fillSlice(BytesRef b, long start, int length) {
       assert length >= 0: "length=" + length;
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
@@ -91,8 +100,18 @@ public final class PagedBytes {
       return b;
     }
 
-    /** Reads length as 1 or 2 byte vInt prefix, starting @ start */
-    public BytesRef fillUsingLengthPrefix(BytesRef b, long start) {
+    /**
+     * Reads length as 1 or 2 byte vInt prefix, starting at <i>start</i>.
+     * <p>
+     * <b>Note:</b> this method does not support slices spanning across block
+     * borders.
+     * </p>
+     * 
+     * @return the given {@link BytesRef}
+     * 
+     * @lucene.internal
+     **/
+    public BytesRef fill(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
       final byte[] block = b.bytes = blocks[index];
@@ -108,8 +127,17 @@ public final class PagedBytes {
       return b;
     }
 
-    /** @lucene.internal  Reads length as 1 or 2 byte vInt prefix, starting @ start.  Returns the block number of the term. */
-    public int fillUsingLengthPrefix2(BytesRef b, long start) {
+    /**
+     * Reads length as 1 or 2 byte vInt prefix, starting at <i>start</i>. *
+     * <p>
+     * <b>Note:</b> this method does not support slices spanning across block
+     * borders.
+     * </p>
+     * 
+     * @return the internal block number of the slice.
+     * @lucene.internal
+     **/
+    public int fillAndGetIndex(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
       final byte[] block = b.bytes = blocks[index];
@@ -125,10 +153,21 @@ public final class PagedBytes {
       return index;
     }
 
-    /** @lucene.internal  Reads length as 1 or 2 byte vInt prefix, starting @ start. 
-     * Returns the start offset of the next part, suitable as start parameter on next call
-     * to sequentially read all BytesRefs. */
-    public long fillUsingLengthPrefix3(BytesRef b, long start) {
+    /**
+     * Reads length as 1 or 2 byte vInt prefix, starting at <i>start</i> and
+     * returns the start offset of the next part, suitable as start parameter on
+     * next call to sequentially read all {@link BytesRef}.
+     * 
+     * <p>
+     * <b>Note:</b> this method does not support slices spanning across block
+     * borders.
+     * </p>
+     * 
+     * @return the start offset of the next part, suitable as start parameter on
+     *         next call to sequentially read all {@link BytesRef}.
+     * @lucene.internal
+     **/
+    public long fillAndGetStart(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
       final byte[] block = b.bytes = blocks[index];

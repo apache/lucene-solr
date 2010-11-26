@@ -165,7 +165,7 @@ public class DocTermsCreator extends EntryCreatorWithOptions<DocTerms>
     @Override
     public BytesRef getTerm(int docID, BytesRef ret) {
       final long pointer = docToOffset.get(docID);
-      return bytes.fillUsingLengthPrefix(ret, pointer);
+      return bytes.fill(ret, pointer);
     }
   }
 }

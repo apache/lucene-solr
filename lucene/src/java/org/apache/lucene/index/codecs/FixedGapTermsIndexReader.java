@@ -358,7 +358,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       private void fillResult(int idx, TermsIndexResult result) {
         final long offset = termOffsets.get(idx);
         final int length = (int) (termOffsets.get(1+idx) - offset);
-        termBytesReader.fill(result.term, termBytesStart + offset, length);
+        termBytesReader.fillSlice(result.term, termBytesStart + offset, length);
         result.position = idx * totalIndexInterval;
         result.offset = termsStart + termsDictOffsets.get(idx);
       }
@@ -373,7 +373,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
           final long offset = termOffsets.get(mid);
           final int length = (int) (termOffsets.get(1+mid) - offset);
-          termBytesReader.fill(result.term, termBytesStart + offset, length);
+          termBytesReader.fillSlice(result.term, termBytesStart + offset, length);
 
           int delta = termComp.compare(term, result.term);
           if (delta < 0) {
@@ -394,7 +394,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
         final long offset = termOffsets.get(hi);
         final int length = (int) (termOffsets.get(1+hi) - offset);
-        termBytesReader.fill(result.term, termBytesStart + offset, length);
+        termBytesReader.fillSlice(result.term, termBytesStart + offset, length);
 
         result.position = hi*totalIndexInterval;
         result.offset = termsStart + termsDictOffsets.get(hi);
