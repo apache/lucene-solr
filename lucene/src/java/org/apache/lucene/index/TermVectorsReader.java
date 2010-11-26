@@ -106,8 +106,13 @@ class TermVectorsReader implements Cloneable {
           // docs
           assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
         }
-      } else
+      } else {
+        // If all documents flushed in a segment had hit
+        // non-aborting exceptions, it's possible that
+        // FieldInfos.hasVectors returns true yet the term
+        // vector files don't exist.
         format = 0;
+      }
 
       this.fieldInfos = fieldInfos;
       success = true;
