@@ -56,7 +56,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   /** Default noCFSRatio.  If a merge's size is >= 10% of
    *  the index, then we disable compound file for it.
-   *  @see setNoCFSRatio */
+   *  @see #setNoCFSRatio */
   public static final double DEFAULT_NO_CFS_RATIO = 0.1;
 
   protected int mergeFactor = DEFAULT_MERGE_FACTOR;
@@ -81,7 +81,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     return w != null && w.verbose();
   }
 
-  /** @see setNoCFSRatio */
+  /** @see #setNoCFSRatio */
   public double getNoCFSRatio() {
     return noCFSRatio;
   }
