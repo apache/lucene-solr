@@ -521,7 +521,11 @@ public abstract class LuceneTestCase extends Assert {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
     if (r.nextBoolean()) {
-      c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
+      if (r.nextInt(20) == 17) {
+        c.setMaxBufferedDocs(2);
+      } else {
+        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
+      }
     }
     if (r.nextBoolean()) {
       c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
@@ -535,7 +539,11 @@ public abstract class LuceneTestCase extends Assert {
       logmp.setUseCompoundDocStore(r.nextBoolean());
       logmp.setUseCompoundFile(r.nextBoolean());
       logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
+      if (r.nextInt(3) == 2) {
+        logmp.setMergeFactor(2);
+      } else {
+        logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
+      }
     }
     
     c.setReaderPooling(r.nextBoolean());
