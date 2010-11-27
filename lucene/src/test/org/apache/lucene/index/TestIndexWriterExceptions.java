@@ -385,6 +385,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
 
     });
+    conf.setMaxBufferedDocs(Math.max(3, conf.getMaxBufferedDocs()));
+
     IndexWriter writer = new IndexWriter(dir, conf);
 
     Document doc = new Document();
@@ -412,7 +414,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     writer.close();
     IndexReader reader = IndexReader.open(dir, true);
     final Term t = new Term("content", "aa");
-    assertEquals(reader.docFreq(t), 3);
+    assertEquals(3, reader.docFreq(t));
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
