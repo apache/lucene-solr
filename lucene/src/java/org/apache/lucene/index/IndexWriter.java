@@ -1776,7 +1776,7 @@ public class IndexWriter implements Closeable {
         message("now call final commit()");
       
       if (!hitOOM) {
-        commit(0);
+        commitInternal(null);
       }
 
       if (infoStream != null)
@@ -3133,18 +3133,11 @@ public class IndexWriter implements Closeable {
 
     flush(true, true, true);
 
-    startCommit(0, commitUserData);
+    startCommit(commitUserData);
   }
 
   // Used only by commit, below; lock order is commitLock -> IW
   private final Object commitLock = new Object();
-
-  private void commit(long sizeInBytes) throws IOException {
-    synchronized(commitLock) {
-      startCommit(sizeInBytes, null);
-      finishCommit();
-    }
-  }
 
   /**
    * <p>Commits all pending changes (added & deleted
@@ -3192,6 +3185,11 @@ public class IndexWriter implements Closeable {
   public final void commit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
 
     ensureOpen();
+
+    commitInternal(commitUserData);
+  }
+
+  private final void commitInternal(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
 
     if (infoStream != null) {
       message("commit: start");
@@ -4367,7 +4365,7 @@ public class IndexWriter implements Closeable {
    *  if it wasn't already.  If that succeeds, then we
    *  prepare a new segments_N file but do not fully commit
    *  it. */
-  private void startCommit(long sizeInBytes, Map<String,String> commitUserData) throws IOException {
+  private void startCommit(Map<String,String> commitUserData) throws IOException {
 
     assert testPoint("startStartCommit");
     assert pendingCommit == null;
@@ -4379,7 +4377,7 @@ public class IndexWriter implements Closeable {
     try {
 
       if (infoStream != null)
-        message("startCommit(): start sizeInBytes=" + sizeInBytes);
+        message("startCommit(): start");
 
       final SegmentInfos toSync;
       final long myChangeCount;
