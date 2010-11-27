@@ -981,7 +981,7 @@ public class TestIndexWriter extends LuceneTestCase {
       sis.read(dir);
       // Since we flushed w/o allowing merging we should now
       // have 10 segments
-      assert sis.size() == 10;
+      assertEquals(10, sis.size());
       dir.close();
     }
 
@@ -2363,9 +2363,8 @@ public class TestIndexWriter extends LuceneTestCase {
     final int NUM_THREADS = 5;
     final double RUN_SEC = 0.5;
     final Directory dir = newDirectory();
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
-    _TestUtil.reduceOpenFiles(w);
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    _TestUtil.reduceOpenFiles(w.w);
     w.commit();
     final AtomicBoolean failed = new AtomicBoolean();
     Thread[] threads = new Thread[NUM_THREADS];

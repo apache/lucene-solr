@@ -78,7 +78,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * If non-null, information about loading segments_N files
    * will be printed here.  @see #setInfoStream.
    */
-  private static PrintStream infoStream;
+  private static PrintStream infoStream = null;
   
   public SegmentInfos() {
     this(CodecProvider.getDefault());
@@ -621,7 +621,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
         try {
           Object v = doBody(segmentFileName);
-          if (exc != null && infoStream != null) {
+          if (infoStream != null) {
             message("success on " + segmentFileName);
           }
           return v;
