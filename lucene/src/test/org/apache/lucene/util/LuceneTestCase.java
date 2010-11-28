@@ -322,7 +322,7 @@ public abstract class LuceneTestCase extends Assert {
       if (random.nextInt(4) == 0) { // preflex-only setup
         codec = installTestCodecs("PreFlex", CodecProvider.getDefault());
       } else { // per-field setup
-        CodecProvider.setDefault(new RandomCodecProvider());
+        CodecProvider.setDefault(new RandomCodecProvider(random));
         codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
       }
     } else { // ordinary setup
@@ -982,12 +982,15 @@ public abstract class LuceneTestCase extends Assert {
   private static class RandomCodecProvider extends CodecProvider {
     private List<Codec> knownCodecs = new ArrayList<Codec>();
     private Map<String,Codec> previousMappings = new HashMap<String,Codec>();
+    private final int perFieldSeed;
     
-    RandomCodecProvider() {
+    RandomCodecProvider(Random random) {
+      this.perFieldSeed = random.nextInt();
       register(new StandardCodec());
       register(new PreFlexCodec());
       register(new PulsingCodec(1));
       register(new SimpleTextCodec());
+      Collections.shuffle(knownCodecs, random);
     }
 
     public synchronized void register(Codec codec) {
@@ -1004,7 +1007,7 @@ public abstract class LuceneTestCase extends Assert {
     public synchronized String getFieldCodec(String name) {
       Codec codec = previousMappings.get(name);
       if (codec == null) {
-        codec = knownCodecs.get(random.nextInt(knownCodecs.size()));
+        codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
         previousMappings.put(name, codec);
       }
       return codec.name;
