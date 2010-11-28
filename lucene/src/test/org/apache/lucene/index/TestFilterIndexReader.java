@@ -113,9 +113,6 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
-
-    assertTrue(reader.isOptimized());
-    
     TermEnum terms = reader.terms();
     while (terms.next()) {
       assertTrue(terms.term().text().indexOf('e') != -1);
