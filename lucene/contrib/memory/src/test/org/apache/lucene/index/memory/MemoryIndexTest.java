@@ -37,6 +37,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
@@ -168,44 +169,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       return TEST_TERMS[random.nextInt(TEST_TERMS.length)];
     } else {
       // return a random unicode term
-      return randomString();
+      return _TestUtil.randomUnicodeString(random);
     }
-  }
-  
-  /**
-   * Return a random unicode term, like TestStressIndexing.
-   */
-  private String randomString() {
-    final int end = random.nextInt(20);
-    if (buffer.length < 1 + end) {
-      char[] newBuffer = new char[(int) ((1 + end) * 1.25)];
-      System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-      buffer = newBuffer;
-    }
-    for (int i = 0; i < end - 1; i++) {
-      int t = random.nextInt(6);
-      if (0 == t && i < end - 1) {
-        // Make a surrogate pair
-        // High surrogate
-        buffer[i++] = (char) nextInt(0xd800, 0xdc00);
-        // Low surrogate
-        buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      } else if (t <= 1) buffer[i] = (char) random.nextInt(0x80);
-      else if (2 == t) buffer[i] = (char) nextInt(0x80, 0x800);
-      else if (3 == t) buffer[i] = (char) nextInt(0x800, 0xd800);
-      else if (4 == t) buffer[i] = (char) nextInt(0xe000, 0xffff);
-      else if (5 == t) {
-        // Illegal unpaired surrogate
-        if (random.nextBoolean()) buffer[i] = (char) nextInt(0xd800, 0xdc00);
-        else buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      }
-    }
-    return new String(buffer, 0, end);
-  }
-  
-  private char buffer[] = new char[20];
-  // start is inclusive and end is exclusive
-  private int nextInt(int start, int end) {
-    return start + random.nextInt(end - start);
   }
 }
