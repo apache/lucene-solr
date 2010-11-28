@@ -146,9 +146,6 @@ public class TestFilterIndexReader extends LuceneTestCase {
     reader.close();
     reader = IndexReader.open(target, true);
     
-
-    assertTrue(reader.isOptimized());
-    
     TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
     while (terms.next() != null) {
       assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
