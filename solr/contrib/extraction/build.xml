@@ -117,6 +117,7 @@
       <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
       <sysproperty key="tests.iter" value="${tests.iter}"/>
       <sysproperty key="tests.seed" value="${tests.seed}"/>
+      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
       <!-- set whether or not nightly tests should run -->
       <sysproperty key="tests.nightly" value="${tests.nightly}"/>
       <sysproperty key="jetty.testMode" value="1"/>
