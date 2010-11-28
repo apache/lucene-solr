@@ -236,8 +236,8 @@ public abstract class LuceneTestCase extends Assert {
         }
       }
     stores = null;
-    // if tests failed, report some information back
-    if (testsFailed)
+    // if verbose or tests failed, report some information back
+    if (VERBOSE || testsFailed)
       System.out.println("NOTE: test params are: " +
         "locale=" + locale + 
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
