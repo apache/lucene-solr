@@ -58,6 +58,6 @@ public class GetTermInfo {
   private static void usage() {
     System.out
         .println("\n\nusage:\n\t"
-            + "java org.apache.lucene.misc.GetTermInfo <index dir> field term \n\n");
+            + "java " + GetTermInfo.class.getName() + " <index dir> field term \n\n");
   }
 }
