@@ -127,20 +127,43 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     doc.add(idField);
     doc.add(randField);
     doc.add(bodyField);
-    
-    for (int d = minId; d <= maxId; d++) {
-      idField.setValue(pad(d));
-      int r = index.allowNegativeRandomInts ? random.nextInt() : random
+
+    int minCount = 0;
+    int maxCount = 0;
+
+    while(true) {
+
+      for (int d = minId; d <= maxId; d++) {
+        idField.setValue(pad(d));
+        int r = index.allowNegativeRandomInts ? random.nextInt() : random
           .nextInt(Integer.MAX_VALUE);
-      if (index.maxR < r) {
-        index.maxR = r;
+        if (index.maxR < r) {
+          index.maxR = r;
+          maxCount = 1;
+        } else if (index.maxR == r) {
+          maxCount++;
+        }
+
+        if (r < index.minR) {
+          index.minR = r;
+          minCount = 1;
+        } else if (r == index.minR) {
+          minCount++;
+        }
+        randField.setValue(pad(r));
+        bodyField.setValue("body");
+        writer.addDocument(doc);
       }
-      if (r < index.minR) {
-        index.minR = r;
+
+      if (minCount == 1 && maxCount == 1) {
+        // our subclasses rely on only 1 doc having the min or
+        // max, so, we loop until we satisfy that.  it should be
+        // exceedingly rare (Yonik calculates 1 in ~429,000)
+        // times) that this loop requires more than one try:
+        break;
       }
-      randField.setValue(pad(r));
-      bodyField.setValue("body");
-      writer.addDocument(doc);
+
+      // try again
     }
     
     IndexReader ir = writer.getReader();
