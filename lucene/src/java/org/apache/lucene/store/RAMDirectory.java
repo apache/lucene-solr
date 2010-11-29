@@ -20,8 +20,8 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNameFilter;
@@ -36,7 +36,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  protected HashMap<String,RAMFile> fileMap = new HashMap<String,RAMFile>();
+  protected Map<String,RAMFile> fileMap = new ConcurrentHashMap<String,RAMFile>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   
   // *****
@@ -83,25 +83,16 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   @Override
-  public synchronized final String[] listAll() {
+  public final String[] listAll() {
     ensureOpen();
-    Set<String> fileNames = fileMap.keySet();
-    String[] result = new String[fileNames.size()];
-    int i = 0;
-    for(final String fileName: fileNames) 
-      result[i++] = fileName;
-    return result;
+    return fileMap.keySet().toArray(new String[0]);
   }
 
   /** Returns true iff the named file exists in this directory. */
   @Override
   public final boolean fileExists(String name) {
     ensureOpen();
-    RAMFile file;
-    synchronized (this) {
-      file = fileMap.get(name);
-    }
-    return file != null;
+    return fileMap.containsKey(name);
   }
 
   /** Returns the time the named file was last modified.
@@ -110,12 +101,10 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public final long fileModified(String name) throws IOException {
     ensureOpen();
-    RAMFile file;
-    synchronized (this) {
-      file = fileMap.get(name);
-    }
-    if (file==null)
+    RAMFile file = fileMap.get(name);
+    if (file == null) {
       throw new FileNotFoundException(name);
+    }
     return file.getLastModified();
   }
 
@@ -125,12 +114,10 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public void touchFile(String name) throws IOException {
     ensureOpen();
-    RAMFile file;
-    synchronized (this) {
-      file = fileMap.get(name);
-    }
-    if (file==null)
+    RAMFile file = fileMap.get(name);
+    if (file == null) {
       throw new FileNotFoundException(name);
+    }
     
     long ts2, ts1 = System.currentTimeMillis();
     do {
@@ -151,19 +138,18 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public final long fileLength(String name) throws IOException {
     ensureOpen();
-    RAMFile file;
-    synchronized (this) {
-      file = fileMap.get(name);
-    }
-    if (file==null)
+    RAMFile file = fileMap.get(name);
+    if (file == null) {
       throw new FileNotFoundException(name);
+    }
     return file.getLength();
   }
   
-  /** Return total size in bytes of all files in this
-   * directory.  This is currently quantized to
-   * RAMOutputStream.BUFFER_SIZE. */
-  public synchronized final long sizeInBytes() {
+  /**
+   * Return total size in bytes of all files in this directory. This is
+   * currently quantized to RAMOutputStream.BUFFER_SIZE.
+   */
+  public final long sizeInBytes() {
     ensureOpen();
     return sizeInBytes.get();
   }
@@ -172,14 +158,15 @@ public class RAMDirectory extends Directory implements Serializable {
    * @throws IOException if the file does not exist
    */
   @Override
-  public synchronized void deleteFile(String name) throws IOException {
+  public void deleteFile(String name) throws IOException {
     ensureOpen();
     RAMFile file = fileMap.remove(name);
-    if (file!=null) {
-        file.directory = null;
-        sizeInBytes.addAndGet(-file.sizeInBytes);
-    } else
+    if (file != null) {
+      file.directory = null;
+      sizeInBytes.addAndGet(-file.sizeInBytes);
+    } else {
       throw new FileNotFoundException(name);
+    }
   }
 
   /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
@@ -187,14 +174,12 @@ public class RAMDirectory extends Directory implements Serializable {
   public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
     RAMFile file = newRAMFile();
-    synchronized (this) {
-      RAMFile existing = fileMap.get(name);
-      if (existing!=null) {
-        sizeInBytes.addAndGet(-existing.sizeInBytes);
-        existing.directory = null;
-      }
-      fileMap.put(name, file);
+    RAMFile existing = fileMap.remove(name);
+    if (existing != null) {
+      sizeInBytes.addAndGet(-existing.sizeInBytes);
+      existing.directory = null;
     }
+    fileMap.put(name, file);
     return new RAMOutputStream(file);
   }
 
@@ -211,12 +196,10 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public IndexInput openInput(String name) throws IOException {
     ensureOpen();
-    RAMFile file;
-    synchronized (this) {
-      file = fileMap.get(name);
-    }
-    if (file == null)
+    RAMFile file = fileMap.get(name);
+    if (file == null) {
       throw new FileNotFoundException(name);
+    }
     return new RAMInputStream(file);
   }
 
