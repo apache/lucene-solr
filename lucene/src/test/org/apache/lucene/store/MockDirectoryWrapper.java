@@ -80,7 +80,10 @@ public class MockDirectoryWrapper extends Directory {
 
   public MockDirectoryWrapper(Random random, Directory delegate) {
     this.delegate = delegate;
-    this.randomState = random;
+    // must make a private random since our methods are
+    // called from different threads; else test failures may
+    // not be reproducible from the original seed
+    this.randomState = new Random(random.nextInt());
     init();
   }
 

@@ -50,7 +50,10 @@ public class RandomIndexWriter implements Closeable {
 
     public MockIndexWriter(Random r,Directory dir, IndexWriterConfig conf) throws IOException {
       super(dir, conf);
-      this.r = r;
+      // must make a private random since our methods are
+      // called from different threads; else test failures may
+      // not be reproducible from the original seed
+      this.r = new Random(r.nextInt());
     }
 
     @Override
