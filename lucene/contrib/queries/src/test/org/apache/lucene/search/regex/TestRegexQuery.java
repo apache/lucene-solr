@@ -19,8 +19,10 @@ package org.apache.lucene.search.regex;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -79,9 +81,10 @@ public class TestRegexQuery extends LuceneTestCase {
   }
 
   public void testMatchAll() throws Exception {
-    TermsEnum terms = new RegexQuery(new Term(FN, "jum.")).getTermsEnum(searcher.getIndexReader(), new AttributeSource() /*dummy*/);
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
+    TermsEnum te = new RegexQuery(new Term(FN, "jum.")).getTermsEnum(terms, new AttributeSource() /*dummy*/);
     // no term should match
-    assertNull(terms.next());
+    assertNull(te.next());
   }
 
   public void testRegex1() throws Exception {

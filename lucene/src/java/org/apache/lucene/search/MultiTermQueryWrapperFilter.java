@@ -118,7 +118,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       return DocIdSet.EMPTY_DOCIDSET;
     }
 
-    final TermsEnum termsEnum = query.getTermsEnum(reader);
+    final TermsEnum termsEnum = query.getTermsEnum(terms);
     assert termsEnum != null;
     if (termsEnum.next() != null) {
       // fill into a OpenBitSet

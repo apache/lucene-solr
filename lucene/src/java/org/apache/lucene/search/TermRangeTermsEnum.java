@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.text.Collator;
 import java.util.Comparator;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -51,9 +51,8 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
    * (you can't select all but the first or last term without 
    * explicitly specifying the term to exclude.)
    * 
-   * @param reader
-   * @param field
-   *          An interned field that holds both lower and upper terms.
+   * @param tenum
+   *          TermsEnum to filter
    * @param lowerTermText
    *          The term text at the lower end of the range
    * @param upperTermText
@@ -69,9 +68,9 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
    * 
    * @throws IOException
    */
-  public TermRangeTermsEnum(IndexReader reader, String field, String lowerTermText, String upperTermText, 
+  public TermRangeTermsEnum(TermsEnum tenum, String lowerTermText, String upperTermText, 
     boolean includeLower, boolean includeUpper, Collator collator) throws IOException {
-    super(reader, field);
+    super(tenum);
     this.collator = collator;
     this.upperTermText = upperTermText;
     this.lowerTermText = lowerTermText;

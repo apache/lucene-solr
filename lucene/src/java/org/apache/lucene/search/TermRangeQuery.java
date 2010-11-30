@@ -20,10 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.text.Collator;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.AttributeSource;
 
@@ -131,17 +129,17 @@ public class TermRangeQuery extends MultiTermQuery {
   public Collator getCollator() { return collator; }
   
   @Override
-  protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
+  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     if (collator == null && lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {
       return TermsEnum.EMPTY;
     }
+    
+    TermsEnum tenum = terms.iterator();
+    
     if ((lowerTerm == null || (collator == null && includeLower && "".equals(lowerTerm))) && upperTerm == null) {
-      // NOTE: for now, MultiTermQuery enums terms at the
-      // MultiReader level, so we must use MultiFields here:
-      final Terms terms = MultiFields.getTerms(reader, field);
-      return (terms != null) ? terms.iterator() : null;
+      return tenum;
     }
-    return new TermRangeTermsEnum(reader, field,
+    return new TermRangeTermsEnum(tenum,
         lowerTerm, upperTerm, includeLower, includeUpper, collator);
   }
 

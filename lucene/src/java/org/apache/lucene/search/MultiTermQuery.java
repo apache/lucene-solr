@@ -22,6 +22,7 @@ import java.io.Serializable;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.util.AttributeSource;
@@ -268,14 +269,14 @@ public abstract class MultiTermQuery extends Query {
    * provide attributes, the rewrite method uses to inform about e.g. maximum competitive boosts.
    * This is currently only used by {@link TopTermsRewrite}
    */
-  protected abstract TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException;
+  protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
 
   /** Convenience method, if no attributes are needed:
    * This simply passes empty attributes and is equal to:
-   * <code>getTermsEnum(reader, new AttributeSource())</code>
+   * <code>getTermsEnum(terms, new AttributeSource())</code>
    */
-  protected final TermsEnum getTermsEnum(IndexReader reader) throws IOException {
-    return getTermsEnum(reader, new AttributeSource());
+  protected final TermsEnum getTermsEnum(Terms terms) throws IOException {
+    return getTermsEnum(terms, new AttributeSource());
   }
 
   /**

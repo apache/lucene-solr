@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -86,16 +87,15 @@ public class TestPrefixRandom extends LuceneTestCase {
     }
     
     @Override
-    protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
-      return new SimplePrefixTermsEnum(reader, field, prefix);
+    protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+      return new SimplePrefixTermsEnum(terms.iterator(), prefix);
     }
 
     private class SimplePrefixTermsEnum extends FilteredTermsEnum {
       private final BytesRef prefix;
 
-      private SimplePrefixTermsEnum(IndexReader reader, 
-          String field, BytesRef prefix) throws IOException {
-        super(reader, field);
+      private SimplePrefixTermsEnum(TermsEnum tenum, BytesRef prefix) throws IOException {
+        super(tenum);
         this.prefix = prefix;
         setInitialSeekTerm(new BytesRef(""));
       }
