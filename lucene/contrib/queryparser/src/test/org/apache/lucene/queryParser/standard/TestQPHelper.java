@@ -1041,7 +1041,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertEquals(query1, query2);
   }
 
-// Todo (nocommit): Convert from DateField to DateUtil
+// Todo: Convert from DateField to DateUtil
 //  public void testLocalDateFormat() throws IOException, QueryNodeException {
 //    Directory ramDir = newDirectory();
 //    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));

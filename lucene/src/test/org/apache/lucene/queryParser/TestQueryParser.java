@@ -952,7 +952,7 @@ public class TestQueryParser extends LuceneTestCase {
     assertEquals(query1, query2);
   }
 
-// Todo (nocommit): convert this from DateField to DateUtil
+// Todo: convert this from DateField to DateUtil
 //  public void testLocalDateFormat() throws IOException, ParseException {
 //    Directory ramDir = newDirectory();
 //    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
