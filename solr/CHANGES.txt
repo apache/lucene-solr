@@ -468,6 +468,9 @@ Bug Fixes
   SingleResponseWriter.end to be called 2x 
   (Chris A. Mattmann via hossman) 
   
+* SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
+  (koji)
+
 Other Changes
 ----------------------
 

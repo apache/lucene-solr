@@ -40,6 +40,23 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
 
   private static final String DELETED_PK_QUERY = "select id from x where last_modified > NOW AND deleted='true'";
 
+  private static final String dataConfig_delta =
+    "<dataConfig>" +
+    "  <dataSource  type=\"MockDataSource\"/>\n" +
+    "  <document>\n" +
+    "    <entity name=\"x\" transformer=\"TemplateTransformer\"" +
+    "            query=\"" + FULLIMPORT_QUERY + "\"" +
+    "            deletedPkQuery=\"" + DELETED_PK_QUERY + "\"" +
+    "            deltaImportQuery=\"select * from x where id='${dih.delta.id}'\"" +
+    "            deltaQuery=\"" + DELTA_QUERY + "\">\n" +
+    "      <field column=\"id\" name=\"id\"/>\n" +
+    "      <entity name=\"y\" query=\"select * from y where y.A='${x.id}'\">\n" +
+    "        <field column=\"desc\" />\n" +
+    "      </entity>\n" +
+    "    </entity>\n" +
+    "  </document>\n" +
+    "</dataConfig>\n";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
@@ -115,8 +132,8 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
 
     List childRow = new ArrayList();
     childRow.add(createMap("desc", "hello"));
-    MockDataSource.setIterator("select * from y where y.A='1'", childRow
-        .iterator());
+    MockDataSource.setIterator("select * from y where y.A='1'",
+        childRow.iterator());
 
     runDeltaImport(dataConfig_delta);
 
@@ -270,18 +287,4 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
     assertQ(req("desc:hello"), "//*[@numFound='0']");
     assertQ(req("desc:goodbye"), "//*[@numFound='1']");
   }
-
-  private static String dataConfig_delta = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
-    + "       <document>\n"
-    + "               <entity name=\"x\" transformer=\"TemplateTransformer\""
-    + "				query=\"" + FULLIMPORT_QUERY + "\""
-    + "				deletedPkQuery=\"" + DELETED_PK_QUERY + "\""
-    + " 				deltaImportQuery=\"select * from x where id='${dataimporter.delta.id}'\""
-    + "				deltaQuery=\"" + DELTA_QUERY + "\">\n"
-    + "                       <field column=\"id\" name=\"id\"/>\n"
-    + "                       <entity name=\"y\" query=\"select * from y where y.A='${x.id}'\">\n"
-    + "                               <field column=\"desc\" />\n"
-    + "                       </entity>\n" + "               </entity>\n"
-    + "       </document>\n" + "</dataConfig>\n";
-
 }
