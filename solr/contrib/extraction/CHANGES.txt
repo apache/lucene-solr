@@ -20,13 +20,13 @@ to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequ
  Tika Dependency
  ---------------
 
-Current Version: Tika 0.8-SNAPSHOT (rev 942725)
+Current Version: Tika 0.8 (released 11/07/2010)
 
 $Id:$
 
-================== Release 1.5-dev ==================
+================== Release 3.1-dev ==================
 
-
+* Upgraded to Tika 0.8 and changed deprecated parse call
 
 * SOLR-1756: The date.format setting causes ClassCastException when enabled and the config code that
   parses this setting does not properly use the same iterator instance. (Christoph Brill, Mark Miller)

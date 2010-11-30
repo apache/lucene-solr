@@ -58,13 +58,15 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtraction() throws Exception {
-    // broken for turkish: https://issues.apache.org/jira/browse/SOLR-2088
-    String defLang = Locale.getDefault().getLanguage();
-    assumeFalse("Known bugs under Turkish locale: https://issues.apache.org/jira/browse/SOLR-2088", defLang.equals("tr") || defLang.equals("az"));
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
-    loadLocal("solr-word.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("solr-word.pdf",
+            "fmap.created", "extractedDate",
+            "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Creation-Date", "extractedDate",
+            "fmap.AAPL:Keywords", "ignored_a",
+            "fmap.xmpTPg:NPages", "ignored_a",
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
            "literal.id", "one",
@@ -145,6 +147,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
 
   }
+
 
   @Test
   public void testDefaultField() throws Exception {
@@ -349,6 +352,9 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     loadLocal("arabic.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+        "fmap.Creation-Date", "extractedDate",
+        "fmap.AAPL:Keywords", "ignored_a",
+        "fmap.xmpTPg:NPages", "ignored_a",
         "fmap.Author", "extractedAuthor",
         "fmap.content", "wdf_nocase",
        "literal.id", "one",

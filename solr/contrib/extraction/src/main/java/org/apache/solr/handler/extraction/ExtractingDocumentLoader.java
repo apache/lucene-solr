@@ -31,6 +31,7 @@ import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.xpath.Matcher;
@@ -190,7 +191,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         } //else leave it as is
 
         //potentially use a wrapper handler for parsing, but we still need the SolrContentHandler for getting the document.
-        parser.parse(inputStream, parsingHandler, metadata);
+        ParseContext context = new ParseContext();//TODO: should we design a way to pass in parse context?
+        parser.parse(inputStream, parsingHandler, metadata, context);
         if (extractOnly == false) {
           addDoc(handler);
         } else {
