@@ -115,11 +115,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   
   private static IndexReader build(Random random, TestIndex index) throws IOException {
     /* build an index */
-    RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
-    .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
-    _TestUtil.reduceOpenFiles(writer.w);
-    
+
     Document doc = new Document();
     Field idField = newField(random, "id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     Field randField = newField(random, "rand", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
@@ -128,10 +124,16 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     doc.add(randField);
     doc.add(bodyField);
 
-    int minCount = 0;
-    int maxCount = 0;
-
+    RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
+                                                     newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+                                                     .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+    _TestUtil.reduceOpenFiles(writer.w);
     while(true) {
+
+      int minCount = 0;
+      int maxCount = 0;
+
+      _TestUtil.reduceOpenFiles(writer.w);
 
       for (int d = minId; d <= maxId; d++) {
         idField.setValue(pad(d));
@@ -160,15 +162,14 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         // max, so, we loop until we satisfy that.  it should be
         // exceedingly rare (Yonik calculates 1 in ~429,000)
         // times) that this loop requires more than one try:
-        break;
+        IndexReader ir = writer.getReader();
+        writer.close();
+        return ir;
       }
 
       // try again
+      writer.deleteAll();
     }
-    
-    IndexReader ir = writer.getReader();
-    writer.close();
-    return ir;
   }
   
   @Test
