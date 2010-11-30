@@ -110,7 +110,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("gender", "male"),
                                          field("first",  "bubba"),
                                          field("last",   "jones")     }));
-    reader = new SlowMultiReaderWrapper(writer.getReader());
+    reader = writer.getReader();
     writer.close();
     searcher = new IndexSearcher(reader);
   }
@@ -256,7 +256,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
       { q1, new FieldMaskingSpanQuery(q2, "gender")});
     check(q, new int[] { 0, 1, 2, 3, 4 });
   
-    Spans span = q.getSpans(searcher.getIndexReader());
+    Spans span = q.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
     
     assertEquals(true, span.next());
     assertEquals(s(0,0,1), s(span));
@@ -297,8 +297,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     check(qA, new int[] { 0, 1, 2, 4 });
     check(qB, new int[] { 0, 1, 2, 4 });
   
-    Spans spanA = qA.getSpans(searcher.getIndexReader());
-    Spans spanB = qB.getSpans(searcher.getIndexReader());
+    Spans spanA = qA.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+    Spans spanB = qB.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
     
     while (spanA.next()) {
       assertTrue("spanB not still going", spanB.next());
@@ -319,7 +319,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
         new FieldMaskingSpanQuery(qB, "id") }, -1, false );
     check(q, new int[] { 0, 1, 2, 3 });
   
-    Spans span = q.getSpans(searcher.getIndexReader());
+    Spans span = q.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
     
     assertEquals(true, span.next());
     assertEquals(s(0,0,1), s(span));

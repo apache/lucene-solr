@@ -79,7 +79,7 @@ public class TestBasics extends LuceneTestCase {
       doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = new SlowMultiReaderWrapper(writer.getReader());
+    reader = writer.getReader();
     searcher = new IndexSearcher(reader);
     writer.close();
   }
@@ -524,8 +524,8 @@ public class TestBasics extends LuceneTestCase {
   public void testSpansSkipTo() throws Exception {
 	  SpanTermQuery t1 = new SpanTermQuery(new Term("field", "seventy"));
 	  SpanTermQuery t2 = new SpanTermQuery(new Term("field", "seventy"));
-	  Spans s1 = t1.getSpans(searcher.getIndexReader());
-	  Spans s2 = t2.getSpans(searcher.getIndexReader());
+	  Spans s1 = t1.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+	  Spans s2 = t2.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
 	  
 	  assertTrue(s1.next());
 	  assertTrue(s2.next());
