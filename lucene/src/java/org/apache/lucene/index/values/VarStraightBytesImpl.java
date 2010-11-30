@@ -62,7 +62,7 @@ class VarStraightBytesImpl {
       if (docID >= docToAddress.length) {
         int oldSize = docToAddress.length;
         docToAddress = ArrayUtil.grow(docToAddress, 1 + docID);
-        bytesUsed.addAndGet(-(docToAddress.length - oldSize)
+        bytesUsed.addAndGet((docToAddress.length - oldSize)
             * RamUsageEstimator.NUM_BYTES_INT);
       }
       for (int i = lastDocID + 1; i < docID; i++) {
@@ -127,7 +127,7 @@ class VarStraightBytesImpl {
       public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
         super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong()); 
         addresses = PackedInts.getReader(idxIn);
-        missingValues.bytesValue = new BytesRef(0); // empty
+        missingValue.bytesValue = new BytesRef(0); // empty
       }
 
       @Override

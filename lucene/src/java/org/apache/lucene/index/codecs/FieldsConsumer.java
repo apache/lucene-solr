@@ -44,7 +44,7 @@ public abstract class FieldsConsumer implements Closeable {
   public abstract TermsConsumer addField(FieldInfo field) throws IOException;
   
   /** Adds a new DocValuesField */
-  public /*abstract*/ DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
+  public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
     throw new UnsupportedOperationException("docvalues are not supported");
   }
   

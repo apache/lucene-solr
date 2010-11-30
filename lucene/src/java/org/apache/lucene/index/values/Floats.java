@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
@@ -44,16 +45,16 @@ public class Floats {
   private static final long LONG_DEFAULT = Double
       .doubleToRawLongBits(Double.NEGATIVE_INFINITY);
 
-  public static Writer getWriter(Directory dir, String id, int precisionBytes)
+  public static Writer getWriter(Directory dir, String id, int precisionBytes, AtomicLong bytesUsed)
       throws IOException {
     if (precisionBytes != 4 && precisionBytes != 8) {
       throw new IllegalArgumentException("precisionBytes must be 4 or 8; got "
           + precisionBytes);
     }
     if (precisionBytes == 4) {
-      return new Float4Writer(dir, id);
+      return new Float4Writer(dir, id, bytesUsed);
     } else {
-      return new Float8Writer(dir, id);
+      return new Float8Writer(dir, id, bytesUsed);
     }
   }
 
@@ -63,7 +64,6 @@ public class Floats {
   }
 
   abstract static class FloatsWriter extends Writer {
-
     private final Directory dir;
     private final String id;
     private FloatsRef floatsRef;
@@ -71,8 +71,9 @@ public class Floats {
     protected IndexOutput datOut;
     private final byte precision;
 
-    protected FloatsWriter(Directory dir, String id, int precision)
+    protected FloatsWriter(Directory dir, String id, int precision, AtomicLong bytesUsed)
         throws IOException {
+      super(bytesUsed);
       this.dir = dir;
       this.id = id;
       this.precision = (byte) precision;
@@ -113,7 +114,7 @@ public class Floats {
     protected void merge(MergeState state) throws IOException {
       if (state.bits == null && state.reader instanceof FloatsReader) {
         // no deletes - bulk copy
-        // nocommit - should be do bulks with deletes too?
+        // TODO: should be do bulks with deletes too?
         final FloatsReader reader = (FloatsReader) state.reader;
         assert reader.precisionBytes == (int) precision;
         if (reader.maxDoc == 0)
@@ -140,8 +141,8 @@ public class Floats {
   // Writes 4 bytes (float) per value
   static class Float4Writer extends FloatsWriter {
 
-    protected Float4Writer(Directory dir, String id) throws IOException {
-      super(dir, id, 4);
+    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+      super(dir, id, 4, bytesUsed);
     }
 
     @Override
@@ -184,8 +185,8 @@ public class Floats {
   // Writes 8 bytes (double) per value
   static class Float8Writer extends FloatsWriter {
 
-    protected Float8Writer(Directory dir, String id) throws IOException {
-      super(dir, id, 8);
+    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+      super(dir, id, 8, bytesUsed);
     }
 
     @Override
@@ -280,7 +281,7 @@ public class Floats {
 
       Source4(ByteBuffer buffer) {
         values = buffer.asFloatBuffer();
-        missingValues.doubleValue = Float.NEGATIVE_INFINITY;
+        missingValue.doubleValue = Float.NEGATIVE_INFINITY;
       }
 
       @Override
@@ -295,7 +296,7 @@ public class Floats {
 
       @Override
       public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-        final MissingValues missing = getMissing();
+        final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, Values.SIMPLE_FLOAT_4BYTE, this, maxDoc) {
           private final FloatsRef ref = attr.floats();
           @Override
@@ -324,7 +325,7 @@ public class Floats {
 
       Source8(ByteBuffer buffer) {
         values = buffer.asDoubleBuffer();
-        missingValues.doubleValue = Double.NEGATIVE_INFINITY;
+        missingValue.doubleValue = Double.NEGATIVE_INFINITY;
 
       }
 
@@ -340,7 +341,7 @@ public class Floats {
 
       @Override
       public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-        final MissingValues missing = getMissing();
+        final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, maxDoc) {
           private final FloatsRef ref = attr.floats();
           @Override

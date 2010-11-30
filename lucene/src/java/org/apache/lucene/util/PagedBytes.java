@@ -146,13 +146,19 @@ public final class PagedBytes {
       return start;
     }
     
+  
     /**
-     * Reads length as 1 or 2 byte vInt prefix, starting @ start and fill the
-     * given {@link BytesRef} with the byte slice starting after the length
-     * prefix.
+     * Gets a slice out of {@link PagedBytes} starting at <i>start</i>, the
+     * length is read as 1 or 2 byte vInt prefix. Iff the slice spans across a
+     * block border this method will allocate sufficient resources and copy the
+     * paged data.
+     * <p>
+     * Slices spanning more than one block are not supported.
+     * </p>
+     * 
      * @lucene.internal
      **/
-    public BytesRef fillUsingLengthPrefix4(BytesRef b, long start) {
+    public BytesRef fillSliceWithPrefix(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
       int offset = (int) (start & blockMask);
       final byte[] block = blocks[index];

@@ -19,6 +19,7 @@ package org.apache.lucene.index.codecs.docvalues;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
@@ -35,6 +36,16 @@ import org.apache.lucene.util.BytesRef;
 // TODO this might need to go in the codec package since is a direct relative to
 // TermsConsumer
 public abstract class DocValuesConsumer {
+  
+  protected AtomicLong bytesUsed = new AtomicLong(0);
+  
+  protected DocValuesConsumer(AtomicLong bytesUsed) {
+    this.bytesUsed = bytesUsed;
+  }
+
+  public final long bytesUsed() {
+    return this.bytesUsed.get();
+  }
 
   public abstract void add(int docID, ValuesAttribute attr) throws IOException;
 
@@ -89,8 +100,8 @@ public abstract class DocValuesConsumer {
   }
 
   public static DocValuesConsumer create(String id,
-      Directory directory, FieldInfo field, Comparator<BytesRef> comp)
+      Directory directory, FieldInfo field, Comparator<BytesRef> comp, AtomicLong bytesUsed)
       throws IOException {
-    return Writer.create(field.getDocValues(), id, directory, comp);
+    return Writer.create(field.getDocValues(), id, directory, comp, bytesUsed);
   }
 }

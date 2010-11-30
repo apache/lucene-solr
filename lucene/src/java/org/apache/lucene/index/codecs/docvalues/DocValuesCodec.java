@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldsEnum;
@@ -107,7 +108,7 @@ public class DocValuesCodec extends Codec {
           + field.number),
       // TODO can we have a compound file per segment and codec for
           // docvalues?
-          state.directory, field, comparator);
+          state.directory, field, comparator, state.bytesUsed);
       info.add(field.number);
       return consumer;
     }

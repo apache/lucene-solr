@@ -43,8 +43,13 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.docvalues.DocValuesCodec;
-import org.apache.lucene.index.values.DocValues.MissingValues;
+import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.Source;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
@@ -62,8 +67,27 @@ import org.junit.BeforeClass;
  * 
  */
 public class TestDocValuesIndexing extends LuceneTestCase {
-  // TODO Add a test for addIndexes
-  // TODO add test for unoptimized case with deletes
+  /*
+   * TODO:
+   * Roadmap to land on trunk
+   *   - Cut over to a direct API on ValuesEnum vs. ValuesAttribute 
+   *   - Add documentation for:
+   *      - Source and ValuesEnum
+   *      - DocValues
+   *      - ValuesField
+   *      - ValuesAttribute
+   *      - Values
+   *   - Add @lucene.experimental to all necessary classes
+   *   - Try to make ValuesField more lightweight -> AttributeSource
+   *   - add test for unoptimized case with deletes
+   *   - add a test for addIndexes
+   *   - split up existing testcases and give them meaningfull names
+   *   - use consistent naming throughout DocValues
+   *     - Values -> DocValueType
+   *     - PackedIntsImpl -> Ints
+   *   - run RAT
+   *   - add tests for FieldComparator FloatIndexValuesComparator vs. FloatValuesComparator etc.
+   */
 
   private static DocValuesCodec docValuesCodec;
   private static CodecProvider provider;
@@ -81,6 +105,43 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
     LuceneTestCase.afterClassLuceneTestCaseJ4();
+  }
+  
+  /*
+   * Simple test case to show how to use the API
+   */
+  public void testDocValuesSimple() throws CorruptIndexException, IOException, ParseException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, writerConfig(false));
+    for (int i = 0; i < 5; i++) {
+      Document doc = new Document();
+      ValuesField valuesField = new ValuesField("docId");
+      valuesField.setInt(i);
+      doc.add(valuesField);
+      doc.add(new Field("docId", "" + i, Store.NO, Index.ANALYZED));
+      writer.addDocument(doc);
+    }
+    writer.commit();
+    writer.optimize(true);
+   
+    writer.close();
+    
+    IndexReader reader = IndexReader.open(dir, null, true, 1, provider);
+    assertTrue(reader.isOptimized());
+   
+    IndexSearcher searcher = new IndexSearcher(reader);
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "docId", new MockAnalyzer());
+    TopDocs search = searcher.search(parser.parse("0 OR 1 OR 2 OR 3 OR 4"), 10);
+    assertEquals(5, search.totalHits);
+    ScoreDoc[] scoreDocs = search.scoreDocs;
+    DocValues docValues = MultiFields.getDocValues(reader, "docId");
+    Source source = docValues.getSource();
+    for (int i = 0; i < scoreDocs.length; i++) {
+      assertEquals(i, scoreDocs[i].doc);
+      assertEquals(i, source.getInt(scoreDocs[i].doc));
+    }
+    reader.close();
+    dir.close();
   }
 
   /**
@@ -160,7 +221,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         assertNotNull(intsReader);
 
         Source ints = getSource(intsReader);
-        MissingValues missing = ints.getMissing();
+        MissingValue missing = ints.getMissing();
 
         for (int i = 0; i < base; i++) {
           long value = ints.getInt(i);
@@ -191,7 +252,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         DocValues floatReader = getDocValues(r, val.name());
         assertNotNull(floatReader);
         Source floats = getSource(floatReader);
-        MissingValues missing = floats.getMissing();
+        MissingValue missing = floats.getMissing();
 
         for (int i = 0; i < base; i++) {
           double value = floats.getFloat(i);
@@ -254,7 +315,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       byte upto = 0;
 
       // test the filled up slots for correctness
-      MissingValues missing = bytes.getMissing();
+      MissingValue missing = bytes.getMissing();
       for (int i = 0; i < base; i++) {
 
         BytesRef br = bytes.getBytes(i, new BytesRef());

@@ -19,6 +19,7 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.values.DocValues.SortedSource;
 import org.apache.lucene.index.values.DocValues.Source;
@@ -59,7 +60,8 @@ public class TestDocValues extends LuceneTestCase {
         .getUTF8SortedAsUnicodeComparator() : null;
 
     Directory dir = newDirectory();
-    Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize);
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize, trackBytes);
     int maxDoc = 220;
     final String[] values = new String[maxDoc];
     final int lenMin, lenMax;
@@ -83,6 +85,7 @@ public class TestDocValues extends LuceneTestCase {
       w.add(2 * i, bytesRef);
     }
     w.finish(maxDoc);
+    assertEquals(0, trackBytes.get());
 
     DocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc);
     for (int iter = 0; iter < 2; iter++) {
@@ -186,7 +189,8 @@ public class TestDocValues extends LuceneTestCase {
     final long[] values = new long[NUM_VALUES];
     for (int rx = 1; rx < 63; rx++, maxV *= 2) {
       Directory dir = newDirectory();
-      Writer w = Ints.getWriter(dir, "test", false);
+      final AtomicLong trackBytes = new AtomicLong(0);
+      Writer w = Ints.getWriter(dir, "test", false, trackBytes);
       for (int i = 0; i < NUM_VALUES; i++) {
         final long v = random.nextLong() % (1 + maxV);
         values[i] = v;
@@ -194,6 +198,8 @@ public class TestDocValues extends LuceneTestCase {
       }
       final int additionalDocs = 1 + random.nextInt(9);
       w.finish(NUM_VALUES + additionalDocs);
+      assertEquals(0, trackBytes.get());
+
 
       DocValues r = Ints.getValues(dir, "test", false);
       for (int iter = 0; iter < 2; iter++) {
@@ -250,7 +256,8 @@ public class TestDocValues extends LuceneTestCase {
 
   private void runTestFloats(int precision, double delta) throws IOException {
     Directory dir = newDirectory();
-    Writer w = Floats.getWriter(dir, "test", precision);
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Floats.getWriter(dir, "test", precision, trackBytes);
     final int NUM_VALUES = 777 + random.nextInt(777);;
     final double[] values = new double[NUM_VALUES];
     for (int i = 0; i < NUM_VALUES; i++) {
@@ -261,6 +268,7 @@ public class TestDocValues extends LuceneTestCase {
     }
     final int additionalValues = 1 + random.nextInt(10);
     w.finish(NUM_VALUES + additionalValues);
+    assertEquals(0, trackBytes.get());
 
     DocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues);
     for (int iter = 0; iter < 2; iter++) {

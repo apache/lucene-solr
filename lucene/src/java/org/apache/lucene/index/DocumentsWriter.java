@@ -604,14 +604,14 @@ final class DocumentsWriter {
     initSegmentName(onlyDocStore);
     final SegmentCodecs info = SegmentCodecs.build(docFieldProcessor.fieldInfos, writer.codecs);
     flushState = new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
-                                       docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(), info);
+                                       docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(), info, bytesUsed);
   }
   
   SegmentWriteState segWriteState() { 
     final SegmentCodecs info = SegmentCodecs.build(docFieldProcessor.fieldInfos, writer.codecs);
     return new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
         docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(),
-        info);
+        info, bytesUsed);
   }
 
   /** Returns the SegmentCodecs used to flush the last segment */

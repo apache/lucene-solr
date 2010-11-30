@@ -37,6 +37,7 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
+import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
 import org.apache.lucene.util.packed.PackedInts;
 
 // Stores fixed-length byte[] by deref, ie when two docs
@@ -53,12 +54,13 @@ class FixedSortedBytesImpl {
     private int[] docToEntry;
     private final Comparator<BytesRef> comp;
 
-    private final BytesRefHash hash = new BytesRefHash(pool);
+    private final BytesRefHash hash = new BytesRefHash(pool, BytesRefHash.DEFAULT_CAPACITY,
+        new TrackingDirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
 
-    public Writer(Directory dir, String id, Comparator<BytesRef> comp)
+    public Writer(Directory dir, String id, Comparator<BytesRef> comp, AtomicLong bytesUsed)
         throws IOException {
       this(dir, id, comp, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
-          new AtomicLong());
+          bytesUsed);
     }
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
@@ -148,6 +150,7 @@ class FixedSortedBytesImpl {
       bytesUsed.addAndGet((-docToEntry.length)
           * RamUsageEstimator.NUM_BYTES_INT);
       docToEntry = null;
+      hash.close();
     }
   }
 
@@ -197,16 +200,6 @@ class FixedSortedBytesImpl {
       @Override
       public LookupResult getByValue(BytesRef bytes, BytesRef tmpRef) {
         return binarySearch(bytes, tmpRef, 0, numValue - 1);
-      }
-
-      public long ramBytesUsed() {
-        // TODO(simonw): move ram calcultation to PackedInts?
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + size
-            * numValue
-            + (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + index
-                .getBitsPerValue()
-                * index.size());
       }
 
       @Override

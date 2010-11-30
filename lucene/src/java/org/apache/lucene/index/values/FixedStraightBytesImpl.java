@@ -81,7 +81,7 @@ class FixedStraightBytesImpl {
           oneRecord = new byte[size];
         }
        fill(state.docBase);
-       // nocommit should we add a transfer to API to each reader?
+       // TODO should we add a transfer to API to each reader?
        datOut.copyBytes(reader.cloneData(), size * maxDocs);
        lastDocID += maxDocs-1;
       } else
@@ -139,7 +139,7 @@ class FixedStraightBytesImpl {
       public Source(IndexInput datIn, IndexInput idxIn, int size, int maxDoc) throws IOException {
         super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size*maxDoc);
         this.size = size;
-        this.missingValues.bytesValue = new BytesRef(size);
+        this.missingValue.bytesValue = new BytesRef(size);
         this.maxDoc = maxDoc;
       }
       

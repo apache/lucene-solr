@@ -22,8 +22,8 @@ package org.apache.lucene.index.values;
  *  values into RAM, exposing a random access API, when
  *  loaded.
  *
- * <p><b>NOTE</b>: This feature is experimental and the
- * API is free to change in non-backwards-compatible ways.  */
+ * @lucene.experimenta 
+ */
 public enum Values {
 
   /** Integral value is stored as packed ints.  The bit

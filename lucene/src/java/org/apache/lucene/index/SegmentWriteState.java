@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.Directory;
 
@@ -35,6 +36,7 @@ public class SegmentWriteState {
   public final int numDocs;
   public int numDocsInStore;
   public final Collection<String> flushedFiles;
+  public final AtomicLong bytesUsed;
 
   final SegmentCodecs segmentCodecs;
   public final String codecId;
@@ -62,7 +64,7 @@ public class SegmentWriteState {
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
                            String docStoreSegmentName, int numDocs,
-                           int numDocsInStore, int termIndexInterval, SegmentCodecs segmentCodecs) {
+                           int numDocsInStore, int termIndexInterval, SegmentCodecs segmentCodecs, AtomicLong bytesUsed) {
     this.infoStream = infoStream;
     this.directory = directory;
     this.segmentName = segmentName;
@@ -74,6 +76,7 @@ public class SegmentWriteState {
     this.segmentCodecs = segmentCodecs;
     flushedFiles = new HashSet<String>();
     codecId = "";
+    this.bytesUsed = bytesUsed;
   }
   
   /**
@@ -91,5 +94,6 @@ public class SegmentWriteState {
     segmentCodecs = state.segmentCodecs;
     flushedFiles = state.flushedFiles;
     this.codecId = codecId;
+    bytesUsed = state.bytesUsed;
   }
 }

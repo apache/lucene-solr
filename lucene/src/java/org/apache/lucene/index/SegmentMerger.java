@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader.FieldOption;
@@ -366,7 +367,7 @@ final class SegmentMerger {
       }
     }
 
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, null, docCount, 0, termIndexInterval, codecInfo);
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, null, docCount, 0, termIndexInterval, codecInfo, new AtomicLong(0));
     
     return docCount;
   }

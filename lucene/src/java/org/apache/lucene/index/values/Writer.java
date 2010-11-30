@@ -18,6 +18,7 @@ package org.apache.lucene.index.values;
  */
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.store.Directory;
@@ -25,6 +26,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 public abstract class Writer extends DocValuesConsumer {
+
+  protected Writer(AtomicLong bytesUsed) {
+    super(bytesUsed);
+  }
 
   public static final String INDEX_EXTENSION = "idx";
   public static final String DATA_EXTENSION = "dat";
@@ -85,26 +90,26 @@ public abstract class Writer extends DocValuesConsumer {
   }
 
   public static Writer create(Values v, String id, Directory directory,
-      Comparator<BytesRef> comp) throws IOException {
+      Comparator<BytesRef> comp, AtomicLong bytesUsed) throws IOException {
     switch (v) {
     case PACKED_INTS:
-      return Ints.getWriter(directory, id, true);
+      return Ints.getWriter(directory, id, true, bytesUsed);
     case SIMPLE_FLOAT_4BYTE:
-      return Floats.getWriter(directory, id, 4);
+      return Floats.getWriter(directory, id, 4, bytesUsed);
     case SIMPLE_FLOAT_8BYTE:
-      return Floats.getWriter(directory, id, 8);
+      return Floats.getWriter(directory, id, 8, bytesUsed);
     case BYTES_FIXED_STRAIGHT:
-      return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, true);
+      return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, true, bytesUsed);
     case BYTES_FIXED_DEREF:
-      return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, true);
+      return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, true, bytesUsed);
     case BYTES_FIXED_SORTED:
-      return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, true);
+      return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, true, bytesUsed);
     case BYTES_VAR_STRAIGHT:
-      return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, false);
+      return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, false, bytesUsed);
     case BYTES_VAR_DEREF:
-      return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, false);
+      return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, false, bytesUsed);
     case BYTES_VAR_SORTED:
-      return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, false);
+      return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, false, bytesUsed);
     default:
       throw new IllegalArgumentException("Unknown Values: " + v);
     }

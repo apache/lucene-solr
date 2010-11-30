@@ -64,6 +64,7 @@ final class DocFieldProcessor extends DocConsumer {
       }
       valuesConsumer = fieldsConsumer.addValuesField(fieldInfo);
       docValues.put(name, valuesConsumer);
+      
     }
     return valuesConsumer;
 

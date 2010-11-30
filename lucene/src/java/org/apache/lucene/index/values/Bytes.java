@@ -24,7 +24,7 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.DocValues.MissingValues;
+import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.index.values.DocValues.SourceEnum;
@@ -64,7 +64,7 @@ public final class Bytes {
   // TODO -- i shouldn't have to specify fixed? can
   // track itself & do the write thing at write time?
   public static Writer getWriter(Directory dir, String id, Mode mode,
-      Comparator<BytesRef> comp, boolean fixedSize) throws IOException {
+      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed) throws IOException {
 
     if (comp == null) {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
@@ -74,17 +74,17 @@ public final class Bytes {
       if (mode == Mode.STRAIGHT) {
         return new FixedStraightBytesImpl.Writer(dir, id);
       } else if (mode == Mode.DEREF) {
-        return new FixedDerefBytesImpl.Writer(dir, id);
+        return new FixedDerefBytesImpl.Writer(dir, id, bytesUsed);
       } else if (mode == Mode.SORTED) {
-        return new FixedSortedBytesImpl.Writer(dir, id, comp);
+        return new FixedSortedBytesImpl.Writer(dir, id, comp, bytesUsed);
       }
     } else {
       if (mode == Mode.STRAIGHT) {
-        return new VarStraightBytesImpl.Writer(dir, id);
+        return new VarStraightBytesImpl.Writer(dir, id, bytesUsed);
       } else if (mode == Mode.DEREF) {
-        return new VarDerefBytesImpl.Writer(dir, id);
+        return new VarDerefBytesImpl.Writer(dir, id, bytesUsed);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Writer(dir, id, comp);
+        return new VarSortedBytesImpl.Writer(dir, id, comp, bytesUsed);
       }
     }
 
@@ -162,7 +162,7 @@ public final class Bytes {
 
     @Override
     public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      final MissingValues missing = getMissing();
+      final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
         final BytesRef bytesRef = attr.bytes();
 
@@ -248,7 +248,7 @@ public final class Bytes {
 
     @Override
     public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      final MissingValues missing = getMissing();
+      final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
         final BytesRef bytesRef = attr.bytes();
 
@@ -275,20 +275,19 @@ public final class Bytes {
     protected IndexOutput idxOut;
     protected IndexOutput datOut;
     protected BytesRef bytesRef;
-    private String codecName;
-    private int version;
+    private final String codecName;
+    private final int version;
     protected final ByteBlockPool pool;
-    protected final AtomicLong bytesUsed;
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
         int version, boolean initIndex, boolean initData, ByteBlockPool pool,
         AtomicLong bytesUsed) throws IOException {
+      super(bytesUsed);
       this.dir = dir;
       this.id = id;
       this.codecName = codecName;
       this.version = version;
       this.pool = pool;
-      this.bytesUsed = bytesUsed;
       if (initData)
         initDataOut();
       if (initIndex)

@@ -18,9 +18,9 @@ package org.apache.lucene.index.values;
  */
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.DocValues.MissingValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -50,13 +50,15 @@ class PackedIntsImpl {
     private boolean started;
     private final Directory dir;
     private final String id;
-    private OpenBitSet defaultValues = new OpenBitSet(1);
+    private final OpenBitSet defaultValues = new OpenBitSet(1);
     private int lastDocId = -1;
 
-    protected IntsWriter(Directory dir, String id) throws IOException {
+    protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+      super(bytesUsed);
       this.dir = dir;
       this.id = id;
       docToValue = new long[1];
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG); // TODO the bitset needs memory too
     }
 
     @Override
@@ -76,9 +78,10 @@ class PackedIntsImpl {
       lastDocId = docID;
 
       if (docID >= docToValue.length) {
+        final long len = docToValue.length ;
         docToValue = ArrayUtil.grow(docToValue, 1 + docID);
         defaultValues.ensureCapacity(docToValue.length);
-
+        bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG * ((docToValue.length) - len));
       }
       docToValue[docID] = v;
     }
@@ -115,13 +118,10 @@ class PackedIntsImpl {
         w.add(defaultValue);
       }
       w.finish();
-
       datOut.close();
-    }
-
-    public long ramBytesUsed() {
-      return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + docToValue.length
-          * RamUsageEstimator.NUM_BYTES_LONG;
+      bytesUsed.addAndGet(-(RamUsageEstimator.NUM_BYTES_LONG * docToValue.length ));
+      docToValue = null;
+      
     }
 
     @Override
@@ -180,7 +180,7 @@ class PackedIntsImpl {
         minValue = dataIn.readLong();
         defaultValue = dataIn.readLong();
         values = PackedInts.getReader(dataIn);
-        missingValues.longValue = minValue + defaultValue;
+        missingValue.longValue = minValue + defaultValue;
       }
 
       @Override
@@ -199,7 +199,7 @@ class PackedIntsImpl {
 
       @Override
       public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-        final MissingValues missing = getMissing();
+        final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, values.size()) {
           private final LongsRef ref = attr.ints();
           @Override

@@ -37,8 +37,7 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
-import org.apache.lucene.util.BytesRefHash.ParallelArrayBase;
-import org.apache.lucene.util.BytesRefHash.ParallelBytesStartArray;
+import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
 import org.apache.lucene.util.packed.PackedInts;
 
 // Stores variable-length byte[] by deref, ie when two docs
@@ -51,30 +50,47 @@ class VarDerefBytesImpl {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
-  private static class AddressParallelArray extends
-      ParallelArrayBase<AddressParallelArray> {
-    final int[] address;
+  private static final class AddressByteStartArray extends
+      TrackingDirectBytesStartArray {
+    int[] address;
 
-    AddressParallelArray(int size, AtomicLong bytesUsed) {
+    AddressByteStartArray(int size, AtomicLong bytesUsed) {
       super(size, bytesUsed);
-      address = new int[size];
     }
 
     @Override
-    protected int bytesPerEntry() {
-      return RamUsageEstimator.NUM_BYTES_INT + super.bytesPerEntry();
+    public AtomicLong bytesUsed() {
+      return bytesUsed;
     }
 
     @Override
-    protected void copyTo(AddressParallelArray toArray, int numToCopy) {
-      super.copyTo(toArray, numToCopy);
-      System.arraycopy(address, 0, toArray.address, 0, size);
-
+    public int[] clear() {
+      if (address != null) {
+        bytesUsed.addAndGet(-address.length * RamUsageEstimator.NUM_BYTES_INT);
+        address = null;
+      }
+      return super.clear();
     }
 
     @Override
-    public AddressParallelArray newInstance(int size) {
-      return new AddressParallelArray(size, bytesUsed);
+    public int[] grow() {
+      assert address != null;
+      final int oldSize = address.length;
+      final int[] retVal = super.grow();
+      address = ArrayUtil.grow(address, retVal.length);
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
+          * (address.length - oldSize));
+      return retVal;
+    }
+
+    @Override
+    public int[] init() {
+      if (address == null) {
+        address = new int[ArrayUtil.oversize(initSize,
+            RamUsageEstimator.NUM_BYTES_INT)];
+        bytesUsed.addAndGet((address.length) * RamUsageEstimator.NUM_BYTES_INT);
+      }
+      return super.init();
     }
 
   }
@@ -83,13 +99,14 @@ class VarDerefBytesImpl {
     private int[] docToAddress;
     private int address = 1;
 
-    private final ParallelBytesStartArray<AddressParallelArray> array = new ParallelBytesStartArray<AddressParallelArray>(
-        new AddressParallelArray(0, bytesUsed));
+    private final AddressByteStartArray array = new AddressByteStartArray(1,
+        bytesUsed);
     private final BytesRefHash hash = new BytesRefHash(pool, 16, array);
 
-    public Writer(Directory dir, String id) throws IOException {
+    public Writer(Directory dir, String id, AtomicLong bytesUsed)
+        throws IOException {
       this(dir, id, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
-          new AtomicLong());
+          bytesUsed);
     }
 
     public Writer(Directory dir, String id, Allocator allocator,
@@ -116,12 +133,12 @@ class VarDerefBytesImpl {
       }
       final int docAddress;
       if (e >= 0) {
-        docAddress = array.array.address[e] = address;
+        docAddress = array.address[e] = address;
         address += writePrefixLength(datOut, bytes);
         datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
         address += bytes.length;
       } else {
-        docAddress = array.array.address[(-e) - 1];
+        docAddress = array.address[(-e) - 1];
       }
       docToAddress[docID] = docAddress;
     }
@@ -136,10 +153,6 @@ class VarDerefBytesImpl {
         datOut.writeByte((byte) (bytes.length & 0xff));
         return 2;
       }
-    }
-
-    public long ramBytesUsed() {
-      return bytesUsed.get();
     }
 
     // Important that we get docCount, in case there were
@@ -169,8 +182,11 @@ class VarDerefBytesImpl {
         w.add(0);
       }
       w.finish();
-      hash.clear(true);
+      hash.close();
       super.finish(docCount);
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
+          * (-docToAddress.length));
+      docToAddress = null;
     }
   }
 
@@ -202,7 +218,7 @@ class VarDerefBytesImpl {
       @Override
       public BytesRef getBytes(int docID, BytesRef bytesRef) {
         long address = index.get(docID);
-        return address == 0 ? null : data.fillUsingLengthPrefix4(bytesRef,
+        return address == 0 ? null : data.fillSliceWithPrefix(bytesRef,
             --address);
       }
 

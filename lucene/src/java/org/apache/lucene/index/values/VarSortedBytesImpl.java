@@ -36,6 +36,7 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
+import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
 import org.apache.lucene.util.packed.PackedInts;
 
 // Stores variable-length byte[] by deref, ie when two docs
@@ -52,12 +53,12 @@ class VarSortedBytesImpl {
     private int[] docToEntry;
     private final Comparator<BytesRef> comp;
 
-    private final BytesRefHash hash = new BytesRefHash(pool);
+    private final BytesRefHash hash = new BytesRefHash(pool, BytesRefHash.DEFAULT_CAPACITY,
+        new TrackingDirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
 
-    public Writer(Directory dir, String id, Comparator<BytesRef> comp)
+    public Writer(Directory dir, String id, Comparator<BytesRef> comp, AtomicLong bytesUsed)
         throws IOException {
-      this(dir, id, comp, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
-          new AtomicLong());
+      this(dir, id, comp, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE), bytesUsed);
     }
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
@@ -147,6 +148,7 @@ class VarSortedBytesImpl {
       super.finish(docCount);
       bytesUsed.addAndGet((-docToEntry.length)
           * RamUsageEstimator.NUM_BYTES_INT);
+      hash.close();
 
     }
   }
@@ -193,18 +195,6 @@ class VarSortedBytesImpl {
       @Override
       public LookupResult getByValue(BytesRef bytes, BytesRef tmpRef) {
         return binarySearch(bytes, tmpRef, 0, valueCount - 1);
-      }
-
-      public long ramBytesUsed() {
-        // TODO(simonw): move ram usage to PackedInts?
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + totBytes
-            + (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + docToOrdIndex
-                .getBitsPerValue()
-                * docToOrdIndex.getBitsPerValue())
-            + (RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + ordToOffsetIndex
-                .getBitsPerValue()
-                * ordToOffsetIndex.getBitsPerValue());
       }
 
       @Override

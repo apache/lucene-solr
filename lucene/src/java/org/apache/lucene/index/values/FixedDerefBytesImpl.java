@@ -34,6 +34,7 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
+import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
 import org.apache.lucene.util.packed.PackedInts;
 
 // Stores fixed-length byte[] by deref, ie when two docs
@@ -48,11 +49,12 @@ class FixedDerefBytesImpl {
   static class Writer extends BytesWriterBase {
     private int size = -1;
     private int[] docToID;
-    private final BytesRefHash hash = new BytesRefHash(pool);
+    private final BytesRefHash hash = new BytesRefHash(pool, BytesRefHash.DEFAULT_CAPACITY,
+        new TrackingDirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
 
-    public Writer(Directory dir, String id) throws IOException {
+    public Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
       this(dir, id, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
-          new AtomicLong());
+          bytesUsed);
     }
 
     public Writer(Directory dir, String id, Allocator allocator,
@@ -60,7 +62,7 @@ class FixedDerefBytesImpl {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false,
           new ByteBlockPool(allocator), bytesUsed);
       docToID = new int[1];
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT); // TODO BytesRefHash uses bytes too!
     }
 
     @Override
@@ -85,7 +87,7 @@ class FixedDerefBytesImpl {
       }
 
       if (docID >= docToID.length) {
-        int size = docToID.length;
+        final int size = docToID.length;
         docToID = ArrayUtil.grow(docToID, 1 + docID);
         bytesUsed.addAndGet((docToID.length - size)
             * RamUsageEstimator.NUM_BYTES_INT);
@@ -114,9 +116,11 @@ class FixedDerefBytesImpl {
         w.add(0);
       }
       w.finish();
-      hash.clear();
-
+      hash.close();
       super.finish(docCount);
+      bytesUsed.addAndGet((-docToID.length)
+          * RamUsageEstimator.NUM_BYTES_INT);
+      docToID = null;
     }
   }
 

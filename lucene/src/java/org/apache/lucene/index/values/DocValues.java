@@ -70,7 +70,7 @@ public abstract class DocValues implements Closeable {
    * used since it can handle all precisions.
    */
   public static abstract class Source {
-    protected final MissingValues missingValues = new MissingValues();
+    protected final MissingValue missingValue = new MissingValue();
 
     public long getInt(int docID) {
       throw new UnsupportedOperationException("ints are not supported");
@@ -96,8 +96,8 @@ public abstract class DocValues implements Closeable {
       return getEnum(new AttributeSource());
     }
     
-    public MissingValues getMissing() {
-      return missingValues;
+    public MissingValue getMissing() {
+      return missingValue;
     }
     
     public abstract Values type();
@@ -105,8 +105,6 @@ public abstract class DocValues implements Closeable {
     public abstract ValuesEnum getEnum(AttributeSource attrSource)
         throws IOException;
 
-    public abstract long ramBytesUsed();
-    
   }
 
   abstract static class SourceEnum extends ValuesEnum {
@@ -171,12 +169,12 @@ public abstract class DocValues implements Closeable {
     public abstract LookupResult getByValue(BytesRef value, BytesRef tmpRef);
   }
   
-  public final static class MissingValues {
+  public final static class MissingValue {
     public long longValue;
     public double doubleValue;
     public BytesRef bytesValue;
     
-    public final void copy(MissingValues values) {
+    public final void copy(MissingValue values) {
       longValue = values.longValue;
       doubleValue = values.doubleValue;
       bytesValue = values.bytesValue;
