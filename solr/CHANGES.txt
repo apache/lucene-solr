@@ -259,7 +259,7 @@ New Features
   allows you to customize how WordDelimiterFilter tokenizes text with
   a configuration file.  (Peter Karich, rmuir)
 
-* SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)    
+* SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)
 
 * SOLR-2099: Add ability to throttle rsync based replication using rsync option --bwlimit.
   (Brandon Evans via koji)
@@ -554,6 +554,9 @@ Bug Fixes
 * SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
   true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
   (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
+
+* SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
+  (koji)
 
 Other Changes
 ----------------------

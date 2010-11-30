@@ -175,6 +175,10 @@ public class DataConfig {
     public String getPk(){
       return pk == null ? pkMappingFromSchema : pk;
     }
+
+    public String getSchemaPk(){
+      return pkMappingFromSchema != null ? pkMappingFromSchema : pk;
+    }
   }
 
   public static class Script {
