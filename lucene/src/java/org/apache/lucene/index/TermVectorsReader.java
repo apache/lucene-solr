@@ -88,7 +88,6 @@ class TermVectorsReader implements Cloneable {
         assert format == tvfFormat;
 
         if (format >= FORMAT_VERSION2) {
-          assert (tvx.length()-FORMAT_SIZE) % 16 == 0;
           numTotalDocs = (int) (tvx.length() >> 4);
         } else {
           assert (tvx.length()-FORMAT_SIZE) % 8 == 0;
