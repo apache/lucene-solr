@@ -133,7 +133,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     ExposeWriterHandler duh = new ExposeWriterHandler();
     IndexWriter writer = duh.getWriter();
-    int interval = writer.getTermIndexInterval();
+    int interval = writer.getConfig().getTermIndexInterval();
     assertEquals(256, interval);
     duh.close();
   }

@@ -29,22 +29,40 @@ package org.apache.lucene.util;
  */
 public enum Version {
 
-  /** Match settings and bugs in Lucene's 2.0 release. */
+  /** Match settings and bugs in Lucene's 2.0 release. 
+   * @deprecated (3.1) Use latest 
+   */
+  @Deprecated
   LUCENE_20,
 
-  /** Match settings and bugs in Lucene's 2.1 release. */
+  /** Match settings and bugs in Lucene's 2.1 release. 
+   * @deprecated (3.1) Use latest 
+   */
+  @Deprecated
   LUCENE_21,
 
-  /** Match settings and bugs in Lucene's 2.2 release. */
+  /** Match settings and bugs in Lucene's 2.2 release. 
+   * @deprecated (3.1) Use latest 
+   */
+  @Deprecated
   LUCENE_22,
 
-  /** Match settings and bugs in Lucene's 2.3 release. */
+  /** Match settings and bugs in Lucene's 2.3 release. 
+   * @deprecated (3.1) Use latest 
+   */
+  @Deprecated
   LUCENE_23,
 
-  /** Match settings and bugs in Lucene's 2.4 release. */
+  /** Match settings and bugs in Lucene's 2.4 release. 
+   * @deprecated (3.1) Use latest 
+   */
+  @Deprecated
   LUCENE_24,
 
-  /** Match settings and bugs in Lucene's 2.9 release. */
+  /** Match settings and bugs in Lucene's 2.9 release. 
+   * @deprecated (3.1) Use latest 
+   */
+  @Deprecated
   LUCENE_29,
 
   /** Match settings and bugs in Lucene's 3.0 release. */

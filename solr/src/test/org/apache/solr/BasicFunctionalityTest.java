@@ -31,6 +31,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.AppendedSolrParams;
@@ -121,7 +122,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     SolrIndexWriter writer = new SolrIndexWriter("testWriter",core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(), core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
-    assertEquals("Mergefactor was not picked up", writer.getMergeFactor(), 8);
+    assertEquals("Mergefactor was not picked up", ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
     writer.close();
 
     lrf.args.put("version","2.0");

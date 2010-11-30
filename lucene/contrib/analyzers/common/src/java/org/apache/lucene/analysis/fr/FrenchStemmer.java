@@ -26,7 +26,7 @@ package org.apache.lucene.analysis.fr;
  * (French stemming algorithm) for details
  * </p>
  * @deprecated Use {@link org.tartarus.snowball.ext.FrenchStemmer} instead, 
- * which has the same functionality. This filter will be removed in Lucene 4.0
+ * which has the same functionality. This filter will be removed in Lucene 5.0
  */
 @Deprecated
 public class FrenchStemmer {

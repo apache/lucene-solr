@@ -41,7 +41,7 @@ import java.util.Set;
  * </ul>
  * </p>
  * @deprecated Use the language-specific analyzer in contrib/analyzers instead. 
- * This analyzer will be removed in Lucene 4.0
+ * This analyzer will be removed in Lucene 5.0
  */
 @Deprecated
 public final class SnowballAnalyzer extends Analyzer {

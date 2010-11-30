@@ -56,7 +56,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
 {
     /**
      * List of typical Russian stopwords. (for backwards compatibility)
-     * @deprecated Remove this for LUCENE 4.0
+     * @deprecated Remove this for LUCENE 5.0
      */
     @Deprecated
     private static final String[] RUSSIAN_STOP_WORDS_30 = {
@@ -76,7 +76,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
     public final static String DEFAULT_STOPWORD_FILE = "russian_stop.txt";
     
     private static class DefaultSetHolder {
-      /** @deprecated remove this for Lucene 4.0 */
+      /** @deprecated remove this for Lucene 5.0 */
       @Deprecated
       static final Set<?> DEFAULT_STOP_SET_30 = CharArraySet
           .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 

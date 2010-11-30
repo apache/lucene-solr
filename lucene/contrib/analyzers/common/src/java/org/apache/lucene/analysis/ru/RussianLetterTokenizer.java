@@ -38,7 +38,7 @@ import org.apache.lucene.util.Version;
  * {@link CharTokenizer#normalize(int)} for details.</li>
  * </ul>
  * @deprecated Use {@link StandardTokenizer} instead, which has the same functionality.
- * This filter will be removed in Lucene 4.0 
+ * This filter will be removed in Lucene 5.0 
  */
 @Deprecated
 public class RussianLetterTokenizer extends CharTokenizer

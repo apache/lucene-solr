@@ -42,8 +42,6 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
    * useful for searching and some double-byte interpunctions.
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
-  // TODO make this final in 3.1 -
-  // this might be revised and merged with StopFilter stop words too
   @Deprecated
   public final static String[] STOP_WORDS = {
     "a", "and", "are", "as", "at", "be",

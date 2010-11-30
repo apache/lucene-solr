@@ -257,7 +257,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
       return new TokenStreamComponents(source, result);
     } else {
       final Tokenizer source = new StandardTokenizer(matchVersion, aReader);
-      TokenStream result = new StandardFilter(source);
+      TokenStream result = new StandardFilter(matchVersion, source);
       result = new StopFilter(matchVersion, result, stoptable);
       if (!excltable.isEmpty())
         result = new KeywordMarkerFilter(result, excltable);

@@ -71,7 +71,6 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * Extended list of typical French stopwords.
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
-  // TODO make this private in 3.1, remove in 4.0
   @Deprecated
   public final static String[] FRENCH_STOP_WORDS = {
     "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
@@ -104,7 +103,6 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  //TODO make this final in 3.0
   private Set<?> excltable = Collections.<Object>emptySet();
 
   /**
@@ -116,7 +114,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    /** @deprecated remove this in Lucene 4.0 */
+    /** @deprecated remove this in Lucene 5.0 */
     @Deprecated
     static final Set<?> DEFAULT_STOP_SET_30 = CharArraySet
         .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(FRENCH_STOP_WORDS),
@@ -250,7 +248,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
       return new TokenStreamComponents(source, result);
     } else {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new StandardFilter(source);
+      TokenStream result = new StandardFilter(matchVersion, source);
       result = new StopFilter(matchVersion, result, stopwords);
       if(!excltable.isEmpty())
         result = new KeywordMarkerFilter(result, excltable);

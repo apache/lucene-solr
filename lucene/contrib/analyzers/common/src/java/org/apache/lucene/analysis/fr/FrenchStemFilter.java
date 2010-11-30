@@ -43,7 +43,7 @@ import java.util.Set;
  * @see KeywordMarkerFilter
  * @deprecated Use {@link SnowballFilter} with 
  * {@link org.tartarus.snowball.ext.FrenchStemmer} instead, which has the
- * same functionality. This filter will be removed in Lucene 4.0
+ * same functionality. This filter will be removed in Lucene 5.0
  */
 @Deprecated
 public final class FrenchStemFilter extends TokenFilter {

@@ -71,7 +71,6 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * List of typical german stopwords.
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
-  //TODO make this private in 3.1, remove in 4.0
   @Deprecated
   public final static String[] GERMAN_STOP_WORDS = {
     "einer", "eine", "eines", "einem", "einen",
@@ -100,7 +99,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    /** @deprecated remove in Lucene 4.0 */
+    /** @deprecated remove in Lucene 5.0 */
     @Deprecated
     private static final Set<?> DEFAULT_SET_30 = CharArraySet.unmodifiableSet(new CharArraySet(
         Version.LUCENE_CURRENT, Arrays.asList(GERMAN_STOP_WORDS), false));

@@ -54,7 +54,7 @@ import org.apache.lucene.util.AttributeSource;
  * </p>
  * @version 1.0
  * @deprecated Use {@link StandardTokenizer} instead, which has the same functionality.
- * This filter will be removed in Lucene 4.0
+ * This filter will be removed in Lucene 5.0
  */
 @Deprecated
 public final class ChineseTokenizer extends Tokenizer {

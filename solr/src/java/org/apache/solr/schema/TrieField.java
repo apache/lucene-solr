@@ -444,7 +444,7 @@ public class TrieField extends FieldType {
 
     Field f;
     if (stored) {
-      f = new Field(field.getName(), arr, Field.Store.YES);
+      f = new Field(field.getName(), arr);
       if (indexed) f.setTokenStream(ts);
     } else {
       f = new Field(field.getName(), ts);

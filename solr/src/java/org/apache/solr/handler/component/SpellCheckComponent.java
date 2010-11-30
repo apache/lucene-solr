@@ -640,7 +640,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         IndexSchema schema = core.getSchema();
         String fieldTypeName = (String) initParams.get("queryAnalyzerFieldType");
         FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
-        Analyzer analyzer = fieldType == null ? new WhitespaceAnalyzer()
+        Analyzer analyzer = fieldType == null ? new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion)
                 : fieldType.getQueryAnalyzer();
         //TODO: There's got to be a better way!  Where's Spring when you need it?
         queryConverter.setAnalyzer(analyzer);

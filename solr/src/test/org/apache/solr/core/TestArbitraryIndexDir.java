@@ -27,11 +27,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -101,7 +98,11 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
     //add a doc in the new index dir
     Directory dir = FSDirectory.open(newDir);
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(Version.LUCENE_24), new MaxFieldLength(1000));
+    IndexWriter iw = new IndexWriter(
+        dir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).
+            setMaxFieldLength(1000)
+    );
     Document doc = new Document();
     doc.add(new Field("id", "2", Field.Store.YES, Field.Index.ANALYZED));
     doc.add(new Field("name", "name2", Field.Store.YES, Field.Index.ANALYZED));

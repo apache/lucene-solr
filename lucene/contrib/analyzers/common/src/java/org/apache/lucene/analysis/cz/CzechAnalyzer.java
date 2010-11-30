@@ -60,7 +60,6 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
 	 * List of typical stopwords.
 	 * @deprecated use {@link #getDefaultStopSet()} instead
 	 */
-  // TODO make this private in 3.1
 	@Deprecated
 	public final static String[] CZECH_STOP_WORDS = {
         "a","s","k","o","i","u","v","z","dnes","cz","t\u00edmto","bude\u0161","budem",

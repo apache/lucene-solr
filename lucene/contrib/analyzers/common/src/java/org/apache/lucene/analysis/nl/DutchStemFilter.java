@@ -45,7 +45,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * @see KeywordMarkerFilter
  * @deprecated Use {@link SnowballFilter} with 
  * {@link org.tartarus.snowball.ext.DutchStemmer} instead, which has the
- * same functionality. This filter will be removed in Lucene 4.0
+ * same functionality. This filter will be removed in Lucene 5.0
  */
 @Deprecated
 public final class DutchStemFilter extends TokenFilter {
