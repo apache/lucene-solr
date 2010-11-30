@@ -71,7 +71,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
   
   /**
    * Test turkish lowercasing (old buggy behavior)
-   * @deprecated Remove this when support for 3.0 indexes is no longer required
+   * @deprecated (3.1) Remove this when support for 3.0 indexes is no longer required (5.0)
    */
   @Deprecated
   public void testTurkishBWComp() throws Exception {

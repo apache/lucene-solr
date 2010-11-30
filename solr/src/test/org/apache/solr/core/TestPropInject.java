@@ -31,7 +31,7 @@ public class TestPropInject extends AbstractSolrTestCase {
   public void testMergePolicy() throws Exception {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
-    LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getMergePolicy();
+    LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getConfig().getMergePolicy();
     assertEquals(64.0, mp.getMaxMergeMB());
     uh.close();
   }
@@ -39,7 +39,7 @@ public class TestPropInject extends AbstractSolrTestCase {
   public void testProps() throws Exception {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
-    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getMergeScheduler();
+    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getConfig().getMergeScheduler();
     assertEquals(2, cms.getMaxThreadCount());
     uh.close();
   }

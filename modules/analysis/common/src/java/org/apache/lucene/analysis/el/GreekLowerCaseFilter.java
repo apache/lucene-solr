@@ -38,12 +38,6 @@ public final class GreekLowerCaseFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final CharacterUtils charUtils;
 
-  /** @deprecated Use {@link #GreekLowerCaseFilter(Version, TokenStream)} instead. */
-  @Deprecated
-  public GreekLowerCaseFilter(TokenStream in) {
-    this(Version.LUCENE_30, in);
-  }
-  
   /**
    * Create a GreekLowerCaseFilter that normalizes Greek token text.
    * 

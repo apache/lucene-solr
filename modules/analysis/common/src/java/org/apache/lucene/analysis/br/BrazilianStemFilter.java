@@ -20,11 +20,11 @@ package org.apache.lucene.analysis.br;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
 /**
  * A {@link TokenFilter} that applies {@link BrazilianStemmer}.
@@ -55,19 +55,6 @@ public final class BrazilianStemFilter extends TokenFilter {
     super(in);
   }
   
-  /**
-   * Creates a new BrazilianStemFilter 
-   * 
-   * @param in the source {@link TokenStream} 
-   * @param exclusiontable a set of terms that should be prevented from being stemmed.
-   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
-   */
-  @Deprecated
-  public BrazilianStemFilter(TokenStream in, Set<?> exclusiontable) {
-    this(in);
-    this.exclusions = exclusiontable;
-  }
-
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {

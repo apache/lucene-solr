@@ -17,25 +17,23 @@
 
 package org.apache.lucene.queryParser;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CachingTokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.DateField;
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
-import org.apache.lucene.util.VirtualMethod;
-import org.apache.lucene.queryParser.QueryParser.Operator;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.text.Collator;
 import java.text.DateFormat;
 import java.util.*;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.search.*;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to eparate the majority of the Java code from the .jj grammar file. 
@@ -84,20 +82,6 @@ public abstract class QueryParserBase {
   // for use when constructing RangeQuerys.
   Collator rangeCollator = null;
 
-  /** @deprecated remove when getFieldQuery is removed */
-  @Deprecated
-  static final VirtualMethod<QueryParserBase> getFieldQueryMethod =
-    new VirtualMethod<QueryParserBase>(QueryParserBase.class, "getFieldQuery", String.class, String.class);
-  /** @deprecated remove when getFieldQuery is removed */
-  @Deprecated
-  static final VirtualMethod<QueryParserBase> getFieldQueryWithQuotedMethod =
-    new VirtualMethod<QueryParserBase>(QueryParserBase.class, "getFieldQuery", String.class, String.class, boolean.class);
-  /** @deprecated remove when getFieldQuery is removed */
-  @Deprecated
-  final boolean hasNewAPI =
-    VirtualMethod.compareImplementationDistance(getClass(),
-        getFieldQueryWithQuotedMethod, getFieldQueryMethod) >= 0; // its ok for both to be overridden
-
   boolean autoGeneratePhraseQueries;
 
   // So the generated QueryParser(CharStream) won't error out
@@ -112,11 +96,6 @@ public abstract class QueryParserBase {
   public void init(Version matchVersion, String f, Analyzer a) {
     analyzer = a;
     field = f;
-    if (matchVersion.onOrAfter(Version.LUCENE_29)) {
-      enablePositionIncrements = true;
-    } else {
-      enablePositionIncrements = false;
-    }
     if (matchVersion.onOrAfter(Version.LUCENE_31)) {
       setAutoGeneratePhraseQueries(false);
     } else {
@@ -190,9 +169,6 @@ public abstract class QueryParserBase {
    * surrounded by double quotes.
    */
   public final void setAutoGeneratePhraseQueries(boolean value) {
-    if (value == false && !hasNewAPI)
-      throw new IllegalArgumentException("You must implement the new API: getFieldQuery(String,String,boolean)"
-       + " to use setAutoGeneratePhraseQueries(false)");
     this.autoGeneratePhraseQueries = value;
   }
 
@@ -272,7 +248,7 @@ public abstract class QueryParserBase {
    * Useful when e.g. a StopFilter increases the position increment of
    * the token that follows an omitted token.
    * <p>
-   * Default: false.
+   * Default: true.
    */
   public void setEnablePositionIncrements(boolean enable) {
     this.enablePositionIncrements = enable;
@@ -489,15 +465,6 @@ public abstract class QueryParserBase {
   }
 
   /**
-   * @deprecated Use {@link #getFieldQuery(String,String,boolean)} instead.
-   */
-  @Deprecated
-  protected Query getFieldQuery(String field, String queryText) throws ParseException {
-    // treat the text as if it was quoted, to drive phrase logic with old versions.
-    return getFieldQuery(field, queryText, true);
-  }
-
-  /**
    * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field, String queryText, boolean quoted)  throws ParseException {
@@ -684,7 +651,7 @@ public abstract class QueryParserBase {
    */
   protected Query getFieldQuery(String field, String queryText, int slop)
         throws ParseException {
-    Query query = hasNewAPI ? getFieldQuery(field, queryText, true) : getFieldQuery(field, queryText);
+    Query query = getFieldQuery(field, queryText, true);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -695,11 +662,6 @@ public abstract class QueryParserBase {
 
     return query;
   }
-
-
-  @Deprecated
-  protected final Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws MethodRemovedUseAnother {return null;}
-
 
   /**
    *
@@ -722,15 +684,7 @@ public abstract class QueryParserBase {
     DateTools.Resolution resolution = getDateResolution(field);
     
     try {
-      Date d1 = df.parse(part1);
-      if (resolution == null) {
-        // no default or field specific date resolution has been set,
-        // use deprecated DateField to maintain compatibility with
-        // pre-1.9 Lucene versions.
-        part1 = DateField.dateToString(d1);
-      } else {
-        part1 = DateTools.dateToString(d1, resolution);
-      }
+      part1 = DateTools.dateToString(df.parse(part1), resolution);
     } catch (Exception e) { }
 
     try {
@@ -747,14 +701,7 @@ public abstract class QueryParserBase {
         cal.set(Calendar.MILLISECOND, 999);
         d2 = cal.getTime();
       }
-      if (resolution == null) {
-        // no default or field specific date resolution has been set,
-        // use deprecated DateField to maintain compatibility with
-        // pre-1.9 Lucene versions.
-        part2 = DateField.dateToString(d2);
-      } else {
-        part2 = DateTools.dateToString(d2, resolution);
-      }
+      part2 = DateTools.dateToString(d2, resolution);
     } catch (Exception e) { }
 
     return newRangeQuery(field, part1, part2, startInclusive, endInclusive);
@@ -837,10 +784,6 @@ public abstract class QueryParserBase {
     // FuzzyQuery doesn't yet allow constant score rewrite
     return new FuzzyQuery(term,minimumSimilarity,prefixLength);
   }
-
-  @Deprecated
-  protected final Query newRangeQuery(String field, String part1, String part2, boolean inclusive) throws MethodRemovedUseAnother {return null;}
-
 
   /**
    * Builds a new TermRangeQuery instance
@@ -1064,7 +1007,7 @@ public abstract class QueryParserBase {
       }
       q = getFuzzyQuery(qfield, termImage, fms);
     } else {
-      q = hasNewAPI ? getFieldQuery(qfield, termImage, false) : getFieldQuery(qfield, termImage);
+      q = getFieldQuery(qfield, termImage, false);
     }
     return q;
   }

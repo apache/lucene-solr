@@ -111,10 +111,13 @@ public class TestDoc extends LuceneTestCase {
       PrintWriter out = new PrintWriter(sw, true);
       
       Directory directory = FSDirectory.open(indexDir);
-      IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
-                                           .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+      IndexWriter writer = new IndexWriter(
+          directory,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setOpenMode(OpenMode.CREATE).
+              setMaxBufferedDocs(-1).
+              setMergePolicy(newLogMergePolicy(10))
+      );
 
       SegmentInfo si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
@@ -142,10 +145,13 @@ public class TestDoc extends LuceneTestCase {
       out = new PrintWriter(sw, true);
 
       directory = FSDirectory.open(indexDir);
-      writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
-                               .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+      writer = new IndexWriter(
+          directory,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setOpenMode(OpenMode.CREATE).
+              setMaxBufferedDocs(-1).
+              setMergePolicy(newLogMergePolicy(10))
+      );
 
       si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
@@ -188,7 +194,7 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
       SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
-      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriter.DEFAULT_TERM_INDEX_INTERVAL, merged, null, CodecProvider.getDefault(), null);
+      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, null, CodecProvider.getDefault(), null);
 
       merger.add(r1);
       merger.add(r2);

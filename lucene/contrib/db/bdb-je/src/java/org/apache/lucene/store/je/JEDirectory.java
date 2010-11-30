@@ -21,12 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -193,6 +188,10 @@ public class JEDirectory extends Directory {
     @Override
     public IndexInput openInput(String name) throws IOException {
         return new JEIndexInput(this, name);
+    }
+
+    @Override
+    public void sync(Collection<String> names) throws IOException {
     }
 
     @Override

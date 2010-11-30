@@ -18,10 +18,8 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.util.Version;
 
 /**
  * Testcase for {@link CharTokenizer} subclasses
@@ -91,97 +89,5 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     builder.append("\ud801\udc1c");
     MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString() + builder.toString()), MockTokenizer.SIMPLE, true);
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
-  }
-
-  public void testIsTokenCharCharInSubclass() {
-    new TestingCharTokenizer(Version.LUCENE_30, new StringReader(""));
-    try {
-      new TestingCharTokenizer(TEST_VERSION_CURRENT, new StringReader(""));
-      fail("version 3.1 is not permitted if char based method is implemented");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-  }
-
-  public void testNormalizeCharInSubclass() {
-    new TestingCharTokenizerNormalize(Version.LUCENE_30, new StringReader(""));
-    try {
-      new TestingCharTokenizerNormalize(TEST_VERSION_CURRENT,
-          new StringReader(""));
-      fail("version 3.1 is not permitted if char based method is implemented");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-  }
-
-  public void testNormalizeAndIsTokenCharCharInSubclass() {
-    new TestingCharTokenizerNormalizeIsTokenChar(Version.LUCENE_30,
-        new StringReader(""));
-    try {
-      new TestingCharTokenizerNormalizeIsTokenChar(TEST_VERSION_CURRENT,
-          new StringReader(""));
-      fail("version 3.1 is not permitted if char based method is implemented");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-  }
-
-  static final class TestingCharTokenizer extends CharTokenizer {
-    public TestingCharTokenizer(Version matchVersion, Reader input) {
-      super(matchVersion, input);
-    }
-
-    @Override
-    protected boolean isTokenChar(int c) {
-      return Character.isLetter(c);
-    }
-
-    @Deprecated @Override
-    protected boolean isTokenChar(char c) {
-      return Character.isLetter(c);
-    }
-  }
-
-  static final class TestingCharTokenizerNormalize extends CharTokenizer {
-    public TestingCharTokenizerNormalize(Version matchVersion, Reader input) {
-      super(matchVersion, input);
-    }
-
-    @Deprecated @Override
-    protected char normalize(char c) {
-      return c;
-    }
-
-    @Override
-    protected int normalize(int c) {
-      return c;
-    }
-  }
-
-  static final class TestingCharTokenizerNormalizeIsTokenChar extends CharTokenizer {
-    public TestingCharTokenizerNormalizeIsTokenChar(Version matchVersion,
-        Reader input) {
-      super(matchVersion, input);
-    }
-
-    @Deprecated @Override
-    protected char normalize(char c) {
-      return c;
-    }
-
-    @Override
-    protected int normalize(int c) {
-      return c;
-    }
-
-    @Override
-    protected boolean isTokenChar(int c) {
-      return Character.isLetter(c);
-    }
-
-    @Deprecated @Override
-    protected boolean isTokenChar(char c) {
-      return Character.isLetter(c);
-    }
   }
 }

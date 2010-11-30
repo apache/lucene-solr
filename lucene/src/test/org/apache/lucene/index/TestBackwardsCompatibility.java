@@ -235,7 +235,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
-      w.addIndexes(new Directory[] { dir });
+      w.addIndexes(dir);
       w.close();
 
       _TestUtil.checkIndex(targetDir);
@@ -256,7 +256,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
-      w.addIndexes(new IndexReader[] { reader });
+      w.addIndexes(reader);
       w.close();
       reader.close();
       
@@ -527,9 +527,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(-1).setRAMBufferSizeMB(16.0));
-      ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+      IndexWriter writer = new IndexWriter(
+          dir,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setMaxBufferedDocs(-1).
+              setRAMBufferSizeMB(16.0).
+              setMergePolicy(newLogMergePolicy(true, 10))
+      );
       for(int i=0;i<35;i++) {
         addDoc(writer, i);
       }

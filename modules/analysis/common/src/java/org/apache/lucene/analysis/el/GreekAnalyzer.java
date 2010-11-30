@@ -16,20 +16,19 @@ package org.apache.lucene.analysis.el;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * {@link Analyzer} for the Greek language. 
@@ -98,25 +97,6 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
    */
   public GreekAnalyzer(Version matchVersion, Set<?> stopwords) {
     super(matchVersion, stopwords);
-  }
-  
-  /**
-   * Builds an analyzer with the given stop words.
-   * @param stopwords Array of stopwords to use.
-   * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public GreekAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
-  }
-  
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public GreekAnalyzer(Version matchVersion, Map<?,?> stopwords) {
-    this(matchVersion, stopwords.keySet());
   }
   
   /**

@@ -18,22 +18,16 @@ package org.apache.lucene.analysis.core;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.io.Reader;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.core.SimpleAnalyzer;
-import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.Version;
 
@@ -137,20 +131,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
   
   /**
-   * @deprecated remove this when lucene 3.0 "broken unicode 4" support
-   * is no longer needed.
-   */
-  @Deprecated
-  private static class LowerCaseWhitespaceAnalyzerBWComp extends Analyzer {
-
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new LowerCaseFilter(new WhitespaceTokenizer(reader));
-    }
-    
-  }
-  
-  /**
    * Test that LowercaseFilter handles entire unicode range correctly
    */
   public void testLowerCaseFilter() throws IOException {
@@ -196,30 +176,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     
   }
   
-  /**
-   * Test that LowercaseFilter only works on BMP for back compat,
-   * depending upon version
-   * @deprecated remove this test when lucene 3.0 "broken unicode 4" support
-   * is no longer needed.
-   */
-  @Deprecated
-  public void testLowerCaseFilterBWComp() throws IOException {
-    Analyzer a = new LowerCaseWhitespaceAnalyzerBWComp();
-    // BMP
-    assertAnalyzesTo(a, "AbaCaDabA", new String[] { "abacadaba" });
-    // supplementary, no-op
-    assertAnalyzesTo(a, "\ud801\udc16\ud801\udc16\ud801\udc16\ud801\udc16",
-        new String[] {"\ud801\udc16\ud801\udc16\ud801\udc16\ud801\udc16"});
-    assertAnalyzesTo(a, "AbaCa\ud801\udc16DabA",
-        new String[] { "abaca\ud801\udc16daba" });
-    // unpaired lead surrogate
-    assertAnalyzesTo(a, "AbaC\uD801AdaBa", 
-        new String [] { "abac\uD801adaba" });
-    // unpaired trail surrogate
-    assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
-        new String [] { "abac\uDC16adaba" });
-  }
-  
   public void testLowerCaseTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
     LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT,
@@ -228,6 +184,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
         "\ud801\udc44test" });
   }
 
+  /** @deprecated (3.1) */
   @Deprecated
   public void testLowerCaseTokenizerBWCompat() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
@@ -235,7 +192,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test" });
   }
-  
+
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
     WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
@@ -244,6 +201,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
         "\ud801\udc1ctest" });
   }
 
+  /** @deprecated (3.1) */
   @Deprecated
   public void testWhitespaceTokenizerBWCompat() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");

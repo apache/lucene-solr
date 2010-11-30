@@ -612,8 +612,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       MockDirectoryWrapper dir = newDirectory();
 
       {
-        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1));
-        ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+        final  IndexWriter writer = new IndexWriter(
+            dir,
+            newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
+                setMaxBufferedDocs(-1).
+                setMergePolicy(newLogMergePolicy(10))
+        );
         final int finalI = i;
 
         Thread[] threads = new Thread[NUM_THREAD];
@@ -740,10 +744,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     FailOnlyInSync failure = new FailOnlyInSync();
     dir.failOn(failure);
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(2).
+            setMergeScheduler(new ConcurrentMergeScheduler()).
+            setMergePolicy(newLogMergePolicy(5))
+    );
     failure.setDoFail();
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(5);
 
     for (int i = 0; i < 23; i++) {
       addDoc(writer);
@@ -1005,9 +1013,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexWriter writer = null;
 
-      writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-      ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
-      ((LogMergePolicy) writer.getMergePolicy()).setNoCFSRatio(1.0);
+      writer  = new IndexWriter(
+          dir,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setMergePolicy(newLogMergePolicy(true))
+      );
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
 
       // add 100 documents
       for (int i = 0; i < 100; i++) {

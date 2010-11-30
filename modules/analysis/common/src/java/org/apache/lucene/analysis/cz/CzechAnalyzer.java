@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
@@ -54,35 +55,7 @@ import java.util.Set;
  * <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1068</a>)
  * </ul>
  */
-public final class CzechAnalyzer extends ReusableAnalyzerBase {
-
-  /**
-	 * List of typical stopwords.
-	 * @deprecated use {@link #getDefaultStopSet()} instead
-	 */
-  // TODO make this private in 3.1
-	@Deprecated
-	public final static String[] CZECH_STOP_WORDS = {
-        "a","s","k","o","i","u","v","z","dnes","cz","t\u00edmto","bude\u0161","budem",
-        "byli","jse\u0161","m\u016fj","sv\u00fdm","ta","tomto","tohle","tuto","tyto",
-        "jej","zda","pro\u010d","m\u00e1te","tato","kam","tohoto","kdo","kte\u0159\u00ed",
-        "mi","n\u00e1m","tom","tomuto","m\u00edt","nic","proto","kterou","byla",
-        "toho","proto\u017ee","asi","ho","na\u0161i","napi\u0161te","re","co\u017e","t\u00edm",
-        "tak\u017ee","sv\u00fdch","jej\u00ed","sv\u00fdmi","jste","aj","tu","tedy","teto",
-        "bylo","kde","ke","prav\u00e9","ji","nad","nejsou","\u010di","pod","t\u00e9ma",
-        "mezi","p\u0159es","ty","pak","v\u00e1m","ani","kdy\u017e","v\u0161ak","neg","jsem",
-        "tento","\u010dl\u00e1nku","\u010dl\u00e1nky","aby","jsme","p\u0159ed","pta","jejich",
-        "byl","je\u0161t\u011b","a\u017e","bez","tak\u00e9","pouze","prvn\u00ed","va\u0161e","kter\u00e1",
-        "n\u00e1s","nov\u00fd","tipy","pokud","m\u016f\u017ee","strana","jeho","sv\u00e9","jin\u00e9",
-        "zpr\u00e1vy","nov\u00e9","nen\u00ed","v\u00e1s","jen","podle","zde","u\u017e","b\u00fdt","v\u00edce",
-        "bude","ji\u017e","ne\u017e","kter\u00fd","by","kter\u00e9","co","nebo","ten","tak",
-        "m\u00e1","p\u0159i","od","po","jsou","jak","dal\u0161\u00ed","ale","si","se","ve",
-        "to","jako","za","zp\u011bt","ze","do","pro","je","na","atd","atp",
-        "jakmile","p\u0159i\u010dem\u017e","j\u00e1","on","ona","ono","oni","ony","my","vy",
-        "j\u00ed","ji","m\u011b","mne","jemu","tomu","t\u011bm","t\u011bmu","n\u011bmu","n\u011bmu\u017e",
-        "jeho\u017e","j\u00ed\u017e","jeliko\u017e","je\u017e","jako\u017e","na\u010de\u017e",
-    };
-	
+public final class CzechAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Czech stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
   
@@ -112,27 +85,21 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
 	}
 
  
-  /**
-   * Contains the stopwords used with the {@link StopFilter}.
-   */
-	// TODO once loadStopWords is gone those member should be removed too in favor of StopwordAnalyzerBase
-	private Set<?> stoptable;
-  private final Version matchVersion;
   private final Set<?> stemExclusionTable;
 
   /**
    * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
-   * 
+   *
    * @param matchVersion Lucene version to match See
    *          {@link <a href="#version">above</a>}
    */
 	public CzechAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_SET);
 	}
-	
+
   /**
    * Builds an analyzer with the given stop words.
-   * 
+   *
    * @param matchVersion Lucene version to match See
    *          {@link <a href="#version">above</a>}
    * @param stopwords a stopword set
@@ -140,7 +107,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
   public CzechAnalyzer(Version matchVersion, Set<?> stopwords) {
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
-  
+
   /**
    * Builds an analyzer with the given stop words and a set of work to be
    * excluded from the {@link CzechStemFilter}.
@@ -151,83 +118,9 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    * @param stemExclusionTable a stemming exclusion set
    */
   public CzechAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable) {
-    this.matchVersion = matchVersion;
-    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
+    super(matchVersion, stopwords);
     this.stemExclusionTable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
   }
-
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * 
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
-   * @param stopwords a stopword set
-   * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public CzechAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet( matchVersion, stopwords ));
-	}
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * 
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
-   * @param stopwords a stopword set
-   * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public CzechAnalyzer(Version matchVersion, HashSet<?> stopwords) {
-    this(matchVersion, (Set<?>)stopwords);
-	}
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * 
-   * @param matchVersion Lucene version to match See
-   *          {@link <a href="#version">above</a>}
-   * @param stopwords a file containing stopwords
-   * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public CzechAnalyzer(Version matchVersion, File stopwords ) throws IOException {
-    this(matchVersion, (Set<?>)WordlistLoader.getWordSet( stopwords ));
-	}
-
-    /**
-     * Loads stopwords hash from resource stream (file, database...).
-     * @param   wordfile    File containing the wordlist
-     * @param   encoding    Encoding used (win-1250, iso-8859-2, ...), null for default system encoding
-     * @deprecated use {@link WordlistLoader#getWordSet(Reader, String) }
-     *             and {@link #CzechAnalyzer(Version, Set)} instead
-     */
-    // TODO extend StopwordAnalyzerBase once this method is gone!
-    @Deprecated
-    public void loadStopWords( InputStream wordfile, String encoding ) {
-        setPreviousTokenStream(null); // force a new stopfilter to be created
-        if ( wordfile == null ) {
-            stoptable = Collections.emptySet();
-            return;
-        }
-        try {
-            // clear any previous table (if present)
-            stoptable = Collections.emptySet();
-
-            InputStreamReader isr;
-            if (encoding == null)
-                isr = new InputStreamReader(wordfile);
-            else
-                isr = new InputStreamReader(wordfile, encoding);
-
-            stoptable = WordlistLoader.getWordSet(isr);
-        } catch ( IOException e ) {
-          // clear any previous table (if present)
-          // TODO: throw IOException
-          stoptable = Collections.emptySet();
-        }
-    }
 
   /**
    * Creates
@@ -244,12 +137,12 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    *         {@link CzechStemFilter}.
    */
   @Override
-  protected TokenStreamComponents createComponents(String fieldName,
+  protected ReusableAnalyzerBase.TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
     result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter( matchVersion, result, stoptable);
+    result = new StopFilter( matchVersion, result, stopwords);
     if (matchVersion.onOrAfter(Version.LUCENE_31)) {
       if(!this.stemExclusionTable.isEmpty())
         result = new KeywordMarkerFilter(result, stemExclusionTable);

@@ -21,13 +21,9 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
 import org.junit.Test;
-import org.junit.Assert;
 
 import java.util.Collection;
-import java.util.ArrayList;
 
 
 /**
@@ -42,7 +38,7 @@ public class SpellingQueryConverterTest extends LuceneTestCase {
   public void test() throws Exception {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
-    converter.setAnalyzer(new WhitespaceAnalyzer());
+    converter.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     Collection<Token> tokens = converter.convert("field:foo");
     assertTrue("tokens is null and it shouldn't be", tokens != null);
     assertTrue("tokens Size: " + tokens.size() + " is not: " + 1, tokens.size() == 1);
@@ -52,7 +48,7 @@ public class SpellingQueryConverterTest extends LuceneTestCase {
   public void testSpecialChars()  {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
-    converter.setAnalyzer(new WhitespaceAnalyzer());
+    converter.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     String original = "field_with_underscore:value_with_underscore";
     Collection<Token> tokens = converter.convert(original);
     assertTrue("tokens is null and it shouldn't be", tokens != null);
@@ -98,7 +94,7 @@ public class SpellingQueryConverterTest extends LuceneTestCase {
   public void testUnicode() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
-    converter.setAnalyzer(new WhitespaceAnalyzer());
+    converter.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     
     // chinese text value
     Collection<Token> tokens = converter.convert("text_field:我购买了道具和服装。");
@@ -118,7 +114,7 @@ public class SpellingQueryConverterTest extends LuceneTestCase {
   public void testMultipleClauses() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
-    converter.setAnalyzer(new WhitespaceAnalyzer());
+    converter.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
     // two field:value pairs should give two tokens
     Collection<Token> tokens = converter.convert("买text_field:我购买了道具和服装。 field2:bar");

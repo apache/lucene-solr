@@ -91,16 +91,24 @@ public class TestTransactions extends LuceneTestCase {
     @Override
     public void doWork() throws Throwable {
 
-      IndexWriter writer1 = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-          .setMaxBufferedDocs(3).setMergeScheduler(new ConcurrentMergeScheduler()));
-      ((LogMergePolicy) writer1.getConfig().getMergePolicy()).setMergeFactor(2);
+      IndexWriter writer1 = new IndexWriter(
+          dir1,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setMaxBufferedDocs(3).
+              setMergeScheduler(new ConcurrentMergeScheduler()).
+              setMergePolicy(newLogMergePolicy(2))
+      );
       ((ConcurrentMergeScheduler) writer1.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       // Intentionally use different params so flush/merge
       // happen @ different times
-      IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-          .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
-      ((LogMergePolicy) writer2.getConfig().getMergePolicy()).setMergeFactor(3);
+      IndexWriter writer2 = new IndexWriter(
+          dir2,
+          newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setMaxBufferedDocs(2).
+              setMergeScheduler(new ConcurrentMergeScheduler()).
+              setMergePolicy(newLogMergePolicy(3))
+      );
       ((ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       update(writer1);

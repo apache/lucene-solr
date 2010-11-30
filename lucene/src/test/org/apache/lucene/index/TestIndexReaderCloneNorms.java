@@ -109,11 +109,14 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     Directory dir3 = FSDirectory.open(indexDir3);
 
     createIndex(random, dir3);
-    IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
-    iw.addIndexes(new Directory[] { dir1, dir2 });
+    IndexWriter iw = new IndexWriter(
+        dir3,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
+            setOpenMode(OpenMode.APPEND).
+            setMaxBufferedDocs(5).
+            setMergePolicy(newLogMergePolicy(3))
+    );
+    iw.addIndexes(dir1, dir2);
     iw.optimize();
     iw.close();
 
@@ -128,9 +131,13 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     doTestNorms(random, dir3);
 
     // now with optimize
-    iw = new IndexWriter(dir3, newIndexWriterConfig( TEST_VERSION_CURRENT,
-        anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
+    iw = new IndexWriter(
+        dir3,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
+            setOpenMode(OpenMode.APPEND).
+            setMaxBufferedDocs(5).
+            setMergePolicy(newLogMergePolicy(3))
+    );
     iw.optimize();
     iw.close();
     verifyIndex(dir3);
@@ -162,7 +169,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   public void testNormsClose() throws IOException { 
     Directory dir1 = newDirectory(); 
     TestIndexReaderReopen.createIndex(random, dir1, false);
-    SegmentReader reader1 = SegmentReader.getOnlySegmentReader(dir1);
+    SegmentReader reader1 = getOnlySegmentReader(IndexReader.open(dir1, false));
     reader1.norms("field1");
     Norm r1norm = reader1.norms.get("field1");
     AtomicInteger r1BytesRef = r1norm.bytesRef();
@@ -181,7 +188,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader1 = IndexReader.open(dir1, false);
         
     IndexReader reader2C = (IndexReader) reader1.clone();
-    SegmentReader segmentReader2C = SegmentReader.getOnlySegmentReader(reader2C);
+    SegmentReader segmentReader2C = getOnlySegmentReader(reader2C);
     segmentReader2C.norms("field1"); // load the norms for the field
     Norm reader2CNorm = segmentReader2C.norms.get("field1");
     assertTrue("reader2CNorm.bytesRef()=" + reader2CNorm.bytesRef(), reader2CNorm.bytesRef().get() == 2);
@@ -189,13 +196,13 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     
     
     IndexReader reader3C = (IndexReader) reader2C.clone();
-    SegmentReader segmentReader3C = SegmentReader.getOnlySegmentReader(reader3C);
+    SegmentReader segmentReader3C = getOnlySegmentReader(reader3C);
     Norm reader3CCNorm = segmentReader3C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().get());
     
     // edit a norm and the refcount should be 1
     IndexReader reader4C = (IndexReader) reader3C.clone();
-    SegmentReader segmentReader4C = SegmentReader.getOnlySegmentReader(reader4C);
+    SegmentReader segmentReader4C = getOnlySegmentReader(reader4C);
     assertEquals(4, reader3CCNorm.bytesRef().get());
     reader4C.setNorm(5, "field1", 0.33f);
     
@@ -215,7 +222,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     assertEquals(1, reader4CCNorm.bytesRef().get());
         
     IndexReader reader5C = (IndexReader) reader4C.clone();
-    SegmentReader segmentReader5C = SegmentReader.getOnlySegmentReader(reader5C);
+    SegmentReader segmentReader5C = getOnlySegmentReader(reader5C);
     Norm reader5CCNorm = segmentReader5C.norms.get("field1");
     reader5C.setNorm(5, "field1", 0.7f);
     assertEquals(1, reader5CCNorm.bytesRef().get());

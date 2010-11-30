@@ -19,9 +19,9 @@ package org.apache.lucene.search.function;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.util.ReaderUtil;
 
 /** This class wraps another ValueSource, but protects
  *  against accidental double RAM usage in FieldCache when
@@ -31,7 +31,7 @@ import org.apache.lucene.search.Explanation;
  *  lookup, as it must resolve the incoming document to the
  *  right sub-reader using a binary search.</p>
  *
- *  @deprecated This class is temporary, to ease the
+ *  @deprecated (4.0) This class is temporary, to ease the
  *  migration to segment-based searching. Please change your
  *  code to not pass composite readers to these APIs. */
 

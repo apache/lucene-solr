@@ -70,7 +70,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     wB.close();
     readerA = IndexReader.open(dirA, true);
     readerB = IndexReader.open(dirB, true);
-    readerX = new MultiReader(new IndexReader[] { readerA, readerB });
+    readerX = new MultiReader(readerA, readerB);
   }
 
   @Override

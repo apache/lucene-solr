@@ -229,7 +229,7 @@ public class _TestUtil {
   // count lowish
   public static void reduceOpenFiles(IndexWriter w) {
     // keep number of open files lowish
-    LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
+    LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
     lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
 
     MergeScheduler ms = w.getConfig().getMergeScheduler();

@@ -52,10 +52,14 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
   public void runTest(Random random, Directory directory, MergeScheduler merger) throws Exception {
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, ANALYZER)
-        .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2).setMergeScheduler(
-            merger));
+    IndexWriter writer = new IndexWriter(
+        directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, ANALYZER).
+            setOpenMode(OpenMode.CREATE).
+            setMaxBufferedDocs(2).
+            setMergeScheduler(merger).
+            setMergePolicy(newLogMergePolicy())
+    );
 
     for(int iter=0;iter<NUM_ITER;iter++) {
       final int iterFinal = iter;

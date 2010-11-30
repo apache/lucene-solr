@@ -19,9 +19,10 @@ package org.apache.lucene.analysis.br;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Collections;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -135,19 +136,10 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
  
   public void testStemExclusionTable() throws Exception {
-    BrazilianAnalyzer a = new BrazilianAnalyzer(TEST_VERSION_CURRENT);
-    a.setStemExclusionTable(new String[] { "quintessência" });
+    BrazilianAnalyzer a = new BrazilianAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet(), asSet("quintessência"));
     checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
   }
   
-  public void testStemExclusionTableBWCompat() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
-    set.add("Brasília");
-    BrazilianStemFilter filter = new BrazilianStemFilter(
-        new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader("Brasília Brasilia")), set);
-    assertTokenStreamContents(filter, new String[] { "brasília", "brasil" });
-  }
-
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("Brasília");
@@ -157,28 +149,6 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[] { "brasília", "brasil" });
   }
 
-  public void testWithKeywordAttributeAndExclusionTable() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
-    set.add("Brasília");
-    CharArraySet set1 = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
-    set1.add("Brasilia");
-    BrazilianStemFilter filter = new BrazilianStemFilter(
-        new KeywordMarkerFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(
-            "Brasília Brasilia")), set), set1);
-    assertTokenStreamContents(filter, new String[] { "brasília", "brasilia" });
-  }
-  
-  /* 
-   * Test that changes to the exclusion table are applied immediately
-   * when using reusable token streams.
-   */
-  public void testExclusionTableReuse() throws Exception {
-    BrazilianAnalyzer a = new BrazilianAnalyzer(TEST_VERSION_CURRENT);
-    checkReuse(a, "quintessência", "quintessente");
-    a.setStemExclusionTable(new String[] { "quintessência" });
-    checkReuse(a, "quintessência", "quintessência");
-  }
-  
   private void check(final String input, final String expected) throws Exception {
     checkOneTerm(new BrazilianAnalyzer(TEST_VERSION_CURRENT), input, expected);
   }

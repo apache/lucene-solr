@@ -189,48 +189,6 @@ public final class WordDelimiterFilter extends TokenFilter {
     this.protWords = protWords;
     this.iterator = new WordDelimiterIterator(charTypeTable, splitOnCaseChange != 0, splitOnNumerics != 0, stemEnglishPossessive != 0);
   }
-  
-  /**
-   * Compatibility constructor
-   * 
-   * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, byte[], int, int, int, int, int, int, int, int, int, CharArraySet)}
-   *             instead.
-   */
-  @Deprecated
-  public WordDelimiterFilter(TokenStream in,
-                             byte[] charTypeTable,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll,
-                             int splitOnCaseChange,
-                             int preserveOriginal,
-                             int splitOnNumerics,
-                             CharArraySet protWords) {
-    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, 1, 1, null);
-  }
-
-  /**
-   * Compatibility constructor
-   * 
-   * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, byte[], int, int, int, int, int, int, int, int, int, CharArraySet)}
-   *             instead.
-   */
-  @Deprecated
-  public WordDelimiterFilter(TokenStream in,
-                             byte[] charTypeTable,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll,
-                             int splitOnCaseChange,
-                             int preserveOriginal) {
-    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, 1, null);
-  }
 
   /**
    * @param in Token stream to be filtered.
@@ -257,76 +215,6 @@ public final class WordDelimiterFilter extends TokenFilter {
                              int stemEnglishPossessive,
                              CharArraySet protWords) {
     this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, stemEnglishPossessive, protWords);
-  }
-  
-  /**
-   * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
-   *             instead.
-   */
-  @Deprecated
-  public WordDelimiterFilter(TokenStream in,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll,
-                             int splitOnCaseChange,
-                             int preserveOriginal,
-                             int splitOnNumerics,
-                             CharArraySet protWords) {
-    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, 1, protWords);
-  }
-
-  /**   * Compatibility constructor
-   * 
-   * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
-   *             instead.
-   */
-  @Deprecated
-  public WordDelimiterFilter(TokenStream in,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll,
-                             int splitOnCaseChange,
-                             int preserveOriginal) {
-    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal);
-  }
-  /**
-   * Compatibility constructor
-   * 
-   * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
-   *             instead.
-   */
-  @Deprecated
-  public WordDelimiterFilter(TokenStream in,
-                             byte[] charTypeTable,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll) {
-    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0, 1, null);
-  }
-  /**
-   * Compatibility constructor
-   * 
-   * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
-   *             instead.
-   */
-  @Deprecated
-  public WordDelimiterFilter(TokenStream in,
-                             int generateWordParts,
-                             int generateNumberParts,
-                             int catenateWords,
-                             int catenateNumbers,
-                             int catenateAll) {
-    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0, 1, null);
   }
   
   public boolean incrementToken() throws IOException {

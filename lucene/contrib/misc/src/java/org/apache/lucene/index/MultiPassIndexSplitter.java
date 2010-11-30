@@ -96,7 +96,7 @@ public class MultiPassIndexSplitter {
           new WhitespaceAnalyzer(Version.LUCENE_CURRENT))
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
-      w.addIndexes(new IndexReader[]{input});
+      w.addIndexes(input);
       w.close();
     }
     System.err.println("Done.");

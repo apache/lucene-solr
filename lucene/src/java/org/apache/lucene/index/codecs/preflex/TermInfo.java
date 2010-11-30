@@ -19,7 +19,7 @@ package org.apache.lucene.index.codecs.preflex;
 
 /** A TermInfo is the record of information stored for a
  * term
- * @deprecated This class is no longer used in flexible
+ * @deprecated (4.0) This class is no longer used in flexible
  * indexing. */
 
 @Deprecated

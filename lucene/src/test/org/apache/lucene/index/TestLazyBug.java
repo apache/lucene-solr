@@ -17,19 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -53,7 +46,7 @@ public class TestLazyBug extends LuceneTestCase {
     "this string is a bigger string, mary had a little lamb, little lamb, little lamb!"
   };
 
-  private static Set<String> dataset = new HashSet<String>(Arrays.asList(data));
+  private static Set<String> dataset = asSet(data);
   
   private static String MAGIC_FIELD = "f"+(NUM_FIELDS/3);
   

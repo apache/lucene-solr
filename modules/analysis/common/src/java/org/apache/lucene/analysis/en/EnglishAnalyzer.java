@@ -21,11 +21,11 @@ import java.io.Reader;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -103,7 +103,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(source);
+    TokenStream result = new StandardFilter(matchVersion, source);
     // prior to this we get the classic behavior, standardfilter does it for us.
     if (matchVersion.onOrAfter(Version.LUCENE_31))
       result = new EnglishPossessiveFilter(result);

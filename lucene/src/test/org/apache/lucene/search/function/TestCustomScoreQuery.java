@@ -122,7 +122,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private static class CustomMulAddQuery extends CustomScoreQuery {
     // constructor
     CustomMulAddQuery(Query q, ValueSourceQuery qValSrc1, ValueSourceQuery qValSrc2) {
-      super(q, new ValueSourceQuery[]{qValSrc1, qValSrc2});
+      super(q, qValSrc1, qValSrc2);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */

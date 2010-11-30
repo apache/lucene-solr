@@ -17,16 +17,26 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
@@ -43,15 +53,7 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
-import org.junit.Assume;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestWatchman;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
@@ -61,30 +63,6 @@ import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -176,6 +154,21 @@ public abstract class LuceneTestCase extends Assert {
   
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
+
+  /**
+   * Some tests expect the directory to contain a single segment, and want to do tests on that segment's reader.
+   * This is an utility method to help them.
+   */
+  public static SegmentReader getOnlySegmentReader(IndexReader reader) {
+    if (reader instanceof SegmentReader)
+      return (SegmentReader) reader;
+
+    IndexReader[] subReaders = reader.getSequentialSubReaders();
+    if (subReaders.length != 1)
+      throw new IllegalArgumentException(reader + " has " + subReaders.length + " segments instead of exactly one");
+
+    return (SegmentReader) subReaders[0];
+  }
 
   private static class UncaughtExceptionEntry {
     public final Thread thread;
@@ -308,7 +301,7 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  /** @deprecated: until we fix no-fork problems in solr tests */
+  /** @deprecated (4.0) until we fix no-fork problems in solr tests */
   @Deprecated
   private static List<String> testClassesRun = new ArrayList<String>();
   
@@ -543,8 +536,7 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
   
-  // These deprecated methods should be removed soon, when all tests using no Epsilon are fixed:
-  
+  // @deprecated (4.0) These deprecated methods should be removed soon, when all tests using no Epsilon are fixed:
   @Deprecated
   static public void assertEquals(double expected, double actual) {
     assertEquals(null, expected, actual);
@@ -608,6 +600,10 @@ public abstract class LuceneTestCase extends Assert {
     Assume.assumeNoException(e == null ? null : new TestIgnoredException(msg, e));
   }
  
+  public static <T> Set<T> asSet(T... args) {
+    return new HashSet<T>(Arrays.asList(args));
+  }
+
   /**
    * Convinience method for logging an iterator.
    *
@@ -647,9 +643,6 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
     if (r.nextBoolean()) {
-      c.setMergePolicy(new LogDocMergePolicy());
-    }
-    if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
     if (r.nextBoolean()) {
@@ -665,22 +658,50 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       c.setMaxThreadStates(_TestUtil.nextInt(r, 1, 20));
     }
-    
-    if (c.getMergePolicy() instanceof LogMergePolicy) {
-      LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
-      logmp.setUseCompoundDocStore(r.nextBoolean());
-      logmp.setUseCompoundFile(r.nextBoolean());
-      logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-      if (r.nextInt(3) == 2) {
-        logmp.setMergeFactor(2);
-      } else {
-        logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
-      }
-    }
-    
+
+    c.setMergePolicy(newLogMergePolicy(r));
+
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
+  }
+
+  public static LogMergePolicy newLogMergePolicy() {
+    return newLogMergePolicy(random);
+  }
+
+  public static LogMergePolicy newLogMergePolicy(Random r) {
+    LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
+    logmp.setUseCompoundDocStore(r.nextBoolean());
+    logmp.setUseCompoundFile(r.nextBoolean());
+    logmp.setCalibrateSizeByDeletes(r.nextBoolean());
+    if (r.nextInt(3) == 2) {
+      logmp.setMergeFactor(2);
+    } else {
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
+    }
+    return logmp;
+  }
+
+  public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setUseCompoundFile(useCFS);
+    logmp.setUseCompoundDocStore(useCFS);
+    return logmp;
+  }
+
+  public static LogMergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setUseCompoundFile(useCFS);
+    logmp.setUseCompoundDocStore(useCFS);
+    logmp.setMergeFactor(mergeFactor);
+    return logmp;
+  }
+
+  public static LogMergePolicy newLogMergePolicy(int mergeFactor) {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setMergeFactor(mergeFactor);
+    return logmp;
   }
 
   /**

@@ -28,7 +28,7 @@ public class TestValueSource extends LuceneTestCase {
 
   public void testMultiValueSource() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     Field f = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(f);

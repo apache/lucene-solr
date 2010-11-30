@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -185,6 +186,9 @@ public class RAMDirectory extends Directory implements Serializable {
    */
   protected RAMFile newRAMFile() {
     return new RAMFile(this);
+  }
+
+  public void sync(Collection<String> names) throws IOException {
   }
 
   /** Returns a stream reading an existing file. */

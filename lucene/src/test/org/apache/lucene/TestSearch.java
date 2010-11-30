@@ -114,29 +114,15 @@ public class TestSearch extends LuceneTestCase {
         Query query = parser.parse(queries[j]);
         out.println("Query: " + query.toString("contents"));
 
-      //DateFilter filter =
-      //  new DateFilter("modified", Time(1997,0,1), Time(1998,0,1));
-      //DateFilter filter = DateFilter.Before("modified", Time(1997,00,01));
-      //System.out.println(filter);
-
         hits = searcher.search(query, null, 1000).scoreDocs;
 
         out.println(hits.length + " total results");
         for (int i = 0 ; i < hits.length && i < 10; i++) {
           Document d = searcher.doc(hits[i].doc);
-          out.println(i + " " + hits[i].score
-// 			   + " " + DateField.stringToDate(d.get("modified"))
-                             + " " + d.get("contents"));
+          out.println(i + " " + hits[i].score + " " + d.get("contents"));
         }
       }
       searcher.close();
       directory.close();
-  }
-
-  static long Time(int year, int month, int day) {
-    GregorianCalendar calendar = new GregorianCalendar();
-    calendar.clear();
-    calendar.set(year, month, day);
-    return calendar.getTime().getTime();
   }
 }

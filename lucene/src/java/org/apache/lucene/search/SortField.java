@@ -21,13 +21,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
 
-import org.apache.lucene.search.cache.ByteValuesCreator;
-import org.apache.lucene.search.cache.CachedArrayCreator;
-import org.apache.lucene.search.cache.DoubleValuesCreator;
-import org.apache.lucene.search.cache.FloatValuesCreator;
-import org.apache.lucene.search.cache.IntValuesCreator;
-import org.apache.lucene.search.cache.LongValuesCreator;
-import org.apache.lucene.search.cache.ShortValuesCreator;
+import org.apache.lucene.search.cache.*;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -138,7 +132,7 @@ implements Serializable {
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
    *  
-   *  @deprecated use EntryCreator version
+   *  @deprecated (4.0) use EntryCreator version
    */
   @Deprecated
   public SortField (String field, FieldCache.Parser parser) {
@@ -156,7 +150,7 @@ implements Serializable {
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
    *  
-   *  @deprecated use EntryCreator version
+   *  @deprecated (4.0) use EntryCreator version
    */
   @Deprecated
   public SortField (String field, FieldCache.Parser parser, boolean reverse) {
@@ -314,7 +308,7 @@ implements Serializable {
   /** Returns the instance of a {@link FieldCache} parser that fits to the given sort type.
    * May return <code>null</code> if no parser was specified. Sorting is using the default parser then.
    * @return An instance of a {@link FieldCache} parser, or <code>null</code>.
-   * @deprecated use getEntryCreator()
+   * @deprecated (4.0) use getEntryCreator()
    */
   @Deprecated
   public FieldCache.Parser getParser() {

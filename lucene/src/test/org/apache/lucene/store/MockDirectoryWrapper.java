@@ -97,17 +97,6 @@ public class MockDirectoryWrapper extends Directory {
     preventDoubleWrite = value;
   }
 
-  @Deprecated
-  @Override
-  public void sync(String name) throws IOException {
-    maybeYield();
-    maybeThrowDeterministicException();
-    if (crashed)
-      throw new IOException("cannot sync after crash");
-    unSyncedFiles.remove(name);
-    delegate.sync(name);
-  }
-
   @Override
   public synchronized void sync(Collection<String> names) throws IOException {
     maybeYield();

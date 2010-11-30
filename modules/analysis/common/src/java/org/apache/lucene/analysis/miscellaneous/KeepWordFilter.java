@@ -17,13 +17,12 @@
 
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-
-import java.io.IOException;
-import java.util.Set;
 
 /**
  * A TokenFilter that only keeps tokens with text contained in the
@@ -34,12 +33,6 @@ import java.util.Set;
 public final class KeepWordFilter extends TokenFilter {
   private final CharArraySet words;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-  /** @deprecated Use {@link #KeepWordFilter(TokenStream, CharArraySet)} instead */
-  @Deprecated
-  public KeepWordFilter(TokenStream in, Set<String> words, boolean ignoreCase ) {
-    this(in, new CharArraySet(words, ignoreCase));
-  }
 
   /** The words set passed to this constructor will be directly used by this filter
    * and should not be modified, */

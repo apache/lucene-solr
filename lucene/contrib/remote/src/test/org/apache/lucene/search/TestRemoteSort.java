@@ -84,10 +84,12 @@ public class TestRemoteSort extends RemoteTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     indexStore = newDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
+    IndexWriter writer = new IndexWriter(
+        indexStore,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(2).
+            setMergePolicy(newLogMergePolicy(1000))
+    );
     for (int i=0; i<data.length; ++i) {
         Document doc = new Document();
         doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
@@ -217,7 +219,7 @@ public class TestRemoteSort extends RemoteTestCase {
   @Test
   public void testRemoteSort() throws Exception {
     Searchable searcher = lookupRemote();
-    MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
+    MultiSearcher multi = new MultiSearcher (searcher);
     runMultiSorts(multi, true); // this runs on the full index
   }
 
@@ -255,7 +257,7 @@ public class TestRemoteSort extends RemoteTestCase {
     HashMap<String,Float> scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
 
     // we'll test searching locally, remote and multi
-    MultiSearcher remote = new MultiSearcher (new Searchable[] { lookupRemote() });
+    MultiSearcher remote = new MultiSearcher (lookupRemote());
 
     // change sorting and make sure relevancy stays the same
 

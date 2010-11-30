@@ -152,10 +152,14 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
   public void testEnforceDeletions() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-                                                     newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()));
-    // asserts below requires no unexpected merges:
-    ((LogMergePolicy) writer.w.getMergePolicy()).setMergeFactor(10);
+    RandomIndexWriter writer = new RandomIndexWriter(
+        random,
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMergeScheduler(new SerialMergeScheduler()).
+            // asserts below requires no unexpected merges:
+            setMergePolicy(newLogMergePolicy(10))
+    );
 
     // NOTE: cannot use writer.getReader because RIW (on
     // flipping a coin) may give us a newly opened reader,

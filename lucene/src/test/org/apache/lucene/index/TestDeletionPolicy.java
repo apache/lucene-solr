@@ -373,10 +373,13 @@ public class TestDeletionPolicy extends LuceneTestCase {
     Directory dir = newDirectory();
     policy.dir = dir;
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setIndexDeletionPolicy(policy).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setIndexDeletionPolicy(policy).
+            setMaxBufferedDocs(2).
+            setMergePolicy(newLogMergePolicy(10))
+    );
     for(int i=0;i<10;i++) {
       addDoc(writer);
       if ((1+i)%2 == 0)

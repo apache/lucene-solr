@@ -53,8 +53,8 @@ import org.apache.lucene.util.AttributeSource;
  * CJKTokenizer will not work.
  * </p>
  * @version 1.0
- * @deprecated Use {@link StandardTokenizer} instead, which has the same functionality.
- * This filter will be removed in Lucene 4.0
+ * @deprecated (3.1) Use {@link StandardTokenizer} instead, which has the same functionality.
+ * This filter will be removed in Lucene 5.0
  */
 @Deprecated
 public final class ChineseTokenizer extends Tokenizer {

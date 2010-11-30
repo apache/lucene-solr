@@ -1240,33 +1240,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public final Object getCoreCacheKey() {
     return core;
   }
-  
-  /**
-   * Lotsa tests did hacks like:<br/>
-   * SegmentReader reader = (SegmentReader) IndexReader.open(dir);<br/>
-   * They broke. This method serves as a hack to keep hacks working
-   * We do it with R/W access for the tests (BW compatibility)
-   * @deprecated Remove this when tests are fixed!
-   */
-  @Deprecated
-  static SegmentReader getOnlySegmentReader(Directory dir) throws IOException {
-    return getOnlySegmentReader(IndexReader.open(dir, false));
-  }
-
-  static SegmentReader getOnlySegmentReader(IndexReader reader) {
-    if (reader instanceof SegmentReader)
-      return (SegmentReader) reader;
-
-    if (reader instanceof DirectoryReader) {
-      IndexReader[] subReaders = reader.getSequentialSubReaders();
-      if (subReaders.length != 1)
-        throw new IllegalArgumentException(reader + " has " + subReaders.length + " segments instead of exactly one");
-
-      return (SegmentReader) subReaders[0];
-    }
-
-    throw new IllegalArgumentException(reader + " is not a SegmentReader or a single-segment DirectoryReader");
-  }
 
   @Override
   public int getTermInfosIndexDivisor() {

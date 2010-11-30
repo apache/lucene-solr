@@ -441,9 +441,13 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
     //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderPooling(true));
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()).setReaderPooling(true));
-
-    ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(2);
+    IndexWriter w = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMergeScheduler(new SerialMergeScheduler()).
+            setReaderPooling(true).
+            setMergePolicy(newLogMergePolicy(2))
+    );
 
     Document doc = new Document();
     doc.add(newField("f", "doctor who", Field.Store.YES, Field.Index.ANALYZED));

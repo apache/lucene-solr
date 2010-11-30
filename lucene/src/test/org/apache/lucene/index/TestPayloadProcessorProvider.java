@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -118,10 +116,6 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
   private static final int NUM_DOCS = 10;
 
-  private IndexWriterConfig getConfig(Random random) {
-    return newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
-  }
-
   private void populateDirs(Random random, Directory[] dirs, boolean multipleCommits)
       throws IOException {
     for (int i = 0; i < dirs.length; i++) {
@@ -134,8 +128,11 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
 
   private void populateDocs(Random random, Directory dir, boolean multipleCommits)
       throws IOException {
-    IndexWriter writer = new IndexWriter(dir, getConfig(random));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).
+            setMergePolicy(newLogMergePolicy(10))
+    );
     TokenStream payloadTS1 = new PayloadTokenStream("p1");
     TokenStream payloadTS2 = new PayloadTokenStream("p2");
     for (int i = 0; i < NUM_DOCS; i++) {
@@ -191,7 +188,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     for (Directory d : dirs) {
       processors.put(d, new PerTermPayloadProcessor());
     }
-    IndexWriter writer = new IndexWriter(dir, getConfig(random));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
 
     IndexReader[] readers = new IndexReader[dirs.length];
@@ -245,7 +242,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     // won't get processed.
     Map<Directory, DirPayloadProcessor> processors = new HashMap<Directory, DirPayloadProcessor>();
     processors.put(dir, new PerTermPayloadProcessor());
-    IndexWriter writer = new IndexWriter(dir, getConfig(random));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
     writer.optimize();
     writer.close();

@@ -19,20 +19,18 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+
+import org.apache.lucene.index.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.HighFrequencyDictionary;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -60,7 +58,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
   public void build(SolrCore core, SolrIndexSearcher searcher) {
     try {
-      loadExternalFileDictionary(core.getSchema(), core.getResourceLoader());
+      loadExternalFileDictionary(core);
       spellChecker.clearIndex();
       spellChecker.indexDictionary(dictionary);
     } catch (IOException e) {
@@ -77,22 +75,28 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   }
 
   @SuppressWarnings("unchecked")
-  private void loadExternalFileDictionary(IndexSchema schema, SolrResourceLoader loader) {
+  private void loadExternalFileDictionary(SolrCore core) {
     try {
 
       // Get the field's analyzer
-      if (fieldTypeName != null
-              && schema.getFieldTypeNoEx(fieldTypeName) != null) {
-        FieldType fieldType = schema.getFieldTypes()
-                .get(fieldTypeName);
+      if (fieldTypeName != null && core.getSchema().getFieldTypeNoEx(fieldTypeName) != null) {
+        FieldType fieldType = core.getSchema().getFieldTypes().get(fieldTypeName);
         // Do index-time analysis using the given fieldType's analyzer
         RAMDirectory ramDir = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(ramDir, fieldType.getAnalyzer(),
-                true, IndexWriter.MaxFieldLength.UNLIMITED);
-        writer.setMergeFactor(300);
-        writer.setMaxBufferedDocs(150);
 
-        List<String> lines = loader.getLines(sourceLocation, characterEncoding);
+        LogMergePolicy mp = new LogByteSizeMergePolicy();
+        mp.setMergeFactor(300);
+
+        IndexWriter writer = new IndexWriter(
+            ramDir,
+            new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getAnalyzer()).
+                setMaxBufferedDocs(150).
+                setMergePolicy(mp).
+                setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH).
+                setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+        );
+
+        List<String> lines = core.getResourceLoader().getLines(sourceLocation, characterEncoding);
 
         for (String s : lines) {
           Document d = new Document();
@@ -107,9 +111,9 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
       } else {
         // check if character encoding is defined
         if (characterEncoding == null) {
-          dictionary = new PlainTextDictionary(loader.openResource(sourceLocation));
+          dictionary = new PlainTextDictionary(core.getResourceLoader().openResource(sourceLocation));
         } else {
-          dictionary = new PlainTextDictionary(new InputStreamReader(loader.openResource(sourceLocation), characterEncoding));
+          dictionary = new PlainTextDictionary(new InputStreamReader(core.getResourceLoader().openResource(sourceLocation), characterEncoding));
         }
       }
 

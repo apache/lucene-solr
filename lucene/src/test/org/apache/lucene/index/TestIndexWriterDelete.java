@@ -794,7 +794,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   public void testDeleteNullQuery() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter modifier = new IndexWriter(dir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     for (int i = 0; i < 5; i++) {
       addDoc(modifier, i, 2*i);

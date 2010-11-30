@@ -17,6 +17,7 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -73,10 +74,10 @@ public class TestRegexQuery extends LuceneTestCase {
   }
 
   private int  spanRegexQueryNrHits(String regex1, String regex2, int slop, boolean ordered) throws Exception {
-    SpanRegexQuery srq1 = new SpanRegexQuery( newTerm(regex1));
-    SpanRegexQuery srq2 = new SpanRegexQuery( newTerm(regex2));
+    SpanQuery srq1 = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(newTerm(regex1)));
+    SpanQuery srq2 = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(newTerm(regex2)));
     SpanNearQuery query = new SpanNearQuery( new SpanQuery[]{srq1, srq2}, slop, ordered);
-    
+
     return searcher.search(query, null, 1000).totalHits;
   }
 

@@ -22,6 +22,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
@@ -53,9 +54,11 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   
   /**
    * Test the broken 3.0 behavior, for back compat
+   * @deprecated (3.1) Remove in Lucene 5.0
    */
+  @Deprecated
   public void testBackCompat() throws Exception {
-    assertEquals("\uDF05\uD866\uDF05\uD866", ReverseStringFilter.reverse("𩬅𩬅"));
+    assertEquals("\uDF05\uD866\uDF05\uD866", ReverseStringFilter.reverse(Version.LUCENE_30, "𩬅𩬅"));
   }
   
   public void testReverseSupplementary() throws Exception {

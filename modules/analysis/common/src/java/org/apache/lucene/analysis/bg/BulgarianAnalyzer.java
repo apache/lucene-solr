@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.bg;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
@@ -32,7 +31,6 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
 /**
@@ -44,7 +42,6 @@ import org.apache.lucene.util.Version;
  * <p>
  */
 public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
-  
   /**
    * File containing default Bulgarian stopwords.
    * 
@@ -53,16 +50,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * BSD-Licensed.
    */
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
-  
-  /**
-   * The comment character in the stopwords file. All lines prefixed with this
-   * will be ignored
-   * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly
-   */
-  //TODO make this private
-  @Deprecated
-  public static final String STOPWORDS_COMMENT = "#";
-  
+
   /**
    * Returns an unmodifiable instance of the default stop-words set.
    * 
@@ -81,7 +69,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
     
     static {
       try {
-        DEFAULT_STOP_SET = loadStopwordSet(false, BulgarianAnalyzer.class, DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
+        DEFAULT_STOP_SET = loadStopwordSet(false, BulgarianAnalyzer.class, DEFAULT_STOPWORD_FILE, "#");
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)

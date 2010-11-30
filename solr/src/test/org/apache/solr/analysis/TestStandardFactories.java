@@ -126,17 +126,4 @@ public class TestStandardFactories extends BaseTokenTestCase {
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "Ceska" });
   }
-  
-  /**
-   * Ensure the ISOLatin1AccentFilterFactory works 
-   * (sometimes, at least not uppercase hacek)
-   */
-  public void testISOLatin1Folding() throws Exception {
-    Reader reader = new StringReader("Česká");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
-    ISOLatin1AccentFilterFactory factory = new ISOLatin1AccentFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    TokenStream stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "Česka" });
-  }
 }

@@ -230,9 +230,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected IndexReader openReader() throws IOException {
-        return new MultiReader(new IndexReader[] 
-                        {IndexReader.open(dir1, false), 
-                         IndexReader.open(dir2, false)});
+        return new MultiReader(IndexReader.open(dir1, false),
+            IndexReader.open(dir2, false));
       }
       
     });
@@ -256,12 +255,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected IndexReader openReader() throws IOException {
-        return new MultiReader(new IndexReader[] 
-                        {IndexReader.open(dir3, false), 
-                         IndexReader.open(dir4, false),
-                         // Does not implement reopen, so
-                         // hits exception:
-                         new FilterIndexReader(IndexReader.open(dir3, false))});
+        return new MultiReader(IndexReader.open(dir3, false),
+            IndexReader.open(dir4, false),
+            // Does not implement reopen, so
+            // hits exception:
+            new FilterIndexReader(IndexReader.open(dir3, false)));
       }
       
     });
@@ -297,10 +295,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         ParallelReader pr = new ParallelReader();
         pr.add(IndexReader.open(dir1, false));
         pr.add(IndexReader.open(dir2, false));
-        MultiReader mr = new MultiReader(new IndexReader[] {
-            IndexReader.open(dir3, false), IndexReader.open(dir4, false)});
-        return new MultiReader(new IndexReader[] {
-           pr, mr, IndexReader.open(dir5, false)});
+        MultiReader mr = new MultiReader(IndexReader.open(dir3, false), IndexReader.open(dir4, false));
+        return new MultiReader(pr, mr, IndexReader.open(dir5, false));
       }
     });
     dir1.close();
@@ -612,7 +608,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     createIndex(random, dir1, false);
     
     IndexReader reader1 = IndexReader.open(dir1, false);
-    SegmentReader segmentReader1 = SegmentReader.getOnlySegmentReader(reader1);
+    SegmentReader segmentReader1 = getOnlySegmentReader(reader1);
     IndexReader modifier = IndexReader.open(dir1, false);
     modifier.deleteDocument(0);
     modifier.close();
@@ -624,7 +620,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     modifier.close();
     
     IndexReader reader3 = reader2.reopen();
-    SegmentReader segmentReader3 = SegmentReader.getOnlySegmentReader(reader3);
+    SegmentReader segmentReader3 = getOnlySegmentReader(reader3);
     modifier = IndexReader.open(dir1, false);
     modifier.deleteDocument(2);
     modifier.close();
@@ -1167,7 +1163,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     IndexReader[] rs2 = r2.getSequentialSubReaders();
 
-    SegmentReader sr1 = SegmentReader.getOnlySegmentReader(r1);
+    SegmentReader sr1 = getOnlySegmentReader(r1);
     SegmentReader sr2 = (SegmentReader) rs2[0];
 
     // At this point they share the same BitVector
@@ -1190,9 +1186,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testReopenOnCommit() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-                                                                   TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(new KeepAllCommits()).setMaxBufferedDocs(-1));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setIndexDeletionPolicy(new KeepAllCommits()).
+            setMaxBufferedDocs(-1).
+            setMergePolicy(newLogMergePolicy(10))
+    );
     for(int i=0;i<4;i++) {
       Document doc = new Document();
       doc.add(newField("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));

@@ -135,12 +135,6 @@ public class FileSwitchDirectory extends Directory {
     return getDirectory(name).createOutput(name);
   }
 
-  @Deprecated
-  @Override
-  public void sync(String name) throws IOException {
-    sync(Collections.singleton(name));
-  }
-
   @Override
   public void sync(Collection<String> names) throws IOException {
     List<String> primaryNames = new ArrayList<String>();

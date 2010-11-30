@@ -132,13 +132,14 @@ public class Test2BTerms extends LuceneTestCase {
     int TERMS_PER_DOC = 1000000;
 
     Directory dir = FSDirectory.open(_TestUtil.getTempDir("2BTerms"));
-    IndexWriter w = new IndexWriter(dir,
-                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
-                                                  .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-                                                .setRAMBufferSizeMB(256.0).setMergeScheduler(new ConcurrentMergeScheduler()));
-    ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
-    ((LogMergePolicy) w.getConfig().getMergePolicy()).setMergeFactor(10);
+    IndexWriter w = new IndexWriter(
+        dir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).
+            setRAMBufferSizeMB(256.0).
+            setMergeScheduler(new ConcurrentMergeScheduler()).
+            setMergePolicy(newLogMergePolicy(false, 10))
+    );
 
     Document doc = new Document();
     Field field = new Field("field", new MyTokenStream(TERMS_PER_DOC));

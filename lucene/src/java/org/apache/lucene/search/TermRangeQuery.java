@@ -20,10 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.text.Collator;
 
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A Query that matches documents within an range of terms.
@@ -141,12 +141,6 @@ public class TermRangeQuery extends MultiTermQuery {
     }
     return new TermRangeTermsEnum(tenum,
         lowerTerm, upperTerm, includeLower, includeUpper, collator);
-  }
-
-  /** @deprecated */
-  @Deprecated
-  public String field() {
-    return getField();
   }
 
   /** Prints a user-readable version of this query. */

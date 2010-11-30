@@ -620,10 +620,12 @@ public class TestExternalCodecs extends LuceneTestCase {
     
     final int NUM_DOCS = 173;
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir,
-                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).setCodecProvider(provider));
-
-    w.setMergeFactor(3);
+    IndexWriter w = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).
+            setCodecProvider(provider).
+            setMergePolicy(newLogMergePolicy(3))
+    );
     Document doc = new Document();
     // uses default codec:
     doc.add(newField("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));

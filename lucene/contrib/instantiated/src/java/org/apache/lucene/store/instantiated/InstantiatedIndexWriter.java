@@ -64,8 +64,6 @@ public class InstantiatedIndexWriter implements Closeable {
 
   private PrintStream infoStream = null;
 
-  private int maxFieldLength = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
-
   private final InstantiatedIndex index;
   private final Analyzer analyzer;
 
@@ -431,9 +429,7 @@ public class InstantiatedIndexWriter implements Closeable {
   };
 
   /**
-   * Adds a document to this index.  If the document contains more than
-   * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
-   * discarded.
+   * Adds a document to this index.
    */
   public void addDocument(Document doc) throws IOException {
     addDocument(doc, getAnalyzer());
@@ -441,9 +437,7 @@ public class InstantiatedIndexWriter implements Closeable {
 
   /**
    * Adds a document to this index, using the provided analyzer instead of the
-   * value of {@link #getAnalyzer()}.  If the document contains more than
-   * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
-   * discarded.
+   * value of {@link #getAnalyzer()}.
    *
    * @param doc
    * @param analyzer
@@ -555,9 +549,6 @@ public class InstantiatedIndexWriter implements Closeable {
             }
             tokens.add(token); // the vector will be built on commit.
             fieldSetting.fieldLength++;
-            if (fieldSetting.fieldLength > maxFieldLength) {
-              break;
-            }
           }
           tokenStream.end();
           tokenStream.close();
@@ -664,14 +655,6 @@ public class InstantiatedIndexWriter implements Closeable {
   public void updateDocument(Term term, Document doc, Analyzer analyzer) throws IOException {
     deleteDocuments(term);
     addDocument(doc, analyzer);
-  }
-
-  public int getMaxFieldLength() {
-    return maxFieldLength;
-  }
-
-  public void setMaxFieldLength(int maxFieldLength) {
-    this.maxFieldLength = maxFieldLength;
   }
 
   public Similarity getSimilarity() {

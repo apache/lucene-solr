@@ -44,7 +44,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 
 /** Exposes flex API on a pre-flex index, as a codec. 
- * @lucene.experimental */
+ * @lucene.experimental
+ * @deprecated (4.0)
+ */
+@Deprecated
 public class PreFlexFields extends FieldsProducer {
   
   private static final boolean DEBUG_SURROGATES = false;

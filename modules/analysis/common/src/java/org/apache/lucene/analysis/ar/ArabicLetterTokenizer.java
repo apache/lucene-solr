@@ -40,8 +40,6 @@ import org.apache.lucene.util.Version;
  * </ul>
  */
 public class ArabicLetterTokenizer extends LetterTokenizer {
-
-  
   /**
    * Construct a new ArabicLetterTokenizer.
    * @param matchVersion Lucene version
@@ -84,41 +82,6 @@ public class ArabicLetterTokenizer extends LetterTokenizer {
   }
   
   /**
-   * Construct a new ArabicLetterTokenizer.
-   * 
-   * @deprecated use {@link #ArabicLetterTokenizer(Version, Reader)} instead. This will
-   *             be removed in Lucene 4.0.
-   */
-  @Deprecated
-  public ArabicLetterTokenizer(Reader in) {
-    super(in);
-  }
-
-  /**
-   * Construct a new ArabicLetterTokenizer using a given {@link AttributeSource}.
-   * 
-   * @deprecated use {@link #ArabicLetterTokenizer(Version, AttributeSource, Reader)}
-   *             instead. This will be removed in Lucene 4.0.
-   */
-  @Deprecated
-  public ArabicLetterTokenizer(AttributeSource source, Reader in) {
-    super(source, in);
-  }
-
-  /**
-   * Construct a new ArabicLetterTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
-   * 
-   * @deprecated use {@link #ArabicLetterTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
-   *             instead. This will be removed in Lucene 4.0.
-   */
-  @Deprecated
-  public ArabicLetterTokenizer(AttributeFactory factory, Reader in) {
-    super(factory, in);
-  }
-  
-  
-  /** 
    * Allows for Letter category or NonspacingMark category
    * @see org.apache.lucene.analysis.core.LetterTokenizer#isTokenChar(int)
    */

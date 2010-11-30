@@ -18,7 +18,6 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -77,10 +76,8 @@ import org.apache.lucene.util.VirtualMethod;
  * <tt>date:[6/1/2005 TO 6/4/2005]</tt> produces a range query that searches
  * for "date" fields between 2005-06-01 and 2005-06-04. Note that the format
  * of the accepted input depends on {@link #setLocale(Locale) the locale}.
- * By default a date is converted into a search term using the deprecated
- * {@link DateField} for compatibility reasons.
- * To use the new {@link DateTools} to convert dates, a
- * {@link org.apache.lucene.document.DateTools.Resolution} has to be set.
+ * A {@link org.apache.lucene.document.DateTools.Resolution} has to be set,
+ * if you want to use {@link DateTools} for date conversion.
  * </p>
  * <p>
  * The date resolution that shall be used for RangeQueries can be set
@@ -91,10 +88,9 @@ import org.apache.lucene.util.VirtualMethod;
  * resolutions take, if set, precedence over the default date resolution.
  * </p>
  * <p>
- * If you use neither {@link DateField} nor {@link DateTools} in your
- * index, you can create your own
+ * If you don't use {@link DateTools} in your index, you can create your own
  * query parser that inherits QueryParser and overwrites
- * {@link #getRangeQuery(String, String, String, boolean)} to
+ * {@link #getRangeQuery(String, String, String, boolean, boolean)} to
  * use a different method for date conversion.
  * </p>
  *
@@ -108,8 +104,6 @@ import org.apache.lucene.util.VirtualMethod;
  * <p><b>NOTE</b>: You must specify the required {@link Version}
  * compatibility when creating QueryParser:
  * <ul>
- *    <li> As of 2.9, {@link #setEnablePositionIncrements} is true by
- *         default.
  *    <li> As of 3.1, {@link #setAutoGeneratePhraseQueries} is false by
  *         default.
  * </ul>

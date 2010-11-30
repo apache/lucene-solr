@@ -168,7 +168,7 @@ public final class Term implements Comparable<Term>, java.io.Serializable {
     BytesRef.getUTF8SortedAsUTF16Comparator();
 
   /** 
-   * @deprecated For internal backwards compatibility use only
+   * @deprecated (4.0) For internal backwards compatibility use only
    * @lucene.internal
    */
   @Deprecated

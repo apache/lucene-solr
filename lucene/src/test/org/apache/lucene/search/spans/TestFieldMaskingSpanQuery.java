@@ -146,9 +146,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
       (new SpanTermQuery(new Term("last", "sally")) {
           @Override
           public Query rewrite(IndexReader reader) {
-            return new SpanOrQuery(new SpanQuery[] {
-              new SpanTermQuery(new Term("first", "sally")),
-              new SpanTermQuery(new Term("first", "james")) });
+            return new SpanOrQuery(new SpanTermQuery(new Term("first", "sally")),
+                new SpanTermQuery(new Term("first", "james")));
           }
         }, "first");
 
@@ -252,8 +251,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   public void testSpans0() throws Exception {
     SpanQuery q1 = new SpanTermQuery(new Term("gender", "female"));
     SpanQuery q2 = new SpanTermQuery(new Term("first",  "james"));
-    SpanQuery q  = new SpanOrQuery(new SpanQuery[]
-      { q1, new FieldMaskingSpanQuery(q2, "gender")});
+    SpanQuery q  = new SpanOrQuery(q1, new FieldMaskingSpanQuery(q2, "gender"));
     check(q, new int[] { 0, 1, 2, 3, 4 });
   
     Spans span = q.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
@@ -291,7 +289,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   public void testSpans1() throws Exception {
     SpanQuery q1 = new SpanTermQuery(new Term("first", "sally"));
     SpanQuery q2 = new SpanTermQuery(new Term("first", "james"));
-    SpanQuery qA = new SpanOrQuery(new SpanQuery[] { q1, q2 });
+    SpanQuery qA = new SpanOrQuery(q1, q2);
     SpanQuery qB = new FieldMaskingSpanQuery(qA, "id");
                                             
     check(qA, new int[] { 0, 1, 2, 4 });
@@ -311,8 +309,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   public void testSpans2() throws Exception {
     SpanQuery qA1 = new SpanTermQuery(new Term("gender", "female"));
     SpanQuery qA2 = new SpanTermQuery(new Term("first",  "james"));
-    SpanQuery qA  = new SpanOrQuery(new SpanQuery[]
-      { qA1, new FieldMaskingSpanQuery(qA2, "gender")});
+    SpanQuery qA  = new SpanOrQuery(qA1, new FieldMaskingSpanQuery(qA2, "gender"));
     SpanQuery qB  = new SpanTermQuery(new Term("last",   "jones"));
     SpanQuery q   = new SpanNearQuery(new SpanQuery[]
       { new FieldMaskingSpanQuery(qA, "id"),

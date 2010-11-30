@@ -114,7 +114,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   /**
-   * @deprecated remove this test in Lucene 4.0
+   * @deprecated (3.1) remove this test in Lucene 5.0
    */
   @Deprecated
   public void testOldBuggyStemmer() throws Exception {
@@ -137,19 +137,6 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "lichamelijk", "licham");
     checkOneTermReuse(a, "lichamelijke", "licham");
     checkOneTermReuse(a, "lichamelijkheden", "licham");
-  }
-  
-  /* 
-   * Test that changes to the exclusion table are applied immediately
-   * when using reusable token streams.
-   */
-  public void testExclusionTableReuse() throws Exception {
-    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
-    checkOneTermReuse(a, "lichamelijk", "licham");
-    a.setStemExclusionTable(new String[] { "lichamelijk" });
-    checkOneTermReuse(a, "lichamelijk", "lichamelijk");
-
-    
   }
   
   public void testExclusionTableViaCtor() throws IOException {
@@ -178,7 +165,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   /**
    * Prior to 3.1, this analyzer had no lowercase filter.
    * stopwords were case sensitive. Preserve this for back compat.
-   * @deprecated Remove this test in Lucene 4.0
+   * @deprecated (3.1) Remove this test in Lucene 5.0
    */
   @Deprecated
   public void testBuggyStopwordsCasing() throws IOException {

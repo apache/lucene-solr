@@ -28,29 +28,18 @@ package org.apache.lucene.util;
  * your indexing code to match, and re-index.
  */
 public enum Version {
-
-  /** Match settings and bugs in Lucene's 2.0 release. */
-  LUCENE_20,
-
-  /** Match settings and bugs in Lucene's 2.1 release. */
-  LUCENE_21,
-
-  /** Match settings and bugs in Lucene's 2.2 release. */
-  LUCENE_22,
-
-  /** Match settings and bugs in Lucene's 2.3 release. */
-  LUCENE_23,
-
-  /** Match settings and bugs in Lucene's 2.4 release. */
-  LUCENE_24,
-
-  /** Match settings and bugs in Lucene's 2.9 release. */
-  LUCENE_29,
-
-  /** Match settings and bugs in Lucene's 3.0 release. */
+  /**
+   * Match settings and bugs in Lucene's 3.0 release.
+   * @deprecated (4.0) Use latest
+   */
+  @Deprecated
   LUCENE_30,
 
-  /** Match settings and bugs in Lucene's 3.1 release. */
+  /**
+   * Match settings and bugs in Lucene's 3.1 release.
+   * @deprecated (4.0) Use latest
+   */
+  @Deprecated
   LUCENE_31,
 
   /** Match settings and bugs in Lucene's 4.0 release. 

@@ -77,7 +77,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     addDoc(writer, "aaa bbb");
     writer.close();
-    SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir, false));
     TermsEnum terms = reader.fields().terms("content").iterator();
     assertNotNull(terms.next());
     assertEquals("aaa", terms.term().utf8ToString());

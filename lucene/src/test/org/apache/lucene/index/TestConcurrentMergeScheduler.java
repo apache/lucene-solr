@@ -184,8 +184,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
+    IndexWriter writer = new IndexWriter(
+        directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(2).
+            setMergePolicy(newLogMergePolicy(100))
+    );
 
     for(int iter=0;iter<10;iter++) {
 
@@ -213,8 +217,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       reader.close();
 
       // Reopen
-      writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
+      writer = new IndexWriter(
+          directory,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setOpenMode(OpenMode.APPEND).
+              setMergePolicy(newLogMergePolicy(100))
+      );
     }
     writer.close();
 

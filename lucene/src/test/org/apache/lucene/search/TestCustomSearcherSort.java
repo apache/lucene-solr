@@ -118,8 +118,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
     Sort custSort = new Sort(
         new SortField("publicationDate_", SortField.STRING),
         SortField.FIELD_SCORE);
-    Searcher searcher = new MultiSearcher(new Searchable[] {
-        new CustomSearcher(reader, 0), new CustomSearcher(reader, 2)});
+    Searcher searcher = new MultiSearcher(new CustomSearcher(reader, 0), new CustomSearcher(reader, 2));
     // search and check hits
     matchHits(searcher, custSort);
   }

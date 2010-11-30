@@ -28,22 +28,14 @@ import java.nio.charset.Charset;
  *
  **/
 public class IdentityEncoder extends AbstractEncoder implements PayloadEncoder{
-
   protected Charset charset = Charset.forName("UTF-8");
   
-  /** @deprecated This field is no longer used. Use {@link #charset} instead. */
-  @Deprecated
-  protected String charsetName = charset.name();
-
   public IdentityEncoder() {
   }
 
   public IdentityEncoder(Charset charset) {
     this.charset = charset;
-    // @deprecated, remove this in 4.0:
-    charsetName = charset.name();
   }
-
 
   public Payload encode(char[] buffer, int offset, int length) {
     final ByteBuffer bb = charset.encode(CharBuffer.wrap(buffer, offset, length));

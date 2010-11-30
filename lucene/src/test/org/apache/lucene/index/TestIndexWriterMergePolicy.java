@@ -100,9 +100,12 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testMergeFactorChange() throws IOException {
     Directory dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMaxBufferedDocs(10).setMergePolicy(new LogDocMergePolicy()));
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(10).
+            setMergePolicy(newLogMergePolicy())
+    );
 
     for (int i = 0; i < 250; i++) {
       addDoc(writer);

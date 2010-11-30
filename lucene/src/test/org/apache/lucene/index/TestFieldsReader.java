@@ -19,10 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -427,6 +424,10 @@ public class TestFieldsReader extends LuceneTestCase {
     @Override
     public IndexOutput createOutput(String name) throws IOException {
       return fsDir.createOutput(name);
+    }
+    @Override
+    public void sync(Collection<String> names) throws IOException {
+      fsDir.sync(names);
     }
     @Override
     public void close() throws IOException {

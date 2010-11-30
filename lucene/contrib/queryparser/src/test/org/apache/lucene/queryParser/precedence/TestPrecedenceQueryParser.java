@@ -34,7 +34,6 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.queryParser.TestQueryParser;
 import org.apache.lucene.queryParser.core.QueryNodeException;
@@ -405,18 +404,10 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     final String hourField = "hour";
     PrecedenceQueryParser qp = new PrecedenceQueryParser(new MockAnalyzer());
 
-    // Don't set any date resolution and verify if DateField is used
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,
-        endDateExpected.getTime(), null);
-
     Map<CharSequence, DateTools.Resolution> fieldMap = new HashMap<CharSequence,DateTools.Resolution>();
     // set a field specific date resolution
     fieldMap.put(monthField, DateTools.Resolution.MONTH);
     qp.setDateResolution(fieldMap);
-
-    // DateField should still be used for defaultField
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,
-        endDateExpected.getTime(), null);
 
     // set default date resolution to MILLISECOND
     qp.setDateResolution(DateTools.Resolution.MILLISECOND);
@@ -439,20 +430,14 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   }
 
   /** for testing DateTools support */
-  private String getDate(String s, DateTools.Resolution resolution)
-      throws Exception {
+  private String getDate(String s, DateTools.Resolution resolution) throws Exception {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     return getDate(df.parse(s), resolution);
   }
 
   /** for testing DateTools support */
-  private String getDate(Date d, DateTools.Resolution resolution)
-      throws Exception {
-    if (resolution == null) {
-      return DateField.dateToString(d);
-    } else {
-      return DateTools.dateToString(d, resolution);
-    }
+  private String getDate(Date d, DateTools.Resolution resolution) throws Exception {
+    return DateTools.dateToString(d, resolution);
   }
 
   public void assertQueryEquals(PrecedenceQueryParser qp, String field, String query,

@@ -55,10 +55,13 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     Directory merged = newDirectory();
 
-    IndexWriter writer = new IndexWriter(merged, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
+    IndexWriter writer = new IndexWriter(
+        merged,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMergePolicy(newLogMergePolicy(2))
+    );
 
-    writer.addIndexes(new Directory[]{indexA, indexB});
+    writer.addIndexes(indexA, indexB);
     writer.optimize();
     writer.close();
 
@@ -94,11 +97,13 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
   private void fillIndex(Random random, Directory dir, int start, int numDocs) throws IOException {
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, 
-        new MockAnalyzer())
-        .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setOpenMode(OpenMode.CREATE).
+            setMaxBufferedDocs(2).
+            setMergePolicy(newLogMergePolicy(2))
+    );
 
     for (int i = start; i < (start + numDocs); i++)
     {

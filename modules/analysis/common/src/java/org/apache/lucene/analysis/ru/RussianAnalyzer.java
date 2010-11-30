@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ru;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -56,7 +55,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
 {
     /**
      * List of typical Russian stopwords. (for backwards compatibility)
-     * @deprecated Remove this for LUCENE 4.0
+     * @deprecated (3.1) Remove this for LUCENE 5.0
      */
     @Deprecated
     private static final String[] RUSSIAN_STOP_WORDS_30 = {
@@ -76,7 +75,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
     public final static String DEFAULT_STOPWORD_FILE = "russian_stop.txt";
     
     private static class DefaultSetHolder {
-      /** @deprecated remove this for Lucene 4.0 */
+      /** @deprecated (3.1) remove this for Lucene 5.0 */
       @Deprecated
       static final Set<?> DEFAULT_STOP_SET_30 = CharArraySet
           .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
@@ -113,15 +112,6 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
     }
   
     /**
-     * Builds an analyzer with the given stop words.
-     * @deprecated use {@link #RussianAnalyzer(Version, Set)} instead
-     */
-    @Deprecated
-    public RussianAnalyzer(Version matchVersion, String... stopwords) {
-      this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
-    }
-    
-    /**
      * Builds an analyzer with the given stop words
      * 
      * @param matchVersion
@@ -147,18 +137,6 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
       this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
     }
    
-   
-    /**
-     * Builds an analyzer with the given stop words.
-     * TODO: create a Set version of this ctor
-     * @deprecated use {@link #RussianAnalyzer(Version, Set)} instead
-     */
-    @Deprecated
-    public RussianAnalyzer(Version matchVersion, Map<?,?> stopwords)
-    {
-      this(matchVersion, stopwords.keySet());
-    }
-
   /**
    * Creates
    * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
@@ -188,7 +166,8 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
         result = new StopFilter(matchVersion, result, stopwords);
         if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerFilter(
           result, stemExclusionSet);
-        return new TokenStreamComponents(source, new RussianStemFilter(result));
+        result = new SnowballFilter(result, new org.tartarus.snowball.ext.RussianStemmer());
+        return new TokenStreamComponents(source, result);
       }
     }
 }

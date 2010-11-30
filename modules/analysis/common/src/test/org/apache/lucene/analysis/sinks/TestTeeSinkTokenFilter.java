@@ -16,18 +16,17 @@ package org.apache.lucene.analysis.sinks;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CachingTokenFilter;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import java.io.IOException;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -37,8 +36,6 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.English;
-import java.io.IOException;
-import java.io.StringReader;
 
 
 /**
@@ -168,10 +165,10 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
         buffer.append(English.intToEnglish(i).toUpperCase()).append(' ');
       }
       //make sure we produce the same tokens
-      TeeSinkTokenFilter teeStream = new TeeSinkTokenFilter(new StandardFilter(new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))));
+      TeeSinkTokenFilter teeStream = new TeeSinkTokenFilter(new StandardFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))));
       TokenStream sink = teeStream.newSinkTokenStream(new ModuloSinkFilter(100));
       teeStream.consumeAllTokens();
-      TokenStream stream = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))), 100);
+      TokenStream stream = new ModuloTokenFilter(new StandardFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))), 100);
       CharTermAttribute tfTok = stream.addAttribute(CharTermAttribute.class);
       CharTermAttribute sinkTok = sink.addAttribute(CharTermAttribute.class);
       for (int i=0; stream.incrementToken(); i++) {
@@ -184,12 +181,12 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
         int tfPos = 0;
         long start = System.currentTimeMillis();
         for (int i = 0; i < 20; i++) {
-          stream = new StandardFilter(new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString())));
+          stream = new StandardFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString())));
           PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
           while (stream.incrementToken()) {
             tfPos += posIncrAtt.getPositionIncrement();
           }
-          stream = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))), modCounts[j]);
+          stream = new ModuloTokenFilter(new StandardFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))), modCounts[j]);
           posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
           while (stream.incrementToken()) {
             tfPos += posIncrAtt.getPositionIncrement();
@@ -201,7 +198,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
         //simulate one field with one sink
         start = System.currentTimeMillis();
         for (int i = 0; i < 20; i++) {
-          teeStream = new TeeSinkTokenFilter(new StandardFilter(new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))));
+          teeStream = new TeeSinkTokenFilter(new StandardFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))));
           sink = teeStream.newSinkTokenStream(new ModuloSinkFilter(modCounts[j]));
           PositionIncrementAttribute posIncrAtt = teeStream.getAttribute(PositionIncrementAttribute.class);
           while (teeStream.incrementToken()) {

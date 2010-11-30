@@ -32,7 +32,7 @@ import org.apache.lucene.index.codecs.FieldsProducer;
  *  format.  It does not provide a writer because newly
  *  written segments should use StandardCodec.
  *
- * @deprecated This is only used to read indexes created
+ * @deprecated (4.0) This is only used to read indexes created
  * before 4.0.
  * @lucene.experimental
  */

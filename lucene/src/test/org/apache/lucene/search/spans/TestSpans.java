@@ -331,8 +331,8 @@ public class TestSpans extends LuceneTestCase {
     Spans spans = orSpans(new String[0]);
     assertFalse("empty next", spans.next());
 
-    SpanOrQuery a = new SpanOrQuery( new SpanQuery[0] );
-    SpanOrQuery b = new SpanOrQuery( new SpanQuery[0] );
+    SpanOrQuery a = new SpanOrQuery();
+    SpanOrQuery b = new SpanOrQuery();
     assertTrue("empty should equal", a.equals(b));
   }
 

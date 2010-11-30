@@ -21,7 +21,7 @@ package org.apache.lucene.analysis.compound;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenFilter; // for javadocs
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
 
@@ -34,67 +34,6 @@ import org.apache.lucene.util.Version;
  * </p>
  */
 public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBase {
-  
-  /**
-   * Creates a new {@link DictionaryCompoundWordTokenFilter}
-   * 
-   * @param input the {@link TokenStream} to process
-   * @param dictionary the word dictionary to match against
-   * @param minWordSize only words longer than this get processed
-   * @param minSubwordSize only subwords longer than this get to the output stream
-   * @param maxSubwordSize only subwords shorter than this get to the output stream
-   * @param onlyLongestMatch Add only the longest matching subword to the stream
-   * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, String[], int, int, int, boolean)} instead
-   */
-  @Deprecated
-  public DictionaryCompoundWordTokenFilter(TokenStream input, String[] dictionary,
-      int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    super(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
-  }
-
-  /**
-   * Creates a new {@link DictionaryCompoundWordTokenFilter}
-   *  
-   * @param input the {@link TokenStream} to process
-   * @param dictionary the word dictionary to match against
-   * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, String[])} instead 
-   */
-  @Deprecated
-  public DictionaryCompoundWordTokenFilter(TokenStream input, String[] dictionary) {
-    super(Version.LUCENE_30, input, dictionary);
-  }
-
-  /**
-   * Creates a new {@link DictionaryCompoundWordTokenFilter}
-   *  
-   * @param input the {@link TokenStream} to process
-   * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
-   *        lower case strings.
-   * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, Set)} instead 
-   */
-  @Deprecated
-  public DictionaryCompoundWordTokenFilter(TokenStream input, Set dictionary) {
-    super(Version.LUCENE_30, input, dictionary);
-  }
-
-  /**
-   * Creates a new {@link DictionaryCompoundWordTokenFilter}
-   *  
-   * @param input the {@link TokenStream} to process
-   * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
-   *        lower case strings. 
-   * @param minWordSize only words longer than this get processed
-   * @param minSubwordSize only subwords longer than this get to the output stream
-   * @param maxSubwordSize only subwords shorter than this get to the output stream
-   * @param onlyLongestMatch Add only the longest matching subword to the stream
-   * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, Set, int, int, int, boolean)} instead
-   */
-  @Deprecated
-  public DictionaryCompoundWordTokenFilter(TokenStream input, Set dictionary,
-      int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    super(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
-  }
-  
   /**
    * Creates a new {@link DictionaryCompoundWordTokenFilter}
    * 

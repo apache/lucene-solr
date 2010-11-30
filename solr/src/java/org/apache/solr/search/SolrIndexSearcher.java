@@ -149,7 +149,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     if (r.directory() instanceof FSDirectory) {
       FSDirectory fsDirectory = (FSDirectory) r.directory();
-      indexDir = fsDirectory.getFile().getAbsolutePath();
+      indexDir = fsDirectory.getDirectory().getAbsolutePath();
     }
 
     this.closeReader = closeReader;

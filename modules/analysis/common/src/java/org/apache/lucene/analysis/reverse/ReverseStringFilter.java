@@ -74,40 +74,6 @@ public final class ReverseStringFilter extends TokenFilter {
    * The reversed tokens will not be marked. 
    * </p>
    * 
-   * @param in {@link TokenStream} to filter
-   * @deprecated use {@link #ReverseStringFilter(Version, TokenStream)} 
-   *    instead. This constructor will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public ReverseStringFilter(TokenStream in) {
-    this(in, NOMARKER);
-  }
-  
-  /**
-   * Create a new ReverseStringFilter that reverses and marks all tokens in the
-   * supplied {@link TokenStream}.
-   * <p>
-   * The reversed tokens will be prepended (marked) by the <code>marker</code>
-   * character.
-   * </p>
-   * 
-   * @param in {@link TokenStream} to filter
-   * @param marker A character used to mark reversed tokens
-   * @deprecated use {@link #ReverseStringFilter(Version, TokenStream, char)} 
-   *    instead. This constructor will be removed in Lucene 4.0 
-   */
-  @Deprecated
-  public ReverseStringFilter(TokenStream in, char marker) {
-    this(Version.LUCENE_30, in, marker);
-  }
-  
-  /**
-   * Create a new ReverseStringFilter that reverses all tokens in the 
-   * supplied {@link TokenStream}.
-   * <p>
-   * The reversed tokens will not be marked. 
-   * </p>
-   * 
    * @param matchVersion See <a href="#version">above</a>
    * @param in {@link TokenStream} to filter
    */
@@ -153,19 +119,6 @@ public final class ReverseStringFilter extends TokenFilter {
   /**
    * Reverses the given input string
    * 
-   * @param input the string to reverse
-   * @return the given input string in reversed order
-   * @deprecated use {@link #reverse(Version, String)} instead. This method 
-   *    will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static String reverse( final String input ){
-    return reverse(Version.LUCENE_30, input);
-  }
-  
-  /**
-   * Reverses the given input string
-   * 
    * @param matchVersion See <a href="#version">above</a>
    * @param input the string to reverse
    * @return the given input string in reversed order
@@ -178,36 +131,11 @@ public final class ReverseStringFilter extends TokenFilter {
   
   /**
    * Reverses the given input buffer in-place
-   * @param buffer the input char array to reverse
-   * @deprecated use {@link #reverse(Version, char[])} instead. This 
-   *    method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static void reverse( final char[] buffer ){
-    reverse( buffer, 0, buffer.length );
-  }
-  
-  /**
-   * Reverses the given input buffer in-place
    * @param matchVersion See <a href="#version">above</a>
    * @param buffer the input char array to reverse
    */
   public static void reverse(Version matchVersion, final char[] buffer) {
     reverse(matchVersion, buffer, 0, buffer.length);
-  }
-  
-  /**
-   * Partially reverses the given input buffer in-place from offset 0
-   * up to the given length.
-   * @param buffer the input char array to reverse
-   * @param len the length in the buffer up to where the
-   *        buffer should be reversed
-   * @deprecated use {@link #reverse(Version, char[], int)} instead. This 
-   *    method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static void reverse( final char[] buffer, final int len ){
-    reverse( buffer, 0, len );
   }
   
   /**
@@ -224,22 +152,7 @@ public final class ReverseStringFilter extends TokenFilter {
   }
   
   /**
-   * Partially reverses the given input buffer in-place from the given offset
-   * up to the given length.
-   * @param buffer the input char array to reverse
-   * @param start the offset from where to reverse the buffer
-   * @param len the length in the buffer up to where the
-   *        buffer should be reversed
-   * @deprecated use {@link #reverse(Version, char[], int, int)} instead. This 
-   *    method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static void reverse(char[] buffer, int start, int len ) {
-    reverseUnicode3(buffer, start, len);
-  }
-  
-  /**
-   * @deprecated Remove this when support for 3.0 indexes is no longer needed.
+   * @deprecated (3.1) Remove this when support for 3.0 indexes is no longer needed.
    */
   @Deprecated
   private static void reverseUnicode3( char[] buffer, int start, int len ){
