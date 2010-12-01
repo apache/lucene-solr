@@ -98,15 +98,6 @@ Bug fixes
    Additionally, for Version > 3.0, the Snowball stopword lists are used by
    default.  (Robert Muir, Uwe Schindler, Simon Willnauer)
 
- * LUCENE-2278: FastVectorHighlighter: Highlighted term is out of alignment
-   in multi-valued NOT_ANALYZED field. (Koji Sekiguchi)
- 
- * LUCENE-2284: MatchAllDocsQueryNode toString() created an invalid XML tag.
-   (Frank Wesemann via Robert Muir)
-
- * LUCENE-2277: QueryNodeImpl threw ConcurrentModificationException on 
-   add(List<QueryNode>). (Frank Wesemann via Robert Muir)
-
  * LUCENE-2184: Fixed bug with handling best fit value when the proper best fit value is
 		not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
 		
@@ -116,9 +107,6 @@ Bug fixes
  * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
    For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
    will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
-
-* LUCENE-2524: FastVectorHighlighter: use mod for getting colored tag.
-  (Koji Sekiguchi)
 
 * LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
   permissions to newly created files, and to not silently hardwire
@@ -132,9 +120,6 @@ Bug fixes
   always the case. If the dictionary is unavailable, the filter will now throw 
   UnsupportedOperationException in the constructor.  (Robert Muir)
 
-* LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
-  empty in multiValued field (Koji Sekiguchi)
-  
 * LUCENE-589: Fix contrib/demo for international documents. 
   (Curtis d'Entremont via Robert Muir)
   
@@ -322,6 +307,41 @@ Other
 
  * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
    Regex prefix.  (Uwe Schindler)
+
+================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
+
+Bug Fixes
+
+ * LUCENE-2277: QueryNodeImpl threw ConcurrentModificationException on 
+   add(List<QueryNode>). (Frank Wesemann via Robert Muir)
+
+ * LUCENE-2284: MatchAllDocsQueryNode toString() created an invalid XML tag.
+   (Frank Wesemann via Robert Muir)
+
+ * LUCENE-2278: FastVectorHighlighter: Highlighted term is out of alignment
+   in multi-valued NOT_ANALYZED field. (Koji Sekiguchi)
+
+ * LUCENE-2524: FastVectorHighlighter: use mod for getting colored tag.
+   (Koji Sekiguchi)
+
+ * LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
+   empty in multiValued field (Koji Sekiguchi)
+   
+ * LUCENE-2731, LUCENE-2732: Fix (charset) problems in XML loading in
+   HyphenationCompoundWordTokenFilter (partial bugfix-only in 2.9 and 3.0,
+   full fix will be in later 3.1).
+   (Uwe Schinder)
+
+Documentation
+
+ * LUCENE-2055: Add documentation noting that the Dutch and French stemmers
+   in contrib/analyzers do not implement the Snowball algorithm correctly,
+   and recommend to use the equivalents in contrib/snowball if possible. 
+   (Robert Muir, Uwe Schindler, Simon Willnauer)
+
+ * LUCENE-2653: Add documentation noting that ThaiWordFilter will not work
+   as expected on all JRE's. For example, on an IBM JRE, it does nothing.
+   (Robert Muir)
 
 ================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
 

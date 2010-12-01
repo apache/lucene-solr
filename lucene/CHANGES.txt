@@ -330,10 +330,6 @@ Documentation
 * LUCENE-2579: Fix oal.search's package.html description of abstract
   methods.  (Santiago M. Mola via Mike McCandless)
   
-* LUCENE-2239: Documented limitations in NIOFSDirectory and MMapDirectory due to
-  Java NIO behavior when a Thread is interrupted while blocking on IO.
-  (Simon Willnauer, Robert Muir)
-
 Bug fixes
 
 * LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
@@ -434,10 +430,6 @@ Changes in runtime behavior
   usage, allowing applications to accidentally open two writers on the
   same directory.  (Mike McCandless)
 
-* LUCENE-2689: NativeFSLockFactory no longer attempts to acquire a
-  test lock just before the real lock is acquired.  (Surinder Pal
-  Singh Bindra via Mike McCandless)
-
 * LUCENE-2701: maxMergeMB and maxMergeDocs constraints set on LogMergePolicy now
   affect optimize() as well (as opposed to only regular merges). This means that
   you can run optimize() and too large segments won't be merged. (Shai Erera)
@@ -537,12 +529,6 @@ API Changes
   
 Bug fixes
 
-* LUCENE-2216: OpenBitSet.hashCode returned different hash codes for
-  sets that only differed by trailing zeros. (Dawid Weiss, yonik)
-
-* LUCENE-2235: Implement missing PerFieldAnalyzerWrapper.getOffsetGap().
-  (Javier Godoy via Uwe Schindler)
-
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
   close.  (Martin Traverso via Uwe Schindler)
   
@@ -554,10 +540,6 @@ Bug fixes
   IndexWriter/IndexReader to Directory, and it no longer leaks memory.
   (Earwin Burrfoot via Mike McCandless)
 
-* LUCENE-2365: IndexWriter.newestSegment (used normally for testing)
-  is fixed to return null if there are no segments.  (Karthick
-  Sankarachary via Mike McCandless)
-
 * LUCENE-2074: Reduce buffer size of lexer back to default on reset.
   (Ruben Laguna, Shai Erera via Uwe Schindler)
   
@@ -565,41 +547,9 @@ Bug fixes
   a prior (corrupt) index missing its segments_N file.  (Mike
   McCandless)
 
-* LUCENE-2142 (correct fix): FieldCacheImpl.getStringIndex no longer
-  throws an exception when term count exceeds doc count.
-  (Mike McCandless, Uwe Schindler)
-
-* LUCENE-2513: when opening writable IndexReader on a not-current
-  commit, do not overwrite "future" commits.  (Mike McCandless)
-
-* LUCENE-2533: fix FileSwitchDirectory.listAll to not return dups when
-  primary & secondary dirs share the same underlying directory.
-  (Michael McCandless)
-
 * LUCENE-2534: fix over-sharing bug in
   MultiTermsEnum.docs/AndPositionsEnum.  (Robert Muir, Mike
   McCandless)
-
-* LUCENE-2536: IndexWriter.rollback was failing to properly rollback
-  buffered deletions against segments that were flushed (Mark Harwood
-  via Mike McCandless)
-
-* LUCENE-2541: Fixed NumericRangeQuery that returned incorrect results
-  with endpoints near Long.MIN_VALUE and Long.MAX_VALUE:
-  NumericUtils.splitRange() overflowed, if
-  - the range contained a LOWER bound
-    that was greater than (Long.MAX_VALUE - (1L << precisionStep))
-  - the range contained an UPPER bound
-    that was less than (Long.MIN_VALUE + (1L << precisionStep))
-  With standard precision steps around 4, this had no effect on
-  most queries, only those that met the above conditions.
-  Queries with large precision steps failed more easy. Queries with
-  precision step >=64 were not affected. Also 32 bit data types int
-  and float were not affected.
-  (Yonik Seeley, Uwe Schindler)
-
-* LUCENE-2549: Fix TimeLimitingCollector#TimeExceededException to record
-  the absolute docid.  (Uwe Schindler)
 
 * LUCENE-2458: QueryParser no longer automatically forms phrase queries,
   assuming whitespace tokenization. Previously all CJK queries, for example,
@@ -614,32 +564,12 @@ Bug fixes
 * LUCENE-2580: MultiPhraseQuery throws AIOOBE if number of positions
   exceeds number of terms at one position (Jayendra Patil via Mike McCandless)
 
-* LUCENE-2593: Fixed certain rare cases where a disk full could lead
-  to a corrupted index (Robert Muir, Mike McCandless)
-
 * LUCENE-2617: Optional clauses of a BooleanQuery were not factored
   into coord if the scorer for that segment returned null.  This
   can cause the same document to score to differently depending on
   what segment it resides in. (yonik)
 
-* LUCENE-2627: Fixed bug in MMapDirectory chunking when a file is an
-  exact multiple of the chunk size.  (Robert Muir)
-
 * LUCENE-2272: Fix explain in PayloadNearQuery and also fix scoring issue (Peter Keegan via Grant Ingersoll)  
-
-* LUCENE-2634: isCurrent on an NRT reader was failing to return false
-  if the writer had just committed (Nikolay Zamosenchuk via Mike McCandless)
-
-* LUCENE-2650: Added extra safety to MMapIndexInput clones to prevent accessing
-  an unmapped buffer if the input is closed (Mike McCandless, Uwe Schindler, Robert Muir) 
-
-* LUCENE-2658: Exceptions while processing term vectors enabled for multiple
-  fields could lead to invalid ArrayIndexOutOfBoundsExceptions.
-  (Robert Muir, Mike McCandless)
-
-* LUCENE-2744: CheckIndex was stating total number of fields,
-  not the number that have norms enabled, on the "test: field
-  norms..." output.  (Mark Kristensson via Mike McCandless)
 
 New features
 
@@ -792,12 +722,6 @@ Optimizations
   (getStrings, getStringIndex), consume quite a bit less RAM in most
   cases.  (Mike McCandless)
 
-* LUCENE-2098: Improve the performance of BaseCharFilter, especially for
-  large documents.  (Robin Wojciki, Koji Sekiguchi, Robert Muir)
-
-* LUCENE-2556: Improve memory usage after cloning (Char)TermAttribute.
-  (Adriano Crestani via Uwe Schindler)
-
 * LUCENE-2719: Improved TermsHashPerField's sorting to use a better
   quick sort algorithm that dereferences the privot element not on
   every compare call. Also replaced lots of sorting code in Lucene
@@ -872,6 +796,159 @@ Test Cases
 * LUCENE-2398, LUCENE-2611: Improve tests to work better from IDEs such 
   as Eclipse and IntelliJ.
   (Paolo Castagna, Steven Rowe via Robert Muir)
+
+================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
+
+Changes in runtime behavior
+
+* LUCENE-2689: NativeFSLockFactory no longer attempts to acquire a
+  test lock just before the real lock is acquired.  (Surinder Pal
+  Singh Bindra via Mike McCandless)
+
+* LUCENE-2762: Fixed bug in IndexWriter causing it to hold open file
+  handles against deleted files when compound-file was enabled (the
+  default) and readers are pooled.  As a result of this the peak
+  worst-case free disk space required during optimize is now 3X the
+  index size, when compound file is enabled (else 2X).  (Mike
+  McCandless)
+
+* LUCENE-2773: LogMergePolicy accepts a double noCFSRatio (default =
+  0.1), which means any time a merged segment is greater than 10% of
+  the index size, it will be left in non-compound format even if
+  compound format is on.  This change was made to reduce peak
+  transient disk usage during optimize which increased due to
+  LUCENE-2762.  (Mike McCandless)
+  
+Bug fixes
+
+* LUCENE-2142 (correct fix): FieldCacheImpl.getStringIndex no longer
+  throws an exception when term count exceeds doc count.
+  (Mike McCandless, Uwe Schindler)
+
+* LUCENE-2513: when opening writable IndexReader on a not-current
+  commit, do not overwrite "future" commits.  (Mike McCandless)
+
+* LUCENE-2536: IndexWriter.rollback was failing to properly rollback
+  buffered deletions against segments that were flushed (Mark Harwood
+  via Mike McCandless)
+
+* LUCENE-2541: Fixed NumericRangeQuery that returned incorrect results
+  with endpoints near Long.MIN_VALUE and Long.MAX_VALUE:
+  NumericUtils.splitRange() overflowed, if
+  - the range contained a LOWER bound
+    that was greater than (Long.MAX_VALUE - (1L << precisionStep))
+  - the range contained an UPPER bound
+    that was less than (Long.MIN_VALUE + (1L << precisionStep))
+  With standard precision steps around 4, this had no effect on
+  most queries, only those that met the above conditions.
+  Queries with large precision steps failed more easy. Queries with
+  precision step >=64 were not affected. Also 32 bit data types int
+  and float were not affected.
+  (Yonik Seeley, Uwe Schindler)
+
+* LUCENE-2593: Fixed certain rare cases where a disk full could lead
+  to a corrupted index (Robert Muir, Mike McCandless)
+  
+* LUCENE-2620: Fixed a bug in WildcardQuery where too many asterisks
+  would result in unbearably slow performance.  (Nick Barkas via Robert Muir)
+
+* LUCENE-2627: Fixed bug in MMapDirectory chunking when a file is an
+  exact multiple of the chunk size.  (Robert Muir)
+
+* LUCENE-2634: isCurrent on an NRT reader was failing to return false
+  if the writer had just committed (Nikolay Zamosenchuk via Mike McCandless)
+
+* LUCENE-2650: Added extra safety to MMapIndexInput clones to prevent accessing
+  an unmapped buffer if the input is closed (Mike McCandless, Uwe Schindler, Robert Muir)
+  
+* LUCENE-2384: Reset zzBuffer in StandardTokenizerImpl when lexer is reset.
+  (Ruben Laguna via Uwe Schindler, sub-issue of LUCENE-2074) 
+  
+* LUCENE-2658: Exceptions while processing term vectors enabled for multiple
+  fields could lead to invalid ArrayIndexOutOfBoundsExceptions.
+  (Robert Muir, Mike McCandless)
+
+* LUCENE-2235: Implement missing PerFieldAnalyzerWrapper.getOffsetGap().
+  (Javier Godoy via Uwe Schindler)
+
+* LUCENE-2328: Fixed memory leak in how IndexWriter/Reader tracked
+  already sync'd files. (Earwin Burrfoot via Mike McCandless)
+
+* LUCENE-2549: Fix TimeLimitingCollector#TimeExceededException to record
+  the absolute docid.  (Uwe Schindler)
+ 
+* LUCENE-2533: fix FileSwitchDirectory.listAll to not return dups when
+  primary & secondary dirs share the same underlying directory.
+  (Michael McCandless)
+
+* LUCENE-2365: IndexWriter.newestSegment (used normally for testing)
+  is fixed to return null if there are no segments.  (Karthick
+  Sankarachary via Mike McCandless)
+
+* LUCENE-2730: Fix two rare deadlock cases in IndexWriter (Mike McCandless)
+
+* LUCENE-2744: CheckIndex was stating total number of fields,
+  not the number that have norms enabled, on the "test: field
+  norms..." output.  (Mark Kristensson via Mike McCandless)
+
+* LUCENE-2759: Fixed two near-real-time cases where doc store files
+  may be opened for read even though they are still open for write.
+  (Mike McCandless)
+
+* LUCENE-2618: Fix rare thread safety issue whereby
+  IndexWriter.optimize could sometimes return even though the index
+  wasn't fully optimized (Mike McCandless)
+
+* LUCENE-2767: Fix thread safety issue in addIndexes(IndexReader[])
+  that could potentially result in index corruption.  (Mike
+  McCandless)
+
+* LUCENE-2762: Fixed bug in IndexWriter causing it to hold open file
+  handles against deleted files when compound-file was enabled (the
+  default) and readers are pooled.  As a result of this the peak
+  worst-case free disk space required during optimize is now 3X the
+  index size, when compound file is enabled (else 2X).  (Mike
+  McCandless)
+
+* LUCENE-2216: OpenBitSet.hashCode returned different hash codes for
+  sets that only differed by trailing zeros. (Dawid Weiss, yonik)
+
+* LUCENE-2782: Fix rare potential thread hazard with
+  IndexWriter.commit (Mike McCandless)
+
+API Changes
+
+* LUCENE-2773: LogMergePolicy accepts a double noCFSRatio (default =
+  0.1), which means any time a merged segment is greater than 10% of
+  the index size, it will be left in non-compound format even if
+  compound format is on.  This change was made to reduce peak
+  transient disk usage during optimize which increased due to
+  LUCENE-2762.  (Mike McCandless)
+
+Optimizations
+
+* LUCENE-2556: Improve memory usage after cloning TermAttribute.
+  (Adriano Crestani via Uwe Schindler)
+
+* LUCENE-2098: Improve the performance of BaseCharFilter, especially for
+  large documents.  (Robin Wojciki, Koji Sekiguchi, Robert Muir)
+
+New features
+
+* LUCENE-2675 (2.9.4 only): Add support for Lucene 3.0 stored field files
+  also in 2.9. The file format did not change, only the version number was
+  upgraded to mark segments that have no compression. FieldsWriter still only
+  writes 2.9 segments as they could contain compressed fields. This cross-version
+  index format compatibility is provided here solely because Lucene 2.9 and 3.0
+  have the same bugfix level, features, and the same index format with this slight
+  compression difference. In general, Lucene does not support reading newer
+  indexes with older library versions. (Uwe Schindler)
+  
+Documentation
+
+* LUCENE-2239: Documented limitations in NIOFSDirectory and MMapDirectory due to
+  Java NIO behavior when a Thread is interrupted while blocking on IO.
+  (Simon Willnauer, Robert Muir)
 
 ================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
 
