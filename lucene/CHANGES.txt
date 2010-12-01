@@ -127,6 +127,11 @@ Changes in runtime behavior
   never be merged by default.  These changes were made to reduce peak
   transient disk usage during optimize which increased due to
   LUCENE-2762.  (Mike McCandless)
+
+* LUCENE-2785: TopScoreDocCollector, TopFieldCollector and
+  the IndexSearcher search methods that take an int nDocs will now
+  throw IllegalArgumentException if nDocs is 0.  Instead, you should
+  use the newly added TotalHitCountCollector.  (Mike McCandless)
   
 API Changes
 
@@ -233,6 +238,9 @@ API Changes
 * LUCENE-2778: RAMDirectory now exposes newRAMFile() which allows to override
   and return a different RAMFile implementation. (Shai Erera)
   
+* LUCENE-2785: Added TotalHitCountCollector whose sole purpose is to
+  count the number of hits matching the query.  (Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2216: OpenBitSet.hashCode returned different hash codes for

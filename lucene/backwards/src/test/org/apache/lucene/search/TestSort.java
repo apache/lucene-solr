@@ -962,7 +962,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private void assertMatches(Searcher searcher, Query query, Sort sort,
       String expectedResult) throws IOException {
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-    TopDocs hits = searcher.search (query, null, expectedResult.length(), sort);
+    TopDocs hits = searcher.search (query, null, Math.max(1, expectedResult.length()), sort);
     ScoreDoc[] result = hits.scoreDocs;
     assertEquals(hits.totalHits, expectedResult.length());
     StringBuilder buff = new StringBuilder(10);

@@ -909,6 +909,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
     
+    if (numHits <= 0) {
+      throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
+    }
+
     FieldValueHitQueue queue = FieldValueHitQueue.create(sort.fields, numHits);
     if (queue.getComparators().length == 1) {
       if (docsScoredInOrder) {
