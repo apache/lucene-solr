@@ -26,9 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1104,7 +1101,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private void assertMatches(String msg, Searcher searcher, Query query, Sort sort,
       String expectedResult) throws IOException {
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-    TopDocs hits = searcher.search (query, null, expectedResult.length(), sort);
+    TopDocs hits = searcher.search (query, null, Math.max(1, expectedResult.length()), sort);
     ScoreDoc[] result = hits.scoreDocs;
     assertEquals(expectedResult.length(),hits.totalHits);
     StringBuilder buff = new StringBuilder(10);
@@ -1197,4 +1194,23 @@ public class TestSort extends LuceneTestCase implements Serializable {
     indexStore.close();
   }
 
+  public void testCountingCollector() throws Exception {
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    for (int i=0; i<5; i++) {
+      Document doc = new Document();
+      doc.add (new Field ("string", "a"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add (new Field ("string", "b"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      writer.addDocument (doc);
+    }
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = new IndexSearcher(reader);
+    TotalHitCountCollector c = new TotalHitCountCollector();
+    searcher.search(new MatchAllDocsQuery(), null, c);
+    assertEquals(5, c.getTotalHits());
+    reader.close();
+    indexStore.close();
+  }
 }
