@@ -34,13 +34,14 @@ import java.util.HashMap;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocumentsWriter docWriter;
-  final FieldInfos fieldInfos = new FieldInfos();
+  final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
 
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
     this.docWriter = docWriter;
     this.consumer = consumer;
+    fieldInfos = docWriter.getFieldInfos();
     consumer.setFieldInfos(fieldInfos);
     fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
   }
