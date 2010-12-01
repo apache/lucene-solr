@@ -20,8 +20,11 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,7 +39,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  protected Map<String,RAMFile> fileMap = new ConcurrentHashMap<String,RAMFile>();
+  protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<String,RAMFile>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   
   // *****
@@ -81,7 +84,12 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public final String[] listAll() {
     ensureOpen();
-    return fileMap.keySet().toArray(new String[0]);
+    // NOTE: fileMap.keySet().toArray(new String[0]) is broken in non Sun JDKs,
+    // and the code below is resilient to map changes during the array population.
+    Set<String> fileNames = fileMap.keySet();
+    List<String> names = new ArrayList<String>(fileNames.size());
+    for (String name : fileNames) names.add(name);
+    return names.toArray(new String[names.size()]);
   }
 
   /** Returns true iff the named file exists in this directory. */
@@ -188,6 +196,7 @@ public class RAMDirectory extends Directory implements Serializable {
     return new RAMFile(this);
   }
 
+  @Override
   public void sync(Collection<String> names) throws IOException {
   }
 
@@ -206,6 +215,6 @@ public class RAMDirectory extends Directory implements Serializable {
   @Override
   public void close() {
     isOpen = false;
-    fileMap = null;
+    fileMap.clear();
   }
 }
