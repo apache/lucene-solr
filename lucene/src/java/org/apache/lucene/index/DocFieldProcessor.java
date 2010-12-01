@@ -39,9 +39,9 @@ final class DocFieldProcessor extends DocConsumer {
   final StoredFieldsWriter fieldsWriter;
 
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
-    this.fieldInfos = new FieldInfos();
     this.docWriter = docWriter;
     this.consumer = consumer;
+    fieldInfos = docWriter.getFieldInfos();
     consumer.setFieldInfos(fieldInfos);
     fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
   }

@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
@@ -31,7 +30,6 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -766,7 +764,7 @@ public class IndexWriter implements Closeable {
 
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates());
+      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates(), getCurrentFieldInfos());
       docWriter.setInfoStream(infoStream);
       docWriter.setMaxFieldLength(maxFieldLength);
 
@@ -809,7 +807,27 @@ public class IndexWriter implements Closeable {
       }
     }
   }
-  
+
+  private FieldInfos getCurrentFieldInfos() throws IOException {
+    final FieldInfos fieldInfos;
+    if (segmentInfos.size() > 0) {
+      SegmentInfo info = segmentInfos.info(segmentInfos.size()-1);
+      Directory cfsDir;
+      if (info.getUseCompoundFile()) {
+        cfsDir = new CompoundFileReader(directory, IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      } else {
+        cfsDir = directory;
+      }
+      fieldInfos = new FieldInfos(cfsDir, IndexFileNames.segmentFileName(info.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+      if (info.getUseCompoundFile()) {
+        cfsDir.close();
+      }
+    } else {
+      fieldInfos = new FieldInfos();
+    }
+    return fieldInfos;
+  }
+
   private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
     rollbackSegmentInfos = (SegmentInfos) infos.clone();
     rollbackSegments = new HashMap<SegmentInfo,Integer>();
