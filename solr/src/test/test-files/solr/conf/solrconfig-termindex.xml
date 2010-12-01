@@ -23,7 +23,7 @@
   -->
 
 <config>
-
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <!-- see TestConfig.testLib() -->
   <lib dir="../lib-dirs/a" />
   <lib dir="../lib-dirs/b" regex="b." />
