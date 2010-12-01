@@ -117,8 +117,8 @@
       -->
     <fieldtype name="text" class="solr.TextField">
       <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
+        <tokenizer class="solr.ClassicTokenizerFactory"/>
+        <filter class="solr.ClassicFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory"/>
         <filter class="solr.PorterStemFilterFactory"/>
@@ -133,7 +133,7 @@
     <fieldtype name="teststop" class="solr.TextField">
        <analyzer>
         <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.ClassicFilterFactory"/>
         <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
       </analyzer>
     </fieldtype>
@@ -168,14 +168,14 @@
     </fieldtype>
     <fieldtype name="standardtokfilt" class="solr.TextField">
       <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
+        <tokenizer class="solr.ClassicTokenizerFactory"/>
+        <filter class="solr.ClassicFilterFactory"/>
       </analyzer>
     </fieldtype>
     <fieldtype name="standardfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.ClassicFilterFactory"/>
       </analyzer>
     </fieldtype>
     <fieldtype name="lowerfilt" class="solr.TextField">

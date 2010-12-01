@@ -23,6 +23,7 @@
   -->
 
 <config>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <indexDefaults>
     <useCompoundFile>${unset.sys.property}</useCompoundFile>
   </indexDefaults>
