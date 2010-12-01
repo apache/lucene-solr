@@ -56,15 +56,6 @@ Bug fixes
    Additionally, for Version > 3.0, the Snowball stopword lists are used by
    default.  (Robert Muir, Uwe Schindler, Simon Willnauer)
 
- * LUCENE-2278: FastVectorHighlighter: Highlighted term is out of alignment
-   in multi-valued NOT_ANALYZED field. (Koji Sekiguchi)
- 
- * LUCENE-2284: MatchAllDocsQueryNode toString() created an invalid XML tag.
-   (Frank Wesemann via Robert Muir)
-
- * LUCENE-2277: QueryNodeImpl threw ConcurrentModificationException on 
-   add(List<QueryNode>). (Frank Wesemann via Robert Muir)
-
  * LUCENE-2184: Fixed bug with handling best fit value when the proper best fit value is
 		not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
 		
@@ -75,24 +66,18 @@ Bug fixes
    For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
    will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
 
- * LUCENE-2524: FastVectorHighlighter: use mod for getting colored tag.
-   (Koji Sekiguchi)
+* LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
+  permissions to newly created files, and to not silently hardwire
+  buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
 
- * LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
-   empty in multiValued field (Koji Sekiguchi)
+* LUCENE-2629: Fix gennorm2 task for generating ICUFoldingFilter's .nrm file. This allows
+  you to customize its normalization/folding, by editing the source data files in src/data
+  and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
 
- * LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
-   permissions to newly created files, and to not silently hardwire
-   buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
+* LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
+  always the case. If the dictionary is unavailable, the filter will now throw 
+  UnsupportedOperationException in the constructor.  (Robert Muir)
 
- * LUCENE-2629: Fix gennorm2 task for generating ICUFoldingFilter's .nrm file. This allows
-   you to customize its normalization/folding, by editing the source data files in src/data
-   and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
-
- * LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
-   always the case. If the dictionary is unavailable, the filter will now throw 
-   UnsupportedOperationException in the constructor.  (Robert Muir)
-  
 * LUCENE-589: Fix contrib/demo for international documents. 
   (Curtis d'Entremont via Robert Muir)
   
@@ -104,9 +89,6 @@ Bug fixes
 
 * LUCENE-591: The demo indexer now indexes meta keywords.
   (Curtis d'Entremont via Robert Muir)
-   
- * LUCENE-2732: Fix charset problems in XML loading in
-   HyphenationCompoundWordTokenFilter.  (Uwe Schinder)
    
 API Changes
 
@@ -123,9 +105,6 @@ API Changes
    stemming. Add Turkish and Romanian stopwords lists to support this.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
 
- * LUCENE-2477: Deprecate MoreLikeThis's DEFAULT_ANALYZER. If you are not using term 
-   vectors, explicitly set your analyzer instead.  (Robert Muir)
-
  * LUCENE-2603: Add setMultiValuedSeparator(char) method to set an arbitrary
    char that is used when concatenating multiValued data. Default is a space
    (' '). It is applied on ANALYZED field only. (Koji Sekiguchi)
@@ -141,29 +120,11 @@ API Changes
    QueryNodeProcessorPipeline now implements the List interface, this is useful
    if you want to extend or modify an existing pipeline. (Adriano Crestani via Robert Muir)
     
- * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
-   can be generated. (Chris Harris via Steven Rowe)
-
  * LUCENE-2754, LUCENE-2757: Deprecated SpanRegexQuery. Use
    new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery()) instead.
    (Robert Muir, Uwe Schindler)
 
-New Features
-
- * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
-   Directory impl that uses the O_DIRECT flag to bypass the buffer
-   cache.  This is useful to prevent segment merging from evicting
-   pages from the buffer cache, since fadvise/madvise do not seem.
-   (Michael McCandless)
-
- * LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
-   with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
-
- * LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
-   approach is also still available.  (Grant Ingersoll)
-
- * LUCENE-2482: Added IndexSorter tool for sorting postings data in a way that maximizes
-   quality of "early terminated" search results (Andrzej Bialecki)
+New features
 
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
@@ -228,14 +189,14 @@ New Features
 
  * LUCENE-2437: Add an Analyzer for Indonesian.  (Robert Muir)
 
+ * LUCENE-2393: The HighFreqTerms tool (in misc) can now optionally
+   also include the total termFreq.  (Tom Burton-West via Mike McCandless)
+
  * LUCENE-2463: Add a Greek inflectional stemmer. GreekAnalyzer will now stem words
    when Version is set to 3.1 or higher.  (Robert Muir)
 
  * LUCENE-1287: Allow usage of HyphenationCompoundWordTokenFilter without dictionary.
    (Thomas Peuss via Robert Muir)
-
- * LUCENE-2393: The HighFreqTerms tool (in misc) can now optionally
-   also include the total termFreq.  (Tom Burton-West via Mike McCandless)
 
  * LUCENE-2464: FastVectorHighlighter: add SingleFragListBuilder to return
    entire field contents. (Koji Sekiguchi)
@@ -273,9 +234,6 @@ Build
 
  * LUCENE-2399, LUCENE-2683: Upgrade contrib/icu's ICU jar file to ICU 4.4.2  
    (Robert Muir)
-
- * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
-   (Robert Muir)
    
 Optimizations
 
@@ -307,6 +265,41 @@ Other
 
  * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
    Regex prefix.  (Uwe Schindler)
+
+================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
+
+Bug Fixes
+
+ * LUCENE-2277: QueryNodeImpl threw ConcurrentModificationException on 
+   add(List<QueryNode>). (Frank Wesemann via Robert Muir)
+
+ * LUCENE-2284: MatchAllDocsQueryNode toString() created an invalid XML tag.
+   (Frank Wesemann via Robert Muir)
+
+ * LUCENE-2278: FastVectorHighlighter: Highlighted term is out of alignment
+   in multi-valued NOT_ANALYZED field. (Koji Sekiguchi)
+
+ * LUCENE-2524: FastVectorHighlighter: use mod for getting colored tag.
+   (Koji Sekiguchi)
+
+ * LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
+   empty in multiValued field (Koji Sekiguchi)
+   
+ * LUCENE-2731, LUCENE-2732: Fix (charset) problems in XML loading in
+   HyphenationCompoundWordTokenFilter (partial bugfix-only in 2.9 and 3.0,
+   full fix will be in later 3.1).
+   (Uwe Schinder)
+
+Documentation
+
+ * LUCENE-2055: Add documentation noting that the Dutch and French stemmers
+   in contrib/analyzers do not implement the Snowball algorithm correctly,
+   and recommend to use the equivalents in contrib/snowball if possible. 
+   (Robert Muir, Uwe Schindler, Simon Willnauer)
+
+ * LUCENE-2653: Add documentation noting that ThaiWordFilter will not work
+   as expected on all JRE's. For example, on an IBM JRE, it does nothing.
+   (Robert Muir)
 
 ================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
 
