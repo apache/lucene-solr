@@ -47,6 +47,12 @@ public class MockRAMDirectory extends RAMDirectory {
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   volatile boolean crashed;
+  
+  // NOTE: BACKWARDS HACK !
+  // fileMap in RAMDir changed from HashMap to Map, and while this change is
+  // allowed (as it wasn't public API), it breaks the backwards tests. We
+  // declare a private member here, that is inited by reflection from super's.
+  private Map<String,RAMFile> fileMap;
 
   // NOTE: we cannot initialize the Map here due to the
   // order in which our constructor actually does this
@@ -54,7 +60,17 @@ public class MockRAMDirectory extends RAMDirectory {
   // like super is called, then our members are initialized:
   Map<String,Integer> openFiles;
 
+  @SuppressWarnings("unchecked")
   private synchronized void init() {
+    if (fileMap == null) {
+      try {
+        // NOTE: BACKWARDS HACK !
+        fileMap = (Map<String,RAMFile>) RAMDirectory.class.getDeclaredField("fileMap").get(this);
+      } catch (Exception e) {
+        throw new RuntimeException("Invalid backwards hack", e);
+      }
+    }
+
     if (openFiles == null)
       openFiles = new HashMap<String,Integer>();
     if (createdFiles == null)
@@ -214,9 +230,11 @@ public class MockRAMDirectory extends RAMDirectory {
       throw new IOException("file " + name + " already exists");
     else {
       if (existing!=null) {
-        //BACKWARDS BREAK in RamDirectory: sizeInBytes -= existing.sizeInBytes;
+        // BACKWARDS HACK in RamDirectory: sizeInBytes used to be a long and not
+        // AtomicLong - however since it wasn't public API, the change was
+        // allowed, but this breaks this class.
         try {
-          ((AtomicLong) getClass().getSuperclass().getDeclaredField("sizeInBytes").get(this)).getAndAdd(-existing.sizeInBytes);
+          ((AtomicLong) RAMDirectory.class.getDeclaredField("sizeInBytes").get(this)).getAndAdd(-existing.sizeInBytes);
         } catch (Exception e) {
           throw new RuntimeException("Backwards-hack failed.", e);
         }
