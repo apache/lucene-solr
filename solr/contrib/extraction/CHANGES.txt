@@ -17,21 +17,23 @@ You will need Solr up and running.  Then, simply add the extraction JAR file, pl
 to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequestHandler for more details on hooking it in
  and configuring.
 
+ Tika Dependency
+ ---------------
+
+Current Version: Tika 0.8 (released 11/07/2010)
+
 $Id:$
 
-================== Release 1.5-dev ==================
+================== Release 3.1-dev ==================
 
-
-* SOLR-1567: Upgrade to Tika 0.5, which upgrades many of the underlying libraries (PDFBox, for example) too (gsingers)
+* Upgraded to Tika 0.8 and changed deprecated parse call
 
 * SOLR-1756: The date.format setting causes ClassCastException when enabled and the config code that
   parses this setting does not properly use the same iterator instance. (Christoph Brill, Mark Miller)
 
-* SOLR-1738: Upgrade to Tika 0.6 (gsingers)
-
 * SOLR-18913: Add ICU4j to libs and add tests for Arabic extraction (Robert Muir via gsingers)
 
-* SOLR-1819: Upgraded to Tika 0.7 (gsingers)
+* SOLR-1902: Upgraded to Tika 0.8-SNAPSHOT to incorporate passing in Solr's custom ClassLoader (gsingers)
 
 ================== Release 1.4.0 ==================
 
