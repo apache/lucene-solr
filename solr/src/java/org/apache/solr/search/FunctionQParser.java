@@ -214,9 +214,8 @@ public class FunctionQParser extends QParser {
    */
   public List<ValueSource> parseValueSourceList() throws ParseException {
     List<ValueSource> sources = new ArrayList<ValueSource>(3);
-    for (;;) {
-      sources.add(parseValueSource(false));
-      if (! consumeArgumentDelimiter()) break;
+    while (hasMoreArguments()) {
+      sources.add(parseValueSource(true));
     }
     return sources;
   }
