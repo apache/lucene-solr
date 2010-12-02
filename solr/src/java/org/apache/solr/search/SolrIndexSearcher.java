@@ -649,6 +649,80 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return answer;
   }
 
+  Filter getFilter(Query q) throws IOException {
+    if (q == null) return null;
+    // TODO: support pure negative queries?
+
+    // if (q instanceof) {
+    // }
+
+    return getDocSet(q).getTopFilter();
+  }
+
+
+  Filter getFilter(DocSet setFilter, List<Query> queries) throws IOException {
+    Filter answer = setFilter == null ? null : setFilter.getTopFilter();
+
+    if (queries == null || queries.size() == 0) {
+      return answer;
+    }
+
+    if (answer == null && queries.size() == 1) {
+      return getFilter(queries.get(0));  
+    }
+
+
+    DocSet finalSet=null;
+
+    int nDocSets =0;
+    boolean[] neg = new boolean[queries.size()];
+    DocSet[] sets = new DocSet[queries.size()];
+    Query[] nocache = new Query[queries.size()];
+
+    int smallestIndex = -1;
+    int smallestCount = Integer.MAX_VALUE;
+    for (Query q : queries) {
+      // if (q instanceof)
+
+
+      Query posQuery = QueryUtils.getAbs(q);
+      sets[nDocSets] = getPositiveDocSet(posQuery);
+      // Negative query if absolute value different from original
+      if (q==posQuery) {
+        neg[nDocSets] = false;
+        // keep track of the smallest positive set.
+        // This optimization is only worth it if size() is cached, which it would
+        // be if we don't do any set operations.
+        int sz = sets[nDocSets].size();
+        if (sz<smallestCount) {
+          smallestCount=sz;
+          smallestIndex=nDocSets;
+          finalSet = sets[nDocSets];
+        }
+      } else {
+        neg[nDocSets] = true;
+      }
+
+      nDocSets++;
+    }
+
+    // if no positive queries, start off with all docs
+    if (finalSet==null) finalSet = getPositiveDocSet(matchAllDocsQuery);
+
+    // do negative queries first to shrink set size
+    for (int i=0; i<sets.length; i++) {
+      if (neg[i]) finalSet = finalSet.andNot(sets[i]);
+    }
+
+    for (int i=0; i<sets.length; i++) {
+      if (!neg[i] && i!=smallestIndex) finalSet = finalSet.intersection(sets[i]);
+    }
+
+    return finalSet.getTopFilter();
+
+
+  }
+
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());

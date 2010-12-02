@@ -90,7 +90,7 @@ public class QueryComponent extends SearchComponent
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
         if (filters==null) {
-          filters = new ArrayList<Query>();
+          filters = new ArrayList<Query>(fqs.length);
           rb.setFilters( filters );
         }
         for (String fq : fqs) {

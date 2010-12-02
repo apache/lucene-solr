@@ -96,7 +96,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     //Because we are generating a box based on the west/east longitudes and the south/north latitudes, which then
     //translates to a range query, which is slightly more inclusive.  Thus, even though 0.0 is 15.725 kms away,
     //it will be included, b/c of the box calculation.
-    checkHits(fieldName, "0.1,0.1", 15, 2, 5, 6);
+    checkHits(fieldName, false, "0.1,0.1", 15, 2, 5, 6);
    //try some more
     clearIndex();
     assertU(adoc("id", "14", fieldName, "0,5"));
@@ -108,15 +108,23 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
 
     checkHits(fieldName, "0,0", 1000, 1, 14);
     checkHits(fieldName, "0,0", 2000, 2, 14, 15);
-    checkHits(fieldName, "0,0", 3000, 3, 14, 15, 16);
+    checkHits(fieldName, false, "0,0", 3000, 3, 14, 15, 16);
     checkHits(fieldName, "0,0", 3001, 3, 14, 15, 16);
     checkHits(fieldName, "0,0", 3000.1, 3, 14, 15, 16);
+
     //really fine grained distance and reflects some of the vagaries of how we are calculating the box
     checkHits(fieldName, "43.517030,-96.789603", 109, 0);
-    checkHits(fieldName, "43.517030,-96.789603", 110, 1, 17);
+
+    // falls outside of the real distance, but inside the bounding box   
+    checkHits(fieldName, true, "43.517030,-96.789603", 110, 0);
+    checkHits(fieldName, false, "43.517030,-96.789603", 110, 1, 17);
   }
 
   private void checkHits(String fieldName, String pt, double distance, int count, int ... docIds) {
+    checkHits(fieldName, true, pt, distance, count, docIds);
+  }
+
+  private void checkHits(String fieldName, boolean exact, String pt, double distance, int count, int ... docIds) {
     String [] tests = new String[docIds != null && docIds.length > 0 ? docIds.length + 1 : 1];
     tests[0] = "*[count(//doc)=" + count + "]";
     if (docIds != null && docIds.length > 0) {
@@ -125,9 +133,12 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
         tests[i++] = "//result/doc/int[@name='id'][.='" + docId + "']";
       }
     }
-    assertQ(req("fl", "id", "q","*:*", "rows", "1000", "fq", "{!sfilt fl=" +fieldName +"}",
-            "pt", pt, "d", String.valueOf(distance)),
-            tests);//
+
+    String method = exact ? "sfilt" : "bbox";
+
+    assertQ(req("fl", "id", "q","*:*", "rows", "1000", "fq", "{!"+method+" fl=" +fieldName +"}",
+              "pt", pt, "d", String.valueOf(distance)),
+              tests);
   }
 
 
