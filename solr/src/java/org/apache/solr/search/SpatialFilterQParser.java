@@ -67,25 +67,31 @@ public class SpatialFilterQParser extends QParser {
     //TODO: Should we accept multiple fields
     String[] fields = localParams.getParams(CommonParams.FL);
     if (fields == null || fields.length == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, CommonParams.FL + " is not properly specified");
+      String field = getParam(SpatialParams.FIELD);
+      if (field == null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " missing field for spatial request");
+      fields = new String[] {field};
     }
-    String pointStr = params.get(SpatialParams.POINT);
+    
+    String pointStr = getParam(SpatialParams.POINT);
     if (pointStr == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.POINT + " is not properly specified");
     }
 
-    double dist = params.getDouble(SpatialParams.DISTANCE, -1);
+    double dist = -1;
+    String distS = getParam(SpatialParams.DISTANCE);
+    if (distS != null) dist = Double.parseDouble(distS);
+
     if (dist < 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.DISTANCE + " must be >= 0");
     }
-    IndexSchema schema = req.getSchema();
 
     String measStr = localParams.get(SpatialParams.MEASURE);
     //TODO: Need to do something with Measures
     Query result = null;
     //fields is valid at this point
     if (fields.length == 1) {
-      SchemaField sf = schema.getField(fields[0]);
+      SchemaField sf = req.getSchema().getField(fields[0]);
       FieldType type = sf.getType();
 
       if (type instanceof SpatialQueryable) {
