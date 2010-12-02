@@ -84,6 +84,49 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
 
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+    int dimension = 2;
+
+    String[] p1;
+    String[] p2;
+    try {
+      p1 = DistanceUtils.parsePoint(null, part1, dimension);
+      p2 = DistanceUtils.parsePoint(null, part2, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    BooleanQuery result = new BooleanQuery(true);
+    for (int i = 0; i < dimension; i++) {
+      SchemaField subSF = subField(field, i);
+      // points must currently be ordered... should we support specifying any two opposite corner points?
+      result.add(subSF.getType().getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
+    }
+    return result;
+
+  }
+
+  @Override
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    int dimension = 2;
+    
+    String[] p1 = new String[0];
+    try {
+      p1 = DistanceUtils.parsePoint(null, externalVal, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    BooleanQuery bq = new BooleanQuery(true);
+    for (int i = 0; i < dimension; i++) {
+      SchemaField sf = subField(field, i);
+      Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);
+      bq.add(tq, BooleanClause.Occur.MUST);
+    }
+    return bq;
+  }
+
+
+
+
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
     double[] point = null;
     try {
