@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -104,6 +103,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "15", fieldName, "0,15"));
     //3000KM from 0,0, see http://www.movable-type.co.uk/scripts/latlong.html
     assertU(adoc("id", "16", fieldName, "18.71111,19.79750"));
+    assertU(adoc("id", "17", fieldName, "44.043900,-95.436643"));
     assertU(commit());
 
     checkHits(fieldName, "0,0", 1000, 1, 14);
@@ -111,6 +111,9 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     checkHits(fieldName, "0,0", 3000, 3, 14, 15, 16);
     checkHits(fieldName, "0,0", 3001, 3, 14, 15, 16);
     checkHits(fieldName, "0,0", 3000.1, 3, 14, 15, 16);
+    //really fine grained distance and reflects some of the vagaries of how we are calculating the box
+    checkHits(fieldName, "43.517030,-96.789603", 109, 0);
+    checkHits(fieldName, "43.517030,-96.789603", 110, 1, 17);
   }
 
   private void checkHits(String fieldName, String pt, double distance, int count, int ... docIds) {

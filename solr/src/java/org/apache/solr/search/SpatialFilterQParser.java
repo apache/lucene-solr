@@ -27,7 +27,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpatialParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialQueryable;
 
@@ -36,8 +35,9 @@ import org.apache.solr.schema.SpatialQueryable;
 /**
  * Creates a spatial Filter based on the type of spatial point used.
  * <p/>
- * The field must implement XXXX
+ * The field must implement {@link org.apache.solr.schema.SpatialQueryable}
  * <p/>
+ * All units are in Kilometers
  * <p/>
  * <p/>
  * Syntax:
@@ -48,9 +48,9 @@ import org.apache.solr.schema.SpatialQueryable;
  * <li>fl - The fields to filter on.  Must implement XXXX. Required.  If more than one, XXXX</li>
  * <li>pt - The point to use as a reference.  Must match the dimension of the field. Required.</li>
  * <li>d - The distance in the units specified. Required.</li>
- * <li>units - The units of the distance.  K - kilometers, M - Miles.  Optional.  Default is miles.</li>
  * <li>meas - The distance measure to use.  Default is Euclidean (2-norm).  If a number between 0-INF is used, then the Vector Distance is used.  hsin = Haversine, sqe = Squared Euclidean</li>
- * </ul>
+ * </ul> *
+ *
  */
 public class SpatialFilterQParser extends QParser {
 
