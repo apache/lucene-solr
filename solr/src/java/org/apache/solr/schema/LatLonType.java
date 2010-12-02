@@ -82,6 +82,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     return f;
   }
 
+
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
     BooleanQuery result = new BooleanQuery();
     double[] point = new double[0];
@@ -108,13 +109,13 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     double [] west = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, DistanceUtils.DEG_270_AS_RADS, tmp, options.radius);
     ll[LONG] = west[LONG] * DistanceUtils.RADIANS_TO_DEGREES;
 
-
     SchemaField subSF;
     Query range;
     //TODO: can we reuse our bearing calculations?
     double angDist = DistanceUtils.angularDistance(options.distance,
             options.radius);//in radians
 
+    
     //for the poles, do something slightly different
     //Also, note point[LAT] is in radians, but ur and ll are in degrees
     if (point[LAT] + angDist > DistanceUtils.DEG_90_AS_RADS) { //we cross the north pole
