@@ -1,4 +1,3 @@
-package org.apache.solr.schema;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,20 +15,20 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+package org.apache.solr.search.function;
 
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.SpatialOptions;
+import org.apache.lucene.index.IndexReader;
 
+import java.io.IOException;
+import java.util.Map;
 
 /**
- * Indicate that the implementing class is capable of generating a Query against spatial resources.
- * For example, the LatLonType is capable of creating a query that restricts the document space down
- * to documents that are within a certain distance of a given point on Earth. *
- *
- **/
-public interface SpatialQueryable {
-
-  public Query createSpatialQuery(QParser parser, SpatialOptions options);
+ * <code>ConstNumberSource</code> is the base class for all constant numbers
+ */
+public abstract class ConstNumberSource extends ValueSource {
+  public abstract int getInt();
+  public abstract long getLong();
+  public abstract float getFloat();
+  public abstract double getDouble();  
+  public abstract Number getNumber();  
 }

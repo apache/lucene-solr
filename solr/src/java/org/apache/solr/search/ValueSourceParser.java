@@ -31,28 +31,56 @@ import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.LegacyDateField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.search.function.*;
-
-import org.apache.solr.search.function.distance.*;
+import org.apache.solr.search.function.BoostedQuery;
+import org.apache.solr.search.function.ConstNumberSource;
+import org.apache.solr.search.function.DivFloatFunction;
+import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.DoubleConstValueSource;
+import org.apache.solr.search.function.DualFloatFunction;
+import org.apache.solr.search.function.LinearFloatFunction;
+import org.apache.solr.search.function.LiteralValueSource;
+import org.apache.solr.search.function.MaxFloatFunction;
+import org.apache.solr.search.function.MultiValueSource;
+import org.apache.solr.search.function.OrdFieldSource;
+import org.apache.solr.search.function.ProductFloatFunction;
+import org.apache.solr.search.function.QueryValueSource;
+import org.apache.solr.search.function.RangeMapFloatFunction;
+import org.apache.solr.search.function.ReciprocalFloatFunction;
+import org.apache.solr.search.function.ReverseOrdFieldSource;
+import org.apache.solr.search.function.ScaleFloatFunction;
+import org.apache.solr.search.function.SimpleFloatFunction;
+import org.apache.solr.search.function.SingleFunction;
+import org.apache.solr.search.function.SumFloatFunction;
+import org.apache.solr.search.function.TopValueSource;
+import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.function.VectorValueSource;
+import org.apache.solr.search.function.distance.GeohashFunction;
+import org.apache.solr.search.function.distance.GeohashHaversineFunction;
+import org.apache.solr.search.function.distance.HaversineConstFunction;
+import org.apache.solr.search.function.distance.HaversineFunction;
+import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
+import org.apache.solr.search.function.distance.StringDistanceFunction;
+import org.apache.solr.search.function.distance.VectorDistanceFunction;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 /**
  * A factory that parses user queries to generate ValueSource instances.
- * Intented usage is to create pluggable, named functions for use in function queries.
+ * Intended usage is to create pluggable, named functions for use in function queries.
  */
 public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /**
    * Initialize the plugin.
    */
-  public void init(NamedList args) {}
+  public void init(NamedList args) {
+  }
 
   /**
    * Parse the user input into a ValueSource.
@@ -65,15 +93,17 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /* standard functions */
   public static Map<String, ValueSourceParser> standardValueSourceParsers = new HashMap<String, ValueSourceParser>();
 
-  /** Adds a new parser for the name and returns any existing one that was overriden.
-   *  This is not thread safe.
+  /**
+   * Adds a new parser for the name and returns any existing one that was overriden.
+   * This is not thread safe.
    */
   public static ValueSourceParser addParser(String name, ValueSourceParser p) {
     return standardValueSourceParsers.put(name, p);
   }
 
-  /** Adds a new parser for the name and returns any existing one that was overriden.
-   *  This is not thread safe.
+  /**
+   * Adds a new parser for the name and returns any existing one that was overriden.
+   * This is not thread safe.
    */
   public static ValueSourceParser addParser(NamedParser p) {
     return standardValueSourceParsers.put(p.name(), p);
@@ -179,7 +209,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
-    alias("sum","add");    
+    alias("sum", "add");
 
     addParser("product", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
@@ -187,7 +217,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
-    alias("product","mul");
+    alias("product", "mul");
 
     addParser("sub", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
@@ -204,8 +234,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         };
       }
     });
-    addParser("vector", new ValueSourceParser(){
-      public ValueSource parse(FunctionQParser fp) throws ParseException{
+    addParser("vector", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new VectorValueSource(fp.parseValueSourceList());
       }
     });
@@ -228,13 +258,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new QueryValueSource(bq, 0.0f);
       }
     });
+
+    addParser("geodist", HaversineConstFunction.parser);
+
     addParser("hsin", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         double radius = fp.parseDouble();
         //SOLR-2114, make the convert flag required, since the parser doesn't support much in the way of lookahead or the ability to convert a String into a ValueSource
         boolean convert = Boolean.parseBoolean(fp.parseArg());
-        
+
         MultiValueSource pv1;
         MultiValueSource pv2;
 
@@ -255,7 +288,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           pv2 = new VectorValueSource(s2);
         } else {
           //check to see if we have multiValue source
-          if (one instanceof MultiValueSource && two instanceof MultiValueSource){
+          if (one instanceof MultiValueSource && two instanceof MultiValueSource) {
             pv1 = (MultiValueSource) one;
             pv2 = (MultiValueSource) two;
           } else {
@@ -443,7 +476,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("ms", new DateValueSourceParser());
 
-    
+
     addParser("pi", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new DoubleConstValueSource(Math.PI);
@@ -607,7 +640,8 @@ class DateValueSourceParser extends ValueSourceParser {
 
 
 // Private for now - we need to revisit how to handle typing in function queries
-class LongConstValueSource extends ValueSource {
+
+class LongConstValueSource extends ConstNumberSource {
   final long constant;
   final double dv;
   final float fv;
@@ -659,70 +693,41 @@ class LongConstValueSource extends ValueSource {
     LongConstValueSource other = (LongConstValueSource) o;
     return this.constant == other.constant;
   }
-}
 
-// Private for now - we need to revisit how to handle typing in function queries
-class DoubleConstValueSource extends ValueSource {
-  final double constant;
-  private final float fv;
-  private final long lv;
-
-  public DoubleConstValueSource(double constant) {
-    this.constant = constant;
-    this.fv = (float)constant;
-    this.lv = (long)constant;
+  @Override
+  public int getInt() {
+    return (int) constant;
   }
 
-  public String description() {
-    return "const(" + constant + ")";
+  @Override
+  public long getLong() {
+    return constant;
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new DocValues() {
-      public float floatVal(int doc) {
-        return fv;
-      }
-
-      public int intVal(int doc) {
-        return (int) lv;
-      }
-
-      public long longVal(int doc) {
-        return lv;
-      }
-
-      public double doubleVal(int doc) {
-        return constant;
-      }
-
-      public String strVal(int doc) {
-        return Double.toString(constant);
-      }
-
-      public String toString(int doc) {
-        return description();
-      }
-    };
+  @Override
+  public float getFloat() {
+    return fv;
   }
 
-  public int hashCode() {
-    long bits = Double.doubleToRawLongBits(constant);
-    return (int)(bits ^ (bits >>> 32));
+  @Override
+  public double getDouble() {
+    return dv;
   }
 
-  public boolean equals(Object o) {
-    if (DoubleConstValueSource.class != o.getClass()) return false;
-    DoubleConstValueSource other = (DoubleConstValueSource) o;
-    return this.constant == other.constant;
+  @Override
+  public Number getNumber() {
+    return constant;
   }
 }
 
 
 abstract class NamedParser extends ValueSourceParser {
   private final String name;
+
   public NamedParser(String name) {
     this.name = name;
   }
+
   public String name() {
     return name;
   }
@@ -751,23 +756,28 @@ abstract class DoubleParser extends NamedParser {
 
     @Override
     public DocValues getValues(Map context, IndexReader reader) throws IOException {
-      final DocValues vals =  source.getValues(context, reader);
+      final DocValues vals = source.getValues(context, reader);
       return new DocValues() {
         public float floatVal(int doc) {
-          return (float)doubleVal(doc);
+          return (float) doubleVal(doc);
         }
+
         public int intVal(int doc) {
-          return (int)doubleVal(doc);
+          return (int) doubleVal(doc);
         }
+
         public long longVal(int doc) {
-          return (long)doubleVal(doc);
+          return (long) doubleVal(doc);
         }
+
         public double doubleVal(int doc) {
           return func(doc, vals);
         }
+
         public String strVal(int doc) {
           return Double.toString(doubleVal(doc));
         }
+
         public String toString(int doc) {
           return name() + '(' + vals.toString(doc) + ')';
         }
@@ -792,9 +802,9 @@ abstract class Double2Parser extends NamedParser {
     private final ValueSource a;
     private final ValueSource b;
 
-   /**
-     * @param   a  the base.
-     * @param   b  the exponent.
+    /**
+     * @param a the base.
+     * @param b the exponent.
      */
     public Function(ValueSource a, ValueSource b) {
       this.a = a;
@@ -806,24 +816,29 @@ abstract class Double2Parser extends NamedParser {
     }
 
     public DocValues getValues(Map context, IndexReader reader) throws IOException {
-      final DocValues aVals =  a.getValues(context, reader);
-      final DocValues bVals =  b.getValues(context, reader);
+      final DocValues aVals = a.getValues(context, reader);
+      final DocValues bVals = b.getValues(context, reader);
       return new DocValues() {
         public float floatVal(int doc) {
-          return (float)doubleVal(doc);
+          return (float) doubleVal(doc);
         }
+
         public int intVal(int doc) {
-          return (int)doubleVal(doc);
+          return (int) doubleVal(doc);
         }
+
         public long longVal(int doc) {
-          return (long)doubleVal(doc);
+          return (long) doubleVal(doc);
         }
+
         public double doubleVal(int doc) {
           return func(doc, aVals, bVals);
         }
+
         public String strVal(int doc) {
           return Double.toString(doubleVal(doc));
         }
+
         public String toString(int doc) {
           return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
         }
@@ -832,8 +847,8 @@ abstract class Double2Parser extends NamedParser {
 
     @Override
     public void createWeight(Map context, Searcher searcher) throws IOException {
-      a.createWeight(context,searcher);
-      b.createWeight(context,searcher);
+      a.createWeight(context, searcher);
+      b.createWeight(context, searcher);
     }
 
     public int hashCode() {
@@ -847,9 +862,9 @@ abstract class Double2Parser extends NamedParser {
 
     public boolean equals(Object o) {
       if (this.getClass() != o.getClass()) return false;
-      Function other = (Function)o;
+      Function other = (Function) o;
       return this.a.equals(other.a)
-          && this.b.equals(other.b);
+              && this.b.equals(other.b);
     }
   }
 

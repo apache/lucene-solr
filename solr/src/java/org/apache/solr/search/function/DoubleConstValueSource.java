@@ -22,16 +22,15 @@ import org.apache.lucene.index.IndexReader;
 import java.io.IOException;
 import java.util.Map;
 
-/**
- * <code>ConstValueSource</code> returns a constant for all documents
- */
-public class ConstValueSource extends ConstNumberSource {
-  final float constant;
-  private final double dv;
+public class DoubleConstValueSource extends ConstNumberSource {
+  final double constant;
+  private final float fv;
+  private final long lv;
 
-  public ConstValueSource(float constant) {
+  public DoubleConstValueSource(double constant) {
     this.constant = constant;
-    this.dv = constant;
+    this.fv = (float)constant;
+    this.lv = (long)constant;
   }
 
   public String description() {
@@ -41,20 +40,25 @@ public class ConstValueSource extends ConstNumberSource {
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new DocValues() {
       public float floatVal(int doc) {
+        return fv;
+      }
+
+      public int intVal(int doc) {
+        return (int) lv;
+      }
+
+      public long longVal(int doc) {
+        return lv;
+      }
+
+      public double doubleVal(int doc) {
         return constant;
       }
-      public int intVal(int doc) {
-        return (int)constant;
-      }
-      public long longVal(int doc) {
-        return (long)constant;
-      }
-      public double doubleVal(int doc) {
-        return dv;
-      }
+
       public String strVal(int doc) {
-        return Float.toString(constant);
+        return Double.toString(constant);
       }
+
       public String toString(int doc) {
         return description();
       }
@@ -62,33 +66,34 @@ public class ConstValueSource extends ConstNumberSource {
   }
 
   public int hashCode() {
-    return Float.floatToIntBits(constant) * 31;
+    long bits = Double.doubleToRawLongBits(constant);
+    return (int)(bits ^ (bits >>> 32));
   }
 
   public boolean equals(Object o) {
-    if (!(o instanceof ConstValueSource)) return false;
-    ConstValueSource other = (ConstValueSource)o;
-    return  this.constant == other.constant;
+    if (!(o instanceof DoubleConstValueSource)) return false;
+    DoubleConstValueSource other = (DoubleConstValueSource) o;
+    return this.constant == other.constant;
   }
 
   @Override
   public int getInt() {
-    return (int)constant;
+    return (int)lv;
   }
 
   @Override
   public long getLong() {
-    return (long)constant;
+    return lv;
   }
 
   @Override
   public float getFloat() {
-    return constant;
+    return fv;
   }
 
   @Override
   public double getDouble() {
-    return dv;
+    return constant;
   }
 
   @Override

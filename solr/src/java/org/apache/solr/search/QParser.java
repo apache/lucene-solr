@@ -157,7 +157,7 @@ public abstract class QParser {
   //                       $x+=foo (append to global for limited scope)
 
   /** check both local and global params */
-  protected String getParam(String name) {
+  public String getParam(String name) {
     String val;
     if (localParams != null) {
       val = localParams.get(name);

@@ -30,7 +30,7 @@ import org.junit.Test;
 public class DistanceFunctionTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-functionquery.xml", "schema11.xml");
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   @Test
@@ -61,14 +61,57 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
 
     assertQ(req("fl", "id,point_hash,score", "q", "{!func}recip(ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", point_hash, \"" + GeoHashUtils.encode(32, -79) + "\"), 1, 1, 0)"),
             "//*[@numFound='7']", 
-            "//result/doc[1]/float[@name='id'][.='6.0']",
-            "//result/doc[2]/float[@name='id'][.='7.0']"//all the rest don't matter
+            "//result/doc[1]/str[@name='id'][.='6']",
+            "//result/doc[2]/str[@name='id'][.='7']"//all the rest don't matter
             );
 
 
     assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.171875'");
   }
 
+
+  @Test
+  public void testLatLon() throws Exception {
+    assertU(adoc("id", "100", "store", "1,2"));
+    assertU(commit());
+   
+    assertJQ(req("defType","func", "q","geodist(1,2,3,4)","fq","id:100","fl","id,score")
+      ,"/response/docs/[0]/score==314.40338"
+    );
+
+    // throw in some decimal points
+    assertJQ(req("defType","func", "q","geodist(1.0,2,3,4.0)","fq","id:100","fl","id,score")
+      ,"/response/docs/[0]/score==314.40338"
+    );
+
+    // default to reading pt
+    assertJQ(req("defType","func", "q","geodist(1,2)","pt","3,4", "fq","id:100","fl","id,score")
+      ,"/response/docs/[0]/score==314.40338"
+    );
+
+    // default to reading pt first
+    assertJQ(req("defType","func", "q","geodist(1,2)","pt","3,4", "sfield","store", "fq","id:100","fl","id,score")
+      ,"/response/docs/[0]/score==314.40338"
+    );
+
+    // if pt missing, use sfield
+    assertJQ(req("defType","func", "q","geodist(3,4)","sfield","store", "fq","id:100","fl","id,score")
+      ,"/response/docs/[0]/score==314.40338"
+    );
+
+    // read both pt and sfield
+    assertJQ(req("defType","func", "q","geodist()","pt","3,4","sfield","store", "fq","id:100","fl","id,score")
+      ,"/response/docs/[0]/score==314.40338"
+    );
+
+    // param substitution
+    assertJQ(req("defType","func", "q","geodist($a,$b)","a","3,4","b","store", "fq","id:100","fl","id,score")
+      ,"/response/docs/[0]/score==314.40338"
+    );
+
+  }
+
+  
   @Test
   public void testVector() throws Exception {
     clearIndex();
