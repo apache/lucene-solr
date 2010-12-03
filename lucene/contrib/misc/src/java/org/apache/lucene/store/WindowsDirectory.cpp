@@ -65,14 +65,13 @@ JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_WindowsDirectory_open
 {
   char *fname;
   HANDLE handle;
-  jboolean isCopy;
   
   if (filename == NULL) {
     throwException(env, "java/lang/NullPointerException", "filename cannot be null");
     return -1;
   }
   
-  fname = (char *) env->GetStringUTFChars(filename, &isCopy);
+  fname = (char *) env->GetStringUTFChars(filename, NULL);
   
   if (fname == NULL) {
     throwException(env, "java/lang/IllegalArgumentException", "invalid filename");
@@ -82,9 +81,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_WindowsDirectory_open
   handle = CreateFile(fname, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, 
                       NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL);
   
-  if (isCopy) {
-    env->ReleaseStringUTFChars(filename, fname);
-  }
+  env->ReleaseStringUTFChars(filename, fname);
   
   if (handle == INVALID_HANDLE_VALUE) {
     throwIOException(env, GetLastError());
@@ -127,17 +124,14 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_WindowsDirectory_read
     }
   	
   } else {
-    jboolean isCopy;
-    jbyte *buffer = env->GetByteArrayElements (bytes, &isCopy);
+    jbyte *buffer = env->GetByteArrayElements (bytes, NULL);
   
     if (!ReadFile((HANDLE) fd, (void *)(buffer+offset), length, &numRead, &io)) {
       throwIOException(env, GetLastError());
       numRead = -1;
     }
   	
-    if (isCopy == JNI_TRUE) {
-      env->ReleaseByteArrayElements(bytes, buffer, numRead == 0 || numRead == -1 ? JNI_ABORT : 0);
-    }
+    env->ReleaseByteArrayElements(bytes, buffer, numRead == 0 || numRead == -1 ? JNI_ABORT : 0);
   }
   
   return numRead;
