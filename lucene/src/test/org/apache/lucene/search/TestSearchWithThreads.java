@@ -61,7 +61,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
     w.close();
 
     final long endTime = System.currentTimeMillis();
-    System.out.println("BUILD took " + (endTime-startTime));
+    if (VERBOSE) System.out.println("BUILD took " + (endTime-startTime));
 
     final IndexSearcher s = new IndexSearcher(r);
 
@@ -100,7 +100,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
     for(int threadID=0;threadID<NUM_SEARCH_THREADS;threadID++) {
       threads[threadID].join();
     }
-    System.out.println(NUM_SEARCH_THREADS + " threads did " + netSearch.get() + " searches");
+    if (VERBOSE) System.out.println(NUM_SEARCH_THREADS + " threads did " + netSearch.get() + " searches");
 
     s.close();
     r.close();
