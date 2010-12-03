@@ -307,7 +307,7 @@ abstract class CSVLoader extends ContentStreamLoader {
         String encStr = params.getFieldParam(fname,ENCAPSULATOR);
         char fenc = encStr==null || encStr.length()==0 ? (char)-2 : encStr.charAt(0);
         String escStr = params.getFieldParam(fname,ESCAPE);
-        char fesc = escStr==null || encStr.length()==0 ? CSVStrategy.ESCAPE_DISABLED : escStr.charAt(0);
+        char fesc = escStr==null || escStr.length()==0 ? CSVStrategy.ESCAPE_DISABLED : escStr.charAt(0);
 
         CSVStrategy fstrat = new CSVStrategy(fsep,fenc,CSVStrategy.COMMENTS_DISABLED,fesc, false, false, false, false);
         adders[i] = new CSVLoader.FieldSplitter(fstrat, adders[i]);
