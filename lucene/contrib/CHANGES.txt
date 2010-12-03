@@ -32,6 +32,11 @@ New Features
   * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
     from the term dictionary using levenshtein automata.  (Robert Muir)
 
+  * LUCENE-2791: Added WindowsDirectory, a Windows-specific Directory impl
+    that doesn't synchronize on the file handle. This can be useful to 
+    avoid the performance problems of SimpleFSDirectory and NIOFSDirectory.
+    (Robert Muir, Simon Willnauer, Uwe Schindler, Michael McCandless)
+  
 API Changes
 
   * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
