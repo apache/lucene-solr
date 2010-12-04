@@ -22,20 +22,17 @@
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
     <Set name="ThreadPool">
-      <!-- Default bounded blocking threadpool 
-      -->
+
       <New class="org.mortbay.thread.QueuedThreadPool">
         <Set name="minThreads">10</Set>
         <Set name="maxThreads">10000</Set>
-        <Set name="lowThreads">50</Set>
-        <Set name="SpawnOrShrinkAt">2</Set>
+        <Set name="lowThreads">20</Set>
       </New>
 
       <!-- Optional Java 5 bounded threadpool with job queue 
       <New class="org.mortbay.thread.concurrent.ThreadPool">
-        <Arg type="int">0</Arg>
-        <Set name="corePoolSize">10</Set>
-        <Set name="maximumPoolSize">250</Set>
+        <Set name="corePoolSize">50</Set>
+        <Set name="maximumPoolSize">50</Set>
       </New>
       -->
     </Set>
@@ -50,30 +47,35 @@
 
     <!-- Use this connector for many frequently idle connections
          and for threadless continuations.
+    -->    
+  <!--
     <Call name="addConnector">
       <Arg>
           <New class="org.mortbay.jetty.nio.SelectChannelConnector">
+            <Set name="host"><SystemProperty name="jetty.host" /></Set>
             <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
             <Set name="maxIdleTime">30000</Set>
             <Set name="Acceptors">2</Set>
+            <Set name="statsOn">false</Set>
             <Set name="confidentialPort">8443</Set>
+	    <Set name="lowResourcesConnections">5000</Set>
+	    <Set name="lowResourcesMaxIdleTime">5000</Set>
           </New>
       </Arg>
     </Call>
-   -->     
+  -->
 
-    <!-- Use this connector if NIO is not available. -->
-    <!-- This connector is currently being used for Solr because the
-         nio.SelectChannelConnector showed poor performance under WindowsXP
-         from a single client with non-persistent connections (35s vs ~3min)
-         to complete 10,000 requests)
-    -->
+    <!-- This connector is currently being used for Solr because it
+          showed better performance than nio.SelectChannelConnector
+          for typical Solr requests.  -->
     <Call name="addConnector">
       <Arg>
           <New class="org.mortbay.jetty.bio.SocketConnector">
+            <Set name="host"><SystemProperty name="jetty.host" /></Set>
             <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
             <Set name="maxIdleTime">50000</Set>
             <Set name="lowResourceMaxIdleTime">1500</Set>
+            <Set name="statsOn">false</Set>
           </New>
       </Arg>
     </Call>
@@ -82,6 +84,14 @@
     <!-- To add a HTTPS SSL listener                                     -->
     <!-- see jetty-ssl.xml to add an ssl connector. use                  -->
     <!-- java -jar start.jar etc/jetty.xml etc/jetty-ssl.xml             -->
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+    <!-- To allow Jetty to be started from xinetd                        -->
+    <!-- mixin jetty-xinetd.xml:                                         -->
+    <!--   java -jar start.jar etc/jetty.xml etc/jetty-xinetd.xml        -->
+    <!--                                                                 -->
+    <!-- See jetty-xinetd.xml for further instructions.                  -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     
     <!-- =========================================================== -->
@@ -132,7 +142,7 @@
         <New class="org.mortbay.jetty.deployer.ContextDeployer">
           <Set name="contexts"><Ref id="Contexts"/></Set>
           <Set name="configurationDir"><SystemProperty name="jetty.home" default="."/>/contexts</Set>
-          <Set name="scanInterval">1</Set>
+          <Set name="scanInterval">5</Set>
         </New>
       </Arg>
     </Call>
@@ -155,9 +165,9 @@
         <New class="org.mortbay.jetty.deployer.WebAppDeployer">
           <Set name="contexts"><Ref id="Contexts"/></Set>
           <Set name="webAppDir"><SystemProperty name="jetty.home" default="."/>/webapps</Set>
-				  <Set name="parentLoaderPriority">false</Set>
-				  <Set name="extract">true</Set>
-				  <Set name="allowDuplicates">false</Set>
+	  <Set name="parentLoaderPriority">false</Set>
+	  <Set name="extract">true</Set>
+	  <Set name="allowDuplicates">false</Set>
           <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
         </New>
       </Arg>
@@ -170,18 +180,19 @@
     <!-- configuration (see $(jetty.home)/contexts/test.xml for an   -->
     <!-- example).                                                   -->
     <!-- =========================================================== -->
+  <!--
     <Set name="UserRealms">
       <Array type="org.mortbay.jetty.security.UserRealm">
-        <!--
         <Item>
           <New class="org.mortbay.jetty.security.HashUserRealm">
             <Set name="name">Test Realm</Set>
             <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
+            <Set name="refreshInterval">0</Set>
           </New>
         </Item>
-	-->
       </Array>
     </Set>
+  -->
 
     <!-- =========================================================== -->
     <!-- Configure Request Log                                       -->
@@ -190,24 +201,27 @@
     <!-- contexts configuration (see $(jetty.home)/contexts/test.xml -->
     <!-- for an example).                                            -->
     <!-- =========================================================== -->
+  <!--
     <Ref id="RequestLog">
       <Set name="requestLog">
         <New id="RequestLogImpl" class="org.mortbay.jetty.NCSARequestLog">
-          <Arg><SystemProperty name="jetty.logs" default="./logs"/>/yyyy_mm_dd.request.log</Arg>
+          <Set name="filename"><SystemProperty name="jetty.logs" default="./logs"/>/yyyy_mm_dd.request.log</Set>
+          <Set name="filenameDateFormat">yyyy_MM_dd</Set>
           <Set name="retainDays">90</Set>
           <Set name="append">true</Set>
           <Set name="extended">false</Set>
+          <Set name="logCookies">false</Set>
           <Set name="LogTimeZone">GMT</Set>
         </New>
       </Set>
     </Ref>
-
+  -->
     <!-- =========================================================== -->
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
-    <!-- ensure/prevent Server: header being sent to browsers        -->
-    <Set name="sendServerVersion">true</Set>
+    <Set name="sendServerVersion">false</Set>
+    <Set name="sendDateHeader">false</Set>
+    <Set name="gracefulShutdown">1000</Set>
 
 </Configure>
-
