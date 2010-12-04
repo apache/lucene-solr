@@ -2479,10 +2479,14 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testDeleteUnusedFiles() throws Exception {
     for(int iter=0;iter<2;iter++) {
       Directory dir = newDirectory();
+
+      LogMergePolicy mergePolicy = newLogMergePolicy(true);
+      mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
+
       IndexWriter w = new IndexWriter(
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
-              setMergePolicy(newLogMergePolicy(true))
+              setMergePolicy(mergePolicy)
       );
       Document doc = new Document();
       doc.add(newField("field", "go", Field.Store.NO, Field.Index.ANALYZED));
