@@ -279,7 +279,7 @@ Build
    dependency management between contribs by a new ANT macro.
    (Uwe Schindler, Shai Erera)
 
- * LUCENE-2399, LUCENE-2683: Upgrade contrib/icu's ICU jar file to ICU 4.4.2  
+ * LUCENE-2797: Upgrade contrib/icu's ICU jar file to ICU 4.6  
    (Robert Muir)
    
 Optimizations
