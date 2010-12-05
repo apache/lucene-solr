@@ -113,7 +113,7 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_WindowsDirectory_read
     return -1;
   }
   
-  if (length <= 2048) {  /* For small buffers, avoid GetByteArrayElements' copy */
+  if (length <= 4096) {  /* For small buffers, avoid GetByteArrayElements' copy */
     char buffer[length];
   	
     if (ReadFile((HANDLE) fd, &buffer, length, &numRead, &io)) {

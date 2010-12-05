@@ -38,6 +38,7 @@ import java.io.IOException;
  * @lucene.experimental
  */
 public class WindowsDirectory extends FSDirectory {
+  private static final int DEFAULT_BUFFERSIZE = 4096; /* default pgsize on ia32/amd64 */
   
   static {
     System.loadLibrary("WindowsDirectory");
@@ -65,7 +66,7 @@ public class WindowsDirectory extends FSDirectory {
 
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
-    return new WindowsIndexInput(new File(getDirectory(), name), bufferSize);
+    return new WindowsIndexInput(new File(getDirectory(), name), Math.max(bufferSize, DEFAULT_BUFFERSIZE));
   }
   
   protected static class WindowsIndexInput extends BufferedIndexInput {
