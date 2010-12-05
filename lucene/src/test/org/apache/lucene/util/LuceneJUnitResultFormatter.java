@@ -263,6 +263,8 @@ public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
   }
 
   public LuceneJUnitResultFormatter append(String s) {
+    if (s == null)
+      s = "(null)";
     try {
       sb.write(s.getBytes()); // intentionally use default charset, its a console.
     } catch (IOException e) {
