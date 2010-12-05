@@ -34,9 +34,9 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
  * <p/>
  * The datasouce may be configured as follows
  * <p/>
- * <datasource name="f1" type="FieldStreamDataSource" />
+ * &lt;dataSource name="f1" type="FieldStreamDataSource" /&gt;
  * <p/>
- * The enity which uses this datasource must keep and attribute dataField
+ * The entity which uses this datasource must keep and attribute dataField
  * <p/>
  * The fieldname must be resolvable from VariableResolver
  * <p/>
