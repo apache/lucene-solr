@@ -127,6 +127,10 @@ Changes in Runtime Behavior
   changed to enable unmapping by default if supported by the JRE.
   (Mike McCandless, Uwe Schindler, Robert Muir)
 
+* LUCENE-2790: LogMergePolicy.useCompoundFile's logic now factors in noCFSRatio 
+  to determine whether the passed in segment should be compound. 
+  (Shai Erera, Earwin Burrfoot)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
