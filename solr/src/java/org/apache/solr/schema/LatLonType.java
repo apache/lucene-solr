@@ -279,7 +279,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on SpatialTileField " + field.getName());
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on LatLonType " + field.getName());
   }
 
 
@@ -288,7 +288,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public Field createField(SchemaField field, String externalVal, float boost) {
-    throw new UnsupportedOperationException("SpatialTileField uses multiple fields.  field=" + field.getName());
+    throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 
 }
