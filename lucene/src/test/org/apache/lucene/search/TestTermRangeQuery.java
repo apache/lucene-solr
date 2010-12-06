@@ -17,26 +17,22 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+import java.text.Collator;
+import java.util.Locale;
+import java.util.Set;
+
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-
 import org.apache.lucene.util.LuceneTestCase;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Locale;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
-import java.text.Collator;
 
 
 public class TestTermRangeQuery extends LuceneTestCase {
@@ -103,17 +99,18 @@ public class TestTermRangeQuery extends LuceneTestCase {
     initializeIndex(new String[]{"A", "B", "C", "D"});
     IndexSearcher searcher = new IndexSearcher(dir, true);
     TermRangeQuery query = new TermRangeQuery("content", null, null, true, true);
-    assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "content");
+    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, null, 1000).scoreDocs.length);
     query = new TermRangeQuery("content", null, null, false, false);
-    assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, null, 1000).scoreDocs.length);
     query = new TermRangeQuery("content", "", null, true, false);
-    assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    assertFalse(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(4, searcher.search(query, null, 1000).scoreDocs.length);
     // and now anothe one
     query = new TermRangeQuery("content", "B", null, true, false);
-    assertTrue(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    assertTrue(query.getTermsEnum(terms) instanceof TermRangeTermsEnum);
     assertEquals(3, searcher.search(query, null, 1000).scoreDocs.length);
     searcher.close();
   }
@@ -140,7 +137,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   private void checkBooleanTerms(Searcher searcher, TermRangeQuery query, String... terms) throws IOException {
     query.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(50));
     final BooleanQuery bq = (BooleanQuery) searcher.rewrite(query);
-    final Set<String> allowedTerms = new HashSet<String>(Arrays.asList(terms));
+    final Set<String> allowedTerms = asSet(terms);
     assertEquals(allowedTerms.size(), bq.clauses().size());
     for (BooleanClause c : bq.clauses()) {
       assertTrue(c.getQuery() instanceof TermQuery);

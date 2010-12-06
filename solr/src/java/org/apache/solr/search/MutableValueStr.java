@@ -24,29 +24,37 @@ public class MutableValueStr extends MutableValue {
 
   @Override
   public Object toObject() {
-    return ByteUtils.UTF8toUTF16(value);
+    return exists ? ByteUtils.UTF8toUTF16(value) : null;
   }
 
   @Override
   public void copy(MutableValue source) {
-    value.copy(((MutableValueStr)source).value);
+    MutableValueStr s = (MutableValueStr) source;
+    exists = s.exists;
+    value.copy(s.value);
   }
 
   @Override
   public MutableValue duplicate() {
     MutableValueStr v = new MutableValueStr();
-    v.value = new BytesRef(value);
+    v.value.copy(value);
+    v.exists = this.exists;
     return v;
   }
 
   @Override
   public boolean equalsSameType(Object other) {
-    return value.equals(((MutableValueStr)other).value);
+    MutableValueStr b = (MutableValueStr)other;
+    return value.equals(b.value) && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    return value.compareTo(((MutableValueStr)other).value);
+    MutableValueStr b = (MutableValueStr)other;
+    int c = value.compareTo(b.value);
+    if (c != 0) return c;
+    if (exists == b.exists) return 0;
+    return exists ? 1 : -1;
   }
 
 

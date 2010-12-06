@@ -385,6 +385,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
 
     });
+    conf.setMaxBufferedDocs(Math.max(3, conf.getMaxBufferedDocs()));
+
     IndexWriter writer = new IndexWriter(dir, conf);
 
     Document doc = new Document();
@@ -412,7 +414,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     writer.close();
     IndexReader reader = IndexReader.open(dir, true);
     final Term t = new Term("content", "aa");
-    assertEquals(reader.docFreq(t), 3);
+    assertEquals(3, reader.docFreq(t));
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
@@ -506,9 +508,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
 
     for(int i=0;i<2;i++) {
+      if (VERBOSE) {
+        System.out.println("TEST: cycle i=" + i);
+      }
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
-      //writer.setInfoStream(System.out);
+      writer.setInfoStream(VERBOSE ? System.out : null);
+
+      // don't allow a sudden merge to clean up the deleted
+      // doc below:
+      LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
+      lmp.setMergeFactor(Math.max(lmp.getMergeFactor(), 5));
+
       Document doc = new Document();
       doc.add(newField("contents", "here are some contents", Field.Store.YES,
                         Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -522,6 +533,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         writer.addDocument(doc);
         fail("did not hit expected exception");
       } catch (IOException ioe) {
+        if (VERBOSE) {
+          System.out.println("TEST: hit expected exception");
+          ioe.printStackTrace(System.out);
+        }
       }
 
       if (0 == i) {
@@ -533,6 +548,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       writer.close();
 
+      if (VERBOSE) {
+        System.out.println("TEST: open reader");
+      }
       IndexReader reader = IndexReader.open(dir, true);
       int expected = 3+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
@@ -594,8 +612,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       MockDirectoryWrapper dir = newDirectory();
 
       {
-        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1));
-        ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+        final  IndexWriter writer = new IndexWriter(
+            dir,
+            newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
+                setMaxBufferedDocs(-1).
+                setMergePolicy(newLogMergePolicy(10))
+        );
         final int finalI = i;
 
         Thread[] threads = new Thread[NUM_THREAD];
@@ -722,10 +744,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     FailOnlyInSync failure = new FailOnlyInSync();
     dir.failOn(failure);
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(2).
+            setMergeScheduler(new ConcurrentMergeScheduler()).
+            setMergePolicy(newLogMergePolicy(5))
+    );
     failure.setDoFail();
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(5);
 
     for (int i = 0; i < 23; i++) {
       addDoc(writer);
@@ -987,8 +1013,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexWriter writer = null;
 
-      writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-      ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
+      writer  = new IndexWriter(
+          dir,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setMergePolicy(newLogMergePolicy(true))
+      );
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setNoCFSRatio(1.0);
 
       // add 100 documents
       for (int i = 0; i < 100; i++) {

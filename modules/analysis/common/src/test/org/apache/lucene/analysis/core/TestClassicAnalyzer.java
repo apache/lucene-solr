@@ -129,12 +129,13 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     // the following should be recognized as HOST:
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
 
-    // 2.3 should show the bug
-    a2 = new ClassicAnalyzer(org.apache.lucene.util.Version.LUCENE_23);
-    assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
+    // 2.3 should show the bug. But, alas, it's obsolete, we don't support it.
+    // a2 = new ClassicAnalyzer(org.apache.lucene.util.Version.LUCENE_23);
+    // assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
 
-    // 2.4 should not show the bug
-    a2 = new ClassicAnalyzer(Version.LUCENE_24);
+    // 2.4 should not show the bug. But, alas, it's also obsolete,
+    // so we check latest released (Robert's gonna break this on 4.0 soon :) )
+    a2 = new ClassicAnalyzer(Version.LUCENE_31);
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
   }
 

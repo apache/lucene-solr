@@ -20,7 +20,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
-import org.apache.lucene.util.AttributeSource;
 
 import java.io.Reader;
 import java.io.Serializable;
@@ -210,7 +209,4 @@ public interface Fieldable extends Serializable {
   * silently fail to find results.
   */
   void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
-  
-  boolean hasFieldAttribute();
-  AttributeSource getFieldAttributes();
 }

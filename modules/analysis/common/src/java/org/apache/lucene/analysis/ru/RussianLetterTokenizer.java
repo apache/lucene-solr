@@ -37,8 +37,8 @@ import org.apache.lucene.util.Version;
  * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
  * {@link CharTokenizer#normalize(int)} for details.</li>
  * </ul>
- * @deprecated Use {@link StandardTokenizer} instead, which has the same functionality.
- * This filter will be removed in Lucene 4.0 
+ * @deprecated (3.1) Use {@link StandardTokenizer} instead, which has the same functionality.
+ * This filter will be removed in Lucene 5.0 
  */
 @Deprecated
 public class RussianLetterTokenizer extends CharTokenizer
@@ -86,42 +86,7 @@ public class RussianLetterTokenizer extends CharTokenizer
       super(matchVersion, factory, in);
     }
     
-    /**
-     * Construct a new RussianLetterTokenizer.
-     * 
-     * @deprecated use {@link #RussianLetterTokenizer(Version, Reader)} instead. This will
-     *             be removed in Lucene 4.0.
-     */
-    @Deprecated
-    public RussianLetterTokenizer(Reader in) {
-      super(in);
-    }
-
-    /**
-     * Construct a new RussianLetterTokenizer using a given {@link AttributeSource}.
-     * 
-     * @deprecated use {@link #RussianLetterTokenizer(Version, AttributeSource, Reader)}
-     *             instead. This will be removed in Lucene 4.0.
-     */
-    @Deprecated
-    public RussianLetterTokenizer(AttributeSource source, Reader in) {
-      super(source, in);
-    }
-
-    /**
-     * Construct a new RussianLetterTokenizer using a given
-     * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
-     * 
-     * @deprecated use {@link #RussianLetterTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
-     *             instead. This will be removed in Lucene 4.0.
-     */
-    @Deprecated
-    public RussianLetterTokenizer(AttributeFactory factory, Reader in) {
-      super(factory, in);
-    }
-    
-    
-    /**
+     /**
      * Collects only characters which satisfy
      * {@link Character#isLetter(int)}.
      */

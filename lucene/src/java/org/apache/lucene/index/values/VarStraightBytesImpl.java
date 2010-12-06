@@ -34,6 +34,9 @@ import org.apache.lucene.util.packed.PackedInts;
 
 // Variable length byte[] per document, no sharing
 
+/**
+ * @lucene.experimental
+ */
 class VarStraightBytesImpl {
 
   static final String CODEC_NAME = "VarStraightBytes";
@@ -135,7 +138,7 @@ class VarStraightBytesImpl {
         final long address = addresses.get(docID);
         final int length = docID == maxDoc - 1 ? (int) (totalLengthInBytes - address)
             : (int) (addresses.get(1 + docID) - address);
-        return data.fill(bytesRef, address, length);
+        return data.fillSlice(bytesRef, address, length);
       }
 
       @Override
@@ -165,7 +168,6 @@ class VarStraightBytesImpl {
       private final IndexInput idxIn;
       private final long fp;
       private final int totBytes;
-      private final BytesRef ref;
       private int pos = -1;
 
       protected VarStraightBytesEnum(AttributeSource source, IndexInput datIn,
@@ -176,8 +178,6 @@ class VarStraightBytesImpl {
         addresses = PackedInts.getReader(idxIn);
         this.datIn = datIn;
         this.idxIn = idxIn;
-        ref = attr.bytes();
-
       }
 
       @Override
@@ -193,17 +193,18 @@ class VarStraightBytesImpl {
         }
         final long addr = addresses.get(target);
         if (addr == totBytes) { // empty values at the end
-          ref.length = 0;
-          ref.offset = 0;
+          bytesRef.length = 0;
+          bytesRef.offset = 0;
           return pos = target;
         }
         datIn.seek(fp + addr);
         final int size = (int) (target == maxDoc - 1 ? totBytes - addr
             : addresses.get(target + 1) - addr);
-        if (ref.bytes.length < size)
-          ref.grow(size);
-        ref.length = size;
-        datIn.readBytes(ref.bytes, 0, size);
+        if (bytesRef.bytes.length < size) {
+          bytesRef.grow(size);
+        }
+        bytesRef.length = size;
+        datIn.readBytes(bytesRef.bytes, 0, size);
         return pos = target;
       }
 

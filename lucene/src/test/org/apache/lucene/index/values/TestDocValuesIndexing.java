@@ -24,9 +24,9 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.AbstractField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.ValuesField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
@@ -58,8 +58,7 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util._TestUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Before;
 
 /**
  * 
@@ -70,7 +69,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   /*
    * TODO:
    * Roadmap to land on trunk
-   *   - Cut over to a direct API on ValuesEnum vs. ValuesAttribute 
+   *   
    *   - Add documentation for:
    *      - Source and ValuesEnum
    *      - DocValues
@@ -78,7 +77,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    *      - ValuesAttribute
    *      - Values
    *   - Add @lucene.experimental to all necessary classes
-   *   - Try to make ValuesField more lightweight -> AttributeSource
    *   - add test for unoptimized case with deletes
    *   - add a test for addIndexes
    *   - split up existing testcases and give them meaningfull names
@@ -89,23 +87,19 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    *   - add tests for FieldComparator FloatIndexValuesComparator vs. FloatValuesComparator etc.
    */
 
-  private static DocValuesCodec docValuesCodec;
-  private static CodecProvider provider;
+  private DocValuesCodec docValuesCodec;
+  private CodecProvider provider;
 
-  @BeforeClass
-  public static void beforeClassLuceneTestCaseJ4() {
-    LuceneTestCase.beforeClassLuceneTestCaseJ4();
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    String defaultFieldCodec = CodecProvider.getDefault().getDefaultFieldCodec();
     provider = new CodecProvider();
-    docValuesCodec = new DocValuesCodec(CodecProvider.getDefault().lookup(
-        CodecProvider.getDefaultCodec()));
+    docValuesCodec = new DocValuesCodec(CodecProvider.getDefault().lookup(defaultFieldCodec));
     provider.register(docValuesCodec);
     provider.setDefaultFieldCodec(docValuesCodec.name);
   }
-
-  @AfterClass
-  public static void afterClassLuceneTestCaseJ4() {
-    LuceneTestCase.afterClassLuceneTestCaseJ4();
-  }
+  
   
   /*
    * Simple test case to show how to use the API
@@ -271,7 +265,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           }
           assertEquals("advance failed at index: " + i + " of " + r.numDocs()
               + " docs base:" + base, i, floatEnum.advance(i));
-          assertEquals("index " + i, 2.0 * expected, enumRef.get(), 0.00001);
+          assertEquals(floatEnum.getClass() + " index " + i, 2.0 * expected, enumRef.get(), 0.00001);
           assertEquals("index " + i, 2.0 * expected, floats.getFloat(i),
               0.00001);
         }
@@ -374,6 +368,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
               .advance(i));
         }
         for (int j = 0; j < br.length; j++, upto++) {
+          assertTrue(bytesEnum.getClass() + " enumRef not initialized " + msg, enumRef.bytes.length > 0);
           assertEquals(
               "EnumRef Byte at index " + j + " doesn't match - " + msg, upto,
               enumRef.bytes[enumRef.offset + j]);
@@ -464,16 +459,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     OpenBitSet deleted = new OpenBitSet(numValues);
     Document doc = new Document();
     Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
-    Fieldable field = random.nextBoolean() ? new ValuesField(value.name())
+    AbstractField field = random.nextBoolean() ? new ValuesField(value.name())
         : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
             10), idx == Index.NO ? Store.YES : Store.NO, idx);
     doc.add(field);
-
-    ValuesAttribute valuesAttribute = ValuesField.values(field);
-    valuesAttribute.setType(value);
-    final LongsRef intsRef = valuesAttribute.ints();
-    final FloatsRef floatsRef = valuesAttribute.floats();
-    final BytesRef bytesRef = valuesAttribute.bytes();
+    ValuesField valField = new ValuesField("prototype");
+    final BytesRef bytesRef = new BytesRef();
 
     final String idBase = value.name() + "_";
     final byte[] b = new byte[multOfSeven];
@@ -487,11 +478,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       if (isNumeric) {
         switch (value) {
         case PACKED_INTS:
-          intsRef.set(i);
+          valField.setInt(i);
           break;
         case SIMPLE_FLOAT_4BYTE:
         case SIMPLE_FLOAT_8BYTE:
-          floatsRef.set(2.0f * i);
+          valField.setFloat(2.0f * i);
           break;
         default:
           fail("unexpected value " + value);
@@ -500,10 +491,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         for (int j = 0; j < b.length; j++) {
           b[j] = upto++;
         }
+        valField.setBytes(bytesRef, value);
       }
       doc.removeFields("id");
       doc.add(new Field("id", idBase + i, Store.YES,
           Index.NOT_ANALYZED_NO_NORMS));
+      valField.set(field);
       w.addDocument(doc);
 
       if (i % 7 == 0) {

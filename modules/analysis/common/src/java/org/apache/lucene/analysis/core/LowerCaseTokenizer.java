@@ -89,40 +89,6 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
     super(matchVersion, factory, in);
   }
   
-  /**
-   * Construct a new LowerCaseTokenizer.
-   * 
-   * @deprecated use {@link #LowerCaseTokenizer(Reader)} instead. This will be
-   *             removed in Lucene 4.0.
-   */
-  @Deprecated
-  public LowerCaseTokenizer(Reader in) {
-    super(Version.LUCENE_30, in);
-  }
-
-  /**
-   * Construct a new LowerCaseTokenizer using a given {@link AttributeSource}.
-   * 
-   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource, Reader)}
-   *             instead. This will be removed in Lucene 4.0.
-   */
-  @Deprecated
-  public LowerCaseTokenizer(AttributeSource source, Reader in) {
-    super(Version.LUCENE_30, source, in);
-  }
-
-  /**
-   * Construct a new LowerCaseTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
-   * 
-   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource.AttributeFactory, Reader)}
-   *             instead. This will be removed in Lucene 4.0.
-   */
-  @Deprecated
-  public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
-    super(Version.LUCENE_30, factory, in);
-  }
-  
   /** Converts char to lower case
    * {@link Character#toLowerCase(int)}.*/
   @Override

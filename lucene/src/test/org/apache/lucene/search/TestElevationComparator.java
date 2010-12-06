@@ -36,8 +36,12 @@ public class TestElevationComparator extends LuceneTestCase {
   //@Test
   public void testSorting() throws Throwable {
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
+    IndexWriter writer = new IndexWriter(
+        directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(2).
+            setMergePolicy(newLogMergePolicy(1000))
+    );
     writer.addDocument(adoc(new String[] {"id", "a", "title", "ipod", "str_s", "a"}));
     writer.addDocument(adoc(new String[] {"id", "b", "title", "ipod ipod", "str_s", "b"}));
     writer.addDocument(adoc(new String[] {"id", "c", "title", "ipod ipod ipod", "str_s","c"}));

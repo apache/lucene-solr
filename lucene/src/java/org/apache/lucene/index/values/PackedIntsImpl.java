@@ -32,7 +32,10 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** Stores ints packed with fixed-bit precision. */
+/** Stores ints packed with fixed-bit precision.
+ * 
+ * @lucene.experimental
+ * */
 class PackedIntsImpl {
 
   private static final String CODEC_NAME = "PackedInts";
@@ -130,16 +133,13 @@ class PackedIntsImpl {
     }
 
     @Override
-    protected void setNextAttribute(ValuesAttribute attr) {
-      intsRef = attr.ints();
+    protected void setNextEnum(ValuesEnum valuesEnum) {
+      intsRef = valuesEnum.getInt();
     }
 
     @Override
-    public void add(int docID, ValuesAttribute attr) throws IOException {
-      final LongsRef ref;
-      if ((ref = attr.ints()) != null) {
-        add(docID, ref.get());
-      }
+    public void add(int docID, PerDocFieldValues docValues) throws IOException {
+        add(docID, docValues.getInt());
     }
 
     @Override
@@ -191,17 +191,10 @@ class PackedIntsImpl {
         return minValue + values.get(docID);
       }
 
-      public long ramBytesUsed() {
-        // TODO(simonw): move that to PackedInts?
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-            + values.getBitsPerValue() * values.size();
-      }
-
       @Override
       public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, values.size()) {
-          private final LongsRef ref = attr.ints();
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
@@ -211,7 +204,7 @@ class PackedIntsImpl {
                 return pos = NO_MORE_DOCS;
               }
             }
-            ref.ints[ref.offset] = source.getInt(target);
+            intsRef.ints[intsRef.offset] = source.getInt(target);
             return pos = target;
           }
         };
@@ -246,15 +239,13 @@ class PackedIntsImpl {
     private long minValue;
     private final IndexInput dataIn;
     private final long defaultValue;
-    private LongsRef ref;
     private final int maxDoc;
     private int pos = -1;
 
     private IntsEnumImpl(AttributeSource source, IndexInput dataIn)
         throws IOException {
       super(source, Values.PACKED_INTS);
-      this.ref = attr.ints();
-      this.ref.offset = 0;
+      intsRef.offset = 0;
       this.dataIn = dataIn;
       dataIn.seek(CodecUtil.headerLength(CODEC_NAME));
       minValue = dataIn.readLong();
@@ -281,8 +272,8 @@ class PackedIntsImpl {
         }
         val = ints.advance(target);
       }
-      ref.ints[0] = minValue + val;
-      ref.offset = 0; // can we skip this?
+      intsRef.ints[0] = minValue + val;
+      intsRef.offset = 0; // can we skip this?
       return pos = target;
     }
 

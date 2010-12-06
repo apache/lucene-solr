@@ -24,10 +24,16 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
-
+/**
+ * 
+ * @lucene.experimental
+ */
 public abstract class ValuesEnum extends DocIdSetIterator {
   private AttributeSource source;
-  protected final ValuesAttribute attr;
+  private Values enumType;
+  protected BytesRef bytesRef;
+  protected FloatsRef floatsRef;
+  protected LongsRef intsRef;
 
   protected ValuesEnum(Values enumType) {
     this(null, enumType);
@@ -35,26 +41,46 @@ public abstract class ValuesEnum extends DocIdSetIterator {
 
   protected ValuesEnum(AttributeSource source, Values enumType) {
     this.source = source;
-    boolean setType = !hasAttribute(ValuesAttribute.class);
-    attr = addAttribute(ValuesAttribute.class);
-    if (setType)
-      attr.setType(enumType);
+    this.enumType = enumType;
+    switch (enumType) {
+    case BYTES_FIXED_DEREF:
+    case BYTES_FIXED_SORTED:
+    case BYTES_FIXED_STRAIGHT:
+    case BYTES_VAR_DEREF:
+    case BYTES_VAR_SORTED:
+    case BYTES_VAR_STRAIGHT:
+      bytesRef = new BytesRef();
+      break;
+    case PACKED_INTS:
+      intsRef = new LongsRef(1);
+      break;
+    case SIMPLE_FLOAT_4BYTE:
+    case SIMPLE_FLOAT_8BYTE:
+      floatsRef = new FloatsRef(1);
+      break;  
+    }
   }
 
   public Values type() {
-    return attr.type();
+    return enumType;
   }
 
   public BytesRef bytes() {
-    return attr.bytes();
+    return bytesRef;
   }
 
   public FloatsRef getFloat() {
-    return attr.floats();
+    return floatsRef;
   }
 
   public LongsRef getInt() {
-    return attr.ints();
+    return intsRef;
+  }
+  
+  protected void copyReferences(ValuesEnum valuesEnum) {
+    intsRef = valuesEnum.intsRef;
+    floatsRef = valuesEnum.floatsRef;
+    bytesRef = valuesEnum.bytesRef;
   }
 
   public AttributeSource attributes() {

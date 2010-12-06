@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
-import org.apache.lucene.index.values.ValuesAttribute;
+import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -47,11 +47,11 @@ final class DocFieldProcessor extends DocConsumer {
 
 
   synchronized DocValuesConsumer docValuesConsumer(Directory dir,
-      String segment, String name, ValuesAttribute attr, FieldInfo fieldInfo)
+      String segment, String name, PerDocFieldValues values, FieldInfo fieldInfo)
       throws IOException {
     DocValuesConsumer valuesConsumer;
     if ((valuesConsumer = docValues.get(name)) == null) {
-      fieldInfo.setDocValues(attr.type());
+      fieldInfo.setDocValues(values.type());
 
       if(fieldsConsumer == null) {
         /* nocommit -- this is a hack and only works since DocValuesCodec supports initializing the FieldsConsumer twice.
@@ -72,9 +72,9 @@ final class DocFieldProcessor extends DocConsumer {
 
  
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
-    this.fieldInfos = new FieldInfos();
     this.docWriter = docWriter;
     this.consumer = consumer;
+    fieldInfos = docWriter.getFieldInfos();
     consumer.setFieldInfos(fieldInfos);
     fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
   }

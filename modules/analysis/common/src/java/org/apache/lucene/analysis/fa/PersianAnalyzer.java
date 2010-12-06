@@ -17,10 +17,8 @@ package org.apache.lucene.analysis.fa;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Hashtable;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,7 +29,6 @@ import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
 /**
@@ -104,34 +101,6 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    */
   public PersianAnalyzer(Version matchVersion, Set<?> stopwords){
     super(matchVersion, stopwords);
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public PersianAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public PersianAnalyzer(Version matchVersion, Hashtable<?, ?> stopwords) {
-    this(matchVersion, stopwords.keySet());
-  }
-
-  /**
-   * Builds an analyzer with the given stop words. Lines can be commented out
-   * using {@link #STOPWORDS_COMMENT}
-   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public PersianAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords, STOPWORDS_COMMENT));
   }
 
   /**

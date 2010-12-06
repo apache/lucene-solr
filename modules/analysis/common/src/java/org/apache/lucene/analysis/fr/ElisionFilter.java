@@ -18,11 +18,12 @@ package org.apache.lucene.analysis.fr;
  */
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.Arrays;
-import org.apache.lucene.analysis.standard.StandardTokenizer; // for javadocs
-import org.apache.lucene.analysis.TokenStream;
+import java.util.Set;
+
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
@@ -45,51 +46,12 @@ public final class ElisionFilter extends TokenFilter {
   private static char[] apostrophes = {'\'', '\u2019'};
   
   /**
-   * Set the stopword articles
-   * @param matchVersion the lucene backwards compatibility version
-   * @param articles a set of articles
-   * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
-   */
-  @Deprecated
-  public void setArticles(Version matchVersion, Set<?> articles) {
-    this.articles = CharArraySet.unmodifiableSet(
-        CharArraySet.copy(matchVersion, articles));
-  }
-
-  /**
-   * Set the stopword articles
-   * @param articles a set of articles
-   * @deprecated use {@link #setArticles(Version, Set)} instead
-   */
-  @Deprecated
-  public void setArticles(Set<?> articles) {
-    setArticles(Version.LUCENE_CURRENT, articles);
-  }
-  /**
    * Constructs an elision filter with standard stop words
    */
   public ElisionFilter(Version matchVersion, TokenStream input) {
     this(matchVersion, input, DEFAULT_ARTICLES);
   }
 
-  /**
-   * Constructs an elision filter with standard stop words
-   * @deprecated use {@link #ElisionFilter(Version, TokenStream)} instead
-   */
-  @Deprecated
-  public ElisionFilter(TokenStream input) {
-    this(Version.LUCENE_30, input);
-  }
-
-  /**
-   * Constructs an elision filter with a Set of stop words
-   * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
-   */
-  @Deprecated
-  public ElisionFilter(TokenStream input, Set<?> articles) {
-    this(Version.LUCENE_30, input, articles);
-  }
-  
   /**
    * Constructs an elision filter with a Set of stop words
    * @param matchVersion the lucene backwards compatibility version
@@ -100,17 +62,6 @@ public final class ElisionFilter extends TokenFilter {
     super(input);
     this.articles = CharArraySet.unmodifiableSet(
         new CharArraySet(matchVersion, articles, true));
-  }
-
-  /**
-   * Constructs an elision filter with an array of stop words
-   * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
-   */
-  @Deprecated
-  public ElisionFilter(TokenStream input, String[] articles) {
-    this(Version.LUCENE_CURRENT, input,
-        new CharArraySet(Version.LUCENE_CURRENT,
-            Arrays.asList(articles), true));
   }
 
   /**

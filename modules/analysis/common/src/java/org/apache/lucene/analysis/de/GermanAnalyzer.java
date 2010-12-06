@@ -18,12 +18,9 @@ package org.apache.lucene.analysis.de;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -67,13 +64,9 @@ import org.tartarus.snowball.ext.German2Stemmer;
  */
 public final class GermanAnalyzer extends StopwordAnalyzerBase {
   
-  /**
-   * List of typical german stopwords.
-   * @deprecated use {@link #getDefaultStopSet()} instead
-   */
-  //TODO make this private in 3.1, remove in 4.0
+  /** @deprecated in 3.1, remove in Lucene 5.0 (index bw compat) */
   @Deprecated
-  public final static String[] GERMAN_STOP_WORDS = {
+  private final static String[] GERMAN_STOP_WORDS = {
     "einer", "eine", "eines", "einem", "einen",
     "der", "die", "das", "dass", "daß",
     "du", "er", "sie", "es",
@@ -100,7 +93,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    /** @deprecated remove in Lucene 4.0 */
+    /** @deprecated in 3.1, remove in Lucene 5.0 (index bw compat) */
     @Deprecated
     private static final Set<?> DEFAULT_SET_30 = CharArraySet.unmodifiableSet(new CharArraySet(
         Version.LUCENE_CURRENT, Arrays.asList(GERMAN_STOP_WORDS), false));
@@ -124,8 +117,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  // TODO make this final in 3.1
-  private Set<?> exclusionSet;
+  private final Set<?> exclusionSet;
 
   /**
    * Builds an analyzer with the default stop words:
@@ -162,64 +154,6 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   public GermanAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
     super(matchVersion, stopwords);
     exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #GermanAnalyzer(Version, Set)}
-   */
-  @Deprecated
-  public GermanAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #GermanAnalyzer(Version, Set)}
-   */
-  @Deprecated
-  public GermanAnalyzer(Version matchVersion, Map<?,?> stopwords) {
-    this(matchVersion, stopwords.keySet());
-    
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #GermanAnalyzer(Version, Set)}
-   */
-  @Deprecated
-  public GermanAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
-  }
-
-  /**
-   * Builds an exclusionlist from an array of Strings.
-   * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
-   */
-  @Deprecated
-  public void setStemExclusionTable(String[] exclusionlist) {
-    exclusionSet = StopFilter.makeStopSet(matchVersion, exclusionlist);
-    setPreviousTokenStream(null); // force a new stemmer to be created
-  }
-
-  /**
-   * Builds an exclusionlist from a {@link Map}
-   * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
-   */
-  @Deprecated
-  public void setStemExclusionTable(Map<?,?> exclusionlist) {
-    exclusionSet = new HashSet<Object>(exclusionlist.keySet());
-    setPreviousTokenStream(null); // force a new stemmer to be created
-  }
-
-  /**
-   * Builds an exclusionlist from the words contained in the given file.
-   * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
-   */
-  @Deprecated
-  public void setStemExclusionTable(File exclusionlist) throws IOException {
-    exclusionSet = WordlistLoader.getWordSet(exclusionlist);
-    setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
   /**

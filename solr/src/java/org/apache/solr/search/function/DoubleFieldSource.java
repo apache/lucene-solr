@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.cache.DoubleValuesCreator;
 import org.apache.lucene.search.cache.FloatValuesCreator;
@@ -50,6 +51,7 @@ public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final DoubleValues vals = cache.getDoubles(reader, field, creator);
     final double[] arr = vals.values;
+	final Bits valid = vals.valid;
     
     return new DocValues() {
       public float floatVal(int doc) {
@@ -148,6 +150,7 @@ public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
           @Override
           public void fillValue(int doc) {
             mval.value = doubleArr[doc];
+            mval.exists = valid.get(doc);
           }
         };
       }

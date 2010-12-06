@@ -74,7 +74,7 @@ public class TestBoolean2 extends LuceneTestCase {
     do {
       final Directory copy = new MockDirectoryWrapper(random, new RAMDirectory(dir2));
       RandomIndexWriter w = new RandomIndexWriter(random, dir2);
-      w.addIndexes(new Directory[] {copy});
+      w.addIndexes(copy);
       docCount = w.maxDoc();
       w.close();
       mulFactor *= 2;

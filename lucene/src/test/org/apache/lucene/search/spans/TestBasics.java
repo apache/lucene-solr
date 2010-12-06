@@ -80,7 +80,7 @@ public class TestBasics extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    searcher = new IndexSearcher(reader);
     writer.close();
   }
 
@@ -227,7 +227,7 @@ public class TestBasics extends LuceneTestCase {
                                            4, true);
     SpanTermQuery term3 = new SpanTermQuery(new Term("field", "forty"));
 
-    SpanOrQuery or = new SpanOrQuery(new SpanQuery[] {term3});
+    SpanOrQuery or = new SpanOrQuery(term3);
 
     SpanNotQuery query = new SpanNotQuery(near, or);
 
@@ -249,7 +249,7 @@ public class TestBasics extends LuceneTestCase {
     SpanTermQuery term4 = new SpanTermQuery(new Term("field", "sixty"));
     SpanTermQuery term5 = new SpanTermQuery(new Term("field", "eighty"));
 
-    SpanOrQuery or = new SpanOrQuery(new SpanQuery[] {term3, term4, term5});
+    SpanOrQuery or = new SpanOrQuery(term3, term4, term5);
 
     SpanNotQuery query = new SpanNotQuery(near, or);
 
@@ -436,7 +436,7 @@ public class TestBasics extends LuceneTestCase {
     SpanNearQuery near2 = new SpanNearQuery(new SpanQuery[] {term3, term4},
                                             0, true);
 
-    SpanOrQuery query = new SpanOrQuery(new SpanQuery[] {near1, near2});
+    SpanOrQuery query = new SpanOrQuery(near1, near2);
 
     checkHits(query, new int[]
       {33, 47, 133, 147, 233, 247, 333, 347, 433, 447, 533, 547, 633, 647, 733,
@@ -475,8 +475,8 @@ public class TestBasics extends LuceneTestCase {
     SpanTermQuery t5 = new SpanTermQuery(new Term("field","seven"));
     SpanTermQuery t6 = new SpanTermQuery(new Term("field","six"));
 
-    SpanOrQuery to1 = new SpanOrQuery(new SpanQuery[] {t1, t3});
-    SpanOrQuery to2 = new SpanOrQuery(new SpanQuery[] {t5, t6});
+    SpanOrQuery to1 = new SpanOrQuery(t1, t3);
+    SpanOrQuery to2 = new SpanOrQuery(t5, t6);
     
     SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {to1, to2},
                                             10, true);
@@ -505,8 +505,8 @@ public class TestBasics extends LuceneTestCase {
     SpanTermQuery t5 = new SpanTermQuery(new Term("field","seven"));
     SpanTermQuery t6 = new SpanTermQuery(new Term("field","six"));
 
-    SpanOrQuery to1 = new SpanOrQuery(new SpanQuery[] {tt1, tt2});
-    SpanOrQuery to2 = new SpanOrQuery(new SpanQuery[] {t5, t6});
+    SpanOrQuery to1 = new SpanOrQuery(tt1, tt2);
+    SpanOrQuery to2 = new SpanOrQuery(t5, t6);
     
     SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {to1, to2},
                                             100, true);
@@ -524,8 +524,8 @@ public class TestBasics extends LuceneTestCase {
   public void testSpansSkipTo() throws Exception {
 	  SpanTermQuery t1 = new SpanTermQuery(new Term("field", "seventy"));
 	  SpanTermQuery t2 = new SpanTermQuery(new Term("field", "seventy"));
-	  Spans s1 = t1.getSpans(searcher.getIndexReader());
-	  Spans s2 = t2.getSpans(searcher.getIndexReader());
+	  Spans s1 = t1.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+	  Spans s2 = t2.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
 	  
 	  assertTrue(s1.next());
 	  assertTrue(s2.next());

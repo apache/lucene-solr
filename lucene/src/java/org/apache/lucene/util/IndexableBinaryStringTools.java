@@ -37,19 +37,6 @@ import java.nio.ByteBuffer;
  * problem, a char is appended, indicating the number of encoded bytes in the
  * final content char.
  * <p/>
- * Some methods in this class are defined over CharBuffers and ByteBuffers, but
- * these are deprecated in favor of methods that operate directly on byte[] and
- * char[] arrays.  Note that this class calls array() and arrayOffset()
- * on the CharBuffers and ByteBuffers it uses, so only wrapped arrays may be
- * used.  This class interprets the arrayOffset() and limit() values returned 
- * by its input buffers as beginning and end+1 positions on the wrapped array,
- * respectively; similarly, on the output buffer, arrayOffset() is the first
- * position written to, and limit() is set to one past the final output array
- * position.
- * <p/>
- * WARNING: This means that the deprecated Buffer-based methods 
- * only work correctly with buffers that have an offset of 0. For example, they
- * will not correctly interpret buffers returned by {@link ByteBuffer#slice}.  
  *
  * @lucene.experimental
  */
@@ -72,28 +59,6 @@ public final class IndexableBinaryStringTools {
   private IndexableBinaryStringTools() {}
 
   /**
-   * Returns the number of chars required to encode the given byte sequence.
-   * 
-   * @param original The byte sequence to be encoded. Must be backed by an
-   *        array.
-   * @return The number of chars required to encode the given byte sequence
-   * @throws IllegalArgumentException If the given ByteBuffer is not backed by
-   *         an array
-   * @deprecated Use {@link #getEncodedLength(byte[], int, int)} instead. This
-   *             method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static int getEncodedLength(ByteBuffer original)
-    throws IllegalArgumentException {
-    if (original.hasArray()) {
-      return getEncodedLength(original.array(), original.arrayOffset(),
-          original.limit() - original.arrayOffset());
-    } else {
-      throw new IllegalArgumentException("original argument must have a backing array");
-    }
-  }
-  
-  /**
    * Returns the number of chars required to encode the given bytes.
    * 
    * @param inputArray byte sequence to be encoded
@@ -107,28 +72,6 @@ public final class IndexableBinaryStringTools {
     return (int)((8L * inputLength + 14L) / 15L) + 1;
   }
 
-
-  /**
-   * Returns the number of bytes required to decode the given char sequence.
-   * 
-   * @param encoded The char sequence to be decoded. Must be backed by an array.
-   * @return The number of bytes required to decode the given char sequence
-   * @throws IllegalArgumentException If the given CharBuffer is not backed by
-   *         an array
-   * @deprecated Use {@link #getDecodedLength(char[], int, int)} instead. This
-   *             method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static int getDecodedLength(CharBuffer encoded) 
-    throws IllegalArgumentException {
-    if (encoded.hasArray()) {
-      return getDecodedLength(encoded.array(), encoded.arrayOffset(), 
-          encoded.limit() - encoded.arrayOffset());
-    } else {
-      throw new IllegalArgumentException("encoded argument must have a backing array");
-    }
-  }
-  
   /**
    * Returns the number of bytes required to decode the given char sequence.
    * 
@@ -149,36 +92,6 @@ public final class IndexableBinaryStringTools {
     }
   }
 
-  /**
-   * Encodes the input byte sequence into the output char sequence. Before
-   * calling this method, ensure that the output CharBuffer has sufficient
-   * capacity by calling {@link #getEncodedLength(java.nio.ByteBuffer)}.
-   * 
-   * @param input The byte sequence to encode
-   * @param output Where the char sequence encoding result will go. The limit is
-   *        set to one past the position of the final char.
-   * @throws IllegalArgumentException If either the input or the output buffer
-   *         is not backed by an array
-   * @deprecated Use {@link #encode(byte[], int, int, char[], int, int)}
-   *             instead. This method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static void encode(ByteBuffer input, CharBuffer output) {
-    if (input.hasArray() && output.hasArray()) {
-      final int inputOffset = input.arrayOffset();
-      final int inputLength = input.limit() - inputOffset;
-      final int outputOffset = output.arrayOffset();
-      final int outputLength = getEncodedLength(input.array(), inputOffset,
-          inputLength);
-      output.limit(outputLength + outputOffset);
-      output.position(0);
-      encode(input.array(), inputOffset, inputLength, output.array(),
-          outputOffset, outputLength);
-    } else {
-      throw new IllegalArgumentException("Arguments must have backing arrays");
-    }
-  }
-  
   /**
    * Encodes the input byte sequence into the output char sequence.  Before
    * calling this method, ensure that the output array has sufficient
@@ -230,36 +143,6 @@ public final class IndexableBinaryStringTools {
         // Add trailing char containing the number of full bytes in final char
         outputArray[outputCharNum++] = (char) 1;
       }
-    }
-  }
-
-  /**
-   * Decodes the input char sequence into the output byte sequence. Before
-   * calling this method, ensure that the output ByteBuffer has sufficient
-   * capacity by calling {@link #getDecodedLength(java.nio.CharBuffer)}.
-   * 
-   * @param input The char sequence to decode
-   * @param output Where the byte sequence decoding result will go. The limit is
-   *        set to one past the position of the final char.
-   * @throws IllegalArgumentException If either the input or the output buffer
-   *         is not backed by an array
-   * @deprecated Use {@link #decode(char[], int, int, byte[], int, int)}
-   *             instead. This method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static void decode(CharBuffer input, ByteBuffer output) {
-    if (input.hasArray() && output.hasArray()) {
-      final int inputOffset = input.arrayOffset();
-      final int inputLength = input.limit() - inputOffset;
-      final int outputOffset = output.arrayOffset();
-      final int outputLength = getDecodedLength(input.array(), inputOffset,
-          inputLength);
-      output.limit(outputLength + outputOffset);
-      output.position(0);
-      decode(input.array(), inputOffset, inputLength, output.array(),
-          outputOffset, outputLength);
-    } else {
-      throw new IllegalArgumentException("Arguments must have backing arrays");
     }
   }
 
@@ -330,46 +213,6 @@ public final class IndexableBinaryStringTools {
     }
   }
 
-  /**
-   * Decodes the given char sequence, which must have been encoded by
-   * {@link #encode(java.nio.ByteBuffer)} or
-   * {@link #encode(java.nio.ByteBuffer, java.nio.CharBuffer)}.
-   * 
-   * @param input The char sequence to decode
-   * @return A byte sequence containing the decoding result. The limit is set to
-   *         one past the position of the final char.
-   * @throws IllegalArgumentException If the input buffer is not backed by an
-   *         array
-   * @deprecated Use {@link #decode(char[], int, int, byte[], int, int)}
-   *             instead. This method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static ByteBuffer decode(CharBuffer input) {
-    byte[] outputArray = new byte[getDecodedLength(input)];
-    ByteBuffer output = ByteBuffer.wrap(outputArray);
-    decode(input, output);
-    return output;
-  }
-
-  /**
-   * Encodes the input byte sequence.
-   * 
-   * @param input The byte sequence to encode
-   * @return A char sequence containing the encoding result. The limit is set to
-   *         one past the position of the final char.
-   * @throws IllegalArgumentException If the input buffer is not backed by an
-   *         array
-   * @deprecated Use {@link #encode(byte[], int, int, char[], int, int)}
-   *             instead. This method will be removed in Lucene 4.0
-   */
-  @Deprecated
-  public static CharBuffer encode(ByteBuffer input) {
-    char[] outputArray = new char[getEncodedLength(input)];
-    CharBuffer output = CharBuffer.wrap(outputArray);
-    encode(input, output);
-    return output;
-  }
-  
   static class CodingCase {
     int numBytes, initialShift, middleShift, finalShift, advanceBytes = 2;
     short middleMask, finalMask;

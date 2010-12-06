@@ -106,27 +106,15 @@ public class BooleanFilter extends Filter
     }
     
     if (res !=null)
-      return finalResult(res, reader.maxDoc());
+      return res;
 
     return DocIdSet.EMPTY_DOCIDSET;
-  }
-
-  /** Provide a SortedVIntList when it is definitely smaller
-   * than an OpenBitSet.
-   * @deprecated Either use CachingWrapperFilter, or
-   * switch to a different DocIdSet implementation yourself.
-   * This method will be removed in Lucene 4.0 
-   */
-  @Deprecated
-  protected final DocIdSet finalResult(OpenBitSetDISI result, int maxDocs) {
-    return result;
   }
 
   /**
   * Adds a new FilterClause to the Boolean Filter container
   * @param filterClause A FilterClause object containing a Filter and an Occur parameter
   */
-  
   public void add(FilterClause filterClause)
   {
     if (filterClause.getOccur().equals(Occur.MUST)) {

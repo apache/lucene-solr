@@ -58,7 +58,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
         continue;
       }
 
-      final TermsEnum termsEnum = query.getTermsEnum(r, collector.attributes);
+      final TermsEnum termsEnum = query.getTermsEnum(terms, collector.attributes);
       assert termsEnum != null;
 
       if (termsEnum == TermsEnum.EMPTY)

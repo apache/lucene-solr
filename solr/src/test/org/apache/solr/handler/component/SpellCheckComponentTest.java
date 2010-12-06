@@ -66,7 +66,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     );
 
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","bluo", SpellCheckComponent.SPELLCHECK_COUNT,"3", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")
-       ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'blue','freq':1}, {'word':'blud','freq':1}, {'word':'boue','freq':1}]"
+       ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'blud','freq':1}, {'word':'blue','freq':1}, {'word':'blee','freq':1}]"
     );
   }
 

@@ -19,10 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -86,43 +85,43 @@ public class AutomatonQuery extends MultiTermQuery {
   }
 
   @Override
-  protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
+  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     // matches nothing
     if (BasicOperations.isEmpty(automaton)) {
       return TermsEnum.EMPTY;
     }
     
+    TermsEnum tenum = terms.iterator();
+    
     // matches all possible strings
     if (BasicOperations.isTotal(automaton)) {
-      // NOTE: for now, MultiTermQuery enums terms at the
-      // MultiReader level, so we must use MultiFields here:
-      return MultiFields.getTerms(reader, getField()).iterator();
+      return tenum;
     }
     
     // matches a fixed string in singleton representation
     String singleton = automaton.getSingleton();
     if (singleton != null)
-      return new SingleTermsEnum(reader, term.createTerm(singleton));
+      return new SingleTermsEnum(tenum, term.createTerm(singleton));
 
     // matches a fixed string in expanded representation
     final String commonPrefix = SpecialOperations.getCommonPrefix(automaton);
 
     if (commonPrefix.length() > 0) {
       if (BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
-        return new SingleTermsEnum(reader, term.createTerm(commonPrefix));
+        return new SingleTermsEnum(tenum, term.createTerm(commonPrefix));
       }
     
       // matches a constant prefix
       Automaton prefixAutomaton = BasicOperations.concatenate(BasicAutomata
                                                               .makeString(commonPrefix), BasicAutomata.makeAnyString());
       if (BasicOperations.sameLanguage(automaton, prefixAutomaton)) {
-        return new PrefixTermsEnum(reader, term.createTerm(commonPrefix));
+        return new PrefixTermsEnum(tenum, term.createTerm(commonPrefix));
       }
     }
 
     compileAutomaton();
     
-    return new AutomatonTermsEnum(runAutomaton, term.field(), reader, isFinite, commonSuffixRef);
+    return new AutomatonTermsEnum(runAutomaton, tenum, isFinite, commonSuffixRef);
   }
 
   @Override

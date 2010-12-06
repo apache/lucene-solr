@@ -115,7 +115,6 @@ public abstract class BaseResponseWriter {
             }
             responseWriter.writeDoc(sdoc);
           }
-          responseWriter.end();
         } else {
           ArrayList<SolrDocument> list = new ArrayList<SolrDocument>(docList
               .size());

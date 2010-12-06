@@ -107,6 +107,8 @@ class SortableDoubleFieldSource extends FieldCacheSource {
     final double def = defVal;
 
     return new StringIndexDocValues(this, reader, field) {
+      private final BytesRef spare = new BytesRef();
+
       protected String toTerm(String readableValue) {
         return NumberUtils.double2sortableStr(readableValue);
       }
@@ -125,7 +127,7 @@ class SortableDoubleFieldSource extends FieldCacheSource {
 
       public double doubleVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? def  : NumberUtils.SortableStr2double(termsIndex.lookup(ord, new BytesRef()));
+        return ord==0 ? def  : NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
       }
 
       public String strVal(int doc) {
@@ -148,7 +150,14 @@ class SortableDoubleFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = doubleVal(doc);
+            int ord=termsIndex.getOrd(doc);
+            if (ord == 0) {
+              mval.value = def;
+              mval.exists = false;
+            } else {
+              mval.value = NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
+              mval.exists = true;
+            }
           }
         };
       }

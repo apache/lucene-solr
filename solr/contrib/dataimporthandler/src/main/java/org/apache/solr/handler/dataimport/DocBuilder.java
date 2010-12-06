@@ -314,9 +314,10 @@ public class DocBuilder {
     Iterator<Map<String, Object>> iter = deletedKeys.iterator();
     while (iter.hasNext()) {
       Map<String, Object> map = iter.next();
-      Object key = map.get(root.getPk());
+      String keyName = root.isDocRoot ? root.getPk() : root.getSchemaPk();
+      Object key = map.get(keyName);
       if(key == null) {
-        LOG.warn("no key was available for deleteted pk query");
+        LOG.warn("no key was available for deleteted pk query. keyName = " + keyName);
         continue;
       }
       writer.deleteDoc(key);
@@ -607,7 +608,8 @@ public class DocBuilder {
           if (entity.entities != null) {
             vr.addNamespace(entity.name, arow);
             for (DataConfig.Entity child : entity.entities) {
-              buildDocument(vr, doc, null, child, false, ctx);
+              buildDocument(vr, doc,
+                  child.isDocRoot ? pk : null, child, false, ctx);
             }
             vr.removeNamespace(entity.name);
           }
@@ -910,8 +912,9 @@ public class DocBuilder {
     if (entity.isDocRoot)
       deletedRows.addAll(deletedSet);
 
-    return entity.isDocRoot ? myModifiedPks : new HashSet<Map<String, Object>>(
-            parentKeyList);
+    // Do not use entity.isDocRoot here because one of descendant entities may set rootEntity="true"
+    return entity.parentEntity == null ?
+        myModifiedPks : new HashSet<Map<String, Object>>(parentKeyList);
   }
 
   private void getModifiedParentRows(VariableResolverImpl resolver,

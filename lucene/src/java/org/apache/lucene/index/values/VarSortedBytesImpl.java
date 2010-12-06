@@ -43,6 +43,9 @@ import org.apache.lucene.util.packed.PackedInts;
 // have the same value, they store only 1 byte[] and both
 // docs reference that single source
 
+/**
+ * @lucene.experimental
+ */
 class VarSortedBytesImpl {
 
   static final String CODEC_NAME = "VarDerefBytes";
@@ -212,7 +215,7 @@ class VarSortedBytesImpl {
           nextOffset = ordToOffsetIndex.get(1 + ord);
         }
         final long offset = ordToOffsetIndex.get(ord);
-        data.fill(bytesRef, offset , (int)(nextOffset - offset));
+        data.fillSlice(bytesRef, offset , (int)(nextOffset - offset));
         return bytesRef;
       }
 
@@ -233,12 +236,10 @@ class VarSortedBytesImpl {
     }
 
     private static class VarSortedBytesEnum extends ValuesEnum {
-
       private PackedInts.Reader docToOrdIndex;
       private PackedInts.Reader ordToOffsetIndex;
       private IndexInput idxIn;
       private IndexInput datIn;
-      private final BytesRef bytesRef;
       private int valueCount;
       private long totBytes;
       private int docCount;
@@ -248,7 +249,6 @@ class VarSortedBytesImpl {
       protected VarSortedBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn) throws IOException {
         super(source, Values.BYTES_VAR_SORTED);
-        bytesRef = attr.bytes();
         totBytes = idxIn.readLong();
         // keep that in memory to prevent lots of disk seeks
         docToOrdIndex = PackedInts.getReader(idxIn);

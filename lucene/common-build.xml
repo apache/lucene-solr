@@ -64,7 +64,7 @@
     </or>
   </condition>
   <property name="tests.multiplier" value="1" />
-  <property name="tests.codec" value="random" />
+  <property name="tests.codec" value="randomPerField" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
@@ -72,6 +72,7 @@
   <property name="tests.seed" value="random" />
   <property name="tests.userdir" value="."/>
   <property name="tests.loggingfile" value="/dev/null"/>
+  <property name="tests.nightly" value="false" />
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -462,7 +463,9 @@
               <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
               <!-- logging config file -->
               <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
-	
+          <!-- set whether or not nightly tests should run -->
+          <sysproperty key="tests.nightly" value="${tests.nightly}"/>
+
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
               <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
 	      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>

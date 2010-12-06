@@ -24,9 +24,9 @@ import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
@@ -43,11 +43,11 @@ import java.util.Set;
  *   <li> As of 3.1, uses {@link TurkishLowerCaseFilter} for Turkish language.
  * </ul>
  * </p>
- * @deprecated Use the language-specific analyzer in modules/analysis instead. 
- * This analyzer will be removed in Lucene 4.0
+ * @deprecated (3.1) Use the language-specific analyzer in modules/analysis instead. 
+ * This analyzer will be removed in Lucene 5.0
  */
 @Deprecated
-public final class SnowballAnalyzer extends Analyzer {
+public final class SnowballAnalyzer extends ReusableAnalyzerBase {
   private String name;
   private Set<?> stopSet;
   private final Version matchVersion;
@@ -58,16 +58,6 @@ public final class SnowballAnalyzer extends Analyzer {
     this.matchVersion = matchVersion;
   }
 
-  /** 
-   * Builds the named analyzer with the given stop words.
-   * @deprecated Use {@link #SnowballAnalyzer(Version, String, Set)} instead.  
-   */
-  @Deprecated
-  public SnowballAnalyzer(Version matchVersion, String name, String[] stopWords) {
-    this(matchVersion, name);
-    stopSet = StopFilter.makeStopSet(matchVersion, stopWords);
-  }
-  
   /** Builds the named analyzer with the given stop words. */
   public SnowballAnalyzer(Version matchVersion, String name, Set<?> stopWords) {
     this(matchVersion, name);
@@ -79,9 +69,9 @@ public final class SnowballAnalyzer extends Analyzer {
       StandardFilter}, a {@link LowerCaseFilter}, a {@link StopFilter},
       and a {@link SnowballFilter} */
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(matchVersion, reader);
-    result = new StandardFilter(matchVersion, result);
+  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    Tokenizer tokenizer = new StandardTokenizer(matchVersion, reader);
+    TokenStream result = new StandardFilter(matchVersion, tokenizer);
     // remove the possessive 's for english stemmers
     if (matchVersion.onOrAfter(Version.LUCENE_31) && 
         (name.equals("English") || name.equals("Porter") || name.equals("Lovins")))
@@ -95,38 +85,6 @@ public final class SnowballAnalyzer extends Analyzer {
       result = new StopFilter(matchVersion,
                               result, stopSet);
     result = new SnowballFilter(result, name);
-    return result;
-  }
-  
-  private class SavedStreams {
-    Tokenizer source;
-    TokenStream result;
-  }
-  
-  /** Returns a (possibly reused) {@link StandardTokenizer} filtered by a 
-   * {@link StandardFilter}, a {@link LowerCaseFilter}, 
-   * a {@link StopFilter}, and a {@link SnowballFilter} */
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader)
-      throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new StandardTokenizer(matchVersion, reader);
-      streams.result = new StandardFilter(matchVersion, streams.source);
-      // Use a special lowercase filter for turkish, the stemmer expects it.
-      if (matchVersion.onOrAfter(Version.LUCENE_31) && name.equals("Turkish"))
-        streams.result = new TurkishLowerCaseFilter(streams.result);
-      else
-        streams.result = new LowerCaseFilter(matchVersion, streams.result);
-      if (stopSet != null)
-        streams.result = new StopFilter(matchVersion,
-                                        streams.result, stopSet);
-      streams.result = new SnowballFilter(streams.result, name);
-      setPreviousTokenStream(streams);
-    } else {
-      streams.source.reset(reader);
-    }
-    return streams.result;
+    return new TokenStreamComponents(tokenizer, result);
   }
 }

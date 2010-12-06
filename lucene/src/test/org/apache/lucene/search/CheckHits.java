@@ -454,13 +454,6 @@ public class CheckHits {
    */
   public static class ExplanationAsserter extends Collector {
 
-    /**
-     * @deprecated
-     * @see CheckHits#EXPLAIN_SCORE_TOLERANCE_DELTA
-     */
-    @Deprecated
-    public static float SCORE_TOLERANCE_DELTA = 0.00005f;
-
     Query q;
     Searcher s;
     String d;

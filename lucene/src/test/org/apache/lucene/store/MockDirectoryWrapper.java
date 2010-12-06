@@ -80,7 +80,10 @@ public class MockDirectoryWrapper extends Directory {
 
   public MockDirectoryWrapper(Random random, Directory delegate) {
     this.delegate = delegate;
-    this.randomState = random;
+    // must make a private random since our methods are
+    // called from different threads; else test failures may
+    // not be reproducible from the original seed
+    this.randomState = new Random(random.nextInt());
     init();
   }
 
@@ -92,17 +95,6 @@ public class MockDirectoryWrapper extends Directory {
    *  file is opened by createOutput, ever. */
   public void setPreventDoubleWrite(boolean value) {
     preventDoubleWrite = value;
-  }
-
-  @Deprecated
-  @Override
-  public void sync(String name) throws IOException {
-    maybeYield();
-    maybeThrowDeterministicException();
-    if (crashed)
-      throw new IOException("cannot sync after crash");
-    unSyncedFiles.remove(name);
-    delegate.sync(name);
   }
 
   @Override

@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Attribute;
@@ -71,7 +70,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
   private int maxEdits;
   private final boolean raw;
 
-  private final IndexReader reader;
+  private final TermsEnum tenum;
   private final Term term;
   private final int termText[];
   private final int realPrefixLength;
@@ -84,7 +83,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * After calling the constructor the enumeration is already pointing to the first 
    * valid term if such a term exists. 
    * 
-   * @param reader Delivers terms.
+   * @param tenum Delivers terms.
    * @param atts {@link AttributeSource} created by the rewrite method of {@link MultiTermQuery}
    * thats contains information about competitive boosts during rewrite. It is also used
    * to cache DFAs between segment transitions.
@@ -93,7 +92,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param prefixLength Length of required common prefix. Default value is 0.
    * @throws IOException
    */
-  public FuzzyTermsEnum(IndexReader reader, AttributeSource atts, Term term, 
+  public FuzzyTermsEnum(TermsEnum tenum, AttributeSource atts, Term term, 
       final float minSimilarity, final int prefixLength) throws IOException {
     if (minSimilarity >= 1.0f && minSimilarity != (int)minSimilarity)
       throw new IllegalArgumentException("fractional edit distances are not allowed");
@@ -101,7 +100,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
       throw new IllegalArgumentException("minimumSimilarity cannot be less than 0");
     if(prefixLength < 0)
       throw new IllegalArgumentException("prefixLength cannot be less than 0");
-    this.reader = reader;
+    this.tenum = tenum;
     this.term = term;
 
     // convert the string into a utf32 int[] representation for fast comparisons
@@ -304,7 +303,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     
     public AutomatonFuzzyTermsEnum(ByteRunAutomaton matchers[], 
         BytesRef lastTerm) throws IOException {
-      super(matchers[matchers.length - 1], term.field(), reader, true, null);
+      super(matchers[matchers.length - 1], tenum, true, null);
       this.matchers = matchers;
       this.lastTerm = lastTerm;
       termRef = new BytesRef(term.text());
@@ -380,7 +379,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
      * @throws IOException
      */
     public LinearFuzzyTermsEnum() throws IOException {
-      super(reader, term.field());
+      super(tenum);
 
       this.text = new int[termLength - realPrefixLength];
       System.arraycopy(termText, realPrefixLength, text, 0, text.length);

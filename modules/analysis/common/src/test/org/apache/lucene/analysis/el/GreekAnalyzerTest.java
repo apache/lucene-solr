@@ -16,8 +16,8 @@ package org.apache.lucene.analysis.el;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.Version;
 
 /**
@@ -52,7 +52,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 	 * Test the analysis of various greek strings.
 	 *
 	 * @throws Exception in case an error occurs
-	 * @deprecated Remove this test when support for 3.0 is no longer needed
+	 * @deprecated (3.1) Remove this test when support for 3.0 is no longer needed
 	 */
   @Deprecated
 	public void testAnalyzerBWCompat() throws Exception {
@@ -87,15 +87,4 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     assertAnalyzesToReuse(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
         new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
   }
-	
-	/**
-	 * Greek Analyzer didn't call standardFilter, so no normalization of acronyms.
-	 * check that this is preserved.
-	 * @deprecated remove this test in Lucene 4.0
-	 */
-	@Deprecated
-	public void testAcronymBWCompat() throws Exception {
-	  Analyzer a = new GreekAnalyzer(Version.LUCENE_30);
-	  assertAnalyzesTo(a, "Α.Π.Τ.", new String[] { "α.π.τ." });
 	}
-}

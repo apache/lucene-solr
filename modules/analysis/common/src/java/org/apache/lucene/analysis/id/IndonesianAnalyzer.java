@@ -120,7 +120,7 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    result = new LowerCaseFilter(matchVersion, source);
+    result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if (!stemExclusionSet.isEmpty()) {
       result = new KeywordMarkerFilter(result, stemExclusionSet);

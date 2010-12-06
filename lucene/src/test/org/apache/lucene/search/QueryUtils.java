@@ -153,18 +153,14 @@ public class QueryUtils {
     IndexReader[] readers = new IndexReader[] {
       edge < 0 ? r : IndexReader.open(makeEmptyIndex(random, 0), true),
       IndexReader.open(makeEmptyIndex(random, 0), true),
-      new MultiReader(new IndexReader[] {
-        IndexReader.open(makeEmptyIndex(random, edge < 0 ? 4 : 0), true),
-        IndexReader.open(makeEmptyIndex(random, 0), true),
-        0 == edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true)
-      }),
+      new MultiReader(IndexReader.open(makeEmptyIndex(random, edge < 0 ? 4 : 0), true),
+          IndexReader.open(makeEmptyIndex(random, 0), true),
+          0 == edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true)),
       IndexReader.open(makeEmptyIndex(random, 0 < edge ? 0 : 7), true),
       IndexReader.open(makeEmptyIndex(random, 0), true),
-      new MultiReader(new IndexReader[] {
-        IndexReader.open(makeEmptyIndex(random, 0 < edge ? 0 : 5), true),
-        IndexReader.open(makeEmptyIndex(random, 0), true),
-        0 < edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true)
-      })
+      new MultiReader(IndexReader.open(makeEmptyIndex(random, 0 < edge ? 0 : 5), true),
+          IndexReader.open(makeEmptyIndex(random, 0), true),
+          0 < edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true))
     };
     IndexSearcher out = new IndexSearcher(new MultiReader(readers));
     out.setSimilarity(s.getSimilarity());

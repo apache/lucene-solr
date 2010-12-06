@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexFormatTooNewException;
 
 /**
- * @deprecated No longer used with flex indexing, except for
+ * @deprecated (4.0) No longer used with flex indexing, except for
  * reading old segments 
  * @lucene.experimental */
 

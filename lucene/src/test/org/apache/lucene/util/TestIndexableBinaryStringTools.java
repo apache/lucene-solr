@@ -17,32 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.nio.CharBuffer;
-import java.nio.ByteBuffer;
-
 public class TestIndexableBinaryStringTools extends LuceneTestCase {
   private static final int NUM_RANDOM_TESTS = 2000 * RANDOM_MULTIPLIER;
   private static final int MAX_RANDOM_BINARY_LENGTH = 300 * RANDOM_MULTIPLIER;
-  
-  /** @deprecated remove this test for Lucene 4.0 */
-  @Deprecated
-  public void testSingleBinaryRoundTripNIO() {
-    byte[] binary = new byte[] 
-      { (byte)0x23, (byte)0x98, (byte)0x13, (byte)0xE4, (byte)0x76, (byte)0x41,
-        (byte)0xB2, (byte)0xC9, (byte)0x7F, (byte)0x0A, (byte)0xA6, (byte)0xD8 };
-
-    ByteBuffer binaryBuf = ByteBuffer.wrap(binary);
-    CharBuffer encoded = IndexableBinaryStringTools.encode(binaryBuf);
-    ByteBuffer decoded = IndexableBinaryStringTools.decode(encoded);
-    assertEquals("Round trip decode/decode returned different results:"
-                 + System.getProperty("line.separator")
-                 + "original: " + binaryDumpNIO(binaryBuf)
-                 + System.getProperty("line.separator")
-                 + " encoded: " + charArrayDumpNIO(encoded)
-                 + System.getProperty("line.separator")
-                 + " decoded: " + binaryDumpNIO(decoded),
-                 binaryBuf, decoded);
-  }
   
   public void testSingleBinaryRoundTrip() {
     byte[] binary = new byte[] { (byte) 0x23, (byte) 0x98, (byte) 0x13,
@@ -71,64 +48,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
         binaryDump(binary, binary.length), binaryDump(decoded, decoded.length));
   }
   
-  /** @deprecated remove this test for Lucene 4.0 */
-  @Deprecated
-  public void testEncodedSortabilityNIO() {
-    byte[] originalArray1 = new byte[MAX_RANDOM_BINARY_LENGTH];
-    ByteBuffer originalBuf1 = ByteBuffer.wrap(originalArray1);
-    char[] originalString1 = new char[MAX_RANDOM_BINARY_LENGTH];
-    CharBuffer originalStringBuf1 = CharBuffer.wrap(originalString1);
-    char[] encoded1 = new char[IndexableBinaryStringTools.getEncodedLength(originalBuf1)];
-    CharBuffer encodedBuf1 = CharBuffer.wrap(encoded1);
-    byte[] original2 = new byte[MAX_RANDOM_BINARY_LENGTH];
-    ByteBuffer originalBuf2 = ByteBuffer.wrap(original2);
-    char[] originalString2 = new char[MAX_RANDOM_BINARY_LENGTH];
-    CharBuffer originalStringBuf2 = CharBuffer.wrap(originalString2);
-    char[] encoded2 = new char[IndexableBinaryStringTools.getEncodedLength(originalBuf2)];
-    CharBuffer encodedBuf2 = CharBuffer.wrap(encoded2);
-    for (int testNum = 0 ; testNum < NUM_RANDOM_TESTS ; ++testNum) {
-      int numBytes1 = random.nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1
-      originalBuf1.limit(numBytes1);
-      originalStringBuf1.limit(numBytes1);
-      
-      for (int byteNum = 0 ; byteNum < numBytes1 ; ++byteNum) {
-        int randomInt = random.nextInt(0x100);
-        originalArray1[byteNum] = (byte) randomInt;
-        originalString1[byteNum] = (char)randomInt;
-      }
-      
-      int numBytes2 = random.nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1; // Min == 1
-      originalBuf2.limit(numBytes2);
-      originalStringBuf2.limit(numBytes2);
-      for (int byteNum = 0 ; byteNum < numBytes2 ; ++byteNum) {
-        int randomInt = random.nextInt(0x100);
-        original2[byteNum] = (byte)randomInt;
-        originalString2[byteNum] = (char)randomInt;
-      }
-      int originalComparison = originalStringBuf1.compareTo(originalStringBuf2);
-      originalComparison = originalComparison < 0 ? -1 : originalComparison > 0 ? 1 : 0;
-      
-      IndexableBinaryStringTools.encode(originalBuf1, encodedBuf1);
-      IndexableBinaryStringTools.encode(originalBuf2, encodedBuf2);
-      
-      int encodedComparison = encodedBuf1.compareTo(encodedBuf2);
-      encodedComparison = encodedComparison < 0 ? -1 : encodedComparison > 0 ? 1 : 0;
-      
-      assertEquals("Test #" + (testNum + 1) 
-                   + ": Original bytes and encoded chars compare differently:"
-                   + System.getProperty("line.separator")
-                   + " binary 1: " + binaryDumpNIO(originalBuf1)
-                   + System.getProperty("line.separator")
-                   + " binary 2: " + binaryDumpNIO(originalBuf2)
-                   + System.getProperty("line.separator")
-                   + "encoded 1: " + charArrayDumpNIO(encodedBuf1)
-                   + System.getProperty("line.separator")
-                   + "encoded 2: " + charArrayDumpNIO(encodedBuf2)
-                   + System.getProperty("line.separator"),
-                   originalComparison, encodedComparison);
-    }
-  }
-
   public void testEncodedSortability() {
     byte[] originalArray1 = new byte[MAX_RANDOM_BINARY_LENGTH];
     char[] originalString1 = new char[MAX_RANDOM_BINARY_LENGTH];
@@ -192,16 +111,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
     }
   }
 
-  /** @deprecated remove this test for Lucene 4.0 */
-  @Deprecated
-  public void testEmptyInputNIO() {
-    byte[] binary = new byte[0];
-    CharBuffer encoded = IndexableBinaryStringTools.encode(ByteBuffer.wrap(binary));
-    ByteBuffer decoded = IndexableBinaryStringTools.decode(encoded);
-    assertNotNull("decode() returned null", decoded);
-    assertEquals("decoded empty input was not empty", decoded.limit(), 0);
-  }
-  
   public void testEmptyInput() {
     byte[] binary = new byte[0];
 
@@ -218,23 +127,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
         decoded.length);
 
     assertEquals("decoded empty input was not empty", decoded.length, 0);
-  }
-  
-  /** @deprecated remove this test for Lucene 4.0 */
-  @Deprecated
-  public void testAllNullInputNIO() {
-    byte[] binary = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    ByteBuffer binaryBuf = ByteBuffer.wrap(binary);
-    CharBuffer encoded = IndexableBinaryStringTools.encode(binaryBuf);
-    assertNotNull("encode() returned null", encoded);
-    ByteBuffer decodedBuf = IndexableBinaryStringTools.decode(encoded);
-    assertNotNull("decode() returned null", decodedBuf);
-    assertEquals("Round trip decode/decode returned different results:"
-                 + System.getProperty("line.separator")
-                 + "  original: " + binaryDumpNIO(binaryBuf)
-                 + System.getProperty("line.separator")
-                 + "decodedBuf: " + binaryDumpNIO(decodedBuf),
-                 binaryBuf, decodedBuf);
   }
   
   public void testAllNullInput() {
@@ -260,35 +152,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
         binaryDump(binary, binary.length), binaryDump(decoded, decoded.length));
   }
   
-  /** @deprecated remove this test for Lucene 4.0 */
-  @Deprecated
-  public void testRandomBinaryRoundTripNIO() {
-    byte[] binary = new byte[MAX_RANDOM_BINARY_LENGTH];
-    ByteBuffer binaryBuf = ByteBuffer.wrap(binary);
-    char[] encoded = new char[IndexableBinaryStringTools.getEncodedLength(binaryBuf)];
-    CharBuffer encodedBuf = CharBuffer.wrap(encoded);
-    byte[] decoded = new byte[MAX_RANDOM_BINARY_LENGTH];
-    ByteBuffer decodedBuf = ByteBuffer.wrap(decoded);
-    for (int testNum = 0 ; testNum < NUM_RANDOM_TESTS ; ++testNum) {
-      int numBytes = random.nextInt(MAX_RANDOM_BINARY_LENGTH - 1) + 1 ; // Min == 1
-      binaryBuf.limit(numBytes);
-      for (int byteNum = 0 ; byteNum < numBytes ; ++byteNum) {
-        binary[byteNum] = (byte)random.nextInt(0x100);
-      }
-      IndexableBinaryStringTools.encode(binaryBuf, encodedBuf);
-      IndexableBinaryStringTools.decode(encodedBuf, decodedBuf);
-      assertEquals("Test #" + (testNum + 1) 
-                   + ": Round trip decode/decode returned different results:"
-                   + System.getProperty("line.separator")
-                   + "  original: " + binaryDumpNIO(binaryBuf)
-                   + System.getProperty("line.separator")
-                   + "encodedBuf: " + charArrayDumpNIO(encodedBuf)
-                   + System.getProperty("line.separator")
-                   + "decodedBuf: " + binaryDumpNIO(decodedBuf),
-                   binaryBuf, decodedBuf);
-    }
-  }
-
   public void testRandomBinaryRoundTrip() {
     byte[] binary = new byte[MAX_RANDOM_BINARY_LENGTH];
     char[] encoded = new char[MAX_RANDOM_BINARY_LENGTH * 10];
@@ -323,13 +186,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
     }
   }
   
-  /** @deprecated remove this method for Lucene 4.0 */
-  @Deprecated
-  public String binaryDumpNIO(ByteBuffer binaryBuf) {
-    return binaryDump(binaryBuf.array(), 
-        binaryBuf.limit() - binaryBuf.arrayOffset());
-  }
-
   public String binaryDump(byte[] binary, int numBytes) {
     StringBuilder buf = new StringBuilder();
     for (int byteNum = 0 ; byteNum < numBytes ; ++byteNum) {
@@ -344,13 +200,7 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
     }
     return buf.toString();
   }
-  /** @deprecated remove this method for Lucene 4.0 */
-  @Deprecated
-  public String charArrayDumpNIO(CharBuffer charBuf) {
-    return charArrayDump(charBuf.array(), 
-        charBuf.limit() - charBuf.arrayOffset());
-  }
-  
+
   public String charArrayDump(char[] charArray, int numBytes) {
     StringBuilder buf = new StringBuilder();
     for (int charNum = 0 ; charNum < numBytes ; ++charNum) {

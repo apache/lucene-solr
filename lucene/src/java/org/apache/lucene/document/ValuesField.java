@@ -23,28 +23,86 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.Values;
-import org.apache.lucene.index.values.ValuesAttribute;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 /**
  *
  */
 @SuppressWarnings("serial")
-public class ValuesField extends AbstractField {
-  private final ValuesAttribute attr;
-  private final AttributeSource fieldAttributes;
-  
+public class ValuesField extends AbstractField implements PerDocFieldValues {
 
+  protected BytesRef bytes;
+  protected double doubleValue;
+  protected long longValue;
+  protected Values type;
+  protected Comparator<BytesRef> bytesComparator;
+  
   public ValuesField(String name) {
     super(name, Store.NO, Index.NO, TermVector.NO);
-    fieldAttributes = getFieldAttributes();
-    attr = fieldAttributes.addAttribute(ValuesAttribute.class);
+    setDocValues(this);
   }
-  
+
   ValuesField() {
     this("");
+  }
+  
+  public void setInt(long value) {
+    type = Values.PACKED_INTS;
+    longValue = value;
+  }
+
+  public void setFloat(float value) {
+    type = Values.SIMPLE_FLOAT_4BYTE;
+    doubleValue = value;
+  }
+
+  public void setFloat(double value) {
+    type = Values.SIMPLE_FLOAT_8BYTE;
+    doubleValue = value;
+  }
+
+  public void setBytes(BytesRef value, Values type) {
+    setBytes(value, type, null);
+
+  }
+
+  public void setBytes(BytesRef value, Values type, Comparator<BytesRef> comp) {
+    this.type = type;
+    if (bytes == null) {
+      this.bytes = new BytesRef();
+    }
+    bytes.copy(value);
+    bytesComparator = comp;
+  }
+
+  public BytesRef getBytes() {
+    return bytes;
+  }
+
+  public Comparator<BytesRef> bytesComparator() {
+    return bytesComparator;
+  }
+
+  public double getFloat() {
+    return doubleValue;
+  }
+
+  public long getInt() {
+    return longValue;
+  }
+
+  public void setBytesComparator(Comparator<BytesRef> comp) {
+    this.bytesComparator = comp;
+  }
+
+  public void setType(Values type) {
+    this.type = type;
+  }
+
+  public Values type() {
+    return type;
   }
 
   public Reader readerValue() {
@@ -59,49 +117,13 @@ public class ValuesField extends AbstractField {
     return tokenStream;
   }
 
-  public void setInt(long value) {
-    attr.setType(Values.PACKED_INTS);
-    attr.ints().set(value);
-  }
-
-  public void setFloat(float value) {
-    attr.setType(Values.SIMPLE_FLOAT_4BYTE);
-    attr.floats().set(value);
-  }
-
-  public void setFloat(double value) {
-    attr.setType(Values.SIMPLE_FLOAT_8BYTE);
-    attr.floats().set(value);
-  }
-
-  public void setBytes(BytesRef value, Values type) {
-    setBytes(value, type, null);
-
-  }
-
-  public void setBytes(BytesRef value, Values type, Comparator<BytesRef> comp) {
-    attr.setType(type);
-    attr.bytes().copy(value);
-    attr.setBytesComparator(comp);
-  }
-
-  public ValuesAttribute values() {
-    return attr;
-  }
-  
-  public <T extends Fieldable> T set(T field) {
-    AttributeSource src = field.getFieldAttributes();
-    src.addAttribute(ValuesAttribute.class);
-    fieldAttributes.copyTo(field.getFieldAttributes());
+  public <T extends AbstractField> T set(T field) {
+    field.setDocValues(this);
     return field;
   }
-  
-  public static ValuesAttribute values(Fieldable fieldable) {
-    return fieldable.getFieldAttributes().addAttribute(ValuesAttribute.class);
-  }
 
-  public static <T extends Fieldable> T set(T field, Values type) {
-    if(field instanceof ValuesField)
+  public static <T extends AbstractField> T set(T field, Values type) {
+    if (field instanceof ValuesField)
       return field;
     final ValuesField valField = new ValuesField();
     switch (type) {
@@ -112,8 +134,8 @@ public class ValuesField extends AbstractField {
     case BYTES_VAR_SORTED:
     case BYTES_VAR_STRAIGHT:
       BytesRef ref = field.isBinary() ? new BytesRef(field.getBinaryValue(),
-          field.getBinaryOffset(), field.getBinaryLength()) : new BytesRef(field
-          .stringValue());
+          field.getBinaryOffset(), field.getBinaryLength()) : new BytesRef(
+          field.stringValue());
       valField.setBytes(ref, type);
       break;
     case PACKED_INTS:
@@ -130,4 +152,5 @@ public class ValuesField extends AbstractField {
     }
     return valField.set(field);
   }
+
 }

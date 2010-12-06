@@ -39,7 +39,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -692,12 +691,6 @@ public class TestQPHelper extends LuceneTestCase {
     ramDir.close();
   }
 
-  /** for testing legacy DateField support */
-  private String getLegacyDate(String s) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    return DateField.dateToString(df.parse(s));
-  }
-
   /** for testing DateTools support */
   private String getDate(String s, DateTools.Resolution resolution)
       throws Exception {
@@ -708,11 +701,7 @@ public class TestQPHelper extends LuceneTestCase {
   /** for testing DateTools support */
   private String getDate(Date d, DateTools.Resolution resolution)
       throws Exception {
-    if (resolution == null) {
-      return DateField.dateToString(d);
-    } else {
-      return DateTools.dateToString(d, resolution);
-    }
+    return DateTools.dateToString(d, resolution);
   }
   
   private String escapeDateString(String s) {
@@ -735,21 +724,6 @@ public class TestQPHelper extends LuceneTestCase {
     return df.format(calendar.getTime());
   }
 
-  /** for testing legacy DateField support */
-  public void testLegacyDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1);
-    String endDate = getLocalizedDate(2002, 1, 4);
-    Calendar endDateExpected = new GregorianCalendar();
-    endDateExpected.clear();
-    endDateExpected.set(2002, 1, 4, 23, 59, 59);
-    endDateExpected.set(Calendar.MILLISECOND, 999);
-    assertQueryEquals("[ " + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]", null, "["
-        + getLegacyDate(startDate) + " TO "
-        + DateField.dateToString(endDateExpected.getTime()) + "]");
-    assertQueryEquals("{  " + escapeDateString(startDate) + "    " + escapeDateString(endDate) + "   }", null, "{"
-        + getLegacyDate(startDate) + " TO " + getLegacyDate(endDate) + "}");
-  }
-
   public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1);
     String endDate = getLocalizedDate(2002, 1, 4);
@@ -762,19 +736,11 @@ public class TestQPHelper extends LuceneTestCase {
     final String hourField = "hour";
     StandardQueryParser qp = new StandardQueryParser();
 
-    // Don't set any date resolution and verify if DateField is used
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,
-        endDateExpected.getTime(), null);
-
     Map<CharSequence, DateTools.Resolution> dateRes =  new HashMap<CharSequence, DateTools.Resolution>();
     
     // set a field specific date resolution    
     dateRes.put(monthField, DateTools.Resolution.MONTH);
     qp.setDateResolution(dateRes);
-
-    // DateField should still be used for defaultField
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,
-        endDateExpected.getTime(), null);
 
     // set default date resolution to MILLISECOND
     qp.setDateResolution(DateTools.Resolution.MILLISECOND);
@@ -1075,22 +1041,35 @@ public class TestQPHelper extends LuceneTestCase {
     assertEquals(query1, query2);
   }
 
-  public void testLocalDateFormat() throws IOException, QueryNodeException {
-    Directory ramDir = newDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
-    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
-    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
-    iw.close();
-    IndexSearcher is = new IndexSearcher(ramDir, true);
-    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
-    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
-    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
-    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
-    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
-    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
-    is.close();
-    ramDir.close();
-  }
+// Todo: Convert from DateField to DateUtil
+//  public void testLocalDateFormat() throws IOException, QueryNodeException {
+//    Directory ramDir = newDirectory();
+//    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+//    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
+//    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
+//    iw.close();
+//    IndexSearcher is = new IndexSearcher(ramDir, true);
+//    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
+//    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
+//    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
+//    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
+//    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
+//    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
+//    is.close();
+//    ramDir.close();
+//  }
+//
+//  private void addDateDoc(String content, int year, int month, int day,
+//                          int hour, int minute, int second, IndexWriter iw) throws IOException {
+//    Document d = new Document();
+//    d.add(newField("f", content, Field.Store.YES, Field.Index.ANALYZED));
+//    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
+//    cal.set(year, month - 1, day, hour, minute, second);
+//    d.add(newField("date", DateField.dateToString(cal.getTime()),
+//        Field.Store.YES, Field.Index.NOT_ANALYZED));
+//    iw.addDocument(d);
+//  }
+
 
   public void testStarParsing() throws Exception {
     // final int[] type = new int[1];
@@ -1249,17 +1228,6 @@ public class TestQPHelper extends LuceneTestCase {
     Query q = qp.parse(query, "date");
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(expected, hits.length);
-  }
-
-  private void addDateDoc(String content, int year, int month, int day,
-      int hour, int minute, int second, IndexWriter iw) throws IOException {
-    Document d = new Document();
-    d.add(newField("f", content, Field.Store.YES, Field.Index.ANALYZED));
-    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-    cal.set(year, month - 1, day, hour, minute, second);
-    d.add(newField("date", DateField.dateToString(cal.getTime()),
-        Field.Store.YES, Field.Index.NOT_ANALYZED));
-    iw.addDocument(d);
   }
 
   @Override

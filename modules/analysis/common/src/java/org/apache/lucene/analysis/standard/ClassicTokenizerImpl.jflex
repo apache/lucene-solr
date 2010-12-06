@@ -47,11 +47,6 @@ public static final int EMAIL             = StandardTokenizer.EMAIL;
 public static final int HOST              = StandardTokenizer.HOST;
 public static final int NUM               = StandardTokenizer.NUM;
 public static final int CJ                = StandardTokenizer.CJ;
-/**
- * @deprecated this solves a bug where HOSTs that end with '.' are identified
- *             as ACRONYMs.
- */
-@Deprecated
 public static final int ACRONYM_DEP       = StandardTokenizer.ACRONYM_DEP;
 
 public static final String [] TOKEN_TYPES = StandardTokenizer.TOKEN_TYPES;

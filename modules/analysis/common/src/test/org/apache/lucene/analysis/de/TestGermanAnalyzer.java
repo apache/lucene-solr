@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.de;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -35,15 +36,6 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "Tischen", "tisch");
   }
   
-  public void testExclusionTableBWCompat() throws IOException {
-    GermanStemFilter filter = new GermanStemFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, 
-        new StringReader("Fischen Trinken")));
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
-    set.add("fischen");
-    filter.setExclusionSet(set);
-    assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
-  }
-
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("fischen");
@@ -53,27 +45,8 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
 
-  public void testWithKeywordAttributeAndExclusionTable() throws IOException {
-    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
-    set.add("fischen");
-    CharArraySet set1 = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
-    set1.add("trinken");
-    set1.add("fischen");
-    GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(
-            "Fischen Trinken")), set));
-    filter.setExclusionSet(set1);
-    assertTokenStreamContents(filter, new String[] { "fischen", "trinken" });
-  }
-  
-  /* 
-   * Test that changes to the exclusion table are applied immediately
-   * when using reusable token streams.
-   */
-  public void testExclusionTableReuse() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
-    checkOneTermReuse(a, "tischen", "tisch");
-    a.setStemExclusionTable(new String[] { "tischen" });
+  public void testStemExclusionTable() throws Exception {
+    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet(), asSet("tischen"));
     checkOneTermReuse(a, "tischen", "tischen");
   }
   

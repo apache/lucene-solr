@@ -22,7 +22,7 @@ package org.apache.lucene.index.values;
  *  values into RAM, exposing a random access API, when
  *  loaded.
  *
- * @lucene.experimenta 
+ * @lucene.experimental 
  */
 public enum Values {
 

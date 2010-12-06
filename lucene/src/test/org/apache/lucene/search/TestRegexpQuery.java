@@ -99,9 +99,9 @@ public class TestRegexpQuery extends LuceneTestCase {
     AutomatonProvider myProvider = new AutomatonProvider() {
       // automaton that matches quick or brown
       private Automaton quickBrownAutomaton = BasicOperations.union(Arrays
-          .asList(new Automaton[] {BasicAutomata.makeString("quick"),
-              BasicAutomata.makeString("brown"),
-              BasicAutomata.makeString("bob")}));
+          .asList(BasicAutomata.makeString("quick"),
+          BasicAutomata.makeString("brown"),
+          BasicAutomata.makeString("bob")));
       
       public Automaton getAutomaton(String name) throws IOException {
         if (name.equals("quickBrown")) return quickBrownAutomaton;

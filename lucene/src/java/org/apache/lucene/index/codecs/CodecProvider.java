@@ -39,7 +39,7 @@ import org.apache.lucene.index.codecs.standard.StandardCodec;
 public class CodecProvider {
   private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
   private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
-  private String defaultFieldCodec = defaultCodec;
+  private String defaultFieldCodec = "Standard";
   private final Map<String, String> perFieldMap = new HashMap<String, String>();
 
   
@@ -47,7 +47,6 @@ public class CodecProvider {
 
   private final Set<String> knownExtensions = new HashSet<String>();
 
-  private static String defaultCodec = "Standard";
 
   public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText"};
 
@@ -97,25 +96,22 @@ public class CodecProvider {
     return infosReader;
   }
 
-  static private final CodecProvider defaultCodecs = new DefaultCodecProvider();
+  static private CodecProvider defaultCodecs = new DefaultCodecProvider();
 
   public static CodecProvider getDefault() {
     return defaultCodecs;
   }
 
-  /** Used for testing. @lucene.internal */
-  public synchronized static void setDefaultCodec(String s) {
-    defaultCodec = s;
-  }
-  /** Used for testing. @lucene.internal */
-  public synchronized static String getDefaultCodec() {
-    return defaultCodec;
+  /** For testing only
+   *  @lucene.internal */
+  public static void setDefault(CodecProvider cp) {
+    defaultCodecs = cp;
   }
   
   /**
-   * Sets the {@link Codec} for a given field. Not that setting a fields code is
-   * write-once. If the fields codec is already set this method will throw an
-   * {@link IllegalArgumentException}
+   * Sets the {@link Codec} for a given field. Not that setting a field's codec is
+   * write-once. If the field's codec is already set this method will throw an
+   * {@link IllegalArgumentException}.
    * 
    * @param field
    *          the name of the field
@@ -175,6 +171,5 @@ class DefaultCodecProvider extends CodecProvider {
     register(new PreFlexCodec());
     register(new PulsingCodec(1));
     register(new SimpleTextCodec());
-    setDefaultFieldCodec(CodecProvider.getDefaultCodec());
   }
 }

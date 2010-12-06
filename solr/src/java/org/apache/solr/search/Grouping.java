@@ -33,6 +33,7 @@ import java.util.*;
 
 public class Grouping {
 
+  public enum Format {Grouped, Simple}
 
   public abstract class Command {
     public String key;       // the name to use for this group in the response
@@ -42,6 +43,8 @@ public class Grouping {
     public int groupOffset;  // the offset within each group (for paging within each group)
     public int numGroups;    // how many groups - defaults to the "rows" parameter
     public int offset;       // offset into the list of groups
+    public Format format;
+    public boolean main;     // use as the main result in simple format (grouped.main=true param)
 
 
     abstract void prepare() throws IOException;
@@ -64,7 +67,14 @@ public class Grouping {
     }
 
     DocList getDocList(TopDocsCollector collector) {
-      int docsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
+      int max = collector.getTotalHits();
+      int off = groupOffset;
+      int len = docsPerGroup;
+      if (format == Format.Simple) {
+        off = offset;
+        len = numGroups;
+      }
+      int docsToCollect = getMax(off, len, max);
 
       // TODO: implement a DocList impl that doesn't need to start at offset=0
       TopDocs topDocs = collector.topDocs(0, docsToCollect);
@@ -79,7 +89,7 @@ public class Grouping {
 
       float score = topDocs.getMaxScore();
       maxScore = Math.max(maxScore, score);
-      DocSlice docs = new DocSlice(groupOffset, Math.max(0, ids.length - groupOffset), ids, scores, topDocs.totalHits, score);
+      DocSlice docs = new DocSlice(off, Math.max(0, ids.length - off), ids, scores, topDocs.totalHits, score);
 
       if (getDocList) {
         DocIterator iter = docs.iterator();
@@ -115,8 +125,12 @@ public class Grouping {
 
     @Override
     void finish() throws IOException {
-      NamedList rsp = commonResponse();
-      addDocList(rsp, (TopDocsCollector)collector.getCollector());
+      if (main) {
+        mainResult = getDocList((TopDocsCollector)collector.getCollector());
+      } else {
+        NamedList rsp = commonResponse();
+        addDocList(rsp, (TopDocsCollector)collector.getCollector());
+      }
     }
 
     @Override
@@ -148,11 +162,15 @@ public class Grouping {
       // if we aren't going to return any groups, disregard the offset 
       if (numGroups == 0) maxGroupToFind = 0;
 
+      collector = new TopGroupCollector(groupBy, context, normalizeSort(sort), maxGroupToFind);
+
+      /*** if we need a different algorithm when sort != group.sort
       if (compareSorts(sort, groupSort)) {
         collector = new TopGroupCollector(groupBy, context, normalizeSort(sort), maxGroupToFind);
       } else {
         collector = new TopGroupSortCollector(groupBy, context, normalizeSort(sort), normalizeSort(groupSort), maxGroupToFind);
       }
+      ***/
       return collector;
     }
 
@@ -161,18 +179,32 @@ public class Grouping {
       if (numGroups == 0) return null;
 
       int docsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
+      docsToCollect = Math.max(docsToCollect, 1);
 
-      if (false && groupBy instanceof StrFieldSource) {
-        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, offset);
+      // if the format is simple, don't skip groups (since we are counting docs, not groups)
+      int collectorOffset = format==Format.Simple ? 0 : offset;
+
+      if (groupBy instanceof StrFieldSource) {
+        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
       } else {
-        collector2 = new Phase2GroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, offset);
+        collector2 = new Phase2GroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
       }
       return collector2;
     }
 
     @Override
     void finish() throws IOException {
+      if (main) {
+        mainResult = createSimpleResponse();
+        return;
+      }
+
       NamedList groupResult = commonResponse();
+
+      if (format == Format.Simple) {
+        groupResult.add("doclist", createSimpleResponse());
+        return;
+      }
 
       List groupList = new ArrayList();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
@@ -181,8 +213,6 @@ public class Grouping {
       if (numGroups == 0) return;
 
       if (collector.orderedGroups == null) collector.buildSet();
-
-
 
       int skipCount = offset;
       for (SearchGroup group : collector.orderedGroups) {
@@ -198,6 +228,57 @@ public class Grouping {
         SearchGroupDocs groupDocs = collector2.groupMap.get(group.groupValue);
         addDocList(nl, groupDocs.collector);
       }
+    }
+
+    private DocList createSimpleResponse() {
+      int docCount = numGroups;
+      int docOffset = offset;    
+      int docsToGather = getMax(docOffset, docCount, maxDoc);
+
+      float maxScore = Float.NEGATIVE_INFINITY; 
+      List<TopDocs> topDocsList = new ArrayList<TopDocs>();
+      int numDocs = 0;
+      for (SearchGroup group : collector.orderedGroups) {
+        SearchGroupDocs groupDocs = collector2.groupMap.get(group.groupValue);
+        
+        TopDocsCollector collector = groupDocs.collector;
+        int hits = collector.getTotalHits();
+
+        int num = Math.min(docsPerGroup, hits - groupOffset); // how many docs are in this group
+        if (num <= 0) continue;
+
+        TopDocs topDocs = collector.topDocs(groupOffset, Math.min(docsPerGroup,docsToGather-numDocs));
+        topDocsList.add(topDocs);
+        numDocs += topDocs.scoreDocs.length;
+
+        float score = topDocs.getMaxScore();
+        maxScore = Math.max(maxScore, score);
+
+        if (numDocs >= docsToGather) break;
+      }
+      assert numDocs <= docsToGather; // make sure we didn't gather too many
+      
+      int[] ids = new int[numDocs];
+      float[] scores = needScores ? new float[numDocs] : null;
+      int pos = 0;
+
+      for (TopDocs topDocs : topDocsList) {
+        for (ScoreDoc sd : topDocs.scoreDocs) {
+          ids[pos] = sd.doc;
+          if (scores != null) scores[pos] = sd.score;
+          pos++;
+        }
+      }
+
+      DocSlice docs = new DocSlice(docOffset, Math.max(0, ids.length - docOffset), ids, scores, getMatches(), maxScore);
+
+      if (getDocList) {
+        DocIterator iter = docs.iterator();
+        while (iter.hasNext())
+          idSet.add(iter.nextDoc());
+      }
+
+      return docs;
     }
 
     @Override
@@ -238,6 +319,8 @@ public class Grouping {
   final SolrIndexSearcher.QueryResult qr;
   final SolrIndexSearcher.QueryCommand cmd;
   final List<Command> commands = new ArrayList<Command>();
+
+  public DocList mainResult;  // output if one of the grouping commands should be used as the main result.
 
   public Grouping(SolrIndexSearcher searcher, SolrIndexSearcher.QueryResult qr, SolrIndexSearcher.QueryCommand cmd) {
     this.searcher = searcher;
@@ -336,10 +419,6 @@ class SearchGroup {
   int topDoc;
   // float topDocScore;  // currently unused
   int comparatorSlot;
-
-  // currently only used when sort != sort.group
-  FieldComparator[] sortGroupComparators;
-  int[] sortGroupReversed;
 
   /***
   @Override
@@ -506,6 +585,8 @@ class TopGroupCollector extends GroupCollector {
 
       // remove current smallest group
       SearchGroup smallest = orderedGroups.pollLast();
+      assert orderedGroups.size() == nGroups -1;
+
       groupMap.remove(smallest.groupValue);
 
       // reuse the removed SearchGroup
@@ -518,6 +599,7 @@ class TopGroupCollector extends GroupCollector {
 
       groupMap.put(smallest.groupValue, smallest);
       orderedGroups.add(smallest);
+      assert orderedGroups.size() == nGroups;
 
       for (FieldComparator fc : comparators)
         fc.setBottom(orderedGroups.last().comparatorSlot);
@@ -560,6 +642,7 @@ class TopGroupCollector extends GroupCollector {
     if (orderedGroups != null) {
       prevLast = orderedGroups.last();
       orderedGroups.remove(group);
+      assert orderedGroups.size() == nGroups-1;
     }
 
     group.topDoc = docBase + doc;
@@ -569,6 +652,7 @@ class TopGroupCollector extends GroupCollector {
     // re-add the changed group
     if (orderedGroups != null) {
       orderedGroups.add(group);
+      assert orderedGroups.size() == nGroups;
       SearchGroup newLast = orderedGroups.last();
       // if we changed the value of the last group, or changed which group was last, then update bottom
       if (group == newLast || prevLast != newLast) {
@@ -619,174 +703,6 @@ class TopGroupCollector extends GroupCollector {
   public int getMatches() {
     return matches;
   }
-}
-
-
-/**
- * This class allows a different sort within a group than what is used between groups.
- * Sorting between groups is done by the sort value of the first (highest ranking)
- * document in that group.
- */
-class TopGroupSortCollector extends TopGroupCollector {
-
-  IndexReader reader;
-  Sort groupSort;
-
-  public TopGroupSortCollector(ValueSource groupByVS, Map vsContext, Sort sort, Sort groupSort, int nGroups) throws IOException {
-    super(groupByVS, vsContext, sort, nGroups);
-    this.groupSort = groupSort;
-  }
-
-  void constructComparators(FieldComparator[] comparators, int[] reversed, SortField[] sortFields, int size) throws IOException {
-    for (int i = 0; i < sortFields.length; i++) {
-      SortField sortField = sortFields[i];
-      reversed[i] = sortField.getReverse() ? -1 : 1;
-      comparators[i] = sortField.getComparator(size, i);
-      if (scorer != null) comparators[i].setScorer(scorer);
-      if (reader != null) comparators[i] = comparators[i].setNextReader(reader, docBase);
-    }
-  }
-
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    super.setScorer(scorer);
-    for (SearchGroup searchGroup : groupMap.values()) {
-      for (FieldComparator fc : searchGroup.sortGroupComparators) {
-        fc.setScorer(scorer);
-      }
-    }
-  }
-
-  @Override
-  public void collect(int doc) throws IOException {
-    matches++;
-    filler.fillValue(doc);
-    SearchGroup group = groupMap.get(mval);
-    if (group == null) {
-      int num = groupMap.size();
-      if (groupMap.size() < nGroups) {
-        SearchGroup sg = new SearchGroup();
-        SortField[] sortGroupFields = groupSort.getSort();
-        sg.sortGroupComparators = new FieldComparator[sortGroupFields.length];
-        sg.sortGroupReversed = new int[sortGroupFields.length];
-        constructComparators(sg.sortGroupComparators, sg.sortGroupReversed, sortGroupFields, 1);
-
-        sg.groupValue = mval.duplicate();
-        sg.comparatorSlot = num++;
-        sg.matches = 1;
-        sg.topDoc = docBase + doc;
-        // sg.topDocScore = scorer.score();
-        for (FieldComparator fc : comparators)
-          fc.copy(sg.comparatorSlot, doc);
-        for (FieldComparator fc : sg.sortGroupComparators) {
-          fc.copy(0, doc);
-          fc.setBottom(0);
-        }
-        groupMap.put(sg.groupValue, sg);
-        return;
-      }
-
-      if (orderedGroups == null) {
-        buildSet();
-      }
-
-      // see if this new group would be competitive if this doc was the top doc
-      for (int i = 0;; i++) {
-        final int c = reversed[i] * comparators[i].compareBottom(doc);
-        if (c < 0) {
-          // Definitely not competitive. So don't even bother to continue
-          return;
-        } else if (c > 0) {
-          // Definitely competitive.
-          break;
-        } else if (i == comparators.length - 1) {
-          // Here c=0. If we're at the last comparator, this doc is not
-          // competitive, since docs are visited in doc Id order, which means
-          // this doc cannot compete with any other document in the queue.
-          return;
-        }
-      }
-
-      // remove current smallest group
-      SearchGroup smallest = orderedGroups.pollLast();
-      groupMap.remove(smallest.groupValue);
-
-      // reuse the removed SearchGroup
-      smallest.groupValue.copy(mval);
-      smallest.matches = 1;
-      smallest.topDoc = docBase + doc;
-      // smallest.topDocScore = scorer.score();
-      for (FieldComparator fc : comparators)
-        fc.copy(smallest.comparatorSlot, doc);
-      for (FieldComparator fc : smallest.sortGroupComparators) {
-        fc.copy(0, doc);
-        fc.setBottom(0);
-      }
-
-      groupMap.put(smallest.groupValue, smallest);
-      orderedGroups.add(smallest);
-
-      int lastSlot = orderedGroups.last().comparatorSlot;
-      for (FieldComparator fc : comparators)
-        fc.setBottom(lastSlot);
-
-      return;
-    }
-
-    //
-    // update existing group
-    //
-
-    group.matches++; // TODO: these aren't valid if the group is every discarded then re-added.  keep track if there have been discards?
-
-    for (int i = 0;; i++) {
-      FieldComparator fc = group.sortGroupComparators[i];
-
-      final int c = group.sortGroupReversed[i] * fc.compareBottom(doc);
-      if (c < 0) {
-        // Definitely not competitive.
-        return;
-      } else if (c > 0) {
-        // Definitely competitive.
-        // Set remaining comparators
-        for (int j = 0; j < group.sortGroupComparators.length; j++) {
-          group.sortGroupComparators[j].copy(0, doc);
-          group.sortGroupComparators[j].setBottom(0);
-        }
-        for (FieldComparator comparator : comparators) comparator.copy(spareSlot, doc);
-        break;
-      } else if (i == group.sortGroupComparators.length - 1) {
-        // Here c=0. If we're at the last comparator, this doc is not
-        // competitive, since docs are visited in doc Id order, which means
-        // this doc cannot compete with any other document in the queue.
-        return;
-      }
-    }
-
-    // remove before updating the group since lookup is done via comparators
-    // TODO: optimize this
-    if (orderedGroups != null)
-      orderedGroups.remove(group);
-
-    group.topDoc = docBase + doc;
-    // group.topDocScore = scorer.score();
-    int tmp = spareSlot; spareSlot = group.comparatorSlot; group.comparatorSlot=tmp;  // swap slots
-
-    // re-add the changed group
-    if (orderedGroups != null)
-      orderedGroups.add(group);
-  }
-
-  @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    super.setNextReader(reader, docBase);
-    this.reader = reader;
-    for (SearchGroup searchGroup : groupMap.values()) {
-      for (int i=0; i<searchGroup.sortGroupComparators.length; i++)
-        searchGroup.sortGroupComparators[i] = searchGroup.sortGroupComparators[i].setNextReader(reader, docBase);
-    }
-  }
-
 }
 
 
@@ -870,9 +786,9 @@ class SearchGroupDocs {
 
 class Phase2StringGroupCollector extends Phase2GroupCollector {
   FieldCache.DocTermsIndex index;
-  SentinelIntSet ordSet;
-  SearchGroupDocs[] groups;
-  BytesRef spare;
+  final SentinelIntSet ordSet;
+  final SearchGroupDocs[] groups;
+  final BytesRef spare = new BytesRef();
 
   public Phase2StringGroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores, int offset) throws IOException {
     super(topGroups, groupByVS, vsContext,sort,docsPerGroup,getScores,offset);
@@ -902,8 +818,12 @@ class Phase2StringGroupCollector extends Phase2GroupCollector {
 
     ordSet.clear();
     for (SearchGroupDocs group : groupMap.values()) {
-      int ord = index.binarySearchLookup(((MutableValueStr)group.groupValue).value, spare);
-      if (ord > 0) {
+      MutableValueStr gv = (MutableValueStr)group.groupValue;
+      int ord = 0;
+      if (gv.exists) {
+        ord = index.binarySearchLookup(((MutableValueStr)group.groupValue).value, spare);
+      }
+      if (ord >= 0) {
         int slot = ordSet.put(ord);
         groups[slot] = group;
       }

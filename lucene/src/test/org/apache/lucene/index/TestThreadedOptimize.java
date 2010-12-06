@@ -52,10 +52,14 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
   public void runTest(Random random, Directory directory, MergeScheduler merger) throws Exception {
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, ANALYZER)
-        .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2).setMergeScheduler(
-            merger));
+    IndexWriter writer = new IndexWriter(
+        directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, ANALYZER).
+            setOpenMode(OpenMode.CREATE).
+            setMaxBufferedDocs(2).
+            setMergeScheduler(merger).
+            setMergePolicy(newLogMergePolicy())
+    );
 
     for(int iter=0;iter<NUM_ITER;iter++) {
       final int iterFinal = iter;
@@ -112,10 +116,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       final int expectedDocCount = (int) ((1+iter)*(200+8*NUM_ITER2*(NUM_THREADS/2.0)*(1+NUM_THREADS)));
 
-      // System.out.println("TEST: now index=" + writer.segString());
-
-      assertEquals("index=" + writer.segString() + " numDocs" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.numDocs());
-      assertEquals("index=" + writer.segString() + " numDocs" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.maxDoc());
+      assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.numDocs());
+      assertEquals("index=" + writer.segString() + " numDocs=" + writer.numDocs() + " maxDoc=" + writer.maxDoc() + " config=" + writer.getConfig(), expectedDocCount, writer.maxDoc());
 
       writer.close();
       writer = new IndexWriter(directory, newIndexWriterConfig(

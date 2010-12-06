@@ -45,7 +45,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
 
     SpanTermQuery query = new SpanTermQuery(new Term("field", English.intToEnglish(10).trim()));
     SpanQueryFilter filter = new SpanQueryFilter(query);
-    SpanFilterResult result = filter.bitSpans(SlowMultiReaderWrapper.wrap(reader));
+    SpanFilterResult result = filter.bitSpans(new SlowMultiReaderWrapper(reader));
     DocIdSet docIdSet = result.getDocIdSet();
     assertTrue("docIdSet is null and it shouldn't be", docIdSet != null);
     assertContainsDocId("docIdSet doesn't contain docId 10", docIdSet, 10);

@@ -259,7 +259,7 @@ New Features
   allows you to customize how WordDelimiterFilter tokenizes text with
   a configuration file.  (Peter Karich, rmuir)
 
-* SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)    
+* SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)
 
 * SOLR-2099: Add ability to throttle rsync based replication using rsync option --bwlimit.
   (Brandon Evans via koji)
@@ -554,7 +554,10 @@ Bug Fixes
 * SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
   true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
   (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
-  
+
+* SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
+  (koji)
+
 Other Changes
 ----------------------
 
@@ -789,7 +792,8 @@ New Features
  7. SOLR-680: Add StatsComponent. This gets simple statistics on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
-    7.1 SOLR-1380: Added support for multi-valued fields (Harish Agarwal via gsingers)
+    7.1 SOLR-1380: Added support for multi-valued fields to stats component
+        (Harish Agarwal via gsingers)
 
  8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
     as well as configuration replication and exposes detailed statistics and progress information

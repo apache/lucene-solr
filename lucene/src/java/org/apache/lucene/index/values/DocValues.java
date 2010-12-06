@@ -22,7 +22,10 @@ import java.util.Comparator;
 
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-
+/**
+ * 
+ * @lucene.experimental
+ */
 public abstract class DocValues implements Closeable {
 
   public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
@@ -93,7 +96,7 @@ public abstract class DocValues implements Closeable {
     }
 
     public ValuesEnum getEnum() throws IOException {
-      return getEnum(new AttributeSource());
+      return getEnum(null);
     }
     
     public MissingValue getMissing() {
@@ -114,7 +117,6 @@ public abstract class DocValues implements Closeable {
 
     SourceEnum(AttributeSource attrs, Values type, Source source, int numDocs) {
       super(attrs, type);
-      
       this.source = source;
       this.numDocs = numDocs;
     }

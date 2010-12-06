@@ -30,7 +30,7 @@ import org.apache.lucene.util.DoubleBarrelLRUCache;
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
  * Directory.  Pairs are accessed either by Term or by ordinal position the
  * set
- * @deprecated This class has been replaced by
+ * @deprecated (4.0) This class has been replaced by
  * FormatPostingsTermsDictReader, except for reading old segments. 
  * @lucene.experimental
  */

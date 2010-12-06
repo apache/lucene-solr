@@ -20,13 +20,12 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
-import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
 
 /**
@@ -74,7 +73,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   /**
    * Expert ctor:
    * Construct an enumerator based upon an automaton, enumerating the specified
-   * field, working on a supplied reader.
+   * field, working on a supplied TermsEnum
    * <p>
    * @lucene.experimental 
    * <p>
@@ -82,10 +81,10 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    * @param finite true if the automaton accepts a finite language
    */
   public AutomatonTermsEnum(ByteRunAutomaton runAutomaton,
-                     String field, IndexReader reader,
+                     TermsEnum tenum,
                      boolean finite, BytesRef commonSuffixRef)
       throws IOException {
-    super(reader, field);
+    super(tenum);
     this.automaton = runAutomaton.getAutomaton();
     this.finite = finite;
 
@@ -102,12 +101,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     }
 
     // build a cache of sorted transitions for every state
-    allTransitions = new Transition[runAutomaton.getSize()][];
-    for (State state : this.automaton.getNumberedStates()) {
-      state.sortTransitions(Transition.CompareByMinMaxThenDest);
-      state.trimTransitionsArray();
-      allTransitions[state.getNumber()] = state.transitionsArray;
-    }
+    allTransitions = this.automaton.getSortedTransitions();
     // used for path tracking, where each bit is a numbered state.
     visited = new long[runAutomaton.getSize()];
 
@@ -116,13 +110,13 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   
   /**
    * Construct an enumerator based upon an automaton, enumerating the specified
-   * field, working on a supplied reader.
+   * field, working on a supplied TermsEnum
    * <p>
    * It will automatically calculate whether or not the automaton is finite
    */
-  public AutomatonTermsEnum(Automaton automaton, String field, IndexReader reader)
+  public AutomatonTermsEnum(Automaton automaton, TermsEnum tenum)
     throws IOException {
-    this(new ByteRunAutomaton(automaton), field, reader, SpecialOperations.isFinite(automaton), null);
+    this(new ByteRunAutomaton(automaton), tenum, SpecialOperations.isFinite(automaton), null);
   }
  
   /**

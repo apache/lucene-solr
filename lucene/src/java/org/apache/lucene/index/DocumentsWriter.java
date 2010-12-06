@@ -315,13 +315,15 @@ final class DocumentsWriter {
   }
 
   private boolean closed;
+  private final FieldInfos fieldInfos;
 
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates) throws IOException {
+  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos) throws IOException {
     this.directory = directory;
     this.writer = writer;
     this.similarity = writer.getConfig().getSimilarity();
     this.maxThreadStates = maxThreadStates;
     flushedDocCount = writer.maxDoc();
+    this.fieldInfos = fieldInfos;
 
     consumer = indexingChain.getChain(this);
     if (consumer instanceof DocFieldProcessor) {
@@ -329,10 +331,14 @@ final class DocumentsWriter {
     }
   }
 
+  public FieldInfos getFieldInfos() {
+    return fieldInfos;
+  }
+
   /** Returns true if any of the fields in the current
    *  buffered docs have omitTermFreqAndPositions==false */
   boolean hasProx() {
-    return (docFieldProcessor != null) ? docFieldProcessor.fieldInfos.hasProx()
+    return (docFieldProcessor != null) ? fieldInfos.hasProx()
                                        : true;
   }
 
@@ -602,8 +608,8 @@ final class DocumentsWriter {
 
   synchronized private void initFlushState(boolean onlyDocStore) {
     initSegmentName(onlyDocStore);
-    final SegmentCodecs info = SegmentCodecs.build(docFieldProcessor.fieldInfos, writer.codecs);
-    flushState = new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
+    final SegmentCodecs info = SegmentCodecs.build(fieldInfos, writer.codecs);
+    flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
                                        docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(), info, bytesUsed);
   }
   

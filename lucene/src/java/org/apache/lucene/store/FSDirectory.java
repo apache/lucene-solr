@@ -321,12 +321,6 @@ public abstract class FSDirectory extends Directory {
     staleFiles.add(io.name);
   }
 
-  @Deprecated
-  @Override
-  public void sync(String name) throws IOException {
-    sync(Collections.singleton(name));
-  }
-
   @Override
   public void sync(Collection<String> names) throws IOException {
     ensureOpen();
@@ -381,12 +375,6 @@ public abstract class FSDirectory extends Directory {
   @Override
   public synchronized void close() {
     isOpen = false;
-  }
-
-  /** @deprecated Use {@link #getDirectory} instead. */
-  @Deprecated
-  public File getFile() {
-    return getDirectory();
   }
 
   /** @return the underlying filesystem directory */

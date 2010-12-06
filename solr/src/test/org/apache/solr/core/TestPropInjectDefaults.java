@@ -48,7 +48,7 @@ public class TestPropInjectDefaults extends SolrTestCaseJ4 {
   public void testMergePolicyDefaults() throws Exception {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
-    LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getMergePolicy();
+    LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getConfig().getMergePolicy();
     assertEquals(32.0, mp.getMaxMergeMB());
     uh.close();
   }
@@ -57,7 +57,7 @@ public class TestPropInjectDefaults extends SolrTestCaseJ4 {
   public void testPropsDefaults() throws Exception {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
-    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getMergeScheduler();
+    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getConfig().getMergeScheduler();
     assertEquals(4, cms.getMaxThreadCount());
     uh.close();
   }

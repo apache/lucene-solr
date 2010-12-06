@@ -29,11 +29,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.FloatsRef;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Exposes writer/reader for floating point values. You can specify 4 (java
  * float) or 8 (java double) byte precision.
+ * @lucene.experimental
  */
 // TODO - add bulk copy where possible
 public class Floats {
@@ -97,15 +97,13 @@ public class Floats {
     }
 
     @Override
-    public void add(int docID, ValuesAttribute attr) throws IOException {
-      final FloatsRef ref;
-      if ((ref = attr.floats()) != null)
-        add(docID, ref.get());
+    public void add(int docID, PerDocFieldValues docValues) throws IOException {
+        add(docID, docValues.getFloat());
     }
 
     @Override
-    protected void setNextAttribute(ValuesAttribute attr) {
-      floatsRef = attr.floats();
+    protected void setNextEnum(ValuesEnum valuesEnum) {
+      floatsRef = valuesEnum.getFloat();
     }
 
     protected abstract int fillDefault(int num) throws IOException;
@@ -289,16 +287,10 @@ public class Floats {
         return values.get(docID);
       }
 
-      public long ramBytesUsed() {
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + values.limit()
-            * RamUsageEstimator.NUM_BYTES_FLOAT;
-      }
-
       @Override
       public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, Values.SIMPLE_FLOAT_4BYTE, this, maxDoc) {
-          private final FloatsRef ref = attr.floats();
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
@@ -308,7 +300,7 @@ public class Floats {
                 return pos = NO_MORE_DOCS;
               }
             }
-            ref.floats[ref.offset] = source.getFloat(target);
+            floatsRef.floats[floatsRef.offset] = source.getFloat(target);
             return pos = target;
           }
         };
@@ -334,16 +326,10 @@ public class Floats {
         return values.get(docID);
       }
 
-      public long ramBytesUsed() {
-        return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + values.limit()
-            * RamUsageEstimator.NUM_BYTES_DOUBLE;
-      }
-
       @Override
       public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, maxDoc) {
-          private final FloatsRef ref = attr.floats();
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
@@ -353,7 +339,7 @@ public class Floats {
                 return pos = NO_MORE_DOCS;
               }
             }
-            ref.floats[ref.offset] = source.getFloat(target);
+            floatsRef.floats[floatsRef.offset] = source.getFloat(target);
             return pos = target;
           }
         };
@@ -405,8 +391,8 @@ public class Floats {
         if (++target >= maxDoc)
           return pos = NO_MORE_DOCS;
       }
-      ref.floats[0] = Float.intBitsToFloat(intBits);
-      ref.offset = 0;
+      floatsRef.floats[0] = Float.intBitsToFloat(intBits);
+      floatsRef.offset = 0;
       return pos = target;
     }
 
@@ -442,8 +428,8 @@ public class Floats {
         if (++target >= maxDoc)
           return pos = NO_MORE_DOCS;
       }
-      ref.floats[0] = Double.longBitsToDouble(value);
-      ref.offset = 0;
+      floatsRef.floats[0] = Double.longBitsToDouble(value);
+      floatsRef.offset = 0;
       return pos = target;
     }
 
@@ -467,7 +453,6 @@ public class Floats {
     protected final int precision;
     protected final int maxDoc;
     protected final long fp;
-    protected final FloatsRef ref;
 
     FloatsEnumImpl(AttributeSource source, IndexInput dataIn, int precision,
         int maxDoc, Values type) throws IOException {
@@ -477,8 +462,7 @@ public class Floats {
       this.precision = precision;
       this.maxDoc = maxDoc;
       fp = dataIn.getFilePointer();
-      this.ref = attr.floats();
-      this.ref.offset = 0;
+      floatsRef.offset = 0;
     }
 
     @Override

@@ -42,8 +42,8 @@ import org.apache.lucene.util.Version;
  * </ol>
  * 
  * @version 1.0
- * @deprecated Use {@link StopFilter} instead, which has the same functionality.
- * This filter will be removed in Lucene 4.0
+ * @deprecated (3.1) Use {@link StopFilter} instead, which has the same functionality.
+ * This filter will be removed in Lucene 5.0
  */
 @Deprecated
 public final class ChineseFilter extends TokenFilter {

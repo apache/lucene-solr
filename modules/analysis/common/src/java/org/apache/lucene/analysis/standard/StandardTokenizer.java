@@ -17,6 +17,9 @@
 
 package org.apache.lucene.analysis.standard;
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -24,9 +27,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.Reader;
 
 /** A grammar-based tokenizer constructed with JFlex.
  * <p>
@@ -61,28 +61,25 @@ public final class StandardTokenizer extends Tokenizer {
   private StandardTokenizerInterface scanner;
 
   public static final int ALPHANUM          = 0;
-  /** @deprecated */
+  /** @deprecated (3.1) */
   @Deprecated
   public static final int APOSTROPHE        = 1;
-  /** @deprecated */
+  /** @deprecated (3.1) */
   @Deprecated
   public static final int ACRONYM           = 2;
-  /** @deprecated */
+  /** @deprecated (3.1) */
   @Deprecated
   public static final int COMPANY           = 3;
   public static final int EMAIL             = 4;
-  /** @deprecated */
+  /** @deprecated (3.1) */
   @Deprecated
   public static final int HOST              = 5;
   public static final int NUM               = 6;
-  /** @deprecated */
+  /** @deprecated (3.1) */
   @Deprecated
   public static final int CJ                = 7;
 
-  /**
-   * @deprecated this solves a bug where HOSTs that end with '.' are identified
-   *             as ACRONYMs.
-   */
+  /** @deprecated (3.1) */
   @Deprecated
   public static final int ACRONYM_DEP       = 8;
 
@@ -108,8 +105,6 @@ public final class StandardTokenizer extends Tokenizer {
     "<HIRAGANA>"
   };
 
-  private boolean replaceInvalidAcronym;
-    
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
   /** Set the max allowed token length.  Any token longer
@@ -155,12 +150,7 @@ public final class StandardTokenizer extends Tokenizer {
   private final void init(Reader input, Version matchVersion) {
     this.scanner = matchVersion.onOrAfter(Version.LUCENE_31) ?
       new StandardTokenizerImpl(input) : new ClassicTokenizerImpl(input);
-    if (matchVersion.onOrAfter(Version.LUCENE_24)) {
-      replaceInvalidAcronym = true;
-    } else {
-      replaceInvalidAcronym = false;
-    }
-    this.input = input;    
+    this.input = input;
   }
 
   // this tokenizer generates three attributes:
@@ -196,12 +186,8 @@ public final class StandardTokenizer extends Tokenizer {
         // invalid acronyms to HOST. When removed, only the 'else' part should
         // remain.
         if (tokenType == StandardTokenizer.ACRONYM_DEP) {
-          if (replaceInvalidAcronym) {
-            typeAtt.setType(StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HOST]);
-            termAtt.setLength(termAtt.length() - 1); // remove extra '.'
-          } else {
-            typeAtt.setType(StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ACRONYM]);
-          }
+          typeAtt.setType(StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HOST]);
+          termAtt.setLength(termAtt.length() - 1); // remove extra '.'
         } else {
           typeAtt.setType(StandardTokenizer.TOKEN_TYPES[tokenType]);
         }
@@ -224,29 +210,5 @@ public final class StandardTokenizer extends Tokenizer {
   public void reset(Reader reader) throws IOException {
     super.reset(reader);
     scanner.yyreset(reader);
-  }
-
-  /**
-   * Prior to https://issues.apache.org/jira/browse/LUCENE-1068, StandardTokenizer mischaracterized as acronyms tokens like www.abc.com
-   * when they should have been labeled as hosts instead.
-   * @return true if StandardTokenizer now returns these tokens as Hosts, otherwise false
-   *
-   * @deprecated Remove in 3.X and make true the only valid value
-   */
-  @Deprecated
-  public boolean isReplaceInvalidAcronym() {
-    return replaceInvalidAcronym;
-  }
-
-  /**
-   *
-   * @param replaceInvalidAcronym Set to true to replace mischaracterized acronyms as HOST.
-   * @deprecated Remove in 3.X and make true the only valid value
-   *
-   * See https://issues.apache.org/jira/browse/LUCENE-1068
-   */
-  @Deprecated
-  public void setReplaceInvalidAcronym(boolean replaceInvalidAcronym) {
-    this.replaceInvalidAcronym = replaceInvalidAcronym;
   }
 }

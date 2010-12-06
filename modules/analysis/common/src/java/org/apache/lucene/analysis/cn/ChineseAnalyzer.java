@@ -27,8 +27,8 @@ import org.apache.lucene.analysis.Tokenizer;
 /**
  * An {@link Analyzer} that tokenizes text with {@link ChineseTokenizer} and
  * filters with {@link ChineseFilter}
- * @deprecated Use {@link StandardAnalyzer} instead, which has the same functionality.
- * This analyzer will be removed in Lucene 4.0
+ * @deprecated (3.1) Use {@link StandardAnalyzer} instead, which has the same functionality.
+ * This analyzer will be removed in Lucene 5.0
  */
 @Deprecated
 public final class ChineseAnalyzer extends ReusableAnalyzerBase {

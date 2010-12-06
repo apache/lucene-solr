@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldsEnum;
@@ -43,6 +42,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * A codec that adds DocValues support to a given codec transparently.
+ * @lucene.experimental
  */
 public class DocValuesCodec extends Codec {
   private final Codec other;

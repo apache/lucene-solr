@@ -57,6 +57,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+        writer.setInfoStream(VERBOSE ? System.out : null);
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
         if (ms instanceof ConcurrentMergeScheduler)
           // This test intentionally produces exceptions
@@ -101,6 +102,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             
             // Make sure reader can open the index:
             IndexReader.open(dir, true).close();
+            _TestUtil.checkIndex(dir);
           }
             
           dir.close();
@@ -109,6 +111,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           diskFree += 500;
         } else {
           //_TestUtil.syncConcurrentMerges(writer);
+          dir.setMaxSizeInBytes(0);
           writer.close();
           dir.close();
           break;
@@ -438,9 +441,13 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
     //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderPooling(true));
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()).setReaderPooling(true));
-
-    ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(2);
+    IndexWriter w = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMergeScheduler(new SerialMergeScheduler()).
+            setReaderPooling(true).
+            setMergePolicy(newLogMergePolicy(2))
+    );
 
     Document doc = new Document();
     doc.add(newField("f", "doctor who", Field.Store.YES, Field.Index.ANALYZED));

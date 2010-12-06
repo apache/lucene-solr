@@ -1,3 +1,5 @@
+package org.apache.lucene.index.values;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,19 +16,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-package org.apache.solr.analysis;
+import java.util.Comparator;
 
-import org.apache.lucene.analysis.miscellaneous.ISOLatin1AccentFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.BytesRef;
 
-/** Factory for ISOLatin1AccentFilter
- * @deprecated Use {@link ASCIIFoldingFilterFactory} instead.
- *  $Id$ 
+/**
+ * 
+ * @lucene.experimental
  */
-@Deprecated
-public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory {
-  public ISOLatin1AccentFilter create(TokenStream input) {
-    return new ISOLatin1AccentFilter(input);
-  }
+public interface PerDocFieldValues {
+
+  public void setInt(long value);
+
+  public void setFloat(float value);
+
+  public void setFloat(double value);
+
+  public void setBytes(BytesRef value, Values type);
+
+  public void setBytes(BytesRef value, Values type, Comparator<BytesRef> comp);
+
+  public BytesRef getBytes();
+
+  public Comparator<BytesRef> bytesComparator();
+
+  public double getFloat();
+
+  public long getInt();
+
+  public void setBytesComparator(Comparator<BytesRef> comp);
+
+  public void setType(Values type);
+
+  public Values type();
+
 }

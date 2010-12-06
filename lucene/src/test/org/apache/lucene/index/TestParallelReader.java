@@ -26,12 +26,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.MapFieldSelector;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -98,9 +94,9 @@ public class TestParallelReader extends LuceneTestCase {
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
 
-    Document doc11 = pr.document(0, new MapFieldSelector(new String[] {"f1"}));
-    Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList(new String[] {"f4"})));
-    Document doc223 = pr.document(1, new MapFieldSelector(new String[] {"f2", "f3"}));
+    Document doc11 = pr.document(0, new MapFieldSelector("f1"));
+    Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList("f4")));
+    Document doc223 = pr.document(1, new MapFieldSelector("f2", "f3"));
     
     assertEquals(1, doc11.getFields().size());
     assertEquals(1, doc24.getFields().size());
@@ -174,15 +170,21 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir2 = getDir2(random);
     
     // add another document to ensure that the indexes are not optimized
-    IndexWriter modifier = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-    ((LogMergePolicy) modifier.getMergePolicy()).setMergeFactor(10);
+    IndexWriter modifier = new IndexWriter(
+        dir1,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMergePolicy(newLogMergePolicy(10))
+    );
     Document d = new Document();
     d.add(newField("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     modifier.addDocument(d);
     modifier.close();
-    
-    modifier = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-    ((LogMergePolicy) modifier.getMergePolicy()).setMergeFactor(10);
+
+    modifier = new IndexWriter(
+        dir2,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMergePolicy(newLogMergePolicy(10))
+    );
     d = new Document();
     d.add(newField("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
     modifier.addDocument(d);

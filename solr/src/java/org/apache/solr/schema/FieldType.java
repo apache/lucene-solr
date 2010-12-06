@@ -512,7 +512,8 @@ public abstract class FieldType extends FieldProperties {
    */
   @Deprecated
   public ValueSource getValueSource(SchemaField field) {
-    return new OrdFieldSource(field.name);
+    // return new OrdFieldSource(field.name);
+    return new StrFieldSource(field.name);
   }
 
   /**

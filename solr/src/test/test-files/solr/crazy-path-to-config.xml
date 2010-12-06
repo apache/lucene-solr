@@ -24,6 +24,7 @@
   -->
 
 <config>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <indexDefaults>
     <useCompoundFile>false</useCompoundFile>
     <mergeFactor>10</mergeFactor>

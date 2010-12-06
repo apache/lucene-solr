@@ -28,14 +28,14 @@ public interface CharStream {
 
   /**
    * Returns the column position of the character last read.
-   * @deprecated
+   * @deprecated (gen)
    * @see #getEndColumn
    */
   int getColumn();
 
   /**
    * Returns the line number of the character last read.
-   * @deprecated
+   * @deprecated (gen)
    * @see #getEndLine
    */
   int getLine();

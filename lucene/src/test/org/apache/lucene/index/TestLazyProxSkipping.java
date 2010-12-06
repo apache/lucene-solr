@@ -69,9 +69,12 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         int numDocs = 500;
         
         Directory directory = new SeekCountingDirectory(new RAMDirectory());
-        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, false)).setMaxBufferedDocs(10));
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
+        IndexWriter writer = new IndexWriter(
+            directory,
+            newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, false)).
+                setMaxBufferedDocs(10).
+                setMergePolicy(newLogMergePolicy(false))
+        );
         for (int i = 0; i < numDocs; i++) {
             Document doc = new Document();
             String content;
@@ -93,8 +96,8 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         // make sure the index has only a single segment
         writer.optimize();
         writer.close();
-        
-        SegmentReader reader = SegmentReader.getOnlySegmentReader(directory);
+
+      SegmentReader reader = getOnlySegmentReader(IndexReader.open(directory, false));
 
         this.searcher = new IndexSearcher(reader);        
     }
@@ -120,7 +123,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     }
  
     public void testLazySkipping() throws IOException {
-        assumeFalse("This test cannot run with SimpleText codec", CodecProvider.getDefaultCodec().equals("SimpleText"));
+        assumeFalse("This test cannot run with SimpleText codec", CodecProvider.getDefault().getFieldCodec(this.field).equals("SimpleText"));
         // test whether only the minimum amount of seeks()
         // are performed
         performTest(5);

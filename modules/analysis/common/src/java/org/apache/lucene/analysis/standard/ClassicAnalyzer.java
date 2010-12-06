@@ -58,12 +58,6 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
 
   private int maxTokenLength = DEFAULT_MAX_TOKEN_LENGTH;
 
-  /**
-   * Specifies whether deprecated acronyms should be replaced with HOST type.
-   * See {@linkplain "https://issues.apache.org/jira/browse/LUCENE-1068"}
-   */
-  private final boolean replaceInvalidAcronym;
-
   /** An unmodifiable set containing some common English words that are usually not
   useful for searching. */
   public static final Set<?> STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
@@ -74,7 +68,6 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
    * @param stopWords stop words */
   public ClassicAnalyzer(Version matchVersion, Set<?> stopWords) {
     super(matchVersion, stopWords);
-    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_24);
   }
 
   /** Builds an analyzer with the default stop words ({@link
@@ -125,7 +118,6 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
     final ClassicTokenizer src = new ClassicTokenizer(matchVersion, reader);
     src.setMaxTokenLength(maxTokenLength);
-    src.setReplaceInvalidAcronym(replaceInvalidAcronym);
     TokenStream tok = new ClassicFilter(src);
     tok = new LowerCaseFilter(matchVersion, tok);
     tok = new StopFilter(matchVersion, tok, stopwords);

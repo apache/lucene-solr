@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -109,19 +107,13 @@ public class TestFilterIndexReader extends LuceneTestCase {
     }
     
     public TestReader(IndexReader reader) {
-      super(reader);
+      super(new SlowMultiReaderWrapper(reader));
     }
 
     @Override
     public Fields fields() throws IOException {
       return new TestFields(super.fields());
     }
-  }
-
-
-  /** Main for running test case by itself. */
-  public static void main(String args[]) {
-    TestRunner.run (new TestSuite(TestIndexReader.class));
   }
     
   /**
@@ -146,7 +138,6 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     writer.close();
 
-    //IndexReader reader = new TestReader(IndexReader.open(directory, true));
     Directory target = newDirectory();
     writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
@@ -154,9 +145,6 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
     reader.close();
     reader = IndexReader.open(target, true);
-    
-
-    assertTrue(reader.isOptimized());
     
     TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
     while (terms.next() != null) {

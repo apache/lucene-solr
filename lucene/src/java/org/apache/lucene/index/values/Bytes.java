@@ -49,6 +49,7 @@ import org.apache.lucene.util.PagedBytes;
  * <p>
  * NOTE: Each byte[] must be <= 32768 bytes in length
  * </p>
+ * @lucene.experimental
  */
 // TODO - add bulk copy where possible
 public final class Bytes {
@@ -164,8 +165,6 @@ public final class Bytes {
     public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
-        final BytesRef bytesRef = attr.bytes();
-
         @Override
         public int advance(int target) throws IOException {
           if (target >= numDocs) {
@@ -250,7 +249,6 @@ public final class Bytes {
     public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
-        final BytesRef bytesRef = attr.bytes();
 
         @Override
         public int advance(int target) throws IOException {
@@ -332,18 +330,18 @@ public final class Bytes {
       add(docID, bytesRef);
     }
 
-    @Override
-    protected void setNextAttribute(ValuesAttribute attr) {
-      bytesRef = attr.bytes();
-      assert bytesRef != null;
-    }
 
     @Override
-    public void add(int docID, ValuesAttribute attr) throws IOException {
+    public void add(int docID, PerDocFieldValues docValues) throws IOException {
       final BytesRef ref;
-      if ((ref = attr.bytes()) != null) {
+      if ((ref = docValues.getBytes()) != null) {
         add(docID, ref);
       }
+    }
+    
+    @Override
+    protected void setNextEnum(ValuesEnum valuesEnum) {
+      bytesRef = valuesEnum.bytes();
     }
 
     @Override

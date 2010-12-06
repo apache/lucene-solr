@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.LongValues;
 import org.apache.solr.search.MutableValue;
@@ -52,6 +53,7 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final LongValues vals = cache.getLongs(reader, field, creator);
     final long[] arr = vals.values;
+	final Bits valid = vals.valid;
     
     return new DocValues() {
       public float floatVal(int doc) {
@@ -126,6 +128,7 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
           @Override
           public void fillValue(int doc) {
             mval.value = longArr[doc];
+            mval.exists = valid.get(doc);
           }
         };
       }

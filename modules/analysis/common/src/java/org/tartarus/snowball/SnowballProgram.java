@@ -239,13 +239,6 @@ public abstract class SnowballProgram {
 	return true;
     }
 
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected boolean eq_s(int s_size, String s)
-    {
-	return eq_s(s_size, (CharSequence)s);
-    }
-
     protected boolean eq_s_b(int s_size, CharSequence s)
     {
 	if (cursor - limit_backward < s_size) return false;
@@ -257,33 +250,13 @@ public abstract class SnowballProgram {
 	return true;
     }
 
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected boolean eq_s_b(int s_size, String s)
-    {
-	return eq_s_b(s_size, (CharSequence)s);
-    }
-
     protected boolean eq_v(CharSequence s)
     {
 	return eq_s(s.length(), s);
     }
 
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected boolean eq_v(StringBuilder s)
-    {
-	return eq_s(s.length(), (CharSequence)s);
-    }
-
     protected boolean eq_v_b(CharSequence s)
     {   return eq_s_b(s.length(), s);
-    }
-
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected boolean eq_v_b(StringBuilder s)
-    {   return eq_s_b(s.length(), (CharSequence)s);
     }
 
     protected int find_among(Among v[], int v_size)
@@ -456,12 +429,6 @@ public abstract class SnowballProgram {
 	return adjustment;
     }
 
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected int replace_s(int c_bra, int c_ket, String s) {
-	return replace_s(c_bra, c_ket, (CharSequence)s);
-    }
-
     protected void slice_check()
     {
 	if (bra < 0 ||
@@ -484,20 +451,6 @@ public abstract class SnowballProgram {
 	replace_s(bra, ket, s);
     }
  
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected void slice_from(String s)
-    {
-	slice_from((CharSequence)s);
-    }
-
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected void slice_from(StringBuilder s)
-    {
-	slice_from((CharSequence)s);
-    }
-
     protected void slice_del()
     {
 	slice_from((CharSequence)"");
@@ -508,20 +461,6 @@ public abstract class SnowballProgram {
 	int adjustment = replace_s(c_bra, c_ket, s);
 	if (c_bra <= bra) bra += adjustment;
 	if (c_bra <= ket) ket += adjustment;
-    }
-
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected void insert(int c_bra, int c_ket, String s)
-    {
-	insert(c_bra, c_ket, (CharSequence)s);
-    }
-
-    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
-    @Deprecated
-    protected void insert(int c_bra, int c_ket, StringBuilder s)
-    {
-	insert(c_bra, c_ket, (CharSequence)s);
     }
 
     /* Copy the slice into the supplied StringBuffer */

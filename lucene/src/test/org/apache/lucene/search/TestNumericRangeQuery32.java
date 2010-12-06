@@ -23,7 +23,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -563,7 +565,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   private void testEnum(int lower, int upper) throws Exception {
     NumericRangeQuery<Integer> q = NumericRangeQuery.newIntRange("field4", 4,
         lower, upper, true, true);
-    TermsEnum termEnum = q.getTermsEnum(searcher.getIndexReader());
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field4");
+    TermsEnum termEnum = q.getTermsEnum(terms);
     int count = 0;
     while (termEnum.next() != null) {
       final BytesRef t = termEnum.term();

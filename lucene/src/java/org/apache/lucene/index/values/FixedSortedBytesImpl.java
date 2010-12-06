@@ -43,6 +43,9 @@ import org.apache.lucene.util.packed.PackedInts;
 // Stores fixed-length byte[] by deref, ie when two docs
 // have the same value, they store only 1 byte[]
 
+/**
+ * @lucene.experimental
+ */
 class FixedSortedBytesImpl {
 
   static final String CODEC_NAME = "FixedSortedBytes";
@@ -208,7 +211,7 @@ class FixedSortedBytesImpl {
       }
       @Override
       protected BytesRef deref(int ord, BytesRef bytesRef) {
-        return data.fill(bytesRef, (ord* size), size);
+        return data.fillSlice(bytesRef, (ord* size), size);
       }
 
       @Override

@@ -149,7 +149,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     }
     if (analyzer == null)   {
       log.info("Using WhitespaceAnalzyer for dictionary: " + name);
-      analyzer = new WhitespaceAnalyzer();
+      analyzer = new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion);
     }
     return name;
   }

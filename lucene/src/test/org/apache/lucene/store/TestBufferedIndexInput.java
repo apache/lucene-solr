@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -243,10 +244,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       File indexDir = new File(TEMP_DIR, "testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random);
       try {
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer())
-          .setOpenMode(OpenMode.CREATE));
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+        IndexWriter writer = new IndexWriter(
+            dir,
+            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+                setOpenMode(OpenMode.CREATE).
+                setMergePolicy(newLogMergePolicy(false))
+        );
         for(int i=0;i<37;i++) {
           Document doc = new Document();
           doc.add(newField("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.ANALYZED));
@@ -366,12 +369,13 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       {
         return dir.listAll();
       }
-
+      @Override
+      public void sync(Collection<String> names) throws IOException {
+        dir.sync(names);
+      }
       @Override
       public long fileLength(String name) throws IOException {
         return dir.fileLength(name);
       }
-
-
     }
 }

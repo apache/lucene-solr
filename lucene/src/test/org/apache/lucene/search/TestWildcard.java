@@ -24,8 +24,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.queryParser.QueryParser;
 
 import java.io.IOException;
@@ -128,13 +130,13 @@ public class TestWildcard
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
-    
-    assertTrue(wq.getTermsEnum(searcher.getIndexReader()) instanceof PrefixTermsEnum);
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
+    assertTrue(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
-    assertFalse(wq.getTermsEnum(searcher.getIndexReader()) instanceof PrefixTermsEnum);
-    assertFalse(wq.getTermsEnum(searcher.getIndexReader()) instanceof AutomatonTermsEnum);
+    assertFalse(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
+    assertFalse(wq.getTermsEnum(terms) instanceof AutomatonTermsEnum);
     searcher.close();
     indexStore.close();
   }

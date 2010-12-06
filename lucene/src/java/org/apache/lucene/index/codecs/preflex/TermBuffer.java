@@ -25,6 +25,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.FieldInfos;
 
+/**
+ * @lucene.experimental
+ * @deprecated (4.0)
+ */
+@Deprecated
 final class TermBuffer implements Cloneable {
 
   private String field;

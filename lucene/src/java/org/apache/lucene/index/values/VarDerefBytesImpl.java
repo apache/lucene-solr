@@ -44,6 +44,9 @@ import org.apache.lucene.util.packed.PackedInts;
 // have the same value, they store only 1 byte[] and both
 // docs reference that single source
 
+/**
+ * @lucene.experimental
+ */
 class VarDerefBytesImpl {
 
   static final String CODEC_NAME = "VarDerefBytes";

@@ -30,7 +30,9 @@ import org.apache.lucene.util.PagedBytes;
 
 // Simplest storage: stores fixed length byte[] per
 // document, with no dedup and no sorting.
-
+/**
+ * @lucene.experimental
+ */
 class FixedStraightBytesImpl {
 
   static final String CODEC_NAME = "FixedStraightBytes";
@@ -145,7 +147,7 @@ class FixedStraightBytesImpl {
       
       @Override
       public BytesRef getBytes(int docID, BytesRef bytesRef) { 
-        return data.fill(bytesRef, docID * size, size);
+        return data.fillSlice(bytesRef, docID * size, size);
       }
 
       @Override
@@ -175,18 +177,25 @@ class FixedStraightBytesImpl {
       private final int maxDoc;
       private int pos = -1;
       private final long fp;
-      private final BytesRef ref;
 
       public FixedStraightBytesEnum(AttributeSource source, IndexInput datIn, int size, int maxDoc) throws IOException{
         super(source, Values.BYTES_FIXED_STRAIGHT);
         this.datIn = datIn;
         this.size = size;
         this.maxDoc = maxDoc;
-        ref = attr.bytes();
-        ref.grow(size);
-        ref.length = size;
-        ref.offset = 0;
+        bytesRef.grow(size);
+        bytesRef.length = size;
+        bytesRef.offset = 0;
         fp = datIn.getFilePointer();
+      }
+      
+      protected void copyReferences(ValuesEnum valuesEnum) {
+        bytesRef = valuesEnum.bytesRef;
+        if(bytesRef.bytes.length < size) {
+          bytesRef.grow(size);
+        }
+        bytesRef.length = size;
+        bytesRef.offset = 0;
       }
      
       public void close() throws IOException {
@@ -200,7 +209,7 @@ class FixedStraightBytesImpl {
         }
         if((target-1) != pos) // pos inc == 1
           datIn.seek(fp + target * size);
-        datIn.readBytes(ref.bytes, 0, size);
+        datIn.readBytes(bytesRef.bytes, 0, size);
         return pos = target;
       }
       

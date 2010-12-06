@@ -62,14 +62,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
 
   /**
-   * The comment character in the stopwords file.  All lines prefixed with this will be ignored
-   * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly  
-   */
-  // TODO make this private 
-  @Deprecated
-  public static final String STOPWORDS_COMMENT = "#";
-  
-  /**
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
@@ -86,7 +78,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
 
     static {
       try {
-        DEFAULT_STOP_SET = loadStopwordSet(false, ArabicAnalyzer.class, DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
+        DEFAULT_STOP_SET = loadStopwordSet(false, ArabicAnalyzer.class, DEFAULT_STOPWORD_FILE, "#");
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -132,33 +124,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
         matchVersion, stemExclusionSet));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public ArabicAnalyzer( Version matchVersion, String... stopwords ) {
-    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords ));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public ArabicAnalyzer( Version matchVersion, Hashtable<?,?> stopwords ) {
-    this(matchVersion, stopwords.keySet());
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
-   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public ArabicAnalyzer( Version matchVersion, File stopwords ) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT));
   }
 
   /**

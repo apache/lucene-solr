@@ -127,10 +127,10 @@ public class PayloadHelper {
       doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = IndexReader.open(writer);
+    reader = new SlowMultiReaderWrapper(IndexReader.open(writer));
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setSimilarity(similarity);
     return searcher;
   }

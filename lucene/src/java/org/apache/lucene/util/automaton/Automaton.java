@@ -487,7 +487,7 @@ public class Automaton implements Serializable, Cloneable {
    * Returns a sorted array of transitions for each state (and sets state
    * numbers).
    */
-  Transition[][] getSortedTransitions() {
+  public Transition[][] getSortedTransitions() {
     final State[] states = getNumberedStates();
     Transition[][] transitions = new Transition[states.length][];
     for (State s : states) {

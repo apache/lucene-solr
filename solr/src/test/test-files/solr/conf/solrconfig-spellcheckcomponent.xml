@@ -25,7 +25,7 @@ Config for testing spellcheck component
   -->
 
 <config>
-
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <requestHandler name="standard"
      class="solr.StandardRequestHandler"></requestHandler>
 

@@ -76,7 +76,7 @@ public class TestRemoteSearchable extends RemoteTestCase {
     document = searcher.doc(0, fs);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
-    fs = new MapFieldSelector(new String[]{"other"});
+    fs = new MapFieldSelector("other");
     document = searcher.doc(0, fs);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);

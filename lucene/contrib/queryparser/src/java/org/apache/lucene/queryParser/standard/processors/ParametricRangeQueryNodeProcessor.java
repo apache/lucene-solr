@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.queryParser.core.QueryNodeException;
@@ -140,17 +139,8 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
           d2 = cal.getTime();
         }
 
-        if (dateRes == null) {
-          // no default or field specific date resolution has been set,
-          // use deprecated DateField to maintain compatibilty with
-          // pre-1.9 Lucene versions.
-          part1 = DateField.dateToString(d1);
-          part2 = DateField.dateToString(d2);
-
-        } else {
-          part1 = DateTools.dateToString(d1, dateRes);
-          part2 = DateTools.dateToString(d2, dateRes);
-        }
+        part1 = DateTools.dateToString(d1, dateRes);
+        part2 = DateTools.dateToString(d2, dateRes);
       } catch (Exception e) {
         // do nothing
       }

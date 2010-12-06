@@ -26,9 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -155,9 +152,12 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(4));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(97);
+    IndexWriter writer = new IndexWriter(
+        indexStore,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(4).
+            setMergePolicy(newLogMergePolicy(97))
+    );
     for (int i=0; i<NUM_STRINGS; i++) {
         Document doc = new Document();
         String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
@@ -597,7 +597,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     assertMatches (full, queryG, sort, "ZYXW");
 
     // Do the same for a MultiSearcher
-    Searcher multiSearcher=new MultiSearcher (new Searchable[] { full });
+    Searcher multiSearcher=new MultiSearcher (full);
 
     sort.setSort (new SortField ("int", SortField.INT),
                                 new SortField ("string", SortField.STRING),
@@ -611,7 +611,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     // Don't close the multiSearcher. it would close the full searcher too!
 
     // Do the same for a ParallelMultiSearcher
-                Searcher parallelSearcher=new ParallelMultiSearcher (new Searchable[] { full });
+                Searcher parallelSearcher=new ParallelMultiSearcher (full);
 
     sort.setSort (new SortField ("int", SortField.INT),
                                 new SortField ("string", SortField.STRING),
@@ -670,7 +670,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     // Test the MultiSearcher's ability to preserve locale-sensitive ordering
     // by wrapping it around a single searcher
   public void testInternationalMultiSearcherSort() throws Exception {
-    Searcher multiSearcher = new MultiSearcher (new Searchable[] { full });
+    Searcher multiSearcher = new MultiSearcher (full);
     
     sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
     assertMatches (multiSearcher, queryY, sort, "BJDFH");
@@ -684,13 +684,13 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   // test a variety of sorts using more than one searcher
   public void testMultiSort() throws Exception {
-    MultiSearcher searcher = new MultiSearcher (new Searchable[] { searchX, searchY });
+    MultiSearcher searcher = new MultiSearcher (searchX, searchY);
     runMultiSorts(searcher, false);
   }
 
   // test a variety of sorts using a parallel multisearcher
   public void testParallelMultiSort() throws Exception {
-    Searcher searcher = new ParallelMultiSearcher (new Searchable[] { searchX, searchY });
+    Searcher searcher = new ParallelMultiSearcher (searchX, searchY);
     runMultiSorts(searcher, false);
   }
 
@@ -705,7 +705,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
     // we'll test searching locally, remote and multi
     
-    MultiSearcher multi  = new MultiSearcher (new Searchable[] { searchX, searchY });
+    MultiSearcher multi  = new MultiSearcher (searchX, searchY);
 
     // change sorting and make sure relevancy stays the same
 
@@ -1101,7 +1101,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private void assertMatches(String msg, Searcher searcher, Query query, Sort sort,
       String expectedResult) throws IOException {
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-    TopDocs hits = searcher.search (query, null, expectedResult.length(), sort);
+    TopDocs hits = searcher.search (query, null, Math.max(1, expectedResult.length()), sort);
     ScoreDoc[] result = hits.scoreDocs;
     assertEquals(expectedResult.length(),hits.totalHits);
     StringBuilder buff = new StringBuilder(10);
@@ -1194,4 +1194,23 @@ public class TestSort extends LuceneTestCase implements Serializable {
     indexStore.close();
   }
 
+  public void testCountingCollector() throws Exception {
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    for (int i=0; i<5; i++) {
+      Document doc = new Document();
+      doc.add (new Field ("string", "a"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add (new Field ("string", "b"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      writer.addDocument (doc);
+    }
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = new IndexSearcher(reader);
+    TotalHitCountCollector c = new TotalHitCountCollector();
+    searcher.search(new MatchAllDocsQuery(), null, c);
+    assertEquals(5, c.getTotalHits());
+    reader.close();
+    indexStore.close();
+  }
 }

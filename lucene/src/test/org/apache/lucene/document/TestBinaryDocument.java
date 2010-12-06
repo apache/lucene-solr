@@ -37,14 +37,6 @@ public class TestBinaryDocument extends LuceneTestCase {
     Fieldable binaryFldStored = new Field("binaryStored", binaryValStored.getBytes());
     Fieldable stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
 
-    try {
-      // binary fields with store off are not allowed
-      new Field("fail", binaryValStored.getBytes(), Field.Store.NO);
-      fail();
-    }
-    catch (IllegalArgumentException iae) {
-    }
-    
     Document doc = new Document();
     
     doc.add(binaryFldStored);

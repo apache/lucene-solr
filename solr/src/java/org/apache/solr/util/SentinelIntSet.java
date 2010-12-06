@@ -30,7 +30,7 @@ public class SentinelIntSet {
     this.emptyVal = emptyVal;
     int tsize = Math.max(org.apache.lucene.util.BitUtil.nextHighestPowerOfTwo(size), 1);
     rehashCount = tsize - (tsize>>2);
-    if (tsize <= rehashCount) {
+    if (size >= rehashCount) {  // should be able to hold "size" w/o rehashing
       tsize <<= 1;
       rehashCount = tsize - (tsize>>2);
     }
@@ -117,6 +117,8 @@ public class SentinelIntSet {
     startRehash(newSize);
     int[] oldKeys = keys;
     keys = new int[newSize];
+    if (emptyVal != 0) Arrays.fill(keys, emptyVal);
+
     for (int i=0; i<oldKeys.length; i++) {
       int key = oldKeys[i];
       if (key == emptyVal) continue;

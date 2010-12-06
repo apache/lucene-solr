@@ -21,7 +21,6 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.values.Bytes;
@@ -29,10 +28,12 @@ import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.Floats;
 import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.Values;
-import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IntsRef;
 
+/**
+ * @lucene.experimental
+ */
 public abstract class DocValuesProducerBase extends FieldsProducer{
   
   protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();

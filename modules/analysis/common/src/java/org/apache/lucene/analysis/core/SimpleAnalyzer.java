@@ -22,7 +22,6 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharTokenizer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents;
 import org.apache.lucene.util.Version;
 
 /** An {@link Analyzer} that filters {@link LetterTokenizer} 
@@ -49,13 +48,6 @@ public final class SimpleAnalyzer extends ReusableAnalyzerBase {
     this.matchVersion = matchVersion;
   }
   
-  /**
-   * Creates a new {@link SimpleAnalyzer}
-   * @deprecated use {@link #SimpleAnalyzer(Version)} instead 
-   */
-  @Deprecated  public SimpleAnalyzer() {
-    this(Version.LUCENE_30);
-  }
   @Override
   protected TokenStreamComponents createComponents(final String fieldName,
       final Reader reader) {

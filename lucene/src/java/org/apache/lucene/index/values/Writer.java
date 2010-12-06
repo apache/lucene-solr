@@ -25,6 +25,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * @lucene.experimental
+ */
 public abstract class Writer extends DocValuesConsumer {
 
   protected Writer(AtomicLong bytesUsed) {
@@ -51,8 +54,8 @@ public abstract class Writer extends DocValuesConsumer {
 
   /** Records the specfied value for the docID */
   protected abstract void add(int docID) throws IOException;
-
-  protected abstract void setNextAttribute(ValuesAttribute attr);
+  
+  protected abstract void setNextEnum(ValuesEnum valuesEnum);
 
   /** Finish writing, close any files */
   public abstract void finish(int docCount) throws IOException;
@@ -63,8 +66,7 @@ public abstract class Writer extends DocValuesConsumer {
     final ValuesEnum valEnum = state.reader.getEnum();
     assert valEnum != null;
     try {
-      final ValuesAttribute attr = valEnum.addAttribute(ValuesAttribute.class);
-      setNextAttribute(attr);
+      setNextEnum(valEnum);
       int docID = state.docBase;
       final Bits bits = state.bits;
       final int docCount = state.docCount;

@@ -17,17 +17,17 @@ package org.apache.lucene.analysis.th;
  */
 
 import java.io.IOException;
-import java.util.Locale;
 import java.lang.Character.UnicodeBlock;
-import javax.swing.text.Segment;
 import java.text.BreakIterator;
+import java.util.Locale;
+import javax.swing.text.Segment;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
@@ -69,14 +69,6 @@ public final class ThaiWordFilter extends TokenFilter {
   private OffsetAttribute clonedOffsetAtt = null;
   private boolean hasMoreTokensInClone = false;
 
-  /** Creates a new ThaiWordFilter that also lowercases non-thai text.
-   * @deprecated Use the ctor with {@code matchVersion} instead!
-   */
-  @Deprecated
-  public ThaiWordFilter(TokenStream input) {
-    this(Version.LUCENE_30, input);
-  }
-  
   /** Creates a new ThaiWordFilter with the specified match version. */
   public ThaiWordFilter(Version matchVersion, TokenStream input) {
     super(matchVersion.onOrAfter(Version.LUCENE_31) ?

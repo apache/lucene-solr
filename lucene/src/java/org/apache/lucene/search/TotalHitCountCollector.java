@@ -1,4 +1,5 @@
-package org.apache.lucene.index.values;
+package org.apache.lucene.search;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,20 +16,32 @@ package org.apache.lucene.index.values;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.util.Comparator;
 
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FloatsRef;
-import org.apache.lucene.util.LongsRef;
+import org.apache.lucene.index.IndexReader;
 
-public interface ValuesAttribute extends Attribute {
-  public Values type();
-  public BytesRef bytes();
-  public FloatsRef floats();
-  public LongsRef ints();
-  public void setType(Values type);
-  public Comparator<BytesRef> bytesComparator();
-  public void setBytesComparator(Comparator<BytesRef> comp);
-  
+/**
+ * Just counts the total number of hits.
+ */
+
+public class TotalHitCountCollector extends Collector {
+  private int totalHits;
+
+  /** Returns how many hits matched the search. */
+  public int getTotalHits() {
+    return totalHits;
+  }
+
+  public void setScorer(Scorer scorer) {
+  }
+
+  public void collect(int doc) {
+    totalHits++;
+  }
+
+  public void setNextReader(IndexReader reader, int docBase) {
+  }
+
+  public boolean acceptsDocsOutOfOrder() {
+    return true;
+  }
 }

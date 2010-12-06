@@ -91,11 +91,7 @@ public class TestDocValues extends LuceneTestCase {
     for (int iter = 0; iter < 2; iter++) {
       ValuesEnum bytesEnum = r.getEnum();
       assertNotNull("enum is null", bytesEnum);
-      ValuesAttribute attr = bytesEnum.addAttribute(ValuesAttribute.class);
-      assertNotNull("attribute is null", attr);
-      BytesRef ref = attr.bytes();
-      assertNotNull("BytesRef is null - enum not initialized to use bytes",
-          attr);
+      BytesRef ref = bytesEnum.bytes();
 
       for (int i = 0; i < 2; i++) {
         final int idx = 2 * i;
@@ -212,8 +208,7 @@ public class TestDocValues extends LuceneTestCase {
 
       for (int iter = 0; iter < 2; iter++) {
         ValuesEnum iEnum = r.getEnum();
-        ValuesAttribute attr = iEnum.addAttribute(ValuesAttribute.class);
-        LongsRef ints = attr.ints();
+        LongsRef ints = iEnum.getInt();
         for (int i = 0; i < NUM_VALUES; i++) {
           assertEquals(i, iEnum.nextDoc());
           assertEquals(values[i], ints.get());
@@ -230,8 +225,7 @@ public class TestDocValues extends LuceneTestCase {
 
       for (int iter = 0; iter < 2; iter++) {
         ValuesEnum iEnum = r.getEnum();
-        ValuesAttribute attr = iEnum.addAttribute(ValuesAttribute.class);
-        LongsRef ints = attr.ints();
+        LongsRef ints = iEnum.getInt();
         for (int i = 0; i < NUM_VALUES; i += 1 + random.nextInt(25)) {
           assertEquals(i, iEnum.advance(i));
           assertEquals(values[i], ints.get());

@@ -17,11 +17,7 @@ package org.apache.lucene.queryParser.core.processors;
  * limitations under the License.
  */
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
@@ -93,23 +89,6 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
     }
 
     return queryTree;
-
-  }
-
-  /**
-   * Adds a processor to the pipeline, it's always added to the end of the
-   * pipeline.
-   * 
-   * @deprecated this class now conforms to {@link List} interface, so use
-   *             {@link #add(QueryNodeProcessor)} instead
-   * 
-   * @param processor the processor to be added
-   */
-  @Deprecated
-  public void addProcessor(QueryNodeProcessor processor) {
-    this.processors.add(processor);
-
-    processor.setQueryConfigHandler(this.queryConfig);
 
   }
 

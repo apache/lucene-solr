@@ -214,7 +214,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig( Version.LUCENE_24, stopAnalyzer));
+        newIndexWriterConfig( Version.LUCENE_40, stopAnalyzer));
     Document doc = new Document();
     doc.add(newField("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);

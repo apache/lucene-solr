@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.values.ValuesAttribute;
+import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -47,7 +47,7 @@ public abstract class DocValuesConsumer {
     return this.bytesUsed.get();
   }
 
-  public abstract void add(int docID, ValuesAttribute attr) throws IOException;
+  public abstract void add(int docID, PerDocFieldValues docValues) throws IOException;
 
   public abstract void finish(int docCount) throws IOException;
 

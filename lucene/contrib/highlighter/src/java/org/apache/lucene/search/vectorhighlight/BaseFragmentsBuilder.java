@@ -107,23 +107,10 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragments.toArray( new String[fragments.size()] );
   }
   
-  @Deprecated
-  protected String[] getFieldValues( IndexReader reader, int docId, String fieldName) throws IOException {
-    Document doc = reader.document( docId, new MapFieldSelector( new String[]{ fieldName } ) );
-    return doc.getValues( fieldName ); // according to Document class javadoc, this never returns null
-  }
-  
   protected Field[] getFields( IndexReader reader, int docId, String fieldName) throws IOException {
     // according to javadoc, doc.getFields(fieldName) cannot be used with lazy loaded field???
-    Document doc = reader.document( docId, new MapFieldSelector( new String[]{ fieldName } ) );
+    Document doc = reader.document( docId, new MapFieldSelector(fieldName) );
     return doc.getFields( fieldName ); // according to Document class javadoc, this never returns null
-  }
-
-  @Deprecated
-  protected String makeFragment( StringBuilder buffer, int[] index, String[] values, WeightedFragInfo fragInfo ){
-    final int s = fragInfo.startOffset;
-    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s,
-        preTags, postTags, NULL_ENCODER );
   }
 
   protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo,
@@ -151,18 +138,6 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragment.toString();
   }
   
-  @Deprecated
-  protected String getFragmentSource( StringBuilder buffer, int[] index, String[] values,
-      int startOffset, int endOffset ){
-    while( buffer.length() < endOffset && index[0] < values.length ){
-      buffer.append( values[index[0]] );
-      buffer.append( multiValuedSeparator );
-      index[0]++;
-    }
-    int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
-    return buffer.substring( startOffset, eo );
-  }
-
   protected String getFragmentSource( StringBuilder buffer, int[] index, Field[] values,
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){

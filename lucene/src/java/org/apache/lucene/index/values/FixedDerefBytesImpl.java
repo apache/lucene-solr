@@ -39,7 +39,9 @@ import org.apache.lucene.util.packed.PackedInts;
 
 // Stores fixed-length byte[] by deref, ie when two docs
 // have the same value, they store only 1 byte[]
-
+/**
+ * @lucene.experimental
+ */
 class FixedDerefBytesImpl {
 
   static final String CODEC_NAME = "FixedDerefBytes";
@@ -161,7 +163,7 @@ class FixedDerefBytesImpl {
         if (id == 0) {
           return null;
         }
-        return data.fill(bytesRef, ((id - 1) * size), size);
+        return data.fillSlice(bytesRef, ((id - 1) * size), size);
       }
 
       @Override
@@ -191,7 +193,6 @@ class FixedDerefBytesImpl {
       private final PackedInts.ReaderIterator idx;
       protected final long fp;
       private final int size;
-      protected final BytesRef ref;
       private final int valueCount;
       private int pos = -1;
 
@@ -204,16 +205,25 @@ class FixedDerefBytesImpl {
           IndexInput idxIn, int size, Values enumType)
           throws IOException {
         super(source, enumType);
-        ref = attr.bytes();
         this.datIn = datIn;
-        this.size = size == -1 ? 128 : size;
+        this.size = size;
         idxIn.readInt();// read valueCount
         idx = PackedInts.getReaderIterator(idxIn);
         fp = datIn.getFilePointer();
-        ref.grow(this.size);
-        ref.length = this.size;
-        ref.offset = 0;
+        bytesRef.grow(this.size);
+        bytesRef.length = this.size;
+        bytesRef.offset = 0;
         valueCount = idx.size();
+      }
+      
+
+      protected void copyReferences(ValuesEnum valuesEnum) {
+        bytesRef = valuesEnum.bytesRef;
+        if(bytesRef.bytes.length < size) {
+          bytesRef.grow(size);
+        }
+        bytesRef.length = size;
+        bytesRef.offset = 0;
       }
 
       @Override
@@ -226,7 +236,7 @@ class FixedDerefBytesImpl {
             }
           }
           pos = idx.ord();
-          fill(address, ref);
+          fill(address, bytesRef);
           return pos;
         }
         return pos = NO_MORE_DOCS;

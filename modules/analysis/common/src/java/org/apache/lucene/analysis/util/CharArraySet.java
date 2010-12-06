@@ -51,8 +51,7 @@ import org.apache.lucene.util.Version;
  * that has a string representation. The add methods will use
  * {@link Object#toString} and store the result using a {@code char[]}
  * buffer. The same behavior have the {@code contains()} methods.
- * The {@link #iterator()} returns an {@code Iterator<String>}.
- * For type safety also {@link #stringIterator()} is provided.
+ * The {@link #iterator()} returns an {@code Iterator<char[]>}.
  */
 public class CharArraySet extends AbstractSet<Object> {
   public static final CharArraySet EMPTY_SET = new CharArraySet(CharArrayMap.<Object>emptyMap());
@@ -93,37 +92,6 @@ public class CharArraySet extends AbstractSet<Object> {
     addAll(c);
   }
 
-  /**
-   * Creates a set with enough capacity to hold startSize terms
-   * 
-   * @param startSize
-   *          the initial capacity
-   * @param ignoreCase
-   *          <code>false</code> if and only if the set should be case sensitive
-   *          otherwise <code>true</code>.
-   * @deprecated use {@link #CharArraySet(Version, int, boolean)} instead
-   */
-  @Deprecated
-  public CharArraySet(int startSize, boolean ignoreCase) {
-    this(Version.LUCENE_30, startSize, ignoreCase);
-  }
-  
-  /**
-   * Creates a set from a Collection of objects. 
-   * 
-   * @param c
-   *          a collection whose elements to be placed into the set
-   * @param ignoreCase
-   *          <code>false</code> if and only if the set should be case sensitive
-   *          otherwise <code>true</code>.
-   * @deprecated use {@link #CharArraySet(Version, Collection, boolean)} instead         
-   */  
-  @Deprecated
-  public CharArraySet(Collection<?> c, boolean ignoreCase) {
-    this(Version.LUCENE_30, c.size(), ignoreCase);
-    addAll(c);
-  }
-  
   /** Create set from the specified map (internal only), used also by {@link CharArrayMap#keySet()} */
   CharArraySet(final CharArrayMap<Object> map){
     this.map = map;
@@ -202,24 +170,6 @@ public class CharArraySet extends AbstractSet<Object> {
   /**
    * Returns a copy of the given set as a {@link CharArraySet}. If the given set
    * is a {@link CharArraySet} the ignoreCase property will be preserved.
-   * 
-   * @param set
-   *          a set to copy
-   * @return a copy of the given set as a {@link CharArraySet}. If the given set
-   *         is a {@link CharArraySet} the ignoreCase and matchVersion property will be
-   *         preserved.
-   * @deprecated use {@link #copy(Version, Set)} instead.
-   */
-  @Deprecated
-  public static CharArraySet copy(final Set<?> set) {
-    if(set == EMPTY_SET)
-      return EMPTY_SET;
-    return copy(Version.LUCENE_30, set);
-  }
-  
-  /**
-   * Returns a copy of the given set as a {@link CharArraySet}. If the given set
-   * is a {@link CharArraySet} the ignoreCase property will be preserved.
    * <p>
    * <b>Note:</b> If you intend to create a copy of another {@link CharArraySet} where
    * the {@link Version} of the source set differs from its copy
@@ -248,68 +198,13 @@ public class CharArraySet extends AbstractSet<Object> {
     return new CharArraySet(matchVersion, set, false);
   }
   
-  /** The Iterator<String> for this set.  Strings are constructed on the fly, so
-   * use <code>nextCharArray</code> for more efficient access.
-   * @deprecated Use the standard iterator, which returns {@code char[]} instances.
-   */
-  @Deprecated
-  public class CharArraySetIterator implements Iterator<String> {
-    int pos=-1;
-    char[] next;
-    private CharArraySetIterator() {
-      goNext();
-    }
-
-    private void goNext() {
-      next = null;
-      pos++;
-      while (pos < map.keys.length && (next=map.keys[pos]) == null) pos++;
-    }
-
-    public boolean hasNext() {
-      return next != null;
-    }
-
-    /** do not modify the returned char[] */
-    public char[] nextCharArray() {
-      char[] ret = next;
-      goNext();
-      return ret;
-    }
-
-    /** Returns the next String, as a Set<String> would...
-     * use nextCharArray() for better efficiency. */
-    public String next() {
-      return new String(nextCharArray());
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  /** returns an iterator of new allocated Strings (an instance of {@link CharArraySetIterator}).
-   * @deprecated Use {@link #iterator}, which returns {@code char[]} instances.
-   */
-  @Deprecated
-  public Iterator<String> stringIterator() {
-    return new CharArraySetIterator();
-  }
-
-  /** Returns an {@link Iterator} depending on the version used:
-   * <ul>
-   * <li>if {@code matchVersion} &ge; 3.1, it returns {@code char[]} instances in this set.</li>
-   * <li>if {@code matchVersion} is 3.0 or older, it returns new
-   * allocated Strings, so this method violates the Set interface.
-   * It is kept this way for backwards compatibility, normally it should
-   * return {@code char[]} on {@code next()}</li>
-   * </ul>
+  /**
+   * Returns an {@link Iterator} for {@code char[]} instances in this set.
    */
   @Override @SuppressWarnings("unchecked")
   public Iterator<Object> iterator() {
     // use the AbstractSet#keySet()'s iterator (to not produce endless recursion)
-    return map.matchVersion.onOrAfter(Version.LUCENE_31) ?
-      map.originalKeySet().iterator() : (Iterator) stringIterator();
+    return map.originalKeySet().iterator();
   }
   
   @Override

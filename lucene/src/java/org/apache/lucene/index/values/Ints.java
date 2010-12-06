@@ -1,4 +1,5 @@
 package org.apache.lucene.index.values;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,14 +24,17 @@ import org.apache.lucene.index.values.PackedIntsImpl.IntsReader;
 import org.apache.lucene.index.values.PackedIntsImpl.IntsWriter;
 import org.apache.lucene.store.Directory;
 
-//TODO - add bulk copy where possible
+/**
+ * @lucene.experimental
+ */
 public class Ints {
+//TODO - add bulk copy where possible
 
   private Ints() {
   }
 
-  public static Writer getWriter(Directory dir, String id, boolean useFixedArray, AtomicLong bytesUsed)
-      throws IOException {
+  public static Writer getWriter(Directory dir, String id,
+      boolean useFixedArray, AtomicLong bytesUsed) throws IOException {
     // TODO - implement fixed?!
     return new IntsWriter(dir, id, bytesUsed);
   }

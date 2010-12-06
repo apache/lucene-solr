@@ -193,7 +193,7 @@ class BooleanScorer2 extends Scorer {
   }
 
   private Scorer dualConjunctionSumScorer(Scorer req1, Scorer req2) throws IOException { // non counting.
-    return new ConjunctionScorer(defaultSimilarity, new Scorer[]{req1, req2});
+    return new ConjunctionScorer(defaultSimilarity, req1, req2);
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers

@@ -44,14 +44,6 @@ import org.apache.lucene.util.Version;
  * not suit your application, please consider copying this source code
  * directory to your project and maintaining your own grammar-based tokenizer.
  *
- * <a name="version"/>
- * <p>You must specify the required {@link Version}
- * compatibility when creating ClassicAnalyzer:
- * <ul>
- *   <li> As of 2.4, Tokens incorrectly identified as acronyms
- *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1608</a>
- * </ul>
- * 
  * ClassicTokenizer was named StandardTokenizer in Lucene versions prior to 3.1.
  * As of 3.1, {@link StandardTokenizer} implements Unicode text segmentation,
  * as specified by UAX#29.
@@ -70,13 +62,8 @@ public final class ClassicTokenizer extends Tokenizer {
   public static final int NUM               = 6;
   public static final int CJ                = 7;
 
-  /**
-   * @deprecated this solves a bug where HOSTs that end with '.' are identified
-   *             as ACRONYMs.
-   */
-  @Deprecated
   public static final int ACRONYM_DEP       = 8;
-  
+
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
     "<ALPHANUM>",
@@ -90,8 +77,6 @@ public final class ClassicTokenizer extends Tokenizer {
     "<ACRONYM_DEP>"
   };
 
-  private boolean replaceInvalidAcronym;
-    
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
   /** Set the max allowed token length.  Any token longer
@@ -134,15 +119,9 @@ public final class ClassicTokenizer extends Tokenizer {
     init(input, matchVersion);
   }
 
-  private final void init(Reader input, Version matchVersion) {
+  private void init(Reader input, Version matchVersion) {
     this.scanner = new ClassicTokenizerImpl(input);
-
-    if (matchVersion.onOrAfter(Version.LUCENE_24)) {
-      replaceInvalidAcronym = true;
-    } else {
-      replaceInvalidAcronym = false;
-    }
-    this.input = input;    
+    this.input = input;
   }
 
   // this tokenizer generates three attributes:
@@ -174,16 +153,10 @@ public final class ClassicTokenizer extends Tokenizer {
         scanner.getText(termAtt);
         final int start = scanner.yychar();
         offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length()));
-        // This 'if' should be removed in the next release. For now, it converts
-        // invalid acronyms to HOST. When removed, only the 'else' part should
-        // remain.
+
         if (tokenType == ClassicTokenizer.ACRONYM_DEP) {
-          if (replaceInvalidAcronym) {
-            typeAtt.setType(ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.HOST]);
-            termAtt.setLength(termAtt.length() - 1); // remove extra '.'
-          } else {
-            typeAtt.setType(ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.ACRONYM]);
-          }
+          typeAtt.setType(ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.HOST]);
+          termAtt.setLength(termAtt.length() - 1); // remove extra '.'
         } else {
           typeAtt.setType(ClassicTokenizer.TOKEN_TYPES[tokenType]);
         }
@@ -206,29 +179,5 @@ public final class ClassicTokenizer extends Tokenizer {
   public void reset(Reader reader) throws IOException {
     super.reset(reader);
     scanner.yyreset(reader);
-  }
-
-  /**
-   * Prior to https://issues.apache.org/jira/browse/LUCENE-1068, ClassicTokenizer mischaracterized as acronyms tokens like www.abc.com
-   * when they should have been labeled as hosts instead.
-   * @return true if ClassicTokenizer now returns these tokens as Hosts, otherwise false
-   *
-   * @deprecated Remove in 3.X and make true the only valid value
-   */
-  @Deprecated
-  public boolean isReplaceInvalidAcronym() {
-    return replaceInvalidAcronym;
-  }
-
-  /**
-   *
-   * @param replaceInvalidAcronym Set to true to replace mischaracterized acronyms as HOST.
-   * @deprecated Remove in 3.X and make true the only valid value
-   *
-   * See https://issues.apache.org/jira/browse/LUCENE-1068
-   */
-  @Deprecated
-  public void setReplaceInvalidAcronym(boolean replaceInvalidAcronym) {
-    this.replaceInvalidAcronym = replaceInvalidAcronym;
   }
 }

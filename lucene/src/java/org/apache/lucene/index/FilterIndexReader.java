@@ -291,7 +291,7 @@ public class FilterIndexReader extends IndexReader {
   
   @Override
   public Bits getDeletedDocs() {
-    return MultiFields.getDeletedDocs(in);
+    return in.getDeletedDocs();
   }
   
   @Override
@@ -427,12 +427,12 @@ public class FilterIndexReader extends IndexReader {
   
   @Override
   public IndexReader[] getSequentialSubReaders() {
-    return null;
+    return in.getSequentialSubReaders();
   }
 
   @Override
   public Fields fields() throws IOException {
-    return MultiFields.getFields(in);
+    return in.fields();
   }
 
   /** If the subclass of FilteredIndexReader modifies the
