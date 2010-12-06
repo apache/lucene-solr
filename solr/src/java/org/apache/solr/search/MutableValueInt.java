@@ -50,14 +50,8 @@ public class MutableValueInt extends MutableValue {
     MutableValueInt b = (MutableValueInt)other;
     int ai = value;
     int bi = b.value;
-    int c = (int)((((long)ai) - ((long)bi)) >> 32);  // any shift >= 32 should do.
-    if (c!=0) return c;
-    /* is there any pattern that the compiler would recognize as a single native CMP instruction? */
-    /***
-    if (a<b) return -1;
-    else if (a>b) return 1;
-    else return 0;
-    ***/
+    if (ai<bi) return -1;
+    else if (ai>bi) return 1;
 
     if (exists == b.exists) return 0;
     return exists ? 1 : -1;
