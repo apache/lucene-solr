@@ -45,7 +45,7 @@ import org.apache.lucene.index.values.Bytes;
 import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.Floats;
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
 

@@ -80,9 +80,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    *   - add test for unoptimized case with deletes
    *   - add a test for addIndexes
    *   - split up existing testcases and give them meaningfull names
-   *   - use consistent naming throughout DocValues
-   *     - Values -> DocValueType
-   *     - PackedIntsImpl -> Ints
    *   - run RAT
    *   - add tests for FieldComparator FloatIndexValuesComparator vs. FloatValuesComparator etc.
    */
@@ -139,7 +136,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   /**
-   * Tests complete indexing of {@link Values} including deletions, merging and
+   * Tests complete indexing of {@link Type} including deletions, merging and
    * sparse value fields on Compound-File
    */
   public void testIndexBytesNoDeletesCFS() throws IOException {
@@ -159,7 +156,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   /**
-   * Tests complete indexing of {@link Values} including deletions, merging and
+   * Tests complete indexing of {@link Type} including deletions, merging and
    * sparse value fields on None-Compound-File
    */
   public void testIndexBytesNoDeletes() throws IOException {
@@ -198,11 +195,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final int numValues = 179 + random.nextInt(151);
-    final List<Values> numVariantList = new ArrayList<Values>(NUMERICS);
+    final List<Type> numVariantList = new ArrayList<Type>(NUMERICS);
 
     // run in random order to test if fill works correctly during merges
     Collections.shuffle(numVariantList, random);
-    for (Values val : numVariantList) {
+    for (Type val : numVariantList) {
       OpenBitSet deleted = indexValues(w, numValues, val, numVariantList,
           withDeletions, 7);
       List<Closeable> closeables = new ArrayList<Closeable>();
@@ -222,7 +219,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertEquals("index " + i, missing.longValue, value);
         }
 
-        ValuesEnum intsEnum = getValuesEnum(intsReader);
+        DocValuesEnum intsEnum = getValuesEnum(intsReader);
         assertTrue(intsEnum.advance(0) >= base);
 
         intsEnum = getValuesEnum(intsReader);
@@ -253,7 +250,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertEquals(" floats failed for doc: " + i + " base: " + base,
               missing.doubleValue, value, 0.0d);
         }
-        ValuesEnum floatEnum = getValuesEnum(floatReader);
+        DocValuesEnum floatEnum = getValuesEnum(floatReader);
         assertTrue(floatEnum.advance(0) >= base);
 
         floatEnum = getValuesEnum(floatReader);
@@ -288,11 +285,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       throws CorruptIndexException, LockObtainFailedException, IOException {
     final Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
-    final List<Values> byteVariantList = new ArrayList<Values>(BYTES);
+    final List<Type> byteVariantList = new ArrayList<Type>(BYTES);
     // run in random order to test if fill works correctly during merges
     Collections.shuffle(byteVariantList, random);
     final int numValues = 179 + random.nextInt(151);
-    for (Values byteIndexValue : byteVariantList) {
+    for (Type byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
 
       int bytesSize = 7 + random.nextInt(128);
@@ -341,7 +338,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         default:
           assertNull("expected null - " + msg + " " + br, br);
           // make sure we advance at least until base
-          ValuesEnum bytesEnum = getValuesEnum(bytesReader);
+          DocValuesEnum bytesEnum = getValuesEnum(bytesReader);
           final int advancedTo = bytesEnum.advance(0);
           assertTrue(byteIndexValue.name() + " advanced failed base:" + base
               + " advancedTo: " + advancedTo, base <= advancedTo);
@@ -349,7 +346,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         }
       }
 
-      ValuesEnum bytesEnum = getValuesEnum(bytesReader);
+      DocValuesEnum bytesEnum = getValuesEnum(bytesReader);
       final BytesRef enumRef = bytesEnum.bytes();
       // test the actual doc values added in this iteration
       assertEquals(base + numRemainingValues, r.numDocs());
@@ -427,8 +424,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     return source;
   }
 
-  private ValuesEnum getValuesEnum(DocValues values) throws IOException {
-    ValuesEnum valuesEnum;
+  private DocValuesEnum getValuesEnum(DocValues values) throws IOException {
+    DocValuesEnum valuesEnum;
     if (!(values instanceof MultiDocValues) && random.nextInt(10) == 0) {
       // TODO not supported by MultiDocValues yet!
       valuesEnum = getSource(values).getEnum();
@@ -440,20 +437,20 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     return valuesEnum;
   }
 
-  private static EnumSet<Values> BYTES = EnumSet.of(Values.BYTES_FIXED_DEREF,
-      Values.BYTES_FIXED_SORTED, Values.BYTES_FIXED_STRAIGHT,
-      Values.BYTES_VAR_DEREF, Values.BYTES_VAR_SORTED,
-      Values.BYTES_VAR_STRAIGHT);
+  private static EnumSet<Type> BYTES = EnumSet.of(Type.BYTES_FIXED_DEREF,
+      Type.BYTES_FIXED_SORTED, Type.BYTES_FIXED_STRAIGHT,
+      Type.BYTES_VAR_DEREF, Type.BYTES_VAR_SORTED,
+      Type.BYTES_VAR_STRAIGHT);
 
-  private static EnumSet<Values> NUMERICS = EnumSet.of(Values.PACKED_INTS,
-      Values.SIMPLE_FLOAT_4BYTE, Values.SIMPLE_FLOAT_8BYTE);
+  private static EnumSet<Type> NUMERICS = EnumSet.of(Type.PACKED_INTS,
+      Type.SIMPLE_FLOAT_4BYTE, Type.SIMPLE_FLOAT_8BYTE);
 
   private static Index[] IDX_VALUES = new Index[] { Index.ANALYZED,
       Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
       Index.NO };
 
-  private OpenBitSet indexValues(IndexWriter w, int numValues, Values value,
-      List<Values> valueVarList, boolean withDeletions, int multOfSeven)
+  private OpenBitSet indexValues(IndexWriter w, int numValues, Type value,
+      List<Type> valueVarList, boolean withDeletions, int multOfSeven)
       throws CorruptIndexException, IOException {
     final boolean isNumeric = NUMERICS.contains(value);
     OpenBitSet deleted = new OpenBitSet(numValues);
@@ -501,7 +498,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
       if (i % 7 == 0) {
         if (withDeletions && random.nextBoolean()) {
-          Values val = valueVarList.get(random.nextInt(1 + valueVarList
+          Type val = valueVarList.get(random.nextInt(1 + valueVarList
               .indexOf(value)));
           final int randInt = val == value ? random.nextInt(1 + i) : random
               .nextInt(numValues);

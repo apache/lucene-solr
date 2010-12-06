@@ -32,7 +32,7 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -274,8 +274,8 @@ final class SegmentMerger {
                                             fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                                             !reader.hasNorms(fi.name), fi.storePayloads,
                                             fi.omitTermFreqAndPositions);
-          final Values fiIndexValues = fi.docValues;
-          final Values mergedDocValues = merged.docValues;
+          final Type fiIndexValues = fi.docValues;
+          final Type mergedDocValues = merged.docValues;
           if (mergedDocValues == null) {
             merged.setDocValues(fiIndexValues);
           } else if (mergedDocValues != fiIndexValues) {

@@ -156,8 +156,8 @@ class FixedStraightBytesImpl {
       }
 
       @Override
-      public Values type() {
-        return Values.BYTES_FIXED_STRAIGHT;
+      public Type type() {
+        return Type.BYTES_FIXED_STRAIGHT;
       }
 
       @Override
@@ -167,11 +167,11 @@ class FixedStraightBytesImpl {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       return new FixedStraightBytesEnum(source, cloneData(), size, maxDoc);
     }
     
-    private static final class FixedStraightBytesEnum extends ValuesEnum {
+    private static final class FixedStraightBytesEnum extends DocValuesEnum {
       private final IndexInput datIn;
       private final int size;
       private final int maxDoc;
@@ -179,7 +179,7 @@ class FixedStraightBytesImpl {
       private final long fp;
 
       public FixedStraightBytesEnum(AttributeSource source, IndexInput datIn, int size, int maxDoc) throws IOException{
-        super(source, Values.BYTES_FIXED_STRAIGHT);
+        super(source, Type.BYTES_FIXED_STRAIGHT);
         this.datIn = datIn;
         this.size = size;
         this.maxDoc = maxDoc;
@@ -189,7 +189,7 @@ class FixedStraightBytesImpl {
         fp = datIn.getFilePointer();
       }
       
-      protected void copyReferences(ValuesEnum valuesEnum) {
+      protected void copyReferences(DocValuesEnum valuesEnum) {
         bytesRef = valuesEnum.bytesRef;
         if(bytesRef.bytes.length < size) {
           bytesRef.grow(size);
@@ -228,8 +228,8 @@ class FixedStraightBytesImpl {
     }
     
     @Override
-    public Values type() {
-      return Values.BYTES_FIXED_STRAIGHT;
+    public Type type() {
+      return Type.BYTES_FIXED_STRAIGHT;
     }
   }
 }

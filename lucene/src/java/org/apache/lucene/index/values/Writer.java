@@ -55,7 +55,7 @@ public abstract class Writer extends DocValuesConsumer {
   /** Records the specfied value for the docID */
   protected abstract void add(int docID) throws IOException;
   
-  protected abstract void setNextEnum(ValuesEnum valuesEnum);
+  protected abstract void setNextEnum(DocValuesEnum valuesEnum);
 
   /** Finish writing, close any files */
   public abstract void finish(int docCount) throws IOException;
@@ -63,7 +63,7 @@ public abstract class Writer extends DocValuesConsumer {
   // enables bulk copies in subclasses per MergeState
   @Override
   protected void merge(MergeState state) throws IOException {
-    final ValuesEnum valEnum = state.reader.getEnum();
+    final DocValuesEnum valEnum = state.reader.getEnum();
     assert valEnum != null;
     try {
       setNextEnum(valEnum);
@@ -71,11 +71,11 @@ public abstract class Writer extends DocValuesConsumer {
       final Bits bits = state.bits;
       final int docCount = state.docCount;
       int currentDocId;
-      if ((currentDocId = valEnum.advance(0)) != ValuesEnum.NO_MORE_DOCS) {
+      if ((currentDocId = valEnum.advance(0)) != DocValuesEnum.NO_MORE_DOCS) {
         for (int i = 0; i < docCount; i++) {
           if (bits == null || !bits.get(i)) {
             if (currentDocId < i) {
-              if ((currentDocId = valEnum.advance(i)) == ValuesEnum.NO_MORE_DOCS) {
+              if ((currentDocId = valEnum.advance(i)) == DocValuesEnum.NO_MORE_DOCS) {
                 break; // advance can jump over default values
               }
             }
@@ -91,7 +91,7 @@ public abstract class Writer extends DocValuesConsumer {
     }
   }
 
-  public static Writer create(Values v, String id, Directory directory,
+  public static Writer create(Type v, String id, Directory directory,
       Comparator<BytesRef> comp, AtomicLong bytesUsed) throws IOException {
     switch (v) {
     case PACKED_INTS:

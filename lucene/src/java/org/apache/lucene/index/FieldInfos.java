@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -384,31 +384,31 @@ public final class FieldInfos {
           fi.docValues = null;
           break;
         case 1:
-          fi.docValues = Values.PACKED_INTS;
+          fi.docValues = Type.PACKED_INTS;
           break;
         case 2:
-          fi.docValues = Values.SIMPLE_FLOAT_4BYTE;
+          fi.docValues = Type.SIMPLE_FLOAT_4BYTE;
           break;
         case 3:
-          fi.docValues = Values.SIMPLE_FLOAT_8BYTE;
+          fi.docValues = Type.SIMPLE_FLOAT_8BYTE;
           break;
         case 4:
-          fi.docValues = Values.BYTES_FIXED_STRAIGHT;
+          fi.docValues = Type.BYTES_FIXED_STRAIGHT;
           break;
         case 5:
-          fi.docValues = Values.BYTES_FIXED_DEREF;
+          fi.docValues = Type.BYTES_FIXED_DEREF;
           break;
         case 6:
-          fi.docValues = Values.BYTES_FIXED_SORTED;
+          fi.docValues = Type.BYTES_FIXED_SORTED;
           break;
         case 7:
-          fi.docValues = Values.BYTES_VAR_STRAIGHT;
+          fi.docValues = Type.BYTES_VAR_STRAIGHT;
           break;
         case 8:
-          fi.docValues = Values.BYTES_VAR_DEREF;
+          fi.docValues = Type.BYTES_VAR_DEREF;
           break;
         case 9:
-          fi.docValues = Values.BYTES_VAR_SORTED;
+          fi.docValues = Type.BYTES_VAR_SORTED;
           break;
         default:
           throw new IllegalStateException("unhandled indexValues type " + b);

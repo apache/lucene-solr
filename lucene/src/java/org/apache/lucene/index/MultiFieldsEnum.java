@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.MultiDocValues;
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Slice;
@@ -157,7 +157,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   public DocValues docValues() throws IOException {
     final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
     int docsUpto = 0;
-    Values type = null;
+    Type type = null;
     final int numEnums = enumWithSlices.length;
     for (int i = 0; i < numEnums; i++) {
       FieldsEnumWithSlice withSlice = enumWithSlices[i];

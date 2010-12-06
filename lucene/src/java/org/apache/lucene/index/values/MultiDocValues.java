@@ -54,7 +54,7 @@ public class MultiDocValues extends DocValues {
   }
 
   @Override
-  public ValuesEnum getEnum(AttributeSource source) throws IOException {
+  public DocValuesEnum getEnum(AttributeSource source) throws IOException {
     return new MultiValuesEnum(docValuesIdx, starts);
   }
 
@@ -81,13 +81,13 @@ public class MultiDocValues extends DocValues {
     final int maxDoc;
     final Source emptySoruce;
 
-    public DummyDocValues(int maxDoc, Values type) {
+    public DummyDocValues(int maxDoc, Type type) {
       this.maxDoc = maxDoc;
       this.emptySoruce = new EmptySource(type);
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       return emptySoruce.getEnum(attrSource);
     }
 
@@ -97,7 +97,7 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Values type() {
+    public Type type() {
       return emptySoruce.type();
     }
 
@@ -107,13 +107,13 @@ public class MultiDocValues extends DocValues {
 
   }
 
-  private static class MultiValuesEnum extends ValuesEnum {
+  private static class MultiValuesEnum extends DocValuesEnum {
     private DocValuesIndex[] docValuesIdx;
     private final int maxDoc;
     private int currentStart;
     private int currentMax;
     private int currentDoc = -1;
-    private ValuesEnum currentEnum;
+    private DocValuesEnum currentEnum;
     private final int[] starts;
 
     public MultiValuesEnum(DocValuesIndex[] docValuesIdx, int[] starts)
@@ -222,21 +222,21 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       throw new UnsupportedOperationException(); // TODO
     }
 
     @Override
-    public Values type() {
+    public Type type() {
       return docValuesIdx[0].docValues.type();
     }
 
   }
 
   private static class EmptySource extends Source {
-    private final Values type;
+    private final Type type;
 
-    public EmptySource(Values type) {
+    public EmptySource(Type type) {
       this.type = type;
     }
 
@@ -257,18 +257,18 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      return ValuesEnum.emptyEnum(type);
+    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      return DocValuesEnum.emptyEnum(type);
     }
 
     @Override
-    public Values type() {
+    public Type type() {
       return type;
     }
   }
 
   @Override
-  public Values type() {
+  public Type type() {
     return this.docValuesIdx[0].docValues.type();
   }
 }

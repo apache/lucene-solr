@@ -28,18 +28,18 @@ import org.apache.lucene.util.LongsRef;
  * 
  * @lucene.experimental
  */
-public abstract class ValuesEnum extends DocIdSetIterator {
+public abstract class DocValuesEnum extends DocIdSetIterator {
   private AttributeSource source;
-  private Values enumType;
+  private Type enumType;
   protected BytesRef bytesRef;
   protected FloatsRef floatsRef;
   protected LongsRef intsRef;
 
-  protected ValuesEnum(Values enumType) {
+  protected DocValuesEnum(Type enumType) {
     this(null, enumType);
   }
 
-  protected ValuesEnum(AttributeSource source, Values enumType) {
+  protected DocValuesEnum(AttributeSource source, Type enumType) {
     this.source = source;
     this.enumType = enumType;
     switch (enumType) {
@@ -61,7 +61,7 @@ public abstract class ValuesEnum extends DocIdSetIterator {
     }
   }
 
-  public Values type() {
+  public Type type() {
     return enumType;
   }
 
@@ -77,7 +77,7 @@ public abstract class ValuesEnum extends DocIdSetIterator {
     return intsRef;
   }
   
-  protected void copyReferences(ValuesEnum valuesEnum) {
+  protected void copyReferences(DocValuesEnum valuesEnum) {
     intsRef = valuesEnum.intsRef;
     floatsRef = valuesEnum.floatsRef;
     bytesRef = valuesEnum.bytesRef;
@@ -103,8 +103,8 @@ public abstract class ValuesEnum extends DocIdSetIterator {
 
   public abstract void close() throws IOException;
 
-  public static ValuesEnum emptyEnum(Values type) {
-    return new ValuesEnum(type) {
+  public static DocValuesEnum emptyEnum(Type type) {
+    return new DocValuesEnum(type) {
       @Override
       public int nextDoc() throws IOException {
         return NO_MORE_DOCS;

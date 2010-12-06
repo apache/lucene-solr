@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,7 +24,7 @@ public final class FieldInfo {
   public String name;
   public boolean isIndexed;
   public int number;
-  Values docValues;
+  Type docValues;
 
 
   // true if term vector for this field should be stored
@@ -94,7 +94,7 @@ public final class FieldInfo {
     }
   }
 
-  void setDocValues(Values v) {
+  void setDocValues(Type v) {
     if (docValues != null) {
       if (docValues != v) {
         throw new IllegalArgumentException("indexValues is already set to " + docValues + "; cannot change to " + v);
@@ -108,7 +108,7 @@ public final class FieldInfo {
     return docValues != null;
   }
 
-  public Values getDocValues() {
+  public Type getDocValues() {
     return docValues;
   }
 }

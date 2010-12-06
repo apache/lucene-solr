@@ -89,7 +89,7 @@ public class TestDocValues extends LuceneTestCase {
 
     DocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc);
     for (int iter = 0; iter < 2; iter++) {
-      ValuesEnum bytesEnum = r.getEnum();
+      DocValuesEnum bytesEnum = r.getEnum();
       assertNotNull("enum is null", bytesEnum);
       BytesRef ref = bytesEnum.bytes();
 
@@ -100,8 +100,8 @@ public class TestDocValues extends LuceneTestCase {
         assertEquals("doc: " + idx + " lenLeft: " + values[idx].length()
             + " lenRight: " + utf8String.length(), values[idx], utf8String);
       }
-      assertEquals(ValuesEnum.NO_MORE_DOCS, bytesEnum.advance(maxDoc));
-      assertEquals(ValuesEnum.NO_MORE_DOCS, bytesEnum.advance(maxDoc + 1));
+      assertEquals(DocValuesEnum.NO_MORE_DOCS, bytesEnum.advance(maxDoc));
+      assertEquals(DocValuesEnum.NO_MORE_DOCS, bytesEnum.advance(maxDoc + 1));
 
       bytesEnum.close();
     }
@@ -207,7 +207,7 @@ public class TestDocValues extends LuceneTestCase {
       }
 
       for (int iter = 0; iter < 2; iter++) {
-        ValuesEnum iEnum = r.getEnum();
+        DocValuesEnum iEnum = r.getEnum();
         LongsRef ints = iEnum.getInt();
         for (int i = 0; i < NUM_VALUES; i++) {
           assertEquals(i, iEnum.nextDoc());
@@ -217,14 +217,14 @@ public class TestDocValues extends LuceneTestCase {
           assertEquals(NUM_VALUES - 1, iEnum.advance(NUM_VALUES - 1));
         }
         for (int i = NUM_VALUES; i < NUM_VALUES + additionalDocs; i++) {
-          assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
+          assertEquals(DocValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
         }
 
         iEnum.close();
       }
 
       for (int iter = 0; iter < 2; iter++) {
-        ValuesEnum iEnum = r.getEnum();
+        DocValuesEnum iEnum = r.getEnum();
         LongsRef ints = iEnum.getInt();
         for (int i = 0; i < NUM_VALUES; i += 1 + random.nextInt(25)) {
           assertEquals(i, iEnum.advance(i));
@@ -234,7 +234,7 @@ public class TestDocValues extends LuceneTestCase {
           assertEquals(NUM_VALUES - 1, iEnum.advance(NUM_VALUES - 1));
         }
         for (int i = NUM_VALUES; i < NUM_VALUES + additionalDocs; i++) {
-          assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
+          assertEquals(DocValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
         }
 
         iEnum.close();
@@ -273,26 +273,26 @@ public class TestDocValues extends LuceneTestCase {
     }
 
     for (int iter = 0; iter < 2; iter++) {
-      ValuesEnum fEnum = r.getEnum();
+      DocValuesEnum fEnum = r.getEnum();
       FloatsRef floats = fEnum.getFloat();
       for (int i = 0; i < NUM_VALUES; i++) {
         assertEquals(i, fEnum.nextDoc());
         assertEquals(values[i], floats.get(), delta);
       }
       for (int i = NUM_VALUES; i < NUM_VALUES + additionalValues; i++) {
-        assertEquals(ValuesEnum.NO_MORE_DOCS, fEnum.nextDoc());
+        assertEquals(DocValuesEnum.NO_MORE_DOCS, fEnum.nextDoc());
       }
       fEnum.close();
     }
     for (int iter = 0; iter < 2; iter++) {
-      ValuesEnum fEnum = r.getEnum();
+      DocValuesEnum fEnum = r.getEnum();
       FloatsRef floats = fEnum.getFloat();
       for (int i = 0; i < NUM_VALUES; i += 1 + random.nextInt(25)) {
         assertEquals(i, fEnum.advance(i));
         assertEquals(values[i], floats.get(), delta);
       }
       for (int i = NUM_VALUES; i < NUM_VALUES + additionalValues; i++) {
-        assertEquals(ValuesEnum.NO_MORE_DOCS, fEnum.advance(i));
+        assertEquals(DocValuesEnum.NO_MORE_DOCS, fEnum.advance(i));
       }
       fEnum.close();
     }

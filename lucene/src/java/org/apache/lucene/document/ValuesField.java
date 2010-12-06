@@ -24,7 +24,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -36,7 +36,7 @@ public class ValuesField extends AbstractField implements PerDocFieldValues {
   protected BytesRef bytes;
   protected double doubleValue;
   protected long longValue;
-  protected Values type;
+  protected Type type;
   protected Comparator<BytesRef> bytesComparator;
   
   public ValuesField(String name) {
@@ -49,26 +49,26 @@ public class ValuesField extends AbstractField implements PerDocFieldValues {
   }
   
   public void setInt(long value) {
-    type = Values.PACKED_INTS;
+    type = Type.PACKED_INTS;
     longValue = value;
   }
 
   public void setFloat(float value) {
-    type = Values.SIMPLE_FLOAT_4BYTE;
+    type = Type.SIMPLE_FLOAT_4BYTE;
     doubleValue = value;
   }
 
   public void setFloat(double value) {
-    type = Values.SIMPLE_FLOAT_8BYTE;
+    type = Type.SIMPLE_FLOAT_8BYTE;
     doubleValue = value;
   }
 
-  public void setBytes(BytesRef value, Values type) {
+  public void setBytes(BytesRef value, Type type) {
     setBytes(value, type, null);
 
   }
 
-  public void setBytes(BytesRef value, Values type, Comparator<BytesRef> comp) {
+  public void setBytes(BytesRef value, Type type, Comparator<BytesRef> comp) {
     this.type = type;
     if (bytes == null) {
       this.bytes = new BytesRef();
@@ -97,11 +97,11 @@ public class ValuesField extends AbstractField implements PerDocFieldValues {
     this.bytesComparator = comp;
   }
 
-  public void setType(Values type) {
+  public void setType(Type type) {
     this.type = type;
   }
 
-  public Values type() {
+  public Type type() {
     return type;
   }
 
@@ -122,7 +122,7 @@ public class ValuesField extends AbstractField implements PerDocFieldValues {
     return field;
   }
 
-  public static <T extends AbstractField> T set(T field, Values type) {
+  public static <T extends AbstractField> T set(T field, Type type) {
     if (field instanceof ValuesField)
       return field;
     final ValuesField valField = new ValuesField();

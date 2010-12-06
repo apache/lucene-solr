@@ -231,8 +231,8 @@ class VarDerefBytesImpl {
       }
 
       @Override
-      public Values type() {
-        return Values.BYTES_VAR_DEREF;
+      public Type type() {
+        return Type.BYTES_VAR_DEREF;
       }
 
       @Override
@@ -242,7 +242,7 @@ class VarDerefBytesImpl {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       return new VarDerefBytesEnum(source, cloneData(), cloneIndex());
     }
 
@@ -250,7 +250,7 @@ class VarDerefBytesImpl {
 
       public VarDerefBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn) throws IOException {
-        super(source, datIn, idxIn, -1, Values.BYTES_VAR_DEREF);
+        super(source, datIn, idxIn, -1, Type.BYTES_VAR_DEREF);
       }
 
       @Override
@@ -273,8 +273,8 @@ class VarDerefBytesImpl {
     }
 
     @Override
-    public Values type() {
-      return Values.BYTES_VAR_DEREF;
+    public Type type() {
+      return Type.BYTES_VAR_DEREF;
     }
   }
 }

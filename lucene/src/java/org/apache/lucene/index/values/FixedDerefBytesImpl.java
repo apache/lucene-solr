@@ -172,8 +172,8 @@ class FixedDerefBytesImpl {
       }
 
       @Override
-      public Values type() {
-        return Values.BYTES_FIXED_DEREF;
+      public Type type() {
+        return Type.BYTES_FIXED_DEREF;
       }
 
       @Override
@@ -183,12 +183,12 @@ class FixedDerefBytesImpl {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       return new DerefBytesEnum(source, cloneData(), cloneIndex(),
           size);
     }
 
-    static class DerefBytesEnum extends ValuesEnum {
+    static class DerefBytesEnum extends DocValuesEnum {
       protected final IndexInput datIn;
       private final PackedInts.ReaderIterator idx;
       protected final long fp;
@@ -198,11 +198,11 @@ class FixedDerefBytesImpl {
 
       public DerefBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn, int size) throws IOException {
-        this(source, datIn, idxIn, size, Values.BYTES_FIXED_DEREF);
+        this(source, datIn, idxIn, size, Type.BYTES_FIXED_DEREF);
       }
 
       protected DerefBytesEnum(AttributeSource source, IndexInput datIn,
-          IndexInput idxIn, int size, Values enumType)
+          IndexInput idxIn, int size, Type enumType)
           throws IOException {
         super(source, enumType);
         this.datIn = datIn;
@@ -217,7 +217,7 @@ class FixedDerefBytesImpl {
       }
       
 
-      protected void copyReferences(ValuesEnum valuesEnum) {
+      protected void copyReferences(DocValuesEnum valuesEnum) {
         bytesRef = valuesEnum.bytesRef;
         if(bytesRef.bytes.length < size) {
           bytesRef.grow(size);
@@ -270,8 +270,8 @@ class FixedDerefBytesImpl {
     }
 
     @Override
-    public Values type() {
-      return Values.BYTES_FIXED_DEREF;
+    public Type type() {
+      return Type.BYTES_FIXED_DEREF;
     }
   }
 

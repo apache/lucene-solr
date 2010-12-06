@@ -31,11 +31,11 @@ public abstract class DocValues implements Closeable {
   public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
   private SourceCache cache = new SourceCache.DirectSourceCache();
 
-  public ValuesEnum getEnum() throws IOException {
+  public DocValuesEnum getEnum() throws IOException {
     return getEnum(null);
   }
 
-  public abstract ValuesEnum getEnum(AttributeSource attrSource)
+  public abstract DocValuesEnum getEnum(AttributeSource attrSource)
       throws IOException;
 
   public abstract Source load() throws IOException;
@@ -54,7 +54,7 @@ public abstract class DocValues implements Closeable {
     throw new UnsupportedOperationException();
   }
 
-  public abstract Values type();
+  public abstract Type type();
 
   public void close() throws IOException {
     this.cache.close(this);
@@ -95,7 +95,7 @@ public abstract class DocValues implements Closeable {
       throw new UnsupportedOperationException();
     }
 
-    public ValuesEnum getEnum() throws IOException {
+    public DocValuesEnum getEnum() throws IOException {
       return getEnum(null);
     }
     
@@ -103,19 +103,19 @@ public abstract class DocValues implements Closeable {
       return missingValue;
     }
     
-    public abstract Values type();
+    public abstract Type type();
 
-    public abstract ValuesEnum getEnum(AttributeSource attrSource)
+    public abstract DocValuesEnum getEnum(AttributeSource attrSource)
         throws IOException;
 
   }
 
-  abstract static class SourceEnum extends ValuesEnum {
+  abstract static class SourceEnum extends DocValuesEnum {
     protected final Source source;
     protected final int numDocs;
     protected int pos = -1;
 
-    SourceEnum(AttributeSource attrs, Values type, Source source, int numDocs) {
+    SourceEnum(AttributeSource attrs, Type type, Source source, int numDocs) {
       super(attrs, type);
       this.source = source;
       this.numDocs = numDocs;

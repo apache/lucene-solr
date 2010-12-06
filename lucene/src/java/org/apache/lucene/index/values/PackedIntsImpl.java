@@ -133,7 +133,7 @@ class PackedIntsImpl {
     }
 
     @Override
-    protected void setNextEnum(ValuesEnum valuesEnum) {
+    protected void setNextEnum(DocValuesEnum valuesEnum) {
       intsRef = valuesEnum.getInt();
     }
 
@@ -192,7 +192,7 @@ class PackedIntsImpl {
       }
 
       @Override
-      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, values.size()) {
           @Override
@@ -211,8 +211,8 @@ class PackedIntsImpl {
       }
 
       @Override
-      public Values type() {
-        return Values.PACKED_INTS;
+      public Type type() {
+        return Type.PACKED_INTS;
       }
     }
 
@@ -223,18 +223,18 @@ class PackedIntsImpl {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       return new IntsEnumImpl(source, (IndexInput) datIn.clone());
     }
 
     @Override
-    public Values type() {
-      return Values.PACKED_INTS;
+    public Type type() {
+      return Type.PACKED_INTS;
     }
 
   }
 
-  private static final class IntsEnumImpl extends ValuesEnum {
+  private static final class IntsEnumImpl extends DocValuesEnum {
     private final PackedInts.ReaderIterator ints;
     private long minValue;
     private final IndexInput dataIn;
@@ -244,7 +244,7 @@ class PackedIntsImpl {
 
     private IntsEnumImpl(AttributeSource source, IndexInput dataIn)
         throws IOException {
-      super(source, Values.PACKED_INTS);
+      super(source, Type.PACKED_INTS);
       intsRef.offset = 0;
       this.dataIn = dataIn;
       dataIn.seek(CodecUtil.headerLength(CODEC_NAME));

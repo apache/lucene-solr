@@ -102,7 +102,7 @@ public class Floats {
     }
 
     @Override
-    protected void setNextEnum(ValuesEnum valuesEnum) {
+    protected void setNextEnum(DocValuesEnum valuesEnum) {
       floatsRef = valuesEnum.getFloat();
     }
 
@@ -288,9 +288,9 @@ public class Floats {
       }
 
       @Override
-      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
         final MissingValue missing = getMissing();
-        return new SourceEnum(attrSource, Values.SIMPLE_FLOAT_4BYTE, this, maxDoc) {
+        return new SourceEnum(attrSource, Type.SIMPLE_FLOAT_4BYTE, this, maxDoc) {
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
@@ -307,8 +307,8 @@ public class Floats {
       }
 
       @Override
-      public Values type() {
-        return Values.SIMPLE_FLOAT_4BYTE;
+      public Type type() {
+        return Type.SIMPLE_FLOAT_4BYTE;
       }
     }
 
@@ -327,7 +327,7 @@ public class Floats {
       }
 
       @Override
-      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, maxDoc) {
           @Override
@@ -346,8 +346,8 @@ public class Floats {
       }
 
       @Override
-      public Values type() {
-        return Values.SIMPLE_FLOAT_8BYTE;
+      public Type type() {
+        return Type.SIMPLE_FLOAT_8BYTE;
       }
     }
 
@@ -358,7 +358,7 @@ public class Floats {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       IndexInput indexInput = (IndexInput) datIn.clone();
       indexInput.seek(CodecUtil.headerLength(CODEC_NAME));
       // skip precision:
@@ -368,9 +368,9 @@ public class Floats {
     }
 
     @Override
-    public Values type() {
-      return precisionBytes == 4 ? Values.SIMPLE_FLOAT_4BYTE
-          : Values.SIMPLE_FLOAT_8BYTE;
+    public Type type() {
+      return precisionBytes == 4 ? Type.SIMPLE_FLOAT_4BYTE
+          : Type.SIMPLE_FLOAT_8BYTE;
     }
   }
 
@@ -378,7 +378,7 @@ public class Floats {
 
     Floats4Enum(AttributeSource source, IndexInput dataIn, int maxDoc)
         throws IOException {
-      super(source, dataIn, 4, maxDoc, Values.SIMPLE_FLOAT_4BYTE);
+      super(source, dataIn, 4, maxDoc, Type.SIMPLE_FLOAT_4BYTE);
     }
 
     @Override
@@ -414,7 +414,7 @@ public class Floats {
 
     Floats8EnumImpl(AttributeSource source, IndexInput dataIn, int maxDoc)
         throws IOException {
-      super(source, dataIn, 8, maxDoc, Values.SIMPLE_FLOAT_8BYTE);
+      super(source, dataIn, 8, maxDoc, Type.SIMPLE_FLOAT_8BYTE);
     }
 
     @Override
@@ -447,7 +447,7 @@ public class Floats {
     }
   }
 
-  static abstract class FloatsEnumImpl extends ValuesEnum {
+  static abstract class FloatsEnumImpl extends DocValuesEnum {
     protected final IndexInput dataIn;
     protected int pos = -1;
     protected final int precision;
@@ -455,9 +455,9 @@ public class Floats {
     protected final long fp;
 
     FloatsEnumImpl(AttributeSource source, IndexInput dataIn, int precision,
-        int maxDoc, Values type) throws IOException {
-      super(source, precision == 4 ? Values.SIMPLE_FLOAT_4BYTE
-          : Values.SIMPLE_FLOAT_8BYTE);
+        int maxDoc, Type type) throws IOException {
+      super(source, precision == 4 ? Type.SIMPLE_FLOAT_4BYTE
+          : Type.SIMPLE_FLOAT_8BYTE);
       this.dataIn = dataIn;
       this.precision = precision;
       this.maxDoc = maxDoc;

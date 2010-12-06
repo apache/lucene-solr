@@ -26,6 +26,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Per {@link DocValues} {@link Source} cache.
+ * @lucene.experimental
  */
 public abstract class SourceCache {
   public abstract Source load(DocValues values) throws IOException;

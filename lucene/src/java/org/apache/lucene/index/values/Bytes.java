@@ -162,7 +162,7 @@ public final class Bytes {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
         @Override
@@ -246,7 +246,7 @@ public final class Bytes {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
 
@@ -340,7 +340,7 @@ public final class Bytes {
     }
     
     @Override
-    protected void setNextEnum(ValuesEnum valuesEnum) {
+    protected void setNextEnum(DocValuesEnum valuesEnum) {
       bytesRef = valuesEnum.bytes();
     }
 

@@ -24,7 +24,7 @@ package org.apache.lucene.index.values;
  *
  * @lucene.experimental 
  */
-public enum Values {
+public enum Type {
 
   /** Integral value is stored as packed ints.  The bit
    *  precision is fixed across the segment, and

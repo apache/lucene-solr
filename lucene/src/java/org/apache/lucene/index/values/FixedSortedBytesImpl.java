@@ -215,8 +215,8 @@ class FixedSortedBytesImpl {
       }
 
       @Override
-      public Values type() {
-        return Values.BYTES_FIXED_SORTED;
+      public Type type() {
+        return Type.BYTES_FIXED_SORTED;
       }
 
       @Override
@@ -226,15 +226,15 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    public ValuesEnum getEnum(AttributeSource source) throws IOException {
+    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       // do unsorted
       return new DerefBytesEnum(source, cloneData(), cloneIndex(),
           size);
     }
 
     @Override
-    public Values type() {
-      return Values.BYTES_FIXED_SORTED;
+    public Type type() {
+      return Type.BYTES_FIXED_SORTED;
     }
   }
 }

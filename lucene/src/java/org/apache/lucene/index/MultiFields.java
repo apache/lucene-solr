@@ -25,7 +25,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.MultiDocValues;
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;  // for javadocs
@@ -293,7 +293,7 @@ public final class MultiFields extends Fields {
       // create & add to docValues:
       final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
       int docsUpto = 0;
-      Values type = null;
+      Type type = null;
       // Gather all sub-readers that share this field
       for(int i=0;i<subs.length;i++) {
          DocValues values = subs[i].docValues(field);

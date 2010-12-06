@@ -32,9 +32,9 @@ public interface PerDocFieldValues {
 
   public void setFloat(double value);
 
-  public void setBytes(BytesRef value, Values type);
+  public void setBytes(BytesRef value, Type type);
 
-  public void setBytes(BytesRef value, Values type, Comparator<BytesRef> comp);
+  public void setBytes(BytesRef value, Type type, Comparator<BytesRef> comp);
 
   public BytesRef getBytes();
 
@@ -46,8 +46,8 @@ public interface PerDocFieldValues {
 
   public void setBytesComparator(Comparator<BytesRef> comp);
 
-  public void setType(Values type);
+  public void setType(Type type);
 
-  public Values type();
+  public Type type();
 
 }

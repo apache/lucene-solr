@@ -33,7 +33,7 @@ import org.apache.lucene.document.ValuesField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.Type;
 
 /**
  * Creates {@link Document} objects. Uses a {@link ContentSource} to generate
@@ -160,13 +160,13 @@ public class DocMaker {
   private long lastPrintedNumUniqueBytes = 0;
 
   private int printNum = 0;
-  private Map<String, Values> fieldVauleMap;
+  private Map<String, Type> fieldVauleMap;
 
   // create a doc
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
   private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
-    Values valueType;
+    Type valueType;
     final DocState ds = getDocState();
     final Document doc = reuseFields ? ds.doc : new Document();
     doc.getFields().clear();
@@ -252,7 +252,7 @@ public class DocMaker {
   }
   
   private void trySetIndexValues(Field field) {
-    final Values valueType;
+    final Type valueType;
     if((valueType = fieldVauleMap.get(field.name())) != null)
       ValuesField.set(field, valueType);
   }
@@ -385,18 +385,18 @@ public class DocMaker {
     resetLeftovers();
   }
   
-  private static final Map<String, Values> parseValueFields(String fields) {
+  private static final Map<String, Type> parseValueFields(String fields) {
     if(fields == null)
       return Collections.emptyMap();
     String[] split = fields.split(";");
-    Map<String, Values> result = new HashMap<String, Values>();
+    Map<String, Type> result = new HashMap<String, Type>();
     for (String tuple : split) {
       final String[] nameValue = tuple.split("=");
       if (nameValue.length != 2) {
         throw new IllegalArgumentException("illegal doc.stored.values format: "
             + fields + " expected fieldname=ValuesType;...;...;");
       }
-      result.put(nameValue[0].trim(), Values.valueOf(nameValue[1]));
+      result.put(nameValue[0].trim(), Type.valueOf(nameValue[1]));
     }
     return result;
   }
