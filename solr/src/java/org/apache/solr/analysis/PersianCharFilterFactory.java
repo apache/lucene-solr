@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.fa.PersianCharFilter;
  */
 public class PersianCharFilterFactory extends BaseCharFilterFactory {
 
-  @Override
   public CharStream create(CharStream input) {
     return new PersianCharFilter(input);
   }
