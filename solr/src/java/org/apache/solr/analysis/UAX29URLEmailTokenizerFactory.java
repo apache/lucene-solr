@@ -20,7 +20,7 @@ package org.apache.solr.analysis;
 
 
 
-import org.apache.lucene.analysis.standard.UAX29Tokenizer;
+import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 
 import java.io.Reader;
 import java.util.Map;
@@ -30,14 +30,14 @@ import java.util.Map;
  * 
  */
 
-public class UAX29TokenizerFactory extends BaseTokenizerFactory {
+public class UAX29URLEmailTokenizerFactory extends BaseTokenizerFactory {
   @Override
   public void init(Map<String,String> args) {
     super.init(args);
     assureMatchVersion();
   }
 
-  public UAX29Tokenizer create(Reader input) {
-    return new UAX29Tokenizer(input);
+  public UAX29URLEmailTokenizer create(Reader input) {
+    return new UAX29URLEmailTokenizer(input);
   }
 }

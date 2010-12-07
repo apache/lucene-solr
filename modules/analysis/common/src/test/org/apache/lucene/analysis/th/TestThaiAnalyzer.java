@@ -123,7 +123,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
       assertAnalyzesToReuse(
           analyzer,
           "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
-          new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz@demo.com" });
+          new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz", "demo.com" });
 	}
 	
 	/** @deprecated (3.1) for version back compat */

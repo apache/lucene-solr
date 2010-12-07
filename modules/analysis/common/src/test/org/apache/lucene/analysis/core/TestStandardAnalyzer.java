@@ -2,21 +2,14 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -55,63 +48,6 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
       Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
       return new TokenStreamComponents(tokenizer);
-    }
-  };
-
-  /** Passes through tokens with type "<URL>" and blocks all other types. */
-  private class URLFilter extends TokenFilter {
-    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-    public URLFilter(TokenStream in) {
-      super(in);
-    }
-    @Override
-    public final boolean incrementToken() throws java.io.IOException {
-      boolean isTokenAvailable = false;
-      while (input.incrementToken()) {
-        if (typeAtt.type() == StandardTokenizer.TOKEN_TYPES[StandardTokenizer.URL]) {
-          isTokenAvailable = true;
-          break;
-        }
-      }
-      return isTokenAvailable;
-    }
-  }
-  
-  /** Passes through tokens with type "<EMAIL>" and blocks all other types. */
-  private class EmailFilter extends TokenFilter {
-    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-    public EmailFilter(TokenStream in) {
-      super(in);
-    }
-    @Override
-    public final boolean incrementToken() throws java.io.IOException {
-      boolean isTokenAvailable = false;
-      while (input.incrementToken()) {
-        if (typeAtt.type() == StandardTokenizer.TOKEN_TYPES[StandardTokenizer.EMAIL]) {
-          isTokenAvailable = true;
-          break;
-        }
-      }
-      return isTokenAvailable;
-    }
-  }
-
-  private Analyzer urlAnalyzer = new ReusableAnalyzerBase() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      StandardTokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
-      tokenizer.setMaxTokenLength(Integer.MAX_VALUE);  // Tokenize arbitrary length URLs
-      TokenFilter filter = new URLFilter(tokenizer);
-      return new TokenStreamComponents(tokenizer, filter);
-    }
-  };
-
-  private Analyzer emailAnalyzer = new ReusableAnalyzerBase() {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
-      TokenFilter filter = new EmailFilter(tokenizer);
-      return new TokenStreamComponents(tokenizer, filter);
     }
   };
 
@@ -261,138 +197,6 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "<ALPHANUM>", "<ALPHANUM>", "<NUM>", "<ALPHANUM>" });
   }
   
-  public void testWikiURLs() throws Exception {
-    Reader reader = null;
-    String luceneResourcesWikiPage;
-    try {
-      reader = new InputStreamReader
-        (getClass().getResourceAsStream("LuceneResourcesWikiPage.html"), "UTF-8");
-      StringBuilder builder = new StringBuilder();
-      char[] buffer = new char[1024];
-      int numCharsRead;
-      while (-1 != (numCharsRead = reader.read(buffer))) {
-        builder.append(buffer, 0, numCharsRead);
-      }
-      luceneResourcesWikiPage = builder.toString(); 
-    } finally {
-      if (null != reader) {
-        reader.close();
-      }
-    }
-    assertTrue(null != luceneResourcesWikiPage 
-               && luceneResourcesWikiPage.length() > 0);
-    BufferedReader bufferedReader = null;
-    String[] urls;
-    try {
-      List<String> urlList = new ArrayList<String>();
-      bufferedReader = new BufferedReader(new InputStreamReader
-        (getClass().getResourceAsStream("LuceneResourcesWikiPageURLs.txt"), "UTF-8"));
-      String line;
-      while (null != (line = bufferedReader.readLine())) {
-        line = line.trim();
-        if (line.length() > 0) {
-          urlList.add(line);
-        }
-      }
-      urls = urlList.toArray(new String[urlList.size()]);
-    } finally {
-      if (null != bufferedReader) {
-        bufferedReader.close();
-      }
-    }
-    assertTrue(null != urls && urls.length > 0);
-    BaseTokenStreamTestCase.assertAnalyzesTo
-      (urlAnalyzer, luceneResourcesWikiPage, urls);
-  }
-  
-  public void testEmails() throws Exception {
-    Reader reader = null;
-    String randomTextWithEmails;
-    try {
-      reader = new InputStreamReader
-        (getClass().getResourceAsStream("random.text.with.email.addresses.txt"), "UTF-8");
-      StringBuilder builder = new StringBuilder();
-      char[] buffer = new char[1024];
-      int numCharsRead;
-      while (-1 != (numCharsRead = reader.read(buffer))) {
-        builder.append(buffer, 0, numCharsRead);
-      }
-      randomTextWithEmails = builder.toString(); 
-    } finally {
-      if (null != reader) {
-        reader.close();
-      }
-    }
-    assertTrue(null != randomTextWithEmails 
-               && randomTextWithEmails.length() > 0);
-    BufferedReader bufferedReader = null;
-    String[] emails;
-    try {
-      List<String> emailList = new ArrayList<String>();
-      bufferedReader = new BufferedReader(new InputStreamReader
-        (getClass().getResourceAsStream("email.addresses.from.random.text.with.email.addresses.txt"), "UTF-8"));
-      String line;
-      while (null != (line = bufferedReader.readLine())) {
-        line = line.trim();
-        if (line.length() > 0) {
-          emailList.add(line);
-        }
-      }
-      emails = emailList.toArray(new String[emailList.size()]);
-    } finally {
-      if (null != bufferedReader) {
-        bufferedReader.close();
-      }
-    }
-    assertTrue(null != emails && emails.length > 0);
-    BaseTokenStreamTestCase.assertAnalyzesTo
-      (emailAnalyzer, randomTextWithEmails, emails);
-  }
-
-  public void testURLs() throws Exception {
-    Reader reader = null;
-    String randomTextWithURLs;
-    try {
-      reader = new InputStreamReader
-        (getClass().getResourceAsStream("random.text.with.urls.txt"), "UTF-8");
-      StringBuilder builder = new StringBuilder();
-      char[] buffer = new char[1024];
-      int numCharsRead;
-      while (-1 != (numCharsRead = reader.read(buffer))) {
-        builder.append(buffer, 0, numCharsRead);
-      }
-      randomTextWithURLs = builder.toString(); 
-    } finally {
-      if (null != reader) {
-        reader.close();
-      }
-    }
-    assertTrue(null != randomTextWithURLs 
-               && randomTextWithURLs.length() > 0);
-    BufferedReader bufferedReader = null;
-    String[] urls;
-    try {
-      List<String> urlList = new ArrayList<String>();
-      bufferedReader = new BufferedReader(new InputStreamReader
-        (getClass().getResourceAsStream("urls.from.random.text.with.urls.txt"), "UTF-8"));
-      String line;
-      while (null != (line = bufferedReader.readLine())) {
-        line = line.trim();
-        if (line.length() > 0) {
-          urlList.add(line);
-        }
-      }
-      urls = urlList.toArray(new String[urlList.size()]);
-    } finally {
-      if (null != bufferedReader) {
-        bufferedReader.close();
-      }
-    }
-    assertTrue(null != urls && urls.length > 0);
-    BaseTokenStreamTestCase.assertAnalyzesTo
-      (urlAnalyzer, randomTextWithURLs, urls);
-  }
-
   public void testUnicodeWordBreaks() throws Exception {
     WordBreakTestUnicode_6_0_0 wordBreakTest = new WordBreakTestUnicode_6_0_0();
     wordBreakTest.test(a);
