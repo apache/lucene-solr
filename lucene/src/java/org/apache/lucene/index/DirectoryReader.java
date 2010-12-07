@@ -770,6 +770,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
                                                       deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
                                                       segmentInfos, null, null, codecs);
       segmentInfos.updateGeneration(deleter.getLastSegmentInfos());
+      segmentInfos.changed();
 
       // Checkpoint the state we are about to change, in
       // case we have to roll back:
@@ -782,7 +783,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
         // Sync all files we just wrote
         directory.sync(segmentInfos.files(directory, false));
-
         segmentInfos.commit(directory);
         success = true;
       } finally {

@@ -741,6 +741,7 @@ public class IndexWriter implements Closeable {
         // Record that we have a change (zero out all
         // segments) pending:
         changeCount++;
+        segmentInfos.changed();
       } else {
         segmentInfos.read(directory, codecs);
 
@@ -757,6 +758,7 @@ public class IndexWriter implements Closeable {
           oldInfos.read(directory, commit.getSegmentsFileName(), codecs);
           segmentInfos.replace(oldInfos);
           changeCount++;
+          segmentInfos.changed();
           if (infoStream != null)
             message("init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
         }
@@ -774,12 +776,14 @@ public class IndexWriter implements Closeable {
                                      conf.getIndexDeletionPolicy(),
                                      segmentInfos, infoStream, docWriter, codecs);
 
-      if (deleter.startingCommitDeleted)
+      if (deleter.startingCommitDeleted) {
         // Deletion policy deleted the "head" commit point.
         // We have to mark ourself as changed so that if we
         // are closed w/o any further changes we write a new
         // segments_N file.
         changeCount++;
+        segmentInfos.changed();
+      }
 
       docWriter.setMaxBufferedDeleteTerms(conf.getMaxBufferedDeleteTerms());
       docWriter.setRAMBufferSizeMB(conf.getRAMBufferSizeMB());
@@ -1537,6 +1541,7 @@ public class IndexWriter implements Closeable {
       // name that was previously returned which can cause
       // problems at least with ConcurrentMergeScheduler.
       changeCount++;
+      segmentInfos.changed();
       return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
     }
   }
@@ -2038,6 +2043,7 @@ public class IndexWriter implements Closeable {
 
       // Mark that the index has changed
       ++changeCount;
+      segmentInfos.changed();
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteAll");
     } finally {
@@ -2119,6 +2125,7 @@ public class IndexWriter implements Closeable {
    */
   private synchronized void checkpoint() throws IOException {
     changeCount++;
+    segmentInfos.changed();
     deleter.checkpoint(segmentInfos, false);
   }
 
@@ -3686,6 +3693,7 @@ public class IndexWriter implements Closeable {
             }
             toSync.remove(toSync.size()-1);
             changeCount++;
+            segmentInfos.changed();
           }
         }
         assert filesExist(toSync);
@@ -3818,17 +3826,7 @@ public class IndexWriter implements Closeable {
   }
 
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {
-    if (!infos.equals(segmentInfos)) {
-      // if any structural changes (new segments), we are
-      // stale
-      return false;
-    } else if (infos.getGeneration() != segmentInfos.getGeneration()) {
-      // if any commit took place since we were opened, we
-      // are stale
-      return false;
-    } else {
-      return !docWriter.anyChanges();
-    }
+    return infos.version == segmentInfos.version && !docWriter.anyChanges();
   }
 
   synchronized boolean isClosed() {

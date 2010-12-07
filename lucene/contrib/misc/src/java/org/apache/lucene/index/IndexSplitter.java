@@ -134,6 +134,7 @@ public class IndexSplitter {
       int idx = getIdx(n);
       infos.remove(idx);
     }
+    infos.changed();
     infos.commit(fsDir);
   }
 
@@ -152,6 +153,7 @@ public class IndexSplitter {
         copyFile(srcFile, destFile);
       }
     }
+    destInfos.changed();
     destInfos.commit(destFSDir);
     // System.out.println("destDir:"+destDir.getAbsolutePath());
   }

@@ -51,8 +51,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
           throws IOException {
     IndexOutput out = createOutput(dir, segmentFileName);
     out.writeInt(FORMAT_CURRENT); // write FORMAT
-    out.writeLong(++infos.version); // every write changes
-                                 // the index
+    out.writeLong(infos.version);
     out.writeInt(infos.counter); // write counter
     out.writeInt(infos.size()); // write infos
     for (SegmentInfo si : infos) {

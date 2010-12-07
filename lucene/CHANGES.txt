@@ -131,6 +131,11 @@ Changes in Runtime Behavior
   to determine whether the passed in segment should be compound. 
   (Shai Erera, Earwin Burrfoot)
 
+* LUCENE-2805: IndexWriter now increments the index version on every change to
+  the index instead of for every commit. Committing or closing the IndexWriter
+  without any changes to the index will not cause any index version increment.
+  (Simon Willnauer, Mike Mccandless)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
