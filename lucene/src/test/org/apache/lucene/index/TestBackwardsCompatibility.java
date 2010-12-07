@@ -519,6 +519,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
+    if (doCFS) {
+      ((LogMergePolicy) conf.getMergePolicy()).setNoCFSRatio(1.0);
+    }
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
@@ -556,9 +559,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(16.0));
-      ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(16.0);
+      ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(true);
+      ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(10);
+      ((LogMergePolicy) conf.getMergePolicy()).setNoCFSRatio(1.0);
+      IndexWriter writer = new IndexWriter(dir, conf);
       for(int i=0;i<35;i++) {
         addDoc(writer, i);
       }

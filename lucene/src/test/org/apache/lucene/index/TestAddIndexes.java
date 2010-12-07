@@ -27,6 +27,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -885,4 +888,30 @@ public class TestAddIndexes extends LuceneTestCase {
 
     assertTrue(c.failures.size() == 0);
   }
+
+  // LUCENE-2790: tests that the non CFS files were deleted by addIndexes
+  public void testNonCFSLeftovers() throws Exception {
+    Directory[] dirs = new Directory[2];
+    for (int i = 0; i < dirs.length; i++) {
+      dirs[i] = new RAMDirectory();
+      IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+      Document d = new Document();
+      d.add(new Field("c", "v", Store.YES, Index.ANALYZED, TermVector.YES));
+      w.addDocument(d);
+      w.close();
+    }
+    
+    IndexReader[] readers = new IndexReader[] { IndexReader.open(dirs[0]), IndexReader.open(dirs[1]) };
+    
+    Directory dir = new RAMDirectory();
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
+    lmp.setNoCFSRatio(1.0); // Force creation of CFS
+    IndexWriter w3 = new IndexWriter(dir, conf);
+    w3.addIndexes(readers);
+    w3.close();
+    
+    assertEquals("Only one compound segment should exist", 3, dir.listAll().length);
+  }
+  
 }

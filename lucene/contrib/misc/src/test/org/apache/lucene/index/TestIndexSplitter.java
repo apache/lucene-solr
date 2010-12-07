@@ -34,7 +34,13 @@ public class TestIndexSplitter extends LuceneTestCase {
     _TestUtil.rmDir(destDir);
     destDir.mkdirs();
     FSDirectory fsDir = FSDirectory.open(dir);
-    IndexWriter iw = new IndexWriter(fsDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setOpenMode(OpenMode.CREATE);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(true);
+    ((LogMergePolicy) conf.getMergePolicy()).setNoCFSRatio(1.0);
+
+    IndexWriter iw = new IndexWriter(fsDir, conf);
     for (int x=0; x < 100; x++) {
       Document doc = TestIndexWriterReader.createDocument(x, "index", 5);
       iw.addDocument(doc);

@@ -2377,7 +2377,7 @@ public class IndexWriter implements Closeable {
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @see LogMergePolicy#findMergesForOptimize
+   * @see MergePolicy#findMergesForOptimize
   */
   public void optimize() throws CorruptIndexException, IOException {
     optimize(true);
@@ -2957,48 +2957,35 @@ public class IndexWriter implements Closeable {
       
       int docCount = merger.merge();                // merge 'em
       
-      SegmentInfo info = null;
+      SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
+          false, true, -1, null, false, merger.hasProx());
+      setDiagnostics(info, "addIndexes(IndexReader...)");
+
+      boolean useCompoundFile;
+      synchronized(this) { // Guard segmentInfos
+        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, info);
+      }
+
+      // Now create the compound file if needed
+      if (useCompoundFile) {
+        merger.createCompoundFile(mergedName + ".cfs");
+        info.setUseCompoundFile(true);
+
+        // delete new non cfs files directly: they were never
+        // registered with IFD
+        deleter.deleteNewFiles(merger.getMergedFiles());
+      }
+
+      // Register the new segment
       synchronized(this) {
-        info = new SegmentInfo(mergedName, docCount, directory, false, true,
-            -1, null, false, merger.hasProx());
-        setDiagnostics(info, "addIndexes(IndexReader...)");
         segmentInfos.add(info);
-        checkpoint();
         
         // Notify DocumentsWriter that the flushed count just increased
         docWriter.updateFlushedDocCount(docCount);
+
+        checkpoint();
       }
       
-      // Now create the compound file if needed
-      if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
-
-        List<String> files = null;
-
-        synchronized(this) {
-          // Must incRef our files so that if another thread
-          // is running merge/optimize, it doesn't delete our
-          // segment's files before we have a chance to
-          // finish making the compound file.
-          if (segmentInfos.contains(info)) {
-            files = info.files();
-            deleter.incRef(files);
-          }
-        }
-
-        if (files != null) {
-          try {
-            merger.createCompoundFile(mergedName + ".cfs");
-            synchronized(this) {
-              info.setUseCompoundFile(true);
-              checkpoint();
-            }
-          } finally {
-            synchronized(this) {
-              deleter.decRef(files);
-            }
-          }
-        }
-      }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "addIndexes(IndexReader...)");
     }
@@ -4212,7 +4199,12 @@ public class IndexWriter implements Closeable {
 
       assert mergedDocCount == totDocCount;
 
-      if (merge.useCompoundFile) {
+      boolean useCompoundFile;
+      synchronized (this) { // Guard segmentInfos
+        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, merge.info);
+      }
+
+      if (useCompoundFile) {
 
         success = false;
         final String compoundFileName = IndexFileNames.segmentFileName(mergedName, IndexFileNames.COMPOUND_FILE_EXTENSION);

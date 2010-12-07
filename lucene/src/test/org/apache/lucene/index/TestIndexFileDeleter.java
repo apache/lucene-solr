@@ -40,11 +40,13 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   public void testDeleteLeftoverFiles() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
     dir.setPreventDoubleWrite(false);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+    IndexWriterConfig conf = newIndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-        .setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
+        .setMaxBufferedDocs(10);
+    ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(10);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(true);
+    ((LogMergePolicy) conf.getMergePolicy()).setNoCFSRatio(1.0);
+    IndexWriter writer = new IndexWriter(dir, conf);
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);

@@ -26,7 +26,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LogMergePolicy;
+
 import java.io.*;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.zip.*;
 
@@ -42,6 +46,16 @@ public class TestIndexFileDeleter extends LuceneTestCase
     Directory dir = new RAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
+    // BACKWARDS-HACK: the runtime behavior of LogMergePolicy has changed and we
+    // need to force compound file creation. But setNoCFSRatio does not exist on
+    // 3.0 source, and so we need to use reflection to set it properly.
+    try {
+      Method setNoCFSRatio = LogMergePolicy.class.getDeclaredMethod("setNoCFSRatio", double.class);
+      setNoCFSRatio.invoke(writer.getMergePolicy(), Double.valueOf(1.0));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     writer.setMaxBufferedDocs(10);
     int i;
     for(i=0;i<35;i++) {

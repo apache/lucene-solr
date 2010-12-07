@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -512,6 +514,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase
       Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
       IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+      ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
+      // BACKWARDS-HACK: the runtime behavior of LogMergePolicy has changed and we
+      // need to force compound file creation. But setNoCFSRatio does not exist on
+      // 3.0 source, and so we need to use reflection to set it properly.
+      try {
+        Method setNoCFSRatio = LogMergePolicy.class.getDeclaredMethod("setNoCFSRatio", double.class);
+        setNoCFSRatio.invoke(writer.getMergePolicy(), Double.valueOf(1.0));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
       writer.setRAMBufferSizeMB(16.0);
       for(int i=0;i<35;i++) {
         addDoc(writer, i);

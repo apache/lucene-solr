@@ -2473,8 +2473,10 @@ public class TestIndexWriter extends LuceneTestCase {
 
     for(int iter=0;iter<2;iter++) {
       Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-      ((LogMergePolicy) w.getMergePolicy()).setUseCompoundFile(true);
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+      ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(true);
+      ((LogMergePolicy) conf.getMergePolicy()).setNoCFSRatio(1.0);
+      IndexWriter w = new IndexWriter(dir, conf);
       Document doc = new Document();
       doc.add(newField("field", "go", Field.Store.NO, Field.Index.ANALYZED));
       w.addDocument(doc);
@@ -2568,6 +2570,7 @@ public class TestIndexWriter extends LuceneTestCase {
     public FlushCountingIndexWriter(Directory dir, IndexWriterConfig iwc) throws IOException {
       super(dir, iwc);
     }
+    @Override
     public void doAfterFlush() {
       flushCount++;
     }
