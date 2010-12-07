@@ -27,11 +27,14 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+
 import org.apache.lucene.util.Version;
 
 /**
@@ -140,14 +143,19 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
-   *         built from a {@link ArabicLetterTokenizer} filtered with
+   *         built from a {@link StandardTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link ArabicNormalizationFilter},
    *         {@link PersianNormalizationFilter} and Persian Stop words
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new ArabicLetterTokenizer(matchVersion, reader);
+    final Tokenizer source;
+    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+      source = new StandardTokenizer(matchVersion, reader);
+    } else {
+      source = new ArabicLetterTokenizer(matchVersion, reader);
+    }
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     result = new ArabicNormalizationFilter(result);
     /* additional persian-specific normalization */
@@ -157,5 +165,15 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
      * above!
      */
     return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
+  }
+  
+  /** 
+   * Wraps the Reader with {@link PersianCharFilter}
+   */
+  @Override
+  protected Reader initReader(Reader reader) {
+    return matchVersion.onOrAfter(Version.LUCENE_31) ? 
+       new PersianCharFilter(CharReader.get(reader)) :
+       reader;
   }
 }

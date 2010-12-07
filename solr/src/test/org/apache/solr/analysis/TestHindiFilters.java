@@ -28,23 +28,11 @@ import org.apache.lucene.analysis.Tokenizer;
  */
 public class TestHindiFilters extends BaseTokenTestCase {
   /**
-   * Test IndicTokenizerFactory
-   */
-  public void testTokenizer() throws Exception {
-    Reader reader = new StringReader("मुझे हिंदी का और अभ्यास करना होगा ।");
-    IndicTokenizerFactory factory = new IndicTokenizerFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    Tokenizer stream = factory.create(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "मुझे", "हिंदी", "का", "और", "अभ्यास", "करना", "होगा" });
-  }
-  
-  /**
    * Test IndicNormalizationFilterFactory
    */
   public void testIndicNormalizer() throws Exception {
     Reader reader = new StringReader("ত্‍ अाैर");
-    IndicTokenizerFactory factory = new IndicTokenizerFactory();
+    StandardTokenizerFactory factory = new StandardTokenizerFactory();
     IndicNormalizationFilterFactory filterFactory = new IndicNormalizationFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     filterFactory.init(DEFAULT_VERSION_PARAM);
@@ -58,7 +46,7 @@ public class TestHindiFilters extends BaseTokenTestCase {
    */
   public void testHindiNormalizer() throws Exception {
     Reader reader = new StringReader("क़िताब");
-    IndicTokenizerFactory factory = new IndicTokenizerFactory();
+    StandardTokenizerFactory factory = new StandardTokenizerFactory();
     IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
     HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
@@ -74,7 +62,7 @@ public class TestHindiFilters extends BaseTokenTestCase {
    */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("किताबें");
-    IndicTokenizerFactory factory = new IndicTokenizerFactory();
+    StandardTokenizerFactory factory = new StandardTokenizerFactory();
     IndicNormalizationFilterFactory indicFilterFactory = new IndicNormalizationFilterFactory();
     HindiNormalizationFilterFactory hindiFilterFactory = new HindiNormalizationFilterFactory();
     HindiStemFilterFactory stemFactory = new HindiStemFilterFactory();
