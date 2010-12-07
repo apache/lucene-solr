@@ -15,8 +15,8 @@
  */
 
 // Generated from IANA Root Zone Database <http://www.internic.net/zones/root.zone>
-// file version from Tuesday, October 12, 2010 11:34:09 AM UTC
-// generated on Wednesday, October 13, 2010 4:12:27 AM UTC
+// file version from Tuesday, December 7, 2010 12:34:02 PM UTC
+// generated on Tuesday, December 7, 2010 4:53:37 PM UTC
 // by org.apache.lucene.analysis.standard.GenerateJflexTLDMacros
 
 ASCIITLD = "." (

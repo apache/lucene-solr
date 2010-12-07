@@ -1,11 +1,16 @@
 package org.apache.lucene.analysis;
 
-import org.apache.lucene.analysis.standard.UAX29Tokenizer;
+import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,7 +29,7 @@ import java.util.Arrays;
  * limitations under the License.
  */
 
-public class TestUAX29Tokenizer extends BaseTokenStreamTestCase {
+public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   
   public void testHugeDoc() throws IOException {
     StringBuilder sb = new StringBuilder();
@@ -33,7 +38,7 @@ public class TestUAX29Tokenizer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    UAX29Tokenizer tokenizer = new UAX29Tokenizer(new StringReader(input));
+    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(new StringReader(input));
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
@@ -42,11 +47,70 @@ public class TestUAX29Tokenizer extends BaseTokenStreamTestCase {
     protected TokenStreamComponents createComponents
       (String fieldName, Reader reader) {
 
-      Tokenizer tokenizer = new UAX29Tokenizer(reader);
+      Tokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
       return new TokenStreamComponents(tokenizer);
     }
   };
 
+
+  /** Passes through tokens with type "<URL>" and blocks all other types. */
+  private class URLFilter extends TokenFilter {
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+    public URLFilter(TokenStream in) {
+      super(in);
+    }
+    @Override
+    public final boolean incrementToken() throws java.io.IOException {
+      boolean isTokenAvailable = false;
+      while (input.incrementToken()) {
+        if (typeAtt.type() == UAX29URLEmailTokenizer.URL_TYPE) {
+          isTokenAvailable = true;
+          break;
+        }
+      }
+      return isTokenAvailable;
+    }
+  }
+  
+  /** Passes through tokens with type "<EMAIL>" and blocks all other types. */
+  private class EmailFilter extends TokenFilter {
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+    public EmailFilter(TokenStream in) {
+      super(in);
+    }
+    @Override
+    public final boolean incrementToken() throws java.io.IOException {
+      boolean isTokenAvailable = false;
+      while (input.incrementToken()) {
+        if (typeAtt.type() == UAX29URLEmailTokenizer.EMAIL_TYPE) {
+          isTokenAvailable = true;
+          break;
+        }
+      }
+      return isTokenAvailable;
+    }
+  }
+
+  private Analyzer urlAnalyzer = new ReusableAnalyzerBase() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
+      tokenizer.setMaxTokenLength(Integer.MAX_VALUE);  // Tokenize arbitrary length URLs
+      TokenFilter filter = new URLFilter(tokenizer);
+      return new TokenStreamComponents(tokenizer, filter);
+    }
+  };
+
+  private Analyzer emailAnalyzer = new ReusableAnalyzerBase() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
+      TokenFilter filter = new EmailFilter(tokenizer);
+      return new TokenStreamComponents(tokenizer, filter);
+    }
+  };
+  
+  
   public void testArmenian() throws Exception {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "Վիքիպեդիայի 13 միլիոն հոդվածները (4,600` հայերեն վիքիպեդիայում) գրվել են կամավորների կողմից ու համարյա բոլոր հոդվածները կարող է խմբագրել ցանկաց մարդ ով կարող է բացել Վիքիպեդիայի կայքը։",
         new String[] { "Վիքիպեդիայի", "13", "միլիոն", "հոդվածները", "4,600", "հայերեն", "վիքիպեդիայում", "գրվել", "են", "կամավորների", "կողմից", 
@@ -159,7 +223,6 @@ public class TestUAX29Tokenizer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "21.35", new String[]{"21.35"});
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "R2D2 C3PO", new String[]{"R2D2", "C3PO"});
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
-    BaseTokenStreamTestCase.assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
   }
 
   public void testTextWithNumbersSA() throws Exception {
@@ -193,6 +256,140 @@ public class TestUAX29Tokenizer extends BaseTokenStreamTestCase {
         new String[] { "<ALPHANUM>", "<ALPHANUM>", "<NUM>", "<ALPHANUM>" });
   }
   
+  public void testWikiURLs() throws Exception {
+    Reader reader = null;
+    String luceneResourcesWikiPage;
+    try {
+      reader = new InputStreamReader(getClass().getResourceAsStream
+        ("LuceneResourcesWikiPage.html"), "UTF-8");
+      StringBuilder builder = new StringBuilder();
+      char[] buffer = new char[1024];
+      int numCharsRead;
+      while (-1 != (numCharsRead = reader.read(buffer))) {
+        builder.append(buffer, 0, numCharsRead);
+      }
+      luceneResourcesWikiPage = builder.toString(); 
+    } finally {
+      if (null != reader) {
+        reader.close();
+      }
+    }
+    assertTrue(null != luceneResourcesWikiPage 
+               && luceneResourcesWikiPage.length() > 0);
+    BufferedReader bufferedReader = null;
+    String[] urls;
+    try {
+      List<String> urlList = new ArrayList<String>();
+      bufferedReader = new BufferedReader(new InputStreamReader
+        (getClass().getResourceAsStream("LuceneResourcesWikiPageURLs.txt"), "UTF-8"));
+      String line;
+      while (null != (line = bufferedReader.readLine())) {
+        line = line.trim();
+        if (line.length() > 0) {
+          urlList.add(line);
+        }
+      }
+      urls = urlList.toArray(new String[urlList.size()]);
+    } finally {
+      if (null != bufferedReader) {
+        bufferedReader.close();
+      }
+    }
+    assertTrue(null != urls && urls.length > 0);
+    BaseTokenStreamTestCase.assertAnalyzesTo
+      (urlAnalyzer, luceneResourcesWikiPage, urls);
+  }
+  
+  public void testEmails() throws Exception {
+    Reader reader = null;
+    String randomTextWithEmails;
+    try {
+      reader = new InputStreamReader(getClass().getResourceAsStream
+        ("random.text.with.email.addresses.txt"), "UTF-8");
+      StringBuilder builder = new StringBuilder();
+      char[] buffer = new char[1024];
+      int numCharsRead;
+      while (-1 != (numCharsRead = reader.read(buffer))) {
+        builder.append(buffer, 0, numCharsRead);
+      }
+      randomTextWithEmails = builder.toString(); 
+    } finally {
+      if (null != reader) {
+        reader.close();
+      }
+    }
+    assertTrue(null != randomTextWithEmails 
+               && randomTextWithEmails.length() > 0);
+    BufferedReader bufferedReader = null;
+    String[] emails;
+    try {
+      List<String> emailList = new ArrayList<String>();
+      bufferedReader = new BufferedReader(new InputStreamReader
+        (getClass().getResourceAsStream
+          ("email.addresses.from.random.text.with.email.addresses.txt"), "UTF-8"));
+      String line;
+      while (null != (line = bufferedReader.readLine())) {
+        line = line.trim();
+        if (line.length() > 0) {
+          emailList.add(line);
+        }
+      }
+      emails = emailList.toArray(new String[emailList.size()]);
+    } finally {
+      if (null != bufferedReader) {
+        bufferedReader.close();
+      }
+    }
+    assertTrue(null != emails && emails.length > 0);
+    BaseTokenStreamTestCase.assertAnalyzesTo
+      (emailAnalyzer, randomTextWithEmails, emails);
+  }
+
+  public void testURLs() throws Exception {
+    Reader reader = null;
+    String randomTextWithURLs;
+    try {
+      reader = new InputStreamReader(getClass().getResourceAsStream
+        ("random.text.with.urls.txt"), "UTF-8");
+      StringBuilder builder = new StringBuilder();
+      char[] buffer = new char[1024];
+      int numCharsRead;
+      while (-1 != (numCharsRead = reader.read(buffer))) {
+        builder.append(buffer, 0, numCharsRead);
+      }
+      randomTextWithURLs = builder.toString(); 
+    } finally {
+      if (null != reader) {
+        reader.close();
+      }
+    }
+    assertTrue(null != randomTextWithURLs 
+               && randomTextWithURLs.length() > 0);
+    BufferedReader bufferedReader = null;
+    String[] urls;
+    try {
+      List<String> urlList = new ArrayList<String>();
+      bufferedReader = new BufferedReader(new InputStreamReader
+        (getClass().getResourceAsStream
+          ("urls.from.random.text.with.urls.txt"), "UTF-8"));
+      String line;
+      while (null != (line = bufferedReader.readLine())) {
+        line = line.trim();
+        if (line.length() > 0) {
+          urlList.add(line);
+        }
+      }
+      urls = urlList.toArray(new String[urlList.size()]);
+    } finally {
+      if (null != bufferedReader) {
+        bufferedReader.close();
+      }
+    }
+    assertTrue(null != urls && urls.length > 0);
+    BaseTokenStreamTestCase.assertAnalyzesTo
+      (urlAnalyzer, randomTextWithURLs, urls);
+  }
+
   public void testUnicodeWordBreaks() throws Exception {
     WordBreakTestUnicode_6_0_0 wordBreakTest = new WordBreakTestUnicode_6_0_0();
     wordBreakTest.test(a);

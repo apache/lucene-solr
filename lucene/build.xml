@@ -517,7 +517,7 @@
   <!-- Build the JFlex files into the source tree                         -->
   <!-- ================================================================== -->
 
-  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-UAX29Tokenizer" />
+  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-UAX29URLEmailTokenizer" />
 
   <target name="jflex-StandardAnalyzer" depends="init,jflex-check,gen-tlds" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
@@ -532,11 +532,11 @@
            nobak="on" />
   </target>
 
-  <target name="jflex-UAX29Tokenizer" depends="jflex-check" if="jflex.present">
+  <target name="jflex-UAX29URLEmailTokenizer" depends="jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
-    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29Tokenizer.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizer.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
   </target>
