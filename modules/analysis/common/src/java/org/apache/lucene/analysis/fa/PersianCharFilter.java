@@ -1,4 +1,5 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.fa;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,20 +17,31 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
+import java.io.IOException;
 
-import java.io.Reader;
-
+import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.charfilter.CharFilter;
 
 /**
- * Factory for {@link ArabicLetterTokenizer}
- * @deprecated (3.1) Use StandardTokenizerFactory instead.
- **/
-@Deprecated
-public class ArabicLetterTokenizerFactory extends BaseTokenizerFactory{
+ * CharFilter that replaces instances of Zero-width non-joiner with an
+ * ordinary space.
+ */
+public class PersianCharFilter extends CharFilter {
 
-  public ArabicLetterTokenizer create(Reader input) {
-    assureMatchVersion();
-    return new ArabicLetterTokenizer(luceneMatchVersion, input);
+  public PersianCharFilter(CharStream in) {
+    super(in);
+  }
+  
+  public int read(char[] cbuf, int off, int len) throws IOException {
+    final int charsRead = super.read(cbuf, off, len);
+    if (charsRead > 0) {
+      final int end = off + charsRead;
+      while (off < end) {
+        if (cbuf[off] == '\u200C')
+          cbuf[off] = ' ';
+        off++;
+      }
+    }
+    return charsRead;
   }
 }

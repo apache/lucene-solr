@@ -171,6 +171,9 @@ API Changes
    new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery()) instead.
    (Robert Muir, Uwe Schindler)
 
+ * LUCENE-2747: Deprecated ArabicLetterTokenizer. StandardTokenizer now tokenizes
+   most languages correctly including Arabic.  (Steven Rowe, Robert Muir)
+
 New features
 
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.

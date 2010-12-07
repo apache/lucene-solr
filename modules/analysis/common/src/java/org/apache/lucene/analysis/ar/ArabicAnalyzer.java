@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
@@ -132,7 +133,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
-   *         built from an {@link ArabicLetterTokenizer} filtered with
+   *         built from an {@link StandardTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link StopFilter},
    *         {@link ArabicNormalizationFilter}, {@link KeywordMarkerFilter}
    *         if a stem exclusion set is provided and {@link ArabicStemFilter}.
@@ -140,7 +141,8 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new ArabicLetterTokenizer(matchVersion, reader);
+    final Tokenizer source = matchVersion.onOrAfter(Version.LUCENE_31) ? 
+        new StandardTokenizer(matchVersion, reader) : new ArabicLetterTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter( matchVersion, result, stopwords);
