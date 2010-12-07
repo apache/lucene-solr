@@ -130,7 +130,6 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
       DocsEnum docs = null;
 
       while(true) {
@@ -149,7 +148,7 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
           termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
         }
         termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
-        docs = termsEnum.docs(delDocs, docs);
+        docs = termsEnum.docs(null, docs);
         while (true) {
           final int docID = docs.nextDoc();
           if (docID == DocIdSetIterator.NO_MORE_DOCS) {

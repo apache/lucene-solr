@@ -110,7 +110,6 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
     vals.values = new byte[maxDoc];
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
       OpenBitSet validBits = (hasOption(OPTION_CACHE_BITS)) ? new OpenBitSet( maxDoc ) : null;
       DocsEnum docs = null;
       try {
@@ -120,7 +119,7 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
             break;
           }
           final byte termval = parser.parseByte(term);
-          docs = termsEnum.docs(delDocs, docs);
+          docs = termsEnum.docs(null, docs);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocIdSetIterator.NO_MORE_DOCS) {
@@ -137,7 +136,7 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
       } catch (FieldCache.StopFillCacheException stop) {}
 
       if( vals.valid == null ) {
-        vals.valid = checkMatchAllBits( delDocs, validBits, vals.numDocs, maxDoc );
+        vals.valid = checkMatchAllBits( validBits, vals.numDocs, maxDoc );
       }
     }
     if( vals.valid == null && vals.numDocs < 1 ) {
