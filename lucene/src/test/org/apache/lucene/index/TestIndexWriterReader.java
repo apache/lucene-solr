@@ -175,6 +175,44 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir1.close();
   }
   
+  public void testIsCurrent() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
+    
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    writer = new IndexWriter(dir, iwc);
+    doc = new Document();
+    doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    IndexReader nrtReader = writer.getReader();
+    assertTrue(nrtReader.isCurrent());
+    writer.addDocument(doc);
+    assertFalse(nrtReader.isCurrent()); // should see the changes
+    writer.optimize(); // make sure we don't have a merge going on
+    assertFalse(nrtReader.isCurrent());
+    nrtReader.close();
+    
+    IndexReader dirReader = IndexReader.open(dir);
+    nrtReader = writer.getReader();
+    
+    assertTrue(dirReader.isCurrent());
+    assertTrue(nrtReader.isCurrent()); // nothing was committed yet so we are still current
+    assertEquals(2, nrtReader.maxDoc()); // sees the actual document added
+    assertEquals(1, dirReader.maxDoc());
+    writer.close(); // close is actually a commit both should see the changes
+    assertTrue(nrtReader.isCurrent()); 
+    assertFalse(dirReader.isCurrent()); // this reader has been opened before the writer was closed / committed
+    
+    dirReader.close();
+    nrtReader.close();
+    dir.close();
+  }
+  
   /**
    * Test using IW.addIndexes
    * 
