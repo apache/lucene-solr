@@ -133,7 +133,11 @@
   <property name="junit.output.dir" location="${common-solr.dir}/${dest}/test-results"/>
   <property name="junit.reports" location="${common-solr.dir}/${dest}/test-results/reports"/>
   <property name="junit.formatter" value="plain"/>
-  <property name="junit.details.formatter" value="org.apache.lucene.util.LuceneJUnitResultFormatter"/>
+  <condition property="junit.details.formatter"
+      value="org.apache.tools.ant.taskdefs.optional.junit.PlainJUnitResultFormatter"
+      else="org.apache.lucene.util.LuceneJUnitResultFormatter">
+    <isset property="tests.sequential"/>
+  </condition>
   <property name="junit.parallel.selector" value="org.apache.lucene.util.LuceneJUnitDividingSelector"/>
 
   <!-- Maven properties -->
