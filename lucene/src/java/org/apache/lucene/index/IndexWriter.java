@@ -50,13 +50,13 @@ import java.util.Date;
   An <code>IndexWriter</code> creates and maintains an index.
 
   <p>The <code>create</code> argument to the {@link
-  #IndexWriter(Directory, Analyzer, boolean, MaxFieldLength) constructor} determines 
+  #IndexWriter(Directory, IndexWriterConfig) constructor} determines 
   whether a new index is created, or whether an existing index is
   opened.  Note that you can open an index with <code>create=true</code>
   even while readers are using the index.  The old readers will 
   continue to search the "point in time" snapshot they had opened, 
   and won't see the newly created index until they re-open.  There are
-  also {@link #IndexWriter(Directory, Analyzer, MaxFieldLength) constructors}
+  also {@link #IndexWriter(Directory, IndexWriterConfig) constructors}
   with no <code>create</code> argument which will create a new index
   if there is not already an index at the provided path and otherwise 
   open the existing index.</p>
@@ -72,11 +72,11 @@ import java.util.Date;
   <p>These changes are buffered in memory and periodically
   flushed to the {@link Directory} (during the above method
   calls).  A flush is triggered when there are enough
-  buffered deletes (see {@link #setMaxBufferedDeleteTerms})
+  buffered deletes (see {@link IndexWriterConfig#setMaxBufferedDeleteTerms})
   or enough added documents since the last flush, whichever
   is sooner.  For the added documents, flushing is triggered
   either by RAM usage of the documents (see {@link
-  #setRAMBufferSizeMB}) or the number of added documents.
+  IndexWriterConfig#setRAMBufferSizeMB}) or the number of added documents.
   The default is to flush when RAM usage hits 16 MB.  For
   best indexing speed you should flush by RAM usage with a
   large RAM buffer.  Note that flushing just moves the
@@ -1252,8 +1252,8 @@ public class IndexWriter implements Closeable {
 
   /**
    * Adds a document to this index.  If the document contains more than
-   * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
-   * discarded.
+   * {@link IndexWriterConfig#setMaxFieldLength(int)} terms for a given field, 
+   * the remainder are discarded.
    *
    * <p> Note that if an Exception is hit (for example disk full)
    * then the index will be consistent, but this document
@@ -1301,7 +1301,7 @@ public class IndexWriter implements Closeable {
   /**
    * Adds a document to this index, using the provided analyzer instead of the
    * value of {@link #getAnalyzer()}.  If the document contains more than
-   * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
+   * {@link IndexWriterConfig#setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
    *
    * <p>See {@link #addDocument(Document)} for details on
@@ -1608,7 +1608,7 @@ public class IndexWriter implements Closeable {
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @see LogMergePolicy#findMergesForOptimize
+   * @see MergePolicy#findMergesForOptimize
   */
   public void optimize() throws CorruptIndexException, IOException {
     optimize(true);
@@ -2289,8 +2289,7 @@ public class IndexWriter implements Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addIndexes(IndexReader... readers)
-    throws CorruptIndexException, IOException {
+  public void addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
     ensureOpen();
 
     try {
@@ -2303,47 +2302,33 @@ public class IndexWriter implements Closeable {
       
       int docCount = merger.merge();                // merge 'em
       
-      SegmentInfo info = null;
-      synchronized(this) {
-        info = new SegmentInfo(mergedName, docCount, directory, false, -1,
-            null, false, merger.hasProx(), merger.getSegmentCodecs());
-        setDiagnostics(info, "addIndexes(IndexReader...)");
-        segmentInfos.add(info);
-        checkpoint();
-        
-        // Notify DocumentsWriter that the flushed count just increased
-        docWriter.updateFlushedDocCount(docCount);
+      SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
+          false, -1, null, false, merger.hasProx(), merger.getSegmentCodecs());
+      setDiagnostics(info, "addIndexes(IndexReader...)");
+
+      boolean useCompoundFile;
+      synchronized(this) { // Guard segmentInfos
+        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, info);
       }
       
       // Now create the compound file if needed
-      if (mergePolicy instanceof LogMergePolicy && ((LogMergePolicy) mergePolicy).getUseCompoundFile()) {
+      if (useCompoundFile) {
+        merger.createCompoundFile(mergedName + ".cfs", info);
+        info.setUseCompoundFile(true);
+        
+        // delete new non cfs files directly: they were never
+        // registered with IFD
+        deleter.deleteNewFiles(merger.getMergedFiles(info));
+      }
 
-        List<String> files = null;
-
-        synchronized(this) {
-          // Must incRef our files so that if another thread
-          // is running merge/optimize, it doesn't delete our
-          // segment's files before we have a chance to
-          // finish making the compound file.
-          if (segmentInfos.contains(info)) {
-            files = info.files();
-            deleter.incRef(files);
-          }
-        }
-
-        if (files != null) {
-          try {
-            merger.createCompoundFile(mergedName + ".cfs", info);
-            synchronized(this) {
-              info.setUseCompoundFile(true);
-              checkpoint();
-            }
-          } finally {
-            synchronized(this) {
-              deleter.decRef(files);
-            }
-          }
-        }
+      // Register the new segment
+      synchronized(this) {
+        segmentInfos.add(info);
+        
+        // Notify DocumentsWriter that the flushed count just increased
+        docWriter.updateFlushedDocCount(docCount);
+        
+        checkpoint();
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "addIndexes(IndexReader...)");
@@ -3447,8 +3432,12 @@ public class IndexWriter implements Closeable {
       //System.out.println("merger set hasProx=" + merger.hasProx() + " seg=" + merge.info.name);
       merge.info.setHasProx(merger.hasProx());
 
-      if (merge.useCompoundFile) {
+      boolean useCompoundFile;
+      synchronized (this) { // Guard segmentInfos
+        useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, merge.info);
+      }
 
+      if (useCompoundFile) {
         success = false;
         final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
 

@@ -76,16 +76,14 @@ public abstract class MergePolicy implements java.io.Closeable {
     SegmentReader[] readers;        // used by IndexWriter
     SegmentReader[] readersClone;   // used by IndexWriter
     public final SegmentInfos segments;
-    public final boolean useCompoundFile;
     boolean aborted;
     Throwable error;
     boolean paused;
 
-    public OneMerge(SegmentInfos segments, boolean useCompoundFile) {
+    public OneMerge(SegmentInfos segments) {
       if (0 == segments.size())
         throw new RuntimeException("segments must include at least one segment");
       this.segments = segments;
-      this.useCompoundFile = useCompoundFile;
     }
 
     /** Record that an exception occurred while executing
@@ -314,10 +312,9 @@ public abstract class MergePolicy implements java.io.Closeable {
   public abstract void close();
 
   /**
-   * Returns true if a newly flushed (not from merge)
-   * segment should use the compound file format.
+   * Returns true if a new segment (regardless of its origin) should use the compound file format.
    */
-  public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment);
+  public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment) throws IOException;
 
   /**
    * Returns true if the doc store files should use the

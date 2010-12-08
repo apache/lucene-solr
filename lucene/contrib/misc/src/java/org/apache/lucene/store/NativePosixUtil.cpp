@@ -97,9 +97,9 @@ JNIEXPORT jobject JNICALL Java_org_apache_lucene_store_NativePosixUtil_open_1dir
   fname = (char *) env->GetStringUTFChars(filename, NULL);
 
   if (readOnly) {
-    fd = open(fname, O_RDONLY | O_DIRECT);
+    fd = open(fname, O_RDONLY | O_DIRECT | O_NOATIME);
   } else {
-    fd = open(fname, O_RDWR | O_CREAT | O_DIRECT, 0666);
+    fd = open(fname, O_RDWR | O_CREAT | O_DIRECT | O_NOATIME, 0666);
   }
 
   //printf("open %s -> %d; ro %d\n", fname, fd, readOnly); fflush(stdout);

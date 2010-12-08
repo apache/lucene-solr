@@ -100,22 +100,13 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   /**
    * Utility function to help check what bits are valid
    */
-  protected Bits checkMatchAllBits( Bits deleted, OpenBitSet valid, int numDocs, int maxDocs )
+  protected Bits checkMatchAllBits( OpenBitSet valid, int numDocs, int maxDocs )
   {
     if( numDocs != maxDocs ) {
       if( hasOption( OPTION_CACHE_BITS ) ) {
-        if( deleted == null ) {
-          for( int i=0; i<maxDocs; i++ ) {
-            if( !valid.get(i) ) {
-              return valid;
-            }
-          }
-        }
-        else {
-          for( int i=0; i<maxDocs; i++ ) {
-            if( !deleted.get(i) && !valid.get(i) ) {
-              return valid;
-            }
+        for( int i=0; i<maxDocs; i++ ) {
+          if( !valid.get(i) ) {
+            return valid;
           }
         }
       }
@@ -132,7 +123,6 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
     Terms terms = MultiFields.getTerms(reader, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
       OpenBitSet validBits = new OpenBitSet( reader.maxDoc() );
       DocsEnum docs = null;
       while(true) {
@@ -140,7 +130,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
         if (term == null) {
           break;
         }
-        docs = termsEnum.docs(delDocs, docs);
+        docs = termsEnum.docs(null, docs);
         while (true) {
           final int docID = docs.nextDoc();
           if (docID == DocIdSetIterator.NO_MORE_DOCS) {
@@ -152,7 +142,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
         vals.numTerms++;
       }
 
-      vals.valid = checkMatchAllBits( delDocs, validBits, vals.numDocs, reader.maxDoc() );
+      vals.valid = checkMatchAllBits( validBits, vals.numDocs, reader.maxDoc() );
     }
     if( vals.numDocs < 1 ) {
       vals.valid = new Bits.MatchNoBits( reader.maxDoc() );

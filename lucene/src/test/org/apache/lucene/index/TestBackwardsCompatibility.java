@@ -527,12 +527,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
+      LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
+      mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
+
       IndexWriter writer = new IndexWriter(
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
               setMaxBufferedDocs(-1).
               setRAMBufferSizeMB(16.0).
-              setMergePolicy(newLogMergePolicy(true, 10))
+              setMergePolicy(mergePolicy)
       );
       for(int i=0;i<35;i++) {
         addDoc(writer, i);
