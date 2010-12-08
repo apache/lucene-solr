@@ -20,7 +20,7 @@ lucene-analyzers-common-XX.jar
 lucene-analyzers-icu-XX.jar
   An add-on analysis library that provides improved Unicode support via
   International Components for Unicode (ICU). Note: this module depends on
-  the ICU4j jar file (version >= 4.4.0)
+  the ICU4j jar file (version >= 4.6.0)
 
 lucene-analyzers-phonetic-XX.jar
   An add-on analysis library that provides phonetic encoders via Apache

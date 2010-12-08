@@ -83,10 +83,9 @@ public final class StandardTokenizer extends Tokenizer {
   @Deprecated
   public static final int ACRONYM_DEP       = 8;
 
-  public static final int URL = 9;
-  public static final int SOUTHEAST_ASIAN = 10;
-  public static final int IDEOGRAPHIC = 11;
-  public static final int HIRAGANA = 12;
+  public static final int SOUTHEAST_ASIAN = 9;
+  public static final int IDEOGRAPHIC = 10;
+  public static final int HIRAGANA = 11;
   
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
@@ -99,7 +98,6 @@ public final class StandardTokenizer extends Tokenizer {
     "<NUM>",
     "<CJ>",
     "<ACRONYM_DEP>",
-    "<URL>",
     "<SOUTHEAST_ASIAN>",
     "<IDEOGRAPHIC>",
     "<HIRAGANA>"

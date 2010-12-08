@@ -20,6 +20,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.CharTokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
+import org.apache.lucene.analysis.standard.StandardTokenizer; // javadoc @link
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
@@ -38,7 +39,9 @@ import org.apache.lucene.util.Version;
  * detect token characters. See {@link #isTokenChar(int)} and
  * {@link #normalize(int)} for details.</li>
  * </ul>
+ * @deprecated (3.1) Use {@link StandardTokenizer} instead.
  */
+@Deprecated
 public class ArabicLetterTokenizer extends LetterTokenizer {
   /**
    * Construct a new ArabicLetterTokenizer.

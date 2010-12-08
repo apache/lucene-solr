@@ -27,7 +27,10 @@
         as of Lucene 3.1, implements the Word Break rules from the Unicode Text 
         Segmentation algorithm, as specified in 
         <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>.
-        URLs and email addresses are also tokenized according to the relevant RFCs.
+        Unlike <code>UAX29URLEmailTokenizer</code>, URLs and email addresses are
+        <b>not</b> tokenized as single tokens, but are instead split up into 
+        tokens according to the UAX#29 word break rules.
+        <br/>
         <code><a href="StandardAnalyzer">StandardAnalyzer</a></code> includes
         <code>StandardTokenizer</code>, 
         <code><a href="StandardFilter">StandardFilter</a></code>, 
@@ -46,13 +49,11 @@
         <code><a href="../../../../../../all/org/apache/lucene/analysis/LowerCaseFilter.html">LowerCaseFilter</a></code>
         and <code><a href="../../../../../../all/org/apache/lucene/analysis/StopFilter.html">StopFilter</a></code>.
     </li>
-    <li><code><a href="UAX29Tokenizer.html">UAX29Tokenizer</a></code>: 
-        implements the Word Break rules from the Unicode Text Segmentation 
-        algorithm, as specified in
+    <li><code><a href="UAX29URLEmailTokenizer.html">UAX29URLEmailTokenizer</a></code>: 
+        implements the Word Break rules from the Unicode Text Segmentation
+        algorithm, as specified in 
         <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>.
-        Unlike <code>StandardTokenizer</code>, URLs and email addresses are
-        <b>not</b> tokenized as single tokens, but are instead split up into 
-        tokens according to the UAX#29 word break rules.
+        URLs and email addresses are also tokenized according to the relevant RFCs.
     </li>
 </ul>
 </body>
