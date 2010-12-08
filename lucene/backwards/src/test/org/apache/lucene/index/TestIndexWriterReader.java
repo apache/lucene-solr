@@ -165,7 +165,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(r1.isCurrent());
 
     writer.commit();
-    assertFalse(r1.isCurrent());
+    assertTrue(r1.isCurrent());
 
     assertEquals(200, r1.maxDoc());
 

@@ -97,7 +97,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * counts how often the index has been changed by adding or deleting docs.
    * starting with the current time in milliseconds forces to create unique version numbers.
    */
-  private long version = System.currentTimeMillis();
+  long version = System.currentTimeMillis();
 
   private long generation = 0;     // generation of the "segments_N" for the next commit
   private long lastGeneration = 0; // generation of the "segments_N" file we last successfully read
@@ -335,8 +335,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
     try {
       segnOutput.writeInt(CURRENT_FORMAT); // write FORMAT
-      segnOutput.writeLong(++version); // every write changes
-                                   // the index
+      segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
       for (int i = 0; i < size(); i++) {
@@ -758,7 +757,6 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   void updateGeneration(SegmentInfos other) {
     lastGeneration = other.lastGeneration;
     generation = other.generation;
-    version = other.version;
   }
 
   final void rollbackCommit(Directory dir) throws IOException {
@@ -789,7 +787,12 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    *  segments file, but writes an invalid checksum at the
    *  end, so that it is not visible to readers.  Once this
    *  is called you must call {@link #finishCommit} to complete
-   *  the commit or {@link #rollbackCommit} to abort it. */
+   *  the commit or {@link #rollbackCommit} to abort it.
+   *  <p>
+   *  Note: {@link #changed()} should be called prior to this
+   *  method if changes have been made to this {@link SegmentInfos} instance
+   *  </p>  
+   **/
   final void prepareCommit(Directory dir) throws IOException {
     if (pendingSegnOutput != null)
       throw new IllegalStateException("prepareCommit was already called");
@@ -875,7 +878,12 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   }
 
   /** Writes & syncs to the Directory dir, taking care to
-   *  remove the segments file on exception */
+   *  remove the segments file on exception
+   *  <p>
+   *  Note: {@link #changed()} should be called prior to this
+   *  method if changes have been made to this {@link SegmentInfos} instance
+   *  </p>  
+   **/
   final void commit(Directory dir) throws IOException {
     prepareCommit(dir);
     finishCommit(dir);
@@ -925,5 +933,11 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       count += info.docCount;
     }
     return count;
+  }
+
+  /** Call this before committing if changes have been made to the
+   *  segments. */
+  public void changed() {
+    version++;
   }
 }

@@ -56,7 +56,54 @@ public class TestIndexWriterReader extends LuceneTestCase {
     td.close();
     return count;
   }
-
+  
+  public void testAddCloseOpen() throws IOException {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    
+    IndexWriter writer = new IndexWriter(dir1, iwc);
+    for (int i = 0; i < 97 ; i++) {
+      IndexReader reader = writer.getReader();
+      if (i == 0) {
+        writer.addDocument(createDocument(i, "x", 1 + random.nextInt(5)));
+      } else {
+        int previous = random.nextInt(i);
+        // a check if the reader is current here could fail since there might be
+        // merges going on.
+        switch (random.nextInt(5)) {
+        case 0:
+        case 1:
+        case 2:
+          writer.addDocument(createDocument(i, "x", 1 + random.nextInt(5)));
+          break;
+        case 3:
+          writer.updateDocument(new Term("id", "" + previous), createDocument(
+              previous, "x", 1 + random.nextInt(5)));
+          break;
+        case 4:
+          writer.deleteDocuments(new Term("id", "" + previous));
+        }
+      }
+      assertFalse(reader.isCurrent());
+      reader.close();
+    }
+    writer.optimize(); // make sure all merging is done etc.
+    IndexReader reader = writer.getReader();
+    writer.commit(); // no changes that are not visible to the reader
+    assertTrue(reader.isCurrent());
+    writer.close();
+    assertTrue(reader.isCurrent()); // all changes are visible to the reader
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    writer = new IndexWriter(dir1, iwc);
+    assertTrue(reader.isCurrent());
+    writer.addDocument(createDocument(1, "x", 1+random.nextInt(5)));
+    assertTrue(reader.isCurrent()); // segments in ram but IW is different to the readers one
+    writer.close();
+    assertFalse(reader.isCurrent()); // segments written
+    reader.close();
+    dir1.close();
+  }
+  
   public void testUpdateDocument() throws Exception {
     boolean optimize = true;
 
@@ -166,7 +213,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(r1.isCurrent());
 
     writer.commit();
-    assertFalse(r1.isCurrent());
+    assertTrue(r1.isCurrent()); // we have seen all changes - no change after opening the NRT reader
 
     assertEquals(200, r1.maxDoc());
 

@@ -116,6 +116,11 @@ Changes in runtime behavior
 * LUCENE-2790: LogMergePolicy.useCompoundFile's logic now factors in noCFSRatio 
   to determine whether the passed in segment should be compound. 
   (Shai Erera, Earwin Burrfoot)
+
+* LUCENE-2805: IndexWriter now increments the index version on every change to
+  the index instead of for every commit. Committing or closing the IndexWriter
+  without any changes to the index will not cause any index version increment.
+  (Simon Willnauer, Mike Mccandless)
   
 API Changes
 

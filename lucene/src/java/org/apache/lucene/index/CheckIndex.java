@@ -766,6 +766,7 @@ public class CheckIndex {
   public void fixIndex(Status result) throws IOException {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
+    result.newSegments.changed();
     result.newSegments.commit(result.dir);
   }
 
