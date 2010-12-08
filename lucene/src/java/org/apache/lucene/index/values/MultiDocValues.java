@@ -142,8 +142,9 @@ public class MultiDocValues extends DocValues {
           + " must be > than the current doc " + currentDoc;
       int relativeDoc = target - currentStart;
       do {
-        if (target >= maxDoc) // we are beyond max doc
+        if (target >= maxDoc) {// we are beyond max doc
           return currentDoc = NO_MORE_DOCS;
+        }
         if (target >= currentMax) {
           final int idx = ReaderUtil.subIndex(target, starts);
           currentEnum.close();
@@ -152,9 +153,9 @@ public class MultiDocValues extends DocValues {
           currentStart = docValuesIdx[idx].start;
           currentMax = currentStart + docValuesIdx[idx].length;
           relativeDoc = target - currentStart;
-        } else {
-          return currentDoc = currentStart + currentEnum.advance(relativeDoc);
         }
+        target = currentMax; // make sure that we advance to the next enum if the current is exhausted
+
       } while ((relativeDoc = currentEnum.advance(relativeDoc)) == NO_MORE_DOCS);
       return currentDoc = currentStart + relativeDoc;
     }

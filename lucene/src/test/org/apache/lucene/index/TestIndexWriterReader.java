@@ -61,7 +61,54 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     return count;
   }
-
+  
+  public void testAddCloseOpen() throws IOException {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    
+    IndexWriter writer = new IndexWriter(dir1, iwc);
+    for (int i = 0; i < 97 ; i++) {
+      IndexReader reader = writer.getReader();
+      if (i == 0) {
+        writer.addDocument(createDocument(i, "x", 1 + random.nextInt(5)));
+      } else {
+        int previous = random.nextInt(i);
+        // a check if the reader is current here could fail since there might be
+        // merges going on.
+        switch (random.nextInt(5)) {
+        case 0:
+        case 1:
+        case 2:
+          writer.addDocument(createDocument(i, "x", 1 + random.nextInt(5)));
+          break;
+        case 3:
+          writer.updateDocument(new Term("id", "" + previous), createDocument(
+              previous, "x", 1 + random.nextInt(5)));
+          break;
+        case 4:
+          writer.deleteDocuments(new Term("id", "" + previous));
+        }
+      }
+      assertFalse(reader.isCurrent());
+      reader.close();
+    }
+    writer.optimize(); // make sure all merging is done etc.
+    IndexReader reader = writer.getReader();
+    writer.commit(); // no changes that are not visible to the reader
+    assertTrue(reader.isCurrent());
+    writer.close();
+    assertTrue(reader.isCurrent()); // all changes are visible to the reader
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    writer = new IndexWriter(dir1, iwc);
+    assertTrue(reader.isCurrent());
+    writer.addDocument(createDocument(1, "x", 1+random.nextInt(5)));
+    assertTrue(reader.isCurrent()); // segments in ram but IW is different to the readers one
+    writer.close();
+    assertFalse(reader.isCurrent()); // segments written
+    reader.close();
+    dir1.close();
+  }
+  
   public void testUpdateDocument() throws Exception {
     boolean optimize = true;
 
@@ -128,6 +175,44 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir1.close();
   }
   
+  public void testIsCurrent() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
+    
+    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    writer = new IndexWriter(dir, iwc);
+    doc = new Document();
+    doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    IndexReader nrtReader = writer.getReader();
+    assertTrue(nrtReader.isCurrent());
+    writer.addDocument(doc);
+    assertFalse(nrtReader.isCurrent()); // should see the changes
+    writer.optimize(); // make sure we don't have a merge going on
+    assertFalse(nrtReader.isCurrent());
+    nrtReader.close();
+    
+    IndexReader dirReader = IndexReader.open(dir);
+    nrtReader = writer.getReader();
+    
+    assertTrue(dirReader.isCurrent());
+    assertTrue(nrtReader.isCurrent()); // nothing was committed yet so we are still current
+    assertEquals(2, nrtReader.maxDoc()); // sees the actual document added
+    assertEquals(1, dirReader.maxDoc());
+    writer.close(); // close is actually a commit both should see the changes
+    assertTrue(nrtReader.isCurrent()); 
+    assertFalse(dirReader.isCurrent()); // this reader has been opened before the writer was closed / committed
+    
+    dirReader.close();
+    nrtReader.close();
+    dir.close();
+  }
+  
   /**
    * Test using IW.addIndexes
    * 
@@ -171,7 +256,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(r1.isCurrent());
 
     writer.commit();
-    assertFalse(r1.isCurrent());
+    assertTrue(r1.isCurrent()); // we have seen all changes - no change after opening the NRT reader
 
     assertEquals(200, r1.maxDoc());
 

@@ -19,6 +19,7 @@ package org.apache.lucene.index.values;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -67,21 +68,14 @@ import org.junit.Before;
  */
 public class TestDocValuesIndexing extends LuceneTestCase {
   /*
-   * TODO:
-   * Roadmap to land on trunk
-   *   
-   *   - Add documentation for:
-   *      - Source and ValuesEnum
-   *      - DocValues
-   *      - ValuesField
-   *      - ValuesAttribute
-   *      - Values
-   *   - Add @lucene.experimental to all necessary classes
-   *   - add test for unoptimized case with deletes
-   *   - add a test for addIndexes
-   *   - split up existing testcases and give them meaningfull names
-   *   - run RAT
-   *   - add tests for FieldComparator FloatIndexValuesComparator vs. FloatValuesComparator etc.
+   * TODO: Roadmap to land on trunk
+   * 
+   * - Add documentation for: - Source and ValuesEnum - DocValues - ValuesField
+   * - ValuesAttribute - Values - Add @lucene.experimental to all necessary
+   * classes - add test for unoptimized case with deletes - add a test for
+   * addIndexes - split up existing testcases and give them meaningfull names -
+   * run RAT - add tests for FieldComparator FloatIndexValuesComparator vs.
+   * FloatValuesComparator etc.
    */
 
   private DocValuesCodec docValuesCodec;
@@ -90,18 +84,20 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    String defaultFieldCodec = CodecProvider.getDefault().getDefaultFieldCodec();
+    String defaultFieldCodec = CodecProvider.getDefault()
+        .getDefaultFieldCodec();
     provider = new CodecProvider();
-    docValuesCodec = new DocValuesCodec(CodecProvider.getDefault().lookup(defaultFieldCodec));
+    docValuesCodec = new DocValuesCodec(CodecProvider.getDefault().lookup(
+        defaultFieldCodec));
     provider.register(docValuesCodec);
     provider.setDefaultFieldCodec(docValuesCodec.name);
   }
-  
-  
+
   /*
    * Simple test case to show how to use the API
    */
-  public void testDocValuesSimple() throws CorruptIndexException, IOException, ParseException {
+  public void testDocValuesSimple() throws CorruptIndexException, IOException,
+      ParseException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
@@ -114,14 +110,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     }
     writer.commit();
     writer.optimize(true);
-   
+
     writer.close();
-    
+
     IndexReader reader = IndexReader.open(dir, null, true, 1, provider);
     assertTrue(reader.isOptimized());
-   
+
     IndexSearcher searcher = new IndexSearcher(reader);
-    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "docId", new MockAnalyzer());
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "docId",
+        new MockAnalyzer());
     TopDocs search = searcher.search(parser.parse("0 OR 1 OR 2 OR 3 OR 4"), 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
@@ -173,6 +170,79 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void testIndexNumericsDeletes() throws IOException {
     runTestNumerics(writerConfig(false), true);
+  }
+
+  public void testAddIndexes() throws IOException {
+    int valuesPerIndex = 10;
+    List<Type> values = Arrays.asList(Type.values());
+    Collections.shuffle(values, random);
+    Type first = values.get(0);
+    Type second = values.get(1);
+    String msg = "[first=" + first.name() + ", second=" + second.name() + "]";
+    // index first index
+    Directory d_1 = newDirectory();
+    IndexWriter w_1 = new IndexWriter(d_1, writerConfig(random.nextBoolean()));
+    indexValues(w_1, valuesPerIndex, first, values, false, 7);
+    w_1.commit();
+    assertEquals(valuesPerIndex, w_1.maxDoc());
+    _TestUtil.checkIndex(d_1, w_1.getConfig().getCodecProvider());
+
+    // index second index
+    Directory d_2 = newDirectory();
+    IndexWriter w_2 = new IndexWriter(d_2, writerConfig(random.nextBoolean()));
+    indexValues(w_2, valuesPerIndex, second, values, false, 7);
+    w_2.commit();
+    assertEquals(valuesPerIndex, w_2.maxDoc());
+    _TestUtil.checkIndex(d_2, w_2.getConfig().getCodecProvider());
+
+    Directory target = newDirectory();
+    IndexWriter w = new IndexWriter(target, writerConfig(random.nextBoolean()));
+    IndexReader r_1 = IndexReader.open(w_1);
+    IndexReader r_2 = IndexReader.open(w_2);
+    if (random.nextBoolean()) {
+      w.addIndexes(d_1, d_2);
+    } else {
+      w.addIndexes(r_1, r_2);
+    }
+    w.optimize();
+    w.commit();
+    
+    _TestUtil.checkIndex(target, w.getConfig().getCodecProvider());
+    assertEquals(valuesPerIndex * 2, w.maxDoc());
+
+    // check values
+
+    IndexReader merged = IndexReader.open(w);
+    DocValuesEnum vE_1 = getValuesEnum(getDocValues(r_1, first.name()));
+    DocValuesEnum vE_2 = getValuesEnum(getDocValues(r_2, second.name()));
+    DocValuesEnum vE_1_merged = getValuesEnum(getDocValues(merged, first.name()));
+    DocValuesEnum vE_2_merged = getValuesEnum(getDocValues(merged, second
+        .name()));
+    if (second == Type.BYTES_VAR_STRAIGHT || second == Type.BYTES_FIXED_STRAIGHT) {
+      assertEquals(msg, valuesPerIndex-1, vE_2_merged.advance(valuesPerIndex-1));
+    }
+    for (int i = 0; i < valuesPerIndex; i++) {
+      assertEquals(msg, i, vE_1.nextDoc());
+      assertEquals(msg, i, vE_1_merged.nextDoc());
+
+      assertEquals(msg, i, vE_2.nextDoc());
+      assertEquals(msg, i + valuesPerIndex, vE_2_merged.nextDoc());
+    }
+    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_1.nextDoc());
+    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_2.nextDoc());
+    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_1_merged.advance(valuesPerIndex*2));
+    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_2_merged.nextDoc());
+
+    // close resources
+    r_1.close();
+    r_2.close();
+    merged.close();
+    w_1.close();
+    w_2.close();
+    w.close();
+    d_1.close();
+    d_2.close();
+    target.close();
   }
 
   private IndexWriterConfig writerConfig(boolean useCompoundFile) {
@@ -262,7 +332,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           }
           assertEquals("advance failed at index: " + i + " of " + r.numDocs()
               + " docs base:" + base, i, floatEnum.advance(i));
-          assertEquals(floatEnum.getClass() + " index " + i, 2.0 * expected, enumRef.get(), 0.00001);
+          assertEquals(floatEnum.getClass() + " index " + i, 2.0 * expected,
+              enumRef.get(), 0.00001);
           assertEquals("index " + i, 2.0 * expected, floats.getFloat(i),
               0.00001);
         }
@@ -365,7 +436,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
               .advance(i));
         }
         for (int j = 0; j < br.length; j++, upto++) {
-          assertTrue(bytesEnum.getClass() + " enumRef not initialized " + msg, enumRef.bytes.length > 0);
+          assertTrue(" enumRef not initialized " + msg,
+              enumRef.bytes.length > 0);
           assertEquals(
               "EnumRef Byte at index " + j + " doesn't match - " + msg, upto,
               enumRef.bytes[enumRef.offset + j]);
@@ -393,6 +465,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   private DocValues getDocValues(IndexReader reader, String field)
       throws IOException {
     boolean optimized = reader.isOptimized();
+    reader.isCurrent();
     Fields fields = optimized ? reader.getSequentialSubReaders()[0].fields()
         : MultiFields.getFields(reader);
     switch (random.nextInt(optimized ? 3 : 2)) { // case 2 only if optimized
@@ -438,9 +511,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   private static EnumSet<Type> BYTES = EnumSet.of(Type.BYTES_FIXED_DEREF,
-      Type.BYTES_FIXED_SORTED, Type.BYTES_FIXED_STRAIGHT,
-      Type.BYTES_VAR_DEREF, Type.BYTES_VAR_SORTED,
-      Type.BYTES_VAR_STRAIGHT);
+      Type.BYTES_FIXED_SORTED, Type.BYTES_FIXED_STRAIGHT, Type.BYTES_VAR_DEREF,
+      Type.BYTES_VAR_SORTED, Type.BYTES_VAR_STRAIGHT);
 
   private static EnumSet<Type> NUMERICS = EnumSet.of(Type.PACKED_INTS,
       Type.SIMPLE_FLOAT_4BYTE, Type.SIMPLE_FLOAT_8BYTE);
@@ -519,5 +591,4 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       w.optimize();
     return deleted;
   }
-
 }

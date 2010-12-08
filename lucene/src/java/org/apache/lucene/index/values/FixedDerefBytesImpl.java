@@ -244,7 +244,7 @@ class FixedDerefBytesImpl {
 
       @Override
       public int nextDoc() throws IOException {
-        if (pos < valueCount) {
+        if (pos >= valueCount) {
           return pos = NO_MORE_DOCS;
         }
         return advance(pos + 1);
