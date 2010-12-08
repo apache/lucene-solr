@@ -275,6 +275,11 @@ Bug fixes
 * LUCENE-2732: Fix charset problems in XML loading in
   HyphenationCompoundWordTokenFilter.  (Uwe Schinder)
 
+* LUCENE-2802: NRT DirectoryReader returned incorrect values from
+  getVersion, isOptimized, getCommitUserData, getIndexCommit and isCurrent due
+  to a mutable reference to the IndexWriters SegmentInfos. 
+  (Simon Willnauer, Earwin Burrfoot)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
