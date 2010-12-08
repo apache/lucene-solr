@@ -696,11 +696,7 @@ public abstract class LuceneTestCase extends Assert {
         tmpFile.mkdir();
         try {
           Constructor<? extends Directory> ctor = clazz.getConstructor(File.class);
-          Directory d = ctor.newInstance(tmpFile);
-          // try not to enable this hack unless we must.
-          if (d instanceof MMapDirectory && Constants.WINDOWS && MMapDirectory.UNMAP_SUPPORTED)
-            ((MMapDirectory)d).setUseUnmap(true);
-          return d;
+          return ctor.newInstance(tmpFile);
         } catch (Exception e2) {
           // try .open(File)
           Method method = clazz.getMethod("open", new Class[] { File.class });

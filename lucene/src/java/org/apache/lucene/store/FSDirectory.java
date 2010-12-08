@@ -177,8 +177,9 @@ public abstract class FSDirectory extends Directory {
    *  The directory returned uses the {@link NativeFSLockFactory}.
    *
    *  <p>Currently this returns {@link NIOFSDirectory}
-   *  on non-Windows JREs and {@link SimpleFSDirectory}
-   *  on Windows. It is highly recommended that you consult the
+   *  on non-Windows JREs, {@link MMapDirectory} on 64-bit 
+   *  Sun Windows JREs, and {@link SimpleFSDirectory} for other
+   *  JRes on Windows. It is highly recommended that you consult the
    *  implementation's documentation for your platform before
    *  using this method.
    *
@@ -187,11 +188,8 @@ public abstract class FSDirectory extends Directory {
    * the event that higher performance defaults become
    * possible; if the precise implementation is important to
    * your application, please instantiate it directly,
-   * instead. On 64 bit systems, it may also good to
-   * return {@link MMapDirectory}, but this is disabled
-   * because of officially missing unmap support in Java.
-   * For optimal performance you should consider using
-   * this implementation on 64 bit JVMs.
+   * instead. For optimal performance you should consider using
+   * {@link MMapDirectory} on 64 bit JVMs.
    *
    * <p>See <a href="#subclasses">above</a> */
   public static FSDirectory open(File path) throws IOException {
@@ -202,7 +200,10 @@ public abstract class FSDirectory extends Directory {
    *  also specify a custom {@link LockFactory}. */
   public static FSDirectory open(File path, LockFactory lockFactory) throws IOException {
     if (Constants.WINDOWS) {
-      return new SimpleFSDirectory(path, lockFactory);
+      if (MMapDirectory.UNMAP_SUPPORTED && Constants.JRE_IS_64BIT)
+        return new MMapDirectory(path, lockFactory);
+      else
+        return new SimpleFSDirectory(path, lockFactory);
     } else {
       return new NIOFSDirectory(path, lockFactory);
     }

@@ -121,6 +121,12 @@ Changes in runtime behavior
   the index instead of for every commit. Committing or closing the IndexWriter
   without any changes to the index will not cause any index version increment.
   (Simon Willnauer, Mike Mccandless)
+
+* LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit
+  Windows systems that support unmapping, FSDirectory.open returns
+  MMapDirectory. Additionally the behavior of MMapDirectory has been
+  changed to enable unmapping by default if supported by the JRE.
+  (Mike McCandless, Uwe Schindler, Robert Muir)
   
 API Changes
 
