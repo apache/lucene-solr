@@ -471,6 +471,7 @@ public abstract class LuceneTestCase extends Assert {
 
       if (!uncaughtExceptions.isEmpty()) {
         testsFailed = true;
+        reportAdditionalFailureInfo();
         System.err.println("The following exceptions were thrown by threads:");
         for (UncaughtExceptionEntry entry : uncaughtExceptions) {
           System.err.println("*** Thread: " + entry.thread.getName() + " ***");
