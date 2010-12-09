@@ -66,11 +66,10 @@ public class TestSearchWithThreads extends LuceneTestCase {
     final IndexSearcher s = new IndexSearcher(r);
 
     final AtomicBoolean failed = new AtomicBoolean();
-    final long stopAt = System.currentTimeMillis() + RUN_TIME_MSEC;
     final AtomicLong netSearch = new AtomicLong();
 
     Thread[] threads = new Thread[NUM_SEARCH_THREADS];
-    for(int threadID=0;threadID<NUM_SEARCH_THREADS;threadID++) {
+    for (int threadID = 0; threadID < NUM_SEARCH_THREADS; threadID++) {
       threads[threadID] = new Thread() {
         TotalHitCountCollector col = new TotalHitCountCollector();
           @Override
@@ -78,6 +77,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
             try {
               long totHits = 0;
               long totSearch = 0;
+              long stopAt = System.currentTimeMillis() + RUN_TIME_MSEC;
               while(System.currentTimeMillis() < stopAt && !failed.get()) {
                 s.search(new TermQuery(new Term("body", "aaa")), col);
                 totHits += col.getTotalHits();
@@ -85,7 +85,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
                 totHits += col.getTotalHits();
                 totSearch++;
               }
-              assertTrue(totHits > 0);
+              assertTrue(totSearch > 0 && totHits > 0);
               netSearch.addAndGet(totSearch);
             } catch (Exception exc) {
               failed.set(true);
@@ -94,12 +94,16 @@ public class TestSearchWithThreads extends LuceneTestCase {
           }
         };
       threads[threadID].setDaemon(true);
-      threads[threadID].start();
     }
 
-    for(int threadID=0;threadID<NUM_SEARCH_THREADS;threadID++) {
-      threads[threadID].join();
+    for (Thread t : threads) {
+      t.start();
     }
+    
+    for (Thread t : threads) {
+      t.join();
+    }
+
     if (VERBOSE) System.out.println(NUM_SEARCH_THREADS + " threads did " + netSearch.get() + " searches");
 
     s.close();
