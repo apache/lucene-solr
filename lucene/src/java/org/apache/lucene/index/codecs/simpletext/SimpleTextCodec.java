@@ -57,7 +57,7 @@ public class SimpleTextCodec extends Codec {
   static final String POSTINGS_EXTENSION = "pst";
 
   static String getPostingsFileName(String segment, String id) {
-    return IndexFileNames.segmentFileName(segment, "", POSTINGS_EXTENSION);
+    return IndexFileNames.segmentFileName(segment, id, POSTINGS_EXTENSION);
   }
 
   @Override
