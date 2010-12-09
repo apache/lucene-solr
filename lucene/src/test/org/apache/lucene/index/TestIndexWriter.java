@@ -48,6 +48,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -57,7 +58,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
@@ -319,34 +319,30 @@ public class TestIndexWriter extends LuceneTestCase {
     // reader holds it open (this fails pre lock-less
     // commits on windows):
     public void testCreateWithReader() throws IOException {
-        File indexDir = _TestUtil.getTempDir("lucenetestindexwriter");
+      Directory dir = newDirectory();
 
-        try {
-          Directory dir = FSDirectory.open(indexDir);
+      // add one document & close writer
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+      addDoc(writer);
+      writer.close();
 
-          // add one document & close writer
-          IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-          addDoc(writer);
-          writer.close();
+      // now open reader:
+      IndexReader reader = IndexReader.open(dir, true);
+      assertEquals("should be one document", reader.numDocs(), 1);
 
-          // now open reader:
-          IndexReader reader = IndexReader.open(dir, true);
-          assertEquals("should be one document", reader.numDocs(), 1);
+      // now open index for create:
+      writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+      assertEquals("should be zero documents", writer.maxDoc(), 0);
+      addDoc(writer);
+      writer.close();
 
-          // now open index for create:
-          writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
-          assertEquals("should be zero documents", writer.maxDoc(), 0);
-          addDoc(writer);
-          writer.close();
-
-          assertEquals("should be one document", reader.numDocs(), 1);
-          IndexReader reader2 = IndexReader.open(dir, true);
-          assertEquals("should be one document", reader2.numDocs(), 1);
-          reader.close();
-          reader2.close();
-        } finally {
-          rmDir(indexDir);
-        }
+      assertEquals("should be one document", reader.numDocs(), 1);
+      IndexReader reader2 = IndexReader.open(dir, true);
+      assertEquals("should be one document", reader2.numDocs(), 1);
+      reader.close();
+      reader2.close();
+      
+      dir.close();
     }
 
     public void testChangesAfterClose() throws IOException {
@@ -943,16 +939,6 @@ public class TestIndexWriter extends LuceneTestCase {
       dir.close();
     }
 
-    private void rmDir(File dir) {
-        File[] files = dir.listFiles();
-        if (files != null) {
-          for (int i = 0; i < files.length; i++) {
-            files[i].delete();
-          }
-        }
-        dir.delete();
-    }
-  
   /**
    * Test that no NullPointerException will be raised,
    * when adding one document with a single, empty field
@@ -1727,7 +1713,7 @@ public class TestIndexWriter extends LuceneTestCase {
                                                                 "field",
                                                                 new BytesRef("a"));
 
-    assertTrue(tps.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(tps.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, tps.freq());
     assertEquals(0, tps.nextPosition());
     w.close();
@@ -1967,11 +1953,9 @@ public class TestIndexWriter extends LuceneTestCase {
   // create=true does not remove non-index files
   
   public void testOtherFiles() throws Throwable {
-    File indexDir = new File(TEMP_DIR, "otherfiles");
-    Directory dir = FSDirectory.open(indexDir);
+    Directory dir = newDirectory();
     try {
       // Create my own random file:
-
       IndexOutput out = dir.createOutput("myrandomfile");
       out.writeByte((byte) 42);
       out.close();
@@ -1981,7 +1965,6 @@ public class TestIndexWriter extends LuceneTestCase {
       assertTrue(dir.fileExists("myrandomfile"));
     } finally {
       dir.close();
-      _TestUtil.rmDir(indexDir);
     }
   }
 
@@ -2191,12 +2174,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc1field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc2field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc3field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc1field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc2field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
-    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc3field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc1field1")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc2field1")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc3field1")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc1field2")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc2field2")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc3field2")).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     ir.close();
     dir.close();
@@ -2467,7 +2450,7 @@ public class TestIndexWriter extends LuceneTestCase {
     while(t.next() != null) {
       final DocsEnum docs = t.docs(null, null);
       assertEquals(0, docs.nextDoc());
-      assertEquals(DocsEnum.NO_MORE_DOCS, docs.nextDoc());
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
       count++;
     }
     assertEquals(300, count);
@@ -2581,6 +2564,7 @@ public class TestIndexWriter extends LuceneTestCase {
     public FlushCountingIndexWriter(Directory dir, IndexWriterConfig iwc) throws IOException {
       super(dir, iwc);
     }
+    @Override
     public void doAfterFlush() {
       flushCount++;
     }
@@ -2642,8 +2626,9 @@ public class TestIndexWriter extends LuceneTestCase {
     // Tests that if FSDir is opened w/ a NoLockFactory (or SingleInstanceLF),
     // then IndexWriter ctor succeeds. Previously (LUCENE-2386) it failed 
     // when listAll() was called in IndexFileDeleter.
-    FSDirectory dir = FSDirectory.open(new File(TEMP_DIR, "emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
+    Directory dir = newFSDirectory(new File(TEMP_DIR, "emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
     new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())).close();
+    dir.close();
   }
 
   public void testEmptyDirRollback() throws Exception {
@@ -2691,28 +2676,23 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testNoSegmentFile() throws IOException {
-    File tempDir = _TestUtil.getTempDir("noSegmentFile");
-    try {
-      Directory dir = FSDirectory.open(tempDir);
-      dir.setLockFactory(NoLockFactory.getNoLockFactory());
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
-
-      Document doc = new Document();
-      doc.add(newField("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-      w.addDocument(doc);
-      w.addDocument(doc);
-      IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2)
-          .setOpenMode(OpenMode.CREATE));
-
-      w2.close();
-      // If we don't do that, the test fails on Windows
-      w.rollback();
-      dir.close();
-    } finally {
-      _TestUtil.rmDir(tempDir);
-    }
+    Directory dir = newDirectory();
+    dir.setLockFactory(NoLockFactory.getNoLockFactory());
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    
+    Document doc = new Document();
+    doc.add(newField("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    w.addDocument(doc);
+    w.addDocument(doc);
+    IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2)
+        .setOpenMode(OpenMode.CREATE));
+    
+    w2.close();
+    // If we don't do that, the test fails on Windows
+    w.rollback();
+    dir.close();
   }
 
   public void testFutureCommit() throws Exception {

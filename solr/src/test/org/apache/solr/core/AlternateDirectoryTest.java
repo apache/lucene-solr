@@ -42,14 +42,20 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     assertQ(req("q","*:*","qt","standard"));
     assertTrue(TestFSDirectoryFactory.openCalled);
     assertTrue(TestIndexReaderFactory.newReaderCalled);
+    TestFSDirectoryFactory.dir.close();
   }
 
   static public class TestFSDirectoryFactory extends DirectoryFactory {
     public static volatile boolean openCalled = false;
-
-    public FSDirectory open(String path) throws IOException {
+    public static volatile Directory dir;
+    
+    public Directory open(String path) throws IOException {
       openCalled = true;
-      return FSDirectory.open(new File(path));
+      // need to close the directory, or otherwise the test fails.
+      if (dir != null) {
+        dir.close();
+      }
+      return dir = newFSDirectory(new File(path));
     }
 
   }

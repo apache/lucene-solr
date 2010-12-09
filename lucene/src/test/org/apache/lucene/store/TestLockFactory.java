@@ -145,15 +145,15 @@ public class TestLockFactory extends LuceneTestCase {
     }
 
     public void _testStressLocks(LockFactory lockFactory, File indexDir) throws Exception {
-        FSDirectory fs1 = FSDirectory.open(indexDir, lockFactory);
+        Directory dir = newFSDirectory(indexDir, lockFactory);
 
         // First create a 1 doc index:
-        IndexWriter w = new IndexWriter(fs1, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
         addDoc(w);
         w.close();
 
-        WriterThread writer = new WriterThread(100, fs1);
-        SearcherThread searcher = new SearcherThread(100, fs1);
+        WriterThread writer = new WriterThread(100, dir);
+        SearcherThread searcher = new SearcherThread(100, dir);
         writer.start();
         searcher.start();
 
@@ -164,6 +164,7 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("IndexWriter hit unexpected exceptions", !writer.hitException);
         assertTrue("IndexSearcher hit unexpected exceptions", !searcher.hitException);
 
+        dir.close();
         // Cleanup
         _TestUtil.rmDir(indexDir);
     }
@@ -234,9 +235,9 @@ public class TestLockFactory extends LuceneTestCase {
 
       File fdir1 = _TestUtil.getTempDir("TestLockFactory.8");
       File fdir2 = _TestUtil.getTempDir("TestLockFactory.8.Lockdir");
-      Directory dir1 = FSDirectory.open(fdir1, new NativeFSLockFactory(fdir1));
+      Directory dir1 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir1));
       // same directory, but locks are stored somewhere else. The prefix of the lock factory should != null
-      Directory dir2 = FSDirectory.open(fdir1, new NativeFSLockFactory(fdir2));
+      Directory dir2 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir2));
 
       String prefix1 = dir1.getLockFactory().getLockPrefix();
       assertNull("Lock prefix for lockDir same as directory should be null", prefix1);
@@ -244,6 +245,8 @@ public class TestLockFactory extends LuceneTestCase {
       String prefix2 = dir2.getLockFactory().getLockPrefix();
       assertNotNull("Lock prefix for lockDir outside of directory should be not null", prefix2);
 
+      dir1.close();
+      dir2.close();
       _TestUtil.rmDir(fdir1);
       _TestUtil.rmDir(fdir2);
     }
@@ -254,12 +257,13 @@ public class TestLockFactory extends LuceneTestCase {
 
       // Make sure we get null prefix:
       File dirName = _TestUtil.getTempDir("TestLockFactory.10");
-      Directory dir = FSDirectory.open(dirName);
+      Directory dir = newFSDirectory(dirName);
 
       String prefix = dir.getLockFactory().getLockPrefix();
 
       assertTrue("Default lock prefix should be null", null == prefix);
 
+      dir.close();
       _TestUtil.rmDir(dirName);
     }
 

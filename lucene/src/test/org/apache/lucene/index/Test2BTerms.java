@@ -58,6 +58,7 @@ public class Test2BTerms extends LuceneTestCase {
       bytes.length = TOKEN_LEN;
     }
     
+    @Override
     public boolean incrementToken() {
       if (tokenCount >= tokensPerDoc) {
         return false;
@@ -67,6 +68,7 @@ public class Test2BTerms extends LuceneTestCase {
       return true;
     }
 
+    @Override
     public void reset() {
       tokenCount = 0;
     }
@@ -131,7 +133,7 @@ public class Test2BTerms extends LuceneTestCase {
 
     int TERMS_PER_DOC = 1000000;
 
-    Directory dir = FSDirectory.open(_TestUtil.getTempDir("2BTerms"));
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
     IndexWriter w = new IndexWriter(
         dir,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).

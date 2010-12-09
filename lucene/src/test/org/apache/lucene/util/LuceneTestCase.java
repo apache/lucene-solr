@@ -51,6 +51,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
@@ -356,7 +358,17 @@ public abstract class LuceneTestCase extends Assert {
       for (MockDirectoryWrapper d : stores.keySet()) {
         if (d.isOpen()) {
           StackTraceElement elements[] = stores.get(d);
-          StackTraceElement element = (elements.length > 1) ? elements[1] : null;
+          // Look for the first class that is not LuceneTestCase that requested
+          // a Directory. The first two items are of Thread's, so skipping over
+          // them.
+          StackTraceElement element = null;
+          for (int i = 2; i < elements.length; i++) {
+            StackTraceElement ste = elements[i];
+            if (ste.getClassName().indexOf("LuceneTestCase") == -1) {
+              element = ste;
+              break;
+            }
+          }
           fail("directory of test was not closed, opened from: " + element);
         }
       }
@@ -705,7 +717,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Returns a new Dictionary instance. Use this when the test does not
+   * Returns a new Directory instance. Use this when the test does not
    * care about the specific Directory implementation (most tests).
    * <p>
    * The Directory is wrapped with {@link MockDirectoryWrapper}.
@@ -719,15 +731,14 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
-    StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
-    stores.put(dir, stack);
+    stores.put(dir, Thread.currentThread().getStackTrace());
     return dir;
   }
   
   /**
-   * Returns a new Dictionary instance, with contents copied from the
+   * Returns a new Directory instance, with contents copied from the
    * provided directory. See {@link #newDirectory()} for more
    * information.
    */
@@ -735,14 +746,46 @@ public abstract class LuceneTestCase extends Assert {
     return newDirectory(random, d);
   }
   
+  /** Returns a new FSDirectory instance over the given file, which must be a folder. */
+  public static MockDirectoryWrapper newFSDirectory(File f) throws IOException {
+    return newFSDirectory(f, null);
+  }
+  
+  /** Returns a new FSDirectory instance over the given file, which must be a folder. */
+  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) throws IOException {
+    String fsdirClass = TEST_DIRECTORY;
+    if (fsdirClass.equals("random")) {
+      fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
+    }
+    
+    if (fsdirClass.indexOf(".") == -1) {// if not fully qualified, assume .store
+      fsdirClass = "org.apache.lucene.store." + fsdirClass;
+    }
+    
+    Class<? extends FSDirectory> clazz;
+    try {
+      try {
+        clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
+      } catch (ClassCastException e) {
+        // TEST_DIRECTORY is not a sub-class of FSDirectory, so draw one at random
+        fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
+        clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
+      }
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f, lf));
+      stores.put(dir, Thread.currentThread().getStackTrace());
+      return dir;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+  
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
-    StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file);
     }
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
-    stores.put(dir, stack);
+    stores.put(dir, Thread.currentThread().getStackTrace());
     return dir;
   }
   
@@ -818,11 +861,15 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static String CORE_DIRECTORIES[] = {
-    "RAMDirectory",
+  private static final String FS_DIRECTORIES[] = {
     "SimpleFSDirectory",
     "NIOFSDirectory",
     "MMapDirectory"
+  };
+
+  private static final String CORE_DIRECTORIES[] = {
+    "RAMDirectory",
+    FS_DIRECTORIES[0], FS_DIRECTORIES[1], FS_DIRECTORIES[2]
   };
   
   public static String randomDirectory(Random random) {
@@ -830,6 +877,23 @@ public abstract class LuceneTestCase extends Assert {
       return CORE_DIRECTORIES[random.nextInt(CORE_DIRECTORIES.length)];
     } else {
       return "RAMDirectory";
+    }
+  }
+
+  private static Directory newFSDirectoryImpl(
+      Class<? extends FSDirectory> clazz, File file, LockFactory lockFactory)
+      throws IOException {
+    try {
+      // Assuming every FSDirectory has a ctor(File), but not all may take a
+      // LockFactory too, so setting it afterwards.
+      Constructor<? extends FSDirectory> ctor = clazz.getConstructor(File.class);
+      FSDirectory d = ctor.newInstance(file);
+      if (lockFactory != null) {
+        d.setLockFactory(lockFactory);
+      }
+      return d;
+    } catch (Exception e) {
+      return FSDirectory.open(file);
     }
   }
   
@@ -840,27 +904,22 @@ public abstract class LuceneTestCase extends Assert {
       clazzName = "org.apache.lucene.store." + clazzName;
     try {
       final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
-      try {
-        // try empty ctor
-        return clazz.newInstance();
-      } catch (Exception e) {
+      // If it is a FSDirectory type, try its ctor(File)
+      if (FSDirectory.class.isAssignableFrom(clazz)) {
         final File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
         tmpFile.delete();
         tmpFile.mkdir();
-        try {
-          Constructor<? extends Directory> ctor = clazz.getConstructor(File.class);
-          return ctor.newInstance(tmpFile);
-        } catch (Exception e2) {
-          // try .open(File)
-          Method method = clazz.getMethod("open", new Class[] { File.class });
-          return (Directory) method.invoke(null, tmpFile);
-        }
+        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile, null);
       }
+
+      // try empty ctor
+      return clazz.newInstance();
     } catch (Exception e) {
       throw new RuntimeException(e);
     } 
   }
   
+
   public String getName() {
     return this.name;
   }
@@ -869,6 +928,7 @@ public abstract class LuceneTestCase extends Assert {
    * if a real file is needed. To get a stream, code should prefer
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.
    */
+  
   protected File getDataFile(String name) throws IOException {
     try {
       return new File(this.getClass().getResource(name).toURI());
@@ -1014,17 +1074,20 @@ public abstract class LuceneTestCase extends Assert {
       Collections.shuffle(knownCodecs, random);
     }
 
+    @Override
     public synchronized void register(Codec codec) {
       if (!codec.name.equals("PreFlex"))
         knownCodecs.add(codec);
       super.register(codec);
     }
 
+    @Override
     public synchronized void unregister(Codec codec) {
       knownCodecs.remove(codec);
       super.unregister(codec);
     }
 
+    @Override
     public synchronized String getFieldCodec(String name) {
       Codec codec = previousMappings.get(name);
       if (codec == null) {
@@ -1034,6 +1097,7 @@ public abstract class LuceneTestCase extends Assert {
       return codec.name;
     }
     
+    @Override
     public String toString() {
       return "RandomCodecProvider: " + previousMappings.toString();
     }

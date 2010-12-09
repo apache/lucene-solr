@@ -27,20 +27,14 @@ import java.util.Arrays;
 public class TestDirectory extends LuceneTestCase {
 
   public void testDetectClose() throws Throwable {
-    Directory dir = new RAMDirectory();
-    dir.close();
-    try {
-      dir.createOutput("test");
-      fail("did not hit expected exception");
-    } catch (AlreadyClosedException ace) {
-    }
-
-    dir = FSDirectory.open(TEMP_DIR);
-    dir.close();
-    try {
-      dir.createOutput("test");
-      fail("did not hit expected exception");
-    } catch (AlreadyClosedException ace) {
+    Directory[] dirs = new Directory[] { new RAMDirectory(), new SimpleFSDirectory(TEMP_DIR), new NIOFSDirectory(TEMP_DIR) };
+    for (Directory dir : dirs) {
+      dir.close();
+      try {
+        dir.createOutput("test");
+        fail("did not hit expected exception");
+      } catch (AlreadyClosedException ace) {
+      }
     }
   }
 
@@ -140,7 +134,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testFSDirectoryFilter() throws IOException {
-    checkDirectoryFilter(FSDirectory.open(new File(TEMP_DIR,"test")));
+    checkDirectoryFilter(newFSDirectory(new File(TEMP_DIR,"test")));
   }
 
   // LUCENE-1468

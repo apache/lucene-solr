@@ -33,8 +33,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.codecs.CodecProvider;
 
@@ -47,11 +47,9 @@ public class TestDoc extends LuceneTestCase {
         TestRunner.run (new TestSuite(TestDoc.class));
     }
 
-
     private File workDir;
     private File indexDir;
     private LinkedList<File> files;
-
 
     /** Set the test case. This test case needs
      *  a few text files created in the current working directory.
@@ -65,7 +63,7 @@ public class TestDoc extends LuceneTestCase {
         indexDir = new File(workDir, "testIndex");
         indexDir.mkdirs();
 
-        Directory directory = FSDirectory.open(indexDir);
+        Directory directory = newFSDirectory(indexDir);
         directory.close();
 
         files = new LinkedList<File>();
@@ -110,7 +108,7 @@ public class TestDoc extends LuceneTestCase {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
       
-      Directory directory = FSDirectory.open(indexDir);
+      Directory directory = newFSDirectory(indexDir);
       IndexWriter writer = new IndexWriter(
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
@@ -144,7 +142,7 @@ public class TestDoc extends LuceneTestCase {
       sw = new StringWriter();
       out = new PrintWriter(sw, true);
 
-      directory = FSDirectory.open(indexDir);
+      directory = newFSDirectory(indexDir);
       writer = new IndexWriter(
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
@@ -233,7 +231,7 @@ public class TestDoc extends LuceneTestCase {
 
           DocsAndPositionsEnum positions = tis.docsAndPositions(reader.getDeletedDocs(), null);
 
-          while (positions.nextDoc() != positions.NO_MORE_DOCS) {
+          while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             out.print(" doc=" + positions.docID());
             out.print(" TF=" + positions.freq());
             out.print(" pos=");

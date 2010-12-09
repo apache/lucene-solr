@@ -40,7 +40,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BitVector;
@@ -149,12 +148,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // in each iteration verify the work of previous iteration. 
   // try this once with reopen once recreate, on both RAMDir and FSDir.
   public void testCommitReopenFS () throws IOException {
-    Directory dir = FSDirectory.open(indexDir);
+    Directory dir = newFSDirectory(indexDir);
     doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
   public void testCommitRecreateFS () throws IOException {
-    Directory dir = FSDirectory.open(indexDir);
+    Directory dir = newFSDirectory(indexDir);
     doTestReopenWithCommit(random, dir, false);
     dir.close();
   }

@@ -39,13 +39,13 @@ import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
@@ -306,15 +306,14 @@ public class TestIndexReader extends LuceneTestCase
                                      IndexReader reader,
                                      Term term,
                                      int expected)
-    throws IOException
-    {
+    throws IOException {
         DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
                                                      MultiFields.getDeletedDocs(reader),
                                                      term.field(),
                                                      new BytesRef(term.text()));
         int count = 0;
         if (tdocs != null) {
-          while(tdocs.nextDoc()!= tdocs.NO_MORE_DOCS) {
+          while(tdocs.nextDoc()!= DocIdSetIterator.NO_MORE_DOCS) {
             count++;
           }
         }
@@ -524,19 +523,16 @@ public class TestIndexReader extends LuceneTestCase
     // Make sure you can set norms & commit even if a reader
     // is open against the index:
     public void testWritingNorms() throws IOException {
-        File indexDir = new File(TEMP_DIR, "lucenetestnormwriter");
-        Directory dir = FSDirectory.open(indexDir);
-        IndexWriter writer;
-        IndexReader reader;
+        Directory dir = newDirectory();
         Term searchTerm = new Term("content", "aaa");
 
         //  add 1 documents with term : aaa
-        writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         addDoc(writer, searchTerm.text());
         writer.close();
 
         //  now open reader & set norm for doc 0
-        reader = IndexReader.open(dir, false);
+        IndexReader reader = IndexReader.open(dir, false);
         reader.setNorm(0, "content", (float) 2.0);
 
         // we should be holding the write lock now:
@@ -561,8 +557,6 @@ public class TestIndexReader extends LuceneTestCase
 
         reader2.close();
         dir.close();
-
-        rmDir(indexDir);
     }
 
 
@@ -707,7 +701,7 @@ public class TestIndexReader extends LuceneTestCase
   public void testFilesOpenClose() throws IOException {
         // Create initial data set
         File dirFile = _TestUtil.getTempDir("TestIndexReader.testFilesOpenClose");
-        Directory dir = FSDirectory.open(dirFile);
+        Directory dir = newFSDirectory(dirFile);
         IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         addDoc(writer, "test");
         writer.close();
@@ -715,7 +709,7 @@ public class TestIndexReader extends LuceneTestCase
 
         // Try to erase the data - this ensures that the writer closed all files
         _TestUtil.rmDir(dirFile);
-        dir = FSDirectory.open(dirFile);
+        dir = newFSDirectory(dirFile);
 
         // Now create the data set again, just as before
         writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
@@ -724,7 +718,7 @@ public class TestIndexReader extends LuceneTestCase
         dir.close();
 
         // Now open existing directory and test that reader closes all files
-        dir = FSDirectory.open(dirFile);
+        dir = newFSDirectory(dirFile);
         IndexReader reader1 = IndexReader.open(dir, false);
         reader1.close();
         dir.close();
@@ -1131,7 +1125,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testOpenReaderAfterDelete() throws IOException {
       File dirFile = new File(TEMP_DIR, "deletetest");
-      Directory dir = FSDirectory.open(dirFile);
+      Directory dir = newFSDirectory(dirFile);
       try {
         IndexReader.open(dir, false);
         fail("expected FileNotFoundException");
@@ -1313,18 +1307,10 @@ public class TestIndexReader extends LuceneTestCase
         writer.addDocument(doc);
     }
     
-    private void addDoc(IndexWriter writer, String value) throws IOException
-    {
+    private void addDoc(IndexWriter writer, String value) throws IOException {
         Document doc = new Document();
         doc.add(newField("content", value, Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
-    }
-    private void rmDir(File dir) {
-        File[] files = dir.listFiles();
-        for (int i = 0; i < files.length; i++) {
-            files[i].delete();
-        }
-        dir.delete();
     }
 
     public static void assertIndexEquals(IndexReader index1, IndexReader index2) throws IOException {
@@ -1404,8 +1390,8 @@ public class TestIndexReader extends LuceneTestCase
           DocsAndPositionsEnum tp1 = enum1.docsAndPositions(delDocs, null);
           DocsAndPositionsEnum tp2 = enum2.docsAndPositions(delDocs, null);
 
-          while(tp1.nextDoc() != DocsEnum.NO_MORE_DOCS) {
-            assertTrue(tp2.nextDoc() != DocsEnum.NO_MORE_DOCS);
+          while(tp1.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            assertTrue(tp2.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
             assertEquals("Different doc id in postinglist of term " + enum1.term() + ".", tp1.docID(), tp2.docID());
             assertEquals("Different term frequence in postinglist of term " + enum1.term() + ".", tp1.freq(), tp2.freq());
             for (int i = 0; i < tp1.freq(); i++) {
@@ -1590,7 +1576,7 @@ public class TestIndexReader extends LuceneTestCase
   // IndexReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    Directory dir = FSDirectory.open(_TestUtil.getTempDir("doesnotexist"));
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("doesnotexist"));
     try {
       IndexReader.open(dir, true);
       fail("did not hit expected exception");

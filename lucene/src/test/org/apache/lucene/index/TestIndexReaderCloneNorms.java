@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
@@ -34,7 +33,6 @@ import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -79,8 +77,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
    */
   public void testNorms() throws IOException {
     // test with a single index: index1
-    File indexDir1 = new File(TEMP_DIR, "lucenetestindex1");
-    Directory dir1 = FSDirectory.open(indexDir1);
+    Directory dir1 = newDirectory();
     IndexWriter.unlock(dir1);
 
     norms = new ArrayList<Float>();
@@ -98,15 +95,13 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     modifiedNorms = new ArrayList<Float>();
     numDocNorms = 0;
 
-    File indexDir2 = new File(TEMP_DIR, "lucenetestindex2");
-    Directory dir2 = FSDirectory.open(indexDir2);
+    Directory dir2 = newDirectory();
 
     createIndex(random, dir2);
     doTestNorms(random, dir2);
 
     // add index1 and index2 to a third index: index3
-    File indexDir3 = new File(TEMP_DIR, "lucenetestindex3");
-    Directory dir3 = FSDirectory.open(indexDir3);
+    Directory dir3 = newDirectory();
 
     createIndex(random, dir3);
     IndexWriter iw = new IndexWriter(
@@ -163,6 +158,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     modifyNormsForF1(irc3);
     verifyIndex(irc3);
     irc3.flush();
+    
+    ir.close();
+    irc.close();
     irc3.close();
   }
   
