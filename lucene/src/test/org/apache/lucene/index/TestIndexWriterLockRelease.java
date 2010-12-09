@@ -24,7 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
 
 /**
  * This tests the patch for issue #LUCENE-715 (IndexWriter does not
@@ -73,7 +73,7 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     }
 
     public void testIndexWriterLockRelease() throws IOException {
-        FSDirectory dir = FSDirectory.open(this.__test_dir);
+        Directory dir = newFSDirectory(this.__test_dir);
         try {
           new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
               new StandardAnalyzer(TEST_VERSION_CURRENT))

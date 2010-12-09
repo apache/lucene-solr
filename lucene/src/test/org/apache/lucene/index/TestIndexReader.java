@@ -46,7 +46,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
@@ -55,8 +54,7 @@ import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestIndexReader extends LuceneTestCase
-{
+public class TestIndexReader extends LuceneTestCase {
     
     public void testCommitUserData() throws Exception {
       Directory d = newDirectory();
@@ -519,8 +517,7 @@ public class TestIndexReader extends LuceneTestCase
     // Make sure you can set norms & commit even if a reader
     // is open against the index:
     public void testWritingNorms() throws IOException {
-        File indexDir = new File(TEMP_DIR, "lucenetestnormwriter");
-        Directory dir = FSDirectory.open(indexDir);
+        Directory dir = newDirectory();
         IndexWriter writer;
         IndexReader reader;
         Term searchTerm = new Term("content", "aaa");
@@ -556,8 +553,6 @@ public class TestIndexReader extends LuceneTestCase
 
         reader2.close();
         dir.close();
-
-        rmDir(indexDir);
     }
 
 
@@ -700,7 +695,7 @@ public class TestIndexReader extends LuceneTestCase
   public void testFilesOpenClose() throws IOException {
         // Create initial data set
         File dirFile = _TestUtil.getTempDir("TestIndexReader.testFilesOpenClose");
-        Directory dir = FSDirectory.open(dirFile);
+        Directory dir = newFSDirectory(dirFile);
         IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         addDoc(writer, "test");
         writer.close();
@@ -708,7 +703,7 @@ public class TestIndexReader extends LuceneTestCase
 
         // Try to erase the data - this ensures that the writer closed all files
         _TestUtil.rmDir(dirFile);
-        dir = FSDirectory.open(dirFile);
+        dir = newFSDirectory(dirFile);
 
         // Now create the data set again, just as before
         writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
@@ -717,7 +712,7 @@ public class TestIndexReader extends LuceneTestCase
         dir.close();
 
         // Now open existing directory and test that reader closes all files
-        dir = FSDirectory.open(dirFile);
+        dir = newFSDirectory(dirFile);
         IndexReader reader1 = IndexReader.open(dir, false);
         reader1.close();
         dir.close();
@@ -1151,7 +1146,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testOpenReaderAfterDelete() throws IOException {
       File dirFile = new File(TEMP_DIR, "deletetest");
-      Directory dir = FSDirectory.open(dirFile);
+      Directory dir = newFSDirectory(dirFile);
       try {
         IndexReader.open(dir, false);
         fail("expected FileNotFoundException");
@@ -1306,18 +1301,10 @@ public class TestIndexReader extends LuceneTestCase
         writer.addDocument(doc);
     }
     
-    private void addDoc(IndexWriter writer, String value) throws IOException
-    {
+    private void addDoc(IndexWriter writer, String value) throws IOException {
         Document doc = new Document();
         doc.add(newField("content", value, Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
-    }
-    private void rmDir(File dir) {
-        File[] files = dir.listFiles();
-        for (int i = 0; i < files.length; i++) {
-            files[i].delete();
-        }
-        dir.delete();
     }
 
     public static void assertIndexEquals(IndexReader index1, IndexReader index2) throws IOException {
@@ -1567,7 +1554,7 @@ public class TestIndexReader extends LuceneTestCase
   // IndexReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    Directory dir = FSDirectory.open(_TestUtil.getTempDir("doesnotexist"));
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("doesnotexist"));
     try {
       IndexReader.open(dir, true);
       fail("did not hit expected exception");

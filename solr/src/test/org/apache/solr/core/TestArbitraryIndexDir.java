@@ -97,7 +97,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     }
 
     //add a doc in the new index dir
-    Directory dir = FSDirectory.open(newDir);
+    Directory dir = newFSDirectory(newDir);
     IndexWriter iw = new IndexWriter(
         dir,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).
@@ -109,7 +109,8 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     iw.addDocument(doc);
     iw.commit();
     iw.close();
-
+    dir.close();
+    
     //commit will cause searcher to open with the new index dir
     assertU(commit());
     //new index dir contains just 1 doc.

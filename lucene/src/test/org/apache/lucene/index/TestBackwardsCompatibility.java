@@ -47,7 +47,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -213,7 +212,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for(int i=0;i<oldNames.length;i++) {
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       String fullPath = fullDir(oldNames[i]);
-      Directory dir = FSDirectory.open(new File(fullPath));
+      Directory dir = newFSDirectory(new File(fullPath));
 
       if (oldNames[i].startsWith("29.")) {
         assertCompressedFields29(dir, true);
@@ -243,7 +242,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       unzip(getDataFile("index." + name + ".zip"), name);
       String fullPath = fullDir(name);
-      Directory dir = FSDirectory.open(new File(fullPath));
+      Directory dir = newFSDirectory(new File(fullPath));
 
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
@@ -263,7 +262,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       unzip(getDataFile("index." + name + ".zip"), name);
       String fullPath = fullDir(name);
-      Directory dir = FSDirectory.open(new File(fullPath));
+      Directory dir = newFSDirectory(new File(fullPath));
       IndexReader reader = IndexReader.open(dir);
       
       Directory targetDir = newDirectory();
@@ -320,7 +319,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.open(new File(dirName));
+    Directory dir = newFSDirectory(new File(dirName));
     IndexSearcher searcher = new IndexSearcher(dir, true);
     IndexReader reader = searcher.getIndexReader();
 
@@ -397,7 +396,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     String origDirName = dirName;
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.open(new File(dirName));
+    Directory dir = newFSDirectory(new File(dirName));
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     // add 10 docs
@@ -465,7 +464,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.open(new File(dirName));
+    Directory dir = newFSDirectory(new File(dirName));
 
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir, true);
@@ -515,7 +514,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.open(new File(dirName));
+    Directory dir = newFSDirectory(new File(dirName));
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
@@ -547,6 +546,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // Set one norm so we get a .s0 file:
     reader.setNorm(21, "content", (float) 1.5);
     reader.close();
+    dir.close();
   }
 
   /* Verifies that the expected file names were produced */
@@ -557,7 +557,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     rmDir(outputDir);
 
     try {
-      Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
+      Directory dir = newFSDirectory(new File(fullDir(outputDir)));
 
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(16.0);
       ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(true);
@@ -706,7 +706,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       String fullPath = fullDir(oldNames[i]);
-      Directory dir = FSDirectory.open(new File(fullPath));
+      Directory dir = newFSDirectory(new File(fullPath));
       IndexSearcher searcher = new IndexSearcher(dir, true);
       
       for (int id=10; id<15; id++) {

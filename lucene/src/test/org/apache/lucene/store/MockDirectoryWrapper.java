@@ -513,7 +513,7 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
-  public synchronized void setLockFactory(LockFactory lockFactory) {
+  public synchronized void setLockFactory(LockFactory lockFactory) throws IOException {
     maybeYield();
     delegate.setLockFactory(lockFactory);
   }

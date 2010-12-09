@@ -37,7 +37,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
@@ -157,7 +156,7 @@ public class TestPayloads extends LuceneTestCase {
         dir.close();
         // now use a FSDirectory and repeat same test
         File dirName = _TestUtil.getTempDir("test_payloads");
-        dir = FSDirectory.open(dirName);
+        dir = newFSDirectory(dirName);
         performTest(dir);
        _TestUtil.rmDir(dirName);
         dir.close();

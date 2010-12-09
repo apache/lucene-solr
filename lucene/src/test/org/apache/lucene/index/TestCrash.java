@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -66,7 +67,7 @@ public class TestCrash extends LuceneTestCase {
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
     IndexWriter writer = initIndex(random, true);
-    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
+    Directory dir = writer.getDirectory();
     crash(writer);
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 157);

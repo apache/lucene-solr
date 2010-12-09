@@ -58,7 +58,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
@@ -377,34 +376,30 @@ public class TestIndexWriter extends LuceneTestCase {
     // reader holds it open (this fails pre lock-less
     // commits on windows):
     public void testCreateWithReader() throws IOException {
-        File indexDir = _TestUtil.getTempDir("lucenetestindexwriter");
-
-        try {
-          Directory dir = FSDirectory.open(indexDir);
-
-          // add one document & close writer
-          IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-          addDoc(writer);
-          writer.close();
-
-          // now open reader:
-          IndexReader reader = IndexReader.open(dir, true);
-          assertEquals("should be one document", reader.numDocs(), 1);
-
-          // now open index for create:
-          writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
-          assertEquals("should be zero documents", writer.maxDoc(), 0);
-          addDoc(writer);
-          writer.close();
-
-          assertEquals("should be one document", reader.numDocs(), 1);
-          IndexReader reader2 = IndexReader.open(dir, true);
-          assertEquals("should be one document", reader2.numDocs(), 1);
-          reader.close();
-          reader2.close();
-        } finally {
-          rmDir(indexDir);
-        }
+      Directory dir = newDirectory();
+      
+      // add one document & close writer
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+      addDoc(writer);
+      writer.close();
+      
+      // now open reader:
+      IndexReader reader = IndexReader.open(dir, true);
+      assertEquals("should be one document", reader.numDocs(), 1);
+      
+      // now open index for create:
+      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
+      assertEquals("should be zero documents", writer.maxDoc(), 0);
+      addDoc(writer);
+      writer.close();
+      
+      assertEquals("should be one document", reader.numDocs(), 1);
+      IndexReader reader2 = IndexReader.open(dir, true);
+      assertEquals("should be one document", reader2.numDocs(), 1);
+      reader.close();
+      reader2.close();
+      
+      dir.close();
     }
 
     public void testChangesAfterClose() throws IOException {
@@ -1097,16 +1092,6 @@ public class TestIndexWriter extends LuceneTestCase {
       dir.close();
     }
 
-    private void rmDir(File dir) {
-        File[] files = dir.listFiles();
-        if (files != null) {
-          for (int i = 0; i < files.length; i++) {
-            files[i].delete();
-          }
-        }
-        dir.delete();
-    }
-  
   /**
    * Test that no NullPointerException will be raised,
    * when adding one document with a single, empty field
@@ -2107,11 +2092,9 @@ public class TestIndexWriter extends LuceneTestCase {
   // create=true does not remove non-index files
   
   public void testOtherFiles() throws Throwable {
-    File indexDir = new File(TEMP_DIR, "otherfiles");
-    Directory dir = FSDirectory.open(indexDir);
+    Directory dir = newDirectory();
     try {
       // Create my own random file:
-
       IndexOutput out = dir.createOutput("myrandomfile");
       out.writeByte((byte) 42);
       out.close();
@@ -2126,7 +2109,6 @@ public class TestIndexWriter extends LuceneTestCase {
       dir2.close();
     } finally {
       dir.close();
-      _TestUtil.rmDir(indexDir);
     }
   }
 
@@ -2632,8 +2614,9 @@ public class TestIndexWriter extends LuceneTestCase {
     // Tests that if FSDir is opened w/ a NoLockFactory (or SingleInstanceLF),
     // then IndexWriter ctor succeeds. Previously (LUCENE-2386) it failed 
     // when listAll() was called in IndexFileDeleter.
-    FSDirectory dir = FSDirectory.open(new File(TEMP_DIR, "emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
+    Directory dir = newFSDirectory(new File(TEMP_DIR, "emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
     new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))).close();
+    dir.close();
   }
 
   public void testEmptyDirRollback() throws Exception {
@@ -2681,27 +2664,22 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testNoSegmentFile() throws IOException {
-    File tempDir = _TestUtil.getTempDir("noSegmentFile");
-    try {
-      Directory dir = FSDirectory.open(tempDir);
-      dir.setLockFactory(NoLockFactory.getNoLockFactory());
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
-
-      Document doc = new Document();
-      doc.add(newField("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-      w.addDocument(doc);
-      w.addDocument(doc);
-      IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setMaxBufferedDocs(2).setOpenMode(OpenMode.CREATE));
-
-      w2.close();
-      w.rollback();
-      dir.close();
-    } finally {
-      _TestUtil.rmDir(tempDir);
-    }
+    Directory dir = newDirectory();
+    dir.setLockFactory(NoLockFactory.getNoLockFactory());
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
+    
+    Document doc = new Document();
+    doc.add(newField("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    w.addDocument(doc);
+    w.addDocument(doc);
+    IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(2).setOpenMode(OpenMode.CREATE));
+    
+    w2.close();
+    w.rollback();
+    dir.close();
   }
 
   public void testFutureCommit() throws Exception {

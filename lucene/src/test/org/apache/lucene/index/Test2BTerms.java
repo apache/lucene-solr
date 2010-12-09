@@ -43,7 +43,6 @@ public class Test2BTerms extends LuceneTestCase {
     private final static int TOKEN_LEN = 5;
     private final char[] chars;
     private final byte[] bytes;
-    private int charUpto;
 
     public MyTokenStream(int tokensPerDoc) {
       super();
@@ -54,6 +53,7 @@ public class Test2BTerms extends LuceneTestCase {
       bytes = new byte[2*TOKEN_LEN];
     }
     
+    @Override
     public boolean incrementToken() {
       if (tokenCount >= tokensPerDoc) {
         return false;
@@ -68,6 +68,7 @@ public class Test2BTerms extends LuceneTestCase {
       return true;
     }
 
+    @Override
     public void reset() {
       tokenCount = 0;
     }
@@ -80,7 +81,7 @@ public class Test2BTerms extends LuceneTestCase {
 
     int TERMS_PER_DOC = 1000000;
 
-    Directory dir = FSDirectory.open(_TestUtil.getTempDir("2BTerms"));
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
     IndexWriter w = new IndexWriter(dir,
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
                                                   .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)

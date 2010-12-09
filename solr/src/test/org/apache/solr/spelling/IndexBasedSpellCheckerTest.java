@@ -30,6 +30,7 @@ import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
@@ -284,8 +285,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     //create a standalone index
     File altIndexDir = new File(TEMP_DIR, "alternateIdx" + new Date().getTime());
+    Directory dir = newFSDirectory(altIndexDir);
     IndexWriter iw = new IndexWriter(
-        FSDirectory.open(altIndexDir),
+        dir,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).
             setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH)
     );
@@ -296,6 +298,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     }
     iw.optimize();
     iw.close();
+    dir.close();
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, altIndexDir.getAbsolutePath());

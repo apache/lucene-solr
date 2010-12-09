@@ -156,20 +156,6 @@ public abstract class FSDirectory extends Directory {
       throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
 
     setLockFactory(lockFactory);
-    
-    // for filesystem based LockFactory, delete the lockPrefix, if the locks are placed
-    // in index dir. If no index dir is given, set ourselves
-    if (lockFactory instanceof FSLockFactory) {
-      final FSLockFactory lf = (FSLockFactory) lockFactory;
-      final File dir = lf.getLockDir();
-      // if the lock factory has no lockDir set, use the this directory as lockDir
-      if (dir == null) {
-        lf.setLockDir(directory);
-        lf.setLockPrefix(null);
-      } else if (dir.getCanonicalPath().equals(directory.getCanonicalPath())) {
-        lf.setLockPrefix(null);
-      }
-    }
   }
 
   /** Creates an FSDirectory instance, trying to pick the
@@ -209,6 +195,26 @@ public abstract class FSDirectory extends Directory {
     }
   }
 
+  @Override
+  public void setLockFactory(LockFactory lockFactory) throws IOException {
+    super.setLockFactory(lockFactory);
+
+    // for filesystem based LockFactory, delete the lockPrefix, if the locks are placed
+    // in index dir. If no index dir is given, set ourselves
+    if (lockFactory instanceof FSLockFactory) {
+      final FSLockFactory lf = (FSLockFactory) lockFactory;
+      final File dir = lf.getLockDir();
+      // if the lock factory has no lockDir set, use the this directory as lockDir
+      if (dir == null) {
+        lf.setLockDir(directory);
+        lf.setLockPrefix(null);
+      } else if (dir.getCanonicalPath().equals(directory.getCanonicalPath())) {
+        lf.setLockPrefix(null);
+      }
+    }
+
+  }
+  
   /** Lists all files (not subdirectories) in the
    *  directory.  This method never returns null (throws
    *  {@link IOException} instead).

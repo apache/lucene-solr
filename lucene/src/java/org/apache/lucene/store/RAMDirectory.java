@@ -48,7 +48,11 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Constructs an empty {@link Directory}. */
   public RAMDirectory() {
-    setLockFactory(new SingleInstanceLockFactory());
+    try {
+      setLockFactory(new SingleInstanceLockFactory());
+    } catch (IOException e) {
+      // Cannot happen
+    }
   }
 
   /**

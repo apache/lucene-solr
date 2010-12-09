@@ -34,9 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-
 
 /** JUnit adaptation of an older test case DocTest. */
 public class TestDoc extends LuceneTestCase {
@@ -46,11 +44,9 @@ public class TestDoc extends LuceneTestCase {
         TestRunner.run (new TestSuite(TestDoc.class));
     }
 
-
     private File workDir;
     private File indexDir;
     private LinkedList<File> files;
-
 
     /** Set the test case. This test case needs
      *  a few text files created in the current working directory.
@@ -64,7 +60,7 @@ public class TestDoc extends LuceneTestCase {
         indexDir = new File(workDir, "testIndex");
         indexDir.mkdirs();
 
-        Directory directory = FSDirectory.open(indexDir);
+        Directory directory = newFSDirectory(indexDir);
         directory.close();
 
         files = new LinkedList<File>();
@@ -109,7 +105,7 @@ public class TestDoc extends LuceneTestCase {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
       
-      Directory directory = FSDirectory.open(indexDir);
+      Directory directory = newFSDirectory(indexDir);
       IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
                                            .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
@@ -140,7 +136,7 @@ public class TestDoc extends LuceneTestCase {
       sw = new StringWriter();
       out = new PrintWriter(sw, true);
 
-      directory = FSDirectory.open(indexDir);
+      directory = newFSDirectory(indexDir);
       writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
                                .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));

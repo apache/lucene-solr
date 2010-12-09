@@ -195,7 +195,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     // Second in an FSDirectory:
     File dirPath = _TestUtil.getTempDir("lucene.test.atomic");
-    directory = FSDirectory.open(dirPath);
+    directory = newFSDirectory(dirPath);
     runTest(directory);
     directory.close();
     _TestUtil.rmDir(dirPath);
