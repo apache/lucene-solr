@@ -18,12 +18,12 @@ package org.apache.lucene.index;
  */
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -36,19 +36,19 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
 
 /*
   Verify we can read the pre-4.0 file format, do searches
@@ -148,6 +148,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   /** This test checks that *only* IndexFormatTooOldExceptions are throws when you open and operate on too old indexes! */
   public void testUnsupportedOldIndexes() throws Exception {
     for(int i=0;i<unsupportedNames.length;i++) {
+      if (VERBOSE) {
+        System.out.println("TEST: index " + unsupportedNames[i]);
+      }
       unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), unsupportedNames[i]);
 
       String fullPath = fullDir(unsupportedNames[i]);
@@ -179,6 +182,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
+        if (VERBOSE) {
+          System.out.println("TEST: got expected exc:");
+          e.printStackTrace(System.out);
+        }
       } finally {
         if (reader != null) reader.close();
         reader = null;
@@ -189,6 +196,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
             // OK -- since IW gives merge scheduler a chance
             // to merge at close, it's possible and fine to
             // hit this exc here
+            writer.close(false);
           }
         }
         writer = null;
