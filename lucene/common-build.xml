@@ -68,6 +68,7 @@
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
+  <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
   <property name="tests.iter" value="1" />
   <property name="tests.seed" value="random" />
   <property name="tests.userdir" value="."/>
@@ -459,6 +460,8 @@
 	      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
               <!-- set the directory tests should run with -->
               <sysproperty key="tests.directory" value="${tests.directory}"/>
+              <!-- set the line file source for oal.util.LineFileDocs -->
+              <sysproperty key="tests.linedocsfile" value="${tests.linedocsfile}"/>
               <!-- set the number of times tests should run -->
               <sysproperty key="tests.iter" value="${tests.iter}"/>
               <!-- set the test seed -->

@@ -128,19 +128,21 @@ public abstract class LuceneTestCase extends Assert {
   // each test case (non-J4 tests) and each test class (J4
   // tests)
   /** Gets the codec to run tests with. */
-  static final String TEST_CODEC = System.getProperty("tests.codec", "randomPerField");
+  public static final String TEST_CODEC = System.getProperty("tests.codec", "randomPerField");
   /** Gets the locale to run tests with */
-  static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
+  public static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
   /** Gets the timezone to run tests with */
-  static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
+  public static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
   /** Gets the directory to run tests with */
-  static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
+  public static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
   /** Get the number of times to run tests */
-  static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
+  public static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
   /** Get the random seed for tests */
-  static final String TEST_SEED = System.getProperty("tests.seed", "random");
+  public static final String TEST_SEED = System.getProperty("tests.seed", "random");
   /** whether or not nightly tests should run */
-  static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
+  public static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
+  /** the line file used by LineFileDocs */
+  public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
   
   private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
 
