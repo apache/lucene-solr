@@ -1993,7 +1993,7 @@ public class IndexWriter implements Closeable {
 
     for (int i = 0; i < segmentInfos.size(); i++) {
       final SegmentInfo info = segmentInfos.info(i);
-      count += info.docCount - info.getDelCount();
+      count += info.docCount - numDeletedDocs(info);
     }
     return count;
   }

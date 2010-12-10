@@ -307,7 +307,7 @@ public class TestNRTThreads extends LuceneTestCase {
       System.out.println("TEST: done join [" + (System.currentTimeMillis()-t0) + " ms]; addCount=" + addCount + " delCount=" + delCount);
     }
     writer.commit();
-    assertEquals(addCount.get() - delCount.get(), writer.numDocs());
+    assertEquals("index=" + writer.segString(), addCount.get() - delCount.get(), writer.numDocs());
       
     writer.close(false);
     dir.close();
