@@ -30,6 +30,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
@@ -79,7 +80,9 @@ public class JettySolrRunner
     this.context = context;
     server = new Server( port );    
     if (System.getProperty("jetty.testMode") != null) {
-      SelectChannelConnector connector = new SelectChannelConnector();
+      // SelectChannelConnector connector = new SelectChannelConnector();
+      // Normal SocketConnector is what solr's example server uses by default
+      SocketConnector connector = new SocketConnector();
       connector.setPort(port);
       connector.setReuseAddress(true);
       server.setConnectors(new Connector[] { connector });
