@@ -829,7 +829,7 @@ public abstract class LuceneTestCase extends Assert {
       if (testMethods != null)
         return testMethods;
       testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
-      testMethods = getTestClass().getAnnotatedMethods(Test.class);
+      testMethods = new ArrayList<FrameworkMethod>();
       for (Method m : getTestClass().getJavaClass().getMethods()) {
         // check if the current test's class has methods annotated with @Ignore
         final Ignore ignored = m.getAnnotation(Ignore.class);
@@ -838,11 +838,11 @@ public abstract class LuceneTestCase extends Assert {
         }
         // add methods starting with "test"
         final int mod = m.getModifiers();
-        if (m.getName().startsWith("test") &&
-            m.getAnnotation(Test.class) == null &&
+        if (m.getAnnotation(Test.class) != null ||
+            (m.getName().startsWith("test") &&
             !Modifier.isAbstract(mod) &&
             m.getParameterTypes().length == 0 &&
-            m.getReturnType() == Void.TYPE)
+            m.getReturnType() == Void.TYPE))
         {
           if (Modifier.isStatic(mod))
             throw new RuntimeException("Test methods must not be static.");
