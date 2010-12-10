@@ -48,6 +48,7 @@ import static org.junit.Assume.*;
 
 // TODO
 //   - mix in optimize, addIndexes
+//   - randomoly mix in non-congruent docs
 
 public class TestNRTThreads extends LuceneTestCase {
 
@@ -216,71 +217,79 @@ public class TestNRTThreads extends LuceneTestCase {
 
       smokeTestReader(r);
 
-      final IndexSearcher s = new IndexSearcher(r);
+      if (r.numDocs() > 0) {
 
-      // run search threads
-      final long searchStopTime = System.currentTimeMillis() + 500;
-      final Thread[] searchThreads = new Thread[NUM_SEARCH_THREADS];
-      final AtomicInteger totHits = new AtomicInteger();
-      for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
-        searchThreads[thread] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              TermsEnum termsEnum = MultiFields.getTerms(s.getIndexReader(), "body").iterator();
-              int seenTermCount = 0;
-              int shift;
-              int trigger;
-              if (totTermCount.get() == 0) {
-                shift = 0;
-                trigger = 1;
-              } else {
-                shift = random.nextInt(totTermCount.get()/10);
-                trigger = totTermCount.get()/10;
-              }
-              while(System.currentTimeMillis() < searchStopTime) {
-                BytesRef term = termsEnum.next();
-                if (term == null) {
-                  totTermCount.set(seenTermCount);
-                  seenTermCount = 0;
-                  trigger = totTermCount.get()/10;
-                  //System.out.println("trigger " + trigger);
-                  shift = random.nextInt(totTermCount.get()/10);
-                  termsEnum.seek(new BytesRef(""));
-                  continue;
-                }
-                seenTermCount++;
-                // search 10 terms
-                if (trigger == 0) {
-                  trigger = 1;
-                }
-                if ((seenTermCount + shift) % trigger == 0) {
-                  //if (VERBOSE) {
-                  //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
-                  //}
-                  totHits.addAndGet(runQuery(s, new TermQuery(new Term("body", term))));
-                }
-              }
-              if (VERBOSE) {
-                System.out.println(Thread.currentThread().getName() + ": search done");
-              }
-            } catch (Throwable t) {
-              failed.set(true);
-              t.printStackTrace(System.out);
-              throw new RuntimeException(t);
-            }
-          }
-          };
-        searchThreads[thread].setDaemon(true);
-        searchThreads[thread].start();
-      }
+        final IndexSearcher s = new IndexSearcher(r);
 
-      for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
-        searchThreads[thread].join();
-      }
+        // run search threads
+        final long searchStopTime = System.currentTimeMillis() + 500;
+        final Thread[] searchThreads = new Thread[NUM_SEARCH_THREADS];
+        final AtomicInteger totHits = new AtomicInteger();
+        for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
+          searchThreads[thread] = new Thread() {
+              @Override
+                public void run() {
+                try {
+                  TermsEnum termsEnum = MultiFields.getTerms(s.getIndexReader(), "body").iterator();
+                  int seenTermCount = 0;
+                  int shift;
+                  int trigger;
+                  if (totTermCount.get() == 0) {
+                    shift = 0;
+                    trigger = 1;
+                  } else {
+                    shift = random.nextInt(totTermCount.get()/10);
+                    trigger = totTermCount.get()/10;
+                  }
+                  while(System.currentTimeMillis() < searchStopTime) {
+                    BytesRef term = termsEnum.next();
+                    if (term == null) {
+                      if (seenTermCount == 0) {
+                        break;
+                      }
+                      totTermCount.set(seenTermCount);
+                      seenTermCount = 0;
+                      trigger = totTermCount.get()/10;
+                      //System.out.println("trigger " + trigger);
+                      shift = random.nextInt(totTermCount.get()/10);
+                      termsEnum.seek(new BytesRef(""));
+                      continue;
+                    }
+                    seenTermCount++;
+                    // search 10 terms
+                    if (trigger == 0) {
+                      trigger = 1;
+                    }
+                    if ((seenTermCount + shift) % trigger == 0) {
+                      //if (VERBOSE) {
+                      //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
+                      //}
+                      totHits.addAndGet(runQuery(s, new TermQuery(new Term("body", term))));
+                    }
+                  }
+                  if (VERBOSE) {
+                    System.out.println(Thread.currentThread().getName() + ": search done");
+                  }
+                } catch (Throwable t) {
+                  failed.set(true);
+                  t.printStackTrace(System.out);
+                  throw new RuntimeException(t);
+                }
+              }
+            };
+          searchThreads[thread].setDaemon(true);
+          searchThreads[thread].start();
+        }
 
-      if (VERBOSE) {
-        System.out.println("TEST: DONE search: totHits=" + totHits);
+        for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
+          searchThreads[thread].join();
+        }
+
+        if (VERBOSE) {
+          System.out.println("TEST: DONE search: totHits=" + totHits);
+        }
+      } else {
+        Thread.sleep(100);
       }
     }
 
