@@ -36,9 +36,9 @@ package org.apache.solr.handler.dataimport;
 public abstract class Evaluator {
 
   /**
-   * Return a String after processing an expression and a VariableResolver
+   * Return a String after processing an expression and a {@link VariableResolver}
    *
-   * @see org.apache.solr.handler.dataimport.VariableResolver
+   * @see VariableResolver
    * @param expression string to be evaluated
    * @param context instance
    * @return the value of the given expression evaluated using the resolver

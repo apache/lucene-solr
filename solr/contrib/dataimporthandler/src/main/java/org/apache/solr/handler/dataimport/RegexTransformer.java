@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 
 /**
  * <p>
- * A Transformer implementation which uses Regular Expressions to extract, split
+ * A {@link Transformer} implementation which uses Regular Expressions to extract, split
  * and replace data in fields.
  * </p>
  * <p/>
@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
  *
  * @version $Id$
  * @since solr 1.3
+ * @see Pattern
  */
 public class RegexTransformer extends Transformer {
   private static final Logger LOG = LoggerFactory.getLogger(RegexTransformer.class);

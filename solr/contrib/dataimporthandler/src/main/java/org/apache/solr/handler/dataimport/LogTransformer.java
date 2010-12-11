@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * A Transformer implementation which logs messages in a given template format.
+ * A {@link Transformer} implementation which logs messages in a given template format.
  * <p/>
  * Refer to <a href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
  * for more details.

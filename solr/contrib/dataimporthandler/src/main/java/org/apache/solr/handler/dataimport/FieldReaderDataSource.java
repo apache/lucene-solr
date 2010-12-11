@@ -28,7 +28,7 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 /**
- * This can be useful for users who have a DB field containing xml and wish to use a nested XPathEntityProcessor
+ * This can be useful for users who have a DB field containing xml and wish to use a nested {@link XPathEntityProcessor}
  * <p/>
  * The datasouce may be configured as follows
  * <p/>
@@ -36,9 +36,9 @@ import java.util.Properties;
  * <p/>
  * The enity which uses this datasource must keep the url value as the variable name url="field-name"
  * <p/>
- * The fieldname must be resolvable from VariableResolver
+ * The fieldname must be resolvable from {@link VariableResolver}
  * <p/>
- * This may be used with any EntityProcessor which uses a DataSource<Reader> eg:XPathEntityProcessor
+ * This may be used with any {@link EntityProcessor} which uses a {@link DataSource}&lt;{@link Reader}&gt; eg: {@link XPathEntityProcessor}
  * <p/>
  * Supports String, BLOB, CLOB data types and there is an extra field (in the entity) 'encoding' for BLOB types
  *

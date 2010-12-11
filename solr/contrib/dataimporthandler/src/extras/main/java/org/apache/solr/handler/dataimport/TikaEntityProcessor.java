@@ -48,10 +48,11 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 /**
- * <p>An implementation of EntityProcessor which reads data from rich docs using Tika
+ * <p>An implementation of {@link EntityProcessor} which reads data from rich docs
+ * using <a href="http://tika.apache.org/">Apache Tika</a>
  *
  * @version $Id$
- * @since solr 1.5
+ * @since solr 3.1
  */
 public class TikaEntityProcessor extends EntityProcessorBase {
   private TikaConfig tikaConfig;

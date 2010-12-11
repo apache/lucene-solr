@@ -25,8 +25,8 @@ import java.util.Map;
 
 /**
  * <p>
- * A Transformer instance capable of executing functions written in scripting
- * languages as a Transformer instance.
+ * A {@link Transformer} instance capable of executing functions written in scripting
+ * languages as a {@link Transformer} instance.
  * </p>
  * <p/>
  * <p>

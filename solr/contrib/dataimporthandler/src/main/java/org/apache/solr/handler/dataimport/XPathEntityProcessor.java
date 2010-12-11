@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * <p> An implementation of EntityProcessor which uses a streaming xpath parser to extract values out of XML documents.
- * It is typically used in conjunction with HttpDataSource or FileDataSource. </p> <p/> <p> Refer to <a
+ * <p> An implementation of {@link EntityProcessor} which uses a streaming xpath parser to extract values out of XML documents.
+ * It is typically used in conjunction with {@link URLDataSource} or {@link FileDataSource}. </p> <p/> <p> Refer to <a
  * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a> for more
  * details. </p>
  * <p/>
