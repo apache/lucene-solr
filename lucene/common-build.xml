@@ -136,7 +136,7 @@
   <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
   <property name="junit.excludes" value=""/>
   <condition property="junit.details.formatter" 
-      value="org.apache.tools.ant.taskdefs.optional.junit.PlainJUnitResultFormatter"
+      value="org.apache.tools.ant.taskdefs.optional.junit.BriefJUnitResultFormatter"
       else="org.apache.lucene.util.LuceneJUnitResultFormatter">
     <isset property="tests.sequential"/>
   </condition>
