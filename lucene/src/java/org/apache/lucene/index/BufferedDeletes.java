@@ -17,153 +17,415 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 import java.util.Map.Entry;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 
-/** Holds buffered deletes, by docID, term or query.  We
- *  hold two instances of this class: one for the deletes
- *  prior to the last flush, the other for deletes after
- *  the last flush.  This is so if we need to abort
- *  (discard all buffered docs) we can also discard the
- *  buffered deletes yet keep the deletes done during
- *  previously flushed segments. */
+/** Holds a {@link SegmentDeletes} for each segment in the
+ *  index. */
+
 class BufferedDeletes {
-  int numTerms;
-  Map<Term,Num> terms;
-  Map<Query,Integer> queries = new HashMap<Query,Integer>();
-  List<Integer> docIDs = new ArrayList<Integer>();
-  long bytesUsed;
-  private final boolean doTermSort;
 
-  public BufferedDeletes(boolean doTermSort) {
-    this.doTermSort = doTermSort;
-    if (doTermSort) {
-      terms = new TreeMap<Term,Num>();
+  // Deletes for all flushed/merged segments:
+  private final Map<SegmentInfo,SegmentDeletes> deletesMap = new HashMap<SegmentInfo,SegmentDeletes>();
+
+  // used only by assert
+  private Term lastDeleteTerm;
+  
+  private PrintStream infoStream;
+  private final AtomicLong bytesUsed = new AtomicLong();
+  private final AtomicInteger numTerms = new AtomicInteger();
+  private final int messageID;
+
+  public BufferedDeletes(int messageID) {
+    this.messageID = messageID;
+  }
+
+  private synchronized void message(String message) {
+    if (infoStream != null) {
+      infoStream.println("BD " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: BD " + message);
+    }
+  }
+  
+  public synchronized void setInfoStream(PrintStream infoStream) {
+    this.infoStream = infoStream;
+  }
+
+  public synchronized void pushDeletes(SegmentDeletes newDeletes, SegmentInfo info) {
+    pushDeletes(newDeletes, info, false);
+  }
+
+  // Moves all pending deletes onto the provided segment,
+  // then clears the pending deletes
+  public synchronized void pushDeletes(SegmentDeletes newDeletes, SegmentInfo info, boolean noLimit) {
+    assert newDeletes.any();
+    numTerms.addAndGet(newDeletes.numTermDeletes.get());
+
+    if (!noLimit) {
+      assert !deletesMap.containsKey(info);
+      assert info != null;
+      deletesMap.put(info, newDeletes);
+      bytesUsed.addAndGet(newDeletes.bytesUsed.get());
     } else {
-      terms = new HashMap<Term,Num>();
+      final SegmentDeletes deletes = getDeletes(info);
+      bytesUsed.addAndGet(-deletes.bytesUsed.get());
+      deletes.update(newDeletes, noLimit);
+      bytesUsed.addAndGet(deletes.bytesUsed.get());
+    }    
+    if (infoStream != null) {
+      message("push deletes seg=" + info + " dels=" + getDeletes(info));
+    }
+    assert checkDeleteStats();    
+  }
+
+  public synchronized void clear() {
+    deletesMap.clear();
+    numTerms.set(0);
+    bytesUsed.set(0);
+  }
+
+  synchronized boolean any() {
+    return bytesUsed.get() != 0;
+  }
+
+  public int numTerms() {
+    return numTerms.get();
+  }
+
+  public long bytesUsed() {
+    return bytesUsed.get();
+  }
+
+  // IW calls this on finishing a merge.  While the merge
+  // was running, it's possible new deletes were pushed onto
+  // our last (and only our last) segment.  In this case we
+  // must carry forward those deletes onto the merged
+  // segment.
+  synchronized void commitMerge(MergePolicy.OneMerge merge) {
+    assert checkDeleteStats();
+    if (infoStream != null) {
+      message("commitMerge merge.info=" + merge.info + " merge.segments=" + merge.segments);
+    }
+    final SegmentInfo lastInfo = merge.segments.lastElement();
+    final SegmentDeletes lastDeletes = deletesMap.get(lastInfo);
+    if (lastDeletes != null) {
+      deletesMap.remove(lastInfo);
+      assert !deletesMap.containsKey(merge.info);
+      deletesMap.put(merge.info, lastDeletes);
+      // don't need to update numTerms/bytesUsed since we
+      // are just moving the deletes from one info to
+      // another
+      if (infoStream != null) {
+        message("commitMerge done: new deletions=" + lastDeletes);
+      }
+    } else if (infoStream != null) {
+      message("commitMerge done: no new deletions");
+    }
+    assert !anyDeletes(merge.segments.range(0, merge.segments.size()-1));
+    assert checkDeleteStats();
+  }
+
+  synchronized void clear(SegmentDeletes deletes) {
+    deletes.clear();
+  }
+  
+  public synchronized boolean applyDeletes(IndexWriter.ReaderPool readerPool, SegmentInfos segmentInfos, SegmentInfos applyInfos) throws IOException {
+    if (!any()) {
+      return false;
+    }
+    final long t0 = System.currentTimeMillis();
+
+    if (infoStream != null) {
+      message("applyDeletes: applyInfos=" + applyInfos + "; index=" + segmentInfos);
+    }
+
+    assert checkDeleteStats();
+
+    assert applyInfos.size() > 0;
+
+    boolean any = false;
+    
+    final SegmentInfo lastApplyInfo = applyInfos.lastElement();
+    final int lastIdx = segmentInfos.indexOf(lastApplyInfo);
+    
+    final SegmentInfo firstInfo = applyInfos.firstElement();
+    final int firstIdx = segmentInfos.indexOf(firstInfo);
+
+    // applyInfos must be a slice of segmentInfos
+    assert lastIdx - firstIdx + 1 == applyInfos.size();
+    
+    // iterate over all segment infos backwards
+    // coalesceing deletes along the way 
+    // when we're at or below the last of the 
+    // segments to apply to, start applying the deletes
+    // we traverse up to the first apply infos
+    SegmentDeletes coalescedDeletes = null;
+    boolean hasDeletes = false;
+    for (int segIdx=segmentInfos.size()-1; segIdx >= firstIdx; segIdx--) {
+      final SegmentInfo info = segmentInfos.info(segIdx);
+      final SegmentDeletes deletes = deletesMap.get(info);
+      assert deletes == null || deletes.any();
+
+      if (deletes == null && coalescedDeletes == null) {
+        continue;
+      }
+
+      if (infoStream != null) {
+        message("applyDeletes: seg=" + info + " segment's deletes=[" + (deletes == null ? "null" : deletes) + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "]");
+      }
+
+      hasDeletes |= deletes != null;
+
+      if (segIdx <= lastIdx && hasDeletes) {
+
+        any |= applyDeletes(readerPool, info, coalescedDeletes, deletes);
+      
+        if (deletes != null) {
+          // we've applied doc ids, and they're only applied
+          // on the current segment
+          bytesUsed.addAndGet(-deletes.docIDs.size() * SegmentDeletes.BYTES_PER_DEL_DOCID);
+          deletes.clearDocIDs();
+        }
+      }
+      
+      // now coalesce at the max limit
+      if (deletes != null) {
+        if (coalescedDeletes == null) {
+          coalescedDeletes = new SegmentDeletes();
+        }
+        // TODO: we could make this single pass (coalesce as
+        // we apply the deletes
+        coalescedDeletes.update(deletes, true);
+      }
+    }
+
+    // move all deletes to segment just before our merge.
+    if (firstIdx > 0) {
+
+      SegmentDeletes mergedDeletes = null;
+      // TODO: we could also make this single pass
+      for (SegmentInfo info : applyInfos) {
+        final SegmentDeletes deletes = deletesMap.get(info);
+        if (deletes != null) {
+          assert deletes.any();
+          if (mergedDeletes == null) {
+            mergedDeletes = getDeletes(segmentInfos.info(firstIdx-1));
+            numTerms.addAndGet(-mergedDeletes.numTermDeletes.get());
+            bytesUsed.addAndGet(-mergedDeletes.bytesUsed.get());
+          }
+
+          mergedDeletes.update(deletes, true);
+        }
+      }
+
+      if (mergedDeletes != null) {
+        numTerms.addAndGet(mergedDeletes.numTermDeletes.get());
+        bytesUsed.addAndGet(mergedDeletes.bytesUsed.get());
+      }
+
+      if (infoStream != null) {
+        if (mergedDeletes != null) {
+          message("applyDeletes: merge all deletes into seg=" + segmentInfos.info(firstIdx-1) + ": " + mergedDeletes);
+        } else {
+          message("applyDeletes: no deletes to merge");
+        }
+      }
+    } else {
+      // We drop the deletes in this case, because we've
+      // applied them to segment infos starting w/ the first
+      // segment.  There are no prior segments so there's no
+      // reason to keep them around.  When the applyInfos ==
+      // segmentInfos this means all deletes have been
+      // removed:
+    }
+    remove(applyInfos);
+
+    assert checkDeleteStats();
+    assert applyInfos != segmentInfos || !any();
+    
+    if (infoStream != null) {
+      message("applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");
+    }
+    return any;
+  }
+  
+  private synchronized boolean applyDeletes(IndexWriter.ReaderPool readerPool,
+                                            SegmentInfo info, 
+                                            SegmentDeletes coalescedDeletes,
+                                            SegmentDeletes segmentDeletes) throws IOException {    
+    assert readerPool.infoIsLive(info);
+    
+    assert coalescedDeletes == null || coalescedDeletes.docIDs.size() == 0;
+    
+    boolean any = false;
+
+    // Lock order: IW -> BD -> RP
+    SegmentReader reader = readerPool.get(info, false);
+    try {
+      if (coalescedDeletes != null) {
+        any |= applyDeletes(coalescedDeletes, reader);
+      }
+      if (segmentDeletes != null) {
+        any |= applyDeletes(segmentDeletes, reader);
+      }
+    } finally {
+      readerPool.release(reader);
+    }
+    return any;
+  }
+  
+  private synchronized boolean applyDeletes(SegmentDeletes deletes, SegmentReader reader) throws IOException {
+    boolean any = false;
+
+    assert checkDeleteTerm(null);
+    
+    if (deletes.terms.size() > 0) {
+      Fields fields = reader.fields();
+      if (fields == null) {
+        // This reader has no postings
+        return false;
+      }
+
+      TermsEnum termsEnum = null;
+        
+      String currentField = null;
+      DocsEnum docs = null;
+        
+      for (Entry<Term,Integer> entry: deletes.terms.entrySet()) {
+        Term term = entry.getKey();
+        // Since we visit terms sorted, we gain performance
+        // by re-using the same TermsEnum and seeking only
+        // forwards
+        if (term.field() != currentField) {
+          assert currentField == null || currentField.compareTo(term.field()) < 0;
+          currentField = term.field();
+          Terms terms = fields.terms(currentField);
+          if (terms != null) {
+            termsEnum = terms.iterator();
+          } else {
+            termsEnum = null;
+          }
+        }
+          
+        if (termsEnum == null) {
+          continue;
+        }
+        assert checkDeleteTerm(term);
+          
+        if (termsEnum.seek(term.bytes(), false) == TermsEnum.SeekStatus.FOUND) {
+          DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
+            
+          if (docsEnum != null) {
+            docs = docsEnum;
+            final int limit = entry.getValue();
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS || docID >= limit) {
+                break;
+              }
+              reader.deleteDocument(docID);
+              any = true;
+            }
+          }
+        }
+      }
+    }
+
+    // Delete by docID
+    for (Integer docIdInt : deletes.docIDs) {
+      int docID = docIdInt.intValue();
+      reader.deleteDocument(docID);
+      any = true;
+    }
+
+    // Delete by query
+    if (deletes.queries.size() > 0) {
+      IndexSearcher searcher = new IndexSearcher(reader);
+      try {
+        for (Entry<Query, Integer> entry : deletes.queries.entrySet()) {
+          Query query = entry.getKey();
+          int limit = entry.getValue().intValue();
+          Weight weight = query.weight(searcher);
+          Scorer scorer = weight.scorer(reader, true, false);
+          if (scorer != null) {
+            while(true)  {
+              int doc = scorer.nextDoc();
+              if (doc >= limit)
+                break;
+              reader.deleteDocument(doc);
+              any = true;
+            }
+          }
+        }
+      } finally {
+        searcher.close();
+      }
+    }
+    return any;
+  }
+  
+  public synchronized SegmentDeletes getDeletes(SegmentInfo info) {
+    SegmentDeletes deletes = deletesMap.get(info);
+    if (deletes == null) {
+      deletes = new SegmentDeletes();
+      deletesMap.put(info, deletes);
+    }
+    return deletes;
+  }
+  
+  public synchronized void remove(SegmentInfos infos) {
+    assert infos.size() > 0;
+    for (SegmentInfo info : infos) {
+      SegmentDeletes deletes = deletesMap.get(info);
+      if (deletes != null) {
+        bytesUsed.addAndGet(-deletes.bytesUsed.get());
+        assert bytesUsed.get() >= 0: "bytesUsed=" + bytesUsed;
+        numTerms.addAndGet(-deletes.numTermDeletes.get());
+        assert numTerms.get() >= 0: "numTerms=" + numTerms;
+        deletesMap.remove(info);
+      }
     }
   }
 
-  // Number of documents a delete term applies to.
-  final static class Num {
-    private int num;
-
-    Num(int num) {
-      this.num = num;
+  // used only by assert
+  private boolean anyDeletes(SegmentInfos infos) {
+    for(SegmentInfo info : infos) {
+      if (deletesMap.containsKey(info)) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    int getNum() {
-      return num;
+  // used only by assert
+  private boolean checkDeleteTerm(Term term) {
+    if (term != null) {
+      assert lastDeleteTerm == null || term.compareTo(lastDeleteTerm) > 0: "lastTerm=" + lastDeleteTerm + " vs term=" + term;
     }
-
-    void setNum(int num) {
-      // Only record the new number if it's greater than the
-      // current one.  This is important because if multiple
-      // threads are replacing the same doc at nearly the
-      // same time, it's possible that one thread that got a
-      // higher docID is scheduled before the other
-      // threads.
-      if (num > this.num)
-        this.num = num;
+    lastDeleteTerm = term;
+    return true;
+  }
+  
+  // only for assert
+  private boolean checkDeleteStats() {
+    int numTerms2 = 0;
+    long bytesUsed2 = 0;
+    for(SegmentDeletes deletes : deletesMap.values()) {
+      numTerms2 += deletes.numTermDeletes.get();
+      bytesUsed2 += deletes.bytesUsed.get();
     }
-  }
-
-  int size() {
-    // We use numTerms not terms.size() intentionally, so
-    // that deletes by the same term multiple times "count",
-    // ie if you ask to flush every 1000 deletes then even
-    // dup'd terms are counted towards that 1000
-    return numTerms + queries.size() + docIDs.size();
-  }
-
-  void update(BufferedDeletes in) {
-    numTerms += in.numTerms;
-    bytesUsed += in.bytesUsed;
-    terms.putAll(in.terms);
-    queries.putAll(in.queries);
-    docIDs.addAll(in.docIDs);
-    in.clear();
-  }
-    
-  void clear() {
-    terms.clear();
-    queries.clear();
-    docIDs.clear();
-    numTerms = 0;
-    bytesUsed = 0;
-  }
-
-  void addBytesUsed(long b) {
-    bytesUsed += b;
-  }
-
-  boolean any() {
-    return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0;
-  }
-
-  // Remaps all buffered deletes based on a completed
-  // merge
-  synchronized void remap(MergeDocIDRemapper mapper,
-                          SegmentInfos infos,
-                          int[][] docMaps,
-                          int[] delCounts,
-                          MergePolicy.OneMerge merge,
-                          int mergeDocCount) {
-
-    final Map<Term,Num> newDeleteTerms;
-
-    // Remap delete-by-term
-    if (terms.size() > 0) {
-      if (doTermSort) {
-        newDeleteTerms = new TreeMap<Term,Num>();
-      } else {
-        newDeleteTerms = new HashMap<Term,Num>();
-      }
-      for(Entry<Term,Num> entry : terms.entrySet()) {
-        Num num = entry.getValue();
-        newDeleteTerms.put(entry.getKey(),
-                           new Num(mapper.remap(num.getNum())));
-      }
-    } else 
-      newDeleteTerms = null;
-    
-
-    // Remap delete-by-docID
-    final List<Integer> newDeleteDocIDs;
-
-    if (docIDs.size() > 0) {
-      newDeleteDocIDs = new ArrayList<Integer>(docIDs.size());
-      for (Integer num : docIDs) {
-        newDeleteDocIDs.add(Integer.valueOf(mapper.remap(num.intValue())));
-      }
-    } else 
-      newDeleteDocIDs = null;
-    
-
-    // Remap delete-by-query
-    final HashMap<Query,Integer> newDeleteQueries;
-    
-    if (queries.size() > 0) {
-      newDeleteQueries = new HashMap<Query, Integer>(queries.size());
-      for(Entry<Query,Integer> entry: queries.entrySet()) {
-        Integer num = entry.getValue();
-        newDeleteQueries.put(entry.getKey(),
-                             Integer.valueOf(mapper.remap(num.intValue())));
-      }
-    } else
-      newDeleteQueries = null;
-
-    if (newDeleteTerms != null)
-      terms = newDeleteTerms;
-    if (newDeleteDocIDs != null)
-      docIDs = newDeleteDocIDs;
-    if (newDeleteQueries != null)
-      queries = newDeleteQueries;
+    assert numTerms2 == numTerms.get(): "numTerms2=" + numTerms2 + " vs " + numTerms.get();
+    assert bytesUsed2 == bytesUsed.get(): "bytesUsed2=" + bytesUsed2 + " vs " + bytesUsed;
+    return true;
   }
 }

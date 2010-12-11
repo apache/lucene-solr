@@ -361,6 +361,10 @@ public final class SegmentInfo {
     return docStoreSegment;
   }
   
+  public void setDocStoreSegment(String segment) {
+    docStoreSegment = segment;
+  }
+  
   void setDocStoreOffset(int offset) {
     docStoreOffset = offset;
     clearFiles();
@@ -534,6 +538,12 @@ public final class SegmentInfo {
     
     if (docStoreOffset != -1) {
       s.append("->").append(docStoreSegment);
+      if (docStoreIsCompoundFile) {
+        s.append('c');
+      } else {
+        s.append('C');
+      }
+      s.append('+').append(docStoreOffset);
     }
 
     return s.toString();

@@ -47,28 +47,34 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   public void testAddDocumentOnDiskFull() throws IOException {
 
     for(int pass=0;pass<2;pass++) {
-      if (VERBOSE)
+      if (VERBOSE) {
         System.out.println("TEST: pass=" + pass);
+      }
       boolean doAbort = pass == 1;
       long diskFree = 200;
       while(true) {
-        if (VERBOSE)
+        if (VERBOSE) {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
+        }
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
         writer.setInfoStream(VERBOSE ? System.out : null);
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
-        if (ms instanceof ConcurrentMergeScheduler)
+        if (ms instanceof ConcurrentMergeScheduler) {
           // This test intentionally produces exceptions
           // in the threads that CMS launches; we don't
           // want to pollute test output with these.
           ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+        }
 
         boolean hitError = false;
         try {
           for(int i=0;i<200;i++) {
             addDoc(writer);
+          }
+          if (VERBOSE) {
+            System.out.println("TEST: done adding docs; now commit");
           }
           writer.commit();
         } catch (IOException e) {
@@ -81,13 +87,19 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
         if (hitError) {
           if (doAbort) {
+            if (VERBOSE) {
+              System.out.println("TEST: now rollback");
+            }
             writer.rollback();
           } else {
             try {
+              if (VERBOSE) {
+                System.out.println("TEST: now close");
+              }
               writer.close();
             } catch (IOException e) {
               if (VERBOSE) {
-                System.out.println("TEST: exception on close");
+                System.out.println("TEST: exception on close; retry w/ no disk space limit");
                 e.printStackTrace(System.out);
               }
               dir.setMaxSizeInBytes(0);

@@ -114,6 +114,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(1));
+
+    writer.setInfoStream(VERBOSE ? System.out : null);
+    writer.addDocument(new Document());
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
@@ -125,11 +128,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   // test when delete terms only apply to ram segments
   public void testRAMDeletes() throws IOException {
     for(int t=0;t<2;t++) {
+      if (VERBOSE) {
+        System.out.println("TEST: t=" + t);
+      }
       Directory dir = newDirectory();
       IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(4)
           .setMaxBufferedDeleteTerms(4));
-
+      modifier.setInfoStream(VERBOSE ? System.out : null);
       int id = 0;
       int value = 100;
 
@@ -439,6 +445,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Iterate w/ ever increasing free disk space:
     while (!done) {
+      if (VERBOSE) {
+        System.out.println("TEST: cycle");
+      }
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
       dir.setPreventDoubleWrite(false);
       IndexWriter modifier = new IndexWriter(dir,
@@ -448,6 +457,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                              .setMaxBufferedDeleteTerms(1000)
                                              .setMergeScheduler(new ConcurrentMergeScheduler()));
       ((ConcurrentMergeScheduler) modifier.getConfig().getMergeScheduler()).setSuppressExceptions();
+      modifier.setInfoStream(VERBOSE ? System.out : null);
 
       // For each disk size, first try to commit against
       // dir that will hit random IOExceptions & disk
@@ -456,6 +466,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       boolean success = false;
 
       for (int x = 0; x < 2; x++) {
+        if (VERBOSE) {
+          System.out.println("TEST: x=" + x);
+        }
 
         double rate = 0.1;
         double diskRatio = ((double)diskFree) / diskUsage;
