@@ -26,7 +26,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 
 /**
  * <p>
- * A DataSource which reads from local files
+ * A {@link DataSource} which reads from local files
  * </p>
  * <p>
  * The file is read with the default platform encoding. It can be overriden by

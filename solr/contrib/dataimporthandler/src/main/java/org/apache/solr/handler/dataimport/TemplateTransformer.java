@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * A Transformer which can put values into a column by resolving an expression
+ * A {@link Transformer} which can put values into a column by resolving an expression
  * containing other columns
  * </p>
  * <p/>
