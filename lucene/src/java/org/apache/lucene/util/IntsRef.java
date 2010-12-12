@@ -21,7 +21,7 @@ package org.apache.lucene.util;
  *  existing int[].
  *
  *  @lucene.internal */
-public final class IntsRef {
+public final class IntsRef implements Comparable<IntsRef> {
 
   public int[] ints;
   public int offset;
@@ -81,6 +81,31 @@ public final class IntsRef {
     }
   }
 
+  /** Signed int order comparison */
+  public int compareTo(IntsRef other) {
+    if (this == other) return 0;
+
+    final int[] aInts = this.ints;
+    int aUpto = this.offset;
+    final int[] bInts = other.ints;
+    int bUpto = other.offset;
+
+    final int aStop = aUpto + Math.min(this.length, other.length);
+
+    while(aUpto < aStop) {
+      int aInt = aInts[aUpto++];
+      int bInt = bInts[bUpto++];
+      if (aInt > bInt) {
+        return 1;
+      } else if (aInt < bInt) {
+        return -1;
+      }
+    }
+
+    // One is a prefix of the other, or, they are equal:
+    return this.length - other.length;
+  }
+
   public void copy(IntsRef other) {
     if (ints == null) {
       ints = new int[other.length];
@@ -96,5 +121,19 @@ public final class IntsRef {
     if (ints.length < newLength) {
       ints = ArrayUtil.grow(ints, newLength);
     }
+  }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append('[');
+    final int end = offset + length;
+    for(int i=offset;i<end;i++) {
+      if (i > offset) {
+        sb.append(' ');
+      }
+      sb.append(Integer.toHexString(ints[i]));
+    }
+    sb.append(']');
+    return sb.toString();
   }
 }

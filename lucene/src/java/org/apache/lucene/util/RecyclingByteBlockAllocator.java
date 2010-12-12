@@ -93,13 +93,7 @@ public final class RecyclingByteBlockAllocator extends ByteBlockPool.Allocator {
   @Override
   public synchronized void recycleByteBlocks(byte[][] blocks, int start, int end) {
     final int numBlocks = Math.min(maxBufferedBlocks - freeBlocks, end - start);
-    final int size = freeBlocks + numBlocks;
-    if (size >= freeByteBlocks.length) {
-      final byte[][] newBlocks = new byte[ArrayUtil.oversize(size,
-          RamUsageEstimator.NUM_BYTES_OBJ_REF)][];
-      System.arraycopy(freeByteBlocks, 0, newBlocks, 0, freeBlocks);
-      freeByteBlocks = newBlocks;
-    }
+    freeByteBlocks = ArrayUtil.grow(freeByteBlocks, freeBlocks + numBlocks);
     final int stop = start + numBlocks;
     for (int i = start; i < stop; i++) {
       freeByteBlocks[freeBlocks++] = blocks[i];

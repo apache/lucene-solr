@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Finite-state automaton with regular expression operations.
@@ -281,9 +280,7 @@ public class Automaton implements Serializable, Cloneable {
             worklist.add(t.to);
             t.to.number = upto;
             if (upto == numberedStates.length) {
-              final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
-              System.arraycopy(numberedStates, 0, newArray, 0, upto);
-              numberedStates = newArray;
+              numberedStates = ArrayUtil.grow(numberedStates);
             }
             numberedStates[upto] = t.to;
             upto++;
