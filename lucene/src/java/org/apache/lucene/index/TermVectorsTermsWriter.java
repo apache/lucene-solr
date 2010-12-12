@@ -54,7 +54,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     // hit non-aborting exceptions, in which case we will
     // not have yet init'd the TermVectorsWriter.  This is
     // actually OK (unlike in the stored fields case)
-    // because, although IieldInfos.hasVectors() will return
+    // because, although FieldInfos.hasVectors() will return
     // true, the TermVectorsReader gracefully handles
     // non-existence of the term vectors files.
 
