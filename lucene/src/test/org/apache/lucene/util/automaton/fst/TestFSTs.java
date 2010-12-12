@@ -926,7 +926,7 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     final LineFileDocs docs = new LineFileDocs(false);
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : 1;
+    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 100 : 1;
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
@@ -972,6 +972,9 @@ public class TestFSTs extends LuceneTestCase {
         }
         builder.add(term, outputs.get(output));
         ord++;
+        if (ord % 100000 == 0 && LuceneTestCase.TEST_NIGHTLY) {
+          System.out.println(ord + " terms...");
+        }
       }
       final FST<Long> fst = builder.finish();
       if (VERBOSE) {
