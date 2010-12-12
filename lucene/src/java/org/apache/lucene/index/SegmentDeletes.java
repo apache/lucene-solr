@@ -48,19 +48,19 @@ class SegmentDeletes {
      Term's text is String (OBJ_HEADER + 4*INT + POINTER +
      OBJ_HEADER + string.length*CHAR).  Integer is
      OBJ_HEADER + INT. */
-  final static int BYTES_PER_DEL_TERM = 8*RamUsageEstimator.NUM_BYTES_OBJ_REF + 5*RamUsageEstimator.NUM_BYTES_OBJ_HEADER + 6*RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_DEL_TERM = 8*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 5*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 6*RamUsageEstimator.NUM_BYTES_INT;
 
   /* Rough logic: del docIDs are List<Integer>.  Say list
      allocates ~2X size (2*POINTER).  Integer is OBJ_HEADER
      + int */
-  final static int BYTES_PER_DEL_DOCID = 2*RamUsageEstimator.NUM_BYTES_OBJ_REF + RamUsageEstimator.NUM_BYTES_OBJ_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_DEL_DOCID = 2*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
 
   /* Rough logic: HashMap has an array[Entry] w/ varying
      load factor (say 2 * POINTER).  Entry is object w/
      Query key, Integer val, int hash, Entry next
      (OBJ_HEADER + 3*POINTER + INT).  Query we often
      undercount (say 24 bytes).  Integer is OBJ_HEADER + INT. */
-  final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJ_REF + 2*RamUsageEstimator.NUM_BYTES_OBJ_HEADER + 2*RamUsageEstimator.NUM_BYTES_INT + 24;
+  final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*RamUsageEstimator.NUM_BYTES_INT + 24;
 
   // TODO: many of the deletes stored here will map to
   // Integer.MAX_VALUE; we could be more efficient for this

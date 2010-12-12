@@ -433,7 +433,7 @@ public final class ArrayUtil {
   public static <T> T[] grow(T[] array, int minSize) {
     if (array.length < minSize) {
       @SuppressWarnings("unchecked") final T[] newArray =
-        (T[]) Array.newInstance(array.getClass().getComponentType(), oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJ_REF));
+        (T[]) Array.newInstance(array.getClass().getComponentType(), oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
       System.arraycopy(array, 0, newArray, 0, array.length);
       return newArray;
     } else
@@ -445,7 +445,7 @@ public final class ArrayUtil {
   }
 
   public static <T> T[] shrink(T[] array, int targetSize) {
-    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_OBJ_REF);
+    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
     if (newSize != array.length) {
       @SuppressWarnings("unchecked") final T[] newArray =
         (T[]) Array.newInstance(array.getClass().getComponentType(), newSize);

@@ -43,9 +43,10 @@ public final class RamUsageEstimator {
   public final static int NUM_BYTES_LONG = 8;
   public final static int NUM_BYTES_FLOAT = 4;
   public final static int NUM_BYTES_DOUBLE = 8;
-  public final static int NUM_BYTES_OBJ_HEADER = 8;
-  public final static int NUM_BYTES_OBJ_REF = Constants.JRE_IS_64BIT ? 8 : 4;
-  public final static int NUM_BYTES_ARRAY_HEADER = NUM_BYTES_OBJ_HEADER + NUM_BYTES_INT + NUM_BYTES_OBJ_REF;
+  public final static int NUM_BYTES_CHAR = 2;
+  public final static int NUM_BYTES_OBJECT_HEADER = 8;
+  public final static int NUM_BYTES_OBJECT_REF = Constants.JRE_IS_64BIT ? 8 : 4;
+  public final static int NUM_BYTES_ARRAY_HEADER = NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT + NUM_BYTES_OBJECT_REF;
 
   private MemoryModel memoryModel;
 
@@ -54,9 +55,6 @@ public final class RamUsageEstimator {
   private int refSize;
   private int arraySize;
   private int classSize;
-
-  public final static int NUM_BYTES_OBJECT_REF = Constants.JRE_IS_64BIT ? 8 : 4;
-  public final static int NUM_BYTES_CHAR = 2;
 
   private boolean checkInterned;
 
