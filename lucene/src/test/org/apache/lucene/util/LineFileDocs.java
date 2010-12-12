@@ -18,7 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.Closeable;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -63,9 +63,10 @@ public class LineFileDocs implements Closeable {
   private synchronized void open() throws IOException {
     InputStream is = getClass().getResourceAsStream(path);
     if (is == null) {
-      throw new FileNotFoundException("cannot find line docs resource \"" + path + "\"");
+      // if its not in classpath, we load it as absolute filesystem path (e.g. Hudson's home dir)
+      is = new FileInputStream(path);
     }
-    if (path.toString().endsWith(".gz")) {
+    if (path.endsWith(".gz")) {
       is = new GZIPInputStream(is);
     }
     final InputStream in = new BufferedInputStream(is, BUFFER_SIZE);
