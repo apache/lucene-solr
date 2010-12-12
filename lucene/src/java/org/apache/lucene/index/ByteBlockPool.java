@@ -85,12 +85,7 @@ final class ByteBlockPool {
   }
 
   public void nextBuffer() {
-    if (1+bufferUpto == buffers.length) {
-      byte[][] newBuffers = new byte[ArrayUtil.oversize(buffers.length+1,
-                                                        NUM_BYTES_OBJECT_REF)][];
-      System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
-      buffers = newBuffers;
-    }
+    buffers = ArrayUtil.grow(buffers, 2+bufferUpto);
     buffer = buffers[1+bufferUpto] = allocator.getByteBlock();
     bufferUpto++;
 

@@ -236,6 +236,42 @@ public final class ArrayUtil {
       return currentSize;
   }
 
+  public static short[] grow(short[] array, int minSize) {
+    if (array.length < minSize) {
+      short[] newArray = new short[oversize(minSize, RamUsageEstimator.NUM_BYTES_SHORT)];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static short[] grow(short[] array) {
+    return grow(array, 1 + array.length);
+  }
+  
+  public static float[] grow(float[] array, int minSize) {
+    if (array.length < minSize) {
+      float[] newArray = new float[oversize(minSize, RamUsageEstimator.NUM_BYTES_FLOAT)];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static float[] grow(float[] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static short[] shrink(short[] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_SHORT);
+    if (newSize != array.length) {
+      short[] newArray = new short[newSize];
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else
+      return array;
+  }
+
   public static int[] grow(int[] array, int minSize) {
     if (array.length < minSize) {
       int[] newArray = new int[oversize(minSize, RamUsageEstimator.NUM_BYTES_INT)];
@@ -299,6 +335,29 @@ public final class ArrayUtil {
     final int newSize = getShrinkSize(array.length, targetSize, 1);
     if (newSize != array.length) {
       byte[] newArray = new byte[newSize];
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static boolean[] grow(boolean[] array, int minSize) {
+    if (array.length < minSize) {
+      boolean[] newArray = new boolean[oversize(minSize, 1)];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static boolean[] grow(boolean[] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static boolean[] shrink(boolean[] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, 1);
+    if (newSize != array.length) {
+      boolean[] newArray = new boolean[newSize];
       System.arraycopy(array, 0, newArray, 0, newSize);
       return newArray;
     } else
