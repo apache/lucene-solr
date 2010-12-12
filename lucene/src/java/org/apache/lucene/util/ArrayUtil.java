@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.lang.reflect.Array;
 
 /**
  * Methods for manipulating arrays.
@@ -339,7 +340,7 @@ public final class ArrayUtil {
   }
 
   /**
-   * Returns hash of chars in range start (inclusive) to
+   * Returns hash of bytes in range start (inclusive) to
    * end (inclusive)
    */
   public static int hashCode(byte[] array, int start, int end) {
@@ -347,6 +348,98 @@ public final class ArrayUtil {
     for (int i = end - 1; i >= start; i--)
       code = code * 31 + array[i];
     return code;
+  }
+
+
+  // Since Arrays.equals doesn't implement offsets for equals
+  /**
+   * See if two array slices are the same.
+   *
+   * @param left        The left array to compare
+   * @param offsetLeft  The offset into the array.  Must be positive
+   * @param right       The right array to compare
+   * @param offsetRight the offset into the right array.  Must be positive
+   * @param length      The length of the section of the array to compare
+   * @return true if the two arrays, starting at their respective offsets, are equal
+   * 
+   * @see java.util.Arrays#equals(char[], char[])
+   */
+  public static boolean equals(char[] left, int offsetLeft, char[] right, int offsetRight, int length) {
+    if ((offsetLeft + length <= left.length) && (offsetRight + length <= right.length)) {
+      for (int i = 0; i < length; i++) {
+        if (left[offsetLeft + i] != right[offsetRight + i]) {
+          return false;
+        }
+
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public static <T> T[] grow(T[] array, int minSize) {
+    if (array.length < minSize) {
+      @SuppressWarnings("unchecked") final T[] newArray =
+        (T[]) Array.newInstance(array.getClass().getComponentType(), oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static <T> T[] grow(T[] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static <T> T[] shrink(T[] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+    if (newSize != array.length) {
+      @SuppressWarnings("unchecked") final T[] newArray =
+        (T[]) Array.newInstance(array.getClass().getComponentType(), newSize);
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else
+      return array;
+  }
+
+  // Since Arrays.equals doesn't implement offsets for equals
+  /**
+   * See if two array slices are the same.
+   *
+   * @param left        The left array to compare
+   * @param offsetLeft  The offset into the array.  Must be positive
+   * @param right       The right array to compare
+   * @param offsetRight the offset into the right array.  Must be positive
+   * @param length      The length of the section of the array to compare
+   * @return true if the two arrays, starting at their respective offsets, are equal
+   * 
+   * @see java.util.Arrays#equals(char[], char[])
+   */
+  public static boolean equals(int[] left, int offsetLeft, int[] right, int offsetRight, int length) {
+    if ((offsetLeft + length <= left.length) && (offsetRight + length <= right.length)) {
+      for (int i = 0; i < length; i++) {
+        if (left[offsetLeft + i] != right[offsetRight + i]) {
+          return false;
+        }
+
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public static int[] toIntArray(Collection<Integer> ints) {
+
+    final int[] result = new int[ints.size()];
+    int upto = 0;
+    for(int v : ints) {
+      result[upto++] = v;
+    }
+
+    // paranoia:
+    assert upto == result.length;
+
+    return result;
   }
   
   /** SorterTemplate with custom {@link Comparator} */
