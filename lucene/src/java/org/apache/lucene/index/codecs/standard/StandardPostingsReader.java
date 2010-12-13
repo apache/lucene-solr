@@ -82,16 +82,15 @@ public class StandardPostingsReader extends PostingsReaderBase {
     maxSkipLevels = termsIn.readInt();
   }
 
-  private static class DocTermState extends TermState {
+  // Must keep final because we do non-standard clone
+  private final static class DocTermState extends TermState {
     long freqOffset;
     long proxOffset;
     int skipOffset;
 
     public Object clone() {
-      DocTermState other = (DocTermState) super.clone();
-      other.freqOffset = freqOffset;
-      other.proxOffset = proxOffset;
-      other.skipOffset = skipOffset;
+      DocTermState other = new DocTermState();
+      other.copy(this);
       return other;
     }
 
