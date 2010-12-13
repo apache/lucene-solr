@@ -28,7 +28,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -644,13 +643,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /**
    * Returns <code>true</code> if an index exists at the specified directory.
-   * If the directory does not exist or if there is no index in it.
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean indexExists(Directory directory) throws IOException {
-    return SegmentInfos.getCurrentSegmentGeneration(directory) != -1;
+    try {
+      new SegmentInfos().read(directory);
+      return true;
+    } catch (IOException ioe) {
+      return false;
+    }
   }
 
   /** Returns the number of documents in this index. */
