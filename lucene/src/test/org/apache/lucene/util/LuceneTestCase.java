@@ -951,7 +951,7 @@ public abstract class LuceneTestCase extends Assert {
   // extra params that were overridden needed to reproduce the command
   private String reproduceWithExtraParams() {
     StringBuilder sb = new StringBuilder();
-    if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
+    if (!TEST_CODEC.equals("randomPerField")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
     if (!TEST_LOCALE.equals("random")) sb.append(" -Dtests.locale=").append(TEST_LOCALE);
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
