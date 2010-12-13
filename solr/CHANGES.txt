@@ -473,6 +473,9 @@ Bug Fixes
 * SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
   (koji)
 
+* SOLR-2219: The init() method of every SolrRequestHandler was being
+  called twice. (ambikeshwar singh and hossman)
+
 Other Changes
 ----------------------
 
