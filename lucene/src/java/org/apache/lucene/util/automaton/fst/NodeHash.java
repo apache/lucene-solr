@@ -28,8 +28,6 @@ final class NodeHash<T> {
   private final FST<T> fst;
   private final FST.Arc<T> scratchArc = new FST.Arc<T>();
 
-  public static int conf;
-
   public NodeHash(FST<T> fst) {
     table = new int[16];
     mask = 15;
@@ -113,10 +111,9 @@ final class NodeHash<T> {
   public int add(Builder.UnCompiledNode<T> node) throws IOException {
     // System.out.println("hash: add count=" + count + " vs " + table.length);
     final int h = hash(node);
-    int h2 = h;
-    int c = 1;
+    int pos = h & mask;
+    int c = 0;
     while(true) {
-      final int pos = h2 & mask;
       final int v = table[pos];
       if (v == 0) {
         // freeze & add
@@ -135,28 +132,22 @@ final class NodeHash<T> {
       }
 
       // quadratic probe
-      h2 = h+(c + c*c)/2;
-      c++;
-      conf++;
+      pos = (pos + (++c)) & mask;
     }
   }
 
   // called only by rehash
   private void addNew(int address) throws IOException {
-    final int h = hash(address);
-    int h2 = h;
-    int c = 1;
+    int pos = hash(address) & mask;
+    int c = 0;
     while(true) {
-      final int pos = h2 & mask;
       if (table[pos] == 0) {
         table[pos] = address;
         break;
       }
 
       // quadratic probe
-      h2 = h + (c + c*c)/2;
-      c++;
-      conf++;
+      pos = (pos + (++c)) & mask;
     }
   }
 
