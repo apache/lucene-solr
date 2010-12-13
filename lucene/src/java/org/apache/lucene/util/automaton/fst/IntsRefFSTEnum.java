@@ -19,6 +19,7 @@ package org.apache.lucene.util.automaton.fst;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
 
@@ -30,7 +31,7 @@ public class IntsRefFSTEnum<T> {
   private final FST<T> fst;
 
   private IntsRef current = new IntsRef(10);
-  @SuppressWarnings("unchecked") private FST.Arc<T>[] arcs = (FST.Arc<T>[]) new FST.Arc[10];
+  @SuppressWarnings("unchecked") private FST.Arc<T>[] arcs = new FST.Arc[10];
   // outputs are cumulative
   @SuppressWarnings("unchecked") private T[] output = (T[]) new Object[10];
 
@@ -235,8 +236,18 @@ public class IntsRefFSTEnum<T> {
   private void grow() {
     final int l = current.length + 1;
     current.grow(l);
-    arcs = ArrayUtil.grow(arcs, l);
-    output = ArrayUtil.grow(output, l);
+    if (arcs.length < l) {
+      @SuppressWarnings("unchecked") final FST.Arc<T>[] newArcs =
+        new FST.Arc[ArrayUtil.oversize(l, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      System.arraycopy(arcs, 0, newArcs, 0, arcs.length);
+      arcs = newArcs;
+    }
+    if (output.length < l) {
+      @SuppressWarnings("unchecked") final T[] newOutput =
+        (T[]) new Object[ArrayUtil.oversize(l, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      System.arraycopy(output, 0, newOutput, 0, output.length);
+      output = newOutput;
+    }
   }
 
   private void appendOutput(T addedOutput) {

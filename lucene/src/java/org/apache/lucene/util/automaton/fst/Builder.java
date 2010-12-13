@@ -18,6 +18,7 @@ package org.apache.lucene.util.automaton.fst;
  */
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -287,7 +288,9 @@ public class Builder<T> {
     final int prefixLenPlus1 = pos1+1;
       
     if (frontier.length < input.length+1) {
-      final UnCompiledNode<T>[] next = ArrayUtil.grow(frontier, input.length+1);
+      @SuppressWarnings("unchecked") final UnCompiledNode<T>[] next =
+        new UnCompiledNode[ArrayUtil.oversize(input.length+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      System.arraycopy(frontier, 0, next, 0, frontier.length);
       for(int idx=frontier.length;idx<next.length;idx++) {
         next[idx] = new UnCompiledNode<T>(this);
       }
@@ -450,7 +453,9 @@ public class Builder<T> {
       assert label >= 0;
       assert numArcs == 0 || label > arcs[numArcs-1].label: "arc[-1].label=" + arcs[numArcs-1].label + " new label=" + label + " numArcs=" + numArcs;
       if (numArcs == arcs.length) {
-        final Arc<T>[] newArcs = ArrayUtil.grow(arcs);
+        @SuppressWarnings("unchecked") final Arc<T>[] newArcs =
+          new Arc[ArrayUtil.oversize(numArcs+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        System.arraycopy(arcs, 0, newArcs, 0, arcs.length);
         for(int arcIdx=numArcs;arcIdx<newArcs.length;arcIdx++) {
           newArcs[arcIdx] = new Arc<T>();
         }

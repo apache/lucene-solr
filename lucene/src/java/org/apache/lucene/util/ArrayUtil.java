@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.lang.reflect.Array;
 
 /**
  * Methods for manipulating arrays.
@@ -430,6 +429,7 @@ public final class ArrayUtil {
     return false;
   }
 
+  /* DISABLE THIS FOR NOW: This has performance problems until Java creates intrinsics for Class#getComponentType() and Array.newInstance()
   public static <T> T[] grow(T[] array, int minSize) {
     if (array.length < minSize) {
       @SuppressWarnings("unchecked") final T[] newArray =
@@ -454,6 +454,7 @@ public final class ArrayUtil {
     } else
       return array;
   }
+  */
 
   // Since Arrays.equals doesn't implement offsets for equals
   /**
