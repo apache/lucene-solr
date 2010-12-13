@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.lang.reflect.Array;
 
 /**
  * Methods for manipulating arrays.
@@ -434,31 +433,6 @@ public final class ArrayUtil {
       return true;
     }
     return false;
-  }
-
-  public static <T> T[] grow(T[] array, int minSize) {
-    if (array.length < minSize) {
-      @SuppressWarnings("unchecked") final T[] newArray =
-        (T[]) Array.newInstance(array.getClass().getComponentType(), oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
-      System.arraycopy(array, 0, newArray, 0, array.length);
-      return newArray;
-    } else
-      return array;
-  }
-
-  public static <T> T[] grow(T[] array) {
-    return grow(array, 1 + array.length);
-  }
-
-  public static <T> T[] shrink(T[] array, int targetSize) {
-    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-    if (newSize != array.length) {
-      @SuppressWarnings("unchecked") final T[] newArray =
-        (T[]) Array.newInstance(array.getClass().getComponentType(), newSize);
-      System.arraycopy(array, 0, newArray, 0, newSize);
-      return newArray;
-    } else
-      return array;
   }
 
   // Since Arrays.equals doesn't implement offsets for equals
