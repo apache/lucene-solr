@@ -23,6 +23,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
@@ -66,6 +67,16 @@ public class ResponseBuilder
   private Query highlightQuery = null;
 
   public List<SearchComponent> components;
+
+  SolrRequestInfo requestInfo;
+
+  public ResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components)
+  {
+    this.req = req;
+    this.rsp = rsp;
+    this.components = components;
+    this.requestInfo = SolrRequestInfo.getRequestInfo();
+  }
 
   //////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////

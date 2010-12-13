@@ -153,10 +153,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     request = req("qt", "spellCheckCompRH", "q", "*:*", "spellcheck.q", "ttle",
         "spellcheck", "true", "spellcheck.dictionary", "default",
         "spellcheck.reload", "true");
-    ResponseBuilder rb = new ResponseBuilder();
-    rb.req = request;
-    rb.rsp = new SolrQueryResponse();
-    rb.components = new ArrayList(h.getCore().getSearchComponents().values());
+    ResponseBuilder rb = new ResponseBuilder(request, new SolrQueryResponse(), new ArrayList(h.getCore().getSearchComponents().values()));
     checker.prepare(rb);
 
     try {

@@ -318,6 +318,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z/SECOND,2009-08-31T12:10:10.124Z/SECOND)", "fq","id:1"), "//float[@name='score']='0.0'");
 
+    // test that we can specify "NOW"
+    assertQ(req("fl","*,score","q", "{!func}ms(NOW)", "NOW","1000"), "//float[@name='score']='1000.0'");
+
+
     for (int i=100; i<112; i++) {
       assertU(adoc("id",""+i, "text","batman"));
     }

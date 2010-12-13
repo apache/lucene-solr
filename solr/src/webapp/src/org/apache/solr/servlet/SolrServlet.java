@@ -20,6 +20,8 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+
+import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +84,7 @@ public class SolrServlet extends HttpServlet {
         log.warn("Unknown Request Handler '" + solrReq.getQueryType() +"' :" + solrReq);
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + solrReq.getQueryType() + "'", true);
       }
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
       core.execute(handler, solrReq, solrRsp );
       if (solrRsp.getException() == null) {
         QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
@@ -105,6 +108,7 @@ public class SolrServlet extends HttpServlet {
     } finally {
       // This releases the IndexReader associated with the request
       solrReq.close();
+      SolrRequestInfo.clearRequestInfo();      
     }
   }
 
