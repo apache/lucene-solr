@@ -628,6 +628,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             if (!seen) {
               // Only fail once we are no longer in applyDeletes
               failed = true;
+              if (VERBOSE) {
+                System.out.println("TEST: mock failure: now fail");
+                new Throwable().printStackTrace(System.out);
+              }
               throw new IOException("fail after applyDeletes");
             }
           }
@@ -635,6 +639,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             StackTraceElement[] trace = new Exception().getStackTrace();
             for (int i = 0; i < trace.length; i++) {
               if ("applyDeletes".equals(trace[i].getMethodName())) {
+                if (VERBOSE) {
+                  System.out.println("TEST: mock failure: saw applyDeletes");
+                  new Throwable().printStackTrace(System.out);
+                }
                 sawMaybe = true;
                 break;
               }
@@ -654,6 +662,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDeleteTerms(2).setReaderPooling(false));
+    modifier.setInfoStream(VERBOSE ? System.out : null);
+
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(true);
     lmp.setUseCompoundDocStore(true);
@@ -674,7 +684,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
     // flush (and commit if ac)
 
+    if (VERBOSE) {
+      System.out.println("TEST: now optimize");
+    }
+
     modifier.optimize();
+    if (VERBOSE) {
+      System.out.println("TEST: now commit");
+    }
     modifier.commit();
 
     // one of the two files hits
@@ -688,11 +705,18 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // delete the doc
     // max buf del terms is two, so this is buffered
 
+    if (VERBOSE) {
+      System.out.println("TEST: delete term=" + term);
+    }
+
     modifier.deleteDocuments(term);
 
     // add a doc (needed for the !ac case; see below)
     // doc remains buffered
 
+    if (VERBOSE) {
+      System.out.println("TEST: add empty doc");
+    }
     Document doc = new Document();
     modifier.addDocument(doc);
 
@@ -710,6 +734,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // lose deletes if failing while creating the cfs file)
     boolean failed = false;
     try {
+      if (VERBOSE) {
+        System.out.println("TEST: now commit for failure");
+      }
       modifier.commit();
     } catch (IOException ioe) {
       // expected
