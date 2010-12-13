@@ -365,13 +365,15 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testSortByFunc() throws Exception {
-    assertU(adoc("id", "1", "x_i", "100"));
-    assertU(adoc("id", "2", "x_i", "300"));
-    assertU(adoc("id", "3", "x_i", "200"));
+    assertU(adoc("id", "1", "const_s", "xx", "x_i", "100", "1_s", "a"));
+    assertU(adoc("id", "2", "const_s", "xx", "x_i", "300", "1_s", "c"));
+    assertU(adoc("id", "3", "const_s", "xx", "x_i", "200", "1_s", "b"));
     assertU(commit());
 
     String desc = "/response/docs==[{'x_i':300},{'x_i':200},{'x_i':100}]";
     String asc =  "/response/docs==[{'x_i':100},{'x_i':200},{'x_i':300}]";
+
+    String threeonetwo =  "/response/docs==[{'x_i':200},{'x_i':100},{'x_i':300}]";
 
     String q = "id:[1 TO 3]";
     assertJQ(req("q",q,  "fl","x_i", "sort","add(x_i,x_i) desc")
@@ -379,27 +381,32 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     );
 
     // param sub of entire function
-    assertJQ(req("q",q,  "fl","x_i", "sort", "$x asc", "x","add(x_i,x_i)")
+    assertJQ(req("q",q,  "fl","x_i", "sort", "const_s asc, $x asc", "x","add(x_i,x_i)")
       ,asc
     );
 
     // multiple functions
-    assertJQ(req("q",q,  "fl","x_i", "sort", "$x asc, $y desc", "x", "5", "y","add(x_i,x_i)")
+    assertJQ(req("q",q,  "fl","x_i", "sort", "$x asc, const_s asc, $y desc", "x", "5", "y","add(x_i,x_i)")
       ,desc
     );
 
     // multiple functions inline
-    assertJQ(req("q",q,  "fl","x_i", "sort", "add( 10 , 10 ) asc, add(x_i , $const) desc", "const","50")
+    assertJQ(req("q",q,  "fl","x_i", "sort", "add( 10 , 10 ) asc, const_s asc, add(x_i , $const) desc", "const","50")
       ,desc
     );
 
     // test function w/ local params + func inline
-     assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=foo}add(x_i,x_i) desc")
-      ,desc
+    assertJQ(req("q",q,  "fl","x_i", 
+                 "sort", "const_s asc, {!key=foo}add(x_i,x_i) desc")
+             ,desc
+    );
+    assertJQ(req("q",q,  "fl","x_i", 
+                 "sort", "{!key=foo}add(x_i,x_i) desc, const_s asc")
+             ,desc
     );
 
     // test multiple functions w/ local params + func inline
-    assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=bar}add(10,20) asc, {!key=foo}add(x_i,x_i) desc")
+    assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=bar}add(10,20) asc, const_s asc, {!key=foo}add(x_i,x_i) desc")
       ,desc
     );
 
@@ -407,6 +414,31 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=bar v=$s1} asc, {!key=foo v=$s2} desc", "s1","add(3,4)", "s2","add(x_i,5)")
       ,desc
     );
+
+    // no space between inlined localparams and sort order
+    assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=bar v=$s1}asc,const_s asc,{!key=foo v=$s2}desc", "s1","add(3,4)", "s2","add(x_i,5)")
+      ,desc
+    );
+
+    // field name that isn't a legal java Identifier 
+    // and starts with a number to trick function parser
+    assertJQ(req("q",q,  "fl","x_i", "sort", "1_s asc")
+             ,asc
+    );
+
+    // really ugly field name that isn't a java Id, and can't be 
+    // parsed as a func, but sorted fine in Solr 1.4
+    assertJQ(req("q",q,  "fl","x_i", 
+                 "sort", "[]_s asc, {!key=foo}add(x_i,x_i) desc")
+             ,desc
+    );
+    // use localparms to sort by a lucene query, then a function
+    assertJQ(req("q",q,  "fl","x_i", 
+                 "sort", "{!lucene v='id:3'}desc, {!key=foo}add(x_i,x_i) asc")
+             ,threeonetwo
+    );
+
+
   }
 
   @Test
