@@ -30,6 +30,7 @@
 package org.apache.lucene.util.automaton;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -458,7 +459,9 @@ final public class BasicOperations {
 
     public void add(Transition t) {
       if (transitions.length == count) {
-        transitions = ArrayUtil.grow(transitions);
+        Transition[] newArray = new Transition[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        System.arraycopy(transitions, 0, newArray, 0, count);
+        transitions = newArray;
       }
       transitions[count++] = t;
     }
@@ -500,7 +503,9 @@ final public class BasicOperations {
     private PointTransitions next(int point) {
       // 1st time we are seeing this point
       if (count == points.length) {
-        points = ArrayUtil.grow(points);
+        final PointTransitions[] newArray = new PointTransitions[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        System.arraycopy(points, 0, newArray, 0, count);
+        points = newArray;
       }
       PointTransitions points0 = points[count];
       if (points0 == null) {
@@ -645,7 +650,9 @@ final public class BasicOperations {
             final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
             worklist.add(p);
             if (newStateUpto == newStatesArray.length) {
-              newStatesArray = ArrayUtil.grow(newStatesArray);
+              final State[] newArray = new State[ArrayUtil.oversize(1+newStateUpto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+              System.arraycopy(newStatesArray, 0, newArray, 0, newStateUpto);
+              newStatesArray = newArray;
             }
             newStatesArray[newStateUpto] = q;
             q.number = newStateUpto;

@@ -17,6 +17,7 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ArrayUtil;
 
 import java.util.List;
@@ -298,7 +299,9 @@ final class UTF32ToUTF8 {
   private State newUTF8State() {
     State s = new State();
     if (utf8StateCount == utf8States.length) {
-      utf8States = ArrayUtil.grow(utf8States);
+      final State[] newArray = new State[ArrayUtil.oversize(1+utf8StateCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      System.arraycopy(utf8States, 0, newArray, 0, utf8StateCount);
+      utf8States = newArray;
     }
     utf8States[utf8StateCount] = s;
     s.number = utf8StateCount;

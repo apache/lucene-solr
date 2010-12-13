@@ -29,6 +29,7 @@
 
 package org.apache.lucene.util.automaton;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -110,7 +111,9 @@ public class State implements Serializable, Comparable<State> {
    */
   public void addTransition(Transition t) {
     if (numTransitions == transitionsArray.length) {
-      transitionsArray = ArrayUtil.grow(transitionsArray);
+      final Transition[] newArray = new Transition[ArrayUtil.oversize(1+numTransitions, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      System.arraycopy(transitionsArray, 0, newArray, 0, numTransitions);
+      transitionsArray = newArray;
     }
     transitionsArray[numTransitions++] = t;
   }
