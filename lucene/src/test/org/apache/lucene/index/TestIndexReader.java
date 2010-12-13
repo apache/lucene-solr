@@ -1850,5 +1850,16 @@ public class TestIndexReader extends LuceneTestCase
     }
     dir.close();
   }
-  
+
+  // LUCENE-2812
+  public void testIndexExists() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    writer.addDocument(new Document());
+    writer.prepareCommit();
+    assertFalse(IndexReader.indexExists(dir));
+    writer.close();
+    assertTrue(IndexReader.indexExists(dir));
+    dir.close();
+  }
 }
