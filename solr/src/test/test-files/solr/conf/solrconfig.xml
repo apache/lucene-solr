@@ -304,6 +304,7 @@
     <lst name="lst1"> <str name="op">sqrt</str> <int name="val">2</int> </lst>
     <lst name="lst2"> <str name="op">log</str> <float name="val">10</float> </lst>
   </requestHandler>
+  <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 

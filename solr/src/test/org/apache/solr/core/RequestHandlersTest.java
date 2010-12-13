@@ -30,6 +30,14 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testInitCount() {
+    SolrCore core = h.getCore();
+    SolrRequestHandler handler = core.getRequestHandler( "mock" );
+    assertEquals("Incorrect init count",
+                 1, handler.getStatistics().get("initCount"));
+  }
+
+  @Test
   public void testLazyLoading() {
     SolrCore core = h.getCore();
     SolrRequestHandler handler = core.getRequestHandler( "lazy" );
