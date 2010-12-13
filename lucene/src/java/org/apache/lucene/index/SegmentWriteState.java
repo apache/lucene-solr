@@ -34,6 +34,7 @@ public class SegmentWriteState {
   public final String docStoreSegmentName;
   public final int numDocs;
   public int numDocsInStore;
+  public boolean hasVectors;
   public final Collection<String> flushedFiles;
 
   final SegmentCodecs segmentCodecs;

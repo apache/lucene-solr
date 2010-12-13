@@ -106,6 +106,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       message += ")";
       if (LuceneTestCase.VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": MDW: now throw fake disk full");
+        new Throwable().printStackTrace(System.out);
       }
       throw new IOException(message);
     } else {

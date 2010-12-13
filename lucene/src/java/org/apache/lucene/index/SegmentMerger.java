@@ -75,6 +75,7 @@ final class SegmentMerger {
   private final CodecProvider codecs;
   private Codec codec;
   private SegmentWriteState segmentWriteState;
+  private boolean hasVectors;
 
   private PayloadProcessorProvider payloadProcessorProvider;
   
@@ -98,6 +99,10 @@ final class SegmentMerger {
   
   boolean hasProx() {
     return fieldInfos.hasProx();
+  }
+
+  boolean hasVectors() {
+    return hasVectors;
   }
 
   /**
@@ -427,7 +432,7 @@ final class SegmentMerger {
   private final void mergeVectors() throws IOException {
     TermVectorsWriter termVectorsWriter = 
       new TermVectorsWriter(directory, segment, fieldInfos);
-
+    hasVectors = true;
     try {
       int idx = 0;
       for (final IndexReader reader : readers) {

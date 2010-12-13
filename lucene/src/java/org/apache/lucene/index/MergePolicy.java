@@ -68,6 +68,7 @@ public abstract class MergePolicy implements java.io.Closeable {
 
     SegmentInfo info;               // used by IndexWriter
     boolean mergeDocStores;         // used by IndexWriter
+    boolean hasVectors;             // used by IndexWriter
     boolean optimize;               // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -155,6 +156,9 @@ public abstract class MergePolicy implements java.io.Closeable {
         b.append(" [optimize]");
       if (mergeDocStores) {
         b.append(" [mergeDocStores]");
+      }
+      if (aborted) {
+        b.append(" [ABORTED]");
       }
       return b.toString();
     }

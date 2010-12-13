@@ -881,10 +881,14 @@ public class TestIndexWriter extends LuceneTestCase {
     public void testEmptyDocAfterFlushingRealDoc() throws IOException {
       Directory dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+      writer.setInfoStream(VERBOSE ? System.out : null);
       Document doc = new Document();
       doc.add(newField("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       writer.addDocument(doc);
       writer.commit();
+      if (VERBOSE) {
+        System.out.println("\nTEST: now add empty doc");
+      }
       writer.addDocument(new Document());
       writer.close();
       _TestUtil.checkIndex(dir);
@@ -1027,7 +1031,11 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     int delID = 0;
     for(int i=0;i<20;i++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + i);
+      }
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+      writer.setInfoStream(VERBOSE ? System.out : null);
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setMergeFactor(2);
       lmp.setUseCompoundFile(false);

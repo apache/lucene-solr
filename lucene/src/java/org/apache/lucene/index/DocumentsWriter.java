@@ -450,7 +450,7 @@ final class DocumentsWriter {
     assert docStoreSegment != null;
 
     if (infoStream != null) {
-      message("closeDocStore: files=" + openFiles + "; segment=" + docStoreSegment + "; docStoreOffset=" + docStoreOffset + "; numDocsInStore=" + numDocsInStore + "; isSeparate=" + isSeparate);
+      message("closeDocStore: openFiles=" + openFiles + "; segment=" + docStoreSegment + "; docStoreOffset=" + docStoreOffset + "; numDocsInStore=" + numDocsInStore + "; isSeparate=" + isSeparate);
     }
 
     closedFiles.clear();
@@ -720,16 +720,20 @@ final class DocumentsWriter {
                                                                  docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(),
                                                                  SegmentCodecs.build(fieldInfos, writer.codecs));
 
-      newSegment = new SegmentInfo(segment, numDocsInRAM, directory, false, -1, null, false, hasProx(), flushState.segmentCodecs);
+      newSegment = new SegmentInfo(segment, numDocsInRAM, directory, false, -1, null, false, hasProx(), flushState.segmentCodecs, false);
 
       if (!closeDocStore || docStoreOffset != 0) {
         newSegment.setDocStoreSegment(docStoreSegment);
         newSegment.setDocStoreOffset(docStoreOffset);
       }
+      
+      boolean hasVectors = false;
 
       if (closeDocStore) {
         closeDocStore(flushState, writer, deleter, newSegment, mergePolicy, segmentInfos);
       }
+
+      hasVectors |= flushState.hasVectors;
 
       if (numDocsInRAM > 0) {
 
@@ -748,6 +752,19 @@ final class DocumentsWriter {
 
         final long startNumBytesUsed = bytesUsed();
         consumer.flush(threads, flushState);
+
+        hasVectors |= flushState.hasVectors;
+
+        if (hasVectors) {
+          if (infoStream != null) {
+            message("new segment has vectors");
+          }
+          newSegment.setHasVectors(true);
+        } else {
+          if (infoStream != null) {
+            message("new segment has no vectors");
+          }
+        }
 
         if (infoStream != null) {
           message("flushedFiles=" + flushState.flushedFiles);
