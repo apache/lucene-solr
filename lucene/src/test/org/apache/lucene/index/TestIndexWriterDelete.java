@@ -625,14 +625,20 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     MockDirectoryWrapper.Failure failure = new MockDirectoryWrapper.Failure() {
         boolean sawMaybe = false;
         boolean failed = false;
+        Thread thread;
         @Override
         public MockDirectoryWrapper.Failure reset() {
+          thread = Thread.currentThread();
           sawMaybe = false;
           failed = false;
           return this;
         }
         @Override
         public void eval(MockDirectoryWrapper dir)  throws IOException {
+          if (Thread.currentThread() != thread) {
+            // don't fail during merging
+            return;
+          }
           if (sawMaybe && !failed) {
             boolean seen = false;
             StackTraceElement[] trace = new Exception().getStackTrace();
