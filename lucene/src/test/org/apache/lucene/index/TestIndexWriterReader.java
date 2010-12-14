@@ -837,10 +837,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final Thread[] threads = new Thread[NUM_THREAD];
     for(int i=0;i<NUM_THREAD;i++) {
       threads[i] = new Thread() {
+          final Random r = new Random(random.nextLong());
+
           @Override
           public void run() {
             int count = 0;
-            final Random r = new Random();
             do {
               try {
                 for(int docUpto=0;docUpto<10;docUpto++) {

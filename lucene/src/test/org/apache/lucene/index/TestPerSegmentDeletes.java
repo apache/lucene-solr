@@ -38,7 +38,7 @@ import org.apache.lucene.util.Version;
 public class TestPerSegmentDeletes extends LuceneTestCase {
   public void testDeletes1() throws Exception {
     //IndexWriter.debug2 = System.out;
-    Directory dir = new MockDirectoryWrapper(new Random(), new RAMDirectory());
+    Directory dir = new MockDirectoryWrapper(new Random(random.nextLong()), new RAMDirectory());
     IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_CURRENT,
         new MockAnalyzer());
     iwc.setMergeScheduler(new SerialMergeScheduler());
