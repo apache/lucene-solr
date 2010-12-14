@@ -965,7 +965,7 @@ public abstract class LuceneTestCase extends Assert {
   private long seed;
   
   private static final Random seedRand = new Random();
-  protected static final Random random = new Random();
+  protected static final Random random = new Random(0);
 
   private String name = "<unknown>";
   
