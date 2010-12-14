@@ -2910,4 +2910,138 @@ public class TestIndexWriter extends LuceneTestCase {
 
     dir.close();
   }
+
+  public void testGrowingGaps() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    //w.w.setInfoStream(System.out);
+    Document doc = new Document();
+    Field f = newField(random, "field", "two", Field.Store.NO, Field.Index.ANALYZED);
+    doc.add(f);
+    final int NUM_GAPS = 100;
+    for(int i=0;i<NUM_GAPS;i++) {
+      f.setValue("one");
+      w.addDocument(doc);
+      f.setValue("two");
+      for(int j=0;j<1+i;j++) {
+        w.addDocument(doc);
+      }
+    }
+
+    // MultiBulkPostingsEnum doesn't jump (yet):
+    w.optimize();
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    DocsEnum docs = MultiFields.getTermDocsEnum(r,
+                                                MultiFields.getDeletedDocs(r),
+                                                "field",
+                                                new BytesRef("one"));
+    // test simple linear scan:
+    int[] docIDs = new int[r.maxDoc()];
+    int upto = 0;
+    int docID;
+    int expDocID = 0;
+    int gap = 2;
+    while((docID = docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+      //System.out.println("  got doc=" + docID + " ord=" + upto);
+      docIDs[upto++] = docID;
+      assertEquals(expDocID, docID);
+      expDocID += gap;
+      gap++;
+    }
+    assertEquals(NUM_GAPS, upto);
+
+    final int maxDoc = r.maxDoc();
+
+    // test advance:
+    for(int i=0;i<NUM_GAPS;i++) {
+      docs = MultiFields.getTermDocsEnum(r,
+                                         MultiFields.getDeletedDocs(r),
+                                         "field",
+                                         new BytesRef("one"));
+      //System.out.println("  .advance(" + docIDs[i] + ")");
+      assertEquals(docIDs[i], docs.advance(docIDs[i]));
+      for(int j=i+1;j<NUM_GAPS;j++) {
+        assertEquals(docIDs[j], docs.nextDoc());
+      }
+      assertEquals(DocsEnum.NO_MORE_DOCS, docs.nextDoc());
+    }
+
+    assertEquals(NUM_GAPS, r.docFreq("field", new BytesRef("one")));
+
+    BulkPostingsEnum bulkPostings = MultiFields.getBulkPostingsEnum(r,
+                                                                    "field",
+                                                                    new BytesRef("one"),
+                                                                    false,
+                                                                    false);
+
+    // test simple linear scan using BulkPostingsEnum:
+    BulkPostingsEnum.BlockReader docDeltasReader = bulkPostings.getDocDeltasReader();
+    int[] docDeltas = docDeltasReader.getBuffer();
+    int docDeltaUpto = docDeltasReader.offset();
+    int docDeltaMax = docDeltasReader.end();
+    if (docDeltaUpto >= docDeltaMax) {
+      docDeltaMax = docDeltasReader.fill();
+    }
+    docID = 0;
+    for(int i=0;i<NUM_GAPS;i++) {
+      if (docDeltaUpto == docDeltaMax) {
+        docDeltaUpto = 0;
+        docDeltaMax = docDeltasReader.fill();
+      }
+      assertTrue(docDeltas[docDeltaUpto] > 0 || i==0);
+      docID += docDeltas[docDeltaUpto++];
+      assertEquals(docID, docIDs[i]);
+    }
+
+    // nocommit test reuse too
+    // test jump using BulkPostingsEnum:
+    boolean didJump = false;
+    for(int i=0;i<NUM_GAPS;i++) {
+      //System.out.println("GAP i=" + i);
+      bulkPostings = MultiFields.getBulkPostingsEnum(r,
+                                                     "field",
+                                                     new BytesRef("one"),
+                                                     false,
+                                                     false);
+      //System.out.println("try jump " + docIDs[i]);
+      final BulkPostingsEnum.JumpResult jr = bulkPostings.jump(docIDs[i], 0);
+      int count;
+      if (jr != null) {
+        //System.out.println("  got jump!");
+        didJump = true;
+        assertEquals("jump to docID=" + docID + " got count=" + jr.count + " docID=" + jr.docID, docIDs[jr.count-1], jr.docID);
+        docID = jr.docID;
+        count = jr.count;
+      } else {
+        //System.out.println("  no jump!");
+        docID = 0;
+        count = 0;
+      }
+      docDeltasReader = bulkPostings.getDocDeltasReader();
+      docDeltas = docDeltasReader.getBuffer();
+      docDeltaUpto = docDeltasReader.offset();
+      docDeltaMax = docDeltasReader.end();
+      if (docDeltaUpto >= docDeltaMax) {
+        docDeltaMax = docDeltasReader.fill();
+        //System.out.println("  do pre-fill");
+      }
+      for(int j=count;j<NUM_GAPS;j++) {
+        //System.out.println("  GAP j=" + j);
+        if (docDeltaUpto >= docDeltaMax) {
+          docDeltaUpto = 0;
+          docDeltaMax = docDeltasReader.fill();
+        }
+        //System.out.println("  docUpto=" + docDeltaUpto + " delta=" + docDeltas[docDeltaUpto]);
+        docID += docDeltas[docDeltaUpto++];
+        assertEquals(docIDs[j], docID);
+      }
+    }
+    assertTrue(CodecProvider.getDefault().getFieldCodec("field").equals("SimpleText") || didJump);
+    
+    r.close();
+    dir.close();
+  }
 }

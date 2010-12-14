@@ -181,6 +181,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
         posIndex.write(docOut, true);
         docOut.writeVLong(payloadStart);
       }
+      // nocommit -- only write if docFreq > skipInterval?
       docOut.writeVLong(skipOut.getFilePointer());
       firstDoc = false;
     }
@@ -199,6 +200,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     }
 
     lastDocID = docID;
+    //System.out.println("sepw: write docID=" + docID);
     docOut.write(delta);
     if (!omitTF) {
       freqOut.write(termDocFreq);

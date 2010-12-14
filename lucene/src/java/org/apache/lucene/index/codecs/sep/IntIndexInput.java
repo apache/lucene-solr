@@ -18,72 +18,43 @@ package org.apache.lucene.index.codecs.sep;
  */
 
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.index.BulkPostingsEnum;
 
 import java.io.IOException;
 import java.io.Closeable;
 
-/** Defines basic API for writing ints to an IndexOutput.
- *  IntBlockCodec interacts with this API. @see
- *  IntBlockReader
+// nocommit -- move to oal.store?
+
+/** Defines basic API for reading blocks of ints.  SepCodec
+ *  interacts with this API.
  *
  * @lucene.experimental */
 public abstract class IntIndexInput implements Closeable {
 
-  public abstract Reader reader() throws IOException;
+  public abstract BulkPostingsEnum.BlockReader reader() throws IOException;
 
   public abstract void close() throws IOException;
 
   public abstract Index index() throws IOException;
   
-  // TODO: -- can we simplify this?
   public abstract static class Index {
 
     public abstract void read(IndexInput indexIn, boolean absolute) throws IOException;
 
-    public abstract void read(IntIndexInput.Reader indexIn, boolean absolute) throws IOException;
+    public abstract void read(BulkPostingsEnum.BlockReader indexIn, boolean absolute) throws IOException;
 
-    /** Seeks primary stream to the last read offset */
-    public abstract void seek(IntIndexInput.Reader stream) throws IOException;
+    /** Seeks primary stream to the last read offset.
+     *  Returns true if the seek was "within block", ie
+     *  within the last read block, at which point you
+     *  should call {@link
+     *  BulkPostingsEnum.BlockReader#offset} to know where
+     *  to start from.  If this returns false, you must call
+     *  {@link BulkPostingsEnum.BlockReader#fill} to read
+     *  the buffer. */ 
+    public abstract void seek(BulkPostingsEnum.BlockReader stream) throws IOException;
 
     public abstract void set(Index other);
     
     public abstract Object clone();
-  }
-
-  public abstract static class Reader {
-
-    /** Reads next single int */
-    public abstract int next() throws IOException;
-
-    /** Encodes as 1 or 2 ints, and can only use 61 of the 64
-     *  long bits. */
-    public long readVLong() throws IOException {
-      final int v = next();
-      if ((v & 1) == 0) {
-        return v >> 1;
-      } else {
-        final long v2 = next();
-        return (v2 << 30) | (v >> 1);
-      }
-    }
-
-    /** Reads next chunk of ints */
-    private IntsRef bulkResult;
-
-    /** Read up to count ints. */
-    public IntsRef read(int count) throws IOException {
-      if (bulkResult == null) {
-        bulkResult = new IntsRef();
-        bulkResult.ints = new int[count];
-      } else {
-        bulkResult.grow(count);
-      }
-      for(int i=0;i<count;i++) {
-        bulkResult.ints[i] = next();
-      }
-      bulkResult.length = count;
-      return bulkResult;
-    }
   }
 }

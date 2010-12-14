@@ -44,6 +44,8 @@ public abstract class DocsEnum extends DocIdSetIterator {
     return atts;
   }
 
+  // nocommit -- delete all after here:
+
   // TODO: maybe add bulk read only docIDs (for eventual
   // match-only scoring)
 
@@ -83,6 +85,7 @@ public abstract class DocsEnum extends DocIdSetIterator {
    *  <p>NOTE: the default impl simply delegates to {@link
    *  #nextDoc}, but subclasses may do this more
    *  efficiently. */
+  // nocommit -- remove this
   public int read() throws IOException {
     int count = 0;
     final int[] docs = bulkResult.docs.ints;

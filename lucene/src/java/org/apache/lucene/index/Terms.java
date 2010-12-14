@@ -68,6 +68,15 @@ public abstract class Terms {
     }
   }
 
+  public BulkPostingsEnum bulkPostings(BytesRef text, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+    final TermsEnum termsEnum = getThreadTermsEnum();
+    if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+      return termsEnum.bulkPostings(reuse, doFreqs, doPositions);
+    } else {
+      return null;
+    }
+  }
+
   /** Get {@link DocsEnum} for the specified term.  This
    *  method will may return null if the term does not
    *  exists, or positions were not indexed. */ 

@@ -43,6 +43,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
@@ -907,6 +908,17 @@ public class MemoryIndex implements Serializable {
       }
 
       @Override
+      public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) {
+        MemoryBulkPostingsEnum postingsEnum;
+        if (reuse == null || !(reuse instanceof MemoryBulkPostingsEnum) || !((MemoryBulkPostingsEnum) reuse).canReuse(info, doFreqs, doPositions)) {
+          postingsEnum = new MemoryBulkPostingsEnum(info, doFreqs, doPositions);
+        } else {
+          postingsEnum = (MemoryBulkPostingsEnum) reuse;
+        }
+        return postingsEnum.reset(info.sortedTerms[termUpto].getValue());
+      }
+
+      @Override
       public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
@@ -1001,6 +1013,173 @@ public class MemoryIndex implements Serializable {
 
       @Override
       public BytesRef getPayload() {
+        return null;
+      }
+    }
+
+    private class MemoryBulkPostingsEnum extends BulkPostingsEnum {
+
+      private final DocDeltasReader docDeltasReader;
+      private final FreqsReader freqsReader;
+      private final PositionDeltasReader positionDeltasReader;
+      private final Info info;
+      
+      public MemoryBulkPostingsEnum(Info info, boolean doFreqs, boolean doPositions) {
+        this.info = info;
+        docDeltasReader = new DocDeltasReader();
+        if (doFreqs) {
+          freqsReader = new FreqsReader();
+        } else {
+          freqsReader = null;
+        }
+
+        if (doPositions) {
+          positionDeltasReader = new PositionDeltasReader();
+        } else {
+          positionDeltasReader = null;
+        }
+      }
+
+      public boolean canReuse(Info info, boolean doFreq, boolean doPositions) {
+        return this.info == info && (doFreq == (freqsReader != null)) && (doPositions == (positionDeltasReader != null));
+      }
+
+      private class DocDeltasReader extends BlockReader {
+        private final int[] buffer = new int[1];
+
+        public void reset() {
+        }
+
+        @Override
+        public int[] getBuffer() {
+          return buffer;
+        }
+
+        @Override
+        public int offset() {
+          return 0;
+        }
+
+        @Override
+        public void setOffset(int offset) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int end() {
+          return 1;
+        }
+
+        @Override
+        public int fill() {
+          return 1;
+        }
+      }
+
+      private class FreqsReader extends BlockReader {
+        private final int[] buffer = new int[1];
+
+        public void reset(int freq) {
+          buffer[0] = freq;
+        }
+
+        @Override
+        public int[] getBuffer() {
+          return buffer;
+        }
+
+        @Override
+        public int offset() {
+          return 0;
+        }
+
+        @Override
+        public void setOffset(int offset) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int end() {
+          return 1;
+        }
+
+        @Override
+        public int fill() {
+          return 1;
+        }
+      }
+
+      private class PositionDeltasReader extends BlockReader {
+        private final int[] buffer = new int[64];
+        private ArrayIntList positions;
+        private int posUpto;
+        private int limit;
+
+        public void reset(ArrayIntList positions) {
+          posUpto = 0;
+          this.positions = positions;
+          fill();
+        }
+
+        @Override
+        public int[] getBuffer() {
+          return buffer;
+        }
+
+        @Override
+        public int offset() {
+          return 0;
+        }
+
+        @Override
+        public void setOffset(int offset) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int end() {
+          return limit;
+        }
+
+        @Override
+        public int fill() {
+          final int chunk = Math.min(buffer.length, positions.size() - posUpto);
+          for(int i=0;i<chunk;i++) {
+            buffer[i] = positions.get(posUpto++);
+          }
+          return limit = chunk;
+        }
+      }
+
+      public BulkPostingsEnum reset(ArrayIntList positions) {
+        docDeltasReader.reset();
+    
+        if (freqsReader != null) {
+          freqsReader.reset(positions.size());
+        }
+        if (positionDeltasReader != null) {
+          positionDeltasReader.reset(positions);
+        }
+        return this;
+      }
+
+      @Override
+      public BlockReader getDocDeltasReader() {
+        return docDeltasReader;
+      }
+
+      @Override
+      public BlockReader getPositionDeltasReader() {
+        return positionDeltasReader;
+      }
+
+      @Override
+      public BlockReader getFreqsReader() {
+        return freqsReader;
+      }
+
+      @Override
+      public JumpResult jump(int target, int curCount) {
         return null;
       }
     }

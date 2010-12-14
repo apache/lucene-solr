@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -76,15 +77,18 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(),
-                                          term.field(),
-                                          term.bytes());
-
+      assert reader.getSequentialSubReaders() == null;
+      BulkPostingsEnum docs = reader.bulkTermPostingsEnum(term.field(),
+                                                          term.bytes(),
+                                                          true,
+                                                          false);
       if (docs == null) {
         return null;
       }
 
-      return new TermScorer(this, docs, similarity, reader.norms(term.field()));
+      // nocommit: we need this docfreq from TermState, MTQ knows it... but tosses it away.
+      return new TermScorer(this, docs, reader.docFreq(term.field(), term.bytes()),
+                            reader.getDeletedDocs(), similarity, reader.norms(term.field()));
     }
 
     @Override
@@ -124,10 +128,10 @@ public class TermQuery extends Query {
       int tf = 0;
       DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), term.field(), term.bytes());
       if (docs != null) {
-          int newDoc = docs.advance(doc);
-          if (newDoc == doc) {
-            tf = docs.freq();
-          }
+        int newDoc = docs.advance(doc);
+        if (newDoc == doc) {
+          tf = docs.freq();
+        }
         tfExplanation.setValue(similarity.tf(tf));
         tfExplanation.setDescription("tf(termFreq("+term+")="+tf+")");
       } else {

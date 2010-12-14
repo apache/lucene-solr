@@ -67,6 +67,8 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
     public Object clone() {
       Document doc = new Document();
       doc.docID = docID;
+      // nocommit -- aren't termDocFreq and numPositions the
+      // same thing???
       doc.termDocFreq = termDocFreq;
       doc.numPositions = numPositions;
       doc.positions = new Position[positions.length];

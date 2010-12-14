@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Closeable;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.IndexInput;
@@ -49,6 +50,12 @@ public abstract class PostingsReaderBase implements Closeable {
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
   public abstract DocsEnum docs(FieldInfo fieldInfo, TermState state, Bits skipDocs, DocsEnum reuse) throws IOException;
+
+  // nocommit jdocs
+  // nocommit make abstract
+  public BulkPostingsEnum bulkPostings(FieldInfo fieldInfo, TermState state, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+    throw new UnsupportedOperationException();
+  }
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */

@@ -22,6 +22,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -123,6 +124,17 @@ public class InstantiatedTermsEnum extends TermsEnum {
       reuse = new InstantiatedDocsAndPositionsEnum();
     }
     return ((InstantiatedDocsAndPositionsEnum) reuse).reset(skipDocs, terms[upto]);
+  }
+
+  @Override
+  public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) {
+    InstantiatedBulkPostingsEnum postingsEnum;
+    if (reuse == null || !(reuse instanceof InstantiatedBulkPostingsEnum) || !((InstantiatedBulkPostingsEnum) reuse).canReuse(field, doFreqs, doPositions)) {
+      postingsEnum = new InstantiatedBulkPostingsEnum(field, doFreqs, doPositions);
+    } else {
+      postingsEnum = (InstantiatedBulkPostingsEnum) reuse;
+    }
+    return postingsEnum.reset(terms[upto]);
   }
 
   @Override

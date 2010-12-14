@@ -109,6 +109,11 @@ public abstract class TermsEnum {
    * @param reuse pass a prior DocsEnum for possible reuse */
   public abstract DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException;
 
+  // nocommit -- make abstract
+  public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
   /** Get {@link DocsAndPositionsEnum} for the current term.
    *  Do not call this before calling {@link #next} or
    *  {@link #seek} for the first time.  This method will

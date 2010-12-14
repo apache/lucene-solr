@@ -24,8 +24,8 @@ package org.apache.lucene.index.codecs.intblock;
 import java.io.IOException;
 
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.IntsRef;
 
 /** Abstract base class that reads fixed-size blocks of ints
  *  from an IndexInput.  While this is a simple approach, a
@@ -42,7 +42,9 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
   
   public FixedIntBlockIndexInput(final IndexInput in) throws IOException {
     this.in = in;
-    blockSize = in.readVInt();
+    //blockSize = in.readVInt();
+    blockSize = in.readInt();
+    //System.out.println("BLOCK size " + blockSize);
   }
 
   @Override
@@ -67,80 +69,72 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
   public interface BlockReader {
     public void readBlock() throws IOException;
+    // nocommit -- need seek here so mmapdir "knows"
   }
 
-  private static class Reader extends IntIndexInput.Reader {
+  private static class Reader extends BulkPostingsEnum.BlockReader {
     private final IndexInput in;
 
     protected final int[] pending;
-    int upto;
+    private int offset;
 
-    private boolean seekPending;
-    private long pendingFP;
-    private int pendingUpto;
     private long lastBlockFP;
     private final BlockReader blockReader;
     private final int blockSize;
-    private final IntsRef bulkResult = new IntsRef();
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
-    throws IOException {
+      throws IOException {
       this.in = in;
       this.pending = pending;
       this.blockSize = pending.length;
-      bulkResult.ints = pending;
       this.blockReader = blockReader;
-      upto = blockSize;
     }
 
-    void seek(final long fp, final int upto) {
-      pendingFP = fp;
-      pendingUpto = upto;
-      seekPending = true;
-    }
-
-    private void maybeSeek() throws IOException {
-      if (seekPending) {
-        if (pendingFP != lastBlockFP) {
-          // need new block
-          in.seek(pendingFP);
-          lastBlockFP = pendingFP;
-          blockReader.readBlock();
-        }
-        upto = pendingUpto;
-        seekPending = false;
-      }
-    }
-
-    @Override
-    public int next() throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        lastBlockFP = in.getFilePointer();
-        blockReader.readBlock();
-        upto = 0;
-      }
-
-      return pending[upto++];
-    }
-
-    @Override
-    public IntsRef read(final int count) throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        blockReader.readBlock();
-        upto = 0;
-      }
-      bulkResult.offset = upto;
-      if (upto + count < blockSize) {
-        bulkResult.length = count;
-        upto += count;
+    void seek(final long fp, final int upto) throws IOException {
+      offset = upto;
+      if (fp != lastBlockFP) {
+        // Seek to new block; this may in fact be the next
+        // block ie when caller is doing sequential scan (eg
+        // PrefixQuery)
+        //System.out.println("  seek block fp=" + fp + " vs last=" + lastBlockFP + " upto=" + upto);
+        in.seek(fp);
+        fill();
       } else {
-        bulkResult.length = blockSize - upto;
-        upto = blockSize;
+        // Seek within current block
+        //System.out.println("  seek in-block fp=" + fp + " upto=" + offset);
       }
+    }
 
-      return bulkResult;
+    @Override
+    public int[] getBuffer() {
+      return pending;
+    }
+
+    @Override
+    public int end() {
+      return blockSize;
+    }
+
+    @Override
+    public int offset() {
+      return offset;
+    }
+
+    @Override
+    public void setOffset(int offset) {
+      this.offset = offset;
+    }
+
+    @Override
+    public int fill() throws IOException {
+      //System.out.println("fii.fill seekPending=" + seekPending + " set lastFP=" + pendingFP + " this=" + this);
+      // nocommit -- not great that we do this on each
+      // fill -- but we need it to detect seek w/in block
+      // case:
+      // nocommit: can't we += blockNumBytes instead?
+      lastBlockFP = in.getFilePointer();
+      blockReader.readBlock();
+      return blockSize;
     }
   }
 
@@ -150,10 +144,14 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
     @Override
     public void read(final IndexInput indexIn, final boolean absolute) throws IOException {
+      // nocommit -- somehow we should share the "upto" for
+      // doc & freq since they will always be "in sync"
       if (absolute) {
         fp = indexIn.readVLong();
         upto = indexIn.readVInt();
       } else {
+        // nocommit -- can't this be more efficient?  read a
+        // single byte and check a bit?  block size is 128...
         final long delta = indexIn.readVLong();
         if (delta == 0) {
           // same block
@@ -168,7 +166,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void read(final IntIndexInput.Reader indexIn, final boolean absolute) throws IOException {
+    public void read(final BulkPostingsEnum.BlockReader indexIn, final boolean absolute) throws IOException {
       if (absolute) {
         fp = indexIn.readVLong();
         upto = indexIn.next();
@@ -187,7 +185,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void seek(final IntIndexInput.Reader other) throws IOException {
+    public void seek(final BulkPostingsEnum.BlockReader other) throws IOException {
       ((Reader) other).seek(fp, upto);
     }
 
@@ -204,6 +202,11 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       other.fp = fp;
       other.upto = upto;
       return other;
+    }
+
+    @Override
+    public String toString() {
+      return "FixedBlockIndex(fp=" + fp + " offset=" + upto + ")";
     }
   }
 }

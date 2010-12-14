@@ -239,6 +239,9 @@ final class BooleanScorer extends Scorer {
     do {
       bucketTable.first = null;
       
+      // used only by assert:
+      int count = 0;
+
       while (current != null) {         // more queued 
 
         // check prohibited & required
@@ -264,6 +267,8 @@ final class BooleanScorer extends Scorer {
           }
         }
         
+        assert count++ < BucketTable.SIZE;
+        assert current != current.next;
         current = current.next;         // pop the queue
       }
       

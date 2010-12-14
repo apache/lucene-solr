@@ -41,6 +41,7 @@ public final class MultiTermsEnum extends TermsEnum {
   private final TermsEnumWithSlice[] top;
   private final MultiDocsEnum.EnumWithSlice[] subDocs;
   private final MultiDocsAndPositionsEnum.EnumWithSlice[] subDocsAndPositions;
+  private final MultiBulkPostingsEnum.EnumWithSlice[] subBulkPostings;
 
   private BytesRef lastSeek;
   private final BytesRef lastSeekScratch = new BytesRef();
@@ -75,12 +76,15 @@ public final class MultiTermsEnum extends TermsEnum {
     subs = new TermsEnumWithSlice[slices.length];
     subDocs = new MultiDocsEnum.EnumWithSlice[slices.length];
     subDocsAndPositions = new MultiDocsAndPositionsEnum.EnumWithSlice[slices.length];
+    subBulkPostings = new MultiBulkPostingsEnum.EnumWithSlice[slices.length];
     for(int i=0;i<slices.length;i++) {
       subs[i] = new TermsEnumWithSlice(slices[i]);
       subDocs[i] = new MultiDocsEnum.EnumWithSlice();
       subDocs[i].slice = slices[i];
       subDocsAndPositions[i] = new MultiDocsAndPositionsEnum.EnumWithSlice();
       subDocsAndPositions[i].slice = slices[i];
+      subBulkPostings[i] = new MultiBulkPostingsEnum.EnumWithSlice();
+      subBulkPostings[i].slice = slices[i];
     }
     currentSubs = new TermsEnumWithSlice[slices.length];
   }
@@ -399,6 +403,40 @@ public final class MultiTermsEnum extends TermsEnum {
       return null;
     } else {
       return docsAndPositionsEnum.reset(subDocsAndPositions, upto);
+    }
+  }
+
+  @Override
+  public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+    final MultiBulkPostingsEnum postingsEnum = new MultiBulkPostingsEnum();
+    
+    int upto = 0;
+
+    for(int i=0;i<numTop;i++) {
+
+      final TermsEnumWithSlice entry = top[i];
+
+      final BulkPostingsEnum subPostings = entry.terms.bulkPostings(null, doFreqs, doPositions);
+
+      if (subPostings != null) {
+        subBulkPostings[upto].postingsEnum = subPostings;
+        subBulkPostings[upto].slice = entry.subSlice;
+        subBulkPostings[upto].docFreq = entry.terms.docFreq();
+        upto++;
+      } else {
+        if (entry.terms.docs(null, null) != null) {
+          // At least one of our subs does not store
+          // positions -- we can't correctly produce a
+          // MultiDocsAndPositions enum
+          return null;
+        }
+      }
+    }
+
+    if (upto == 0) {
+      return null;
+    } else {
+      return postingsEnum.reset(subBulkPostings, upto, doFreqs, doPositions);
     }
   }
 

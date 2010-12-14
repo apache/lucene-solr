@@ -23,9 +23,9 @@ package org.apache.lucene.index.codecs.intblock;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.IntsRef;
 
 // TODO: much of this can be shared code w/ the fixed case
 
@@ -72,94 +72,97 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     public void seek(long pos) throws IOException;
   }
 
-  public static class Reader extends IntIndexInput.Reader {
+  public static class Reader extends BulkPostingsEnum.BlockReader {
     private final IndexInput in;
 
     public final int[] pending;
-    int upto;
 
     private boolean seekPending;
     private long pendingFP;
-    private int pendingUpto;
+    private int offset;
     private long lastBlockFP;
     private int blockSize;
     private final BlockReader blockReader;
-    private final IntsRef bulkResult = new IntsRef();
+    private int limit;
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
       throws IOException {
       this.in = in;
       this.pending = pending;
-      bulkResult.ints = pending;
       this.blockReader = blockReader;
     }
 
     void seek(final long fp, final int upto) throws IOException {
+      //System.out.println("vintb seek fp=" + fp + " upto=" + upto);
       // TODO: should we do this in real-time, not lazy?
       pendingFP = fp;
-      pendingUpto = upto;
-      assert pendingUpto >= 0: "pendingUpto=" + pendingUpto;
-      seekPending = true;
+      offset = upto;
+      assert offset >= 0: "pendingUpto=" + offset;
+      if (pendingFP != lastBlockFP) {
+        // Clear current block
+        seekPending = true;
+        //        System.out.println("  seekPending=true now fill");
+        fill();
+      } else {
+        //System.out.println("  no seekPending");
+      }
+      //System.out.println("  now offset=" + offset + " limit=" + limit);
+
+      // This is necessary for int encoders that are
+      // non-causal, ie must see future int values to
+      // encode the current ones.
+      while(offset >= limit) {
+        offset -= limit;
+        //System.out.println("  non-causal fill");
+        fill();
+      }
+      //System.out.println("  after skip bock offset=" + offset);
     }
 
-    private final void maybeSeek() throws IOException {
+    @Override
+    public int[] getBuffer() {
+      return pending;
+    }
+
+    @Override
+    public int end() {
+      return limit;
+    }
+
+    @Override
+    public int offset() {
+      return offset;
+    }
+
+    @Override
+    public void setOffset(int offset) {
+      this.offset = offset;
+    }
+
+    @Override
+    public int fill() throws IOException {
       if (seekPending) {
-        if (pendingFP != lastBlockFP) {
-          // need new block
-          in.seek(pendingFP);
-          blockReader.seek(pendingFP);
-          lastBlockFP = pendingFP;
-          blockSize = blockReader.readBlock();
-        }
-        upto = pendingUpto;
+        seekPending = false;
+        in.seek(pendingFP);
+        blockReader.seek(pendingFP);
+        lastBlockFP = pendingFP;
+        blockSize = blockReader.readBlock();
 
         // TODO: if we were more clever when writing the
         // index, such that a seek point wouldn't be written
         // until the int encoder "committed", we could avoid
         // this (likely minor) inefficiency:
 
-        // This is necessary for int encoders that are
-        // non-causal, ie must see future int values to
-        // encode the current ones.
-        while(upto >= blockSize) {
-          upto -= blockSize;
-          lastBlockFP = in.getFilePointer();
-          blockSize = blockReader.readBlock();
-        }
-        seekPending = false;
-      }
-    }
+        //System.out.println("varintblock.fill offset=" + offset + " vs blockSize=" + blockSize);
 
-    @Override
-    public int next() throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        lastBlockFP = in.getFilePointer();
-        blockSize = blockReader.readBlock();
-        upto = 0;
-      }
-
-      return pending[upto++];
-    }
-
-    @Override
-    public IntsRef read(final int count) throws IOException {
-      this.maybeSeek();
-      if (upto == blockSize) {
-        lastBlockFP = in.getFilePointer();
-        blockSize = blockReader.readBlock();
-        upto = 0;
-      }
-      bulkResult.offset = upto;
-      if (upto + count < blockSize) {
-        bulkResult.length = count;
-        upto += count;
       } else {
-        bulkResult.length = blockSize - upto;
-        upto = blockSize;
+        // nocommit -- not great that we do this on each
+        // fill -- but we need it to detect seek w/in block
+        // case:
+        lastBlockFP = in.getFilePointer();
+        blockSize = blockReader.readBlock();
       }
-
-      return bulkResult;
+      return limit = blockSize;
     }
   }
 
@@ -189,7 +192,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void read(final IntIndexInput.Reader indexIn, final boolean absolute) throws IOException {
+    public void read(final BulkPostingsEnum.BlockReader indexIn, final boolean absolute) throws IOException {
       if (absolute) {
         fp = indexIn.readVLong();
         upto = indexIn.next()&0xFF;
@@ -212,7 +215,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void seek(final IntIndexInput.Reader other) throws IOException {
+    public void seek(final BulkPostingsEnum.BlockReader other) throws IOException {
       ((Reader) other).seek(fp, upto);
     }
 

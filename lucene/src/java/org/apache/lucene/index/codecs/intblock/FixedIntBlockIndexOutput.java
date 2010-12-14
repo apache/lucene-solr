@@ -44,7 +44,7 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
   protected FixedIntBlockIndexOutput(IndexOutput out, int fixedBlockSize) throws IOException {
     blockSize = fixedBlockSize;
     this.out = out;
-    out.writeVInt(blockSize);
+    out.writeInt(blockSize);
     buffer = new int[blockSize];
   }
 
@@ -110,6 +110,11 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
       }
       lastUpto = upto;
       lastFP = fp;
+    }
+
+    @Override
+    public String toString() {
+      return "fp=" + fp + " idx=" + upto;
     }
   }
 

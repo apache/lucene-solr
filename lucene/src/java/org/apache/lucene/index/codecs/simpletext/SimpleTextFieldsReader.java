@@ -24,6 +24,7 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.store.IndexInput;
@@ -214,6 +215,17 @@ class SimpleTextFieldsReader extends FieldsProducer {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
       } 
       return docsAndPositionsEnum.reset(docsStart, skipDocs);
+    }
+
+    @Override
+    public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreq, boolean doPositions) throws IOException {
+      SimpleTextBulkPostingsEnum bulkPostingsEnum;
+      if (reuse != null && reuse instanceof SimpleTextBulkPostingsEnum && ((SimpleTextBulkPostingsEnum) reuse).canReuse(in, doFreq, doPositions)) {
+        bulkPostingsEnum = (SimpleTextBulkPostingsEnum) reuse;
+      } else {
+        bulkPostingsEnum = new SimpleTextBulkPostingsEnum(doFreq, doPositions);
+      }
+      return bulkPostingsEnum.reset(docsStart, omitTF);
     }
 
     @Override
@@ -436,6 +448,189 @@ class SimpleTextFieldsReader extends FieldsProducer {
     public TermData(long docsStart, int docFreq) {
       this.docsStart = docsStart;
       this.docFreq = docFreq;
+    }
+  }
+
+  private class SimpleTextBulkPostingsEnum extends BulkPostingsEnum {
+    private final IndexInput inStart;
+    private final IndexInput in;
+    private final LineCountReader docDeltasReader;
+    private final FreqsReader freqsReader;
+    private final LineCountReader positionDeltasReader;
+
+    public SimpleTextBulkPostingsEnum(boolean doFreq, boolean doPositions) {
+      this.inStart = SimpleTextFieldsReader.this.in;
+      this.in = (IndexInput) this.inStart.clone();
+      docDeltasReader = new LineCountReader(DOC);
+      if (doFreq) {
+        freqsReader = new FreqsReader();
+      } else {
+        freqsReader = null;
+      }
+
+      if (doPositions) {
+        positionDeltasReader = new LineCountReader(POS);
+      } else {
+        positionDeltasReader = null;
+      }
+    }
+
+    public boolean canReuse(IndexInput in, boolean doFreq, boolean doPositions) {
+      return in == inStart && (doFreq == (freqsReader != null)) && (doPositions == (positionDeltasReader != null));
+    }
+
+    // reads docDeltas & positionDeltas
+    private class LineCountReader extends BlockReader {
+      private final BytesRef prefix;
+      private final int[] buffer = new int[64];
+      private final IndexInput in;
+      private final BytesRef scratch = new BytesRef(10);
+      private int lastValue;
+      private int limit;
+
+      public LineCountReader(BytesRef prefix) {
+        this.prefix = prefix;
+        this.in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
+      }
+
+      public void reset(long fp) throws IOException {
+        lastValue = 0;
+        in.seek(fp);
+        fill();
+      }
+
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+
+      @Override
+      public int end() {
+        return limit;
+      }
+
+      @Override
+      public int fill() throws IOException {
+        int upto = 0;
+        while(upto < buffer.length) {
+          readLine(in, scratch);
+          if (scratch.startsWith(TERM) || scratch.startsWith(FIELD) || scratch.equals(END)) {
+            break;
+          } else if (scratch.startsWith(prefix)) {
+            final int value = Integer.parseInt(new String(scratch.bytes, scratch.offset+prefix.length, scratch.length-prefix.length));            
+            buffer[upto++] = value - lastValue;
+            lastValue = value;
+          }
+        }
+        return limit = upto;
+      }
+    }
+
+    private class FreqsReader extends BlockReader {
+      private final int[] buffer = new int[64];
+      private final IndexInput in;
+      private final BytesRef scratch = new BytesRef(10);
+      private int limit;
+      private boolean omitTF;
+
+      public FreqsReader() {
+        this.in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
+      }
+
+      public void reset(long fp, boolean omitTF) throws IOException {
+        in.seek(fp);
+        this.omitTF = omitTF;
+        fill();
+      }
+
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+
+      @Override
+      public int end() {
+        return limit;
+      }
+
+      @Override
+      public int fill() throws IOException {
+        int upto = 0;
+        int freq = -1;
+        long lastFP = in.getFilePointer();
+        while(upto < buffer.length) {
+          lastFP = in.getFilePointer();
+          readLine(in, scratch);
+          if (scratch.startsWith(TERM) || scratch.startsWith(FIELD) || scratch.equals(END)) {
+            if (freq != -1) {
+              buffer[upto++] = omitTF ? 1 : freq;
+            }
+            break;
+          } else if (scratch.startsWith(DOC)) {
+            if (freq != -1) {
+              buffer[upto++] = omitTF ? 1: freq;
+            }
+            freq = 0;
+          } else if (scratch.startsWith(POS)) {
+            freq++;
+          }
+        }
+        in.seek(lastFP);
+        return limit = upto;
+      }
+    }
+  
+    public SimpleTextBulkPostingsEnum reset(long fp, boolean omitTF) throws IOException {
+
+      docDeltasReader.reset(fp);
+    
+      if (freqsReader != null) {
+        freqsReader.reset(fp, omitTF);
+      }
+      if (positionDeltasReader != null) {
+        positionDeltasReader.reset(fp);
+      }
+      return this;
+    }
+
+    @Override
+    public BlockReader getDocDeltasReader() {
+      return docDeltasReader;
+    }
+
+    @Override
+    public BlockReader getPositionDeltasReader() {
+      return positionDeltasReader;
+    }
+
+    @Override
+    public BlockReader getFreqsReader() {
+      return freqsReader;
+    }
+
+    @Override
+    public JumpResult jump(int target, int curCount) {
+      return null;
     }
   }
 

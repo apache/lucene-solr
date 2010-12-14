@@ -170,10 +170,17 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
+    public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+      return in.bulkPostings(reuse, doFreqs, doPositions);
+    }
+
+    @Override
     public Comparator<BytesRef> getComparator() throws IOException {
       return in.getComparator();
     }
   }
+
+  // nocommit need FilteredBulkDocsEnum
 
   /** Base class for filtering {@link DocsEnum} implementations. */
   public static class FilterDocsEnum extends DocsEnum {

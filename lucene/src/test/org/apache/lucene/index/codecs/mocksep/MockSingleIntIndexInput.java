@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
+import org.apache.lucene.index.BulkPostingsEnum;
 
 /** Reads IndexInputs written with {@link
  *  SingleIntIndexOutput}.  NOTE: this class is just for
@@ -52,18 +53,41 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     in.close();
   }
 
-  public static class Reader extends IntIndexInput.Reader {
+  public static class Reader extends BulkPostingsEnum.BlockReader {
     // clone:
     private final IndexInput in;
+    private int offset;
+    private final int[] buffer = new int[1];
 
     public Reader(IndexInput in) {
       this.in = in;
     }
 
-    /** Reads next single int */
     @Override
-    public int next() throws IOException {
-      return in.readVInt();
+    public int[] getBuffer() {
+      return buffer;
+    }
+
+    @Override
+    public int offset() {
+      return offset;
+    }
+
+    @Override
+    public void setOffset(int offset) {
+      this.offset = offset;
+    }
+
+    @Override
+    public int end() {
+      return 1;
+    }
+
+    @Override
+    public int fill() throws IOException {
+      buffer[0] = in.readVInt();
+      offset = 0;
+      return 1;
     }
   }
   
@@ -81,7 +105,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void read(IntIndexInput.Reader indexIn, boolean absolute)
+    public void read(BulkPostingsEnum.BlockReader indexIn, boolean absolute)
       throws IOException {
       if (absolute) {
         fp = indexIn.readVLong();
@@ -96,8 +120,9 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void seek(IntIndexInput.Reader other) throws IOException {
+    public void seek(BulkPostingsEnum.BlockReader other) throws IOException {
       ((Reader) other).in.seek(fp);
+      other.fill();
     }
 
     @Override

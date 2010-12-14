@@ -66,5 +66,9 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   public IndexReader[] getSequentialSubReaders() {
     return null;
   }
-  
+
+  @Override
+  public String toString() {
+    return "SlowMultiReaderWrapper(" + in + ")";
+  }
 }

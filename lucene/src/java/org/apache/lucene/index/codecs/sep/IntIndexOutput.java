@@ -25,6 +25,8 @@ import org.apache.lucene.store.IndexOutput;
 import java.io.IOException;
 import java.io.Closeable;
 
+// nocommit -- move to oal.store?
+
 /** Defines basic API for writing ints to an IndexOutput.
  *  IntBlockCodec interacts with this API. @see
  *  IntBlockReader.

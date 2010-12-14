@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
@@ -170,6 +171,17 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   @Override
+  public BulkPostingsEnum bulkPostings(FieldInfo fieldInfo, TermState termState, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+    SegmentBulkPostingsEnum postingsEnum;
+    if (reuse == null || !(reuse instanceof SegmentBulkPostingsEnum) || !((SegmentBulkPostingsEnum) reuse).canReuse(fieldInfo, freqIn, doFreqs, doPositions)) {
+      postingsEnum = new SegmentBulkPostingsEnum(fieldInfo.omitTermFreqAndPositions, doFreqs, doPositions);
+    } else {
+      postingsEnum = (SegmentBulkPostingsEnum) reuse;
+    }
+    return postingsEnum.reset(fieldInfo, (DocTermState) termState);
+  }
+
+  @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, TermState termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (fieldInfo.omitTermFreqAndPositions) {
       return null;
@@ -248,6 +260,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       // cases
       freqIn.seek(termState.freqOffset);
       limit = termState.docFreq;
+      assert limit > 0;
       ord = 0;
       doc = 0;
 
@@ -420,6 +433,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       lazyProxPointer = termState.proxOffset;
 
       limit = termState.docFreq;
+      assert limit > 0;
       ord = 0;
       doc = 0;
       position = 0;
@@ -794,6 +808,330 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     public boolean hasPayload() {
       return payloadPending && payloadLength > 0;
+    }
+  }
+  
+  static final int BULK_BUFFER_SIZE = 64;
+  
+  // Bulk postings API
+  private final class SegmentBulkPostingsEnum extends BulkPostingsEnum {
+    private final IndexInput freqIn;
+    private final IndexInput proxIn;
+  
+    final IndexInput startFreqIn;
+    private final boolean omitTF;
+  
+    boolean storePayloads;                        // does current field store payloads?
+  
+    int ord;                                      // how many docs we've read
+    int docFreq;
+  
+    long freqOffset;
+    long proxOffset;
+    int skipOffset;
+  
+    boolean skipped;
+    DefaultSkipListReader skipper;
+    private int payloadLength;
+  
+    private final DocDeltasReader docDeltasReader;
+    private final FreqsReader freqsReader;
+    private final PositionsReader positionDeltasReader;
+  
+    private boolean docsPending, freqsPending;
+  
+    public SegmentBulkPostingsEnum(boolean omitTF, boolean doFreqs, boolean doPositions) throws IOException {
+      //System.out.println("bulk init");
+      startFreqIn = StandardPostingsReader.this.freqIn;
+      this.freqIn = (IndexInput) StandardPostingsReader.this.freqIn.clone();
+      this.omitTF = omitTF;
+  
+      docDeltasReader = new DocDeltasReader();
+      if (doFreqs && !omitTF) {
+        freqsReader = new FreqsReader();
+      } else {
+        freqsReader = null;
+      }
+  
+      if (doPositions && !omitTF) {
+        this.proxIn = (IndexInput) StandardPostingsReader.this.proxIn.clone();
+        positionDeltasReader = new PositionsReader();
+      } else {
+        this.proxIn = null;
+        positionDeltasReader = null;
+      }
+    }
+  
+    public boolean canReuse(FieldInfo fieldInfo, IndexInput freqin, boolean doFreqs, boolean doPositions) {
+      return freqIn == startFreqIn &&
+        (!doFreqs || freqsReader == null) &&
+        (!doPositions || positionDeltasReader == null) && 
+        (omitTF == fieldInfo.omitTermFreqAndPositions);
+    }
+  
+    final void read() throws IOException {
+      if (freqsReader == null) {
+        // Consumer only wants doc deltas
+        assert !docsPending;
+        if (omitTF) {
+          // Index only stores doc deltas
+          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+            docDeltasReader.buffer[i] = freqIn.readVInt();
+          }
+        } else {
+          // Index stores doc deltas & freq
+          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+            final int code = freqIn.readVInt();
+            docDeltasReader.buffer[i] = code >>> 1;
+            if ((code & 1) == 0) {
+              freqIn.readVInt();
+            }
+          }
+        }
+        ord += BULK_BUFFER_SIZE;
+        docsPending = true;
+      } else {
+        // Consumer wants both
+        assert !docsPending;
+        assert !freqsPending;
+        for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          final int code = freqIn.readVInt();
+          docDeltasReader.buffer[i] = code >>> 1;
+          if ((code & 1) == 0) {
+            freqsReader.buffer[i] = freqIn.readVInt();
+          } else {
+            freqsReader.buffer[i] = 1;
+          }
+        }
+        ord += BULK_BUFFER_SIZE;
+        docsPending = true;
+        freqsPending = true;
+      }
+    }
+  
+    private class DocDeltasReader extends BulkPostingsEnum.BlockReader {
+      final int[] buffer = new int[BULK_BUFFER_SIZE];
+      int limit;
+      int offset;
+  
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+  
+      @Override
+      public int end() {
+        return limit;
+      }
+  
+      @Override
+      public int fill() throws IOException {
+        if (!docsPending) {
+          read();
+        }
+        docsPending = false;
+        limit = BULK_BUFFER_SIZE;
+        offset = 0;
+        //System.out.println("spr: doc deltas read limit=" + limit);
+        return BULK_BUFFER_SIZE;
+      }
+  
+      @Override
+      public int offset() {
+        return offset;
+      }
+  
+      @Override
+      public void setOffset(int offset) {
+        this.offset = offset;
+      }
+    }
+  
+    private class FreqsReader extends BulkPostingsEnum.BlockReader {
+      final int[] buffer = new int[BULK_BUFFER_SIZE];
+      int limit;
+  
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+  
+      @Override
+      public int end() {
+        return limit;
+      }
+  
+      @Override
+      public int fill() throws IOException {
+        if (!freqsPending) {
+          read();
+        }
+        freqsPending = false;
+        limit = BULK_BUFFER_SIZE;
+        return BULK_BUFFER_SIZE;
+      }
+  
+      @Override
+      public int offset() {
+        return 0;
+      }
+  
+      @Override
+      public void setOffset(int offset) {
+        throw new UnsupportedOperationException();
+      }
+    }
+  
+    private class PositionsReader extends BulkPostingsEnum.BlockReader {
+      final int[] buffer = new int[BULK_BUFFER_SIZE];
+      int limit;
+  
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+  
+      @Override
+      public int end() {
+        return limit;
+      }
+  
+      @Override
+      public int fill() throws IOException {
+        // nocommit -- must flush prx file w/ extra 127 0
+        // positions -- index change!!
+        if (storePayloads) {
+          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+            final int code = proxIn.readVInt();
+            buffer[i] = code >>> 1;
+            if ((code & 1) != 0) {
+              payloadLength = proxIn.readVInt();
+            }
+            if (payloadLength != 0) {
+              // skip payload
+              proxIn.seek(proxIn.getFilePointer()+payloadLength);
+            }
+          }
+        } else {
+          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+            buffer[i] = proxIn.readVInt();
+          }
+        }
+        limit = BULK_BUFFER_SIZE;
+        return BULK_BUFFER_SIZE;
+      }
+  
+      @Override
+      public int offset() {
+        return 0;
+      }
+  
+      @Override
+      public void setOffset(int offset) {
+        throw new UnsupportedOperationException();
+      }
+    }
+    
+    @Override
+    public BlockReader getDocDeltasReader() {
+      return docDeltasReader;
+    }
+      
+    @Override
+    public BlockReader getFreqsReader() {
+      return freqsReader;
+    }
+  
+    @Override
+    public BlockReader getPositionDeltasReader() {
+      return positionDeltasReader;
+    }
+  
+    public SegmentBulkPostingsEnum reset(FieldInfo fieldInfo, DocTermState termState) throws IOException {
+      storePayloads = fieldInfo.storePayloads;
+      freqOffset = termState.freqOffset;
+      freqIn.seek(freqOffset);
+  
+      // TODO: for full enum case (eg segment merging) this
+      // seek is unnecessary; maybe we can avoid in such
+      // cases
+      if (positionDeltasReader != null) {
+        // nocommit -- how come this is a live seek but
+        // frq/doc is not?
+        proxOffset = termState.proxOffset;
+        proxIn.seek(proxOffset);
+      }
+  
+      skipOffset = termState.skipOffset;
+      docFreq = termState.docFreq;
+      assert docFreq > 0;
+  
+      ord = 0;
+      skipped = false;
+  
+      return this;
+    }
+  
+    private final JumpResult jumpResult = new JumpResult();
+  
+    @Override
+    public JumpResult jump(int target, int curCount) throws IOException {
+  
+      // TODO: jump right to next() if target is < X away
+      // from where we are now?
+  
+      if (skipOffset > 0) {
+  
+        // There are enough docs in the posting to have
+        // skip data
+  
+        if (skipper == null) {
+          // This is the first time this enum has ever been used for skipping -- do lazy init
+          skipper = new DefaultSkipListReader((IndexInput) freqIn.clone(), maxSkipLevels, skipInterval);
+        }
+  
+        if (!skipped) {
+  
+          // This is the first time this posting has
+          // skipped since reset() was called, so now we
+          // load the skip data for this posting
+          skipper.init(freqOffset + skipOffset,
+                       freqOffset, proxOffset,
+                       docFreq, storePayloads);
+  
+          skipped = true;
+        }
+  
+        final int newOrd = skipper.skipTo(target); 
+  
+        // nocommit rename ord -> count
+        assert curCount == ord: "curCount=" + curCount + " ord=" + ord;
+  
+        if (newOrd > ord) {
+          // Skipper moved
+          //System.out.println("newOrd=" + newOrd + " vs ord=" + ord + " doc=" + skipper.getDoc());
+  
+          freqIn.seek(skipper.getFreqPointer());
+          docDeltasReader.limit = 0;
+  
+          if (freqsReader != null) {
+            freqsReader.limit = 0;
+          }
+  
+          if (positionDeltasReader != null) {
+            positionDeltasReader.limit = 0;
+            proxIn.seek(skipper.getProxPointer());
+          }
+  
+          jumpResult.count = ord = newOrd;
+          jumpResult.docID = skipper.getDoc();
+  
+          return jumpResult;
+        }
+      }
+  
+      // no jump occurred
+      return null;
     }
   }
 }

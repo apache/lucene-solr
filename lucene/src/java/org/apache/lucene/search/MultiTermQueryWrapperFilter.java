@@ -23,7 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Bits;
@@ -125,26 +125,32 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
       int termCount = 0;
       final Bits delDocs = MultiFields.getDeletedDocs(reader);
-      DocsEnum docsEnum = null;
+      BulkPostingsEnum postingsEnum = null;
       do {
         termCount++;
-        // System.out.println("  iter termCount=" + termCount + " term=" +
-        // enumerator.term().toBytesString());
-        docsEnum = termsEnum.docs(delDocs, docsEnum);
-        final DocsEnum.BulkReadResult result = docsEnum.getBulkResult();
-        while (true) {
-          final int count = docsEnum.read();
-          if (count != 0) {
-            final int[] docs = result.docs.ints;
-            for (int i = 0; i < count; i++) {
-              bitSet.set(docs[i]);
-            }
-          } else {
-            break;
+        postingsEnum = termsEnum.bulkPostings(postingsEnum, false, false);
+        final int docFreq = termsEnum.docFreq();
+        final BulkPostingsEnum.BlockReader docDeltasReader = postingsEnum.getDocDeltasReader();
+        final int[] docDeltas = docDeltasReader.getBuffer();
+        int offset = docDeltasReader.offset();
+        int limit = docDeltasReader.end();
+        if (offset >= limit) {
+          limit = docDeltasReader.fill();
+        }
+        int count = 0;
+        int doc = 0;
+        while (count < docFreq) {
+          if (offset >= limit) {
+            offset = 0;
+            limit = docDeltasReader.fill();
+          }
+          doc += docDeltas[offset++];
+          count++;
+          if (delDocs == null || !delDocs.get(doc)) {
+            bitSet.set(doc);
           }
         }
       } while (termsEnum.next() != null);
-      // System.out.println("  done termCount=" + termCount);
 
       query.incTotalNumberOfTerms(termCount);
       return bitSet;

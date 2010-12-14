@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -319,9 +320,9 @@ public class PrefixCodedTermsReader extends FieldsProducer {
       @Override
       public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
         // Check cache
-        fieldTerm.term = term;
         TermState cachedState;
         if (useCache) {
+          fieldTerm.term = term;
           cachedState = termsCache.get(fieldTerm);
           if (cachedState != null) {
             state.copy(cachedState);
@@ -387,7 +388,6 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         while(next() != null) {
           final int cmp = termComp.compare(bytesReader.term, term);
           if (cmp == 0) {
-
             if (doSeek && useCache) {
               // Store in cache
               FieldAndTerm entryKey = new FieldAndTerm(fieldTerm);
@@ -396,7 +396,6 @@ public class PrefixCodedTermsReader extends FieldsProducer {
               cachedState.filePointer = in.getFilePointer();
               termsCache.put(entryKey, cachedState);
             }
-              
             return SeekStatus.FOUND;
           } else if (cmp > 0) {
             return SeekStatus.NOT_FOUND;
@@ -497,6 +496,12 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, skipDocs, reuse);
         assert docsEnum != null;
         return docsEnum;
+      }
+
+      @Override
+      public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+        BulkPostingsEnum postingsEnum = postingsReader.bulkPostings(fieldInfo, state, reuse, doFreqs, doPositions);
+        return postingsEnum;
       }
 
       @Override

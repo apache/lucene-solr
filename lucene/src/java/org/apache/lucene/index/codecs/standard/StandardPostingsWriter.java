@@ -224,6 +224,16 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void close() throws IOException {
+
+    // Readers read whole blocks at once, so we have to
+    // flush final block out w/ unused values:
+    for(int i=0;i<StandardPostingsReader.BULK_BUFFER_SIZE-1;i++) {
+      freqOut.writeVInt(1);
+      if (proxOut != null) {
+        proxOut.writeVInt(0);
+      }
+    }
+ 
     try {
       freqOut.close();
     } finally {

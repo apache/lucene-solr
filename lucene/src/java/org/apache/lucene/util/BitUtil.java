@@ -814,4 +814,25 @@ public final class BitUtil {
     return v;
   }
 
+  /** Returns the smallest non negative p such that a given value < (2**(p+1))
+   * This differs from (63 - java.lang.Long.numberOfLeadingZeros(v))
+   * for non positive given values.
+   */
+  public static int logNextHigherPowerOfTwo(long v) {
+    long vinput = v; // only for assertions below.
+    int p = 0;
+    while (v >= (1 << 8)) {
+      v >>= 8;
+      p += 8;
+    }
+    while (v >= (1 << 1)) {
+      v >>= 1;
+      p++;
+    }
+    assert (p <= 62) : p;
+    assert (p == 62) || (vinput < (1L << (p + 1))) : "p " + p + ", vinput " + vinput;
+    assert (p == 0) || (vinput >= (1L << p)) : "p " + p + ", vinput " + vinput;
+    assert (vinput <= 0) || (p == (63 - Long.numberOfLeadingZeros(vinput))) : "p " + p + ", vinput " + vinput;
+    return p;
+  }
 }

@@ -770,7 +770,7 @@ public class CheckIndex {
             }
 
             if (totDocCount != totDocCount2) {
-              throw new RuntimeException("search to seek terms produced wrong number of hits: " + totDocCount + " vs " + totDocCount2);
+              throw new RuntimeException("search by seek term produced wrong number of hits: " + totDocCount + " vs " + totDocCount2 + " field=" + field);
             }
           }
         }

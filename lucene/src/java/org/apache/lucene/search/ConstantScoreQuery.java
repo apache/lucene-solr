@@ -142,6 +142,11 @@ public class ConstantScoreQuery extends Query {
     public int nextDoc() throws IOException {
       return docIdSetIterator.nextDoc();
     }
+
+    @Override
+    public String toString() {
+      return "ConstantScorer(" + filter + ")";
+    }
     
     @Override
     public int docID() {

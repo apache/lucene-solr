@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.pulsing;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.codecs.TermState;
@@ -30,6 +31,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.ArrayUtil;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format 
@@ -200,6 +202,27 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     }
   }
 
+  // TODO: we could actually reuse, by having TL that
+  // holds the last wrapped reuse, and vice-versa
+  @Override
+  public BulkPostingsEnum bulkPostings(FieldInfo field, TermState _termState, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+    PulsingTermState termState = (PulsingTermState) _termState;
+    if (termState.docFreq <= maxPulsingDocFreq) {
+      if (reuse instanceof PulsingBulkPostingsEnum && ((PulsingBulkPostingsEnum) reuse).docDeltas.length == maxPulsingDocFreq) {
+        return ((PulsingBulkPostingsEnum) reuse).reset(termState, doFreqs, doPositions);
+      } else {
+        PulsingBulkPostingsEnum postingsEnum = new PulsingBulkPostingsEnum(maxPulsingDocFreq);
+        return postingsEnum.reset(termState, doFreqs, doPositions);
+      }
+    } else {
+      if (reuse instanceof PulsingBulkPostingsEnum) {
+        return wrappedPostingsReader.bulkPostings(field, termState.wrappedTermState, null, doFreqs, doPositions);
+      } else {
+        return wrappedPostingsReader.bulkPostings(field, termState.wrappedTermState, reuse, doFreqs, doPositions);
+      }
+    }
+  }
+
   // TODO: -- not great that we can't always reuse
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, TermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
@@ -225,8 +248,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     private Bits skipDocs;
     private Document doc;
     private PulsingTermState state;
-
-    public void close() {}
 
     PulsingDocsEnum reset(Bits skipDocs, PulsingTermState termState) {
       // TODO: -- not great we have to clone here --
@@ -287,6 +308,159 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           return doc;
       }
       return NO_MORE_DOCS;
+    }
+  }
+
+  static class PulsingBulkPostingsEnum extends BulkPostingsEnum {
+    private Document doc;
+    private PulsingTermState state;
+    private int numDocs;
+    private final int[] docDeltas;
+    private final int[] freqs;
+    private int[] positionDeltas;
+    private int numPositions;
+    private boolean doFreqs;
+    private boolean doPositions;
+
+    public PulsingBulkPostingsEnum(int maxFreq) {
+      docDeltas = new int[maxFreq];
+      freqs = new int[maxFreq];
+      positionDeltas = new int[maxFreq];
+    }
+
+    PulsingBulkPostingsEnum reset(PulsingTermState termState, boolean doFreqs, boolean doPositions) {
+      numDocs = termState.docFreq;
+      this.doFreqs = doFreqs;
+      this.doPositions = doPositions;
+      assert numDocs <= docDeltas.length;
+      int lastDocID = 0;
+      numPositions = 0;
+      for(int i=0;i<numDocs;i++) {
+        final int docID = termState.docs[i].docID;
+        docDeltas[i] = docID - lastDocID;
+        if (doFreqs) {
+          freqs[i] = termState.docs[i].numPositions;
+          assert freqs[i] > 0;
+          if (doPositions) {
+            final Position[] positions = termState.docs[i].positions;
+            int lastPos = 0;
+            for(int posIndex=0;posIndex<freqs[i];posIndex++) {
+              if (positionDeltas.length == numPositions) {
+                positionDeltas = ArrayUtil.grow(positionDeltas, 1+numPositions);
+              }
+              final int pos = positions[i].pos;
+              positionDeltas[numPositions++] = pos - lastPos;
+              lastPos = pos;
+            }
+          }
+        }
+        lastDocID = docID;
+      }
+      
+      return this;
+    }
+
+    private final BulkPostingsEnum.BlockReader docDeltasReader = new BulkPostingsEnum.BlockReader() {
+      @Override
+      public int[] getBuffer() {
+        return docDeltas;
+      }
+
+      @Override
+      public int fill() {
+        return numDocs;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+
+      @Override
+      public int end() {
+        return docDeltas.length;
+      }
+    };
+
+    @Override
+    public BulkPostingsEnum.BlockReader getDocDeltasReader() {
+      return docDeltasReader;
+    }
+
+    private final BulkPostingsEnum.BlockReader freqsReader = new BulkPostingsEnum.BlockReader() {
+      @Override
+      public int[] getBuffer() {
+        return freqs;
+      }
+
+      @Override
+      public int fill() {
+        return numDocs;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+
+      @Override
+      public int end() {
+        return numDocs;
+      }
+    };
+
+    @Override
+    public BulkPostingsEnum.BlockReader getFreqsReader() {
+      return doFreqs ? freqsReader: null;
+    }
+
+    private final BulkPostingsEnum.BlockReader positionDeltasReader = new BulkPostingsEnum.BlockReader() {
+      @Override
+      public int[] getBuffer() {
+        return positionDeltas;
+      }
+
+      @Override
+      public int fill() {
+        return numPositions;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+
+      @Override
+      public int end() {
+        return positionDeltas.length;
+      }
+    };
+
+    @Override
+    public BulkPostingsEnum.BlockReader getPositionDeltasReader() {
+      return doPositions ? positionDeltasReader : null;
+    }
+
+    @Override
+    public JumpResult jump(int target, int curCount) throws IOException {
+      // TODO: advance is likely unhelpful since apps
+      // "usually" set a lowish docFreq cutoff
+      return null;
     }
   }
 

@@ -215,6 +215,19 @@ public final class MultiFields extends Fields {
     }
   }
 
+  /** Returns {@link BulkPostingsEnum} for the specified
+   *  field & term.  This may return null if the term does
+   *  not exist or positions were not indexed. */
+  public static BulkPostingsEnum getBulkPostingsEnum(IndexReader r, String field, BytesRef term, boolean doFreqs, boolean doPositions) throws IOException {
+    assert field != null;
+    assert term != null;
+    final Terms terms = getTerms(r, field);
+    if (terms != null) {
+      return terms.bulkPostings(term, null, doFreqs, doPositions);
+    } else {
+      return null;
+    }
+  }
   public MultiFields(Fields[] subs, ReaderUtil.Slice[] subSlices) {
     this.subs = subs;
     this.subSlices = subSlices;

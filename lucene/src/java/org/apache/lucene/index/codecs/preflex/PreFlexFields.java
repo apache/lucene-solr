@@ -27,6 +27,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
@@ -42,6 +43,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.index.codecs.standard.DefaultSkipListReader;
 
 /** Exposes flex API on a pre-flex index, as a codec. 
  * @lucene.experimental
@@ -971,6 +973,17 @@ public class PreFlexFields extends FieldsProducer {
       }
       return docsPosEnum.reset(termEnum, skipDocs);        
     }
+
+    @Override
+    public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+      PreBulkPostingsEnum postingsEnum;
+      if (reuse == null || !(reuse instanceof PreBulkPostingsEnum) || !((PreBulkPostingsEnum) reuse).canReuse(fieldInfo, freqStream, doFreqs, doPositions)) {
+        postingsEnum = new PreBulkPostingsEnum(fieldInfo.omitTermFreqAndPositions, doFreqs, doPositions);
+      } else {
+        postingsEnum = (PreBulkPostingsEnum) reuse;
+      }
+      return postingsEnum.reset(fieldInfo, termEnum);
+    }
   }
 
   private final class PreDocsEnum extends DocsEnum {
@@ -1101,6 +1114,326 @@ public class PreFlexFields extends FieldsProducer {
       payload.bytes = pos.getPayload(payload.bytes, 0);
       payload.length = len;
       return payload;
+    }
+  }
+
+  static final int BULK_BUFFER_SIZE = 64;
+  
+  // Bulk postings API
+  private final class PreBulkPostingsEnum extends BulkPostingsEnum {
+    private final IndexInput freqIn;
+    private final IndexInput proxIn;
+
+    final IndexInput startFreqIn;
+    private final boolean omitTF;
+
+    boolean storePayloads;                        // does current field store payloads?
+
+    int ord;                                      // how many docs we've read
+    int docFreq;
+
+    long freqOffset;
+    long proxOffset;
+    int skipOffset;
+
+    boolean skipped;
+    DefaultSkipListReader skipper;
+    private int payloadLength;
+
+    private final DocDeltasReader docDeltasReader;
+    private final FreqsReader freqsReader;
+    private final PositionsReader positionDeltasReader;
+
+    private boolean docsPending, freqsPending;
+
+    public PreBulkPostingsEnum(boolean omitTF, boolean doFreqs, boolean doPositions) throws IOException {
+      startFreqIn = PreFlexFields.this.freqStream;
+      this.freqIn = (IndexInput) PreFlexFields.this.freqStream.clone();
+      this.omitTF = omitTF;
+
+      docDeltasReader = new DocDeltasReader();
+      if (doFreqs && !omitTF) {
+        freqsReader = new FreqsReader();
+      } else {
+        freqsReader = null;
+      }
+
+      if (doPositions && !omitTF) {
+        this.proxIn = (IndexInput) PreFlexFields.this.proxStream.clone();
+        positionDeltasReader = new PositionsReader();
+      } else {
+        this.proxIn = null;
+        positionDeltasReader = null;
+      }
+    }
+
+    public boolean canReuse(FieldInfo fieldInfo, IndexInput freqin, boolean doFreqs, boolean doPositions) {
+      return freqIn == startFreqIn &&
+        (!doFreqs || freqsReader == null) &&
+        (!doPositions || positionDeltasReader == null) && 
+        (omitTF == fieldInfo.omitTermFreqAndPositions);
+    }
+
+    final void read() throws IOException {
+      try {
+        if (freqsReader == null) {
+          // Consumer only wants doc deltas
+          assert !docsPending;
+          if (omitTF) {
+            // Index only stores doc deltas
+            for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+              docDeltasReader.buffer[i] = freqIn.readVInt();
+            }
+          } else {
+            // Index stores doc deltas & freq
+            for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+              final int code = freqIn.readVInt();
+              docDeltasReader.buffer[i] = code >>> 1;
+              if ((code & 1) == 0) {
+                freqIn.readVInt();
+              }
+            }
+          }
+          docsPending = true;
+        } else {
+          // Consumer wants both
+          assert !docsPending;
+          assert !freqsPending;
+          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+            final int code = freqIn.readVInt();
+            docDeltasReader.buffer[i] = code >>> 1;
+            if ((code & 1) == 0) {
+              freqsReader.buffer[i] = freqIn.readVInt();
+            } else {
+              freqsReader.buffer[i] = 1;
+            }
+          }
+          docsPending = true;
+          freqsPending = true;
+        }
+        ord += BULK_BUFFER_SIZE;
+      } catch (IOException ioe) {
+        if (freqIn.getFilePointer() != freqIn.length()) {
+          throw ioe;
+        }
+      }
+    }
+
+    class DocDeltasReader extends BulkPostingsEnum.BlockReader {
+      private final int[] buffer = new int[BULK_BUFFER_SIZE];
+      private int limit;
+
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+
+      @Override
+      public int end() {
+        return limit;
+      }
+
+      @Override
+      public int fill() throws IOException {
+        if (!docsPending) {
+          read();
+        }
+        docsPending = false;
+        limit = BULK_BUFFER_SIZE;
+        return BULK_BUFFER_SIZE;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+    }
+
+    class FreqsReader extends BulkPostingsEnum.BlockReader {
+      private final int[] buffer = new int[BULK_BUFFER_SIZE];
+      private int limit;
+
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+
+      @Override
+      public int end() {
+        return limit;
+      }
+
+      @Override
+      public int fill() throws IOException {
+        if (!freqsPending) {
+          read();
+        }
+        freqsPending = false;
+        limit = BULK_BUFFER_SIZE;
+        return BULK_BUFFER_SIZE;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+    }
+
+    class PositionsReader extends BulkPostingsEnum.BlockReader {
+      final int[] buffer = new int[BULK_BUFFER_SIZE];
+      int limit;
+
+      @Override
+      public int[] getBuffer() {
+        return buffer;
+      }
+
+      @Override
+      public int end() {
+        return limit;
+      }
+
+      @Override
+      public int fill() throws IOException {
+        // nocommit -- must "handle" EOF here -- cannot
+        // change old index format!
+        if (storePayloads) {
+          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+            final int code = proxIn.readVInt();
+            buffer[i] = code >>> 1;
+            if ((code & 1) != 0) {
+              payloadLength = proxIn.readVInt();
+            }
+            if (payloadLength != 0) {
+              // skip payload
+              proxIn.seek(proxIn.getFilePointer()+payloadLength);
+            }
+          }
+        } else {
+          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+            buffer[i] = proxIn.readVInt();
+          }
+        }
+        limit = BULK_BUFFER_SIZE;
+        return BULK_BUFFER_SIZE;
+      }
+
+      @Override
+      public int offset() {
+        return 0;
+      }
+
+      @Override
+      public void setOffset(int offset) {
+        assert offset == 0;
+      }
+    }
+    
+    @Override
+    public BlockReader getDocDeltasReader() {
+      return docDeltasReader;
+    }
+      
+    @Override
+    public BlockReader getFreqsReader() {
+      return freqsReader;
+    }
+
+    @Override
+    public BlockReader getPositionDeltasReader() {
+      return positionDeltasReader;
+    }
+
+    public PreBulkPostingsEnum reset(FieldInfo fieldInfo, SegmentTermEnum termEnum) throws IOException {
+      storePayloads = fieldInfo.storePayloads;
+      freqOffset = termEnum.termInfo.freqPointer;
+      freqIn.seek(freqOffset);
+
+      // TODO: for full enum case (eg segment merging) this
+      // seek is unnecessary; maybe we can avoid in such
+      // cases
+      if (positionDeltasReader != null) {
+        proxOffset = termEnum.termInfo.proxPointer;
+        proxIn.seek(proxOffset);
+      }
+
+      skipOffset = termEnum.termInfo.skipOffset;
+      docFreq = termEnum.docFreq();
+
+      ord = 0;
+      skipped = false;
+
+      return this;
+    }
+
+    private final JumpResult jumpResult = new JumpResult();
+
+    @Override
+    public JumpResult jump(int target, int curCount) throws IOException {
+
+      // TODO: jump right to next() if target is < X away
+      // from where we are now?
+
+      if (skipOffset > 0) {
+
+        // There are enough docs in the posting to have
+        // skip data
+
+        if (skipper == null) {
+          // This is the first time this enum has ever been used for skipping -- do lazy init
+          skipper = new DefaultSkipListReader((IndexInput) freqIn.clone(), tis.getMaxSkipLevels(), tis.getSkipInterval());
+        }
+
+        if (!skipped) {
+
+          // This is the first time this posting has
+          // skipped since reset() was called, so now we
+          // load the skip data for this posting
+          skipper.init(freqOffset + skipOffset,
+                       freqOffset, proxOffset,
+                       docFreq, storePayloads);
+
+          skipped = true;
+        }
+
+        final int newOrd = skipper.skipTo(target); 
+
+        // nocommit rename ord -> count
+        assert curCount == ord: "ord=" + ord + " curCount=" + curCount;
+
+        if (newOrd > ord) {
+
+          // Skipper moved
+          freqIn.seek(skipper.getFreqPointer());
+          if (freqsReader != null) {
+            freqsReader.limit = 0;
+          }
+          docDeltasReader.limit = 0;
+
+          if (positionDeltasReader != null) {
+            positionDeltasReader.limit = 0;
+            proxIn.seek(skipper.getProxPointer());
+          }
+
+          jumpResult.count = ord = newOrd;
+          jumpResult.docID = skipper.getDoc();
+
+          return jumpResult;
+        }
+      }
+
+      // no jump occurred
+      return null;
     }
   }
 }

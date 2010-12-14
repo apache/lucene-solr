@@ -19,26 +19,33 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.index.BulkPostingsEnum;
+import org.apache.lucene.util.Bits;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
-  private DocsEnum docsEnum;
+  private BulkPostingsEnum docsEnum;
   private byte[] norms;
   private float weightValue;
-  private int doc = -1;
-  private int freq;
+  private int doc;
 
-  private int pointer;
-  private int pointerMax;
+  private final int[] docDeltas;
+  private int docPointer;
+  private int docPointerMax;
+  private boolean first = true;
+
+  private final int[] freqs;
+  private int freqPointer;
+  private int freqPointerMax;
 
   private static final int SCORE_CACHE_SIZE = 32;
   private float[] scoreCache = new float[SCORE_CACHE_SIZE];
-  private int[] docs;
-  private int[] freqs;
-  private final DocsEnum.BulkReadResult bulkResult;
+  private final BulkPostingsEnum.BlockReader freqsReader;
+  private final BulkPostingsEnum.BlockReader docDeltasReader;
+  private final Bits skipDocs;
+  private final int docFreq;
+  private int count;
 
   /**
    * Construct a <code>TermScorer</code>.
@@ -53,13 +60,36 @@ final class TermScorer extends Scorer {
    * @param norms
    *          The field norms of the document fields for the <code>Term</code>.
    */
-  TermScorer(Weight weight, DocsEnum td, Similarity similarity, byte[] norms) {
+  TermScorer(Weight weight, BulkPostingsEnum td, int docFreq, Bits skipDocs, Similarity similarity, byte[] norms) throws IOException {
     super(similarity, weight);
     
     this.docsEnum = td;
+    this.docFreq = docFreq;
+    docDeltasReader = td.getDocDeltasReader();
+    docDeltas = docDeltasReader.getBuffer();
+    docPointerMax = docDeltasReader.end();
+    docPointer = docDeltasReader.offset();
+    if (docPointer >= docPointerMax) {
+      docPointerMax = docDeltasReader.fill();
+    }
+    docPointer--;
+
+    freqsReader = td.getFreqsReader();
+    if (freqsReader != null) {
+      freqs = freqsReader.getBuffer();
+      freqPointerMax = freqsReader.end();
+      freqPointer = freqsReader.offset();
+      if (freqPointer >= freqPointerMax) {
+        freqPointerMax = freqsReader.fill();
+      }
+      freqPointer--;
+    } else {
+      freqs = null;
+    }
+
+    this.skipDocs = skipDocs;
     this.norms = norms;
     this.weightValue = weight.getValue();
-    bulkResult = td.getBulkResult();
 
     for (int i = 0; i < SCORE_CACHE_SIZE; i++)
       scoreCache[i] = getSimilarity().tf(i) * weightValue;
@@ -70,41 +100,73 @@ final class TermScorer extends Scorer {
     score(c, Integer.MAX_VALUE, nextDoc());
   }
 
-  private final void refillBuffer() throws IOException {
-    pointerMax = docsEnum.read();  // refill
-    docs = bulkResult.docs.ints;
-    freqs = bulkResult.freqs.ints;
-  }
-
   // firstDocID is ignored since nextDoc() sets 'doc'
   @Override
   protected boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
+    //System.out.println("ts.collect firstdocID=" + firstDocID + " term=" + term + " end=" + end + " doc=" + doc);
+    // nocommit -- this can leave scorer on a deleted doc...
     while (doc < end) {                           // for docs in window
-      c.collect(doc);                      // collect score
-      if (++pointer >= pointerMax) {
-        refillBuffer();
-        if (pointerMax != 0) {
-          pointer = 0;
-        } else {
-          doc = NO_MORE_DOCS;                // set to sentinel value
-          return false;
+      if (skipDocs == null || !skipDocs.get(doc)) {
+        //System.out.println("ts.collect doc=" + doc + " skipDocs=" + skipDocs + " count=" + count + " vs dF=" + docFreq);
+        c.collect(doc);                      // collect
+      }
+      if (count == docFreq) {
+        doc = NO_MORE_DOCS;
+        return false;
+      }
+      count++;
+      docPointer++;
+
+      //System.out.println("dp=" + docPointer + " dpMax=" + docPointerMax + " count=" + count + " countMax=" + docFreq);
+
+      if (docPointer >= docPointerMax) {
+        docPointerMax = docDeltasReader.fill();
+        //System.out.println("    refill!  dpMax=" + docPointerMax + " reader=" + docDeltasReader);
+        assert docPointerMax != 0;
+        docPointer = 0;
+
+        if (freqsReader != null) {
+          freqPointer++;
+          // NOTE: this code is intentionally dup'd
+          // (specialized) w/ the else clause, for better CPU
+          // branch prediction (assuming compiler doesn't
+          // de-dup): for codecs that always bulk read same
+          // number of docDeltas & freqs (standard, for,
+          // pfor), this if will always be true.  Other codecs
+          // (simple9/16) will not be aligned:
+          if (freqPointer >= freqPointerMax) {
+            freqPointerMax = freqsReader.fill();
+            assert freqPointerMax != 0;
+            freqPointer = 0;
+          }
         }
-      } 
-      doc = docs[pointer];
-      freq = freqs[pointer];
+      } else if (freqsReader != null) {
+        freqPointer++;
+        if (freqPointer >= freqPointerMax) {
+          freqPointerMax = freqsReader.fill();
+          assert freqPointerMax != 0;
+          freqPointer = 0;
+        }
+      }
+
+      doc += docDeltas[docPointer];
     }
     return true;
   }
 
   @Override
   public int docID() {
-    return doc;
+    return first ? -1 : doc;
   }
 
   @Override
   public float freq() {
-    return freq;
+    if (freqsReader != null) {
+      return freqs[freqPointer];
+    } else {
+      return 1.0f;
+    }
   }
 
   /**
@@ -116,23 +178,65 @@ final class TermScorer extends Scorer {
    */
   @Override
   public int nextDoc() throws IOException {
-    pointer++;
-    if (pointer >= pointerMax) {
-      refillBuffer();
-      if (pointerMax != 0) {
-        pointer = 0;
+    //System.out.println("ts.nextDoc " + this + " count=" + count + " vs docFreq=" + docFreq);
+    while(count < docFreq) {
+      docPointer++;
+      if (docPointer >= docPointerMax) {
+        //System.out.println("ts.nd refill docs");
+        docPointerMax = docDeltasReader.fill();
+        assert docPointerMax != 0;
+        docPointer = 0;
+        if (freqsReader != null) {
+          // NOTE: this code is intentionally dup'd
+          // (specialized) w/ the else clause, for better CPU
+          // branch prediction (assuming compiler doesn't
+          // de-dup): for codecs that always bulk read same
+          // number of docDeltas & freqs (standard, for,
+          // pfor), this if will always be true.  Other codecs
+          // (simple9/16) will not be aligned:
+          freqPointer++;
+          if (freqPointer >= freqPointerMax) {
+            //System.out.println("ts.nd refill freqs");
+            freqPointerMax = freqsReader.fill();
+            assert freqPointerMax != 0;
+            freqPointer = 0;
+          }
+        }
       } else {
-        return doc = NO_MORE_DOCS;
+        if (freqsReader != null) {
+          freqPointer++;
+          if (freqPointer >= freqPointerMax) {
+            //System.out.println("ts.nd refill freqs");
+            freqPointerMax = freqsReader.fill();
+            assert freqPointerMax != 0;
+            freqPointer = 0;
+          }
+        }
       }
-    } 
-    doc = docs[pointer];
-    freq = freqs[pointer];
-    assert doc != NO_MORE_DOCS;
-    return doc;
+      count++;
+      doc += docDeltas[docPointer];
+      first = false;
+      assert doc >= 0 && (skipDocs == null || doc < skipDocs.length()) && doc != NO_MORE_DOCS: "doc=" + doc + " skipDocs=" + skipDocs + " skipDocs.length=" + (skipDocs==null? "n/a" : skipDocs.length());
+      if (skipDocs == null || !skipDocs.get(doc)) {
+        //System.out.println("  ret doc=" + doc + " freq=" + freq());
+        return doc;
+      }
+    }
+
+    //System.out.println("  end");
+    return doc = NO_MORE_DOCS;
   }
   
   @Override
   public float score() {
+    assert !first;
+    final int freq;
+    if (freqsReader == null) {
+      freq = 1;
+    } else {
+      freq = freqs[freqPointer];
+    }
+    assert freq > 0;
     assert doc != NO_MORE_DOCS;
     float raw =                                   // compute tf(f)*weight
       freq < SCORE_CACHE_SIZE                        // check cache
@@ -153,24 +257,100 @@ final class TermScorer extends Scorer {
    */
   @Override
   public int advance(int target) throws IOException {
-    // first scan in cache
-    for (pointer++; pointer < pointerMax; pointer++) {
-      if (docs[pointer] >= target) {
-        freq = freqs[pointer];
-        return doc = docs[pointer];
+
+    // nocommit: should we, here, optimize .advance(target that isn't
+    // too far away) into scan?  seems like simple win?
+
+    // first scan current doc deltas block
+    for (docPointer++; docPointer < docPointerMax && count < docFreq; docPointer++) {
+      assert first || docDeltas[docPointer] > 0;
+      doc += docDeltas[docPointer];
+      first = false;
+      count++;
+      if (freqsReader != null && ++freqPointer >= freqPointerMax) {
+        freqPointerMax = freqsReader.fill();
+        assert freqPointerMax != 0;
+        freqPointer = 0;
+      } 
+      if (doc >= target && (skipDocs == null || !skipDocs.get(doc))) {
+        return doc;
       }
     }
 
-    // not found in readahead cache, seek underlying stream
-    int newDoc = docsEnum.advance(target);
-    //System.out.println("ts.advance docsEnum=" + docsEnum);
-    if (newDoc != NO_MORE_DOCS) {
-      doc = newDoc;
-      freq = docsEnum.freq();
-    } else {
-      doc = NO_MORE_DOCS;
+    if (count == docFreq) {
+      return doc = NO_MORE_DOCS;
     }
-    return doc;
+
+    // not found in current block, seek underlying stream
+    BulkPostingsEnum.JumpResult jumpResult = docsEnum.jump(target, count);
+    if (jumpResult != null) {
+      count = jumpResult.count;
+      doc = jumpResult.docID;
+      first = false;
+      docPointer = docDeltasReader.offset();
+      docPointerMax = docDeltasReader.end();
+      if (docPointer >= docPointerMax) {
+        docPointerMax = docDeltasReader.fill();
+      }
+      docPointer--;
+      if (freqsReader != null) {
+        freqPointer = freqsReader.offset();
+        freqPointerMax = freqsReader.end();
+        if (freqPointer >= freqPointerMax) {
+          freqPointerMax = freqsReader.fill();
+        }
+        freqPointer--;
+      }
+    } else {
+      // seek did not jump -- just fill next buffer
+      docPointerMax = docDeltasReader.fill();
+      if (docPointerMax != 0) {
+        docPointer = 0;
+        assert first || docDeltas[0] > 0;
+        doc += docDeltas[0];
+        count++;
+        first = false;
+      } else {
+        return doc = NO_MORE_DOCS;
+      }
+      if (freqsReader != null && ++freqPointer >= freqPointerMax) {
+        freqPointerMax = freqsReader.fill();
+        assert freqPointerMax != 0;
+        freqPointer = 0;
+      } 
+    }
+
+    // now scan
+    while(true) {
+      assert doc >= 0 && doc != NO_MORE_DOCS;
+      if (doc >= target && (skipDocs == null || !skipDocs.get(doc))) {
+        return doc;
+      }
+
+      if (count >= docFreq) {
+        break;
+      }
+
+      if (++docPointer >= docPointerMax) {
+        docPointerMax = docDeltasReader.fill();
+        if (docPointerMax != 0) {
+          docPointer = 0;
+        } else {
+          return doc = NO_MORE_DOCS;
+        }
+      }
+
+      if (freqsReader != null && ++freqPointer >= freqPointerMax) {
+        freqPointerMax = freqsReader.fill();
+        assert freqPointerMax != 0;
+        freqPointer = 0;
+      } 
+
+      assert first || docDeltas[docPointer] > 0;
+      doc += docDeltas[docPointer];
+      count++;
+    }
+    return doc = NO_MORE_DOCS;
   }
 
   /** Returns a string representation of this <code>TermScorer</code>. */

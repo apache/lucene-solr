@@ -18,6 +18,7 @@ package org.apache.lucene.index.codecs.intblock;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.index.codecs.sep.*;
 import org.apache.lucene.index.codecs.mockintblock.*;
@@ -36,10 +37,20 @@ public class TestIntBlockCodec extends LuceneTestCase {
     out.close();
 
     IntIndexInput in = f.openInput(dir, "test");
-    IntIndexInput.Reader r = in.reader();
+    BulkPostingsEnum.BlockReader r = in.reader();
+
+    final int[] buffer = r.getBuffer();
+    int pointer = 0;
+    int pointerMax = r.fill();
+    assertTrue(pointerMax > 0);
 
     for(int i=0;i<11777;i++) {
-      assertEquals(i, r.next());
+      assertEquals(i, buffer[pointer++]);
+      if (pointer == pointerMax) {
+        pointerMax = r.fill();
+        assertTrue(pointerMax > 0);
+        pointer = 0;
+      }
     }
     in.close();
     

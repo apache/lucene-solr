@@ -342,6 +342,114 @@ public class TestExternalCodecs extends LuceneTestCase {
       public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) {
         return new RAMDocsAndPositionsEnum(ramField.termToDocs.get(current), skipDocs);
       }
+
+      @Override
+      public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+        return new RAMBulkPostingsEnum(ramField.termToDocs.get(current));
+      }
+    }
+
+    static final int BULK_BUFFER_SIZE = 64;
+  
+    // Bulk postings API
+    private static class RAMBulkPostingsEnum extends BulkPostingsEnum {
+      private final RAMTerm ramTerm;
+      private final BlockReader docDeltasReader;
+      private final BlockReader freqsReader;
+      private final BlockReader posDeltasReader;
+
+      public RAMBulkPostingsEnum(RAMTerm ramTerm) throws IOException {
+        this.ramTerm = ramTerm;
+
+        int[] docDeltas = new int[10];
+        int[] freqs = new int[10];
+        int[] posDeltas = new int[10];
+        int docUpto = 0;
+        int posUpto = 0;
+        int lastDocID = 0;
+        for(RAMDoc doc : ramTerm.docs) {
+          if (docDeltas.length == docUpto) {
+            docDeltas = ArrayUtil.grow(docDeltas, 1+docUpto);
+            freqs = ArrayUtil.grow(freqs, 1+docUpto);
+          }
+          docDeltas[docUpto] = doc.docID - lastDocID;
+          freqs[docUpto] = doc.positions.length;
+          docUpto++;
+          lastDocID = doc.docID;
+          int lastPos = 0;
+          for(int pos : doc.positions) {
+            if (posDeltas.length == posUpto) {
+              posDeltas = ArrayUtil.grow(posDeltas, 1+posUpto);
+            }
+            posDeltas[posUpto++] = pos - lastPos;
+            lastPos = pos;
+          }
+        }
+        docDeltasReader = new SimpleBlockReader(docDeltas, docUpto);
+        freqsReader = new SimpleBlockReader(freqs, docUpto);
+        posDeltasReader = new SimpleBlockReader(posDeltas, posUpto);
+      }
+
+      @Override
+      public BlockReader getDocDeltasReader() {
+        return docDeltasReader;
+      }
+
+      @Override
+      public BlockReader getFreqsReader() {
+        return freqsReader;
+      }
+
+      @Override
+      public BlockReader getPositionDeltasReader() {
+        return posDeltasReader;
+      }
+
+      @Override
+      public JumpResult jump(int target, int curCount) {
+        return null;
+      }
+
+      private static class SimpleBlockReader extends BlockReader {
+        private final int[] ints;
+        private final int count;
+        private boolean done;
+
+        public SimpleBlockReader(int[] ints, int count) {
+          this.ints = ints;
+          this.count = count;
+        }
+
+        @Override
+        public int[] getBuffer() {
+          return ints;
+        }
+
+        @Override
+        public int fill() {
+          if (!done) {
+            done = true;
+            return count;
+          } else {
+            return 0;
+          }
+        }
+
+        @Override
+        public int end() {
+          return done ? 0 : count;
+        }
+
+        @Override
+        public int offset() {
+          return 0;
+        }
+
+        @Override
+        public void setOffset(int offset) {
+          throw new UnsupportedOperationException();
+        }
+      }
     }
 
     private static class RAMDocsEnum extends DocsEnum {

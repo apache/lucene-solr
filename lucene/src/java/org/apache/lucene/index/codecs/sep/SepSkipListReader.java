@@ -108,10 +108,10 @@ class SepSkipListReader extends MultiLevelSkipListReader {
 
     for(int i=0;i<maxNumberOfSkipLevels;i++) {
       docIndex[i].set(docBaseIndex);
-      if (freqIndex != null) {
+      if (freqIndex != null && freqBaseIndex != null) {
         freqIndex[i].set(freqBaseIndex);
       }
-      if (posBaseIndex != null) {
+      if (posBaseIndex != null && freqBaseIndex != null) {
         posIndex[i].set(posBaseIndex);
       }
     }
