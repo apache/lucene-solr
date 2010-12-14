@@ -275,15 +275,19 @@ public final class SolrCore implements SolrInfoMBean {
    }
 
   private void initListeners() {
+    final Class<SolrEventListener> clazz = SolrEventListener.class;
+    final String label = "Event Listener";
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
-      SolrEventListener listener = createInitInstance(info, SolrEventListener.class,"Event Listener",null);      
       String event = info.attributes.get("event");
       if("firstSearcher".equals(event) ){
-        firstSearcherListeners.add(listener);
+        SolrEventListener obj = createInitInstance(info,clazz,label,null);
+        firstSearcherListeners.add(obj);
+        log.info(logid + "Added SolrEventListener for firstSearcher: " + obj);
       } else if("newSearcher".equals(event) ){
-        newSearcherListeners.add(listener);
+        SolrEventListener obj = createInitInstance(info,clazz,label,null);
+        newSearcherListeners.add(obj);
+        log.info(logid + "Added SolrEventListener for newSearcher: " + obj);
       }
-      log.info(logid + "Added SolrEventListener: " + listener);
     }
   }
 
