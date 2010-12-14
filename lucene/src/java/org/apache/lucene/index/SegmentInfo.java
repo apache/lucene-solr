@@ -80,7 +80,7 @@ public final class SegmentInfo {
 
   private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
 
-  private byte hasVectors;                        // 0 if no; 1 if yes; 2 if must-check-filesystem (old index)
+  private boolean hasVectors;                     // True if this segment wrote term vectors
 
   private SegmentCodecs segmentCodecs;
 
@@ -99,7 +99,7 @@ public final class SegmentInfo {
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     this.hasProx = hasProx;
     this.segmentCodecs = segmentCodecs;
-    this.hasVectors = (byte) (hasVectors ? 1 : 0);
+    this.hasVectors = hasVectors;
     delCount = 0;
     assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
   }
@@ -191,9 +191,15 @@ public final class SegmentInfo {
     diagnostics = input.readStringStringMap();
     
     if (format <= DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
-      hasVectors = input.readByte();
+      hasVectors = input.readByte() == 1;
     } else {
-      hasVectors = 2;
+      final String storesSegment;
+      if (docStoreOffset != -1) {
+        storesSegment = docStoreSegment;
+      } else {
+        storesSegment = name;
+      }
+      hasVectors = dir.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
     }
   }
   
@@ -216,23 +222,11 @@ public final class SegmentInfo {
   }
 
   public boolean getHasVectors() throws IOException {
-    if (hasVectors == 1) {
-      return true;
-    } else if (hasVectors == 0) {
-      return false;
-    } else {
-      final String storesSegment;
-      if (getDocStoreOffset() != -1) {
-        storesSegment = getDocStoreSegment();
-      } else {
-        storesSegment = name;
-      }
-      return dir.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-    }
+    return hasVectors;
   }
 
   public void setHasVectors(boolean v) {
-    hasVectors = (byte) (v ? 1 : 0);
+    hasVectors = v;
     clearFiles();
   }
 
@@ -432,7 +426,7 @@ public final class SegmentInfo {
     output.writeByte((byte) (hasProx ? 1:0));
     segmentCodecs.write(output);
     output.writeStringStringMap(diagnostics);
-    output.writeByte(hasVectors);
+    output.writeByte((byte) (hasVectors ? 1 : 0));
   }
 
   void setHasProx(boolean hasProx) {
@@ -497,27 +491,19 @@ public final class SegmentInfo {
       } else {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_EXTENSION));
-        if (hasVectors == 1) {
+        if (hasVectors) {
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-        } else if (hasVectors == 2) {
-          addIfExists(fileSet, IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-          addIfExists(fileSet, IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-          addIfExists(fileSet, IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-        }      
+        }
       }
     } else if (!useCompoundFile) {
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_EXTENSION));
-      if (hasVectors == 1) {
+      if (hasVectors) {
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-      } else if (hasVectors == 2) {
-        addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-        addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-        addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
       }      
     }
 
