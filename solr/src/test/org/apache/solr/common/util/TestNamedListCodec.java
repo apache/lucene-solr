@@ -199,7 +199,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
     return lst;
   }
 
-  Random r = new Random();
+  Random r = random;
 
   public Object makeRandom(int lev) {
     switch (r.nextInt(10)) {
@@ -231,7 +231,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
 
 
   public void testRandom() throws Exception {
-    Random r = new Random(0);
+    // Random r = random;
     // let's keep it deterministic since just the wrong
     // random stuff could cause failure because of an OOM (too big)
 

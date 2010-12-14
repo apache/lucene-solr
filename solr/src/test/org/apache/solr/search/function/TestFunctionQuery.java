@@ -218,7 +218,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
 
-    Random r = new Random();
+    Random r = random;
     for (int i=0; i<10; i++) {   // do more iterations for a thorough test
       int len = r.nextInt(ids.length+1);
       boolean sorted = r.nextBoolean();
