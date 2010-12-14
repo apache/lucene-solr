@@ -192,7 +192,13 @@ public class SolrConfig extends Config {
      loadPluginInfo(ValueSourceParser.class,"valueSourceParser",true, true);
      loadPluginInfo(SearchComponent.class,"searchComponent",true, true);
      loadPluginInfo(QueryConverter.class,"queryConverter",true, true);
+
+     // this is hackish, since it picks up all SolrEventListeners,
+     // regardless of when/how/why thye are used (or even if they are 
+     // declared outside of the appropriate context) but there's no nice 
+     // way arround that in the PluginInfo framework
      loadPluginInfo(SolrEventListener.class, "//listener",false, true);
+
      loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
      loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);

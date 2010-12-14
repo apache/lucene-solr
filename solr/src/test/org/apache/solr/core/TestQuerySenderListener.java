@@ -28,9 +28,28 @@ import static org.junit.Assert.*;
 
 public class TestQuerySenderListener extends SolrTestCaseJ4 {
 
+  // number of instances configured in the solrconfig.xml
+  private static final int EXPECTED_MOCK_LISTENER_INSTANCES = 4;
+
+  private static int preInitMockListenerCount = 0;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // record current value prior to core initialization
+    // so we can verify the correct number of instances later
+    // NOTE: this won't work properly if concurrent tests run
+    // in the same VM
+    preInitMockListenerCount = MockEventListener.getCreateCount();
+
     initCore("solrconfig-querysender.xml","schema.xml");
+  }
+
+  public void testListenerCreationCounts() {
+    SolrCore core = h.getCore();
+
+    assertEquals("Unexpected number of listeners created",
+                 EXPECTED_MOCK_LISTENER_INSTANCES, 
+                 MockEventListener.getCreateCount() - preInitMockListenerCount);
   }
 
   @Test
@@ -38,8 +57,8 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     // property values defined in build.xml
     SolrCore core = h.getCore();
 
-    assertEquals( 1, core.firstSearcherListeners.size() );
-    assertEquals( 1, core.newSearcherListeners.size() );
+    assertEquals( 2, core.firstSearcherListeners.size() );
+    assertEquals( 2, core.newSearcherListeners.size() );
   }
 
   @Test

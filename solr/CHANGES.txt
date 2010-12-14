@@ -279,7 +279,6 @@ Optimizations
 
 Bug Fixes
 ----------------------
-
 * SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
   to the original ValueSource.getValues(reader) so custom sources
   will work. (yonik)
@@ -475,6 +474,8 @@ Bug Fixes
 
 * SOLR-2219: The init() method of every SolrRequestHandler was being
   called twice. (ambikeshwar singh and hossman)
+
+* SOLR-2285: duplicate SolrEventListeners no longer created (hossman)
 
 Other Changes
 ----------------------
