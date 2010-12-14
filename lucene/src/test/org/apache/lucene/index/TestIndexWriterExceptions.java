@@ -49,7 +49,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     IndexWriter writer;
 
-    final Random r = new java.util.Random(47);
+    final Random r = new Random(random.nextLong());
     Throwable failure;
 
     public IndexerThread(int i, IndexWriter writer) {
@@ -124,7 +124,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   ThreadLocal<Thread> doFail = new ThreadLocal<Thread>();
 
   private class MockIndexWriter extends IndexWriter {
-    Random r = new java.util.Random(17);
+    Random r = new Random(random.nextLong());
 
     public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
       super(dir, conf);
