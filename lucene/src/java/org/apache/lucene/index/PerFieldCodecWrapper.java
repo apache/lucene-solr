@@ -102,16 +102,34 @@ final class PerFieldCodecWrapper extends Codec {
 
       final int fieldCount = fieldInfos.size();
       final Map<Codec, FieldsProducer> producers = new HashMap<Codec, FieldsProducer>();
-      for (int i = 0; i < fieldCount; i++) {
-        FieldInfo fi = fieldInfos.fieldInfo(i);
-        if (fi.isIndexed) { // TODO this does not work for non-indexed fields
-          fields.add(fi.name);
-          Codec codec = segmentCodecs.codecs[fi.codecId];
-          if (!producers.containsKey(codec)) {
-            producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                si, fieldInfos, readBufferSize, indexDivisor, ""+fi.codecId)));
+      boolean success = false;
+      try {
+        for (int i = 0; i < fieldCount; i++) {
+          FieldInfo fi = fieldInfos.fieldInfo(i);
+          if (fi.isIndexed) { // TODO this does not work for non-indexed fields
+            fields.add(fi.name);
+            Codec codec = segmentCodecs.codecs[fi.codecId];
+            if (!producers.containsKey(codec)) {
+              producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
+                                                                             si, fieldInfos, readBufferSize, indexDivisor, ""+fi.codecId)));
+            }
+            codecs.put(fi.name, producers.get(codec));
           }
-          codecs.put(fi.name, producers.get(codec));
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          // If we hit exception (eg, IOE because writer was
+          // committing, or, for any other reason) we must
+          // go back and close all FieldsProducers we opened:
+          for(FieldsProducer fp : producers.values()) {
+            try {
+              fp.close();
+            } catch (Throwable t) {
+              // Suppress all exceptions here so we continue
+              // to throw the original one
+            }
+          }
         }
       }
     }
