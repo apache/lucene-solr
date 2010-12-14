@@ -66,7 +66,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
       
       // Check comparator compatibility:
       final Comparator<BytesRef> newTermComp = termsEnum.getComparator();
-      if (lastTermComp != null && newTermComp != lastTermComp)
+      if (lastTermComp != null && newTermComp != null && newTermComp != lastTermComp)
         throw new RuntimeException("term comparator should not change between segments: "+lastTermComp+" != "+newTermComp);
       lastTermComp = newTermComp;
       
