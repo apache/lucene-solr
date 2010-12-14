@@ -25,11 +25,15 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.FieldReaderException;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ReaderUtil;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -176,26 +180,24 @@ public class HighFreqTerms {
     return ts;
   }
   
-  public static long getTotalTermFreq(IndexReader reader, String field, BytesRef termtext) throws Exception {
-    BytesRef br = termtext;
-    long totalTF = 0;
-    Bits skipDocs = MultiFields.getDeletedDocs(reader);
-    DocsEnum de = MultiFields.getTermDocsEnum(reader, skipDocs, field, br);
-    // if term is not in index return totalTF of 0
-    if (de == null) {
-      return 0;
-    }
-    // use DocsEnum.read() and BulkResult api
-    final DocsEnum.BulkReadResult bulkresult = de.getBulkResult();
-    int count;
-    while ((count = de.read()) != 0) {
-      final int[] freqs = bulkresult.freqs.ints;
-      final int limit = bulkresult.freqs.offset + count;
-      for(int i=bulkresult.freqs.offset;i<limit;i++) {
-        totalTF += freqs[i];
+  public static long getTotalTermFreq(IndexReader reader, final String field, 
+      final BytesRef termtext) throws Exception {
+    final long totalTF[] = new long[1];
+    
+    new ReaderUtil.Gather(reader) {
+
+      @Override
+      protected void add(int base, IndexReader r) throws IOException {
+        Bits skipDocs = r.getDeletedDocs();
+        DocsEnum de = r.termDocsEnum(skipDocs, field, termtext);
+        if (de != null) {
+          while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
+            totalTF[0] += de.freq();
+        }
       }
-    }
-    return totalTF;
+    }.run();
+    
+    return totalTF[0];
   }
   
   public static void fillQueue(TermsEnum termsEnum, TermStatsQueue tiq, String field) throws Exception {
