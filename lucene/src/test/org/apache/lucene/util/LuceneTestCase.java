@@ -377,7 +377,7 @@ public abstract class LuceneTestCase extends Assert {
     stores = null;
     // if verbose or tests failed, report some information back
     if (VERBOSE || testsFailed)
-      System.out.println("NOTE: test params are: codec=" + codecDescription + 
+      System.err.println("NOTE: test params are: codec=" + codecDescription + 
         ", locale=" + locale + 
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
     if (testsFailed) {
@@ -943,7 +943,7 @@ public abstract class LuceneTestCase extends Assert {
 
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
-    System.out.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
+    System.err.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
         + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed)
         + reproduceWithExtraParams());
   }
