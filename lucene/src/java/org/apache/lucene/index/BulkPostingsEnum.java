@@ -113,6 +113,7 @@ public abstract class BulkPostingsEnum {
    *  seek did occur, you must call .offset() and .limit()
    *  on each BlockReader.  If null is returned then
    *  skipping is not possible, ie you should just scan
-   *  yourself). */
+   *  yourself). The returned JumpResult will only be valid until
+   *  the next call to jump. */
   abstract public JumpResult jump(int target, int curCount) throws IOException;
 }
