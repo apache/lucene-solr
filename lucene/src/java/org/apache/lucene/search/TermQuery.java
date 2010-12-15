@@ -24,6 +24,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.BulkPostingsEnum.BlockReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -85,10 +86,17 @@ public class TermQuery extends Query {
       if (docs == null) {
         return null;
       }
-
       // nocommit: we need this docfreq from TermState, MTQ knows it... but tosses it away.
-      return new TermScorer(this, docs, reader.docFreq(term.field(), term.bytes()),
-                            reader.getDeletedDocs(), similarity, reader.norms(term.field()));
+      final int docFreq = reader.docFreq(term.field(), term.bytes());
+      final BlockReader docDeltas = docs.getDocDeltasReader();
+      final BlockReader frequencies = docs.getFreqsReader();
+      if (frequencies == null) {
+        return new MatchOnlyTermScorer(this, docs, docDeltas, docFreq,
+            reader.getDeletedDocs(), similarity, reader.norms(term.field()));
+      } else {
+        return new TermScorer(this, docs, docDeltas, frequencies, docFreq,
+            reader.getDeletedDocs(), similarity, reader.norms(term.field()));
+      }
     }
 
     @Override

@@ -23,15 +23,12 @@ import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.BulkPostingsEnum.BlockReader;
 import org.apache.lucene.util.Bits;
 
-// nocommit -- break out aligned & not cases?
-// nocommit -- break out bulk vs doc-at-time scorer?
-
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
+ * This scorer only makes sense for the omitTF=true case
  */
-final class TermScorer extends Scorer {
+final class MatchOnlyTermScorer extends Scorer {
   private final BulkPostingsEnum docsEnum;
   private final byte[] norms;
-  private final float weightValue;
   private int doc;
 
   private final int[] docDeltas;
@@ -39,13 +36,7 @@ final class TermScorer extends Scorer {
   private int docPointerMax;
   private boolean first = true;
 
-  private final int[] freqs;
-  private int freqPointer;
-  private int freqPointerMax;
-
-  private static final int SCORE_CACHE_SIZE = 32;
-  private final float[] scoreCache = new float[SCORE_CACHE_SIZE];
-  private final BlockReader freqsReader;
+  private final float rawScore;
   private final BlockReader docDeltasReader;
   private final Bits skipDocs;
   private final int docFreq;
@@ -64,21 +55,20 @@ final class TermScorer extends Scorer {
    * @param norms
    *          The field norms of the document fields for the <code>Term</code>.
    */
-  TermScorer(Weight weight, BulkPostingsEnum td, BlockReader docDeltaReader, BlockReader freqReader, int docFreq, Bits skipDocs, Similarity similarity, byte[] norms) throws IOException {
+  MatchOnlyTermScorer(Weight weight, BulkPostingsEnum td, BlockReader docDeltasReader, int docFreq, Bits skipDocs, Similarity similarity, byte[] norms) throws IOException {
     super(similarity, weight);
+    
+    assert td.getFreqsReader() == null;
+    
     this.docsEnum = td;
     this.docFreq = docFreq;
-    this.docDeltasReader = docDeltaReader;
+    this.docDeltasReader = docDeltasReader;
     docDeltas = docDeltasReader.getBuffer();
-    this.freqsReader = freqReader;
-    freqs = freqsReader.getBuffer();
     reset();
+
     this.skipDocs = skipDocs;
     this.norms = norms;
-    this.weightValue = weight.getValue();
-
-    for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-      scoreCache[i] = getSimilarity().tf(i) * weightValue;
+    rawScore = getSimilarity().tf(1f) * weight.getValue();
   }
 
   @Override
@@ -100,12 +90,13 @@ final class TermScorer extends Scorer {
         return false;
       }
       count++;
-      fillDeltas();
-      fillFreq();
+      fillDocDeltas(); 
       doc += docDeltas[docPointer];
     }
     return true;
   }
+
+
 
   @Override
   public int docID() {
@@ -114,7 +105,7 @@ final class TermScorer extends Scorer {
 
   @Override
   public float freq() {
-    return freqs[freqPointer];
+    return 1.0f;
   }
 
   /**
@@ -127,8 +118,7 @@ final class TermScorer extends Scorer {
   @Override
   public int nextDoc() throws IOException {
     while(count < docFreq) {
-      fillDeltas();
-      fillFreq();
+      fillDocDeltas(); 
       count++;
       doc += docDeltas[docPointer];
       first = false;
@@ -140,19 +130,13 @@ final class TermScorer extends Scorer {
 
     return doc = NO_MORE_DOCS;
   }
-
+  
   @Override
   public float score() {
     assert !first;
-    final int freq = freqs[freqPointer];
-    assert freq > 0;
     assert doc != NO_MORE_DOCS;
-    float raw =                                   // compute tf(f)*weight
-      freq < SCORE_CACHE_SIZE                        // check cache
-      ? scoreCache[freq]                             // cache hit
-      : getSimilarity().tf(freq)*weightValue;        // cache miss
 
-    return norms == null ? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize for field
+    return norms == null ? rawScore : rawScore * getSimilarity().decodeNormValue(norms[doc]); // normalize for field
   }
 
   /**
@@ -176,7 +160,7 @@ final class TermScorer extends Scorer {
       doc += docDeltas[docPointer];
       first = false;
       count++;
-      fillFreq();
+
       if (doc >= target && (skipDocs == null || !skipDocs.get(doc))) {
         return doc;
       }
@@ -206,10 +190,9 @@ final class TermScorer extends Scorer {
       } else {
         return doc = NO_MORE_DOCS;
       }
-     fillFreq();
     }
 
-    // now scan -- let the compiler inline this
+    // now scan
     return scan(target);
   }
 
@@ -233,7 +216,6 @@ final class TermScorer extends Scorer {
         }
       }
 
-      fillFreq();
       assert first || docDeltas[docPointer] > 0;
       doc += docDeltas[docPointer];
       count++;
@@ -241,19 +223,7 @@ final class TermScorer extends Scorer {
     return doc = NO_MORE_DOCS;
   }
 
-  /** Returns a string representation of this <code>TermScorer</code>. */
-  @Override
-  public String toString() { return "scorer(" + weight + ")"; }
-  
-  private final void fillFreq() throws IOException {
-    if (++freqPointer >= freqPointerMax) {
-      freqPointerMax = freqsReader.fill();
-      assert freqPointerMax != 0;
-      freqPointer = 0;
-    }
-  }
-  
-  private void fillDeltas() throws IOException {
+  private void fillDocDeltas() throws IOException {
     if (++docPointer >= docPointerMax) {
       docPointerMax = docDeltasReader.fill();
       assert docPointerMax != 0;
@@ -261,12 +231,14 @@ final class TermScorer extends Scorer {
     }
   }
   
-  private final void reset() throws IOException {
-    docPointer = docDeltasReader.offset();
+  private void reset() throws IOException {
     docPointerMax = docDeltasReader.end();
-    freqPointer = freqsReader.offset();
-    freqPointerMax = freqsReader.end();
-    --docPointer;
-    --freqPointer;
+    docPointer = docDeltasReader.offset();
+    docPointer--;
   }
+  
+  /** Returns a string representation of this <code>TermScorer</code>. */
+  @Override
+  public String toString() { return "scorer(" + weight + ")"; }
+
 }
