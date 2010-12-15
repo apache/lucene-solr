@@ -17,14 +17,8 @@
 
 package org.apache.solr.request;
 
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.PagedBytes;
@@ -230,7 +224,12 @@ public class UnInvertedField {
     // values.  This requires going over the field first to find the most
     // frequent terms ahead of time.
 
-    SolrIndexSearcher.DocsEnumState deState = null;
+    SolrIndexSearcher.DocsEnumState deState = new SolrIndexSearcher.DocsEnumState();
+    deState.deletedDocs = te.deletedDocs;
+    deState.termsEnum = te.tenum;
+    deState.bulkPostings = null;
+
+    final Bits deletes = deState.deletedDocs;
 
     for (;;) {
       BytesRef t = te.term();
@@ -253,13 +252,7 @@ public class UnInvertedField {
         topTerm.termNum = termNum;
         bigTerms.put(topTerm.termNum, topTerm);
 
-        if (deState == null) {
-          deState = new SolrIndexSearcher.DocsEnumState();
-          deState.termsEnum = te.tenum;
-          deState.reuse = te.docsEnum;
-        }
         DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term)), deState);
-        te.docsEnum = deState.reuse;
 
         maxTermCounts[termNum] = set.size();
 
@@ -269,19 +262,23 @@ public class UnInvertedField {
 
       termsInverted++;
 
-      DocsEnum docsEnum = te.getDocsEnum();
-
-      DocsEnum.BulkReadResult bulkResult = docsEnum.getBulkResult();
+      int docsLeft = df;
+      deState.bulkPostings = deState.termsEnum.bulkPostings(deState.bulkPostings, false, false);
+      final BulkPostingsEnum.BlockReader docDeltasReader = deState.bulkPostings.getDocDeltasReader();
+      final int[] deltas = docDeltasReader.getBuffer();
+      int docPointer = docDeltasReader.offset();
+      int docPointerMax = docDeltasReader.end();
+      // assert docPointer < docPointerMax;
+      if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
+      docsLeft -= docPointerMax - docPointer;
+      int doc = 0;
+      int nDocs = 0;
 
       for(;;) {
-        int n = docsEnum.read();
-        if (n <= 0) break;
-
-        maxTermCounts[termNum] += n;
-
-        for (int i=0; i<n; i++) {
-          termInstances++;
-          int doc = bulkResult.docs.ints[i];
+        while (docPointer < docPointerMax) {
+          doc += deltas[docPointer++];
+          if (deletes != null && deletes.get(doc)) continue;
+          nDocs++;
           // add 2 to the term number to make room for special reserved values:
           // 0 (end term) and 1 (index into byte array follows)
           int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
@@ -349,8 +346,15 @@ public class UnInvertedField {
 
         }
 
+        if (docsLeft <= 0) break;
+        docPointerMax = Math.min(docDeltasReader.fill(), docsLeft);
+        assert docPointerMax > 0;
+        docsLeft -= docPointerMax;
+        docPointer = 0; // offset() should always be 0 after fill
       }
 
+      termInstances += nDocs;
+      maxTermCounts[termNum] = nDocs;
       te.next();
     }
 
@@ -966,6 +970,11 @@ class NumberedTermsEnum extends TermsEnum {
   @Override
   public Comparator<BytesRef> getComparator() throws IOException {
     return tenum.getComparator();
+  }
+
+  @Override
+  public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+    return tenum.bulkPostings(reuse, doFreqs, doPositions);
   }
 
   public DocsEnum getDocsEnum() throws IOException {

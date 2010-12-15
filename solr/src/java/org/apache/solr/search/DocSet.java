@@ -148,6 +148,8 @@ public interface DocSet /* extends Collection<Integer> */ {
    * methods will be invoked with.
    */
   public Filter getTopFilter();
+
+  public static final DocSet EMPTY = new SortedIntDocSet(new int[0], 0);  
 }
 
 /** A base class that may be usefull for implementing DocSets */

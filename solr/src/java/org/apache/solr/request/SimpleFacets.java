@@ -631,7 +631,6 @@ public class SimpleFacets {
     Fields fields = MultiFields.getFields(r);
     Terms terms = fields==null ? null : fields.terms(field);
     TermsEnum termsEnum = null;
-    SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
     if (terms != null) {
       termsEnum = terms.iterator();
@@ -652,10 +651,14 @@ public class SimpleFacets {
     }
 
     Term template = new Term(field);
-    DocsEnum docsEnum = null;
     CharArr spare = new CharArr();
 
     if (docs.size() >= mincount) {
+      SolrIndexSearcher.DocsEnumState deState = new SolrIndexSearcher.DocsEnumState();
+      deState.deletedDocs = MultiFields.getDeletedDocs(r);
+      deState.termsEnum = termsEnum;
+      deState.bulkPostings = null;
+
       while (term != null) {
 
         if (startTermBytes != null && !term.startsWith(startTermBytes))
@@ -671,29 +674,19 @@ public class SimpleFacets {
 
           if (df >= minDfFilterCache) {
             // use the filter cache
-            // TODO: need a term query that takes a BytesRef to handle binary terms
-            spare.reset();
-            ByteUtils.UTF8toUTF16(term, spare);
-            Term t = template.createTerm(spare.toString());
-
-            if (deState==null) {
-              deState = new SolrIndexSearcher.DocsEnumState();
-              deState.deletedDocs = MultiFields.getDeletedDocs(r);
-              deState.termsEnum = termsEnum;
-              deState.reuse = docsEnum;
-            }
+            Term t = template.createTerm(new BytesRef(term));
 
             c = searcher.numDocs(new TermQuery(t), docs, deState);
-
-            docsEnum = deState.reuse;
           } else {
             // iterate over TermDocs to calculate the intersection
+            c=0;
+            final BulkPostingsEnum docsEnum = deState.bulkPostings = deState.termsEnum.bulkPostings(deState.bulkPostings, false, false);            
 
+            /*** do per-seg
             // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
             // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
             // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
             docsEnum = termsEnum.docs(null, docsEnum);
-            c=0;
 
             if (docsEnum instanceof MultiDocsEnum) {
               MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
@@ -713,23 +706,32 @@ public class SimpleFacets {
                   }
                 }
               }
-            } else {
-
-              // this should be the same bulk result object if sharing of the docsEnum succeeded
-              DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
+            } else
+            ***/
+            {
+              int docsLeft = df;
+              BulkPostingsEnum.BlockReader docDeltasReader = docsEnum.getDocDeltasReader();
+              int[] deltas = docDeltasReader.getBuffer();
+              int docPointer = docDeltasReader.offset();
+              int docPointerMax = docDeltasReader.end();
+              // assert docPointer < docPointerMax;
+              if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
+              docsLeft -= docPointerMax - docPointer;
+              int doc = 0;
 
               for (;;) {
-                int nDocs = docsEnum.read();
-                if (nDocs == 0) break;
-                int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-                int end = bulk.docs.offset + nDocs;
-                for (int i=bulk.docs.offset; i<end; i++) {
-                  if (fastForRandomSet.exists(docArr[i])) c++;
+                while (docPointer < docPointerMax) {
+                  doc += deltas[docPointer++];
+                  if (fastForRandomSet.exists(doc)) c++;
                 }
+
+                if (docsLeft <= 0) break;
+                docPointerMax = Math.min(docDeltasReader.fill(), docsLeft);
+                assert docPointerMax > 0;
+                docsLeft -= docPointerMax;
+                docPointer = 0; // offset() should always be 0 after fill
               }
             }
-            
-
           }
 
           if (sortByCount) {

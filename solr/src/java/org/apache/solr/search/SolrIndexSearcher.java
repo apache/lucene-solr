@@ -586,8 +586,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
     }
 
-    DocSet absAnswer = getDocSetNC(absQ, null, deState);
-    DocSet answer = positive ? absAnswer : getPositiveDocSet(matchAllDocsQuery, deState).andNot(absAnswer);
+    DocSet absAnswer = getDocSetNC(deState);
+    DocSet answer = positive ? absAnswer : getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
 
     if (filterCache != null) {
       // cache negative queries as positive
@@ -616,7 +616,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       answer = filterCache.get(q);
       if (answer!=null) return answer;
     }
-    answer = getDocSetNC(q,null,deState);
+    answer = getDocSetNC(deState);
     if (filterCache != null) filterCache.put(q,answer);
     return answer;
   }
@@ -752,22 +752,21 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   // query must be positive
-  protected DocSet getDocSetNC(Query query, DocSet filter, DocsEnumState deState) throws IOException {
-    if (filter != null) return getDocSetNC(query, filter, null);
-
+  protected DocSet getDocSetNC(DocsEnumState deState) throws IOException {
     int smallSetSize = maxDoc()>>6;
     int largestPossible = deState.termsEnum.docFreq();
 
     int[] docs = new int[Math.min(smallSetSize, largestPossible)];
-    int upto = 0;
-    int bitsSet = 0;
+    int upto = 0;   // number of docs in the array
+    int nDocs = 0;  // number of docs in this set
     OpenBitSet obs = null;
 
-    DocsEnum docsEnum = deState.termsEnum.docs(deState.deletedDocs, deState.reuse);
-    if (deState.reuse == null) {
-      deState.reuse = docsEnum;
-    }
+    deState.bulkPostings = deState.termsEnum.bulkPostings(deState.bulkPostings, false, false);
+    final Bits deleted = deState.deletedDocs;
 
+    int docsLeft = largestPossible;
+    
+    /** TODO: do per seg
     if (docsEnum instanceof MultiDocsEnum) {
       MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
       int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
@@ -795,25 +794,44 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           }
         }
       }
-    } else {
-      DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
-      for (;;) {
-        int nDocs = docsEnum.read();
-        if (nDocs == 0) break;
-        int[] docArr = bulk.docs.ints;
-        int end = bulk.docs.offset + nDocs;
+    } else
+    **/
+  
+    {
+      BulkPostingsEnum.BlockReader docDeltasReader = deState.bulkPostings.getDocDeltasReader();
+      int[] deltas = docDeltasReader.getBuffer();
+      int docPointer = docDeltasReader.offset();
+      int docPointerMax = docDeltasReader.end();
+      // assert docPointer < docPointerMax;
+      if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
+      docsLeft -= docPointerMax - docPointer;
 
-        if (upto + nDocs > docs.length) {
+      int doc = 0;
+
+      for (;;) {
+        // to big to fit in our temporary int array?
+        if (obs != null || nDocs + (docPointerMax - docPointer) > docs.length) {
           if (obs == null) obs = new OpenBitSet(maxDoc());
-          for (int i=bulk.docs.offset; i<end; i++) {
-            obs.fastSet(docArr[i]);
+          while (docPointer < docPointerMax) {
+            doc += deltas[docPointer++];
+            if (deleted != null && deleted.get(doc)) continue;
+            obs.fastSet(doc);
+            nDocs++;
           }
-          bitsSet += nDocs;
         } else {
-          for (int i=bulk.docs.offset; i<end; i++) {
-            docs[upto++] = docArr[i];
+          while (docPointer < docPointerMax) {
+            doc += deltas[docPointer++];
+            if (deleted != null && deleted.get(doc)) continue;
+            docs[upto++] = doc;
           }
+          nDocs = upto;
         }
+
+        if (docsLeft <= 0) break;
+        docPointerMax = Math.min(docDeltasReader.fill(), docsLeft);
+        assert docPointerMax > 0;
+        docsLeft -= docPointerMax;
+        docPointer = 0; // offset() should always be 0 after fill
       }
     }
 
@@ -821,8 +839,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       for (int i=0; i<upto; i++) {
         obs.fastSet(docs[i]);  
       }
-      bitsSet += upto;
-      return new BitDocSet(obs, bitsSet);
+      return new BitDocSet(obs, nDocs);
     }
 
     return new SortedIntDocSet(docs, upto);
@@ -830,10 +847,20 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
-    DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
-
     if (filter==null) {
       if (query instanceof TermQuery) {
+        Term t = ((TermQuery)query).getTerm();
+        DocsEnumState deState = new DocsEnumState();
+        Terms terms = MultiFields.getTerms(reader, t.field());
+        if (terms == null) return DocSet.EMPTY;
+        deState.termsEnum = terms.iterator();
+        if (deState.termsEnum.seek(t.bytes()) != TermsEnum.SeekStatus.FOUND) return DocSet.EMPTY;
+        deState.deletedDocs = MultiFields.getDeletedDocs(reader);
+        deState.bulkPostings = null;
+
+        return getDocSetNC(deState);
+
+        /** TODO: do per seg
         Term t = ((TermQuery)query).getTerm();
         SolrIndexReader[] readers = reader.getLeafReaders();
         int[] offsets = reader.getLeafOffsets();
@@ -863,12 +890,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
             }
           }
         }
+         ***/
       } else {
+        DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
         super.search(query,null,collector);
+        return collector.getDocSet();
       }
-      return collector.getDocSet();
-
     } else {
+      DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
       Filter luceneFilter = filter.getTopFilter();
       super.search(query, luceneFilter, collector);
       return collector.getDocSet();
@@ -1653,7 +1682,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   public static class DocsEnumState {
     public TermsEnum termsEnum;
     public Bits deletedDocs;
-    public DocsEnum reuse;
+    public BulkPostingsEnum bulkPostings;
   }
 
    /**
