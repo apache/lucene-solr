@@ -282,8 +282,9 @@ final class TermScorer extends Scorer {
     }
 
     // not found in current block, seek underlying stream
-    BulkPostingsEnum.JumpResult jumpResult = docsEnum.jump(target, count);
-    if (jumpResult != null) {
+    BulkPostingsEnum.JumpResult jumpResult;
+    if (target - doc > docDeltas.length && // avoid useless jumps
+        (jumpResult = docsEnum.jump(target, count)) != null) {
       count = jumpResult.count;
       doc = jumpResult.docID;
       first = false;
