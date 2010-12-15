@@ -2241,8 +2241,8 @@ public class IndexWriter implements Closeable {
       int docCount = merger.merge();                // merge 'em
       
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, -1, null, false, merger.hasProx(), merger.getSegmentCodecs(),
-                                         merger.hasVectors());
+                                         false, -1, null, false, merger.fieldInfos().hasProx(), merger.getSegmentCodecs(),
+                                         merger.fieldInfos().hasVectors());
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
       boolean useCompoundFile;
@@ -2719,7 +2719,7 @@ public class IndexWriter implements Closeable {
     // format as well:
     setMergeDocStoreIsCompoundFile(merge);
 
-    merge.info.setHasProx(merger.hasProx());
+    merge.info.setHasProx(merger.fieldInfos().hasProx());
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
     assert !segmentInfos.contains(merge.info);
@@ -3039,7 +3039,6 @@ public class IndexWriter implements Closeable {
       updatePendingMerges(1, false);
     }
 
-    merge.hasVectors = hasVectors;
     merge.mergeDocStores = mergeDocStores;
 
     // Bind a new segment name here so even with
@@ -3051,7 +3050,7 @@ public class IndexWriter implements Closeable {
                                  docStoreIsCompoundFile,
                                  false,
                                  null,
-                                 false);
+                                 hasVectors);
 
     Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", Boolean.toString(merge.optimize));
@@ -3282,7 +3281,6 @@ public class IndexWriter implements Closeable {
 
       // Record which codec was used to write the segment
       merge.info.setSegmentCodecs(merger.getSegmentCodecs());
-      merge.info.setHasVectors(merger.hasVectors() || merge.hasVectors);
 
       if (infoStream != null) {
         message("merge segmentCodecs=" + merger.getSegmentCodecs());
@@ -3294,7 +3292,7 @@ public class IndexWriter implements Closeable {
       // because codec must know if prox was written for
       // this segment:
       //System.out.println("merger set hasProx=" + merger.hasProx() + " seg=" + merge.info.name);
-      merge.info.setHasProx(merger.hasProx());
+      merge.info.setHasProx(merger.fieldInfos().hasProx());
 
       boolean useCompoundFile;
       synchronized (this) { // Guard segmentInfos
