@@ -108,9 +108,9 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     public void read(BulkPostingsEnum.BlockReader indexIn, boolean absolute)
       throws IOException {
       if (absolute) {
-        fp = indexIn.readVLong();
+        fp = readVLong(indexIn);
       } else {
-        fp += indexIn.readVLong();
+        fp += readVLong(indexIn);
       }
     }
 

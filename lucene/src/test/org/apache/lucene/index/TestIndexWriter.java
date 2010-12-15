@@ -2953,8 +2953,6 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     assertEquals(NUM_GAPS, upto);
 
-    final int maxDoc = r.maxDoc();
-
     // test advance:
     for(int i=0;i<NUM_GAPS;i++) {
       docs = MultiFields.getTermDocsEnum(r,
@@ -2982,9 +2980,6 @@ public class TestIndexWriter extends LuceneTestCase {
     int[] docDeltas = docDeltasReader.getBuffer();
     int docDeltaUpto = docDeltasReader.offset();
     int docDeltaMax = docDeltasReader.end();
-    if (docDeltaUpto >= docDeltaMax) {
-      docDeltaMax = docDeltasReader.fill();
-    }
     docID = 0;
     for(int i=0;i<NUM_GAPS;i++) {
       if (docDeltaUpto == docDeltaMax) {
@@ -3024,10 +3019,6 @@ public class TestIndexWriter extends LuceneTestCase {
       docDeltas = docDeltasReader.getBuffer();
       docDeltaUpto = docDeltasReader.offset();
       docDeltaMax = docDeltasReader.end();
-      if (docDeltaUpto >= docDeltaMax) {
-        docDeltaMax = docDeltasReader.fill();
-        //System.out.println("  do pre-fill");
-      }
       for(int j=count;j<NUM_GAPS;j++) {
         //System.out.println("  GAP j=" + j);
         if (docDeltaUpto >= docDeltaMax) {

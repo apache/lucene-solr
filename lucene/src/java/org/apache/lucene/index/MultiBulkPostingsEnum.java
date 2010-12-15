@@ -93,13 +93,6 @@ public final class MultiBulkPostingsEnum extends BulkPostingsEnum {
       currentLeft = subs[upto].docFreq;
       int limit = current.end();
       int offset = current.offset();
-      if (offset >= limit) {
-        //System.out.println("prefill limit=" + limit + " offs=" + offset + " current=" + current);
-        limit = current.fill();
-        //System.out.println("  new limit=" + limit);
-      } else {
-        //System.out.println("  no prefill offset=" + offset + " limit=" + limit);
-      }
       if (limit > offset) {
         doCopy(offset, limit);
       }
@@ -143,10 +136,6 @@ public final class MultiBulkPostingsEnum extends BulkPostingsEnum {
             //System.out.println("  fill current=" + current + " upto=" + upto + " this=" + this);
             int limit = current.end();
             int offset = current.offset();
-            if (offset >= limit) {
-              //System.out.println("prefill2");
-              limit = current.fill();
-            }
             if (limit > offset) {
               return doCopy(offset, limit);
             }

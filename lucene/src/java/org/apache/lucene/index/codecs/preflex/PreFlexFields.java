@@ -1305,6 +1305,7 @@ public class PreFlexFields extends FieldsProducer {
 
       @Override
       public int fill() throws IOException {
+        // nocommit -- before fixing this, get a test to fail:
         // nocommit -- must "handle" EOF here -- cannot
         // change old index format!
         if (storePayloads) {

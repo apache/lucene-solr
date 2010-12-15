@@ -77,8 +77,6 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
     public final int[] pending;
 
-    private boolean seekPending;
-    private long pendingFP;
     private int offset;
     private long lastBlockFP;
     private int blockSize;
@@ -95,18 +93,24 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     void seek(final long fp, final int upto) throws IOException {
       //System.out.println("vintb seek fp=" + fp + " upto=" + upto);
       // TODO: should we do this in real-time, not lazy?
-      pendingFP = fp;
       offset = upto;
       assert offset >= 0: "pendingUpto=" + offset;
-      if (pendingFP != lastBlockFP) {
-        // Clear current block
-        seekPending = true;
-        //        System.out.println("  seekPending=true now fill");
-        fill();
+      if (fp != lastBlockFP) {
+        // Seek to new block
+        in.seek(fp);
+        blockReader.seek(fp);
+        lastBlockFP = fp;
+        limit = blockSize = blockReader.readBlock();
       } else {
+        // Seek w/in current block
         //System.out.println("  no seekPending");
       }
       //System.out.println("  now offset=" + offset + " limit=" + limit);
+
+      // TODO: if we were more clever when writing the
+      // index, such that a seek point wouldn't be written
+      // until the int encoder "committed", we could avoid
+      // this (likely minor) inefficiency:
 
       // This is necessary for int encoders that are
       // non-causal, ie must see future int values to
@@ -141,27 +145,11 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
     @Override
     public int fill() throws IOException {
-      if (seekPending) {
-        seekPending = false;
-        in.seek(pendingFP);
-        blockReader.seek(pendingFP);
-        lastBlockFP = pendingFP;
-        blockSize = blockReader.readBlock();
-
-        // TODO: if we were more clever when writing the
-        // index, such that a seek point wouldn't be written
-        // until the int encoder "committed", we could avoid
-        // this (likely minor) inefficiency:
-
-        //System.out.println("varintblock.fill offset=" + offset + " vs blockSize=" + blockSize);
-
-      } else {
-        // nocommit -- not great that we do this on each
-        // fill -- but we need it to detect seek w/in block
-        // case:
-        lastBlockFP = in.getFilePointer();
-        blockSize = blockReader.readBlock();
-      }
+      // nocommit -- not great that we do this on each
+      // fill -- but we need it to detect seek w/in block
+      // case:
+      lastBlockFP = in.getFilePointer();
+      blockSize = blockReader.readBlock();
       return limit = blockSize;
     }
   }
@@ -170,6 +158,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     private long fp;
     private int upto;
 
+    // This is used when reading skip data:
     @Override
     public void read(final IndexInput indexIn, final boolean absolute) throws IOException {
       if (absolute) {
@@ -191,20 +180,21 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
       //assert upto < maxBlockSize: "upto=" + upto + " max=" + maxBlockSize;
     }
 
+    // This is used on index stored in terms dict
     @Override
     public void read(final BulkPostingsEnum.BlockReader indexIn, final boolean absolute) throws IOException {
       if (absolute) {
-        fp = indexIn.readVLong();
-        upto = indexIn.next()&0xFF;
+        fp = readVLong(indexIn);
+        upto = next(indexIn)&0xFF;
       } else {
-        final long delta = indexIn.readVLong();
+        final long delta = readVLong(indexIn);
         if (delta == 0) {
           // same block
-          upto = indexIn.next()&0xFF;
+          upto = next(indexIn)&0xFF;
         } else {
           // new block
           fp += delta;
-          upto = indexIn.next()&0xFF;
+          upto = next(indexIn)&0xFF;
         }
       }
     }

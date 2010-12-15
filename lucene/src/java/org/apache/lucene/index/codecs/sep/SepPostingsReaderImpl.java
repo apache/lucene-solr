@@ -270,29 +270,23 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       docIndex.seek(docReader);
       docDeltaLimit = docReader.end();
       docDeltaUpto = docReader.offset();
-      if (docDeltaUpto >= docDeltaLimit) {
-        docDeltaLimit = docReader.fill();
-      }
 
       if (!omitTF) {
         freqIndex.read(docReader, true);
         freqIndex.seek(freqReader);
         freqUpto = freqReader.offset();
         freqLimit = freqReader.end();
-        if (freqUpto >= freqLimit) {
-          freqLimit = freqReader.fill();
-        }
         //System.out.println("  freqIndex=" + freqIndex + " posIndex=" + posIndex);
         
         posIndex.read(docReader, true);
         // nocommit -- only store this if storePayloads is true
         // skip payload offset
-        docReader.readVLong();
+        IntIndexInput.readVLong(docReader);
       } else {
         freq = 1;
       }
 
-      skipOffset = docReader.readVLong();
+      skipOffset = IntIndexInput.readVLong(docReader);
 
       docDeltaUpto = docReader.offset();
       docDeltaLimit = docReader.end();
@@ -418,9 +412,6 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           skipper.getDocIndex().seek(docReader);
           docDeltaUpto = docReader.offset();
           docDeltaLimit = docReader.end();
-          if (docDeltaUpto >= docDeltaLimit) {
-            docDeltaLimit = docReader.fill();
-          }
 
           count = newCount;
           doc = skipper.getDoc();
@@ -511,27 +502,20 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       docIndex.seek(docReader);
       docDeltaLimit = docReader.end();
       docDeltaUpto = docReader.offset();
-      if (docDeltaUpto >= docDeltaLimit) {
-        docDeltaLimit = docReader.fill();
-      }
 
       freqIndex.read(docReader, true);
       freqIndex.seek(freqReader);
       freqLimit = freqReader.end();
       freqUpto = freqReader.offset();
-      if (freqUpto >= freqLimit) {
-        //System.out.println("  re-fill freqs freqMax=" + freqLimit);
-        freqLimit = freqReader.fill();
-      }
       //System.out.println("  freqIndex=" + freqIndex);
 
       posIndex.read(docReader, true);
       posSeekPending = true;
       payloadPending = false;
 
-      payloadOffset = docReader.readVLong();
+      payloadOffset = IntIndexInput.readVLong(docReader);
       //System.out.println("  payloadOffset=" + payloadOffset);
-      skipOffset = docReader.readVLong();
+      skipOffset = IntIndexInput.readVLong(docReader);
       //System.out.println("  skipOffset=" + skipOffset);
 
       docDeltaLimit = docReader.end();
@@ -648,16 +632,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           skipper.getFreqIndex().seek(freqReader);
           freqUpto = freqReader.offset();
           freqLimit = freqReader.end();
-          if (freqUpto >= freqLimit) {
-            freqLimit = freqReader.fill();
-          }
 
           skipper.getDocIndex().seek(docReader);
           docDeltaUpto = docReader.offset();
           docDeltaLimit = docReader.end();
-          if (docDeltaUpto >= docDeltaLimit) {
-            docDeltaLimit = docReader.fill();
-          }
 
           posIndex.set(skipper.getPosIndex());
           posSeekPending = true;
@@ -688,9 +666,6 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
         posIndex.seek(posReader);
         posLimit = posReader.end();
         posUpto = posReader.offset();
-        if (posUpto >= posLimit) {
-          posLimit = posReader.fill();
-        }
         payloadIn.seek(payloadOffset);
         posSeekPending = false;
       }
@@ -908,6 +883,13 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     /** Position readers to the specified term */
     SepBulkPostingsEnum init(SepTermState termState) throws IOException {
 
+      // To reduce cost of scanning the terms dict, sep
+      // codecs store only the docDelta index in the terms
+      // dict, and then stuff the other term metadata (freq
+      // index, pos index, skip offset) into the front of
+      // the docDeltas.  So here we seek the docReader and
+      // decode this metadata:
+
       // nocommit -- make sure seek w/in buffer is efficient
       // here:
 
@@ -919,6 +901,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       //System.out.println("  v[0]=" + docReader.getBuffer()[0]);
 
       if (!omitTF) {
+        // nocommit -- would be better (fewer bytes used) to
+        // make this a relative index read (pass false not
+        // true), eg relative to first term in the terms
+        // index block
         freqIndex.read(docReader, true);
         if (freqReader != null) {
           freqIndex.seek(freqReader);
@@ -926,10 +912,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
         posIndex.read(docReader, true);
         // skip payload offset -- nocommit only store this
         // if field has payloads
-        docReader.readVLong();
+        IntIndexInput.readVLong(docReader);
       }
 
-      skipOffset = docReader.readVLong();
+      skipOffset = IntIndexInput.readVLong(docReader);
       //System.out.println("skipOffset=" + skipOffset);
 
       if (posReader != null) {
@@ -940,11 +926,6 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
         } else {
           posIndex.seek(posReader);
         }
-      }
-
-      if (docReader.offset() >= docReader.end()) {
-        docReader.fill();
-        docReader.setOffset(0);
       }
 
       docFreq = termState.docFreq;

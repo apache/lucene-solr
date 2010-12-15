@@ -142,6 +142,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     private long fp;
     private int upto;
 
+    // This is used when reading skip data:
     @Override
     public void read(final IndexInput indexIn, final boolean absolute) throws IOException {
       // nocommit -- somehow we should share the "upto" for
@@ -165,20 +166,21 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       assert upto < blockSize;
     }
 
+    // This is used on index stored in terms dict
     @Override
     public void read(final BulkPostingsEnum.BlockReader indexIn, final boolean absolute) throws IOException {
       if (absolute) {
-        fp = indexIn.readVLong();
-        upto = indexIn.next();
+        fp = readVLong(indexIn);
+        upto = next(indexIn);
       } else {
-        final long delta = indexIn.readVLong();
+        final long delta = readVLong(indexIn);
         if (delta == 0) {
           // same block
-          upto += indexIn.next();
+          upto += next(indexIn);
         } else {
           // new block
           fp += delta;
-          upto = indexIn.next();
+          upto = next(indexIn);
         }
       }
       assert upto < blockSize;

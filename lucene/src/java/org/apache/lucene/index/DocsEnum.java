@@ -23,6 +23,10 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.IntsRef;
 
+// nocommit -- this can always be wrapped on top of the
+// BulkPostingsEnum; maybe instead of each codec impl making
+// a separate DocsEnum, we always use a single wrapper?
+
 /** Iterates through the documents, term freq and positions.
  *  NOTE: you must first call {@link #nextDoc} before using
  *  any of the per-doc methods (this does not apply to the

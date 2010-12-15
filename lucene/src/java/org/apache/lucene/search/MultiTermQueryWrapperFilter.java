@@ -134,9 +134,6 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
         final int[] docDeltas = docDeltasReader.getBuffer();
         int offset = docDeltasReader.offset();
         int limit = docDeltasReader.end();
-        if (offset >= limit) {
-          limit = docDeltasReader.fill();
-        }
         int count = 0;
         int doc = 0;
         while (count < docFreq) {

@@ -22,6 +22,9 @@ import java.io.IOException;
 import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.util.Bits;
 
+// nocommit -- break out aligned & not cases?
+// nocommit -- break out bulk vs doc-at-time scorer?
+
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
@@ -69,9 +72,6 @@ final class TermScorer extends Scorer {
     docDeltas = docDeltasReader.getBuffer();
     docPointerMax = docDeltasReader.end();
     docPointer = docDeltasReader.offset();
-    if (docPointer >= docPointerMax) {
-      docPointerMax = docDeltasReader.fill();
-    }
     docPointer--;
 
     freqsReader = td.getFreqsReader();
@@ -79,9 +79,6 @@ final class TermScorer extends Scorer {
       freqs = freqsReader.getBuffer();
       freqPointerMax = freqsReader.end();
       freqPointer = freqsReader.offset();
-      if (freqPointer >= freqPointerMax) {
-        freqPointerMax = freqsReader.fill();
-      }
       freqPointer--;
     } else {
       freqs = null;
@@ -290,16 +287,10 @@ final class TermScorer extends Scorer {
       first = false;
       docPointer = docDeltasReader.offset();
       docPointerMax = docDeltasReader.end();
-      if (docPointer >= docPointerMax) {
-        docPointerMax = docDeltasReader.fill();
-      }
       docPointer--;
       if (freqsReader != null) {
         freqPointer = freqsReader.offset();
         freqPointerMax = freqsReader.end();
-        if (freqPointer >= freqPointerMax) {
-          freqPointerMax = freqsReader.fill();
-        }
         freqPointer--;
       }
     } else {
