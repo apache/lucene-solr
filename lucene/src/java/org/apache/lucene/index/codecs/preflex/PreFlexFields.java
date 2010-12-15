@@ -1030,16 +1030,6 @@ public class PreFlexFields extends FieldsProducer {
     public int docID() {
       return docs.doc();
     }
-
-    @Override
-    public int read() throws IOException {
-      if (bulkResult == null) {
-        initBulkResult();
-        bulkResult.docs.ints = new int[32];
-        bulkResult.freqs.ints = new int[32];
-      }
-      return this.docs.read(bulkResult.docs.ints, bulkResult.freqs.ints);
-    }
   }
 
   private final class PreDocsAndPositionsEnum extends DocsAndPositionsEnum {

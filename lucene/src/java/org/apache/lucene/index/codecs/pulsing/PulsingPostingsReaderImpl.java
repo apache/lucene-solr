@@ -273,24 +273,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     }
 
     @Override
-    public int read() {
-      int i=0;
-      // TODO: -- ob1?
-      initBulkResult();
-      final int[] docs = bulkResult.docs.ints;
-      final int[] freqs = bulkResult.freqs.ints;
-      while(nextRead < state.docFreq) {
-        doc = state.docs[nextRead++];
-        if (skipDocs == null || !skipDocs.get(doc.docID)) {
-          docs[i] = doc.docID;
-          freqs[i] = doc.numPositions;
-          i++;
-        }
-      }
-      return i;
-    }
-
-    @Override
     public int freq() {
       return doc.numPositions;
     }

@@ -300,38 +300,6 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int read() throws IOException {
-
-      final int[] docs = bulkResult.docs.ints;
-      final int[] freqs = bulkResult.freqs.ints;
-      int i = 0;
-      final int length = docs.length;
-      while (i < length && ord < limit) {
-        ord++;
-        // manually inlined call to next() for speed
-        final int code = freqIn.readVInt();
-        if (omitTF) {
-          doc += code;
-        } else {
-          doc += code >>> 1;              // shift off low bit
-          if ((code & 1) != 0) {          // if low bit is set
-            freq = 1;                     // freq is one
-          } else {
-            freq = freqIn.readVInt();     // else read freq
-          }
-        }
-
-        if (skipDocs == null || !skipDocs.get(doc)) {
-          docs[i] = doc;
-          freqs[i] = freq;
-          ++i;
-        }
-      }
-      
-      return i;
-    }
-
-    @Override
     public int docID() {
       return doc;
     }

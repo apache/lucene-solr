@@ -35,14 +35,4 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
   public abstract BytesRef getPayload() throws IOException;
 
   public abstract boolean hasPayload();
-
-  @Override
-  public final int read() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public BulkReadResult getBulkResult() {
-    throw new UnsupportedOperationException();
-  }
 }
