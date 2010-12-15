@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 import java.io.Reader;
 import java.util.Map;
@@ -28,13 +29,20 @@ import java.util.Map;
  */
 
 public class ClassicTokenizerFactory extends BaseTokenizerFactory {
+
+  private int maxTokenLength;
+
   @Override
   public void init(Map<String,String> args) {
     super.init(args);
     assureMatchVersion();
+    maxTokenLength = getInt("maxTokenLength", 
+                            StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
   }
 
   public Tokenizer create(Reader input) {
-    return new ClassicTokenizer(luceneMatchVersion, input);
+    ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, input); 
+    tokenizer.setMaxTokenLength(maxTokenLength);
+    return tokenizer;
   }
 }

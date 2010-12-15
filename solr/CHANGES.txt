@@ -253,6 +253,9 @@ New Features
 
 * SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
 
+* SOLR-2188: Added "maxTokenLength" argument to the factories for ClassicTokenizer,
+  StandardTokenizer, and UAX29URLEmailTokenizer. (Steven Rowe)
+
 Optimizations
 ----------------------
 
