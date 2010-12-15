@@ -751,12 +751,15 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   }
 
+  int smallSetSize() throws IOException {
+    return (maxDoc()>>6)+5; // add a small constant for better test coverage
+  }
+
   // query must be positive
   protected DocSet getDocSetNC(DocsEnumState deState) throws IOException {
-    int smallSetSize = maxDoc()>>6;
     int largestPossible = deState.termsEnum.docFreq();
 
-    int[] docs = new int[Math.min(smallSetSize, largestPossible)];
+    int[] docs = new int[Math.min(smallSetSize(), largestPossible)];
     int upto = 0;   // number of docs in the array
     int nDocs = 0;  // number of docs in this set
     OpenBitSet obs = null;
@@ -892,12 +895,12 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         }
          ***/
       } else {
-        DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
+        DocSetCollector collector = new DocSetCollector(smallSetSize(), maxDoc());
         super.search(query,null,collector);
         return collector.getDocSet();
       }
     } else {
-      DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
+      DocSetCollector collector = new DocSetCollector(smallSetSize(), maxDoc());
       Filter luceneFilter = filter.getTopFilter();
       super.search(query, luceneFilter, collector);
       return collector.getDocSet();
@@ -1277,7 +1280,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     int maxDoc = maxDoc();
-    int smallSetSize = maxDoc>>6;
+    int smallSetSize = smallSetSize();
 
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
     final long timeAllowed = cmd.getTimeAllowed();
@@ -1339,7 +1342,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         topCollector = TopFieldCollector.create(cmd.getSort(), len, false, needScores, needScores, true);
       }
 
-      DocSetCollector setCollector = new DocSetDelegateCollector(maxDoc>>6, maxDoc, topCollector);
+      DocSetCollector setCollector = new DocSetDelegateCollector(smallSetSize, maxDoc, topCollector);
       Collector collector = setCollector;
 
       if( timeAllowed > 0 ) {
