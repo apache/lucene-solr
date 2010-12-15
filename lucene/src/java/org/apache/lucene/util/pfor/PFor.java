@@ -16,6 +16,9 @@ package org.apache.lucene.util.pfor;
  * limitations under the License.
  */
 
+// nocommit need low level unit tests for this
+// nocommit break out decompress seperately?
+
 import java.util.Arrays;
 
 /** Patched Frame of Reference PFOR compression/decompression.
@@ -136,7 +139,7 @@ public class PFor extends FrameOfRef {
     if (lastExceptionIndex >= 0) {
       encodeCompressedValue(lastExceptionIndex, i - lastExceptionIndex - 1); // end the exception chain.
     }
-    int bitsInArray = numFrameBits * unCompressedData.length;
+    //int bitsInArray = numFrameBits * unCompressedData.length;
     //int bytesInArray = (bitsInArray + 7) / 8;
     if (maxException < (1 << 8)) { // exceptions as byte
       exceptionCode = 0;
@@ -166,8 +169,8 @@ public class PFor extends FrameOfRef {
   }
 
   private int compressedArrayByteSize() {
-    int compressedArrayBits = unComprSize * numFrameBits;
-    return (compressedArrayBits + 7) / 8;
+    assert unComprSize % 32 == 0;
+    return (unComprSize>>3)*numFrameBits;
   }
 
   /** Return the number of integers used in IntBuffer.
@@ -240,48 +243,45 @@ public class PFor extends FrameOfRef {
     if (firstExceptionIndex == -1) {
       return;
     }
+
     int excIndex = firstExceptionIndex;
-    int excByteOffset = compressedArrayByteSize();
-    int excValue;
-    int intIndex;
 
     switch (exceptionCode) {
       case 0: { // 1 byte exceptions
-        do {
-          intIndex = COMPRESSED_INDEX + (excByteOffset >> 2);
-          int firstBitPosition = (excByteOffset & 3) << 3;
-          excValue = (compressedBuffer.get(intIndex) >>> firstBitPosition) & ((1 << 8) - 1);
-          excIndex = patch(excIndex, excValue);
-          excByteOffset++;
-        } while (excIndex < unComprSize);
-      }
-      break;
-
-      case 1: { // 2 byte exceptions
-        int excShortOffset = (excByteOffset + 1) >> 1; // to next multiple of two bytes.
-        intIndex = COMPRESSED_INDEX + (excShortOffset >> 1); // round down here.
-        if ((excShortOffset & 1) != 0) {
-          // decode first 2 byte exception from high 2 bytes of same int as last frame bits.
-          excValue = compressedBuffer.get(intIndex++) >>> 16;
-          excIndex = patch(excIndex, excValue);
-        }
-        while (excIndex < unComprSize) {
-          excValue = compressedBuffer.get(intIndex) & ((1<<16)-1);
+        int curIntValue = compressedBuffer.get();
+        int firstBitPosition = 0;
+        while(true) {
+          final int excValue = (curIntValue >>> firstBitPosition) & ((1 << 8) - 1);
           excIndex = patch(excIndex, excValue);
           if (excIndex >= unComprSize) {
             break;
           }
-          excValue = compressedBuffer.get(intIndex++) >>> 16;
+          firstBitPosition += 8;
+          if (firstBitPosition == 32) {
+            firstBitPosition = 0;
+            curIntValue = compressedBuffer.get();
+          }
+        }
+      }
+      break;
+
+      case 1: { // 2 byte exceptions
+        while (excIndex < unComprSize) {
+          final int curIntValue = compressedBuffer.get();
+          int excValue = curIntValue & ((1<<16)-1);
+          excIndex = patch(excIndex, excValue);
+          if (excIndex >= unComprSize) {
+            break;
+          }
+          excValue = curIntValue >>> 16;
           excIndex = patch(excIndex, excValue);
         }
       }
       break;
 
       case 2: // 4 byte exceptions
-        intIndex = COMPRESSED_INDEX + ((excByteOffset + 3) >> 2); // to next multiple of four bytes, in ints.
         do {
-          excValue = compressedBuffer.get(intIndex++);
-          excIndex = patch(excIndex, excValue);
+          excIndex = patch(excIndex, compressedBuffer.get());
         } while (excIndex < unComprSize);
       break;
     }
