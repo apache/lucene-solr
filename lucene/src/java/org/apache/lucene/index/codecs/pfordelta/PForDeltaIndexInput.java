@@ -20,7 +20,7 @@ package org.apache.lucene.index.codecs.pfordelta;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
-import org.apache.lucene.util.pfor.PFor;
+import org.apache.lucene.util.pfor.PForDecompress;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,7 +35,7 @@ public class PForDeltaIndexInput extends FixedIntBlockIndexInput {
   private static class BlockReader implements FixedIntBlockIndexInput.BlockReader {
     private final IndexInput in;
     private final int[] buffer;
-    private final PFor decompressor;
+    private final PForDecompress decompressor;
     private final byte[] input;
     private final IntBuffer intInput;
 
@@ -43,7 +43,7 @@ public class PForDeltaIndexInput extends FixedIntBlockIndexInput {
       this.in = in;
       this.buffer = buffer;
 
-      decompressor = new PFor();
+      decompressor = new PForDecompress();
       // nocommit -- can't hardwire 1024; it's a function of blockSize
       ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
       input = byteBuffer.array();

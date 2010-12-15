@@ -82,7 +82,7 @@ decodeAnyMethod = '''  static void decodeAnyFrame(
 '''
 
 def genDecompress():
-  className = "ForDecompress"
+  className = "ForDecompressImpl"
   fileName = className + ".java"
   imports = "import java.nio.IntBuffer;\n"
   f = open(fileName, 'w')
@@ -111,7 +111,7 @@ def genDecompress():
 
     w("import java.nio.IntBuffer;\n\n")
 
-    w("final class ForDecompress {\n")
+    w("final class ForDecompressImpl {\n")
 
     w('\n  // nocommit: assess perf of this to see if specializing is really needed\n')
 

@@ -19,10 +19,8 @@ package org.apache.lucene.index.codecs.pfordelta;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MMapDirectory.MMapIndexInput;
-import org.apache.lucene.store.MMapDirectory.MultiMMapIndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
-import org.apache.lucene.util.pfor.FrameOfRef;
+import org.apache.lucene.util.pfor.ForDecompress;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,7 +35,7 @@ public class FORIndexInput extends FixedIntBlockIndexInput {
   private static class BlockReader implements FixedIntBlockIndexInput.BlockReader {
     private final IndexInput in;
     private final int[] buffer;
-    private final FrameOfRef decompressor;
+    private final ForDecompress decompressor;
     private final byte[] input;
     private final IntBuffer intInput;
 
@@ -45,7 +43,7 @@ public class FORIndexInput extends FixedIntBlockIndexInput {
       this.in = in;
       this.buffer = buffer;
 
-      decompressor = new FrameOfRef();
+      decompressor = new ForDecompress();
       // nocommit -- can't hardwire 1024; it's a function of blockSize
       ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
       input = byteBuffer.array();
@@ -75,101 +73,7 @@ public class FORIndexInput extends FixedIntBlockIndexInput {
     }
   }
 
-  // nocommit -- hacked up -- maybe move
-  // IntIndexInput/Output into store?
-  private static class MMapBlockReader implements FixedIntBlockIndexInput.BlockReader {
-    private final MMapIndexInput in;
-    private final int[] buffer;
-    private final FrameOfRef decompressor;
-    private final ByteBuffer byteBufferIn;
-    private final IntBuffer intBufferIn;
-
-    public MMapBlockReader(MMapIndexInput in, int[] buffer) {
-      this.in = in;
-      this.buffer = buffer;
-
-      // nocommit -- we seem to be creating this class
-      // alot... how come?
-      decompressor = new FrameOfRef();
-      
-      byteBufferIn = in.getBuffer();
-      //System.out.println("pos start=" + byteBufferIn.position());
-      // nocommit -- this sets pos relative to current pos
-      // of byteBuffer (confusing) -- this is why we -1 in
-      // seek (pos is always 4 here)
-      intBufferIn = byteBufferIn.asIntBuffer();
-      
-      decompressor.setCompressedBuffer(intBufferIn);
-      decompressor.setUnCompressedData(buffer, 0, buffer.length);
-      //System.out.println("mmmap");
-    }
-
-    public void seek(long pos) throws IOException {
-      assert pos%4 == 0;
-      //System.out.println("this=" + this + " seek=" + pos);
-      intBufferIn.position((int) (pos/4)-1);
-    }
-
-    public void readBlock() throws IOException {
-      // nocommit -- we don't need this numBytes header --
-      // it's a waste.  we need something like the zip
-      // interface -- the decompressor asks for more bytes
-      // if it needs it
-      //int numBytes = in.readInt();
-      int numBytes = intBufferIn.get();
-      //System.out.println("NB=" + numBytes);
-      // nocommit -- how to avoid this copy?  plus, the copy
-      // inside BII.  if mmapdir how can we directly access
-      // underlying ram w/ no copy?
-      //in.readBytes(input, 0, numBytes);
-      decompressor.decompress();
-    }
-  }
-
-  // nocommit -- hacked up -- maybe move
-  // IntIndexInput/Output into store?
-  private static class MultiMMapBlockReader implements FixedIntBlockIndexInput.BlockReader {
-    private final MultiMMapIndexInput in;
-    private final int[] buffer;
-    private final FrameOfRef decompressor;
-    private final ByteBuffer byteBufferIn;
-    private final IntBuffer intBufferIn;
-
-    public MultiMMapBlockReader(MultiMMapIndexInput in, int[] buffer) {
-      this.in = in;
-      this.buffer = buffer;
-
-      decompressor = new FrameOfRef();
-      
-      byteBufferIn = in.getBuffer();
-      intBufferIn = byteBufferIn.asIntBuffer();
-      
-      decompressor.setCompressedBuffer(intBufferIn);
-      decompressor.setUnCompressedData(buffer, 0, buffer.length);
-    }
-
-    public void seek(long pos) throws IOException {
-      //
-      
-    }
-
-    public void readBlock() throws IOException {
-      int numBytes = in.readInt();
-      // nocommit -- how to avoid this copy?  plus, the copy
-      // inside BII.  if mmapdir how can we directly access
-      // underlying ram w/ no copy?
-      //in.readBytes(input, 0, numBytes);
-      //decompressor.decompress();
-    }
-  }
-
   protected FixedIntBlockIndexInput.BlockReader getBlockReader(IndexInput in, int[] buffer) {
-    if (in instanceof MMapIndexInput) {
-      return new MMapBlockReader((MMapIndexInput) in, buffer);
-    } else if (false && in instanceof MultiMMapIndexInput) {
-      return new MultiMMapBlockReader((MultiMMapIndexInput) in, buffer);
-    } else {
-      return new BlockReader(in, buffer);
-    }
+    return new BlockReader(in, buffer);
   }
 }

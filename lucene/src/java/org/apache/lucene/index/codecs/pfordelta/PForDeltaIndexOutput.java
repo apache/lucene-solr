@@ -19,7 +19,7 @@ package org.apache.lucene.index.codecs.pfordelta;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
-import org.apache.lucene.util.pfor.PFor;
+import org.apache.lucene.util.pfor.PForCompress;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,13 +29,13 @@ public class PForDeltaIndexOutput extends FixedIntBlockIndexOutput {
   public final static String CODEC = "P_FOR_DELTA";
   public final static int VERSION_START = 0;
   public final static int VERSION_CURRENT = VERSION_START;
-  private final PFor compressor;
+  private final PForCompress compressor;
   private final byte[] output;
 
   public PForDeltaIndexOutput(Directory dir, String fileName, int blockSize) throws IOException {
     super(dir.createOutput(fileName), blockSize);
 
-    compressor = new PFor();
+    compressor = new PForCompress();
     // nocommit -- can't hardwire 1024; it's a function of blockSize
     ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
     output = byteBuffer.array();

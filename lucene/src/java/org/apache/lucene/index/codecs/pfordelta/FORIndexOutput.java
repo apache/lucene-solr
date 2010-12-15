@@ -22,8 +22,8 @@ package org.apache.lucene.index.codecs.pfordelta;
  *  testing the pluggability.  One should typically use pfor instead. */
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.pfor.ForCompress;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
-import org.apache.lucene.util.pfor.FrameOfRef;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,7 +35,7 @@ public class FORIndexOutput extends FixedIntBlockIndexOutput {
   public final static String CODEC = "P_FOR_DELTA";
   public final static int VERSION_START = 0;
   public final static int VERSION_CURRENT = VERSION_START;
-  private final FrameOfRef compressor;
+  private final ForCompress compressor;
   private final byte[] output;
 
   // nocommit
@@ -46,7 +46,7 @@ public class FORIndexOutput extends FixedIntBlockIndexOutput {
 
     // nocommit
     this.fileName = fileName;
-    compressor = new FrameOfRef();
+    compressor = new ForCompress();
     // nocommit -- can't hardwire 1024; it's a function of blockSize
     ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
     output = byteBuffer.array();
