@@ -42,6 +42,11 @@ import java.io.IOException;
  *  offset/end to get the bounds.
  *
  *  @lucene.experimental */
+
+// nocommit -- should we expose whether doc/freq intblocks
+// are aligned?  consumers like TermScorer can specialize in
+// this case -- end() is always BLOCK_SIZE, and they will
+// alway fill in synchrony
 public abstract class BulkPostingsEnum {
 
   /** NOTE: on first obtaining the BlockReader it's possible
