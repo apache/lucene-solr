@@ -264,8 +264,10 @@ final class TermScorer extends Scorer {
   private final void reset() throws IOException {
     docPointer = docDeltasReader.offset();
     docPointerMax = docDeltasReader.end();
+    assert docPointerMax >= docPointer: "dP=" + docPointer + " dPMax=" + docPointerMax;
     freqPointer = freqsReader.offset();
     freqPointerMax = freqsReader.end();
+    assert freqPointerMax >= freqPointer: "fP=" + freqPointer + " fPMax=" + freqPointerMax;
     --docPointer;
     --freqPointer;
   }
