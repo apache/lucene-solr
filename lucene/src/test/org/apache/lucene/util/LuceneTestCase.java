@@ -773,6 +773,11 @@ public abstract class LuceneTestCase extends Assert {
       } catch (ClassCastException e) {
         // TEST_DIRECTORY is not a sub-class of FSDirectory, so draw one at random
         fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
+        
+        if (fsdirClass.indexOf(".") == -1) {// if not fully qualified, assume .store
+          fsdirClass = "org.apache.lucene.store." + fsdirClass;
+        }
+        
         clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
       }
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f, lf));
