@@ -816,7 +816,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
   // Bulk postings API
   private final class SegmentBulkPostingsEnum extends BulkPostingsEnum {
     private final IndexInput freqIn;
-    private final IndexInput proxIn;
+    final IndexInput proxIn;
   
     final IndexInput startFreqIn;
     private final boolean omitTF;
@@ -832,13 +832,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
   
     boolean skipped;
     DefaultSkipListReader skipper;
-    private int payloadLength;
+    int payloadLength;
   
     private final DocDeltasReader docDeltasReader;
     private final FreqsReader freqsReader;
     private final PositionsReader positionDeltasReader;
   
-    private boolean docsPending, freqsPending;
+    boolean docsPending;
+    boolean freqsPending;
   
     public SegmentBulkPostingsEnum(boolean omitTF, boolean doFreqs, boolean doPositions) throws IOException {
       //System.out.println("bulk init");

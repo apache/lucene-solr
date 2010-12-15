@@ -60,7 +60,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   }
 
   private static class PulsingTermState extends TermState {
-    private Document docs[];
+    Document docs[];
     private TermState wrappedTermState;
     private boolean pendingIndexTerm;
 
@@ -314,11 +314,11 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   static class PulsingBulkPostingsEnum extends BulkPostingsEnum {
     private Document doc;
     private PulsingTermState state;
-    private int numDocs;
-    private final int[] docDeltas;
-    private final int[] freqs;
-    private int[] positionDeltas;
-    private int numPositions;
+    int numDocs;
+    final int[] docDeltas;
+    final int[] freqs;
+    int[] positionDeltas;
+    int numPositions;
     private boolean doFreqs;
     private boolean doPositions;
 
