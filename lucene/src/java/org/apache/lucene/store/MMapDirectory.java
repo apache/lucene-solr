@@ -214,7 +214,8 @@ public class MMapDirectory extends FSDirectory {
     }
   }
 
-  private class MMapIndexInput extends IndexInput {
+  // nocommit make private again
+  public class MMapIndexInput extends IndexInput {
 
     private ByteBuffer buffer;
     private final long length;
@@ -223,6 +224,11 @@ public class MMapDirectory extends FSDirectory {
     private MMapIndexInput(RandomAccessFile raf) throws IOException {
         this.length = raf.length();
         this.buffer = raf.getChannel().map(MapMode.READ_ONLY, 0, length);
+    }
+
+    // nocommit
+    public ByteBuffer getBuffer() {
+      return buffer;
     }
 
     @Override
@@ -283,7 +289,8 @@ public class MMapDirectory extends FSDirectory {
   // Because Java's ByteBuffer uses an int to address the
   // values, it's necessary to access a file >
   // Integer.MAX_VALUE in size using multiple byte buffers.
-  private class MultiMMapIndexInput extends IndexInput {
+  // nocommit make private again
+  public class MultiMMapIndexInput extends IndexInput {
   
     private ByteBuffer[] buffers;
     private int[] bufSizes; // keep here, ByteBuffer.size() method is optional
@@ -331,6 +338,11 @@ public class MMapDirectory extends FSDirectory {
       seek(0L);
     }
   
+    public ByteBuffer getBuffer() {
+      // nocommit fixup
+      return null;
+    }
+
     @Override
     public byte readByte() throws IOException {
       // Performance might be improved by reading ahead into an array of
