@@ -192,9 +192,9 @@ class BufferedDeletes {
 
         if (delCountInc != 0) {
           any = true;
-          if (infoStream != null) {
-            message("deletes touched " + delCountInc + " docIDs");
-          }
+        }
+        if (infoStream != null) {
+          message("deletes touched " + delCountInc + " docIDs");
         }
       
         if (deletes != null) {
