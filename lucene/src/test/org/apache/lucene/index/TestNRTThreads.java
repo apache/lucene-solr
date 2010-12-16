@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
@@ -104,6 +106,9 @@ public class TestNRTThreads extends LuceneTestCase {
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicInteger addCount = new AtomicInteger();
     final AtomicInteger delCount = new AtomicInteger();
+
+    final List<String> delIDs = Collections.synchronizedList(new ArrayList<String>());
+
     final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC*1000;
     Thread[] threads = new Thread[NUM_INDEX_THREADS];
     for(int thread=0;thread<NUM_INDEX_THREADS;thread++) {
@@ -143,7 +148,11 @@ public class TestNRTThreads extends LuceneTestCase {
                   for(String id : toDeleteIDs) {
                     writer.deleteDocuments(new Term("id", id));
                   }
-                  delCount.addAndGet(toDeleteIDs.size());
+                  final int count = delCount.addAndGet(toDeleteIDs.size());
+                  if (VERBOSE) {
+                    System.out.println(Thread.currentThread().getName() + ": tot " + count + " deletes");
+                  }
+                  delIDs.addAll(toDeleteIDs);
                   toDeleteIDs.clear();
                 }
                 addCount.getAndIncrement();
@@ -153,6 +162,9 @@ public class TestNRTThreads extends LuceneTestCase {
                 failed.set(true);
                 throw new RuntimeException(exc);
               }
+            }
+            if (VERBOSE) {
+              System.out.println(Thread.currentThread().getName() + ": indexing done");
             }
           }
         };
@@ -306,8 +318,20 @@ public class TestNRTThreads extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: done join [" + (System.currentTimeMillis()-t0) + " ms]; addCount=" + addCount + " delCount=" + delCount);
     }
+    
+    final IndexReader r2 = writer.getReader();
+    final IndexSearcher s = new IndexSearcher(r2);
+    for(String id : delIDs) {
+      final TopDocs hits = s.search(new TermQuery(new Term("id", id)), 1);
+      if (hits.totalHits != 0) {
+        fail("doc id=" + id + " is supposed to be deleted, but got docID=" + hits.scoreDocs[0].doc);
+      }
+    }
+    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), r2.numDocs());
+    r2.close();
+
     writer.commit();
-    assertEquals("index=" + writer.segString(), addCount.get() - delCount.get(), writer.numDocs());
+    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
       
     writer.close(false);
     dir.close();
