@@ -281,7 +281,19 @@ public class Config {
    
    public Version getLuceneVersion(String path, Version def) {
      String val = getVal(path, false);
-     return val!=null ? parseLuceneVersionString(val) : def;
+     if (val == null) {
+       if (!versionWarningAlreadyLogged.getAndSet(true)) {
+         log.warn(
+           "the luceneMatchVersion is not specified, defaulting to " + def + 
+           " emulation. You should at some point declare and reindex to at least 3.0, " +
+           "because 2.4 emulation is deprecated and will be removed in 4.0. " + 
+           "This parameter will be mandatory in 4.0."
+         );
+       }
+       return def;
+     } else {
+       return parseLuceneVersionString(val);
+     }
    }
   
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
