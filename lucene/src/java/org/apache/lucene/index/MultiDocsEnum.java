@@ -27,6 +27,7 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
+// nocommit -- remove this?
 public final class MultiDocsEnum extends DocsEnum {
   private EnumWithSlice[] subs;
   int numSubs;

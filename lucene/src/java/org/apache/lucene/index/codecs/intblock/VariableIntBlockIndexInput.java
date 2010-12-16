@@ -103,9 +103,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
         limit = blockSize = blockReader.readBlock();
       } else {
         // Seek w/in current block
-        //System.out.println("  no seekPending");
       }
-      //System.out.println("  now offset=" + offset + " limit=" + limit);
 
       // TODO: if we were more clever when writing the
       // index, such that a seek point wouldn't be written
@@ -117,7 +115,6 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
       // encode the current ones.
       while(offset >= limit) {
         offset -= limit;
-        //System.out.println("  non-causal fill");
         fill();
       }
       //System.out.println("  after skip bock offset=" + offset);

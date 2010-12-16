@@ -406,6 +406,7 @@ public final class MultiTermsEnum extends TermsEnum {
     }
   }
 
+  // nocommit nuke this
   @Override
   public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
     final MultiBulkPostingsEnum postingsEnum = new MultiBulkPostingsEnum();

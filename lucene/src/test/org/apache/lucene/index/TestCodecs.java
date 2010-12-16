@@ -616,4 +616,69 @@ public class TestCodecs extends LuceneTestCase {
     }
     consumer.close();
   }
+
+
+  public void testBulkPostingsBufferReuse() throws Exception {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    Field f = newField("field", "", Field.Index.ANALYZED);
+    doc.add(f);
+    f.setValue("a");
+    w.addDocument(doc);
+    f.setValue("a b");
+    w.addDocument(doc);
+    f.setValue("a b c");
+    w.addDocument(doc);
+    w.optimize();
+    IndexReader r = w.getReader();
+    w.close();
+
+    IndexReader sub = r.getSequentialSubReaders()[0];
+    TermsEnum termsEnum = sub.terms("field").iterator();
+
+    if (VERBOSE) {
+      System.out.println("TEST: initial next");
+    }
+    assertEquals(new BytesRef("a"), termsEnum.next());
+    assertEquals(3, termsEnum.docFreq());
+    final BulkPostingsEnum bpe = termsEnum.bulkPostings(null, true, true);
+    assertNotNull(bpe);
+    BulkPostingsEnum.BlockReader freqs = bpe.getFreqsReader();
+    final int[] buffer = freqs.getBuffer();
+    int upto = freqs.offset();
+    int limit = freqs.end();
+    if (VERBOSE) {
+      System.out.println("TEST: buffer size=" + buffer.length + " offset=" + upto + " end=" + limit);
+    }
+    if (upto == limit) {
+      limit = freqs.fill();
+      upto = 0;
+      if (VERBOSE) {
+        System.out.println("TEST: after fill offset=" + upto + " end=" + limit);
+      }
+    }
+
+    // now next term
+    if (VERBOSE) {
+      System.out.println("TEST: now next to term b");
+    }
+    assertEquals(new BytesRef("b"), termsEnum.next());
+    assertEquals(2, termsEnum.docFreq());
+    final BulkPostingsEnum bpe2 = termsEnum.bulkPostings(bpe, true, true);
+
+    // verify bulk postings enum was in fact reused
+    assertEquals(bpe, bpe2);
+
+    if (VERBOSE) {
+      System.out.println("TEST: offset=" + freqs.offset() + " end=" + freqs.end());
+    }
+
+    // verify docDelta buffer reused, if the first read
+    // pulled enough data
+    assertTrue(limit <= 3 || freqs.offset() >= upto + 3);
+
+    r.close();
+    dir.close();
+  }
 }

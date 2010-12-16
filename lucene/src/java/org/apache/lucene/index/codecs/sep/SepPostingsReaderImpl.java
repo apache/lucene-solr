@@ -179,17 +179,25 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     return docsEnum.init(fieldInfo, termState, skipDocs);
   }
 
+  private SepBulkPostingsEnum lastBulkEnum;
+
   @Override
   public BulkPostingsEnum bulkPostings(FieldInfo fieldInfo, TermState _termState, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
-    SepBulkPostingsEnum postingsEnum;
-    if (reuse == null || !(reuse instanceof SepBulkPostingsEnum) || !((SepBulkPostingsEnum) reuse).canReuse(fieldInfo, docIn, doFreqs, doPositions)) {
-      postingsEnum = new SepBulkPostingsEnum(fieldInfo, doFreqs, doPositions);
+    final SepBulkPostingsEnum lastBulkEnum = this.lastBulkEnum;
+    if (lastBulkEnum != null && reuse == lastBulkEnum) {
+      // fastpath
+      return lastBulkEnum.init(termState);
     } else {
-      postingsEnum = (SepBulkPostingsEnum) reuse;
+      SepBulkPostingsEnum postingsEnum;
+      if (reuse == null || !(reuse instanceof SepBulkPostingsEnum) || !((SepBulkPostingsEnum) reuse).canReuse(fieldInfo, docIn, doFreqs, doPositions)) {
+        postingsEnum = new SepBulkPostingsEnum(fieldInfo, doFreqs, doPositions);
+      } else {
+        postingsEnum = (SepBulkPostingsEnum) reuse;
+      }
+      this.lastBulkEnum = postingsEnum;
+      return postingsEnum.init(termState);
     }
-
-    return postingsEnum.init(termState);
   }
 
   @Override
@@ -809,8 +817,8 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     public boolean canReuse(FieldInfo fieldInfo, IntIndexInput docIn, boolean doFreq, boolean doPos) {
       return fieldInfo.storePayloads == storePayloads &&
         startDocIn == docIn &&
-        (freqReader != null || !doFreq) &&
-        (posReader != null || !doPos);
+        doFreq == (freqReader != null) &&
+        doPos == (posReader != null);
     }
 
     // nocommit -- make sure this is tested!!

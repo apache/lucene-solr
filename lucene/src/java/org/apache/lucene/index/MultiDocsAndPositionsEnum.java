@@ -29,6 +29,8 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
+// nocommit -- remove this?  or make it package private
+// (merge needs it)
 public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private EnumWithSlice[] subs;
   int numSubs;

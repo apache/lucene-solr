@@ -974,15 +974,24 @@ public class PreFlexFields extends FieldsProducer {
       return docsPosEnum.reset(termEnum, skipDocs);        
     }
 
+    private PreBulkPostingsEnum lastBulkEnum;
+
     @Override
     public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
-      PreBulkPostingsEnum postingsEnum;
-      if (reuse == null || !(reuse instanceof PreBulkPostingsEnum) || !((PreBulkPostingsEnum) reuse).canReuse(fieldInfo, freqStream, doFreqs, doPositions)) {
-        postingsEnum = new PreBulkPostingsEnum(fieldInfo.omitTermFreqAndPositions, doFreqs, doPositions);
+      // must assign to local, first, for thread safety:
+      final PreBulkPostingsEnum lastBulkEnum = this.lastBulkEnum;
+      if (lastBulkEnum != null && lastBulkEnum == reuse) {
+        return lastBulkEnum.reset(fieldInfo, termEnum);
       } else {
-        postingsEnum = (PreBulkPostingsEnum) reuse;
+        final PreBulkPostingsEnum postingsEnum;
+        if (reuse == null || !(reuse instanceof PreBulkPostingsEnum) || !((PreBulkPostingsEnum) reuse).canReuse(fieldInfo, freqStream, doFreqs, doPositions)) {
+          postingsEnum = new PreBulkPostingsEnum(fieldInfo, doFreqs, doPositions);
+        } else {
+          postingsEnum = (PreBulkPostingsEnum) reuse;
+        }
+        this.lastBulkEnum = postingsEnum;
+        return postingsEnum.reset(fieldInfo, termEnum);
       }
-      return postingsEnum.reset(fieldInfo, termEnum);
     }
   }
 
@@ -1111,13 +1120,13 @@ public class PreFlexFields extends FieldsProducer {
   
   // Bulk postings API
   private final class PreBulkPostingsEnum extends BulkPostingsEnum {
-    private final IndexInput freqIn;
-    private final IndexInput proxIn;
+    final IndexInput freqIn;
+    final IndexInput proxIn;
 
     final IndexInput startFreqIn;
-    private final boolean omitTF;
+    final boolean omitTF;
 
-    boolean storePayloads;                        // does current field store payloads?
+    final boolean storePayloads;                        // does current field store payloads?
 
     int ord;                                      // how many docs we've read
     int docFreq;
@@ -1128,90 +1137,112 @@ public class PreFlexFields extends FieldsProducer {
 
     boolean skipped;
     DefaultSkipListReader skipper;
-    private int payloadLength;
+    int payloadLength;
 
-    private final DocDeltasReader docDeltasReader;
-    private final FreqsReader freqsReader;
-    private final PositionsReader positionDeltasReader;
+    final DocDeltasReader docDeltasReader;
+    final FreqsReader freqsReader;
+    final PositionsReader positionDeltasReader;
 
-    private boolean docsPending, freqsPending;
+    boolean docsPending;
+    boolean freqsPending;
 
-    public PreBulkPostingsEnum(boolean omitTF, boolean doFreqs, boolean doPositions) throws IOException {
+    public PreBulkPostingsEnum(FieldInfo fieldInfo, boolean doFreqs, boolean doPositions) throws IOException {
       startFreqIn = PreFlexFields.this.freqStream;
       this.freqIn = (IndexInput) PreFlexFields.this.freqStream.clone();
-      this.omitTF = omitTF;
+      omitTF = fieldInfo.omitTermFreqAndPositions;
+      storePayloads = fieldInfo.storePayloads;
 
       docDeltasReader = new DocDeltasReader();
       if (doFreqs && !omitTF) {
         freqsReader = new FreqsReader();
+        if (doPositions) {
+          proxIn = (IndexInput) PreFlexFields.this.proxStream.clone();
+          positionDeltasReader = new PositionsReader();
+        } else {
+          proxIn = null;
+          positionDeltasReader = null;
+        }
       } else {
+        proxIn = null;
         freqsReader = null;
-      }
-
-      if (doPositions && !omitTF) {
-        this.proxIn = (IndexInput) PreFlexFields.this.proxStream.clone();
-        positionDeltasReader = new PositionsReader();
-      } else {
-        this.proxIn = null;
         positionDeltasReader = null;
       }
     }
 
-    public boolean canReuse(FieldInfo fieldInfo, IndexInput freqin, boolean doFreqs, boolean doPositions) {
+    public boolean canReuse(FieldInfo fieldInfo, IndexInput freqIn, boolean doFreqs, boolean doPositions) {
       return freqIn == startFreqIn &&
-        (!doFreqs || freqsReader == null) &&
-        (!doPositions || positionDeltasReader == null) && 
-        (omitTF == fieldInfo.omitTermFreqAndPositions);
+        doFreqs == (freqsReader != null) &&
+        doPositions == (positionDeltasReader != null) && 
+        omitTF == fieldInfo.omitTermFreqAndPositions &&
+        storePayloads == fieldInfo.storePayloads;
     }
 
     final void read() throws IOException {
-      try {
-        if (freqsReader == null) {
-          // Consumer only wants doc deltas
-          assert !docsPending;
-          if (omitTF) {
-            // Index only stores doc deltas
-            for(int i=0;i<BULK_BUFFER_SIZE;i++) {
-              docDeltasReader.buffer[i] = freqIn.readVInt();
-            }
-          } else {
-            // Index stores doc deltas & freq
-            for(int i=0;i<BULK_BUFFER_SIZE;i++) {
-              final int code = freqIn.readVInt();
-              docDeltasReader.buffer[i] = code >>> 1;
-              if ((code & 1) == 0) {
-                freqIn.readVInt();
-              }
-            }
+      final int left = docFreq - ord;
+      final int limit = left > BULK_BUFFER_SIZE ? BULK_BUFFER_SIZE : left;
+      if (freqsReader == null) {
+        // Consumer only wants doc deltas
+        assert !docsPending;
+        if (omitTF) {
+          // Index already only stores doc deltas
+          for(int i=0;i<limit;i++) {
+            docDeltasReader.buffer[i] = freqIn.readVInt();
           }
-          docsPending = true;
         } else {
-          // Consumer wants both
-          assert !docsPending;
-          assert !freqsPending;
-          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          // Index stores doc deltas & freq
+          for(int i=0;i<limit;i++) {
             final int code = freqIn.readVInt();
             docDeltasReader.buffer[i] = code >>> 1;
             if ((code & 1) == 0) {
-              freqsReader.buffer[i] = freqIn.readVInt();
-            } else {
-              freqsReader.buffer[i] = 1;
+              // nocommit skipVint?
+              freqIn.readVInt();
             }
           }
-          docsPending = true;
-          freqsPending = true;
         }
-        ord += BULK_BUFFER_SIZE;
-      } catch (IOException ioe) {
-        if (freqIn.getFilePointer() != freqIn.length()) {
-          throw ioe;
+      } else if (positionDeltasReader == null) {
+        // Consumer wants both, but not positions
+        assert !docsPending;
+        assert !freqsPending;
+        for(int i=0;i<limit;i++) {
+          final int code = freqIn.readVInt();
+          docDeltasReader.buffer[i] = code >>> 1;
+          if ((code & 1) == 0) {
+            freqsReader.buffer[i] = freqIn.readVInt();
+          } else {
+            freqsReader.buffer[i] = 1;
+          }
         }
+        freqsPending = true;
+        freqsReader.limit = limit;
+      } else {
+        // Consumer wants all three
+        assert !docsPending;
+        assert !freqsPending;
+        int sumFreq = 0;
+        for(int i=0;i<limit;i++) {
+          final int code = freqIn.readVInt();
+          docDeltasReader.buffer[i] = code >>> 1;
+          final int freq;
+          if ((code & 1) == 0) {
+            freq = freqIn.readVInt();
+          } else {
+            freq = 1;
+          }
+          sumFreq += freq;
+          freqsReader.buffer[i] = freq;
+        }
+        freqsPending = true;
+        freqsReader.limit = limit;
+        positionDeltasReader.pending += sumFreq;
       }
+      docDeltasReader.limit = limit;
+      ord += limit;
+      docsPending = true;
     }
 
     class DocDeltasReader extends BulkPostingsEnum.BlockReader {
-      private final int[] buffer = new int[BULK_BUFFER_SIZE];
-      private int limit;
+      final int[] buffer = new int[BULK_BUFFER_SIZE];
+      int limit;
 
       @Override
       public int[] getBuffer() {
@@ -1229,8 +1260,7 @@ public class PreFlexFields extends FieldsProducer {
           read();
         }
         docsPending = false;
-        limit = BULK_BUFFER_SIZE;
-        return BULK_BUFFER_SIZE;
+        return limit;
       }
 
       @Override
@@ -1240,7 +1270,7 @@ public class PreFlexFields extends FieldsProducer {
 
       @Override
       public void setOffset(int offset) {
-        assert offset == 0;
+        throw new UnsupportedOperationException();
       }
     }
 
@@ -1264,8 +1294,7 @@ public class PreFlexFields extends FieldsProducer {
           read();
         }
         freqsPending = false;
-        limit = BULK_BUFFER_SIZE;
-        return BULK_BUFFER_SIZE;
+        return limit;
       }
 
       @Override
@@ -1275,13 +1304,14 @@ public class PreFlexFields extends FieldsProducer {
 
       @Override
       public void setOffset(int offset) {
-        assert offset == 0;
+        throw new UnsupportedOperationException();
       }
     }
 
     class PositionsReader extends BulkPostingsEnum.BlockReader {
       final int[] buffer = new int[BULK_BUFFER_SIZE];
       int limit;
+      int pending;
 
       @Override
       public int[] getBuffer() {
@@ -1298,8 +1328,9 @@ public class PreFlexFields extends FieldsProducer {
         // nocommit -- before fixing this, get a test to fail:
         // nocommit -- must "handle" EOF here -- cannot
         // change old index format!
+        limit = pending > BULK_BUFFER_SIZE ? BULK_BUFFER_SIZE : pending;
         if (storePayloads) {
-          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          for(int i=0;i<limit;i++) {
             final int code = proxIn.readVInt();
             buffer[i] = code >>> 1;
             if ((code & 1) != 0) {
@@ -1311,12 +1342,12 @@ public class PreFlexFields extends FieldsProducer {
             }
           }
         } else {
-          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          for(int i=0;i<limit;i++) {
             buffer[i] = proxIn.readVInt();
           }
         }
-        limit = BULK_BUFFER_SIZE;
-        return BULK_BUFFER_SIZE;
+        pending -= limit;
+        return limit;
       }
 
       @Override
@@ -1346,20 +1377,29 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     public PreBulkPostingsEnum reset(FieldInfo fieldInfo, SegmentTermEnum termEnum) throws IOException {
-      storePayloads = fieldInfo.storePayloads;
       freqOffset = termEnum.termInfo.freqPointer;
       freqIn.seek(freqOffset);
 
-      // TODO: for full enum case (eg segment merging) this
-      // seek is unnecessary; maybe we can avoid in such
-      // cases
-      if (positionDeltasReader != null) {
-        proxOffset = termEnum.termInfo.proxPointer;
-        proxIn.seek(proxOffset);
+      docFreq = termEnum.docFreq();
+      assert docFreq > 0;
+
+      docDeltasReader.limit = 0;
+      if (freqsReader != null) {
+        freqsReader.limit = 0;
+        if (positionDeltasReader != null) {
+          positionDeltasReader.limit = 0;
+          positionDeltasReader.pending = 0;
+          // TODO: for full enum case (eg MTQ that .next()'s
+          // across terms) this seek is unnecessary; maybe we
+          // can avoid in such cases
+          if (positionDeltasReader != null) {
+            proxOffset = termEnum.termInfo.proxPointer;
+            proxIn.seek(proxOffset);
+          }
+        }
       }
 
       skipOffset = termEnum.termInfo.skipOffset;
-      docFreq = termEnum.docFreq();
 
       ord = 0;
       skipped = false;

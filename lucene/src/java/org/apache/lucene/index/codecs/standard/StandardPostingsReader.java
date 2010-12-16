@@ -170,15 +170,26 @@ public class StandardPostingsReader extends PostingsReaderBase {
     return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
   }
 
+  private SegmentBulkPostingsEnum lastBulkEnum;
+
   @Override
   public BulkPostingsEnum bulkPostings(FieldInfo fieldInfo, TermState termState, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
-    SegmentBulkPostingsEnum postingsEnum;
-    if (reuse == null || !(reuse instanceof SegmentBulkPostingsEnum) || !((SegmentBulkPostingsEnum) reuse).canReuse(fieldInfo, freqIn, doFreqs, doPositions)) {
-      postingsEnum = new SegmentBulkPostingsEnum(fieldInfo.omitTermFreqAndPositions, doFreqs, doPositions);
+    // must assign to local, first, for thread safety:
+    final SegmentBulkPostingsEnum lastBulkEnum = this.lastBulkEnum;
+
+    if (lastBulkEnum != null && reuse == lastBulkEnum) {
+      // fastpath
+      return lastBulkEnum.reset((DocTermState) termState);
     } else {
-      postingsEnum = (SegmentBulkPostingsEnum) reuse;
+      final SegmentBulkPostingsEnum postingsEnum;
+      if (reuse == null || !(reuse instanceof SegmentBulkPostingsEnum) || !((SegmentBulkPostingsEnum) reuse).canReuse(fieldInfo, freqIn, doFreqs, doPositions)) {
+        postingsEnum = new SegmentBulkPostingsEnum(fieldInfo, doFreqs, doPositions);
+      } else {
+        postingsEnum = (SegmentBulkPostingsEnum) reuse;
+      }
+      this.lastBulkEnum = postingsEnum;
+      return postingsEnum.reset((DocTermState) termState);
     }
-    return postingsEnum.reset(fieldInfo, (DocTermState) termState);
   }
 
   @Override
@@ -783,13 +794,13 @@ public class StandardPostingsReader extends PostingsReaderBase {
   
   // Bulk postings API
   private final class SegmentBulkPostingsEnum extends BulkPostingsEnum {
-    private final IndexInput freqIn;
+    final IndexInput freqIn;
     final IndexInput proxIn;
   
     final IndexInput startFreqIn;
-    private final boolean omitTF;
+    final boolean omitTF;
   
-    boolean storePayloads;                        // does current field store payloads?
+    final boolean storePayloads;                        // does current field store payloads?
   
     int ord;                                      // how many docs we've read
     int docFreq;
@@ -802,68 +813,71 @@ public class StandardPostingsReader extends PostingsReaderBase {
     DefaultSkipListReader skipper;
     int payloadLength;
   
-    private final DocDeltasReader docDeltasReader;
-    private final FreqsReader freqsReader;
-    private final PositionsReader positionDeltasReader;
+    final DocDeltasReader docDeltasReader;
+    final FreqsReader freqsReader;
+    final PositionsReader positionDeltasReader;
   
     boolean docsPending;
     boolean freqsPending;
   
-    public SegmentBulkPostingsEnum(boolean omitTF, boolean doFreqs, boolean doPositions) throws IOException {
-      //System.out.println("bulk init");
+    public SegmentBulkPostingsEnum(FieldInfo fieldInfo, boolean doFreqs, boolean doPositions) throws IOException {
       startFreqIn = StandardPostingsReader.this.freqIn;
       this.freqIn = (IndexInput) StandardPostingsReader.this.freqIn.clone();
-      this.omitTF = omitTF;
+      omitTF = fieldInfo.omitTermFreqAndPositions;
+      storePayloads = fieldInfo.storePayloads;
   
       docDeltasReader = new DocDeltasReader();
       if (doFreqs && !omitTF) {
         freqsReader = new FreqsReader();
+        if (doPositions) {
+          proxIn = (IndexInput) StandardPostingsReader.this.proxIn.clone();
+          positionDeltasReader = new PositionsReader();
+        } else {
+          proxIn = null;
+          positionDeltasReader = null;
+        }
       } else {
+        proxIn = null;
         freqsReader = null;
-      }
-  
-      if (doPositions && !omitTF) {
-        this.proxIn = (IndexInput) StandardPostingsReader.this.proxIn.clone();
-        positionDeltasReader = new PositionsReader();
-      } else {
-        this.proxIn = null;
         positionDeltasReader = null;
       }
     }
   
-    public boolean canReuse(FieldInfo fieldInfo, IndexInput freqin, boolean doFreqs, boolean doPositions) {
+    public boolean canReuse(FieldInfo fieldInfo, IndexInput freqIn, boolean doFreqs, boolean doPositions) {
       return freqIn == startFreqIn &&
-        (!doFreqs || freqsReader == null) &&
-        (!doPositions || positionDeltasReader == null) && 
-        (omitTF == fieldInfo.omitTermFreqAndPositions);
+        doFreqs == (freqsReader != null) &&
+        doPositions == (positionDeltasReader != null) && 
+        omitTF == fieldInfo.omitTermFreqAndPositions &&
+        storePayloads == fieldInfo.storePayloads;
     }
   
     final void read() throws IOException {
+      final int left = docFreq - ord;
+      final int limit = left > BULK_BUFFER_SIZE ? BULK_BUFFER_SIZE : left;
       if (freqsReader == null) {
         // Consumer only wants doc deltas
         assert !docsPending;
         if (omitTF) {
-          // Index only stores doc deltas
-          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          // Index already only stores doc deltas
+          for(int i=0;i<limit;i++) {
             docDeltasReader.buffer[i] = freqIn.readVInt();
           }
         } else {
           // Index stores doc deltas & freq
-          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          for(int i=0;i<limit;i++) {
             final int code = freqIn.readVInt();
             docDeltasReader.buffer[i] = code >>> 1;
             if ((code & 1) == 0) {
+              // nocommit -- skipVInt?
               freqIn.readVInt();
             }
           }
         }
-        ord += BULK_BUFFER_SIZE;
-        docsPending = true;
-      } else {
-        // Consumer wants both
+      } else if (positionDeltasReader == null) {
+        // Consumer wants both, but no positions
         assert !docsPending;
         assert !freqsPending;
-        for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+        for(int i=0;i<limit;i++) {
           final int code = freqIn.readVInt();
           docDeltasReader.buffer[i] = code >>> 1;
           if ((code & 1) == 0) {
@@ -872,16 +886,38 @@ public class StandardPostingsReader extends PostingsReaderBase {
             freqsReader.buffer[i] = 1;
           }
         }
-        ord += BULK_BUFFER_SIZE;
-        docsPending = true;
+
         freqsPending = true;
+        freqsReader.limit = limit;
+      } else {
+        // Consumer wants all three
+        assert !docsPending;
+        assert !freqsPending;
+        int sumFreq = 0;
+        for(int i=0;i<limit;i++) {
+          final int code = freqIn.readVInt();
+          docDeltasReader.buffer[i] = code >>> 1;
+          final int freq;
+          if ((code & 1) == 0) {
+            freq = freqIn.readVInt();
+          } else {
+            freq = 1;
+          }
+          sumFreq += freq;
+          freqsReader.buffer[i] = freq;
+        }
+        freqsPending = true;
+        freqsReader.limit = limit;
+        positionDeltasReader.pending += sumFreq;
       }
+      docDeltasReader.limit = limit;
+      ord += limit;
+      docsPending = true;
     }
   
-    private class DocDeltasReader extends BulkPostingsEnum.BlockReader {
+    class DocDeltasReader extends BulkPostingsEnum.BlockReader {
       final int[] buffer = new int[BULK_BUFFER_SIZE];
       int limit;
-      int offset;
   
       @Override
       public int[] getBuffer() {
@@ -892,31 +928,28 @@ public class StandardPostingsReader extends PostingsReaderBase {
       public int end() {
         return limit;
       }
-  
+
       @Override
       public int fill() throws IOException {
         if (!docsPending) {
           read();
         }
         docsPending = false;
-        limit = BULK_BUFFER_SIZE;
-        offset = 0;
-        //System.out.println("spr: doc deltas read limit=" + limit);
-        return BULK_BUFFER_SIZE;
+        return limit;
       }
   
       @Override
       public int offset() {
-        return offset;
+        return 0;
       }
   
       @Override
       public void setOffset(int offset) {
-        this.offset = offset;
+        throw new UnsupportedOperationException();
       }
     }
   
-    private class FreqsReader extends BulkPostingsEnum.BlockReader {
+    class FreqsReader extends BulkPostingsEnum.BlockReader {
       final int[] buffer = new int[BULK_BUFFER_SIZE];
       int limit;
   
@@ -936,8 +969,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           read();
         }
         freqsPending = false;
-        limit = BULK_BUFFER_SIZE;
-        return BULK_BUFFER_SIZE;
+        return limit;
       }
   
       @Override
@@ -951,9 +983,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
       }
     }
   
-    private class PositionsReader extends BulkPostingsEnum.BlockReader {
+    class PositionsReader extends BulkPostingsEnum.BlockReader {
       final int[] buffer = new int[BULK_BUFFER_SIZE];
       int limit;
+      int pending;
   
       @Override
       public int[] getBuffer() {
@@ -967,10 +1000,9 @@ public class StandardPostingsReader extends PostingsReaderBase {
   
       @Override
       public int fill() throws IOException {
-        // nocommit -- must flush prx file w/ extra 127 0
-        // positions -- index change!!
+        limit = pending > BULK_BUFFER_SIZE ? BULK_BUFFER_SIZE : pending;
         if (storePayloads) {
-          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          for(int i=0;i<limit;i++) {
             final int code = proxIn.readVInt();
             buffer[i] = code >>> 1;
             if ((code & 1) != 0) {
@@ -982,12 +1014,12 @@ public class StandardPostingsReader extends PostingsReaderBase {
             }
           }
         } else {
-          for(int i=0;i<BULK_BUFFER_SIZE;i++) {
+          for(int i=0;i<limit;i++) {
             buffer[i] = proxIn.readVInt();
           }
         }
-        limit = BULK_BUFFER_SIZE;
-        return BULK_BUFFER_SIZE;
+        pending -= limit;
+        return limit;
       }
   
       @Override
@@ -1015,25 +1047,30 @@ public class StandardPostingsReader extends PostingsReaderBase {
     public BlockReader getPositionDeltasReader() {
       return positionDeltasReader;
     }
-  
-    public SegmentBulkPostingsEnum reset(FieldInfo fieldInfo, DocTermState termState) throws IOException {
-      storePayloads = fieldInfo.storePayloads;
+
+    public SegmentBulkPostingsEnum reset(DocTermState termState) throws IOException {
       freqOffset = termState.freqOffset;
       freqIn.seek(freqOffset);
   
-      // TODO: for full enum case (eg segment merging) this
-      // seek is unnecessary; maybe we can avoid in such
-      // cases
-      if (positionDeltasReader != null) {
-        // nocommit -- how come this is a live seek but
-        // frq/doc is not?
-        proxOffset = termState.proxOffset;
-        proxIn.seek(proxOffset);
-      }
-  
-      skipOffset = termState.skipOffset;
       docFreq = termState.docFreq;
       assert docFreq > 0;
+
+      docDeltasReader.limit = 0;
+      if (freqsReader != null) {
+        freqsReader.limit = 0;
+        if (positionDeltasReader != null) {
+          positionDeltasReader.limit = 0;
+          positionDeltasReader.pending = 0;
+          // TODO: for full enum case (eg MTQ that .next()'s
+          // across terms) this seek is unnecessary; maybe we
+          // can avoid in such cases
+          if (positionDeltasReader != null) {
+            proxOffset = termState.proxOffset;
+            proxIn.seek(proxOffset);
+          }
+        }
+      }
+      skipOffset = termState.skipOffset;
   
       ord = 0;
       skipped = false;
@@ -1085,11 +1122,11 @@ public class StandardPostingsReader extends PostingsReaderBase {
   
           if (freqsReader != null) {
             freqsReader.limit = 0;
-          }
-  
-          if (positionDeltasReader != null) {
-            positionDeltasReader.limit = 0;
-            proxIn.seek(skipper.getProxPointer());
+            if (positionDeltasReader != null) {
+              positionDeltasReader.limit = 0;
+              positionDeltasReader.pending = 0;
+              proxIn.seek(skipper.getProxPointer());
+            }
           }
   
           jumpResult.count = ord = newOrd;

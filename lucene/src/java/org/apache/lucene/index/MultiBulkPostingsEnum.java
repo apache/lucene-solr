@@ -23,6 +23,9 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
 
+// nocommit remove this class -- it's slow and
+// consumers should use this API per-segment now
+
 public final class MultiBulkPostingsEnum extends BulkPostingsEnum {
   private EnumWithSlice[] subs;
   int numSubs;

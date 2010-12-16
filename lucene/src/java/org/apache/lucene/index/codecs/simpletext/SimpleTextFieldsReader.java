@@ -476,7 +476,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     public boolean canReuse(IndexInput in, boolean doFreq, boolean doPositions) {
-      return in == inStart && (doFreq == (freqsReader != null)) && (doPositions == (positionDeltasReader != null));
+      return in == inStart && doFreq == (freqsReader != null) && doPositions == (positionDeltasReader != null);
     }
 
     // reads docDeltas & positionDeltas
