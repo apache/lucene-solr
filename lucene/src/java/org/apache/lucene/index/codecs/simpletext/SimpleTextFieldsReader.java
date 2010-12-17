@@ -194,7 +194,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
       SimpleTextDocsEnum docsEnum;
-      if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(in)) {
+      if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in)) {
         docsEnum = (SimpleTextDocsEnum) reuse;
       } else {
         docsEnum = new SimpleTextDocsEnum();
@@ -209,7 +209,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       }
 
       SimpleTextDocsAndPositionsEnum docsAndPositionsEnum;
-      if (reuse != null && reuse instanceof SimpleTextDocsAndPositionsEnum && ((SimpleTextDocsAndPositionsEnum) reuse).canReuse(in)) {
+      if (reuse != null && reuse instanceof SimpleTextDocsAndPositionsEnum && ((SimpleTextDocsAndPositionsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in)) {
         docsAndPositionsEnum = (SimpleTextDocsAndPositionsEnum) reuse;
       } else {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
@@ -220,7 +220,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreq, boolean doPositions) throws IOException {
       SimpleTextBulkPostingsEnum bulkPostingsEnum;
-      if (reuse != null && reuse instanceof SimpleTextBulkPostingsEnum && ((SimpleTextBulkPostingsEnum) reuse).canReuse(in, doFreq, doPositions)) {
+      if (reuse != null && reuse instanceof SimpleTextBulkPostingsEnum && ((SimpleTextBulkPostingsEnum) reuse).canReuse(SimpleTextFieldsReader.this.in, doFreq, doPositions)) {
         bulkPostingsEnum = (SimpleTextBulkPostingsEnum) reuse;
       } else {
         bulkPostingsEnum = new SimpleTextBulkPostingsEnum(doFreq, doPositions);
@@ -257,6 +257,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       this.skipDocs = skipDocs;
       in.seek(fp);
       this.omitTF = omitTF;
+      docID = 0;
       if (omitTF) {
         tf = 1;
       }
