@@ -40,7 +40,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
-import static org.junit.Assume.*;
 
 // TODO: test multiple codecs here?
 
