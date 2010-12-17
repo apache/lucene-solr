@@ -55,6 +55,8 @@ public class FORIndexOutput extends FixedIntBlockIndexOutput {
 
   @Override
   protected void flushBlock() throws IOException {
+    // make sure output is always aligned to int
+    assert (out.getFilePointer() & 3) == 0;
     compressor.setUnCompressedData(buffer, 0, buffer.length);
     final int numFrameBits = compressor.frameBitsForCompression();
     compressor.compress();
