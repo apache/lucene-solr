@@ -1235,6 +1235,9 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(idField);
 
     for(int pass=0;pass<2;pass++) {
+      if (VERBOSE) {
+        System.out.println("TEST: pass=" + pass);
+      }
 
       IndexWriterConfig conf = newIndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE)
@@ -1244,15 +1247,17 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       IndexWriter writer = new IndexWriter(directory, conf);
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
+      writer.setInfoStream(VERBOSE ? System.out : null);
 
       // have to use compound file to prevent running out of
       // descripters when newDirectory returns a file-system
       // backed directory:
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(true);
       
-      //System.out.println("TEST: pass=" + pass + " cms=" + (pass >= 2));
       for(int iter=0;iter<10;iter++) {
-        //System.out.println("TEST: iter=" + iter);
+        if (VERBOSE) {
+          System.out.println("TEST: iter=" + iter);
+        }
         for(int j=0;j<199;j++) {
           idField.setValue(Integer.toString(iter*201+j));
           writer.addDocument(doc);
@@ -1297,8 +1302,9 @@ public class TestIndexWriter extends LuceneTestCase {
             }
           };
 
-        if (failure.size() > 0)
+        if (failure.size() > 0) {
           throw failure.get(0);
+        }
 
         t1.start();
 
@@ -1311,6 +1317,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
         // Reopen
         writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
+        writer.setInfoStream(VERBOSE ? System.out : null);
       }
       writer.close();
     }
@@ -2563,7 +2570,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     Directory dir = newDirectory();
     FlushCountingIndexWriter w = new FlushCountingIndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMaxBufferedDeleteTerms(-1));
-    //w.setInfoStream(System.out);
+    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
     int num = 6*RANDOM_MULTIPLIER;
@@ -2571,6 +2578,9 @@ public class TestIndexWriter extends LuceneTestCase {
       int count = 0;
 
       final boolean doIndexing = r.nextBoolean();
+      if (VERBOSE) {
+        System.out.println("TEST: iter doIndexing=" + doIndexing);
+      }
       if (doIndexing) {
         // Add docs until a flush is triggered
         final int startFlushCount = w.flushCount;

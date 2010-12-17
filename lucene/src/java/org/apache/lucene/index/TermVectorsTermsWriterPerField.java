@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
@@ -301,7 +302,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     @Override
     int bytesPerPosting() {
-      return super.bytesPerPosting() + 3 * DocumentsWriter.INT_NUM_BYTE;
+      return super.bytesPerPosting() + 3 * RamUsageEstimator.NUM_BYTES_INT;
     }
   }
 }

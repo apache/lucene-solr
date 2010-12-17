@@ -105,6 +105,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     int NUM_THREADS = 3;
 
     for(int iter=0;iter<10;iter++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter);
+      }
       MockDirectoryWrapper dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler());
@@ -113,6 +116,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, conf);
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
       dir.setMaxSizeInBytes(4*1024+20*iter);
+      writer.setInfoStream(VERBOSE ? System.out : null);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 

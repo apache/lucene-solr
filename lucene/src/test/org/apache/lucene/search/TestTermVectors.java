@@ -354,11 +354,18 @@ public class TestTermVectors extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
         .setOpenMode(OpenMode.CREATE));
+    writer.w.setInfoStream(VERBOSE ? System.out : null);
+    if (VERBOSE) {
+      System.out.println("TEST: now add non-vectors");
+    }
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(new Field("field", English.intToEnglish(i),
                         Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
       writer.addDocument(doc);
+    }
+    if (VERBOSE) {
+      System.out.println("TEST: now add vectors");
     }
     for(int i=0;i<10;i++) {
       Document doc = new Document();
@@ -367,6 +374,9 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
+    if (VERBOSE) {
+      System.out.println("TEST: now getReader");
+    }
     IndexReader reader = writer.getReader();
     writer.close();
     searcher = new IndexSearcher(reader);
@@ -375,6 +385,7 @@ public class TestTermVectors extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(10, hits.length);
     for (int i = 0; i < hits.length; i++) {
+
       TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
       assertTrue(vector != null);
       assertTrue(vector.length == 1);
