@@ -156,6 +156,9 @@ public abstract class MergePolicy implements java.io.Closeable {
       if (mergeDocStores) {
         b.append(" [mergeDocStores]");
       }
+      if (aborted) {
+        b.append(" [ABORTED]");
+      }
       return b.toString();
     }
     

@@ -103,9 +103,9 @@ final class SegmentMerger {
     }
     termIndexInterval = writer.getConfig().getTermIndexInterval();
   }
-  
-  boolean hasProx() {
-    return fieldInfos.hasProx();
+
+  public FieldInfos fieldInfos() {
+    return fieldInfos;
   }
 
   /**
@@ -151,8 +151,9 @@ final class SegmentMerger {
     mergeTerms();
     mergeNorms();
 
-    if (mergeDocStores && fieldInfos.hasVectors())
+    if (mergeDocStores && fieldInfos.hasVectors()) {
       mergeVectors();
+    }
 
     return mergedDocs;
   }
@@ -162,7 +163,7 @@ final class SegmentMerger {
     
     // Basic files
     for (String ext : IndexFileNames.COMPOUND_EXTENSIONS) {
-      if (ext.equals(IndexFileNames.PROX_EXTENSION) && !hasProx())
+      if (ext.equals(IndexFileNames.PROX_EXTENSION) && !fieldInfos.hasProx())
         continue;
 
       if (mergeDocStores || (!ext.equals(IndexFileNames.FIELDS_EXTENSION) &&

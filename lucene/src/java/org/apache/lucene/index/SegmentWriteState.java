@@ -31,6 +31,7 @@ class SegmentWriteState {
   int termIndexInterval;
   int numDocsInStore;
   Collection<String> flushedFiles;
+  public boolean hasVectors;
 
   public SegmentWriteState(DocumentsWriter docWriter, Directory directory, String segmentName, String docStoreSegmentName, int numDocs,
                            int numDocsInStore, int termIndexInterval) {

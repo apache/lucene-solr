@@ -88,38 +88,26 @@ public final class SegmentInfo {
 
   private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
 
+  private boolean hasVectors;                     // True if this segment wrote term vectors
+
   private Map<String,String> diagnostics;
 
-  public SegmentInfo(String name, int docCount, Directory dir) {
+  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile,
+                     int docStoreOffset, String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx,
+                     boolean hasVectors) { 
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
     delGen = NO;
-    isCompoundFile = CHECK_DIR;
-    preLockless = true;
-    hasSingleNormFile = false;
-    docStoreOffset = -1;
-    docStoreSegment = name;
-    docStoreIsCompoundFile = false;
-    delCount = 0;
-    hasProx = true;
-  }
-
-  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile) { 
-    this(name, docCount, dir, isCompoundFile, hasSingleNormFile, -1, null, false, true);
-  }
-
-  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile,
-                     int docStoreOffset, String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx) { 
-    this(name, docCount, dir);
     this.isCompoundFile = (byte) (isCompoundFile ? YES : NO);
-    this.hasSingleNormFile = hasSingleNormFile;
     preLockless = false;
+    this.hasSingleNormFile = hasSingleNormFile;
     this.docStoreOffset = docStoreOffset;
     this.docStoreSegment = docStoreSegment;
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
-    this.hasProx = hasProx;
     delCount = 0;
+    this.hasProx = hasProx;
+    this.hasVectors = hasVectors;
     assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
   }
 
@@ -135,6 +123,8 @@ public final class SegmentInfo {
     delGen = src.delGen;
     docStoreOffset = src.docStoreOffset;
     docStoreIsCompoundFile = src.docStoreIsCompoundFile;
+    hasVectors = src.hasVectors;
+    hasProx = src.hasProx;
     if (src.normGen == null) {
       normGen = null;
     } else {
@@ -213,6 +203,36 @@ public final class SegmentInfo {
       } else {
         diagnostics = Collections.<String,String>emptyMap();
       }
+
+      if (format <= SegmentInfos.FORMAT_HAS_VECTORS) {
+        hasVectors = input.readByte() == 1;
+      } else {
+        final String storesSegment;
+        final String ext;
+        final boolean isCompoundFile;
+        if (docStoreOffset != -1) {
+          storesSegment = docStoreSegment;
+          isCompoundFile = docStoreIsCompoundFile;
+          ext = IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
+        } else {
+          storesSegment = name;
+          isCompoundFile = getUseCompoundFile();
+          ext = IndexFileNames.COMPOUND_FILE_EXTENSION;
+        }
+        final Directory dirToTest;
+        if (isCompoundFile) {
+          dirToTest = new CompoundFileReader(dir, IndexFileNames.segmentFileName(storesSegment, ext));
+        } else {
+          dirToTest = dir;
+        }
+        try {
+          hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, IndexFileNames.VECTORS_INDEX_EXTENSION));
+        } finally {
+          if (isCompoundFile) {
+            dirToTest.close();
+          }
+        }
+      }
     } else {
       delGen = CHECK_DIR;
       normGen = null;
@@ -267,6 +287,15 @@ public final class SegmentInfo {
     return sizeInBytes;
   }
 
+  public boolean getHasVectors() throws IOException {
+    return hasVectors;
+  }
+
+  public void setHasVectors(boolean v) {
+    hasVectors = v;
+    clearFiles();
+  }
+
   public boolean hasDeletions()
     throws IOException {
     // Cases:
@@ -308,21 +337,18 @@ public final class SegmentInfo {
   }
 
   @Override
-  public Object clone () {
-    SegmentInfo si = new SegmentInfo(name, docCount, dir);
-    si.isCompoundFile = isCompoundFile;
+  public Object clone() {
+    SegmentInfo si = new SegmentInfo(name, docCount, dir, false, hasSingleNormFile,
+                                     docStoreOffset, docStoreSegment, docStoreIsCompoundFile,
+                                     hasProx, hasVectors);
     si.delGen = delGen;
     si.delCount = delCount;
-    si.hasProx = hasProx;
     si.preLockless = preLockless;
-    si.hasSingleNormFile = hasSingleNormFile;
+    si.isCompoundFile = isCompoundFile;
     si.diagnostics = new HashMap<String, String>(diagnostics);
     if (normGen != null) {
       si.normGen = normGen.clone();
     }
-    si.docStoreOffset = docStoreOffset;
-    si.docStoreSegment = docStoreSegment;
-    si.docStoreIsCompoundFile = docStoreIsCompoundFile;
     return si;
   }
 
@@ -556,6 +582,7 @@ public final class SegmentInfo {
     output.writeInt(delCount);
     output.writeByte((byte) (hasProx ? 1:0));
     output.writeStringStringMap(diagnostics);
+    output.writeByte((byte) (hasVectors ? 1 : 0));
   }
 
   void setHasProx(boolean hasProx) {
@@ -603,12 +630,22 @@ public final class SegmentInfo {
       if (docStoreIsCompoundFile) {
         files.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
       } else {
-        for (String ext : IndexFileNames.STORE_INDEX_EXTENSIONS)
-          addIfExists(files, IndexFileNames.segmentFileName(docStoreSegment, ext));
+        files.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.FIELDS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.FIELDS_EXTENSION));
+        if (hasVectors) {
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_INDEX_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_FIELDS_EXTENSION));
+        }
       }
     } else if (!useCompoundFile) {
-      for (String ext : IndexFileNames.STORE_INDEX_EXTENSIONS)
-        addIfExists(files, IndexFileNames.segmentFileName(name, ext));
+      files.add(IndexFileNames.segmentFileName(name, IndexFileNames.FIELDS_INDEX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(name, IndexFileNames.FIELDS_EXTENSION));
+      if (hasVectors) {
+        files.add(IndexFileNames.segmentFileName(name, IndexFileNames.VECTORS_INDEX_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(name, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+        files.add(IndexFileNames.segmentFileName(name, IndexFileNames.VECTORS_FIELDS_EXTENSION));
+      }      
     }
 
     String delFileName = IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);

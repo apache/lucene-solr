@@ -1820,8 +1820,10 @@ public class IndexWriter implements Closeable {
 
       mergePolicy.close();
 
-      finishMerges(waitForMerges);
-      stopMerges = true;
+      synchronized(this) {
+        finishMerges(waitForMerges);
+        stopMerges = true;
+      }
 
       mergeScheduler.close();
 
@@ -2024,10 +2026,12 @@ public class IndexWriter implements Closeable {
           synchronized (this) {
             // If docWriter has some aborted files that were
             // never incref'd, then we clean them up here
+            deleter.checkpoint(segmentInfos, false);
             if (docWriter != null) {
               final Collection<String> files = docWriter.abortedFiles();
-              if (files != null)
+              if (files != null) {
                 deleter.deleteNewFiles(files);
+              }
             }
           }
         }
@@ -2652,7 +2656,14 @@ public class IndexWriter implements Closeable {
     }
 
     try {
-      finishMerges(false);
+      synchronized(this) {
+        finishMerges(false);
+        stopMerges = true;
+      }
+
+      if (infoStream != null ) {
+        message("rollback: done finish merges");
+      }
 
       // Must pre-close these two, in case they increment
       // changeCount so that we can then set it to false
@@ -2894,7 +2905,9 @@ public class IndexWriter implements Closeable {
       int docCount = merger.merge();                // merge 'em
       
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-          false, true, -1, null, false, merger.hasProx());
+                                         false, true, -1, null, false,
+                                         merger.fieldInfos().hasProx(),
+                                         merger.fieldInfos().hasVectors());
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
       boolean useCompoundFile;
@@ -3333,8 +3346,16 @@ public class IndexWriter implements Closeable {
       return false;
     } finally {
       flushControl.clearFlushPending();
-      if (!success && infoStream != null) {
-        message("hit exception during flush");
+      if (!success) {
+        if (infoStream != null) {
+          message("hit exception during flush");
+        }
+        if (docWriter != null) {
+          final Collection<String> files = docWriter.abortedFiles();
+          if (files != null) {
+            deleter.deleteNewFiles(files);
+          }
+        }
       }
     }
   }
@@ -3488,8 +3509,6 @@ public class IndexWriter implements Closeable {
     // started), then we will switch to the compound
     // format as well:
     setMergeDocStoreIsCompoundFile(merge);
-
-    merge.info.setHasProx(merger.hasProx());
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
     assert !segmentInfos.contains(merge.info);
@@ -3718,6 +3737,7 @@ public class IndexWriter implements Closeable {
 
     boolean mergeDocStores = false;
     boolean doFlushDocStore = false;
+    boolean hasVectors = false;
     final String currentDocStoreSegment = docWriter.getDocStoreSegment();
 
     // Test each segment to be merged: check if we need to
@@ -3728,6 +3748,10 @@ public class IndexWriter implements Closeable {
       // If it has deletions we must merge the doc stores
       if (si.hasDeletions())
         mergeDocStores = true;
+
+      if (si.getHasVectors()) {
+        hasVectors = true;
+      }
 
       // If it has its own (private) doc stores we must
       // merge the doc stores
@@ -3814,14 +3838,18 @@ public class IndexWriter implements Closeable {
                                  docStoreOffset,
                                  docStoreSegment,
                                  docStoreIsCompoundFile,
-                                 false);
-
+                                 false,
+                                 hasVectors);
 
     Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", Boolean.toString(merge.optimize));
     details.put("mergeFactor", Integer.toString(end));
     details.put("mergeDocStores", Boolean.toString(mergeDocStores));
     setDiagnostics(merge.info, "merge", details);
+
+    if (infoStream != null) {
+      message("merge seg=" + merge.info.name + " mergeDocStores=" + mergeDocStores);
+    }
 
     // Also enroll the merged segment into mergingSegments;
     // this prevents it from getting selected for a merge
@@ -4042,6 +4070,11 @@ public class IndexWriter implements Closeable {
 
       assert mergedDocCount == totDocCount;
 
+      // Very important to do this before opening the reader
+      // because codec must know if prox was written for
+      // this segment:
+      merge.info.setHasProx(merger.fieldInfos().hasProx());
+
       boolean useCompoundFile;
       synchronized (this) { // Guard segmentInfos
         useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, merge.info);
@@ -4224,7 +4257,7 @@ public class IndexWriter implements Closeable {
       // are called, deleter should know about every
       // file referenced by the current head
       // segmentInfos:
-      assert deleter.exists(fileName) : "IndexFileDeleter doesn't know about file " + fileName;
+      assert deleter.exists(fileName): "IndexFileDeleter doesn't know about file " + fileName;
     }
     return true;
   }

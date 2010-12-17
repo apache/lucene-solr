@@ -76,41 +76,33 @@ class TermVectorsReader implements Cloneable {
 
     try {
       String idxName = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION);
-      if (d.fileExists(idxName)) {
-        tvx = d.openInput(idxName, readBufferSize);
-        format = checkValidFormat(tvx);
-        tvd = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), readBufferSize);
-        final int tvdFormat = checkValidFormat(tvd);
-        tvf = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION), readBufferSize);
-        final int tvfFormat = checkValidFormat(tvf);
+      tvx = d.openInput(idxName, readBufferSize);
+      format = checkValidFormat(tvx);
+      tvd = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), readBufferSize);
+      final int tvdFormat = checkValidFormat(tvd);
+      tvf = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION), readBufferSize);
+      final int tvfFormat = checkValidFormat(tvf);
 
-        assert format == tvdFormat;
-        assert format == tvfFormat;
+      assert format == tvdFormat;
+      assert format == tvfFormat;
 
-        if (format >= FORMAT_VERSION2) {
-          numTotalDocs = (int) (tvx.length() >> 4);
-        } else {
-          assert (tvx.length()-FORMAT_SIZE) % 8 == 0;
-          numTotalDocs = (int) (tvx.length() >> 3);
-        }
-
-        if (-1 == docStoreOffset) {
-          this.docStoreOffset = 0;
-          this.size = numTotalDocs;
-          assert size == 0 || numTotalDocs == size;
-        } else {
-          this.docStoreOffset = docStoreOffset;
-          this.size = size;
-          // Verify the file is long enough to hold all of our
-          // docs
-          assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
-        }
+      if (format >= FORMAT_VERSION2) {
+        numTotalDocs = (int) (tvx.length() >> 4);
       } else {
-        // If all documents flushed in a segment had hit
-        // non-aborting exceptions, it's possible that
-        // FieldInfos.hasVectors returns true yet the term
-        // vector files don't exist.
-        format = 0;
+        assert (tvx.length()-FORMAT_SIZE) % 8 == 0;
+        numTotalDocs = (int) (tvx.length() >> 3);
+      }
+
+      if (-1 == docStoreOffset) {
+        this.docStoreOffset = 0;
+        this.size = numTotalDocs;
+        assert size == 0 || numTotalDocs == size;
+      } else {
+        this.docStoreOffset = docStoreOffset;
+        this.size = size;
+        // Verify the file is long enough to hold all of our
+        // docs
+        assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
       }
 
       this.fieldInfos = fieldInfos;

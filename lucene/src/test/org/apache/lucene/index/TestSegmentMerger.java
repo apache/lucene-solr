@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.document.Document;
 
 import java.io.IOException;
@@ -76,7 +77,12 @@ public class TestSegmentMerger extends LuceneTestCase {
     int docsMerged = merger.merge();
     assertTrue(docsMerged == 2);
     //Should be able to open a new SegmentReader against the new directory
-    SegmentReader mergedReader = SegmentReader.get(true, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false, true), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader mergedReader = SegmentReader.get(false, mergedDir,
+                                                   new SegmentInfo(mergedSegment, docsMerged, mergedDir, false, true, -1,
+                                                                   null, false, merger.fieldInfos().hasProx(),
+                                                                   merger.fieldInfos().hasVectors()),
+                                                   BufferedIndexInput.BUFFER_SIZE, true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     Document newDoc1 = mergedReader.document(0);

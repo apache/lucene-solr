@@ -89,8 +89,11 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    *  diagnostics storage, and switches userData to Map */
   public static final int FORMAT_DIAGNOSTICS = -9;
 
+  /** Each segment records whether it has term vectors */
+  public static final int FORMAT_HAS_VECTORS = -10;
+
   /* This must always point to the most recent file format. */
-  static final int CURRENT_FORMAT = FORMAT_DIAGNOSTICS;
+  public static final int CURRENT_FORMAT = FORMAT_HAS_VECTORS;
   
   public int counter = 0;    // used to name new segments
   /**

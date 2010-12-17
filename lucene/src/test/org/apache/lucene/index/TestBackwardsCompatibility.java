@@ -69,11 +69,25 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   /*
   public void testCreatePreLocklessCFS() throws IOException {
-    createIndex("index.cfs", true);
+    createIndex(random, "index.cfs", true);
   }
 
   public void testCreatePreLocklessNoCFS() throws IOException {
-    createIndex("index.nocfs", false);
+    createIndex(random, "index.nocfs", false);
+  }
+  */
+
+  /*
+  public void testCreateCFS() throws IOException {
+    String dirName = "testindex.cfs";
+    createIndex(random, dirName, true);
+    //rmDir(dirName);
+  }
+
+  public void testCreateNoCFS() throws IOException {
+    String dirName = "testindex.nocfs";
+    createIndex(random, dirName, false);
+    //rmDir(dirName);
   }
   */
 
@@ -109,18 +123,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
 
     zipFile.close();
-  }
-
-  public void testCreateCFS() throws IOException {
-    String dirName = "testindex.cfs";
-    createIndex(random, dirName, true);
-    rmDir(dirName);
-  }
-
-  public void testCreateNoCFS() throws IOException {
-    String dirName = "testindex.nocfs";
-    createIndex(random, dirName, true);
-    rmDir(dirName);
   }
 
   final String[] oldNames = {"19.cfs",
@@ -352,6 +354,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
             f = d.getField("fie\u2C77ld");
             assertEquals("field with non-ascii name", f.stringValue());
           }
+
+          TermFreqVector tfv = reader.getTermFreqVector(i, "utf8");
+          assertNotNull("docID=" + i + " index=" + dirName, tfv);
+          assertTrue(tfv instanceof TermPositionVector);
         }       
       } else
         // Only ID 7 is deleted

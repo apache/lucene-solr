@@ -51,7 +51,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         System.out.println("TEST: pass=" + pass);
       }
       boolean doAbort = pass == 1;
-      long diskFree = 200;
+      long diskFree = _TestUtil.nextInt(random, 100, 300);
       while(true) {
         if (VERBOSE) {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
@@ -120,7 +120,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           dir.close();
           // Now try again w/ more space:
 
-          diskFree += 500;
+          diskFree += _TestUtil.nextInt(random, 400, 600);
         } else {
           //_TestUtil.syncConcurrentMerges(writer);
           dir.setMaxSizeInBytes(0);

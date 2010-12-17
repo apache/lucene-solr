@@ -22,13 +22,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 
-import java.io.IOException;
-import java.util.Collection;
-
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
   private Directory mergedDir = new RAMDirectory();
-  private String mergedSegment = "test";
   //First segment to be merged
   private Directory merge1Dir = new RAMDirectory();
   private Document doc1 = new Document();
@@ -61,53 +57,4 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(reader1 != null);
     assertTrue(reader2 != null);
   }
-  
-  public void testMerge() throws IOException {                             
-    SegmentMerger merger = new SegmentMerger(mergedDir, mergedSegment);
-    merger.add(reader1);
-    merger.add(reader2);
-    int docsMerged = merger.merge();
-    assertTrue(docsMerged == 2);
-    //Should be able to open a new SegmentReader against the new directory
-    SegmentReader mergedReader = SegmentReader.get(true, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false, true), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
-    assertTrue(mergedReader != null);
-    assertTrue(mergedReader.numDocs() == 2);
-    Document newDoc1 = mergedReader.document(0);
-    assertTrue(newDoc1 != null);
-    //There are 2 unstored fields on the document
-    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    Document newDoc2 = mergedReader.document(1);
-    assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
-    
-    TermDocs termDocs = mergedReader.termDocs(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
-    assertTrue(termDocs != null);
-    assertTrue(termDocs.next() == true);
-    
-    Collection stored = mergedReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
-    assertTrue(stored != null);
-    //System.out.println("stored size: " + stored.size());
-    assertTrue("We do not have 3 fields that were indexed with term vector",stored.size() == 3);
-    
-    TermFreqVector vector = mergedReader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
-    assertTrue(vector != null);
-    String [] terms = vector.getTerms();
-    assertTrue(terms != null);
-    //System.out.println("Terms size: " + terms.length);
-    assertTrue(terms.length == 3);
-    int [] freqs = vector.getTermFrequencies();
-    assertTrue(freqs != null);
-    //System.out.println("Freqs size: " + freqs.length);
-    assertTrue(vector instanceof TermPositionVector == true);
-    
-    for (int i = 0; i < terms.length; i++) {
-      String term = terms[i];
-      int freq = freqs[i];
-      //System.out.println("Term: " + term + " Freq: " + freq);
-      assertTrue(DocHelper.FIELD_2_TEXT.indexOf(term) != -1);
-      assertTrue(DocHelper.FIELD_2_FREQS[i] == freq);
-    }
-
-    TestSegmentReader.checkNorms(mergedReader);
-  }    
 }
