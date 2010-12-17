@@ -330,7 +330,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
               if (positionDeltas.length == numPositions) {
                 positionDeltas = ArrayUtil.grow(positionDeltas, 1+numPositions);
               }
-              final int pos = positions[i].pos;
+              final int pos = positions[posIndex].pos;
               positionDeltas[numPositions++] = pos - lastPos;
               lastPos = pos;
             }
