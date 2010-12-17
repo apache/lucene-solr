@@ -1420,7 +1420,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
 
-  private Fields fields;
+  private volatile Fields fields;
 
   /** @lucene.internal */
   void storeFields(Fields fields) {
