@@ -2719,8 +2719,6 @@ public class IndexWriter implements Closeable {
     // format as well:
     setMergeDocStoreIsCompoundFile(merge);
 
-    merge.info.setHasProx(merger.fieldInfos().hasProx());
-
     segmentInfos.subList(start, start + merge.segments.size()).clear();
     assert !segmentInfos.contains(merge.info);
     segmentInfos.add(start, merge.info);

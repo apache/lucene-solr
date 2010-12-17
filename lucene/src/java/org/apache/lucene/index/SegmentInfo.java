@@ -116,6 +116,7 @@ public final class SegmentInfo {
     docStoreOffset = src.docStoreOffset;
     docStoreIsCompoundFile = src.docStoreIsCompoundFile;
     hasVectors = src.hasVectors;
+    hasProx = src.hasProx;
     if (src.normGen == null) {
       normGen = null;
     } else {
@@ -194,12 +195,30 @@ public final class SegmentInfo {
       hasVectors = input.readByte() == 1;
     } else {
       final String storesSegment;
+      final String ext;
+      final boolean isCompoundFile;
       if (docStoreOffset != -1) {
         storesSegment = docStoreSegment;
+        isCompoundFile = docStoreIsCompoundFile;
+        ext = IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
       } else {
         storesSegment = name;
+        isCompoundFile = getUseCompoundFile();
+        ext = IndexFileNames.COMPOUND_FILE_EXTENSION;
       }
-      hasVectors = dir.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+      final Directory dirToTest;
+      if (isCompoundFile) {
+        dirToTest = new CompoundFileReader(dir, IndexFileNames.segmentFileName(storesSegment, "", ext));
+      } else {
+        dirToTest = dir;
+      }
+      try {
+        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+      } finally {
+        if (isCompoundFile) {
+          dirToTest.close();
+        }
+      }
     }
   }
   

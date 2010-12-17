@@ -727,13 +727,11 @@ final class DocumentsWriter {
         newSegment.setDocStoreOffset(docStoreOffset);
       }
       
-      boolean hasVectors = false;
-
       if (closeDocStore) {
         closeDocStore(flushState, writer, deleter, newSegment, mergePolicy, segmentInfos);
       }
 
-      hasVectors |= flushState.hasVectors;
+      boolean hasVectors = flushState.hasVectors;
 
       if (numDocsInRAM > 0) {
 

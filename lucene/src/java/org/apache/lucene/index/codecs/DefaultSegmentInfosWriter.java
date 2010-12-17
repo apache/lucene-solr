@@ -37,14 +37,14 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
 
   /** Each segment records whether its postings are written
    *  in the new flex format */
-  public static final int FORMAT_4_0 = -10;
+  public static final int FORMAT_4_0 = -11;
 
   /** Each segment records whether it has term vectors */
-  public static final int FORMAT_HAS_VECTORS = -11;
+  public static final int FORMAT_HAS_VECTORS = -10;
 
   /** This must always point to the most recent file format.
    * whenever you add a new format, make it 1 smaller (negative version logic)! */
-  public static final int FORMAT_CURRENT = FORMAT_HAS_VECTORS;
+  public static final int FORMAT_CURRENT = FORMAT_4_0;
   
   /** This must always point to the first supported file format. */
   public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
