@@ -23,8 +23,6 @@ import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.util.pfor.ForDecompress;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 
 public class FORIndexInput extends FixedIntBlockIndexInput {
 
@@ -33,23 +31,10 @@ public class FORIndexInput extends FixedIntBlockIndexInput {
   }
 
   private static class BlockReader implements FixedIntBlockIndexInput.BlockReader {
-    private final IndexInput in;
-    private final int[] buffer;
     private final ForDecompress decompressor;
-    private final byte[] input;
-    private final IntBuffer intInput;
 
     public BlockReader(IndexInput in, int[] buffer) {
-      this.in = in;
-      this.buffer = buffer;
-
-      decompressor = new ForDecompress();
-      // nocommit -- can't hardwire 1024; it's a function of blockSize
-      ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
-      input = byteBuffer.array();
-      intInput = byteBuffer.asIntBuffer();
-      decompressor.setCompressedBuffer(intInput);
-      decompressor.setUnCompressedData(buffer, 0, buffer.length);
+      decompressor = new ForDecompress(in, buffer, 0, buffer.length);
     }
 
     public void seek(long pos) throws IOException {
@@ -57,17 +42,6 @@ public class FORIndexInput extends FixedIntBlockIndexInput {
     }
 
     public void readBlock() throws IOException {
-      // nocommit -- we don't need this numBytes header --
-      // it's a waste.  we need something like the zip
-      // interface -- the decompressor asks for more bytes
-      // if it needs it
-      //System.out.println("for: read @ fp=" + in.getFilePointer());
-      int numBytes = in.readInt();
-      // nocommit -- how to avoid this copy?  plus, the copy
-      // inside BII.  if mmapdir how can we directly access
-      // underlying ram w/ no copy?
-      in.readBytes(input, 0, numBytes);
-      intInput.rewind();
       decompressor.decompress();
       //System.out.println("  FOR.readBlock");
     }

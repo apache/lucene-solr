@@ -1,4 +1,10 @@
 package org.apache.lucene.util.pfor;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
+import org.apache.lucene.store.DataInput;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,7 +23,6 @@ package org.apache.lucene.util.pfor;
  */
 
 // nocommit need low level unit tests for this
-// nocommit break out decompress seperately?
 
 /** Patched Frame of Reference PFOR compression/decompression.
  * <p>
@@ -55,49 +60,38 @@ package org.apache.lucene.util.pfor;
  * </ul>
  */
 //nocommit: make into static methods without state
-public class PForDecompress extends ForDecompress {
+public final class PForDecompress  {
+  /** IntBuffer for compressed data */
+  final IntBuffer compressedBuffer;
+
+  /** Uncompressed data */
+  final int[] out;
+  /** Offset into unCompressedData */
+  final int offset;
+  /** Size of unCompressedData, -1 when not available. */
+  final int len;
+
+  // nocommit -- can't hardwire 1024; it's a function of blockSize
+  final ByteBuffer byteBuffer;
+  final byte input[];
+  final DataInput in;
+  
+  public PForDecompress(DataInput in, int out[], int offset, int len) {
+    this.in = in;
+    this.out = out;
+    this.offset = offset;
+    this.len = len;
+    byteBuffer = ByteBuffer.allocate(1024);
+    input = byteBuffer.array();
+    compressedBuffer = byteBuffer.asIntBuffer();
+  }
+  
   /** Index on input and in compressed frame of first exception, -1 when no exceptions */
   private int firstExceptionIndex;
   
   /** How to encode PFor exceptions: 0: byte, 1: short, 2:int, unused: 3: long */
   private int exceptionCode = -1;
-  
-  /** Total number of exception values */
-  private int numExceptions;
-  
-  /** Return the number bytes used for a single exception */
-  private int exceptionByteSize() {
-    assert exceptionCode >= 0;
-    assert exceptionCode <= 2;
-    return exceptionCode == 0 ? 1
-          : exceptionCode == 1 ? 2
-          : 4;
-  }
-  
-  /** Return the number of exceptions.
-   *  Only valid after compress() or decompress().
-   */
-  public int getNumExceptions() {
-    return numExceptions;
-  }
 
-  private int compressedArrayByteSize() {
-    assert unComprSize % 32 == 0;
-    return (unComprSize>>3)*numFrameBits;
-  }
-
-  /** Return the number of integers used in IntBuffer.
-   *  Only valid after compress() or decompress().
-   */
-  @Override
-  public int compressedSize() {
-    // numExceptions only valid after compress() or decompress()
-    return ForConstants.HEADER_SIZE
-           + ((compressedArrayByteSize()
-               + exceptionByteSize() * numExceptions
-               + 3) >> 2); // round up to next multiple of 4 and divide by 4
-  }
-  
   /** Decode the exception values while going through the exception chain.
    * <br>For performance, delegate/subclass this to classes with fixed exceptionCode.
    * <br> Also, decoding exceptions is preferably done from an int border instead of
@@ -107,7 +101,6 @@ public class PForDecompress extends ForDecompress {
    * zero bytes so specialize for these cases.
    */
   private void patchExceptions() {
-    numExceptions = 0;
     if (firstExceptionIndex == -1) {
       return;
     }
@@ -121,7 +114,7 @@ public class PForDecompress extends ForDecompress {
         while(true) {
           final int excValue = (curIntValue >>> firstBitPosition) & ((1 << 8) - 1);
           excIndex = patch(excIndex, excValue);
-          if (excIndex >= unComprSize) {
+          if (excIndex >= len) {
             break;
           }
           firstBitPosition += 8;
@@ -134,11 +127,11 @@ public class PForDecompress extends ForDecompress {
       break;
 
       case 1: { // 2 byte exceptions
-        while (excIndex < unComprSize) {
+        while (excIndex < len) {
           final int curIntValue = compressedBuffer.get();
           int excValue = curIntValue & ((1<<16)-1);
           excIndex = patch(excIndex, excValue);
-          if (excIndex >= unComprSize) {
+          if (excIndex >= len) {
             break;
           }
           excValue = curIntValue >>> 16;
@@ -150,38 +143,68 @@ public class PForDecompress extends ForDecompress {
       case 2: // 4 byte exceptions
         do {
           excIndex = patch(excIndex, compressedBuffer.get());
-        } while (excIndex < unComprSize);
+        } while (excIndex < len);
       break;
     }
   }
 
-  @Override
-  protected void decodeHeader() {
+  /** Decompress from the buffer into output from a given offset. */
+  public void decompress() throws IOException {
+    int numBytes = in.readInt(); // nocommit: is it possible to encode # of exception bytes in header?
+    in.readBytes(input, 0, numBytes);
+    compressedBuffer.rewind();
     int header = compressedBuffer.get();
+    final int numFrameBits = ((header >>> 8) & 31) + 1;
+
+    switch (numFrameBits) {
+      // CHECKME: two other implementations might be faster:
+      // - array of static methods: Method[numFrameBits].invoke(null, [this]), 
+      // - array of non static decompressors: ForDecompressor[numFrameBits].decompressFrame(this) .
+      case 1: ForDecompressImpl.decode1(compressedBuffer, out); break;
+      case 2: ForDecompressImpl.decode2(compressedBuffer, out); break;
+      case 3: ForDecompressImpl.decode3(compressedBuffer, out); break;
+      case 4: ForDecompressImpl.decode4(compressedBuffer, out); break;
+      case 5: ForDecompressImpl.decode5(compressedBuffer, out); break;
+      case 6: ForDecompressImpl.decode6(compressedBuffer, out); break;
+      case 7: ForDecompressImpl.decode7(compressedBuffer, out); break;
+      case 8: ForDecompressImpl.decode8(compressedBuffer, out); break;
+      case 9: ForDecompressImpl.decode9(compressedBuffer, out); break;
+      case 10: ForDecompressImpl.decode10(compressedBuffer, out); break;
+      case 11: ForDecompressImpl.decode11(compressedBuffer, out); break;
+      case 12: ForDecompressImpl.decode12(compressedBuffer, out); break;
+      case 13: ForDecompressImpl.decode13(compressedBuffer, out); break;
+      case 14: ForDecompressImpl.decode14(compressedBuffer, out); break;
+      case 15: ForDecompressImpl.decode15(compressedBuffer, out); break;
+      case 16: ForDecompressImpl.decode16(compressedBuffer, out); break;
+      case 17: ForDecompressImpl.decode17(compressedBuffer, out); break;
+      case 18: ForDecompressImpl.decode18(compressedBuffer, out); break;
+      case 19: ForDecompressImpl.decode19(compressedBuffer, out); break;
+      case 20: ForDecompressImpl.decode20(compressedBuffer, out); break;
+      case 21: ForDecompressImpl.decode21(compressedBuffer, out); break;
+      case 22: ForDecompressImpl.decode22(compressedBuffer, out); break;
+      case 23: ForDecompressImpl.decode23(compressedBuffer, out); break;
+      case 24: ForDecompressImpl.decode24(compressedBuffer, out); break;
+      case 25: ForDecompressImpl.decode25(compressedBuffer, out); break;
+      case 26: ForDecompressImpl.decode26(compressedBuffer, out); break;
+      case 27: ForDecompressImpl.decode27(compressedBuffer, out); break;
+      case 28: ForDecompressImpl.decode28(compressedBuffer, out); break;
+      case 29: ForDecompressImpl.decode29(compressedBuffer, out); break;
+      case 30: ForDecompressImpl.decode30(compressedBuffer, out); break;
+      case 31: ForDecompressImpl.decode31(compressedBuffer, out); break;
+      default:
+        throw new IllegalStateException("Unknown number of frame bits " + numFrameBits);
+    }
     firstExceptionIndex = ((header >>> 24) & 255) - 1; 
-    //unComprSize = ((header >>> 16) & 255) + 1;
-    numFrameBits = ((header >>> 8) & 31) + 1;
-    assert numFrameBits > 0: numFrameBits;
-    assert numFrameBits <= 32: numFrameBits;
-    // verify compression method:
-    assert ForConstants.PFOR_COMPRESSION == ((header >>> 4) & 15);
     exceptionCode = (header >>> 13) & 3;
     assert exceptionCode <= 2;
-  }
-
-  /** Decompress from the buffer into output from a given offset. */
-  @Override
-  public void decompress() {
-    super.decompress();
     patchExceptions();
   }
   
   /** Patch and return index of next exception */
   private int patch(int excIndex, int excValue) {
-    int nextExceptionIndex = unCompressedData[excIndex] + excIndex + 1; // chain offset
-    unCompressedData[excIndex + offset] = excValue; // patch
+    int nextExceptionIndex = out[excIndex] + excIndex + 1; // chain offset
+    out[excIndex + offset] = excValue; // patch
     assert nextExceptionIndex > excIndex;
-    numExceptions++;
     return nextExceptionIndex;
   }
 }

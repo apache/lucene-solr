@@ -62,7 +62,6 @@ public class FORIndexOutput extends FixedIntBlockIndexOutput {
     compressor.compress();
     final int numBytes = compressor.compressedSize() * 4;
     assert numBytes <= 1024;
-    out.writeInt(numBytes);
     out.writeBytes(output, numBytes);
   }
 }

@@ -23,8 +23,6 @@ import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.util.pfor.PForDecompress;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 
 public class PForDeltaIndexInput extends FixedIntBlockIndexInput {
 
@@ -33,23 +31,10 @@ public class PForDeltaIndexInput extends FixedIntBlockIndexInput {
   }
 
   private static class BlockReader implements FixedIntBlockIndexInput.BlockReader {
-    private final IndexInput in;
-    private final int[] buffer;
     private final PForDecompress decompressor;
-    private final byte[] input;
-    private final IntBuffer intInput;
 
     public BlockReader(IndexInput in, int[] buffer) {
-      this.in = in;
-      this.buffer = buffer;
-
-      decompressor = new PForDecompress();
-      // nocommit -- can't hardwire 1024; it's a function of blockSize
-      ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
-      input = byteBuffer.array();
-      intInput = byteBuffer.asIntBuffer();
-      decompressor.setCompressedBuffer(intInput);
-      decompressor.setUnCompressedData(buffer, 0, buffer.length);
+      decompressor = new PForDecompress(in, buffer, 0, buffer.length);
     }
 
     public void seek(long pos) throws IOException {
@@ -57,11 +42,6 @@ public class PForDeltaIndexInput extends FixedIntBlockIndexInput {
     }
 
     public void readBlock() throws IOException {
-      int numBytes = in.readInt();
-      //System.out.println("nb=" + numBytes);
-      // nocommit -- how to avoid this copy?
-      in.readBytes(input, 0, numBytes);
-      intInput.rewind();
       decompressor.decompress();
     }
   }
