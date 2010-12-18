@@ -469,10 +469,10 @@ public abstract class LuceneTestCase extends Assert {
   public void tearDown() throws Exception {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
-    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     if (!getClass().getName().startsWith("org.apache.solr"))
       threadCleanup("test method: '" + getName() + "'");
+    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
     try {
 
       if (!uncaughtExceptions.isEmpty()) {
@@ -527,9 +527,7 @@ public abstract class LuceneTestCase extends Assert {
       
       for (int i = 0; i < threadCount; i++) {
         Thread t = stillRunning[i];
-        // TODO: turn off our exception handler for these leftover threads... does this work?
-        if (t != Thread.currentThread())
-          t.setUncaughtExceptionHandler(null);
+          
         if (t.isAlive() && 
             !rogueThreads.containsKey(t) && 
             t != Thread.currentThread() &&
@@ -539,7 +537,12 @@ public abstract class LuceneTestCase extends Assert {
           rogueThreads.put(t, true);
           shouldFail = true;
           rogueCount++;
+          // wait on the thread to die of natural causes
+          try {
+            t.join(THREAD_STOP_GRACE_MSEC);
+          } catch (InterruptedException e) { e.printStackTrace(); }
           // try to stop the thread:
+          t.setUncaughtExceptionHandler(null);
           t.interrupt();
           try {
             t.join(THREAD_STOP_GRACE_MSEC);
