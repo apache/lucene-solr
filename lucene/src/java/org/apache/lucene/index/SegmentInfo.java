@@ -86,22 +86,18 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
 
-  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, int docStoreOffset, 
-                     String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx, SegmentCodecs segmentCodecs,
-                     boolean hasVectors) { 
+  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
+                     boolean hasProx, SegmentCodecs segmentCodecs, boolean hasVectors) {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
     delGen = NO;
     this.isCompoundFile = isCompoundFile;
-    this.docStoreOffset = docStoreOffset;
-    this.docStoreSegment = docStoreSegment;
-    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    this.docStoreOffset = -1;
     this.hasProx = hasProx;
     this.segmentCodecs = segmentCodecs;
     this.hasVectors = hasVectors;
     delCount = 0;
-    assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
   }
 
   /**
@@ -274,7 +270,10 @@ public final class SegmentInfo {
 
   @Override
   public Object clone() {
-    SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, docStoreOffset, docStoreSegment, docStoreIsCompoundFile, hasProx, segmentCodecs, false);
+    SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, hasProx, segmentCodecs, false);
+    si.docStoreOffset = docStoreOffset;
+    si.docStoreSegment = docStoreSegment;
+    si.docStoreIsCompoundFile = docStoreIsCompoundFile;
     si.delGen = delGen;
     si.delCount = delCount;
     si.diagnostics = new HashMap<String, String>(diagnostics);

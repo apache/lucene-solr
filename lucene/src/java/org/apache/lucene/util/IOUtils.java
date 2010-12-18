@@ -64,4 +64,27 @@ public final class IOUtils {
     else if (firstIOE != null)
       throw firstIOE;
   }
+
+  /**
+   * <p>Closes all given <tt>Closeable</tt>s, suppressing all thrown exceptions. Some of the <tt>Closeable</tt>s
+   * may be null, they are ignored. After everything is closed, method either throws the first of suppressed exceptions,
+   * or completes normally.</p>
+   * @param objects         objects to call <tt>close()</tt> on
+   */
+  public static void closeSafely(Closeable... objects) throws IOException {
+    IOException firstIOE = null;
+
+    for (Closeable object : objects) {
+      try {
+        if (object != null)
+          object.close();
+      } catch (IOException ioe) {
+        if (firstIOE == null)
+          firstIOE = ioe;
+      }
+    }
+
+    if (firstIOE != null)
+      throw firstIOE;
+  }
 }

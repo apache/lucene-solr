@@ -157,7 +157,7 @@ public class TestIndexWriter extends LuceneTestCase {
       String[] startFiles = dir.listAll();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
-      new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null, CodecProvider.getDefault());
+      new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, CodecProvider.getDefault());
       String[] endFiles = dir.listAll();
 
       Arrays.sort(startFiles);
@@ -866,7 +866,7 @@ public class TestIndexWriter extends LuceneTestCase {
       doc.add(newField("field", "aaa", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
       for(int i=0;i<19;i++)
         writer.addDocument(doc);
-      writer.flush(false, true, true);
+      writer.flush(false, true);
       writer.close();
       SegmentInfos sis = new SegmentInfos();
       sis.read(dir);
@@ -1039,7 +1039,6 @@ public class TestIndexWriter extends LuceneTestCase {
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setMergeFactor(2);
       lmp.setUseCompoundFile(false);
-      lmp.setUseCompoundDocStore(false);
       Document doc = new Document();
       String contents = "aa bb cc dd ee ff gg hh ii jj kk";
 
@@ -1075,7 +1074,6 @@ public class TestIndexWriter extends LuceneTestCase {
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
         LogMergePolicy lmp2 = (LogMergePolicy) writer.getConfig().getMergePolicy();
         lmp2.setUseCompoundFile(false);
-        lmp2.setUseCompoundDocStore(false);
         writer.optimize();
         writer.close();
       }
@@ -2257,7 +2255,6 @@ public class TestIndexWriter extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     writer.setInfoStream(new PrintStream(bos));
     writer.addDocument(new Document());

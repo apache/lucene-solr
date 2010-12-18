@@ -138,7 +138,6 @@ public class TestAppendingCodec extends LuceneTestCase {
     
     cfg.setCodecProvider(new AppendingCodecProvider());
     ((LogMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy)cfg.getMergePolicy()).setUseCompoundDocStore(false);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
     doc.add(newField("f", text, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));

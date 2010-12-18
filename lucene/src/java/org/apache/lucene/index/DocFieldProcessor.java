@@ -47,12 +47,6 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   @Override
-  public void closeDocStore(SegmentWriteState state) throws IOException {
-    consumer.closeDocStore(state);
-    fieldsWriter.closeDocStore(state);
-  }
-
-  @Override
   public void flush(Collection<DocConsumerPerThread> threads, SegmentWriteState state) throws IOException {
 
     Map<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>> childThreadsAndFields = new HashMap<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>>();

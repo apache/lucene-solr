@@ -500,7 +500,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = newFSDirectory(new File(dirName));
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
@@ -512,7 +511,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // open fresh writer so we get no prx file in the added segment
     conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
     writer = new IndexWriter(dir, conf);
     addNoProxDoc(writer);
     writer.close();

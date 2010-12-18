@@ -82,7 +82,6 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFiles);
-      lmp.setUseCompoundDocStore(useCompoundFiles);
       IndexWriter writer = new IndexWriter(directory, conf);
       if (VERBOSE) {
         System.out.println("TEST: now build index");
