@@ -336,7 +336,11 @@ public abstract class LuceneTestCase extends Assert {
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    threadCleanup("test class");
+    int rogueThreads = threadCleanup("test class");
+    if (rogueThreads > 0) {
+      // TODO: fail here once the leaks are fixed.
+      System.err.println("RESOURCE LEAK: test class left " + rogueThreads + " thread(s) running");
+    }
     String codecDescription;
     CodecProvider cp = CodecProvider.getDefault();
 
@@ -470,8 +474,17 @@ public abstract class LuceneTestCase extends Assert {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-    if (!getClass().getName().startsWith("org.apache.solr"))
-      threadCleanup("test method: '" + getName() + "'");
+    if (!getClass().getName().startsWith("org.apache.solr")) {
+      int rogueThreads = threadCleanup("test method: '" + getName() + "'");
+      if (rogueThreads > 0) {
+        System.err.println("RESOURCE LEAK: test method: '" + getName() 
+            + "' left " + rogueThreads + " thread(s) running");
+        // TODO: fail, but print seed for now.
+        if (!testsFailed && uncaughtExceptions.isEmpty()) {
+          reportAdditionalFailureInfo();
+        }
+      }
+    }
     Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
     try {
 
@@ -509,10 +522,12 @@ public abstract class LuceneTestCase extends Assert {
   // jvm-wide list of 'rogue threads' we found, so they only get reported once.
   private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
   
-  private static void threadCleanup(String context) {
-    // we will only actually fail() after all cleanup has happened!
-    boolean shouldFail = false;
-    
+  /**
+   * Looks for leftover running threads, trying to kill them off,
+   * so they don't fail future tests.
+   * returns the number of rogue threads that it found.
+   */
+  private static int threadCleanup(String context) {
     // educated guess
     Thread[] stillRunning = new Thread[Thread.activeCount()+1];
     int threadCount = 0;
@@ -535,7 +550,6 @@ public abstract class LuceneTestCase extends Assert {
             !t.getName().equals("TimeLimitedCollector timer thread")) {
           System.err.println("WARNING: " + context  + " left thread running: " + t);
           rogueThreads.put(t, true);
-          shouldFail = true;
           rogueCount++;
           // wait on the thread to die of natural causes
           try {
@@ -551,12 +565,7 @@ public abstract class LuceneTestCase extends Assert {
         }
       }
     }
-    
-    if (shouldFail && !testsFailed /* don't be loud if the test failed, maybe it didnt join() etc */) {
-      // TODO: we can't fail until we fix contrib and solr
-      //fail("test '" + getName() + "' left " + rogueCount + " thread(s) running");
-      System.err.println("RESOURCE LEAK: " + context + " left " + rogueCount + " thread(s) running");
-    }
+    return rogueCount;
   }
   
   /**
