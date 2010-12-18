@@ -543,6 +543,7 @@ public abstract class LuceneTestCase extends Assert {
           } catch (InterruptedException e) { e.printStackTrace(); }
           // try to stop the thread:
           t.setUncaughtExceptionHandler(null);
+          Thread.setDefaultUncaughtExceptionHandler(null);
           t.interrupt();
           try {
             t.join(THREAD_STOP_GRACE_MSEC);
