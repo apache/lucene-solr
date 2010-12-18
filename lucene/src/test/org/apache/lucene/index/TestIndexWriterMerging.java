@@ -60,7 +60,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
             setMergePolicy(newLogMergePolicy(2))
     );
-
+    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(indexA, indexB);
     writer.optimize();
     writer.close();

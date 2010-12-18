@@ -581,6 +581,9 @@ public final class SegmentInfo {
     if (this.dir != dir) {
       s.append('x');
     }
+    if (hasVectors) {
+      s.append('v');
+    }
     s.append(docCount);
 
     int delCount = getDelCount() + pendingDelCount;

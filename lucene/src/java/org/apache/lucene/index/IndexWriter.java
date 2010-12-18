@@ -2151,7 +2151,8 @@ public class IndexWriter implements Closeable {
         }
         SegmentInfos sis = new SegmentInfos(codecs); // read infos from dir
         sis.read(dir, codecs);
-        Map<String, String> dsNames = new HashMap<String, String>();
+        final Set<String> dsFilesCopied = new HashSet<String>();
+        final Map<String, String> dsNames = new HashMap<String, String>();
         for (SegmentInfo info : sis) {
           assert !infos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
 
@@ -2160,7 +2161,7 @@ public class IndexWriter implements Closeable {
           String dsName = info.getDocStoreSegment();
 
           if (infoStream != null) {
-            message("addIndexes: process segment origName=" + info.name + " newName=" + newSegName + " dsName=" + dsName);
+            message("addIndexes: process segment origName=" + info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
           }
 
           // Determine if the doc store of this segment needs to be copied. It's
@@ -2170,22 +2171,32 @@ public class IndexWriter implements Closeable {
           // NOTE: pre-3x segments include a null DSName if they don't share doc
           // store. So the following code ensures we don't accidentally insert
           // 'null' to the map.
-          String newDsName = newSegName;
-          boolean docStoreCopied = false;
-          if (dsNames.containsKey(dsName)) {
-            newDsName = dsNames.get(dsName);
-            docStoreCopied = true;
-          } else if (dsName != null) {
-            dsNames.put(dsName, newSegName);
-            docStoreCopied = false;
+          final String newDsName;
+          if (dsName != null) {
+            if (dsNames.containsKey(dsName)) {
+              newDsName = dsNames.get(dsName);
+            } else {
+              dsNames.put(dsName, newSegName);
+              newDsName = newSegName;
+            }
+          } else {
+            newDsName = newSegName;
           }
 
           // Copy the segment files
-          for (String file : info.files()) {
-            if (docStoreCopied && IndexFileNames.isDocStoreFile(file)) {
-              continue;
-            } 
-            dir.copy(directory, file, newSegName + IndexFileNames.stripSegmentName(file));
+          for (String file: info.files()) {
+            final String newFileName;
+            if (IndexFileNames.isDocStoreFile(file)) {
+              newFileName = newDsName + IndexFileNames.stripSegmentName(file);
+              if (dsFilesCopied.contains(newFileName)) {
+                continue;
+              }
+              dsFilesCopied.add(newFileName);
+            } else {
+              newFileName = newSegName + IndexFileNames.stripSegmentName(file);
+            }
+            assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+            dir.copy(directory, file, newFileName);
           }
 
           // Update SI appropriately
