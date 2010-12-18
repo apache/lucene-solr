@@ -224,6 +224,13 @@ public final class FieldInfos {
     return fi;
   }
 
+  synchronized public FieldInfo add(FieldInfo fi) {
+    return add(fi.name, fi.isIndexed, fi.storeTermVector,
+               fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
+               fi.omitNorms, fi.storePayloads,
+               fi.omitTermFreqAndPositions);
+  }
+
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {

@@ -40,7 +40,8 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
     IndexInput input = null;
     try {
       input = openInput(directory, segmentsFileName);
-      int format = input.readInt();
+      final int format = input.readInt();
+      infos.setFormat(format);
   
       // check that it is a format we can understand
       if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM)

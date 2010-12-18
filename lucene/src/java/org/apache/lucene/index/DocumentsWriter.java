@@ -126,8 +126,6 @@ final class DocumentsWriter {
   boolean bufferIsFull;                   // True when it's time to write segment
   private boolean aborting;               // True if an abort is pending
 
-  private DocFieldProcessor docFieldProcessor;
-
   PrintStream infoStream;
   int maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
   Similarity similarity;
@@ -294,9 +292,6 @@ final class DocumentsWriter {
     flushControl = writer.flushControl;
 
     consumer = indexingChain.getChain(this);
-    if (consumer instanceof DocFieldProcessor) {
-      docFieldProcessor = (DocFieldProcessor) consumer;
-    }
   }
 
   // Buffer a specific docID for deletion.  Currently only
@@ -352,13 +347,6 @@ final class DocumentsWriter {
 
   public FieldInfos getFieldInfos() {
     return fieldInfos;
-  }
-
-  /** Returns true if any of the fields in the current
-   *  buffered docs have omitTermFreqAndPositions==false */
-  boolean hasProx() {
-    return (docFieldProcessor != null) ? fieldInfos.hasProx()
-                                       : true;
   }
 
   /** If non-null, various details of indexing are printed
@@ -597,7 +585,7 @@ final class DocumentsWriter {
                                                                  numDocs, writer.getConfig().getTermIndexInterval(),
                                                                  SegmentCodecs.build(fieldInfos, writer.codecs));
 
-      newSegment = new SegmentInfo(segment, numDocs, directory, false, hasProx(), flushState.segmentCodecs, false);
+      newSegment = new SegmentInfo(segment, numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false);
 
       Collection<DocConsumerPerThread> threads = new HashSet<DocConsumerPerThread>();
       for (DocumentsWriterThreadState threadState : threadStates) {

@@ -17,35 +17,36 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.BufferedIndexInput;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.io.Closeable;
-import java.io.PrintStream;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
-import java.util.Collection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Date;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -810,19 +811,40 @@ public class IndexWriter implements Closeable {
     }
   }
 
-  private FieldInfos getCurrentFieldInfos() throws IOException {
-    final FieldInfos fieldInfos;
-    if (segmentInfos.size() > 0) {
-      SegmentInfo info = segmentInfos.info(segmentInfos.size()-1);
-      Directory cfsDir;
+  private FieldInfos getFieldInfos(SegmentInfo info) throws IOException {
+    Directory cfsDir = null;
+    try {
       if (info.getUseCompoundFile()) {
         cfsDir = new CompoundFileReader(directory, IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
       } else {
         cfsDir = directory;
       }
-      fieldInfos = new FieldInfos(cfsDir, IndexFileNames.segmentFileName(info.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
-      if (info.getUseCompoundFile()) {
+      return new FieldInfos(cfsDir, IndexFileNames.segmentFileName(info.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+    } finally {
+      if (info.getUseCompoundFile() && cfsDir != null) {
         cfsDir.close();
+      }
+    }
+  }
+
+  private FieldInfos getCurrentFieldInfos() throws IOException {
+    final FieldInfos fieldInfos;
+    if (segmentInfos.size() > 0) {
+      if (segmentInfos.getFormat() > DefaultSegmentInfosWriter.FORMAT_4_0) {
+        // Pre-4.0 index.  In this case we sweep all
+        // segments, merging their FieldInfos:
+        fieldInfos = new FieldInfos();
+        for(SegmentInfo info : segmentInfos) {
+          final FieldInfos segFieldInfos = getFieldInfos(info);
+          final int fieldCount = segFieldInfos.size();
+          for(int fieldNumber=0;fieldNumber<fieldCount;fieldNumber++) {
+            fieldInfos.add(segFieldInfos.fieldInfo(fieldNumber));
+          }
+        }
+      } else {
+        // Already a 4.0 index; just seed the FieldInfos
+        // from the last segment
+        fieldInfos = getFieldInfos(segmentInfos.info(segmentInfos.size()-1));
       }
     } else {
       fieldInfos = new FieldInfos();
@@ -2213,7 +2235,8 @@ public class IndexWriter implements Closeable {
     try {
       String mergedName = newSegmentName();
       SegmentMerger merger = new SegmentMerger(directory, termIndexInterval,
-          mergedName, null, codecs, payloadProcessorProvider);
+                                               mergedName, null, codecs, payloadProcessorProvider,
+                                               ((FieldInfos) docWriter.getFieldInfos().clone()));
       
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -3050,7 +3073,9 @@ public class IndexWriter implements Closeable {
     if (infoStream != null)
       message("merging " + merge.segString(directory));
 
-    SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge, codecs, payloadProcessorProvider);
+    SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge,
+                                             codecs, payloadProcessorProvider,
+                                             ((FieldInfos) docWriter.getFieldInfos().clone()));
 
     merge.readers = new SegmentReader[numSegments];
     merge.readersClone = new SegmentReader[numSegments];
@@ -3093,6 +3118,7 @@ public class IndexWriter implements Closeable {
 
       if (infoStream != null) {
         message("merge segmentCodecs=" + merger.getSegmentCodecs());
+        message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + numSegments);
       }
       
       assert mergedDocCount == totDocCount;
