@@ -209,7 +209,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter);
       
       // Start with 100 bytes more than we are currently using:
-      long diskFree = diskUsage+100;
+      long diskFree = diskUsage+_TestUtil.nextInt(random, 50, 200);
       
       int method = iter;
       
@@ -226,12 +226,16 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       }
       
       while(!done) {
+        if (VERBOSE) {
+          System.out.println("TEST: cycle...");
+        }
         
         // Make a new dir that will enforce disk usage:
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
         IOException err = null;
-        
+        writer.setInfoStream(VERBOSE ? System.out : null);
+
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
         for(int x=0;x<2;x++) {
           if (ms instanceof ConcurrentMergeScheduler)
