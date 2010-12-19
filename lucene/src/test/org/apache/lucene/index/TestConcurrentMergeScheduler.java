@@ -184,6 +184,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       writer = new IndexWriter(directory, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
           .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(2));
+      writer.setInfoStream(VERBOSE ? System.out : null);
     }
 
     writer.close();

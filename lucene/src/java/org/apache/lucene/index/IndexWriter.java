@@ -4011,9 +4011,6 @@ public class IndexWriter implements Closeable {
     SegmentInfos sourceSegments = merge.segments;
     final int numSegments = sourceSegments.size();
 
-    if (infoStream != null)
-      message("merging " + merge.segString(directory));
-
     SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge,
                                              payloadProcessorProvider,
                                              ((FieldInfos) docWriter.getFieldInfos().clone()));
@@ -4021,6 +4018,11 @@ public class IndexWriter implements Closeable {
     if (merger.fieldInfos().hasVectors() && merge.mergeDocStores) {
       merge.info.setHasVectors(true);
     }
+
+    if (infoStream != null) {
+      message("merging " + merge.segString(directory) + " mergeVectors=" + merge.info.getHasVectors());
+    }
+
     merge.readers = new SegmentReader[numSegments];
     merge.readersClone = new SegmentReader[numSegments];
 

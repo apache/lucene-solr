@@ -93,6 +93,9 @@ public class FunctionTestSetup extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    if (VERBOSE) {
+      System.out.println("TEST: setUp");
+    }
     // prepare a small index with just a few documents.  
     dir = newDirectory();
     anlzr = new StandardAnalyzer(TEST_VERSION_CURRENT);
@@ -102,6 +105,7 @@ public class FunctionTestSetup extends LuceneTestCase {
       iw.w.setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 7));
     }
 
+    iw.w.setInfoStream(VERBOSE ? System.out : null);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];
@@ -116,9 +120,15 @@ public class FunctionTestSetup extends LuceneTestCase {
       remaining --;
     }
     if (!doMultiSegment) {
+      if (VERBOSE) {
+        System.out.println("TEST: setUp optimize");
+      }
       iw.optimize();
     }
     iw.close();
+    if (VERBOSE) {
+      System.out.println("TEST: setUp done close");
+    }
   }
 
   private void addDoc(RandomIndexWriter iw, int i) throws Exception {
