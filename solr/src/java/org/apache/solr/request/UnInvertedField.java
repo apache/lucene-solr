@@ -21,7 +21,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.*;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -36,9 +36,6 @@ import org.apache.solr.util.LongPriorityQueue;
 import org.apache.solr.util.PrimUtils;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.FieldFacetStats;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -195,7 +192,8 @@ public class UnInvertedField {
     final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
     maxTermCounts = new int[1024];
 
-    NumberedTermsEnum te = ti.getEnumerator(reader);
+    Terms terms = searcher.multiFields.terms(field);
+    NumberedTermsEnum te = ti.getEnumerator(terms);
 
     // threshold, over which we use set intersections instead of counting
     // to (1) save memory, and (2) speed up faceting.
@@ -225,11 +223,10 @@ public class UnInvertedField {
     // frequent terms ahead of time.
 
     SolrIndexSearcher.DocsEnumState deState = new SolrIndexSearcher.DocsEnumState();
-    deState.deletedDocs = te.deletedDocs;
+    deState.fieldName = StringHelper.intern(field);  // FUTURE: remove intern
     deState.termsEnum = te.tenum;
-    deState.bulkPostings = null;
+    MultiTermsEnum multiTermsEnum = deState.termsEnum instanceof MultiTermsEnum ? (MultiTermsEnum)deState.termsEnum : null;
 
-    final Bits deletes = deState.deletedDocs;
 
     for (;;) {
       BytesRef t = te.term();
@@ -252,7 +249,7 @@ public class UnInvertedField {
         topTerm.termNum = termNum;
         bigTerms.put(topTerm.termNum, topTerm);
 
-        DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term)), deState);
+        DocSet set = searcher.getDocSet(deState);
 
         maxTermCounts[termNum] = set.size();
 
@@ -262,95 +259,106 @@ public class UnInvertedField {
 
       termsInverted++;
 
-      int docsLeft = df;
-      deState.bulkPostings = deState.termsEnum.bulkPostings(deState.bulkPostings, false, false);
-      final BulkPostingsEnum.BlockReader docDeltasReader = deState.bulkPostings.getDocDeltasReader();
-      final int[] deltas = docDeltasReader.getBuffer();
-      int docPointer = docDeltasReader.offset();
-      int docPointerMax = docDeltasReader.end();
-      // assert docPointer < docPointerMax;
-      if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
-      docsLeft -= docPointerMax - docPointer;
-      int doc = 0;
+      MultiTermsEnum.TermsEnumWithSlice[] subMatches = multiTermsEnum.getMatchArray();
+      int nEnums = multiTermsEnum.getMatchCount();
       int nDocs = 0;
 
-      for(;;) {
-        while (docPointer < docPointerMax) {
-          doc += deltas[docPointer++];
-          if (deletes != null && deletes.get(doc)) continue;
-          nDocs++;
-          // add 2 to the term number to make room for special reserved values:
-          // 0 (end term) and 1 (index into byte array follows)
-          int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
-          lastTerm[doc] = termNum;
-          int val = index[doc];
+      for (int i=0; i<nEnums; i++) {
+        MultiTermsEnum.TermsEnumWithSlice match = subMatches[i];
+        BulkPostingsEnum bulkPostings = match.bulkPostings = match.terms.bulkPostings(match.bulkPostings, false, false);
+        BulkPostingsEnum.BlockReader docDeltasReader = bulkPostings.getDocDeltasReader();
+        Bits deleted = searcher.deletedDocs[match.subSlice.readerIndex];
 
-          if ((val & 0xff)==1) {
-            // index into byte array (actually the end of
-            // the doc-specific byte[] when building)
-            int pos = val >>> 8;
-            int ilen = vIntSize(delta);
-            byte[] arr = bytes[doc];
-            int newend = pos+ilen;
-            if (newend > arr.length) {
-              // We avoid a doubling strategy to lower memory usage.
-              // this faceting method isn't for docs with many terms.
-              // In hotspot, objects have 2 words of overhead, then fields, rounded up to a 64-bit boundary.
-              // TODO: figure out what array lengths we can round up to w/o actually using more memory
-              // (how much space does a byte[] take up?  Is data preceded by a 32 bit length only?
-              // It should be safe to round up to the nearest 32 bits in any case.
-              int newLen = (newend + 3) & 0xfffffffc;  // 4 byte alignment
-              byte[] newarr = new byte[newLen];
-              System.arraycopy(arr, 0, newarr, 0, pos);
-              arr = newarr;
-              bytes[doc] = newarr;
-            }
-            pos = writeInt(delta, arr, pos);
-            index[doc] = (pos<<8) | 1;  // update pointer to end index in byte[]
-          } else {
-            // OK, this int has data in it... find the end (a zero starting byte - not
-            // part of another number, hence not following a byte with the high bit set).
-            int ipos;
-            if (val==0) {
-              ipos=0;
-            } else if ((val & 0x0000ff80)==0) {
-              ipos=1;
-            } else if ((val & 0x00ff8000)==0) {
-              ipos=2;
-            } else if ((val & 0xff800000)==0) {
-              ipos=3;
-            } else {
-              ipos=4;
-            }
+        int docsLeft = match.terms.docFreq();
+        assert docsLeft > 0;
+        int[] deltas = docDeltasReader.getBuffer();
+        int docPointer = docDeltasReader.offset();
+        int docPointerMax = docDeltasReader.end();
+        // assert docPointer < docPointerMax;
+        if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
+        docsLeft -= docPointerMax - docPointer;
+        int base = match.subSlice.start;
+        int doc = base;
 
-            int endPos = writeInt(delta, tempArr, ipos);
-            if (endPos <= 4) {
-              // value will fit in the integer... move bytes back
-              for (int j=ipos; j<endPos; j++) {
-                val |= (tempArr[j] & 0xff) << (j<<3);
+        for (;;) {
+          while (docPointer < docPointerMax) {
+            doc += deltas[docPointer++];
+            if (deleted != null && deleted.get(doc-base)) continue;
+            ////////////////////
+            nDocs++;
+            // add 2 to the term number to make room for special reserved values:
+            // 0 (end term) and 1 (index into byte array follows)
+            int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
+            lastTerm[doc] = termNum;
+            int val = index[doc];
+
+            if ((val & 0xff)==1) {
+              // index into byte array (actually the end of
+              // the doc-specific byte[] when building)
+              int pos = val >>> 8;
+              int ilen = vIntSize(delta);
+              byte[] arr = bytes[doc];
+              int newend = pos+ilen;
+              if (newend > arr.length) {
+                // We avoid a doubling strategy to lower memory usage.
+                // this faceting method isn't for docs with many terms.
+                // In hotspot, objects have 2 words of overhead, then fields, rounded up to a 64-bit boundary.
+                // TODO: figure out what array lengths we can round up to w/o actually using more memory
+                // (how much space does a byte[] take up?  Is data preceded by a 32 bit length only?
+                // It should be safe to round up to the nearest 32 bits in any case.
+                int newLen = (newend + 3) & 0xfffffffc;  // 4 byte alignment
+                byte[] newarr = new byte[newLen];
+                System.arraycopy(arr, 0, newarr, 0, pos);
+                arr = newarr;
+                bytes[doc] = newarr;
               }
-              index[doc] = val;
+              pos = writeInt(delta, arr, pos);
+              index[doc] = (pos<<8) | 1;  // update pointer to end index in byte[]
             } else {
-              // value won't fit... move integer into byte[]
-              for (int j=0; j<ipos; j++) {
-                tempArr[j] = (byte)val;
-                val >>>=8;
+              // OK, this int has data in it... find the end (a zero starting byte - not
+              // part of another number, hence not following a byte with the high bit set).
+              int ipos;
+              if (val==0) {
+                ipos=0;
+              } else if ((val & 0x0000ff80)==0) {
+                ipos=1;
+              } else if ((val & 0x00ff8000)==0) {
+                ipos=2;
+              } else if ((val & 0xff800000)==0) {
+                ipos=3;
+              } else {
+                ipos=4;
               }
-              // point at the end index in the byte[]
-              index[doc] = (endPos<<8) | 1;
-              bytes[doc] = tempArr;
-              tempArr = new byte[12];
-            }
 
+              int endPos = writeInt(delta, tempArr, ipos);
+              if (endPos <= 4) {
+                // value will fit in the integer... move bytes back
+                for (int j=ipos; j<endPos; j++) {
+                  val |= (tempArr[j] & 0xff) << (j<<3);
+                }
+                index[doc] = val;
+              } else {
+                // value won't fit... move integer into byte[]
+                for (int j=0; j<ipos; j++) {
+                  tempArr[j] = (byte)val;
+                  val >>>=8;
+                }
+                // point at the end index in the byte[]
+                index[doc] = (endPos<<8) | 1;
+                bytes[doc] = tempArr;
+                tempArr = new byte[12];
+              }
+
+            }
+            ////////////////////
           }
 
+          if (docsLeft <= 0) break;
+          docPointerMax = Math.min(docDeltasReader.fill(), docsLeft);
+          assert docPointerMax > 0;
+          docsLeft -= docPointerMax;
+          docPointer = 0; // offset() should always be 0 after fill
         }
-
-        if (docsLeft <= 0) break;
-        docPointerMax = Math.min(docDeltasReader.fill(), docsLeft);
-        assert docPointerMax > 0;
-        docsLeft -= docPointerMax;
-        docPointer = 0; // offset() should always be 0 after fill
       }
 
       termInstances += nDocs;
@@ -485,7 +493,7 @@ public class UnInvertedField {
       int startTerm = 0;
       int endTerm = numTermsInField;  // one past the end
 
-      NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
+      NumberedTermsEnum te = ti.getEnumerator(searcher.multiFields.terms(field));
       if (prefix != null && prefix.length() > 0) {
         BytesRef prefixBr = new BytesRef(prefix);
         te.skipTo(prefixBr);
@@ -735,7 +743,7 @@ public class UnInvertedField {
     final int[] index = this.index;
     final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
-    NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
+    NumberedTermsEnum te = ti.getEnumerator(searcher.multiFields.terms(field));
 
 
     boolean doNegative = false;
@@ -939,27 +947,19 @@ class TermEnumListener {
 
 
 class NumberedTermsEnum extends TermsEnum {
-  protected final IndexReader reader;
   protected final TermIndex tindex;
   protected TermsEnum tenum;
   protected int pos=-1;
   protected BytesRef termText;
-  protected DocsEnum docsEnum;
-  protected Bits deletedDocs;
 
-
-  NumberedTermsEnum(IndexReader reader, TermIndex tindex) throws IOException {
-    this.reader = reader;
+  NumberedTermsEnum(TermIndex tindex) throws IOException {
     this.tindex = tindex;
   }
 
 
-  NumberedTermsEnum(IndexReader reader, TermIndex tindex, BytesRef termValue, int pos) throws IOException {
-    this.reader = reader;
+  NumberedTermsEnum(Terms terms, TermIndex tindex, BytesRef termValue, int pos) throws IOException {
     this.tindex = tindex;
     this.pos = pos;
-    Terms terms = MultiFields.getTerms(reader, tindex.field);
-    deletedDocs = MultiFields.getDeletedDocs(reader);
     if (terms != null) {
       tenum = terms.iterator();
       tenum.seek(termValue);
@@ -975,11 +975,6 @@ class NumberedTermsEnum extends TermsEnum {
   @Override
   public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
     return tenum.bulkPostings(reuse, doFreqs, doPositions);
-  }
-
-  public DocsEnum getDocsEnum() throws IOException {
-    docsEnum = tenum.docs(deletedDocs, docsEnum);
-    return docsEnum;
   }
 
   protected BytesRef setTerm() throws IOException {
@@ -1153,8 +1148,8 @@ class TermIndex {
     this.prefix = prefix == null ? null : new BytesRef(prefix);
   }
 
-  NumberedTermsEnum getEnumerator(IndexReader reader, int termNumber) throws IOException {
-    NumberedTermsEnum te = new NumberedTermsEnum(reader, this);
+  NumberedTermsEnum getEnumerator(Terms terms, int termNumber) throws IOException {
+    NumberedTermsEnum te = new NumberedTermsEnum(this);
     te.skipTo(termNumber);
     return te;
   }
@@ -1163,8 +1158,8 @@ class TermIndex {
      with next() to fully traverse all of the terms so the index
      will be built.
    */
-  NumberedTermsEnum getEnumerator(IndexReader reader) throws IOException {
-    if (index==null) return new NumberedTermsEnum(reader,this, prefix==null?new BytesRef():prefix, 0) {
+  NumberedTermsEnum getEnumerator(Terms terms) throws IOException {
+    if (index==null) return new NumberedTermsEnum(terms,this, prefix==null?new BytesRef():prefix, 0) {
       ArrayList<BytesRef> lst;
       PagedBytes bytes;
 
@@ -1193,7 +1188,7 @@ class TermIndex {
         index = lst!=null ? lst.toArray(new BytesRef[lst.size()]) : new BytesRef[0];
       }
     };
-    else return new NumberedTermsEnum(reader,this,new BytesRef(),0);
+    else return new NumberedTermsEnum(terms,this,new BytesRef(),0);
   }
 
 

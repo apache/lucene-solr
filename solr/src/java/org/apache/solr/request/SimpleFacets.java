@@ -21,6 +21,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
@@ -628,8 +629,8 @@ public class SimpleFacets {
       startTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Fields fields = MultiFields.getFields(r);
-    Terms terms = fields==null ? null : fields.terms(field);
+    Fields fields = searcher.multiFields;
+    Terms terms = fields.terms(field);
     TermsEnum termsEnum = null;
     BytesRef term = null;
     if (terms != null) {
@@ -650,14 +651,16 @@ public class SimpleFacets {
       }
     }
 
+    MultiTermsEnum multiTermsEnum = termsEnum instanceof MultiTermsEnum ? (MultiTermsEnum)termsEnum : null;
+    assert multiTermsEnum != null || term == null; // we should have a multiTermsEnum unless there we no matches
+    
     Term template = new Term(field);
     CharArr spare = new CharArr();
 
     if (docs.size() >= mincount) {
       SolrIndexSearcher.DocsEnumState deState = new SolrIndexSearcher.DocsEnumState();
-      deState.deletedDocs = MultiFields.getDeletedDocs(r);
+      deState.fieldName = StringHelper.intern(field);  // FUTURE: remove intern
       deState.termsEnum = termsEnum;
-      deState.bulkPostings = null;
 
       while (term != null) {
 
@@ -674,50 +677,27 @@ public class SimpleFacets {
 
           if (df >= minDfFilterCache) {
             // use the filter cache
-            Term t = template.createTerm(new BytesRef(term));
-
-            c = searcher.numDocs(new TermQuery(t), docs, deState);
+            c = searcher.numDocs(docs, deState);
           } else {
             // iterate over TermDocs to calculate the intersection
             c=0;
-            final BulkPostingsEnum docsEnum = deState.bulkPostings = deState.termsEnum.bulkPostings(deState.bulkPostings, false, false);            
 
-            /*** do per-seg
-            // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
-            // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
-            // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
-            docsEnum = termsEnum.docs(null, docsEnum);
-
-            if (docsEnum instanceof MultiDocsEnum) {
-              MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
-              int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
-              for (int subindex = 0; subindex<numSubs; subindex++) {
-                MultiDocsEnum.EnumWithSlice sub = subs[subindex];
-                if (sub.docsEnum == null) continue;
-                DocsEnum.BulkReadResult bulk = sub.docsEnum.getBulkResult();
-                int base = sub.slice.start;
-                for (;;) {
-                  int nDocs = sub.docsEnum.read();
-                  if (nDocs == 0) break;
-                  int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-                  int end = bulk.docs.offset + nDocs;
-                  for (int i=bulk.docs.offset; i<end; i++) {
-                    if (fastForRandomSet.exists(docArr[i]+base)) c++;
-                  }
-                }
-              }
-            } else
-            ***/
-            {
-              int docsLeft = df;
-              BulkPostingsEnum.BlockReader docDeltasReader = docsEnum.getDocDeltasReader();
+            MultiTermsEnum.TermsEnumWithSlice[] subMatches = multiTermsEnum.getMatchArray();
+            int nEnums = multiTermsEnum.getMatchCount();
+            for (int i=0; i<nEnums; i++) {
+              MultiTermsEnum.TermsEnumWithSlice match = subMatches[i];
+              BulkPostingsEnum bulkPostings = match.bulkPostings = match.terms.bulkPostings(match.bulkPostings, false, false);
+              BulkPostingsEnum.BlockReader docDeltasReader = bulkPostings.getDocDeltasReader();
+              
+              int docsLeft = match.terms.docFreq();
+              assert docsLeft > 0;
               int[] deltas = docDeltasReader.getBuffer();
               int docPointer = docDeltasReader.offset();
               int docPointerMax = docDeltasReader.end();
               // assert docPointer < docPointerMax;
               if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
               docsLeft -= docPointerMax - docPointer;
-              int doc = 0;
+              int doc = match.subSlice.start;
 
               for (;;) {
                 while (docPointer < docPointerMax) {

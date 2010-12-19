@@ -27,6 +27,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
@@ -70,6 +71,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private long warmupTime = 0;
   private final SolrIndexReader reader;
   private final boolean closeReader;
+
+  public final MultiFields multiFields;
+  public final ReaderUtil.Slice[] readerSubs;
+  public final Fields[] fieldSubs;
+  public final Bits[] deletedDocs;
 
   private final int queryResultWindowSize;
   private final int queryResultMaxDocsCached;
@@ -121,7 +127,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   /** Creates a searcher searching the provided index. */
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean enableCache) {
+  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean enableCache) throws IOException {
     this(core, schema,name,r, false, enableCache);
   }
 
@@ -137,7 +143,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return sir;
   }
 
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
+  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) throws IOException {
     super(wrap(r));
     this.reader = (SolrIndexReader)super.getIndexReader();
     this.core = core;
@@ -146,6 +152,20 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     log.info("Opening " + this.name);
 
     SolrIndexReader.setSearcher(reader, this);
+
+    // set up MultiFields
+    SolrIndexReader[] subReaders = reader.getLeafReaders();
+    readerSubs = new ReaderUtil.Slice[subReaders.length];
+    fieldSubs = new Fields[subReaders.length];
+    deletedDocs = new Bits[subReaders.length];
+
+    for (int i=0; i<subReaders.length; i++) {
+      SolrIndexReader subReader = subReaders[i];
+      readerSubs[i] = new ReaderUtil.Slice(subReader.getBase(), subReader.maxDoc(), i);
+      fieldSubs[i] = MultiFields.getFields(subReader); // hopefully segment level
+      deletedDocs[i] = MultiFields.getDeletedDocs(subReader); // hopefully segment level
+    }
+    multiFields = new MultiFields(fieldSubs, readerSubs);
 
     if (r.directory() instanceof FSDirectory) {
       FSDirectory fsDirectory = (FSDirectory) r.directory();
@@ -493,6 +513,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
+    // TODO: do this per-segment
     Fields fields = MultiFields.getFields(reader);
     if (fields == null) return -1;
     Terms terms = fields.terms(t.field());
@@ -572,29 +593,91 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   /** lucene.internal */
-  public DocSet getDocSet(Query query, DocsEnumState deState) throws IOException {
-    // Get the absolute value (positive version) of this query.  If we
-    // get back the same reference, we know it's positive.
-    Query absQ = QueryUtils.getAbs(query);
-    boolean positive = query==absQ;
+  public DocSet getDocSet(DocsEnumState deState) throws IOException {
+    int largestPossible = deState.termsEnum.docFreq();
+    if (largestPossible == 0) return DocSet.EMPTY;
+    boolean useCache = filterCache != null && largestPossible >= deState.minSetSizeCached;
+    TermQuery key = null;
 
-    if (filterCache != null) {
-      DocSet absAnswer = filterCache.get(absQ);
-      if (absAnswer!=null) {
-        if (positive) return absAnswer;
-        else return getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
+    if (useCache) {
+      key = new TermQuery(new Term(deState.fieldName, new BytesRef(deState.termsEnum.term()), false));
+      DocSet result = filterCache.get(key);
+      if (result != null) return result;
+    }
+
+    int scratchSize = Math.min(smallSetSize(), largestPossible);
+    if (deState.scratch == null || deState.scratch.length < scratchSize)
+      deState.scratch = new int[scratchSize];
+
+    final int[] docs = deState.scratch;
+    int upto = 0;
+    int bitsSet = 0;
+    OpenBitSet obs = null;
+
+    MultiTermsEnum multiTermsEnum = (MultiTermsEnum)deState.termsEnum;
+
+    MultiTermsEnum.TermsEnumWithSlice[] subMatches = multiTermsEnum.getMatchArray();
+    int nEnums = multiTermsEnum.getMatchCount();
+    for (int i=0; i<nEnums; i++) {
+      MultiTermsEnum.TermsEnumWithSlice match = subMatches[i];
+      BulkPostingsEnum bulkPostings = match.bulkPostings = match.terms.bulkPostings(match.bulkPostings, false, false);
+      BulkPostingsEnum.BlockReader docDeltasReader = bulkPostings.getDocDeltasReader();
+      Bits deleted = deletedDocs[match.subSlice.readerIndex];
+
+      int docsLeft = match.terms.docFreq();
+      assert docsLeft > 0;
+      int[] deltas = docDeltasReader.getBuffer();
+      int docPointer = docDeltasReader.offset();
+      int docPointerMax = docDeltasReader.end();
+      if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
+      int nDocs = docPointerMax - docPointer;
+      docsLeft -= nDocs;
+      int base = match.subSlice.start;
+      int doc = base;
+
+      for(;;) {
+        if (obs != null || upto + nDocs > docs.length) {
+          if (obs == null) obs = new OpenBitSet(maxDoc());
+          while (docPointer < docPointerMax) {
+            doc += deltas[docPointer++];
+            if (deleted != null && deleted.get(doc-base)) continue;
+            obs.fastSet(doc);
+            bitsSet++;
+          }
+        } else {
+          while (docPointer < docPointerMax) {
+            doc += deltas[docPointer++];
+            if (deleted != null && deleted.get(doc-base)) continue;
+            docs[upto++] = doc;
+          }
+        }
+
+        if (docsLeft <= 0) break;
+        docPointerMax = Math.min(docDeltasReader.fill(), docsLeft);
+        assert docPointerMax > 0;
+        docsLeft -= docPointerMax;
+        docPointer = 0; // offset() should always be 0 after fill
+        nDocs = docPointerMax;
       }
     }
 
-    DocSet absAnswer = getDocSetNC(deState);
-    DocSet answer = positive ? absAnswer : getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
 
-    if (filterCache != null) {
-      // cache negative queries as positive
-      filterCache.put(absQ, absAnswer);
+    DocSet result;
+    if (obs != null) {
+      for (int i=0; i<upto; i++) {
+        obs.fastSet(docs[i]);
+      }
+      bitsSet += upto;
+      result = new BitDocSet(obs, bitsSet);
+    } else {
+      result = new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
 
-    return answer;
+    if (useCache) {
+      filterCache.put(key, result);
+    }
+
+    return result;
   }
 
   // only handle positive (non negative) queries
@@ -605,18 +688,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if (answer!=null) return answer;
     }
     answer = getDocSetNC(q,null);
-    if (filterCache != null) filterCache.put(q,answer);
-    return answer;
-  }
-
-  // only handle positive (non negative) queries
-  DocSet getPositiveDocSet(Query q, DocsEnumState deState) throws IOException {
-    DocSet answer;
-    if (filterCache != null) {
-      answer = filterCache.get(q);
-      if (answer!=null) return answer;
-    }
-    answer = getDocSetNC(deState);
     if (filterCache != null) filterCache.put(q,answer);
     return answer;
   }
@@ -755,98 +826,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return (maxDoc()>>6)+5; // add a small constant for better test coverage
   }
 
-  // query must be positive
-  protected DocSet getDocSetNC(DocsEnumState deState) throws IOException {
-    int largestPossible = deState.termsEnum.docFreq();
-
-    int[] docs = new int[Math.min(smallSetSize(), largestPossible)];
-    int upto = 0;   // number of docs in the array
-    int nDocs = 0;  // number of docs in this set
-    OpenBitSet obs = null;
-
-    deState.bulkPostings = deState.termsEnum.bulkPostings(deState.bulkPostings, false, false);
-    final Bits deleted = deState.deletedDocs;
-
-    int docsLeft = largestPossible;
-    
-    /** TODO: do per seg
-    if (docsEnum instanceof MultiDocsEnum) {
-      MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
-      int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
-      for (int subindex = 0; subindex<numSubs; subindex++) {
-        MultiDocsEnum.EnumWithSlice sub = subs[subindex];
-        if (sub.docsEnum == null) continue;
-        DocsEnum.BulkReadResult bulk = sub.docsEnum.getBulkResult();
-        int base = sub.slice.start;
-
-        for (;;) {
-          int nDocs = sub.docsEnum.read();
-          if (nDocs == 0) break;
-          int[] docArr = bulk.docs.ints;
-          int end = bulk.docs.offset + nDocs;
-          if (upto + nDocs > docs.length) {
-            if (obs == null) obs = new OpenBitSet(maxDoc());
-            for (int i=bulk.docs.offset; i<end; i++) {
-              obs.fastSet(docArr[i]+base);
-            }
-            bitsSet += nDocs;
-          } else {
-            for (int i=bulk.docs.offset; i<end; i++) {
-              docs[upto++] = docArr[i]+base;
-            }
-          }
-        }
-      }
-    } else
-    **/
-  
-    {
-      BulkPostingsEnum.BlockReader docDeltasReader = deState.bulkPostings.getDocDeltasReader();
-      int[] deltas = docDeltasReader.getBuffer();
-      int docPointer = docDeltasReader.offset();
-      int docPointerMax = docDeltasReader.end();
-      // assert docPointer < docPointerMax;
-      if (docPointerMax - docPointer > docsLeft) docPointerMax = docPointer + docsLeft;
-      docsLeft -= docPointerMax - docPointer;
-
-      int doc = 0;
-
-      for (;;) {
-        // to big to fit in our temporary int array?
-        if (obs != null || nDocs + (docPointerMax - docPointer) > docs.length) {
-          if (obs == null) obs = new OpenBitSet(maxDoc());
-          while (docPointer < docPointerMax) {
-            doc += deltas[docPointer++];
-            if (deleted != null && deleted.get(doc)) continue;
-            obs.fastSet(doc);
-            nDocs++;
-          }
-        } else {
-          while (docPointer < docPointerMax) {
-            doc += deltas[docPointer++];
-            if (deleted != null && deleted.get(doc)) continue;
-            docs[upto++] = doc;
-          }
-          nDocs = upto;
-        }
-
-        if (docsLeft <= 0) break;
-        docPointerMax = Math.min(docDeltasReader.fill(), docsLeft);
-        assert docPointerMax > 0;
-        docsLeft -= docPointerMax;
-        docPointer = 0; // offset() should always be 0 after fill
-      }
-    }
-
-    if (obs != null) {
-      for (int i=0; i<upto; i++) {
-        obs.fastSet(docs[i]);  
-      }
-      return new BitDocSet(obs, nDocs);
-    }
-
-    return new SortedIntDocSet(docs, upto);
-  }
 
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
@@ -854,14 +833,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if (query instanceof TermQuery) {
         Term t = ((TermQuery)query).getTerm();
         DocsEnumState deState = new DocsEnumState();
-        Terms terms = MultiFields.getTerms(reader, t.field());
+        deState.fieldName = t.field();
+        Terms terms = multiFields.terms(t.field());
         if (terms == null) return DocSet.EMPTY;
         deState.termsEnum = terms.iterator();
         if (deState.termsEnum.seek(t.bytes()) != TermsEnum.SeekStatus.FOUND) return DocSet.EMPTY;
-        deState.deletedDocs = MultiFields.getDeletedDocs(reader);
-        deState.bulkPostings = null;
-
-        return getDocSetNC(deState);
+        deState.minSetSizeCached = Integer.MAX_VALUE;  // don't use cache
+        return getDocSet(deState);
 
         /** TODO: do per seg
         Term t = ((TermQuery)query).getTerm();
@@ -872,11 +850,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           SolrIndexReader sir = readers[i];
           int offset = offsets[i];
           collector.setNextReader(sir, offset);
-          
+
           Fields fields = sir.fields();
           Terms terms = fields.terms(t.field());
           BytesRef termBytes = t.bytes();
-          
+
           Bits skipDocs = sir.getDeletedDocs();
           DocsEnum docsEnum = terms==null ? null : terms.docs(skipDocs, termBytes, null);
 
@@ -1675,17 +1653,17 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   /** @lucene.internal */
-  public int numDocs(Query a, DocSet b, DocsEnumState deState) throws IOException {
+  public int numDocs(DocSet a, DocsEnumState deState) throws IOException {
     // Negative query if absolute value different from original
-    Query absQ = QueryUtils.getAbs(a);
-    DocSet positiveA = getPositiveDocSet(absQ, deState);
-    return a==absQ ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
+    DocSet b = getDocSet(deState);
+    return a.intersectionSize(b);
   }
 
   public static class DocsEnumState {
+    public String fieldName;    
     public TermsEnum termsEnum;
-    public Bits deletedDocs;
-    public BulkPostingsEnum bulkPostings;
+    public int minSetSizeCached;
+    public int[] scratch;
   }
 
    /**

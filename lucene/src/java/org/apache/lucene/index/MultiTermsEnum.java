@@ -441,10 +441,13 @@ public final class MultiTermsEnum extends TermsEnum {
     }
   }
 
-  private final static class TermsEnumWithSlice {
-    private final ReaderUtil.Slice subSlice;
-    private TermsEnum terms;
+  public final static class TermsEnumWithSlice {
+    public final ReaderUtil.Slice subSlice;
+    public TermsEnum terms;
     public BytesRef current;
+
+    /** initially null, settable by clients for reuse */
+    public BulkPostingsEnum bulkPostings;
 
     public TermsEnumWithSlice(ReaderUtil.Slice subSlice) {
       this.subSlice = subSlice;
