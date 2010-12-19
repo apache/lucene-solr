@@ -4018,6 +4018,9 @@ public class IndexWriter implements Closeable {
                                              payloadProcessorProvider,
                                              ((FieldInfos) docWriter.getFieldInfos().clone()));
 
+    if (merger.fieldInfos().hasVectors() && merge.mergeDocStores) {
+      merge.info.setHasVectors(true);
+    }
     merge.readers = new SegmentReader[numSegments];
     merge.readersClone = new SegmentReader[numSegments];
 
