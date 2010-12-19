@@ -52,7 +52,7 @@ final class SegmentMerger {
   private int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
 
   private List<IndexReader> readers = new ArrayList<IndexReader>();
-  private FieldInfos fieldInfos;
+  private final FieldInfos fieldInfos;
   
   private int mergedDocs;
 
@@ -68,28 +68,12 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private final PayloadProcessorProvider pcp;
+  private final PayloadProcessorProvider payloadProcessorProvider;
   
-  /** This ctor used only by test code.
-   * 
-   * @param dir The Directory to merge the other segments into
-   * @param name The name of the new segment
-   */
-  SegmentMerger(Directory dir, String name) {
-  	pcp = null;
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos) {
+    this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
-    segment = name;
-    checkAbort = new CheckAbort(null, null) {
-      @Override
-      public void work(double units) throws MergeAbortedException {
-        // do nothing
-      }
-    };
-  }
-
-  SegmentMerger(IndexWriter writer, String name, MergePolicy.OneMerge merge) {
-  	pcp = writer.getPayloadProcessorProvider();
-    directory = writer.getDirectory();
+    this.fieldInfos = fieldInfos;
     segment = name;
     if (merge != null) {
       checkAbort = new CheckAbort(merge, directory);
@@ -101,7 +85,7 @@ final class SegmentMerger {
         }
       };
     }
-    termIndexInterval = writer.getConfig().getTermIndexInterval();
+    this.termIndexInterval = termIndexInterval;
   }
 
   public FieldInfos fieldInfos() {
@@ -222,6 +206,11 @@ final class SegmentMerger {
   private SegmentReader[] matchingSegmentReaders;
   private int[] rawDocLengths;
   private int[] rawDocLengths2;
+  private int matchedCount;
+
+  public int getMatchedSubReaderCount() {
+    return matchedCount;
+  }
 
   private void setMatchingSegmentReaders() {
     // If the i'th reader is a SegmentReader and has
@@ -246,6 +235,7 @@ final class SegmentMerger {
         }
         if (same) {
           matchingSegmentReaders[i] = segmentReader;
+          matchedCount++;
         }
       }
     }
@@ -261,18 +251,7 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  private final int mergeFields() throws CorruptIndexException, IOException {
-
-    if (!mergeDocStores) {
-      // When we are not merging by doc stores, their field
-      // name -> number mapping are the same.  So, we start
-      // with the fieldInfos of the last segment in this
-      // case, to keep that numbering.
-      final SegmentReader sr = (SegmentReader) readers.get(readers.size()-1);
-      fieldInfos = (FieldInfos) sr.core.fieldInfos.clone();
-    } else {
-      fieldInfos = new FieldInfos();		  // merge field names
-    }
+  private int mergeFields() throws CorruptIndexException, IOException {
 
     for (IndexReader reader : readers) {
       if (reader instanceof SegmentReader) {
@@ -280,11 +259,7 @@ final class SegmentMerger {
         FieldInfos readerFieldInfos = segmentReader.fieldInfos();
         int numReaderFieldInfos = readerFieldInfos.size();
         for (int j = 0; j < numReaderFieldInfos; j++) {
-          FieldInfo fi = readerFieldInfos.fieldInfo(j);
-          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector,
-              fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
-              !reader.hasNorms(fi.name), fi.storePayloads,
-              fi.omitTermFreqAndPositions);
+          fieldInfos.add(readerFieldInfos.fieldInfo(j));
         }
       } else {
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, false);
@@ -570,8 +545,8 @@ final class SegmentMerger {
       IndexReader reader = readers.get(i);
       TermEnum termEnum = reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
-      if (pcp != null) {
-        smi.dirPayloadProcessor = pcp.getDirProcessor(reader.directory());
+      if (payloadProcessorProvider != null) {
+        smi.dirPayloadProcessor = payloadProcessorProvider.getDirProcessor(reader.directory());
       }
       int[] docMap  = smi.getDocMap();
       if (docMap != null) {

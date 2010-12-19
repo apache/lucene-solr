@@ -109,11 +109,21 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
   private Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
 
+  private int format;
+
   /**
    * If non-null, information about loading segments_N files
    * will be printed here.  @see #setInfoStream.
    */
   private static PrintStream infoStream = null;
+
+  public void setFormat(int format) {
+    this.format = format;
+  }
+
+  public int getFormat() {
+    return format;
+  }
 
   public final SegmentInfo info(int i) {
     return get(i);
