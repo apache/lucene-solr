@@ -2923,17 +2923,10 @@ public class IndexWriter implements Closeable {
     if (merge.isAborted())
       return;
 
-    boolean hasVectors = false;
-    for (SegmentInfo sourceSegment : merge.segments) {
-      if (sourceSegment.getHasVectors()) {
-        hasVectors = true;
-      }
-    }
-
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, hasVectors);
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false);
 
     Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", Boolean.toString(merge.optimize));
@@ -3077,6 +3070,7 @@ public class IndexWriter implements Closeable {
                                              codecs, payloadProcessorProvider,
                                              ((FieldInfos) docWriter.getFieldInfos().clone()));
 
+    merge.info.setHasVectors(merger.fieldInfos().hasVectors());
     merge.readers = new SegmentReader[numSegments];
     merge.readersClone = new SegmentReader[numSegments];
 
