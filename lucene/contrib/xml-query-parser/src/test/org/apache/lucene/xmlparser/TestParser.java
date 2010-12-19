@@ -20,6 +20,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -38,23 +40,17 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 
 public class TestParser extends LuceneTestCase {
+	private static CoreParser builder;
+	private static Directory dir;
+	private static IndexReader reader;
+	private static IndexSearcher searcher;
 
-	CoreParser builder;
-	static Directory dir;
-  // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-	Analyzer analyzer=new MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
-	IndexReader reader;
-	private IndexSearcher searcher;
-
-	/*
-	 * @see TestCase#setUp()
-	 */
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-		
-		//initialize the parser
-		builder=new CorePlusExtensionsParser("contents",analyzer);
+	@BeforeClass
+	public static void beforeClass() throws Exception {
+	  // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
+	  Analyzer analyzer=new MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
+    //initialize the parser
+	  builder=new CorePlusExtensionsParser("contents",analyzer);
 		
 			BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt"))); 
 			dir=newDirectory();
@@ -84,13 +80,17 @@ public class TestParser extends LuceneTestCase {
 	
 	
 	
-	@Override
-	public void tearDown() throws Exception {
+	@AfterClass
+	public static void afterClass() throws Exception {
 		reader.close();
 		searcher.close();
 		dir.close();
-		super.tearDown();
+		reader = null;
+		searcher = null;
+		dir = null;
+		builder = null;
 	}
+	
 	public void testSimpleXML() throws ParserException, IOException
 	{
 			Query q=parse("TermQuery.xml");

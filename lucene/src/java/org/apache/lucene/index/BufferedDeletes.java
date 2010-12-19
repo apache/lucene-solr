@@ -188,7 +188,14 @@ class BufferedDeletes {
 
       if (segIdx <= lastIdx && hasDeletes) {
 
-        any |= applyDeletes(readerPool, info, coalescedDeletes, deletes);
+        final long delCountInc = applyDeletes(readerPool, info, coalescedDeletes, deletes);
+
+        if (delCountInc != 0) {
+          any = true;
+        }
+        if (infoStream != null) {
+          message("deletes touched " + delCountInc + " docIDs");
+        }
       
         if (deletes != null) {
           // we've applied doc ids, and they're only applied
@@ -259,7 +266,7 @@ class BufferedDeletes {
     return any;
   }
   
-  private synchronized boolean applyDeletes(IndexWriter.ReaderPool readerPool,
+  private synchronized long applyDeletes(IndexWriter.ReaderPool readerPool,
                                             SegmentInfo info, 
                                             SegmentDeletes coalescedDeletes,
                                             SegmentDeletes segmentDeletes) throws IOException {    
@@ -267,25 +274,26 @@ class BufferedDeletes {
     
     assert coalescedDeletes == null || coalescedDeletes.docIDs.size() == 0;
     
-    boolean any = false;
+    long delCount = 0;
 
     // Lock order: IW -> BD -> RP
     SegmentReader reader = readerPool.get(info, false);
     try {
       if (coalescedDeletes != null) {
-        any |= applyDeletes(coalescedDeletes, reader);
+        delCount += applyDeletes(coalescedDeletes, reader);
       }
       if (segmentDeletes != null) {
-        any |= applyDeletes(segmentDeletes, reader);
+        delCount += applyDeletes(segmentDeletes, reader);
       }
     } finally {
       readerPool.release(reader);
     }
-    return any;
+    return delCount;
   }
   
-  private synchronized boolean applyDeletes(SegmentDeletes deletes, SegmentReader reader) throws IOException {
-    boolean any = false;
+  private synchronized long applyDeletes(SegmentDeletes deletes, SegmentReader reader) throws IOException {
+
+    long delCount = 0;
 
     assert checkDeleteTerm(null);
     
@@ -293,7 +301,7 @@ class BufferedDeletes {
       Fields fields = reader.fields();
       if (fields == null) {
         // This reader has no postings
-        return false;
+        return 0;
       }
 
       TermsEnum termsEnum = null;
@@ -334,7 +342,12 @@ class BufferedDeletes {
                 break;
               }
               reader.deleteDocument(docID);
-              any = true;
+              // TODO: we could/should change
+              // reader.deleteDocument to return boolean
+              // true if it did in fact delete, because here
+              // we could be deleting an already-deleted doc
+              // which makes this an upper bound:
+              delCount++;
             }
           }
         }
@@ -345,7 +358,7 @@ class BufferedDeletes {
     for (Integer docIdInt : deletes.docIDs) {
       int docID = docIdInt.intValue();
       reader.deleteDocument(docID);
-      any = true;
+      delCount++;
     }
 
     // Delete by query
@@ -362,8 +375,14 @@ class BufferedDeletes {
               int doc = scorer.nextDoc();
               if (doc >= limit)
                 break;
+
               reader.deleteDocument(doc);
-              any = true;
+              // TODO: we could/should change
+              // reader.deleteDocument to return boolean
+              // true if it did in fact delete, because here
+              // we could be deleting an already-deleted doc
+              // which makes this an upper bound:
+              delCount++;
             }
           }
         }
@@ -371,7 +390,8 @@ class BufferedDeletes {
         searcher.close();
       }
     }
-    return any;
+
+    return delCount;
   }
   
   public synchronized SegmentDeletes getDeletes(SegmentInfo info) {

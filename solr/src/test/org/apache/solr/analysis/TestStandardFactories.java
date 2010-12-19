@@ -19,6 +19,8 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -40,6 +42,24 @@ public class TestStandardFactories extends BaseTokenTestCase {
         new String[] {"Wha\u0301t's", "this", "thing", "do" });
   }
   
+  public void testStandardTokenizerMaxTokenLength() throws Exception {
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0 ; i < 100 ; ++i) {
+      builder.append("abcdefg"); // 7 * 100 = 700 char "word"
+    }
+    String longWord = builder.toString();
+    String content = "one two three " + longWord + " four five six";
+    Reader reader = new StringReader(content);
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("luceneMatchVersion", DEFAULT_VERSION_PARAM.get("luceneMatchVersion"));
+    args.put("maxTokenLength", "1000");
+    StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    factory.init(args);
+    Tokenizer stream = factory.create(reader);
+    assertTokenStreamContents(stream, 
+        new String[] {"one", "two", "three", longWord, "four", "five", "six" });
+  }
+  
   /**
    * Test ClassicTokenizerFactory
    */
@@ -50,6 +70,24 @@ public class TestStandardFactories extends BaseTokenTestCase {
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"What's", "this", "thing", "do" });
+  }
+  
+  public void testClassicTokenizerMaxTokenLength() throws Exception {
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0 ; i < 100 ; ++i) {
+      builder.append("abcdefg"); // 7 * 100 = 700 char "word"
+    }
+    String longWord = builder.toString();
+    String content = "one two three " + longWord + " four five six";
+    Reader reader = new StringReader(content);
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("luceneMatchVersion", DEFAULT_VERSION_PARAM.get("luceneMatchVersion"));
+    args.put("maxTokenLength", "1000");
+    ClassicTokenizerFactory factory = new ClassicTokenizerFactory();
+    factory.init(args);
+    Tokenizer stream = factory.create(reader);
+    assertTokenStreamContents(stream, 
+        new String[] {"one", "two", "three", longWord, "four", "five", "six" });
   }
   
   /**

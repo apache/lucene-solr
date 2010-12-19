@@ -1257,6 +1257,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  method should return null when there are no deleted
    *  docs.
    *
+   *  The returned instance has been safely published for use by
+   *  multiple threads without additional synchronization.
    * @lucene.experimental */
   public abstract Bits getDeletedDocs();
 
@@ -1434,7 +1436,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
 
-  private Fields fields;
+  private volatile Fields fields;
 
   /** @lucene.internal */
   void storeFields(Fields fields) {

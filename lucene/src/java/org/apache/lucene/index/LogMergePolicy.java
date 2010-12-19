@@ -70,7 +70,6 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected boolean calibrateSizeByDeletes = true;
   
   protected boolean useCompoundFile = true;
-  protected boolean useCompoundDocStore = true;
 
   public LogMergePolicy() {
     super();
@@ -155,27 +154,6 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  #setUseCompoundFile */
   public boolean getUseCompoundFile() {
     return useCompoundFile;
-  }
-
-  // Javadoc inherited
-  @Override
-  public boolean useCompoundDocStore(SegmentInfos infos) {
-    return useCompoundDocStore;
-  }
-
-  /** Sets whether compound file format should be used for
-   *  newly flushed and newly merged doc store
-   *  segment files (term vectors and stored fields). */
-  public void setUseCompoundDocStore(boolean useCompoundDocStore) {
-    this.useCompoundDocStore = useCompoundDocStore;
-  }
-
-  /** Returns true if newly flushed and newly merge doc
-   *  store segment files (term vectors and stored fields)
-   *  are written in compound file format. @see
-   *  #setUseCompoundDocStore */
-  public boolean getUseCompoundDocStore() {
-    return useCompoundDocStore;
   }
 
   /** Sets whether the segment size should be calibrated by
@@ -591,8 +569,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     sb.append("maxMergeSize=").append(maxMergeSize).append(", ");
     sb.append("calibrateSizeByDeletes=").append(calibrateSizeByDeletes).append(", ");
     sb.append("maxMergeDocs=").append(maxMergeDocs).append(", ");
-    sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
-    sb.append("useCompoundDocStore=").append(useCompoundDocStore);
+    sb.append("useCompoundFile=").append(useCompoundFile);
     sb.append("]");
     return sb.toString();
   }

@@ -69,13 +69,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   protected IndexWriter writer;
   protected int mergeThreadCount;
 
-  public ConcurrentMergeScheduler() {
-    if (allInstances != null) {
-      // Only for testing
-      addMyself();
-    }
-  }
-
   /** Sets the max # simultaneous merge threads that should
    *  be running at once.  This must be <= {@link
    *  #setMaxMergeCount}. */
@@ -431,7 +424,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           if (!suppressExceptions) {
             // suppressExceptions is normally only set during
             // testing.
-            anyExceptions = true;
             handleMergeException(exc);
           }
         }
@@ -471,48 +463,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     throw new MergePolicy.MergeException(exc, dir);
   }
 
-  static boolean anyExceptions = false;
-
-  /** Used for testing */
-  public static boolean anyUnhandledExceptions() {
-    if (allInstances == null) {
-      throw new RuntimeException("setTestMode() was not called; often this is because your test case's setUp method fails to call super.setUp in LuceneTestCase");
-    }
-    synchronized(allInstances) {
-      final int count = allInstances.size();
-      // Make sure all outstanding threads are done so we see
-      // any exceptions they may produce:
-      for(int i=0;i<count;i++)
-        allInstances.get(i).sync();
-      boolean v = anyExceptions;
-      anyExceptions = false;
-      return v;
-    }
-  }
-
-  public static void clearUnhandledExceptions() {
-    synchronized(allInstances) {
-      anyExceptions = false;
-    }
-  }
-
-  /** Used for testing */
-  private void addMyself() {
-    synchronized(allInstances) {
-      final int size = allInstances.size();
-      int upto = 0;
-      for(int i=0;i<size;i++) {
-        final ConcurrentMergeScheduler other = allInstances.get(i);
-        if (!(other.closed && 0 == other.mergeThreadCount()))
-          // Keep this one for now: it still has threads or
-          // may spawn new threads
-          allInstances.set(upto++, other);
-      }
-      allInstances.subList(upto, allInstances.size()).clear();
-      allInstances.add(this);
-    }
-  }
-
   private boolean suppressExceptions;
 
   /** Used for testing */
@@ -523,11 +473,5 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   /** Used for testing */
   void clearSuppressExceptions() {
     suppressExceptions = false;
-  }
-
-  /** Used for testing */
-  private static List<ConcurrentMergeScheduler> allInstances;
-  public static void setTestMode() {
-    allInstances = new ArrayList<ConcurrentMergeScheduler>();
   }
 }

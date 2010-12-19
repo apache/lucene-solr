@@ -336,6 +336,11 @@ public abstract class LuceneTestCase extends Assert {
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
+    int rogueThreads = threadCleanup("test class");
+    if (rogueThreads > 0) {
+      // TODO: fail here once the leaks are fixed.
+      System.err.println("RESOURCE LEAK: test class left " + rogueThreads + " thread(s) running");
+    }
     String codecDescription;
     CodecProvider cp = CodecProvider.getDefault();
 
@@ -434,13 +439,13 @@ public abstract class LuceneTestCase extends Assert {
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
+        testsFailed = true;
         uncaughtExceptions.add(new UncaughtExceptionEntry(t, e));
         if (savedUncaughtExceptionHandler != null)
           savedUncaughtExceptionHandler.uncaughtException(t, e);
       }
     });
     
-    ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
   }
 
@@ -469,6 +474,18 @@ public abstract class LuceneTestCase extends Assert {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
+    if (!getClass().getName().startsWith("org.apache.solr")) {
+      int rogueThreads = threadCleanup("test method: '" + getName() + "'");
+      if (rogueThreads > 0) {
+        System.err.println("RESOURCE LEAK: test method: '" + getName() 
+            + "' left " + rogueThreads + " thread(s) running");
+        // TODO: fail, but print seed for now.
+        if (!testsFailed && uncaughtExceptions.isEmpty()) {
+          reportAdditionalFailureInfo();
+        }
+      }
+    }
+    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
     try {
 
       if (!uncaughtExceptions.isEmpty()) {
@@ -496,19 +513,61 @@ public abstract class LuceneTestCase extends Assert {
       // isolated in distinct test methods  
       assertSaneFieldCaches(getTestLabel());
 
-      if (ConcurrentMergeScheduler.anyUnhandledExceptions()) {
-        // Clear the failure so that we don't just keep
-        // failing subsequent test cases
-        ConcurrentMergeScheduler.clearUnhandledExceptions();
-        fail("ConcurrentMergeScheduler hit unhandled exceptions");
-      }
     } finally {
       purgeFieldCache(FieldCache.DEFAULT);
     }
-    
-    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
   }
 
+  private final static int THREAD_STOP_GRACE_MSEC = 1000;
+  // jvm-wide list of 'rogue threads' we found, so they only get reported once.
+  private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
+  
+  /**
+   * Looks for leftover running threads, trying to kill them off,
+   * so they don't fail future tests.
+   * returns the number of rogue threads that it found.
+   */
+  private static int threadCleanup(String context) {
+    // educated guess
+    Thread[] stillRunning = new Thread[Thread.activeCount()+1];
+    int threadCount = 0;
+    int rogueCount = 0;
+    
+    if ((threadCount = Thread.enumerate(stillRunning)) > 1) {
+      while (threadCount == stillRunning.length) {
+        // truncated response
+        stillRunning = new Thread[stillRunning.length*2];
+        threadCount = Thread.enumerate(stillRunning);
+      }
+      
+      for (int i = 0; i < threadCount; i++) {
+        Thread t = stillRunning[i];
+          
+        if (t.isAlive() && 
+            !rogueThreads.containsKey(t) && 
+            t != Thread.currentThread() &&
+            // TODO: TimeLimitingCollector starts a thread statically.... WTF?!
+            !t.getName().equals("TimeLimitedCollector timer thread")) {
+          System.err.println("WARNING: " + context  + " left thread running: " + t);
+          rogueThreads.put(t, true);
+          rogueCount++;
+          // wait on the thread to die of natural causes
+          try {
+            t.join(THREAD_STOP_GRACE_MSEC);
+          } catch (InterruptedException e) { e.printStackTrace(); }
+          // try to stop the thread:
+          t.setUncaughtExceptionHandler(null);
+          Thread.setDefaultUncaughtExceptionHandler(null);
+          t.interrupt();
+          try {
+            t.join(THREAD_STOP_GRACE_MSEC);
+          } catch (InterruptedException e) { e.printStackTrace(); }
+        }
+      }
+    }
+    return rogueCount;
+  }
+  
   /**
    * Asserts that FieldCacheSanityChecker does not detect any
    * problems with FieldCache.DEFAULT.
@@ -688,7 +747,6 @@ public abstract class LuceneTestCase extends Assert {
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
-    logmp.setUseCompoundDocStore(r.nextBoolean());
     logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
     if (r.nextInt(3) == 2) {
@@ -702,14 +760,12 @@ public abstract class LuceneTestCase extends Assert {
   public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setUseCompoundFile(useCFS);
-    logmp.setUseCompoundDocStore(useCFS);
     return logmp;
   }
 
   public static LogMergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setUseCompoundFile(useCFS);
-    logmp.setUseCompoundDocStore(useCFS);
     logmp.setMergeFactor(mergeFactor);
     return logmp;
   }
@@ -773,6 +829,11 @@ public abstract class LuceneTestCase extends Assert {
       } catch (ClassCastException e) {
         // TEST_DIRECTORY is not a sub-class of FSDirectory, so draw one at random
         fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
+        
+        if (fsdirClass.indexOf(".") == -1) {// if not fully qualified, assume .store
+          fsdirClass = "org.apache.lucene.store." + fsdirClass;
+        }
+        
         clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
       }
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f, lf));

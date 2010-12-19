@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 
 
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 
 import java.io.Reader;
@@ -31,13 +32,20 @@ import java.util.Map;
  */
 
 public class UAX29URLEmailTokenizerFactory extends BaseTokenizerFactory {
+
+  private int maxTokenLength;
+
   @Override
   public void init(Map<String,String> args) {
     super.init(args);
     assureMatchVersion();
+    maxTokenLength = getInt("maxTokenLength",
+                            StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
   }
 
   public UAX29URLEmailTokenizer create(Reader input) {
-    return new UAX29URLEmailTokenizer(input);
+    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(input); 
+    tokenizer.setMaxTokenLength(maxTokenLength);
+    return tokenizer;
   }
 }

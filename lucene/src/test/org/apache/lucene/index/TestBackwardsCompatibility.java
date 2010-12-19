@@ -293,6 +293,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testIndexOldIndex() throws IOException {
     for(int i=0;i<oldNames.length;i++) {
+      if (VERBOSE) {
+        System.out.println("TEST: oldName=" + oldNames[i]);
+      }
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       changeIndexWithAdds(random, oldNames[i]);
       rmDir(oldNames[i]);
@@ -344,6 +347,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           f = d.getField("fie\u2C77ld");
           assertEquals("field with non-ascii name", f.stringValue());
         }
+
+        TermFreqVector tfv = reader.getTermFreqVector(i, "utf8");
+        assertNotNull("docID=" + i + " index=" + dirName, tfv);
+        assertTrue(tfv instanceof TermPositionVector);
       } else
         // Only ID 7 is deleted
         assertEquals(7, i);
@@ -382,6 +389,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = newFSDirectory(new File(dirName));
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     // add 10 docs
     for(int i=0;i<10;i++) {
       addDoc(writer, 35+i);
@@ -496,7 +504,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = newFSDirectory(new File(dirName));
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
@@ -508,7 +515,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // open fresh writer so we get no prx file in the added segment
     conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
     writer = new IndexWriter(dir, conf);
     addNoProxDoc(writer);
     writer.close();

@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Comparator;
@@ -37,9 +36,6 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   public TermsHashConsumerPerThread addThread(TermsHashPerThread perThread) {
     return new FreqProxTermsWriterPerThread(perThread);
   }
-
-  @Override
-  void closeDocStore(SegmentWriteState state) {}
 
   @Override
   void abort() {}

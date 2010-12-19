@@ -237,7 +237,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     writer.setInfoStream(infoStream);
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
-    writer.flush(false, true, true);
+    writer.flush(false, true);
 
     // create a 2nd index
     Directory dir2 = newDirectory();
@@ -317,7 +317,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     writer.setInfoStream(infoStream);
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
-    writer.flush(false, true, true);
+    writer.flush(false, true);
     // get a reader
     IndexReader r1 = writer.getReader();
 
@@ -524,7 +524,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexReader r1 = writer.getReader();
     assertEquals(0, r1.maxDoc());
     createIndexNoClose(false, "index1", writer);
-    writer.flush(!optimize, true, true);
+    writer.flush(!optimize, true);
 
     IndexReader iwr1 = writer.getReader();
     assertEquals(100, iwr1.maxDoc());
@@ -536,7 +536,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       Document d = createDocument(x, "index1", 5);
       writer.addDocument(d);
     }
-    writer.flush(false, true, true);
+    writer.flush(false, true);
     // verify the reader was reopened internally
     IndexReader iwr2 = writer.getReader();
     assertTrue(iwr2 != r1);
