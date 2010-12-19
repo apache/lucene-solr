@@ -105,6 +105,5 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     assertTrue(mergeCalled);
     assertTrue(excCalled);
     dir.close();
-    assertTrue(ConcurrentMergeScheduler.anyUnhandledExceptions());
   }
 }

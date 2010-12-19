@@ -527,6 +527,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Used for testing */
   private static List<ConcurrentMergeScheduler> allInstances;
+  
+  /** @deprecated remove all this test mode code in lucene 3.2! */
+  @Deprecated
   public static void setTestMode() {
     allInstances = new ArrayList<ConcurrentMergeScheduler>();
   }

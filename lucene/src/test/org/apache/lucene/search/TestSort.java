@@ -25,6 +25,10 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -43,6 +47,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Unit tests for sorting code.
@@ -556,7 +561,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     // Don't close the multiSearcher. it would close the full searcher too!
 
     // Do the same for a ParallelMultiSearcher
-                Searcher parallelSearcher=new ParallelMultiSearcher (new Searchable[] { full });
+    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
+    Searcher parallelSearcher=new ParallelMultiSearcher (exec, full);
 
     sort.setSort (new SortField ("int", SortField.INT),
                                 new SortField ("string", SortField.STRING),
@@ -567,7 +573,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
                                 new SortField ("string", SortField.STRING),
         new SortField ("float", SortField.FLOAT, true) );
     assertMatches (parallelSearcher, queryG, sort, "ZYXW");
-    // Don't close the parallelSearcher. it would close the full searcher too!
+    parallelSearcher.close();
+    exec.awaitTermination(1000, TimeUnit.MILLISECONDS);
   }
 
   // test sorts using a series of fields
@@ -635,8 +642,11 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   // test a variety of sorts using a parallel multisearcher
   public void testParallelMultiSort() throws Exception {
-    Searcher searcher = new ParallelMultiSearcher (new Searchable[] { searchX, searchY });
+    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
+    Searcher searcher = new ParallelMultiSearcher (exec, searchX, searchY);
     runMultiSorts(searcher, false);
+    searcher.close();
+    exec.awaitTermination(1000, TimeUnit.MILLISECONDS);
   }
 
   // test that the relevancy scores are the same even if

@@ -277,6 +277,7 @@ public class TestMultiSearcher extends LuceneTestCase
     indexSearcher2.close();
     ramDirectory1.close();
     ramDirectory2.close();
+    searcher.close();
   }
 
   /* uncomment this when the highest score is always normalized to 1.0, even when it was < 1.0
