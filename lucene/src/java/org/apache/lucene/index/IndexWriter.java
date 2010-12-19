@@ -830,7 +830,7 @@ public class IndexWriter implements Closeable {
   private FieldInfos getCurrentFieldInfos() throws IOException {
     final FieldInfos fieldInfos;
     if (segmentInfos.size() > 0) {
-      if (segmentInfos.getFormat() > DefaultSegmentInfosWriter.FORMAT_4_0) {
+      if (segmentInfos.getFormat() > DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
         // Pre-4.0 index.  In this case we sweep all
         // segments, merging their FieldInfos:
         fieldInfos = new FieldInfos();

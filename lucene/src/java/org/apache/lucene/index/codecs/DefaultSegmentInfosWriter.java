@@ -35,12 +35,12 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
    *  diagnostics storage, and switches userData to Map */
   public static final int FORMAT_DIAGNOSTICS = -9;
 
+  /** Each segment records whether it has term vectors */
+  public static final int FORMAT_HAS_VECTORS = -10;
+
   /** Each segment records whether its postings are written
    *  in the new flex format */
   public static final int FORMAT_4_0 = -11;
-
-  /** Each segment records whether it has term vectors */
-  public static final int FORMAT_HAS_VECTORS = -10;
 
   /** This must always point to the most recent file format.
    * whenever you add a new format, make it 1 smaller (negative version logic)! */
