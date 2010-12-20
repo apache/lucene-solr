@@ -622,11 +622,13 @@ final class DocumentsWriter {
 
       if (infoStream != null) {
         message("flush: segment=" + newSegment);
-        final long newSegmentSize = newSegment.sizeInBytes();
+        final long newSegmentSizeNoStore = newSegment.sizeInBytes(false);
+        final long newSegmentSize = newSegment.sizeInBytes(true);
         message("  ramUsed=" + nf.format(startNumBytesUsed / 1024. / 1024.) + " MB" +
-            " newFlushedSize=" + nf.format(newSegmentSize / 1024 / 1024) + " MB" +
-            " docs/MB=" + nf.format(numDocs / (newSegmentSize / 1024. / 1024.)) +
-            " new/old=" + nf.format(100.0 * newSegmentSize / startNumBytesUsed) + "%");
+                " newFlushedSize=" + nf.format(newSegmentSize / 1024 / 1024) + " MB" +
+                " (" + nf.format(newSegmentSizeNoStore / 1024 / 1024) + " MB w/o doc stores)" +
+                " docs/MB=" + nf.format(numDocs / (newSegmentSize / 1024. / 1024.)) +
+                " new/old=" + nf.format(100.0 * newSegmentSizeNoStore / startNumBytesUsed) + "%");
       }
 
       success = true;

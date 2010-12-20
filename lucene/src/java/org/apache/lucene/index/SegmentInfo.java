@@ -220,13 +220,16 @@ public final class SegmentInfo {
   
   /** Returns total size in bytes of all of files used by
    *  this segment. */
-  public long sizeInBytes() throws IOException {
+  public long sizeInBytes(boolean includeDocStores) throws IOException {
     if (sizeInBytes == -1) {
       List<String> files = files();
       final int size = files.size();
       sizeInBytes = 0;
       for(int i=0;i<size;i++) {
         final String fileName = files.get(i);
+        if (!includeDocStores && IndexFileNames.isDocStoreFile(fileName)) {
+          continue;
+        }
         // We don't count bytes used by a shared doc store
         // against this segment:
         if (docStoreOffset == -1 || !IndexFileNames.isDocStoreFile(fileName))
