@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
 public abstract class SourceCache {
   public abstract Source load(DocValues values) throws IOException;
 
-  public abstract SortedSource laodSorted(DocValues values,
+  public abstract SortedSource loadSorted(DocValues values,
       Comparator<BytesRef> comp) throws IOException;
 
   public abstract void invalidate(DocValues values);
@@ -50,7 +50,7 @@ public abstract class SourceCache {
       return ref;
     }
 
-    public synchronized SortedSource laodSorted(DocValues values,
+    public synchronized SortedSource loadSorted(DocValues values,
         Comparator<BytesRef> comp) throws IOException {
       if (sortedRef == null)
         sortedRef = values.loadSorted(comp);
