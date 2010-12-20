@@ -26,6 +26,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.NumericField;
 
 /**
  * Simple task to test performance of tokenizers.  It just
@@ -67,7 +68,7 @@ public class ReadTokensTask extends PerfTask {
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
     for(final Fieldable field : fields) {
-      if (!field.isTokenized()) continue;
+      if (!field.isTokenized() || field instanceof NumericField) continue;
       
       final TokenStream stream;
       final TokenStream streamValue = field.tokenStreamValue();

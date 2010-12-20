@@ -475,8 +475,9 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     FieldsEnum fields = MultiFields.getFields(reader).iterator();
     String fieldName = null;
     while((fieldName = fields.next()) != null) {
-      if (fieldName == DocMaker.ID_FIELD)
+      if (fieldName == DocMaker.ID_FIELD || fieldName == DocMaker.DATE_MSEC_FIELD || fieldName == DocMaker.TIME_SEC_FIELD) {
         continue;
+      }
       TermsEnum terms = fields.terms();
       DocsEnum docs = null;
       while(terms.next() != null) {

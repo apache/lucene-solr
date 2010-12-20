@@ -172,7 +172,7 @@ public final class NumericUtils {
   public static int getPrefixCodedLongShift(final BytesRef val) {
     final int shift = val.bytes[val.offset] - SHIFT_START_LONG;
     if (shift > 63 || shift < 0)
-      throw new NumberFormatException("Invalid shift value in prefixCoded bytes (is encoded value really an INT?)");
+      throw new NumberFormatException("Invalid shift value (" + shift + ") in prefixCoded bytes (is encoded value really an INT?)");
     return shift;
   }
 

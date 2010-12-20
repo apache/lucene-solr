@@ -29,6 +29,7 @@ public class DocData {
   private String body;
   private String title;
   private String date;
+  private int id;
   private Properties props;
   
   public void clear() {
@@ -37,6 +38,7 @@ public class DocData {
     title = null;
     date = null;
     props = null;
+    id = -1;
   }
   
   public String getBody() {
@@ -55,6 +57,10 @@ public class DocData {
 
   public String getName() {
     return name;
+  }
+
+  public int getID() {
+    return id;
   }
 
   public Properties getProps() {
@@ -83,6 +89,10 @@ public class DocData {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public void setID(int id) {
+    this.id = id;
   }
 
   public void setProps(Properties props) {
