@@ -513,16 +513,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
-    // TODO: do this per-segment
-    Fields fields = MultiFields.getFields(reader);
-    if (fields == null) return -1;
-    Terms terms = fields.terms(t.field());
-    if (terms == null) return -1;
-    BytesRef termBytes = t.bytes();
-    DocsEnum docs = terms.docs(MultiFields.getDeletedDocs(reader), termBytes, null);
-    if (docs == null) return -1;
-    int id = docs.nextDoc();
-    return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
+    SolrIndexReader[] subReaders = getReader().getLeafReaders();
+    for (int i=0; i<subReaders.length; i++) {
+      DocsEnum denum = MultiFields.getTermDocsEnum(subReaders[i], deletedDocs[i], t.field(), t.bytes());
+      if (denum == null) continue;
+      int id = denum.nextDoc();
+      if (id != DocIdSetIterator.NO_MORE_DOCS) return id + subReaders[i].getBase();
+    }
+    return -1;
   }
 
 
