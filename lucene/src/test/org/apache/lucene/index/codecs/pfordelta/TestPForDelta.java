@@ -39,7 +39,11 @@ public class TestPForDelta extends LuceneTestCase {
       Directory dir = newDirectory();
       int testDataSize = _TestUtil.nextInt(random, 10000, 100000);
       int[] testData = new int[testDataSize];
+
       for(int i=0; i<testDataSize; ++i) {
+        // nocommit -- do a better job here -- pick
+        // numFrameBits, numExceptions, hten gen according
+        // to that
         testData[i] = random.nextInt() & Integer.MAX_VALUE;
       }
     
