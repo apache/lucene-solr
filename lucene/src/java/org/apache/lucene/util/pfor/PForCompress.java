@@ -18,6 +18,7 @@ package org.apache.lucene.util.pfor;
 
 // nocommit need low level unit tests for this
 // nocommit break out decompress seperately?
+// nocommit merge w/ pfor2 before landing to trunk!
 
 import java.util.Arrays;
 

@@ -29,6 +29,7 @@ import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.index.codecs.pfordelta.PatchedFrameOfRefCodec;
 import org.apache.lucene.index.codecs.pfordelta.FrameOfRefCodec;
+import org.apache.lucene.index.codecs.pfordelta2.PForDeltaFixedIntBlockCodec;
 
 /** Holds a set of codecs, keyed by name.  You subclass
  *  this, instantiate it, and register your codecs, then
@@ -49,7 +50,7 @@ public class CodecProvider {
 
   private final Set<String> knownExtensions = new HashSet<String>();
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "PatchedFrameOfRef", "FrameOfRef"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "PatchedFrameOfRef", "FrameOfRef", "PatchedFrameOfRef2"};
 
   public synchronized void register(Codec codec) {
     if (codec.name == null) {
@@ -174,5 +175,6 @@ class DefaultCodecProvider extends CodecProvider {
     register(new SimpleTextCodec());
     register(new PatchedFrameOfRefCodec());
     register(new FrameOfRefCodec());
+    register(new PForDeltaFixedIntBlockCodec(128));
   }
 }

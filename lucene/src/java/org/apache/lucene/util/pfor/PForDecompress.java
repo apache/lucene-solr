@@ -60,6 +60,7 @@ import org.apache.lucene.store.DataInput;
  * </ul>
  */
 //nocommit: make into static methods without state
+// nocommit -- need serious random unit test for these int encoders
 public final class PForDecompress  {
   /** IntBuffer for compressed data */
   final IntBuffer compressedBuffer;

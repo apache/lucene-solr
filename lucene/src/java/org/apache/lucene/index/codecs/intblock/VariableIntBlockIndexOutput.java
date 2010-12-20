@@ -125,21 +125,31 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
     }
   }
 
+  private boolean abort;
+
   @Override
   public void write(int v) throws IOException {
-    upto -= add(v)-1;
-    assert upto >= 0;
+    boolean success = false;
+    try {
+      upto -= add(v)-1;
+      assert upto >= 0;
+      success = true;
+    } finally {
+      abort |= !success;
+    }
   }
 
   @Override
   public void close() throws IOException {
     try {
       // stuff 0s in until the "real" data is flushed:
-      int stuffed = 0;
-      while(upto > stuffed) {
-        upto -= add(0)-1;
-        assert upto >= 0;
-        stuffed += 1;
+      if (!abort) {
+        int stuffed = 0;
+        while(upto > stuffed) {
+          upto -= add(0)-1;
+          assert upto >= 0;
+          stuffed += 1;
+        }
       }
     } finally {
       out.close();

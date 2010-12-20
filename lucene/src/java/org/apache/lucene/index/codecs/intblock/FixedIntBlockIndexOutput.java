@@ -118,11 +118,19 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
     }
   }
 
+  private boolean abort;
+
   @Override
   public void write(int v) throws IOException {
     buffer[upto++] = v;
     if (upto == blockSize) {
-      flushBlock();
+      boolean success = false;
+      try {
+        flushBlock();
+        success = true;
+      } finally {
+        abort |= !success;
+      }
       upto = 0;
     }
   }
@@ -130,11 +138,29 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
   @Override
   public void close() throws IOException {
     try {
-      if (upto > 0) {
-        // NOTE: entries in the block after current upto are
-        // invalid
-        flushBlock();
+      // NOTE: entries in the block after current upto are
+      // invalid
+      if (!abort) {
+        while(upto != 0) {
+          // nocommit -- risky since in theory a "smart" int
+          // encoder could do run-length-encoding and thus
+          // never flush on an infinite stream of 0s; maybe
+          // flush upto instead?  or random ints heh
+          // stuff 0s until final block is flushed
+          //System.out.println("upto=" + upto + " stuff 0; blockSize=" + blockSize);
+          write(0);
+        }
       }
+      /*
+      if (upto > 0) {
+        while(upto < blockSize) {
+          write(0);
+          upto++;
+          System.out.println("FILL");
+        }
+        //flushBlock();
+      }
+      */
     } finally {
       out.close();
     }
