@@ -65,7 +65,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   protected Directory dir;
 
-  private boolean closed;
   protected IndexWriter writer;
   protected int mergeThreadCount;
 
@@ -147,18 +146,37 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    *  pause & unpause threads. */
   protected synchronized void updateMergeThreads() {
 
-    CollectionUtil.mergeSort(mergeThreads, compareByMergeDocCount);
-    
-    final int count = mergeThreads.size();
-    int pri = mergeThreadPriority;
-    for(int i=0;i<count;i++) {
-      final MergeThread mergeThread = mergeThreads.get(i);
-      final MergePolicy.OneMerge merge = mergeThread.getCurrentMerge();
-      if (merge == null) {
+    // Only look at threads that are alive & not in the
+    // process of stopping (ie have an active merge):
+    final List<MergeThread> activeMerges = new ArrayList<MergeThread>();
+
+    int threadIdx = 0;
+    while (threadIdx < mergeThreads.size()) {
+      final MergeThread mergeThread = mergeThreads.get(threadIdx);
+      if (!mergeThread.isAlive()) {
+        // Prune any dead threads
+        mergeThreads.remove(threadIdx);
         continue;
       }
+      if (mergeThread.getCurrentMerge() != null) {
+        activeMerges.add(mergeThread);
+      }
+      threadIdx++;
+    }
+
+    CollectionUtil.mergeSort(activeMerges, compareByMergeDocCount);
+    
+    int pri = mergeThreadPriority;
+    final int activeMergeCount = activeMerges.size();
+    for (threadIdx=0;threadIdx<activeMergeCount;threadIdx++) {
+      final MergeThread mergeThread = activeMerges.get(threadIdx);
+      final MergePolicy.OneMerge merge = mergeThread.getCurrentMerge();
+      if (merge == null) { 
+        continue;
+      }
+
       final boolean doPause;
-      if (i < count-maxThreadCount) {
+      if (threadIdx < activeMergeCount-maxThreadCount) {
         doPause = true;
       } else {
         doPause = false;
@@ -208,23 +226,29 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   @Override
   public void close() {
-    closed = true;
+    sync();
   }
 
-  public synchronized void sync() {
-    while(mergeThreadCount() > 0) {
-      if (verbose())
-        message("now wait for threads; currently " + mergeThreads.size() + " still running");
-      final int count = mergeThreads.size();
-      if (verbose()) {
-        for(int i=0;i<count;i++)
-          message("    " + i + ": " + mergeThreads.get(i));
+  /** Wait for any running merge threads to finish */
+  public void sync() {
+    while(true) {
+      MergeThread toSync = null;
+      synchronized(this) {
+        for(MergeThread t : mergeThreads) {
+          if (t.isAlive()) {
+            toSync = t;
+            break;
+          }
+        }
       }
-      
-      try {
-        wait();
-      } catch (InterruptedException ie) {
-        throw new ThreadInterruptedException(ie);
+      if (toSync != null) {
+        try {
+          toSync.join();
+        } catch (InterruptedException ie) {
+          throw new ThreadInterruptedException(ie);
+        }
+      } else {
+        break;
       }
     }
   }
@@ -232,9 +256,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   private synchronized int mergeThreadCount() {
     int count = 0;
     final int numThreads = mergeThreads.size();
-    for(int i=0;i<numThreads;i++)
-      if (mergeThreads.get(i).isAlive())
+    for(int i=0;i<numThreads;i++) {
+      final MergeThread t = mergeThreads.get(i);
+      if (t.isAlive() && t.getCurrentMerge() != null) {
         count++;
+      }
+    }
     return count;
   }
 
@@ -311,11 +338,17 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           // merge:
           merger = getMergeThread(writer, merge);
           mergeThreads.add(merger);
-          updateMergeThreads();
-          if (verbose())
+          if (verbose()) {
             message("    launch new thread [" + merger.getName() + "]");
+          }
 
           merger.start();
+
+          // Must call this after starting the thread else
+          // the new thread is removed from mergeThreads
+          // (since it's not alive yet):
+          updateMergeThreads();
+
           success = true;
         }
       } finally {
@@ -408,8 +441,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
             if (verbose())
               message("  merge thread: do another merge " + merge.segString(dir));
           } else {
-            done = true;
-            updateMergeThreads();
             break;
           }
         }
@@ -428,11 +459,10 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           }
         }
       } finally {
+        done = true;
         synchronized(ConcurrentMergeScheduler.this) {
-          ConcurrentMergeScheduler.this.notifyAll();
-          boolean removed = mergeThreads.remove(this);
-          assert removed;
           updateMergeThreads();
+          ConcurrentMergeScheduler.this.notifyAll();
         }
       }
     }

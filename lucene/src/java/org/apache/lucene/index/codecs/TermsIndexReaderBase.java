@@ -57,7 +57,7 @@ public abstract class TermsIndexReaderBase {
 
     public abstract void getIndexOffset(long ord, TermsIndexResult result) throws IOException;
 
-    /** Call this sequentially for each term encoutered,
+    /** Call this sequentially for each term encountered,
      *  after calling {@link #getIndexOffset}. */
     public abstract boolean isIndexTerm(long ord, int docFreq, boolean onlyLoaded) throws IOException;
 

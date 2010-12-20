@@ -26,7 +26,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.FSDirectory;
 
@@ -108,7 +107,7 @@ public class IndexSplitter {
     DecimalFormat formatter = new DecimalFormat("###,###.###");
     for (int x = 0; x < infos.size(); x++) {
       SegmentInfo info = infos.info(x);
-      String sizeStr = formatter.format(info.sizeInBytes());
+      String sizeStr = formatter.format(info.sizeInBytes(true));
       System.out.println(info.name + " " + sizeStr);
     }
   }

@@ -830,7 +830,7 @@ public class IndexWriter implements Closeable {
   private FieldInfos getCurrentFieldInfos() throws IOException {
     final FieldInfos fieldInfos;
     if (segmentInfos.size() > 0) {
-      if (segmentInfos.getFormat() > DefaultSegmentInfosWriter.FORMAT_4_0) {
+      if (segmentInfos.getFormat() > DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
         // Pre-4.0 index.  In this case we sweep all
         // segments, merging their FieldInfos:
         fieldInfos = new FieldInfos();
@@ -2923,17 +2923,10 @@ public class IndexWriter implements Closeable {
     if (merge.isAborted())
       return;
 
-    boolean hasVectors = false;
-    for (SegmentInfo sourceSegment : merge.segments) {
-      if (sourceSegment.getHasVectors()) {
-        hasVectors = true;
-      }
-    }
-
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, hasVectors);
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false);
 
     Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", Boolean.toString(merge.optimize));
@@ -3070,13 +3063,15 @@ public class IndexWriter implements Closeable {
     SegmentInfos sourceSegments = merge.segments;
     final int numSegments = sourceSegments.size();
 
-    if (infoStream != null)
-      message("merging " + merge.segString(directory));
-
     SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge,
                                              codecs, payloadProcessorProvider,
                                              ((FieldInfos) docWriter.getFieldInfos().clone()));
 
+    if (infoStream != null) {
+      message("merging " + merge.segString(directory) + " mergeVectors=" + merger.fieldInfos().hasVectors());
+    }
+
+    merge.info.setHasVectors(merger.fieldInfos().hasVectors());
     merge.readers = new SegmentReader[numSegments];
     merge.readersClone = new SegmentReader[numSegments];
 
