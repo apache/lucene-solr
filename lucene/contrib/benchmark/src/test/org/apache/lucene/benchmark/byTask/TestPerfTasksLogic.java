@@ -473,8 +473,8 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     while(terms.next()) {
       Term term = terms.term();
       /* not-tokenized, but indexed field */
-      if (term != null && term.field() != DocMaker.ID_FIELD) { 
-        termDocs.seek(terms.term());
+      if (term != null && term.field() != DocMaker.ID_FIELD && term.field() != DocMaker.DATE_MSEC_FIELD && term.field() != DocMaker.TIME_SEC_FIELD) {
+          termDocs.seek(terms.term());
         while (termDocs.next())
           totalTokenCount2 += termDocs.freq();
       }
