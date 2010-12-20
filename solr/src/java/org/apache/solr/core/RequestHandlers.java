@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -137,7 +138,8 @@ final class RequestHandlers {
    */
 
   void initHandlersFromConfig(SolrConfig config ){
-    Map<PluginInfo,SolrRequestHandler> handlers = new HashMap<PluginInfo,SolrRequestHandler>();
+    // use link map so we iterate in the same order
+    Map<PluginInfo,SolrRequestHandler> handlers = new LinkedHashMap<PluginInfo,SolrRequestHandler>();
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName())) {
       try {
         SolrRequestHandler requestHandler;
@@ -153,11 +155,6 @@ final class RequestHandlers {
           requestHandler = core.createRequestHandler(info.className);
         }
         handlers.put(info,requestHandler);
-        if (requestHandler instanceof PluginInfoInitialized) {
-          ((PluginInfoInitialized) requestHandler).init(info);
-        } else{
-          requestHandler.init(info.initArgs);
-        }
         SolrRequestHandler old = register(info.name, requestHandler);
         if(old != null) {
           log.warn("Multiple requestHandler registered to the same name: " + info.name + " ignoring: " + old.getClass().getName());
@@ -176,8 +173,16 @@ final class RequestHandlers {
           throw e;
       }
     }
+
+    // we've now registered all handlers, time ot init them in the same order
     for (Map.Entry<PluginInfo,SolrRequestHandler> entry : handlers.entrySet()) {
-      entry.getValue().init(entry.getKey().initArgs);
+      PluginInfo info = entry.getKey();
+      SolrRequestHandler requestHandler = entry.getValue();
+      if (requestHandler instanceof PluginInfoInitialized) {
+        ((PluginInfoInitialized) requestHandler).init(info);
+      } else{
+        requestHandler.init(info.initArgs);
+      }
     }
 
     if(get("") == null) register("", get(DEFAULT_HANDLER_NAME));

@@ -34,7 +34,7 @@ public class TestNumberUtils extends LuceneTestCase {
     return str+"]";
   }
 
-  static Random rng = new Random();
+  static Random rng = random;
 
   static int[] special = {0,10,100,1000,10000,Integer.MAX_VALUE, Integer.MIN_VALUE};
   static int getSpecial() {

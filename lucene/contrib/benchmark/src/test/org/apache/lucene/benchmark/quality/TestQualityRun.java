@@ -23,7 +23,7 @@ import org.apache.lucene.benchmark.quality.trec.TrecTopicsReader;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -67,7 +67,8 @@ public class TestQualityRun extends BenchmarkTestCase {
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
     
-    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(getWorkDir(),"index")), true);
+    Directory dir = newFSDirectory(new File(getWorkDir(),"index"));
+    IndexSearcher searcher = new IndexSearcher(dir, true);
 
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
@@ -131,8 +132,9 @@ public class TestQualityRun extends BenchmarkTestCase {
     for (int j = 1; j <= QualityStats.MAX_POINTS; j++) {
       assertTrue("avg p_at_"+j+" should be hurt: "+avg.getPrecisionAt(j), 1.0 > avg.getPrecisionAt(j));
     }
-
     
+    searcher.close();
+    dir.close();
   }
   
   public void testTrecTopicsReader() throws Exception {    

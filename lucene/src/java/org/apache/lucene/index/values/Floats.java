@@ -1,4 +1,5 @@
 package org.apache.lucene.index.values;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -33,6 +34,7 @@ import org.apache.lucene.util.FloatsRef;
 /**
  * Exposes writer/reader for floating point values. You can specify 4 (java
  * float) or 8 (java double) byte precision.
+ * 
  * @lucene.experimental
  */
 // TODO - add bulk copy where possible
@@ -45,8 +47,8 @@ public class Floats {
   private static final long LONG_DEFAULT = Double
       .doubleToRawLongBits(Double.NEGATIVE_INFINITY);
 
-  public static Writer getWriter(Directory dir, String id, int precisionBytes, AtomicLong bytesUsed)
-      throws IOException {
+  public static Writer getWriter(Directory dir, String id, int precisionBytes,
+      AtomicLong bytesUsed) throws IOException {
     if (precisionBytes != 4 && precisionBytes != 8) {
       throw new IllegalArgumentException("precisionBytes must be 4 or 8; got "
           + precisionBytes);
@@ -71,15 +73,16 @@ public class Floats {
     protected IndexOutput datOut;
     private final byte precision;
 
-    protected FloatsWriter(Directory dir, String id, int precision, AtomicLong bytesUsed)
-        throws IOException {
+    protected FloatsWriter(Directory dir, String id, int precision,
+        AtomicLong bytesUsed) throws IOException {
       super(bytesUsed);
       this.dir = dir;
       this.id = id;
       this.precision = (byte) precision;
+      initDatOut();
     }
 
-    protected void initDatOut() throws IOException {
+    private void initDatOut() throws IOException {
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION));
       CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
@@ -98,7 +101,7 @@ public class Floats {
 
     @Override
     public void add(int docID, PerDocFieldValues docValues) throws IOException {
-        add(docID, docValues.getFloat());
+      add(docID, docValues.getFloat());
     }
 
     @Override
@@ -139,7 +142,8 @@ public class Floats {
   // Writes 4 bytes (float) per value
   static class Float4Writer extends FloatsWriter {
 
-    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed)
+        throws IOException {
       super(dir, id, 4, bytesUsed);
     }
 
@@ -148,9 +152,6 @@ public class Floats {
         throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
-      if (datOut == null) {
-        initDatOut();
-      }
       if (docID - lastDocId > 1) {
         // fill with default values
         lastDocId += fillDefault(docID - lastDocId - 1);
@@ -162,13 +163,14 @@ public class Floats {
 
     @Override
     synchronized public void finish(int docCount) throws IOException {
-      if (datOut == null)
-        return; // no data added - don't create file!
-      if (docCount > lastDocId + 1)
-        for (int i = lastDocId; i < docCount; i++) {
-          datOut.writeInt(INT_DEFAULT); // default value
-        }
-      datOut.close();
+      try {
+        if (docCount > lastDocId + 1)
+          for (int i = lastDocId; i < docCount; i++) {
+            datOut.writeInt(INT_DEFAULT); // default value
+          }
+      } finally {
+        datOut.close();
+      }
     }
 
     @Override
@@ -183,7 +185,8 @@ public class Floats {
   // Writes 8 bytes (double) per value
   static class Float8Writer extends FloatsWriter {
 
-    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed)
+        throws IOException {
       super(dir, id, 8, bytesUsed);
     }
 
@@ -191,9 +194,6 @@ public class Floats {
     synchronized public void add(int docID, double v) throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
-      if (datOut == null) {
-        initDatOut();
-      }
       if (docID - lastDocId > 1) {
         // fill with default values
         lastDocId += fillDefault(docID - lastDocId - 1);
@@ -205,13 +205,14 @@ public class Floats {
 
     @Override
     synchronized public void finish(int docCount) throws IOException {
-      if (datOut == null)
-        return; // no data added - don't create file!
-      if (docCount > lastDocId + 1)
-        for (int i = lastDocId; i < docCount; i++) {
-          datOut.writeLong(LONG_DEFAULT); // default value
-        }
-      datOut.close();
+      try {
+        if (docCount > lastDocId + 1)
+          for (int i = lastDocId; i < docCount; i++) {
+            datOut.writeLong(LONG_DEFAULT); // default value
+          }
+      } finally {
+        datOut.close();
+      }
     }
 
     @Override
@@ -288,7 +289,8 @@ public class Floats {
       }
 
       @Override
-      public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      public DocValuesEnum getEnum(AttributeSource attrSource)
+          throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, Type.SIMPLE_FLOAT_4BYTE, this, maxDoc) {
           @Override
@@ -327,7 +329,8 @@ public class Floats {
       }
 
       @Override
-      public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      public DocValuesEnum getEnum(AttributeSource attrSource)
+          throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, maxDoc) {
           @Override

@@ -22,29 +22,28 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-
-import java.util.List;
-import java.util.Random;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
@@ -149,12 +148,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // in each iteration verify the work of previous iteration. 
   // try this once with reopen once recreate, on both RAMDir and FSDir.
   public void testCommitReopenFS () throws IOException {
-    Directory dir = FSDirectory.open(indexDir);
+    Directory dir = newFSDirectory(indexDir);
     doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
   public void testCommitRecreateFS () throws IOException {
-    Directory dir = FSDirectory.open(indexDir);
+    Directory dir = newFSDirectory(indexDir);
     doTestReopenWithCommit(random, dir, false);
     dir.close();
   }
@@ -751,7 +750,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       ReaderThreadTask task;
       
-      if (i < 4 ||( i >=10 && i < 14) || i > 18) {
+      if (i < 4 || (i >=10 && i < 14) || i > 18) {
         task = new ReaderThreadTask() {
           
           @Override
@@ -769,7 +768,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 // not synchronized
                 IndexReader refreshed = r.reopen();
                 
-                
                 IndexSearcher searcher = new IndexSearcher(refreshed);
                 ScoreDoc[] hits = searcher.search(
                     new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))),
@@ -778,19 +776,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                   searcher.doc(hits[0].doc);
                 }
                 
-                // r might have changed because this is not a 
-                // synchronized method. However we don't want
-                // to make it synchronized to test 
-                // thread-safety of IndexReader.close().
-                // That's why we add refreshed also to 
-                // readersToClose, because double closing is fine
                 if (refreshed != r) {
                   refreshed.close();
                 }
-                readersToClose.add(refreshed);
               }
               synchronized(this) {
-                wait(1000);
+                wait(_TestUtil.nextInt(random, 1, 100));
               }
             }
           }
@@ -808,12 +799,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
               }
               
               synchronized(this) {
-                wait(100);
+                wait(_TestUtil.nextInt(random, 1, 100));
               }
             }
-                        
           }
-          
         };
       }
       
@@ -870,7 +859,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   private abstract static class ReaderThreadTask {
-    protected boolean stopped;
+    protected volatile boolean stopped;
     public void stop() {
       this.stopped = true;
     }

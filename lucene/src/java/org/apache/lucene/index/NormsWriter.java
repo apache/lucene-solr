@@ -171,7 +171,4 @@ final class NormsWriter extends InvertedDocEndConsumer {
       normsOut.close();
     }
   }
-
-  @Override
-  void closeDocStore(SegmentWriteState state) {}
 }

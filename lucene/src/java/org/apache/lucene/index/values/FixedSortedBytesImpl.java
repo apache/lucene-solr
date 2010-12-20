@@ -57,18 +57,19 @@ class FixedSortedBytesImpl {
     private int[] docToEntry;
     private final Comparator<BytesRef> comp;
 
-    private final BytesRefHash hash = new BytesRefHash(pool, BytesRefHash.DEFAULT_CAPACITY,
-        new TrackingDirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
+    private final BytesRefHash hash = new BytesRefHash(pool,
+        BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
+            BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
 
-    public Writer(Directory dir, String id, Comparator<BytesRef> comp, AtomicLong bytesUsed)
-        throws IOException {
+    public Writer(Directory dir, String id, Comparator<BytesRef> comp,
+        AtomicLong bytesUsed) throws IOException {
       this(dir, id, comp, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
           bytesUsed);
     }
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Allocator allocator, AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false,
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, true,
           new ByteBlockPool(allocator), bytesUsed);
       docToEntry = new int[1];
       // docToEntry[0] = -1;
@@ -82,18 +83,15 @@ class FixedSortedBytesImpl {
         return; // default - skip it
       if (size == -1) {
         size = bytes.length;
-        initDataOut();
         datOut.writeInt(size);
       } else if (bytes.length != size) {
         throw new IllegalArgumentException("expected bytes size=" + size
             + " but got " + bytes.length);
       }
       if (docID >= docToEntry.length) {
-        int[] newArray = new int[ArrayUtil.oversize(1 + docID,
+        final int[] newArray = new int[ArrayUtil.oversize(1 + docID,
             RamUsageEstimator.NUM_BYTES_INT)];
         System.arraycopy(docToEntry, 0, newArray, 0, docToEntry.length);
-        // Arrays.fill(newArray, docToEntry.length, newArray.length, -1);
-
         bytesUsed.addAndGet((newArray.length - docToEntry.length)
             * RamUsageEstimator.NUM_BYTES_INT);
         docToEntry = newArray;
@@ -106,54 +104,56 @@ class FixedSortedBytesImpl {
     // some last docs that we didn't see
     @Override
     synchronized public void finish(int docCount) throws IOException {
-      if (datOut == null)// no data added
-        return;
-      initIndexOut();
-      final int[] sortedEntries = hash.sort(comp);
-      final int count = hash.size();
-      int[] address = new int[count];
-      // first dump bytes data, recording address as we go
-      for (int i = 0; i < count; i++) {
-        final int e = sortedEntries[i];
-        final BytesRef bytes = hash.get(e, new BytesRef());
-        assert bytes.length == size;
-        datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
-        address[e] = 1 + i;
-      }
-
-      idxOut.writeInt(count);
-
-      // next write index
-      PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount, PackedInts
-          .bitsRequired(count));
-      final int limit;
-      if (docCount > docToEntry.length) {
-        limit = docToEntry.length;
-      } else {
-        limit = docCount;
-      }
-      for (int i = 0; i < limit; i++) {
-        final int e = docToEntry[i];
-        if (e == 0) {
-          // null is encoded as zero
-          w.add(0);
-        } else {
-          assert e > 0 && e <= count : "index must  0 > && <= " + count
-              + " was: " + e;
-          w.add(address[e - 1]);
+      try {
+        if (size == -1) {// no data added
+          datOut.writeInt(size);
         }
-      }
+        final int[] sortedEntries = hash.sort(comp);
+        final int count = hash.size();
+        int[] address = new int[count];
+        // first dump bytes data, recording address as we go
+        for (int i = 0; i < count; i++) {
+          final int e = sortedEntries[i];
+          final BytesRef bytes = hash.get(e, new BytesRef());
+          assert bytes.length == size;
+          datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+          address[e] = 1 + i;
+        }
 
-      for (int i = limit; i < docCount; i++) {
-        w.add(0);
-      }
-      w.finish();
+        idxOut.writeInt(count);
 
-      super.finish(docCount);
-      bytesUsed.addAndGet((-docToEntry.length)
-          * RamUsageEstimator.NUM_BYTES_INT);
-      docToEntry = null;
-      hash.close();
+        // next write index
+        PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+            PackedInts.bitsRequired(count));
+        final int limit;
+        if (docCount > docToEntry.length) {
+          limit = docToEntry.length;
+        } else {
+          limit = docCount;
+        }
+        for (int i = 0; i < limit; i++) {
+          final int e = docToEntry[i];
+          if (e == 0) {
+            // null is encoded as zero
+            w.add(0);
+          } else {
+            assert e > 0 && e <= count : "index must  0 > && <= " + count
+                + " was: " + e;
+            w.add(address[e - 1]);
+          }
+        }
+
+        for (int i = limit; i < docCount; i++) {
+          w.add(0);
+        }
+        w.finish();
+      } finally {
+        super.finish(docCount);
+        bytesUsed.addAndGet((-docToEntry.length)
+            * RamUsageEstimator.NUM_BYTES_INT);
+        docToEntry = null;
+        hash.close();
+      }
     }
   }
 
@@ -187,9 +187,10 @@ class FixedSortedBytesImpl {
       private final int numValue;
       private final int size;
 
-      public Source(IndexInput datIn, IndexInput idxIn, int size, int numValues,
-          Comparator<BytesRef> comp) throws IOException {
-        super(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), size*numValues );
+      public Source(IndexInput datIn, IndexInput idxIn, int size,
+          int numValues, Comparator<BytesRef> comp) throws IOException {
+        super(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), size
+            * numValues);
         this.size = size;
         this.numValue = numValues;
         index = PackedInts.getReader(idxIn);
@@ -209,9 +210,10 @@ class FixedSortedBytesImpl {
       public int getValueCount() {
         return numValue;
       }
+
       @Override
       protected BytesRef deref(int ord, BytesRef bytesRef) {
-        return data.fillSlice(bytesRef, (ord* size), size);
+        return data.fillSlice(bytesRef, (ord * size), size);
       }
 
       @Override
@@ -228,8 +230,7 @@ class FixedSortedBytesImpl {
     @Override
     public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       // do unsorted
-      return new DerefBytesEnum(source, cloneData(), cloneIndex(),
-          size);
+      return new DerefBytesEnum(source, cloneData(), cloneIndex(), size);
     }
 
     @Override

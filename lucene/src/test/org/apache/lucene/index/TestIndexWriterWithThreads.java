@@ -106,6 +106,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     int NUM_THREADS = 3;
 
     for(int iter=0;iter<10;iter++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter);
+      }
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer = new IndexWriter(
           dir,
@@ -116,6 +119,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       );
       ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
       dir.setMaxSizeInBytes(4*1024+20*iter);
+      writer.setInfoStream(VERBOSE ? System.out : null);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 
@@ -352,47 +356,6 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   // IOException during rollback(), with multiple threads, is OK:
   public void testIOExceptionDuringAbortWithThreadsOnlyOnce() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush(true));
-  }
-
-  // Throws IOException during DocumentsWriter.closeDocStore
-  private static class FailOnlyInCloseDocStore extends MockDirectoryWrapper.Failure {
-    private boolean onlyOnce;
-    public FailOnlyInCloseDocStore(boolean onlyOnce) {
-      this.onlyOnce = onlyOnce;
-    }
-    @Override
-    public void eval(MockDirectoryWrapper dir)  throws IOException {
-      if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("closeDocStore".equals(trace[i].getMethodName())) {
-            if (onlyOnce)
-              doFail = false;
-            throw new IOException("now failing on purpose");
-          }
-        }
-      }
-    }
-  }
-
-  // LUCENE-1130: test IOException in closeDocStore
-  public void testIOExceptionDuringCloseDocStore() throws IOException {
-    _testSingleThreadFailure(new FailOnlyInCloseDocStore(false));
-  }
-
-  // LUCENE-1130: test IOException in closeDocStore
-  public void testIOExceptionDuringCloseDocStoreOnlyOnce() throws IOException {
-    _testSingleThreadFailure(new FailOnlyInCloseDocStore(true));
-  }
-
-  // LUCENE-1130: test IOException in closeDocStore, with threads
-  public void testIOExceptionDuringCloseDocStoreWithThreads() throws Exception {
-    _testMultipleThreadsFailure(new FailOnlyInCloseDocStore(false));
-  }
-
-  // LUCENE-1130: test IOException in closeDocStore, with threads
-  public void testIOExceptionDuringCloseDocStoreWithThreadsOnlyOnce() throws Exception {
-    _testMultipleThreadsFailure(new FailOnlyInCloseDocStore(true));
   }
 
   // Throws IOException during DocumentsWriter.writeSegment

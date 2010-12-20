@@ -839,13 +839,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /**
    * Returns <code>true</code> if an index exists at the specified directory.
-   * If the directory does not exist or if there is no index in it.
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean indexExists(Directory directory) throws IOException {
-    return SegmentInfos.getCurrentSegmentGeneration(directory) != -1;
+    try {
+      new SegmentInfos().read(directory);
+      return true;
+    } catch (IOException ioe) {
+      return false;
+    }
   }
 
   /** Returns the number of documents in this index. */
@@ -1241,6 +1245,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  method should return null when there are no deleted
    *  docs.
    *
+   *  The returned instance has been safely published for use by
+   *  multiple threads without additional synchronization.
    * @lucene.experimental */
   public abstract Bits getDeletedDocs();
 
@@ -1425,7 +1431,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return fields.docValues(field);
   }
 
-  private Fields fields;
+  private volatile Fields fields;
 
   /** @lucene.internal */
   void storeFields(Fields fields) {

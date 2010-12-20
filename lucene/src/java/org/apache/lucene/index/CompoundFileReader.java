@@ -160,7 +160,7 @@ public class CompoundFileReader extends Directory {
         id = IndexFileNames.stripSegmentName(id);
         final FileEntry entry = entries.get(id);
         if (entry == null)
-            throw new IOException("No sub-file with id " + id + " found");
+          throw new IOException("No sub-file with id " + id + " found (files: " + entries.keySet() + ")");
 
         return new CSIndexInput(stream, entry.offset, entry.length, readBufferSize);
     }

@@ -17,7 +17,6 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import java.util.GregorianCalendar;
 import java.util.Random;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -77,7 +76,6 @@ public class TestSearch extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
-      lmp.setUseCompoundDocStore(useCompoundFile);
       IndexWriter writer = new IndexWriter(directory, conf);
 
       String[] docs = {

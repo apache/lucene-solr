@@ -68,6 +68,7 @@
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
+  <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
   <property name="tests.iter" value="1" />
   <property name="tests.seed" value="random" />
   <property name="tests.userdir" value="."/>
@@ -135,7 +136,11 @@
   <property name="junit.reports" location="${build.dir}/test/reports"/>
   <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
   <property name="junit.excludes" value=""/>
-  <property name="junit.details.formatter" value="org.apache.lucene.util.LuceneJUnitResultFormatter"/>
+  <condition property="junit.details.formatter" 
+      value="org.apache.tools.ant.taskdefs.optional.junit.BriefJUnitResultFormatter"
+      else="org.apache.lucene.util.LuceneJUnitResultFormatter">
+    <isset property="tests.sequential"/>
+  </condition>
   <property name="junit.parallel.selector" value="org.apache.lucene.util.LuceneJUnitDividingSelector"/>
 
   <property name="manifest.file" location="${common.dir}/build/MANIFEST.MF"/>
@@ -455,6 +460,8 @@
 	      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
               <!-- set the directory tests should run with -->
               <sysproperty key="tests.directory" value="${tests.directory}"/>
+              <!-- set the line file source for oal.util.LineFileDocs -->
+              <sysproperty key="tests.linedocsfile" value="${tests.linedocsfile}"/>
               <!-- set the number of times tests should run -->
               <sysproperty key="tests.iter" value="${tests.iter}"/>
               <!-- set the test seed -->

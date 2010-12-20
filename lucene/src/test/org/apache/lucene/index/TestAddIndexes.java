@@ -39,7 +39,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 public class TestAddIndexes extends LuceneTestCase {
@@ -571,7 +570,6 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory dir = newDirectory();
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     lmp.setMergeFactor(100);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -600,7 +598,6 @@ public class TestAddIndexes extends LuceneTestCase {
     lmp = new LogByteSizeMergePolicy();
     lmp.setMinMergeMB(0.0001);
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     lmp.setMergeFactor(4);
     writer = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer())
@@ -642,9 +639,11 @@ public class TestAddIndexes extends LuceneTestCase {
         addDoc(writer);
       writer.close();
 
-      dir2 = new MockDirectoryWrapper(random, new RAMDirectory());
+      dir2 = newDirectory();
       writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+      writer2.setInfoStream(VERBOSE ? System.out : null);
       writer2.commit();
+      
 
       readers = new IndexReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
@@ -914,14 +913,17 @@ public class TestAddIndexes extends LuceneTestCase {
 
   // LUCENE-1335: test simultaneous addIndexes & close
   public void testAddIndexesWithRollback() throws Throwable {
-    
+
     final int NUM_COPY = 50;
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    Thread.sleep(500);
+    Thread.sleep(_TestUtil.nextInt(random, 100, 500));
 
     // Close w/o first stopping/joining the threads
+    if (VERBOSE) {
+      System.out.println("TEST: now force rollback");
+    }
     c.didClose = true;
     c.writer2.rollback();
 

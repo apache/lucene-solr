@@ -32,15 +32,16 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.automaton.fst.Builder;
+import org.apache.lucene.util.automaton.fst.BytesRefFSTEnum;
+import org.apache.lucene.util.automaton.fst.FST;
+import org.apache.lucene.util.automaton.fst.PositiveIntOutputs;
+import org.apache.lucene.util.automaton.fst.PairOutputs;
 
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
 import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.SortedMap;
-import java.util.Iterator;
 
 class SimpleTextFieldsReader extends FieldsProducer {
 
@@ -123,73 +124,39 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private class SimpleTextTermsEnum extends TermsEnum {
     private final IndexInput in;
     private final boolean omitTF;
-    private BytesRef current;
     private int docFreq;
     private long docsStart;
     private boolean ended;
-    private final TreeMap<BytesRef,TermData> allTerms;
-    private Iterator<Map.Entry<BytesRef,TermData>> iter;
+    private final BytesRefFSTEnum<PairOutputs.Pair<Long,Long>> fstEnum;
 
-    public SimpleTextTermsEnum(TreeMap<BytesRef,TermData> allTerms, boolean omitTF) throws IOException {
+    public SimpleTextTermsEnum(FST<PairOutputs.Pair<Long,Long>> fst, boolean omitTF) throws IOException {
       this.in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
-      this.allTerms = allTerms;
       this.omitTF = omitTF;
-      iter = allTerms.entrySet().iterator();
+      fstEnum = new BytesRefFSTEnum<PairOutputs.Pair<Long,Long>>(fst);
     }
 
     public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
-      
-      final SortedMap<BytesRef,TermData> tailMap = allTerms.tailMap(text);
 
-      if (tailMap.isEmpty()) {
-        current = null;
+      fstEnum.reset();
+      //System.out.println("seek to text=" + text.utf8ToString());
+      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,Long>> result = fstEnum.advance(text);
+      if (result == null) {
+        //System.out.println("  end");
         return SeekStatus.END;
       } else {
-        current = tailMap.firstKey();
-        final TermData td = tailMap.get(current);
-        docsStart = td.docsStart;
-        docFreq = td.docFreq;
-        iter = tailMap.entrySet().iterator();
-        assert iter.hasNext();
-        iter.next();
-        if (current.equals(text)) {
+        //System.out.println("  got text=" + term.utf8ToString());
+        PairOutputs.Pair<Long,Long> pair = result.output;
+        docsStart = pair.output1;
+        docFreq = pair.output2.intValue();
+
+        if (result.input.equals(text)) {
+          //System.out.println("  match docsStart=" + docsStart);
           return SeekStatus.FOUND;
         } else {
+          //System.out.println("  not match docsStart=" + docsStart);
           return SeekStatus.NOT_FOUND;
         }
       }
-
-      /*
-      if (current != null) {
-        final int cmp = current.compareTo(text);
-        if (cmp == 0) {
-          return SeekStatus.FOUND;
-        } else if (cmp > 0) {
-          ended = false;
-          in.seek(fieldStart);
-        }
-      } else {
-        ended = false;
-        in.seek(fieldStart);
-      }
-
-      // Naive!!  This just scans... would be better to do
-      // up-front scan to build in-RAM index
-      BytesRef b;
-      while((b = next()) != null) {
-        final int cmp = b.compareTo(text);
-        if (cmp == 0) {
-          ended = false;
-          return SeekStatus.FOUND;
-        } else if (cmp > 0) {
-          ended = false;
-          return SeekStatus.NOT_FOUND;
-        }
-      }
-      current = null;
-      ended = true;
-      return SeekStatus.END;
-      */
     }
 
     @Override
@@ -199,56 +166,20 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public BytesRef next() throws IOException {
       assert !ended;
-
-      if (iter.hasNext()) {
-        Map.Entry<BytesRef,TermData> ent = iter.next();
-        current = ent.getKey();
-        TermData td = ent.getValue();
-        docFreq = td.docFreq;
-        docsStart = td.docsStart;
-        return current;
+      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,Long>> result = fstEnum.next();
+      if (result != null) {
+        final PairOutputs.Pair<Long,Long> pair = result.output;
+        docsStart = pair.output1;
+        docFreq = pair.output2.intValue();
+        return result.input;
       } else {
-        current = null;
         return null;
       }
-
-      /*
-      readLine(in, scratch);
-      if (scratch.equals(END) || scratch.startsWith(FIELD)) {
-        ended = true;
-        current = null;
-        return null;
-      } else {
-        assert scratch.startsWith(TERM): "got " + scratch.utf8ToString();
-        docsStart = in.getFilePointer();
-        final int len = scratch.length - TERM.length;
-        if (len > scratch2.length) {
-          scratch2.grow(len);
-        }
-        System.arraycopy(scratch.bytes, TERM.length, scratch2.bytes, 0, len);
-        scratch2.length = len;
-        current = scratch2;
-        docFreq = 0;
-        long lineStart = 0;
-        while(true) {
-          lineStart = in.getFilePointer();
-          readLine(in, scratch);
-          if (scratch.equals(END) || scratch.startsWith(FIELD) || scratch.startsWith(TERM)) {
-            break;
-          }
-          if (scratch.startsWith(DOC)) {
-            docFreq++;
-          }
-        }
-        in.seek(lineStart);
-        return current;
-      }
-      */
     }
 
     @Override
     public BytesRef term() {
-      return current;
+      return fstEnum.current().input;
     }
 
     @Override
@@ -519,10 +450,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final String field;
     private final long termsStart;
     private final boolean omitTF;
-
-    // NOTE: horribly, horribly RAM consuming, but then
-    // SimpleText should never be used in production
-    private final TreeMap<BytesRef,TermData> allTerms = new TreeMap<BytesRef,TermData>();
+    private FST<PairOutputs.Pair<Long,Long>> fst;
 
     private final BytesRef scratch = new BytesRef(10);
 
@@ -534,6 +462,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     private void loadTerms() throws IOException {
+      PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton(false);
+      Builder<PairOutputs.Pair<Long,Long>> b = new Builder<PairOutputs.Pair<Long,Long>>(FST.INPUT_TYPE.BYTE1, 0, 0, true, new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs));
       IndexInput in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
       in.seek(termsStart);
       final BytesRef lastTerm = new BytesRef(10);
@@ -543,16 +473,14 @@ class SimpleTextFieldsReader extends FieldsProducer {
         readLine(in, scratch);
         if (scratch.equals(END) || scratch.startsWith(FIELD)) {
           if (lastDocsStart != -1) {
-            allTerms.put(new BytesRef(lastTerm),
-                         new TermData(lastDocsStart, docFreq));
+            b.add(lastTerm, new PairOutputs.Pair<Long,Long>(lastDocsStart, Long.valueOf(docFreq)));
           }
           break;
         } else if (scratch.startsWith(DOC)) {
           docFreq++;
         } else if (scratch.startsWith(TERM)) {
           if (lastDocsStart != -1) {
-            allTerms.put(new BytesRef(lastTerm),
-                         new TermData(lastDocsStart, docFreq));
+            b.add(lastTerm, new PairOutputs.Pair<Long,Long>(lastDocsStart, Long.valueOf(docFreq)));
           }
           lastDocsStart = in.getFilePointer();
           final int len = scratch.length - TERM.length;
@@ -564,11 +492,23 @@ class SimpleTextFieldsReader extends FieldsProducer {
           docFreq = 0;
         }
       }
+      fst = b.finish();
+      /*
+      PrintStream ps = new PrintStream("out.dot");
+      fst.toDot(ps);
+      ps.close();
+      System.out.println("SAVED out.dot");
+      */
+      //System.out.println("FST " + fst.sizeInBytes());
     }
 
     @Override
     public TermsEnum iterator() throws IOException {
-      return new SimpleTextTermsEnum(allTerms, omitTF);
+      if (fst != null) {
+        return new SimpleTextTermsEnum(fst, omitTF);
+      } else {
+        return TermsEnum.EMPTY;
+      }
     }
 
     @Override

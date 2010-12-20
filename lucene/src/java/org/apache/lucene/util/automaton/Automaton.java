@@ -281,7 +281,7 @@ public class Automaton implements Serializable, Cloneable {
             worklist.add(t.to);
             t.to.number = upto;
             if (upto == numberedStates.length) {
-              final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+              final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
               System.arraycopy(numberedStates, 0, newArray, 0, upto);
               numberedStates = newArray;
             }

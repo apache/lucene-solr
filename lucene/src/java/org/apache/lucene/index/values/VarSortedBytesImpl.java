@@ -56,17 +56,19 @@ class VarSortedBytesImpl {
     private int[] docToEntry;
     private final Comparator<BytesRef> comp;
 
-    private final BytesRefHash hash = new BytesRefHash(pool, BytesRefHash.DEFAULT_CAPACITY,
-        new TrackingDirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
+    private final BytesRefHash hash = new BytesRefHash(pool,
+        BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
+            BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
 
-    public Writer(Directory dir, String id, Comparator<BytesRef> comp, AtomicLong bytesUsed)
-        throws IOException {
-      this(dir, id, comp, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE), bytesUsed);
+    public Writer(Directory dir, String id, Comparator<BytesRef> comp,
+        AtomicLong bytesUsed) throws IOException {
+      this(dir, id, comp, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
+          bytesUsed);
     }
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Allocator allocator, AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false,
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, true,
           new ByteBlockPool(allocator), bytesUsed);
       this.comp = comp;
       docToEntry = new int[1];
@@ -97,62 +99,59 @@ class VarSortedBytesImpl {
     @Override
     synchronized public void finish(int docCount) throws IOException {
       final int count = hash.size();
-      if (count == 0)
-        return;
-      initIndexOut();
-      initDataOut();
-      int[] sortedEntries = hash.sort(comp);
+      try {
+        final int[] sortedEntries = hash.sort(comp);
 
-      // first dump bytes data, recording index & offset as
-      // we go
-      long offset = 0;
-      long lastOffset = 0;
-      final int[] index = new int[count];
-      final long[] offsets = new long[count];
-      for (int i = 0; i < count; i++) {
-        final int e = sortedEntries[i];
-        offsets[i] = offset;
-        index[e] = 1 + i;
+        // first dump bytes data, recording index & offset as
+        // we go
+        long offset = 0;
+        long lastOffset = 0;
+        final int[] index = new int[count];
+        final long[] offsets = new long[count];
+        for (int i = 0; i < count; i++) {
+          final int e = sortedEntries[i];
+          offsets[i] = offset;
+          index[e] = 1 + i;
 
-        final BytesRef bytes = hash.get(e, new BytesRef());
-        // TODO: we could prefix code...
-        datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
-        lastOffset = offset;
-        offset += bytes.length;
+          final BytesRef bytes = hash.get(e, new BytesRef());
+          // TODO: we could prefix code...
+          datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+          lastOffset = offset;
+          offset += bytes.length;
+        }
+
+        // total bytes of data
+        idxOut.writeLong(offset);
+
+        // write index -- first doc -> 1+ord
+        // TODO(simonw): allow not -1:
+        final PackedInts.Writer indexWriter = PackedInts.getWriter(idxOut,
+            docCount, PackedInts.bitsRequired(count));
+        final int limit = docCount > docToEntry.length ? docToEntry.length
+            : docCount;
+        for (int i = 0; i < limit; i++) {
+          final int e = docToEntry[i];
+          indexWriter.add(e == -1 ? 0 : index[e]);
+        }
+        for (int i = limit; i < docCount; i++) {
+          indexWriter.add(0);
+        }
+        indexWriter.finish();
+
+        // next ord (0-based) -> offset
+        // TODO(simonw): -- allow not -1:
+        PackedInts.Writer offsetWriter = PackedInts.getWriter(idxOut, count,
+            PackedInts.bitsRequired(lastOffset));
+        for (int i = 0; i < count; i++) {
+          offsetWriter.add(offsets[i]);
+        }
+        offsetWriter.finish();
+      } finally {
+        super.finish(docCount);
+        bytesUsed.addAndGet((-docToEntry.length)
+            * RamUsageEstimator.NUM_BYTES_INT);
+        hash.close();
       }
-
-      // total bytes of data
-      idxOut.writeLong(offset);
-
-      // write index -- first doc -> 1+ord
-      // TODO(simonw): allow not -1:
-      final PackedInts.Writer indexWriter = PackedInts.getWriter(idxOut,
-          docCount, PackedInts.bitsRequired(count));
-      final int limit = docCount > docToEntry.length ? docToEntry.length
-          : docCount;
-      for (int i = 0; i < limit; i++) {
-        final int e = docToEntry[i];
-        indexWriter.add(e == -1 ? 0 : index[e]);
-      }
-      for (int i = limit; i < docCount; i++) {
-        indexWriter.add(0);
-      }
-      indexWriter.finish();
-
-      // next ord (0-based) -> offset
-      // TODO(simonw): -- allow not -1:
-      PackedInts.Writer offsetWriter = PackedInts.getWriter(idxOut, count,
-          PackedInts.bitsRequired(lastOffset));
-      for (int i = 0; i < count; i++) {
-        offsetWriter.add(offsets[i]);
-      }
-      offsetWriter.finish();
-
-      super.finish(docCount);
-      bytesUsed.addAndGet((-docToEntry.length)
-          * RamUsageEstimator.NUM_BYTES_INT);
-      hash.close();
-
     }
   }
 
@@ -172,7 +171,7 @@ class VarSortedBytesImpl {
     public SortedSource loadSorted(Comparator<BytesRef> comp)
         throws IOException {
       IndexInput indexIn = cloneIndex();
-      return new Source(cloneData(), indexIn , comp, indexIn.readLong());
+      return new Source(cloneData(), indexIn, comp, indexIn.readLong());
     }
 
     private static class Source extends BytesBaseSortedSource {
@@ -182,7 +181,7 @@ class VarSortedBytesImpl {
       private final int valueCount;
 
       public Source(IndexInput datIn, IndexInput idxIn,
-          Comparator<BytesRef> comp,  long dataLength) throws IOException {
+          Comparator<BytesRef> comp, long dataLength) throws IOException {
         super(datIn, idxIn, comp, new PagedBytes(PAGED_BYTES_BITS), dataLength);
         totBytes = dataLength;
         docToOrdIndex = PackedInts.getReader(idxIn);
@@ -215,7 +214,7 @@ class VarSortedBytesImpl {
           nextOffset = ordToOffsetIndex.get(1 + ord);
         }
         final long offset = ordToOffsetIndex.get(ord);
-        data.fillSlice(bytesRef, offset , (int)(nextOffset - offset));
+        data.fillSlice(bytesRef, offset, (int) (nextOffset - offset));
         return bytesRef;
       }
 
@@ -272,8 +271,8 @@ class VarSortedBytesImpl {
           return pos = NO_MORE_DOCS;
         }
         int ord;
-        while((ord =(int) docToOrdIndex.get(target)) == 0) {
-          if(++target >= docCount) {
+        while ((ord = (int) docToOrdIndex.get(target)) == 0) {
+          if (++target >= docCount) {
             return pos = NO_MORE_DOCS;
           }
         }
@@ -307,7 +306,7 @@ class VarSortedBytesImpl {
         return advance(pos + 1);
       }
     }
-    
+
     @Override
     public Type type() {
       return Type.BYTES_VAR_SORTED;

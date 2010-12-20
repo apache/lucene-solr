@@ -27,7 +27,6 @@ final class DocumentsWriterThreadState {
 
   boolean isIdle = true;                          // false if this is currently in use by a thread
   int numThreads = 1;                             // Number of threads that share this instance
-  boolean doFlushAfter;                           // true if we should flush after processing current doc
   final DocConsumerPerThread consumer;
   final DocumentsWriter.DocState docState;
 
@@ -45,6 +44,5 @@ final class DocumentsWriterThreadState {
 
   void doAfterFlush() {
     numThreads = 0;
-    doFlushAfter = false;
   }
 }

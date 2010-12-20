@@ -20,16 +20,12 @@ package org.apache.lucene.index.codecs;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.values.Writer;
 
 import java.io.IOException;
 import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.List;
 
 /** Abstract API that consumes terms, doc, freq, prox and
  *  payloads postings.  Concrete implementations of this
@@ -47,8 +43,6 @@ public abstract class FieldsConsumer implements Closeable {
   public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
     throw new UnsupportedOperationException("docvalues are not supported");
   }
-  
-
 
   /** Called when we are done adding everything. */
   public abstract void close() throws IOException;
@@ -67,9 +61,10 @@ public abstract class FieldsConsumer implements Closeable {
       }
       if (mergeState.fieldInfo.hasDocValues()) {
         final DocValues docValues = fieldsEnum.docValues();
-        // TODO: is this assert values and if so when?
-//        assert docValues != null : "DocValues are null for " + mergeState.fieldInfo.getDocValues();
-        if(docValues == null) { // for now just continue
+        if(docValues == null) { 
+          /* It is actually possible that a fieldInfo has a values type but no values are actually available.
+           * this can happen if there are already segments without values around.
+           */
           continue; 
         }
         final DocValuesConsumer docValuesConsumer = addValuesField(mergeState.fieldInfo);

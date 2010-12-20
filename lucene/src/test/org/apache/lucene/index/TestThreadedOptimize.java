@@ -141,12 +141,5 @@ public class TestThreadedOptimize extends LuceneTestCase {
     runTest(random, directory, new SerialMergeScheduler());
     runTest(random, directory, new ConcurrentMergeScheduler());
     directory.close();
-
-    File dirName = new File(TEMP_DIR, "luceneTestThreadedOptimize");
-    directory = FSDirectory.open(dirName);
-    runTest(random, directory, new SerialMergeScheduler());
-    runTest(random, directory, new ConcurrentMergeScheduler());
-    directory.close();
-    _TestUtil.rmDir(dirName);
   }
 }

@@ -137,7 +137,6 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.APPEND).setCodecProvider(provider);
     ((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundDocStore(false);
     ((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 

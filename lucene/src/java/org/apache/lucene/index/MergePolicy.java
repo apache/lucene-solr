@@ -67,7 +67,6 @@ public abstract class MergePolicy implements java.io.Closeable {
   public static class OneMerge {
 
     SegmentInfo info;               // used by IndexWriter
-    boolean mergeDocStores;         // used by IndexWriter
     boolean optimize;               // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -153,8 +152,8 @@ public abstract class MergePolicy implements java.io.Closeable {
         b.append(" into ").append(info.name);
       if (optimize)
         b.append(" [optimize]");
-      if (mergeDocStores) {
-        b.append(" [mergeDocStores]");
+      if (aborted) {
+        b.append(" [ABORTED]");
       }
       return b.toString();
     }
@@ -315,10 +314,4 @@ public abstract class MergePolicy implements java.io.Closeable {
    * Returns true if a new segment (regardless of its origin) should use the compound file format.
    */
   public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment) throws IOException;
-
-  /**
-   * Returns true if the doc store files should use the
-   * compound file format.
-   */
-  public abstract boolean useCompoundDocStore(SegmentInfos segments);
 }

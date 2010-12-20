@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.5
  */
 public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
-  public static Random r = new Random(0);
+  public static Random r = random;
 
   protected int shardCount = 4;
   /**
@@ -581,7 +581,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   public static abstract class RandVal {
-    public static Random r = new Random();
+    public static Random r = random;
     public static Set uniqueValues = new HashSet();
 
     public abstract Object val();

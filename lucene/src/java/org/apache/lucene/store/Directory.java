@@ -153,7 +153,7 @@ public abstract class Directory implements Closeable {
    *
    * @param lockFactory instance of {@link LockFactory}.
    */
-  public void setLockFactory(LockFactory lockFactory) {
+  public void setLockFactory(LockFactory lockFactory) throws IOException {
     assert lockFactory != null;
     this.lockFactory = lockFactory;
     lockFactory.setLockPrefix(this.getLockID());

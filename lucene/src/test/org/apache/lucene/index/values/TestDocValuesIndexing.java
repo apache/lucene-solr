@@ -70,12 +70,16 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   /*
    * TODO: Roadmap to land on trunk
    * 
-   * - Add documentation for: - Source and ValuesEnum - DocValues - ValuesField
-   * - ValuesAttribute - Values - Add @lucene.experimental to all necessary
-   * classes - add test for unoptimized case with deletes - add a test for
-   * addIndexes - split up existing testcases and give them meaningfull names -
-   * run RAT - add tests for FieldComparator FloatIndexValuesComparator vs.
-   * FloatValuesComparator etc.
+   * - Add documentation for: 
+   *  - Source and ValuesEnum 
+   *  - DocValues 
+   *  - ValuesField
+   *  - Values 
+   * - Add @lucene.experimental to all necessary classes 
+   * - add test for unoptimized case with deletes
+   * - run RAT
+   * - add tests for FieldComparator FloatIndexValuesComparator vs. FloatValuesComparator etc.
+   * 
    */
 
   private DocValuesCodec docValuesCodec;
@@ -111,7 +115,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.commit();
     writer.optimize(true);
 
-    writer.close();
+    writer.close(true);
 
     IndexReader reader = IndexReader.open(dir, null, true, 1, provider);
     assertTrue(reader.isOptimized());
@@ -204,7 +208,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     } else {
       w.addIndexes(r_1, r_2);
     }
-    w.optimize();
+    w.optimize(true);
     w.commit();
     
     _TestUtil.checkIndex(target, w.getConfig().getCodecProvider());
@@ -237,9 +241,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     r_1.close();
     r_2.close();
     merged.close();
-    w_1.close();
-    w_2.close();
-    w.close();
+    w_1.close(true);
+    w_2.close(true);
+    w.close(true);
     d_1.close();
     d_2.close();
     target.close();
@@ -588,7 +592,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     // TODO test unoptimized with deletions
     if (withDeletions || random.nextBoolean())
-      w.optimize();
+      w.optimize(true);
     return deleted;
   }
 }

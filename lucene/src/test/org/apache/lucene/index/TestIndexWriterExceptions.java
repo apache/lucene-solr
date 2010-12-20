@@ -50,8 +50,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     IndexWriter writer;
 
-    final Random r = new java.util.Random(47);
-    Throwable failure;
+    final Random r = new Random(random.nextLong());
+    volatile Throwable failure;
 
     public IndexerThread(int i, IndexWriter writer) {
       setName("Indexer " + i);
@@ -79,6 +79,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       final long stopTime = System.currentTimeMillis() + 500;
 
       do {
+        if (VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + ": TEST: IndexerThread: cycle");
+        }
         doFail.set(this);
         final String id = ""+r.nextInt(50);
         idField.setValue(id);
@@ -125,7 +128,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   ThreadLocal<Thread> doFail = new ThreadLocal<Thread>();
 
   private class MockIndexWriter extends IndexWriter {
-    Random r = new java.util.Random(17);
+    Random r = new Random(random.nextLong());
 
     public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
       super(dir, conf);
@@ -136,7 +139,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       if (doFail.get() != null && !name.equals("startDoFlush") && r.nextInt(20) == 17) {
         if (VERBOSE) {
           System.out.println(Thread.currentThread().getName() + ": NOW FAIL: " + name);
-          //new Throwable().printStackTrace(System.out);
+          new Throwable().printStackTrace(System.out);
         }
         throw new RuntimeException(Thread.currentThread().getName() + ": intentionally failing at " + name);
       }
@@ -145,16 +148,23 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   public void testRandomExceptions() throws Throwable {
+    if (VERBOSE) {
+      System.out.println("\nTEST: start testRandomExceptions");
+    }
     MockDirectoryWrapper dir = newDirectory();
 
     MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
         .setRAMBufferSizeMB(0.1).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
+    if (VERBOSE) {
+      System.out.println("TEST: initial commit");
+    }
     writer.commit();
 
-    if (VERBOSE)
+    if (VERBOSE) {
       writer.setInfoStream(System.out);
+    }
 
     IndexerThread thread = new IndexerThread(0, writer);
     thread.run();
@@ -163,6 +173,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       fail("thread " + thread.getName() + ": hit unexpected failure");
     }
 
+    if (VERBOSE) {
+      System.out.println("TEST: commit after thread start");
+    }
     writer.commit();
 
     try {
@@ -192,8 +205,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     //writer.setMaxBufferedDocs(10);
     writer.commit();
 
-    if (VERBOSE)
+    if (VERBOSE) {
       writer.setInfoStream(System.out);
+    }
 
     final int NUM_THREADS = 4;
 
@@ -294,6 +308,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionJustBeforeFlush() throws IOException {
     Directory dir = newDirectory();
     MockIndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "a field", Field.Store.YES,
                       Field.Index.ANALYZED));

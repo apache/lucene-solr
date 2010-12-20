@@ -17,6 +17,8 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;
@@ -40,15 +42,18 @@ class QuerySenderListener extends AbstractSolrEventListener {
     final SolrIndexSearcher searcher = newSearcher;
     log.info("QuerySenderListener sending requests to " + newSearcher);
     for (NamedList nlst : (List<NamedList>)args.get("queries")) {
+      SolrQueryRequest req = null;
+
       try {
         // bind the request to a particular searcher (the newSearcher)
         NamedList params = addEventParms(currentSearcher, nlst);
-        LocalSolrQueryRequest req = new LocalSolrQueryRequest(core,params) {
+        req = new LocalSolrQueryRequest(core,params) {
           @Override public SolrIndexSearcher getSearcher() { return searcher; }
           @Override public void close() { }
         };
 
         SolrQueryResponse rsp = new SolrQueryResponse();
+        SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
         core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
         // Retrieve the Document instances (not just the ids) to warm
@@ -65,11 +70,12 @@ class QuerySenderListener extends AbstractSolrEventListener {
           }
         }
 
-        req.close();
-
       } catch (Exception e) {
         // do nothing... we want to continue with the other requests.
         // the failure should have already been logged.
+      } finally {
+        if (req != null) req.close();
+        SolrRequestInfo.clearRequestInfo();
       }
     }
     log.info("QuerySenderListener done.");

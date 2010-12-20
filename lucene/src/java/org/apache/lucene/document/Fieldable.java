@@ -18,6 +18,8 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
+import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 
@@ -209,4 +211,12 @@ public interface Fieldable extends Serializable {
   * silently fail to find results.
   */
   void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
+  
+  public PerDocFieldValues getDocValues() ;
+  
+  public void setDocValues(PerDocFieldValues docValues);
+  
+  public boolean hasDocValues();
+  
+  public Type docValuesType();
 }

@@ -33,7 +33,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
@@ -54,7 +53,6 @@ public class TestFieldsReader extends LuceneTestCase {
     dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(false);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
     writer.close();
@@ -160,7 +158,6 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
-    assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Set<String> loadFieldNames = new HashSet<String>();
     loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
@@ -174,6 +171,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     // Use LATENT instead of LAZY
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames) {
+        @Override
         public FieldSelectorResult accept(String fieldName) {
           final FieldSelectorResult result = super.accept(fieldName);
           if (result == FieldSelectorResult.LAZY_LOAD) {
@@ -290,7 +288,7 @@ public class TestFieldsReader extends LuceneTestCase {
     String userName = System.getProperty("user.name");
     File file = new File(TEMP_DIR, "lazyDir" + userName);
     _TestUtil.rmDir(file);
-    FSDirectory tmpDir = FSDirectory.open(file);
+    Directory tmpDir = newFSDirectory(file);
     assertTrue(tmpDir != null);
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE);
@@ -345,6 +343,7 @@ public class TestFieldsReader extends LuceneTestCase {
       reader.close();
 
     }
+    tmpDir.close();
     if (VERBOSE) {
       System.out.println("Average Non-lazy time (should be very close to zero): " + regularTime / length + " ms for " + length + " reads");
       System.out.println("Average Lazy Time (should be greater than zero): " + lazyTime / length + " ms for " + length + " reads");
@@ -388,9 +387,10 @@ public class TestFieldsReader extends LuceneTestCase {
 
   public static class FaultyFSDirectory extends Directory {
 
-    FSDirectory fsDir;
+    Directory fsDir;
+    
     public FaultyFSDirectory(File dir) throws IOException {
-      fsDir = FSDirectory.open(dir);
+      fsDir = newFSDirectory(dir);
       lockFactory = fsDir.getLockFactory();
     }
     @Override

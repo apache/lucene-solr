@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Random;
 
 
 public class SimpleFacetsTest extends SolrTestCaseJ4 {
@@ -34,12 +33,11 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     createIndex();
   }
 
-  static Random rand = new Random(); // TODO: a way to use lucene's newRandom()?
   static int random_commit_percent = 30;
   static int random_dupe_percent = 25;   // some duplicates in the index to create deleted docs
 
   static void randomCommit(int percent_chance) {
-    if (rand.nextInt(100) <= percent_chance)
+    if (random.nextInt(100) <= percent_chance)
       assertU(commit());
   }
 
@@ -49,7 +47,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   static void add_doc(String... fieldsAndValues) {
     do {
       pendingDocs.add(fieldsAndValues);      
-    } while (rand.nextInt(100) <= random_dupe_percent);
+    } while (random.nextInt(100) <= random_dupe_percent);
 
     // assertU(adoc(fieldsAndValues));
     // randomCommit(random_commit_percent);
@@ -63,7 +61,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     indexFacetPrefixMultiValued();
     indexFacetPrefixSingleValued();
     
-   Collections.shuffle(pendingDocs, rand);
+   Collections.shuffle(pendingDocs, random);
     for (String[] doc : pendingDocs) {
       assertU(adoc(doc));
       randomCommit(random_commit_percent);

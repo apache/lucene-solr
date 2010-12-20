@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -27,6 +26,7 @@ import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.MultiDocValues;
 import org.apache.lucene.index.values.Type;
 import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;  // for javadocs
 import org.apache.lucene.util.Bits;
@@ -50,8 +50,8 @@ import org.apache.lucene.util.BytesRef;
 public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderUtil.Slice[] subSlices;
-  private final Map<String,Terms> terms = new HashMap<String,Terms>();
-  private final Map<String,DocValues> docValues = new HashMap<String,DocValues>();
+  private final Map<String,Terms> terms = new ConcurrentHashMap<String,Terms>();
+  private final Map<String,DocValues> docValues = new ConcurrentHashMap<String,DocValues>();
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
@@ -252,32 +252,32 @@ public final class MultiFields extends Fields {
   @Override
   public Terms terms(String field) throws IOException {
 
-    final Terms result;
+    Terms result = terms.get(field);
+    if (result != null)
+      return result;
 
-    if (!terms.containsKey(field)) {
 
-      // Lazy init: first time this field is requested, we
-      // create & add to terms:
-      final List<Terms> subs2 = new ArrayList<Terms>();
-      final List<ReaderUtil.Slice> slices2 = new ArrayList<ReaderUtil.Slice>();
+    // Lazy init: first time this field is requested, we
+    // create & add to terms:
+    final List<Terms> subs2 = new ArrayList<Terms>();
+    final List<ReaderUtil.Slice> slices2 = new ArrayList<ReaderUtil.Slice>();
 
-      // Gather all sub-readers that share this field
-      for(int i=0;i<subs.length;i++) {
-        final Terms terms = subs[i].terms(field);
-        if (terms != null) {
-          subs2.add(terms);
-          slices2.add(subSlices[i]);
-        }
+    // Gather all sub-readers that share this field
+    for(int i=0;i<subs.length;i++) {
+      final Terms terms = subs[i].terms(field);
+      if (terms != null) {
+        subs2.add(terms);
+        slices2.add(subSlices[i]);
       }
-      if (subs2.size() == 0) {
-        result = null;
-      } else {
-        result = new MultiTerms(subs2.toArray(Terms.EMPTY_ARRAY),
-                                slices2.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
-      }
-      terms.put(field, result);
+    }
+    if (subs2.size() == 0) {
+      result = null;
+      // don't cache this case with an unbounded cache, since the number of fields that don't exist
+      // is unbounded.
     } else {
-      result = terms.get(field);
+      result = new MultiTerms(subs2.toArray(Terms.EMPTY_ARRAY),
+          slices2.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
+      terms.put(field, result);
     }
 
     return result;
@@ -285,10 +285,8 @@ public final class MultiFields extends Fields {
   
   @Override
   public DocValues docValues(String field) throws IOException {
-    final DocValues result;
-
-    if (!docValues.containsKey(field)) {
-
+    DocValues result = docValues.get(field);
+    if (result == null) {
       // Lazy init: first time this field is requested, we
       // create & add to docValues:
       final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
@@ -312,16 +310,14 @@ public final class MultiFields extends Fields {
               new MultiDocValues.DummyDocValues(start, type), docsUpto, start
                   - docsUpto));
         }
-       
       }
-      result = docValuesIndex.isEmpty()?null: new MultiDocValues(docValuesIndex.toArray(DocValuesIndex.EMPTY_ARRAY));
+      if (docValuesIndex.isEmpty()) {
+        return null;
+      }
+      result = new MultiDocValues(docValuesIndex.toArray(DocValuesIndex.EMPTY_ARRAY));
       docValues.put(field, result);
-    } else {
-      result = docValues.get(field);
-    }
-
-    return result;  }
-  
- 
+    } 
+    return result; 
+  }
 }
 

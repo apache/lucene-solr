@@ -100,7 +100,7 @@ public final class FieldInfos {
     List<Fieldable> fields = doc.getFields();
     for (Fieldable field : fields) {
       add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType()); 
     }
   }
 
@@ -199,7 +199,7 @@ public final class FieldInfos {
   synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
     add(name, isIndexed, storeTermVector, storePositionWithTermVector,
-        storeOffsetWithTermVector, omitNorms, false, false);
+        storeOffsetWithTermVector, omitNorms, false, false, null);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -218,22 +218,31 @@ public final class FieldInfos {
    */
   synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+                       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, Type docValues) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValues);
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      fi.setDocValues(docValues);
     }
     return fi;
   }
 
+  synchronized public FieldInfo add(FieldInfo fi) {
+    return add(fi.name, fi.isIndexed, fi.storeTermVector,
+               fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
+               fi.omitNorms, fi.storePayloads,
+               fi.omitTermFreqAndPositions, fi.docValues);
+  }
+
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, Type docValuesType) {
     name = StringHelper.intern(name);
     FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
                                  storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+    fi.setDocValues(docValuesType);
     byNumber.add(fi);
     byName.put(name, fi);
     return fi;
@@ -376,44 +385,46 @@ public final class FieldInfos {
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
-      final FieldInfo fi = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      Type docValuesType = null;
       if (format <= FORMAT_INDEX_VALUES) {
         final byte b = input.readByte();
         switch(b) {
         case 0:
-          fi.docValues = null;
+          docValuesType = null;
           break;
         case 1:
-          fi.docValues = Type.PACKED_INTS;
+          docValuesType = Type.PACKED_INTS;
           break;
         case 2:
-          fi.docValues = Type.SIMPLE_FLOAT_4BYTE;
+          docValuesType = Type.SIMPLE_FLOAT_4BYTE;
           break;
         case 3:
-          fi.docValues = Type.SIMPLE_FLOAT_8BYTE;
+          docValuesType = Type.SIMPLE_FLOAT_8BYTE;
           break;
         case 4:
-          fi.docValues = Type.BYTES_FIXED_STRAIGHT;
+          docValuesType = Type.BYTES_FIXED_STRAIGHT;
           break;
         case 5:
-          fi.docValues = Type.BYTES_FIXED_DEREF;
+          docValuesType = Type.BYTES_FIXED_DEREF;
           break;
         case 6:
-          fi.docValues = Type.BYTES_FIXED_SORTED;
+          docValuesType = Type.BYTES_FIXED_SORTED;
           break;
         case 7:
-          fi.docValues = Type.BYTES_VAR_STRAIGHT;
+          docValuesType = Type.BYTES_VAR_STRAIGHT;
           break;
         case 8:
-          fi.docValues = Type.BYTES_VAR_DEREF;
+          docValuesType = Type.BYTES_VAR_DEREF;
           break;
         case 9:
-          fi.docValues = Type.BYTES_VAR_SORTED;
+          docValuesType = Type.BYTES_VAR_SORTED;
           break;
         default:
           throw new IllegalStateException("unhandled indexValues type " + b);
         }
       }
+      final FieldInfo fi = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValuesType);
+
       fi.codecId = codecId;
     }
 

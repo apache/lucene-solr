@@ -57,9 +57,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
             isClose = true;
           }
         }
-        if (isDoFlush && !isClose) {
+        if (isDoFlush && !isClose && random.nextBoolean()) {
           hitExc = true;
-          throw new IOException("now failing during flush");
+          throw new IOException(Thread.currentThread().getName() + ": now failing during flush");
         }
       }
     }
@@ -73,12 +73,17 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     directory.failOn(failure);
 
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     int extraCount = 0;
 
     for(int i=0;i<10;i++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + i);
+      }
+
       for(int j=0;j<20;j++) {
         idField.setValue(Integer.toString(i*20+j));
         writer.addDocument(doc);
@@ -91,16 +96,20 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         writer.addDocument(doc);
         failure.setDoFail();
         try {
-          writer.flush(true, false, true);
+          writer.flush(true, true);
           if (failure.hitExc) {
             fail("failed to hit IOException");
           }
           extraCount++;
         } catch (IOException ioe) {
+          if (VERBOSE) {
+            ioe.printStackTrace(System.out);
+          }
           failure.clearDoFail();
           break;
         }
       }
+      assertEquals(20*(i+1)+extraCount, writer.numDocs());
     }
 
     writer.close();
@@ -155,8 +164,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
+    writer.setInfoStream(VERBOSE ? System.out : null);
 
     for(int iter=0;iter<7;iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
 
       for(int j=0;j<21;j++) {
         Document doc = new Document();
@@ -171,6 +184,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       writer = new IndexWriter(directory, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(2));
+      writer.setInfoStream(VERBOSE ? System.out : null);
     }
 
     writer.close();

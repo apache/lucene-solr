@@ -76,20 +76,18 @@ public class SpellCheckCollator {
       if (verifyCandidateWithQuery) {
         tryNo++;
 
-        ResponseBuilder checkResponse = new ResponseBuilder();
-        checkResponse.setQparser(ultimateResponse.getQparser());
-        checkResponse.setFilters(ultimateResponse.getFilters());
-        checkResponse.setQueryString(collationQueryStr);
-        checkResponse.components = Arrays.asList(new SearchComponent[] { queryComponent });
-
         ModifiableSolrParams params = new ModifiableSolrParams(ultimateResponse.req.getParams());
         params.set(CommonParams.Q, collationQueryStr);
         params.remove(CommonParams.START);
         params.set(CommonParams.FL, "id");
         params.set(CommonParams.ROWS, "0");
+
         // creating a request here... make sure to close it!
-        checkResponse.req = new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params);
-        checkResponse.rsp = new SolrQueryResponse();
+        ResponseBuilder checkResponse = new ResponseBuilder(new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),new SolrQueryResponse(), Arrays.asList(new SearchComponent[] { queryComponent }));
+        checkResponse.setQparser(ultimateResponse.getQparser());
+        checkResponse.setFilters(ultimateResponse.getFilters());
+        checkResponse.setQueryString(collationQueryStr);
+        checkResponse.components = Arrays.asList(new SearchComponent[] { queryComponent });
 
         try {
           queryComponent.prepare(checkResponse);

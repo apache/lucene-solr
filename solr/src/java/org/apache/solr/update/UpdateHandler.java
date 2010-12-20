@@ -61,15 +61,18 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
 
   private void parseEventListeners() {
-    for (PluginInfo pluginInfo : core.getSolrConfig().getPluginInfos(SolrEventListener.class.getName())) {
-      String event = pluginInfo.attributes.get("event");
-      SolrEventListener listener = core.createInitInstance(pluginInfo,SolrEventListener.class,"Event Listener",null);
+    final Class<SolrEventListener> clazz = SolrEventListener.class;
+    final String label = "Event Listener";
+    for (PluginInfo info : core.getSolrConfig().getPluginInfos(SolrEventListener.class.getName())) {
+      String event = info.attributes.get("event");
       if ("postCommit".equals(event)) {
-        commitCallbacks.add(core.createInitInstance(pluginInfo,SolrEventListener.class,"Event Listener",null));
-        log.info("added SolrEventListener for postCommit: " + listener);
+        SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
+        commitCallbacks.add(obj);
+        log.info("added SolrEventListener for postCommit: " + obj);
       } else if ("postOptimize".equals(event)) {
-        optimizeCallbacks.add(listener);
-        log.info("added SolrEventListener for postOptimize: " + listener);
+        SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
+        optimizeCallbacks.add(obj);
+        log.info("added SolrEventListener for postOptimize: " + obj);
       }
     }
   }

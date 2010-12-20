@@ -32,9 +32,8 @@ public class SegmentWriteState {
   public final Directory directory;
   public final String segmentName;
   public final FieldInfos fieldInfos;
-  public final String docStoreSegmentName;
   public final int numDocs;
-  public int numDocsInStore;
+  public boolean hasVectors;
   public final Collection<String> flushedFiles;
   public final AtomicLong bytesUsed;
 
@@ -63,15 +62,12 @@ public class SegmentWriteState {
 
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-                           String docStoreSegmentName, int numDocs,
-                           int numDocsInStore, int termIndexInterval, SegmentCodecs segmentCodecs, AtomicLong bytesUsed) {
+      int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, AtomicLong bytesUsed) {
     this.infoStream = infoStream;
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
-    this.docStoreSegmentName = docStoreSegmentName;
     this.numDocs = numDocs;
-    this.numDocsInStore = numDocsInStore;
     this.termIndexInterval = termIndexInterval;
     this.segmentCodecs = segmentCodecs;
     flushedFiles = new HashSet<String>();
@@ -87,9 +83,7 @@ public class SegmentWriteState {
     directory = state.directory;
     segmentName = state.segmentName;
     fieldInfos = state.fieldInfos;
-    docStoreSegmentName = state.docStoreSegmentName;
     numDocs = state.numDocs;
-    numDocsInStore = state.numDocsInStore;
     termIndexInterval = state.termIndexInterval;
     segmentCodecs = state.segmentCodecs;
     flushedFiles = state.flushedFiles;

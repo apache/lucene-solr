@@ -28,6 +28,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -328,8 +329,12 @@ public class TestHarness {
    */
   public String query(String handler, SolrQueryRequest req) throws IOException, Exception {
     try {
-      SolrQueryResponse rsp = queryAndResponse(handler, req);
-
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      core.execute(core.getRequestHandler(handler),req,rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
       StringWriter sw = new StringWriter(32000);
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
       responseWriter.write(sw,req,rsp);
@@ -339,10 +344,12 @@ public class TestHarness {
       return sw.toString();
     } finally {
       req.close();
+      SolrRequestInfo.clearRequestInfo();
     }
   }
 
-  /** It is the users responsibility to close the request object when done with it */
+  /** It is the users responsibility to close the request object when done with it.
+   * This method does not set/clear SolrRequestInfo */
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(handler),req,rsp);

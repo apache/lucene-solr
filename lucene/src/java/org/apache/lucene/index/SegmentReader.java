@@ -248,7 +248,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
         }
 
-        if (fieldInfos.hasVectors()) { // open term vector files only as needed
+        if (si.getHasVectors()) { // open term vector files only as needed
           termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
         }
       }

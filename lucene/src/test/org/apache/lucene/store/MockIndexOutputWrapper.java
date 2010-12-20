@@ -19,6 +19,8 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.LuceneTestCase;
+
 /**
  * Used by MockRAMDirectory to create an output stream that
  * will throw an IOException on fake disk full, track max
@@ -102,6 +104,10 @@ public class MockIndexOutputWrapper extends IndexOutput {
         message += "; wrote " + freeSpace + " of " + len + " bytes";
       }
       message += ")";
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": MDW: now throw fake disk full");
+        new Throwable().printStackTrace(System.out);
+      }
       throw new IOException(message);
     } else {
       if (dir.randomState.nextBoolean()) {

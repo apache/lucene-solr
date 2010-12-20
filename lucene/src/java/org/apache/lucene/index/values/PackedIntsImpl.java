@@ -32,7 +32,8 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** Stores ints packed with fixed-bit precision.
+/**
+ * Stores ints packed with fixed-bit precision.
  * 
  * @lucene.experimental
  * */
@@ -51,17 +52,21 @@ class PackedIntsImpl {
     private long minValue;
     private long maxValue;
     private boolean started;
-    private final Directory dir;
     private final String id;
     private final OpenBitSet defaultValues = new OpenBitSet(1);
     private int lastDocId = -1;
+    private IndexOutput datOut;
 
-    protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+    protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed)
+        throws IOException {
       super(bytesUsed);
-      this.dir = dir;
       this.id = id;
       docToValue = new long[1];
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG); // TODO the bitset needs memory too
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG); // TODO the bitset
+                                                             // needs memory too
+      datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+          DATA_EXTENSION));
+      CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
     }
 
     @Override
@@ -81,50 +86,55 @@ class PackedIntsImpl {
       lastDocId = docID;
 
       if (docID >= docToValue.length) {
-        final long len = docToValue.length ;
+        final long len = docToValue.length;
         docToValue = ArrayUtil.grow(docToValue, 1 + docID);
         defaultValues.ensureCapacity(docToValue.length);
-        bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG * ((docToValue.length) - len));
+        bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG
+            * ((docToValue.length) - len));
       }
       docToValue[docID] = v;
     }
 
     @Override
     public synchronized void finish(int docCount) throws IOException {
-      if (!started)
-        return;
-      final IndexOutput datOut = dir.createOutput(IndexFileNames
-          .segmentFileName(id, "", DATA_EXTENSION));
-      CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
-
-      // TODO -- long can't work right since it's signed
-      datOut.writeLong(minValue);
-      // write a default value to recognize docs without a value for that field
-      final long defaultValue = ++maxValue - minValue;
-      datOut.writeLong(defaultValue);
-      PackedInts.Writer w = PackedInts.getWriter(datOut, docCount, PackedInts
-          .bitsRequired(maxValue - minValue));
-      final int firstDoc = defaultValues.nextSetBit(0);
-      assert firstDoc >= 0; // we have at lest one value!
-      for (int i = 0; i < firstDoc; i++) {
-        w.add(defaultValue); // fill with defaults until first bit set
-      }
-      lastDocId++;
-      for (int i = firstDoc; i < lastDocId;) {
-        w.add(docToValue[i] - minValue);
-        final int nextValue = defaultValues.nextSetBit(i);
-        for (i++; i < nextValue; i++) {
-          w.add(defaultValue); // fill all gaps
+      try {
+        if (!started) {
+          minValue = maxValue = 0;
         }
+        // TODO -- long can't work right since it's signed
+        datOut.writeLong(minValue);
+        // write a default value to recognize docs without a value for that
+        // field
+        final long defaultValue = ++maxValue - minValue;
+        datOut.writeLong(defaultValue);
+        PackedInts.Writer w = PackedInts.getWriter(datOut, docCount,
+            PackedInts.bitsRequired(maxValue - minValue));
+        final int firstDoc = defaultValues.nextSetBit(0);
+        lastDocId++;
+        if(firstDoc != -1) { 
+          for (int i = 0; i < firstDoc; i++) {
+            w.add(defaultValue); // fill with defaults until first bit set
+          }
+
+          for (int i = firstDoc; i < lastDocId;) {
+            w.add(docToValue[i] - minValue);
+            final int nextValue = defaultValues.nextSetBit(i);
+            for (i++; i < nextValue; i++) {
+              w.add(defaultValue); // fill all gaps
+            }
+          }
+        }
+        for (int i = lastDocId; i < docCount; i++) {
+          w.add(defaultValue);
+        }
+        w.finish();
+      } finally {
+        datOut.close();
+        bytesUsed
+            .addAndGet(-(RamUsageEstimator.NUM_BYTES_LONG * docToValue.length));
+        docToValue = null;
       }
-      for (int i = lastDocId; i < docCount; i++) {
-        w.add(defaultValue);
-      }
-      w.finish();
-      datOut.close();
-      bytesUsed.addAndGet(-(RamUsageEstimator.NUM_BYTES_LONG * docToValue.length ));
-      docToValue = null;
-      
+
     }
 
     @Override
@@ -139,7 +149,7 @@ class PackedIntsImpl {
 
     @Override
     public void add(int docID, PerDocFieldValues docValues) throws IOException {
-        add(docID, docValues.getInt());
+      add(docID, docValues.getInt());
     }
 
     @Override
@@ -192,7 +202,8 @@ class PackedIntsImpl {
       }
 
       @Override
-      public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      public DocValuesEnum getEnum(AttributeSource attrSource)
+          throws IOException {
         final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, values.size()) {
           @Override

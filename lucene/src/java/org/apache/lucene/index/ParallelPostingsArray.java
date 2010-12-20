@@ -1,7 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.util.ArrayUtil;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,9 +17,11 @@ import org.apache.lucene.util.ArrayUtil;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 class ParallelPostingsArray {
-  final static int BYTES_PER_POSTING = 3 * DocumentsWriter.INT_NUM_BYTE;
+  final static int BYTES_PER_POSTING = 3 * RamUsageEstimator.NUM_BYTES_INT;
 
   final int size;
   final int[] textStarts;

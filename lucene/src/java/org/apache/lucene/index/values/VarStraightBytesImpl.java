@@ -51,7 +51,7 @@ class VarStraightBytesImpl {
 
     public Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false, null, bytesUsed);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, true, null, bytesUsed);
       docToAddress = new long[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
@@ -78,8 +78,6 @@ class VarStraightBytesImpl {
     synchronized public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0)
         return; // default
-      if (datOut == null)
-        initDataOut();
       fill(docID);
       docToAddress[docID] = address;
       datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
@@ -88,22 +86,31 @@ class VarStraightBytesImpl {
 
     @Override
     synchronized public void finish(int docCount) throws IOException {
-      if (datOut == null) {
-        return;
+      try {
+        if (lastDocID == -1) {
+          idxOut.writeVLong(0);
+          final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+              PackedInts.bitsRequired(0));
+          for (int i = 0; i < docCount; i++) {
+            w.add(0);
+          }
+          w.finish();
+        } else {
+          fill(docCount);
+          idxOut.writeVLong(address);
+          final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+              PackedInts.bitsRequired(address));
+          for (int i = 0; i < docCount; i++) {
+            w.add(docToAddress[i]);
+          }
+          w.finish();
+        }
+      } finally {
+        bytesUsed.addAndGet(-(docToAddress.length)
+            * RamUsageEstimator.NUM_BYTES_INT);
+        docToAddress = null;
+        super.finish(docCount);
       }
-      initIndexOut();
-      fill(docCount);
-      idxOut.writeVLong(address);
-      final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
-          PackedInts.bitsRequired(address));
-      for (int i = 0; i < docCount; i++) {
-        w.add(docToAddress[i]);
-      }
-      w.finish();
-      bytesUsed.addAndGet(-(docToAddress.length)
-          * RamUsageEstimator.NUM_BYTES_INT);
-      docToAddress = null;
-      super.finish(docCount);
     }
 
     public long ramBytesUsed() {
@@ -128,7 +135,7 @@ class VarStraightBytesImpl {
       private final PackedInts.Reader addresses;
 
       public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
-        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong()); 
+        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong());
         addresses = PackedInts.getReader(idxIn);
         missingValue.bytesValue = new BytesRef(0); // empty
       }
@@ -167,13 +174,13 @@ class VarStraightBytesImpl {
       private final IndexInput datIn;
       private final IndexInput idxIn;
       private final long fp;
-      private final int totBytes;
+      private final long totBytes;
       private int pos = -1;
 
       protected VarStraightBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn) throws IOException {
         super(source, Type.BYTES_VAR_STRAIGHT);
-        totBytes = idxIn.readVInt();
+        totBytes = idxIn.readVLong();
         fp = datIn.getFilePointer();
         addresses = PackedInts.getReader(idxIn);
         this.datIn = datIn;

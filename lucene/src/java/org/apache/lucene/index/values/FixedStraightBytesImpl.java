@@ -46,46 +46,49 @@ class FixedStraightBytesImpl {
     private byte[] oneRecord;
 
     protected Writer(Directory dir, String id) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false, null, null);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, true, null, null);
     }
-    
+
     // TODO - impl bulk copy here!
 
     @Override
     synchronized public void add(int docID, BytesRef bytes) throws IOException {
       if (size == -1) {
         size = bytes.length;
-        initDataOut();
         datOut.writeInt(size);
         oneRecord = new byte[size];
       } else if (bytes.length != size) {
-        throw new IllegalArgumentException("expected bytes size=" + size + " but got " + bytes.length);
+        throw new IllegalArgumentException("expected bytes size=" + size
+            + " but got " + bytes.length);
       }
       fill(docID);
       assert bytes.bytes.length >= bytes.length;
       datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.lucene.index.values.Writer#merge(org.apache.lucene.index.values.Writer.MergeState)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.apache.lucene.index.values.Writer#merge(org.apache.lucene.index.values
+     * .Writer.MergeState)
      */
     @Override
     protected void merge(MergeState state) throws IOException {
-      if(state.bits == null && state.reader instanceof Reader){
+      if (state.bits == null && state.reader instanceof Reader) {
         Reader reader = (Reader) state.reader;
         final int maxDocs = reader.maxDoc;
-        if(maxDocs == 0)
+        if (maxDocs == 0)
           return;
-        if(size == -1) {
+        if (size == -1) {
           size = reader.size;
-          initDataOut();
           datOut.writeInt(size);
           oneRecord = new byte[size];
         }
-       fill(state.docBase);
-       // TODO should we add a transfer to API to each reader?
-       datOut.copyBytes(reader.cloneData(), size * maxDocs);
-       lastDocID += maxDocs-1;
+        fill(state.docBase);
+        // TODO should we add a transfer to API to each reader?
+        datOut.copyBytes(reader.cloneData(), size * maxDocs);
+        lastDocID += maxDocs - 1;
       } else
         super.merge(state);
     }
@@ -93,7 +96,7 @@ class FixedStraightBytesImpl {
     // Fills up to but not including this docID
     private void fill(int docID) throws IOException {
       assert size >= 0;
-      for(int i=lastDocID+1;i<docID;i++) {
+      for (int i = lastDocID + 1; i < docID; i++) {
         datOut.writeBytes(oneRecord, size);
       }
       lastDocID = docID;
@@ -101,24 +104,28 @@ class FixedStraightBytesImpl {
 
     @Override
     synchronized public void finish(int docCount) throws IOException {
-      if(datOut == null) // no data added
-        return;
-      fill(docCount);
-      super.finish(docCount);
+      try {
+        if (size == -1) {// no data added
+          datOut.writeInt(0);
+        } else {
+          fill(docCount);
+        }
+      } finally {
+        super.finish(docCount);
+      }
     }
 
     public long ramBytesUsed() {
       return 0;
     }
-    
+
   }
 
   public static class Reader extends BytesReaderBase {
     private final int size;
     private final int maxDoc;
 
-    Reader(Directory dir, String id, int maxDoc)
-      throws IOException {
+    Reader(Directory dir, String id, int maxDoc) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_START, false);
       size = datIn.readInt();
       this.maxDoc = maxDoc;
@@ -138,15 +145,16 @@ class FixedStraightBytesImpl {
       private final int size;
       private final int maxDoc;
 
-      public Source(IndexInput datIn, IndexInput idxIn, int size, int maxDoc) throws IOException {
-        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size*maxDoc);
+      public Source(IndexInput datIn, IndexInput idxIn, int size, int maxDoc)
+          throws IOException {
+        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc);
         this.size = size;
         this.missingValue.bytesValue = new BytesRef(size);
         this.maxDoc = maxDoc;
       }
-      
+
       @Override
-      public BytesRef getBytes(int docID, BytesRef bytesRef) { 
+      public BytesRef getBytes(int docID, BytesRef bytesRef) {
         return data.fillSlice(bytesRef, docID * size, size);
       }
 
@@ -170,7 +178,7 @@ class FixedStraightBytesImpl {
     public DocValuesEnum getEnum(AttributeSource source) throws IOException {
       return new FixedStraightBytesEnum(source, cloneData(), size, maxDoc);
     }
-    
+
     private static final class FixedStraightBytesEnum extends DocValuesEnum {
       private final IndexInput datIn;
       private final int size;
@@ -178,7 +186,8 @@ class FixedStraightBytesImpl {
       private int pos = -1;
       private final long fp;
 
-      public FixedStraightBytesEnum(AttributeSource source, IndexInput datIn, int size, int maxDoc) throws IOException{
+      public FixedStraightBytesEnum(AttributeSource source, IndexInput datIn,
+          int size, int maxDoc) throws IOException {
         super(source, Type.BYTES_FIXED_STRAIGHT);
         this.datIn = datIn;
         this.size = size;
@@ -188,45 +197,45 @@ class FixedStraightBytesImpl {
         bytesRef.offset = 0;
         fp = datIn.getFilePointer();
       }
-      
+
       protected void copyReferences(DocValuesEnum valuesEnum) {
         bytesRef = valuesEnum.bytesRef;
-        if(bytesRef.bytes.length < size) {
+        if (bytesRef.bytes.length < size) {
           bytesRef.grow(size);
         }
         bytesRef.length = size;
         bytesRef.offset = 0;
       }
-     
+
       public void close() throws IOException {
         datIn.close();
       }
-  
+
       @Override
       public int advance(int target) throws IOException {
-        if(target >= maxDoc){
+        if (target >= maxDoc || size == 0) {
           return pos = NO_MORE_DOCS;
         }
-        if((target-1) != pos) // pos inc == 1
+        if ((target - 1) != pos) // pos inc == 1
           datIn.seek(fp + target * size);
         datIn.readBytes(bytesRef.bytes, 0, size);
         return pos = target;
       }
-      
+
       @Override
       public int docID() {
         return pos;
       }
-      
+
       @Override
       public int nextDoc() throws IOException {
-        if(pos >= maxDoc){
+        if (pos >= maxDoc) {
           return pos = NO_MORE_DOCS;
         }
-        return advance(pos+1);
+        return advance(pos + 1);
       }
     }
-    
+
     @Override
     public Type type() {
       return Type.BYTES_FIXED_STRAIGHT;

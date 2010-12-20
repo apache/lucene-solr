@@ -74,12 +74,6 @@ final class DocInverter extends DocFieldConsumer {
   }
 
   @Override
-  public void closeDocStore(SegmentWriteState state) throws IOException {
-    consumer.closeDocStore(state);
-    endConsumer.closeDocStore(state);
-  }
-
-  @Override
   void abort() {
     consumer.abort();
     endConsumer.abort();

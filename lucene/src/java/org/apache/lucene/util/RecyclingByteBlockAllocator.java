@@ -96,7 +96,7 @@ public final class RecyclingByteBlockAllocator extends ByteBlockPool.Allocator {
     final int size = freeBlocks + numBlocks;
     if (size >= freeByteBlocks.length) {
       final byte[][] newBlocks = new byte[ArrayUtil.oversize(size,
-          RamUsageEstimator.NUM_BYTES_OBJ_REF)][];
+          RamUsageEstimator.NUM_BYTES_OBJECT_REF)][];
       System.arraycopy(freeByteBlocks, 0, newBlocks, 0, freeBlocks);
       freeByteBlocks = newBlocks;
     }

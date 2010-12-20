@@ -309,6 +309,14 @@ New Features
 
 * SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
 
+* SOLR-1729: Evaluation of NOW for date math is done only once per request for
+  consistency, and is also propagated to shards in distributed search.
+  Adding a parameter NOW=<time_in_ms> to the request will override the
+  current time.  (Peter Sturge, yonik)
+
+* SOLR-2188: Added "maxTokenLength" argument to the factories for ClassicTokenizer,
+  StandardTokenizer, and UAX29URLEmailTokenizer. (Steven Rowe)
+
 Optimizations
 ----------------------
 
@@ -354,7 +362,6 @@ Optimizations
 
 Bug Fixes
 ----------------------
-
 * SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
   to the original ValueSource.getValues(reader) so custom sources
   will work. (yonik)
@@ -559,6 +566,11 @@ Bug Fixes
 
 * SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
   (koji)
+
+* SOLR-2219: The init() method of every SolrRequestHandler was being
+  called twice. (ambikeshwar singh and hossman)
+
+* SOLR-2285: duplicate SolrEventListeners no longer created (hossman)
 
 Other Changes
 ----------------------

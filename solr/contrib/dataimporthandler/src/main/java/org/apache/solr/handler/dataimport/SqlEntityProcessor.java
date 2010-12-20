@@ -25,9 +25,9 @@ import java.util.regex.Pattern;
 
 /**
  * <p>
- * An EntityProcessor instance which provides support for reading from
- * databases. It is used in conjunction with JdbcDataSource. This is the default
- * EntityProcessor if none is specified explicitly in data-config.xml
+ * An {@link EntityProcessor} instance which provides support for reading from
+ * databases. It is used in conjunction with {@link JdbcDataSource}. This is the default
+ * {@link EntityProcessor} if none is specified explicitly in data-config.xml
  * </p>
  * <p/>
  * <p>

@@ -114,7 +114,7 @@ class VarDerefBytesImpl {
 
     public Writer(Directory dir, String id, Allocator allocator,
         AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, false,
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, true,
           new ByteBlockPool(allocator), bytesUsed);
       docToAddress = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
@@ -124,8 +124,6 @@ class VarDerefBytesImpl {
     synchronized public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0)
         return; // default
-      if (datOut == null)
-        initDataOut();
       final int e = hash.add(bytes);
 
       if (docID >= docToAddress.length) {
@@ -162,34 +160,33 @@ class VarDerefBytesImpl {
     // some last docs that we didn't see
     @Override
     synchronized public void finish(int docCount) throws IOException {
-      if (datOut == null)
-        return;
-      initIndexOut();
-      idxOut.writeInt(address - 1);
-
-      // write index
-      // TODO(simonw): -- allow forcing fixed array (not -1)
-      // TODO(simonw): check the address calculation / make it more intuitive
-      final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
-          PackedInts.bitsRequired(address - 1));
-      final int limit;
-      if (docCount > docToAddress.length) {
-        limit = docToAddress.length;
-      } else {
-        limit = docCount;
+      try {
+        idxOut.writeInt(address - 1);
+        // write index
+        // TODO(simonw): -- allow forcing fixed array (not -1)
+        // TODO(simonw): check the address calculation / make it more intuitive
+        final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+            PackedInts.bitsRequired(address - 1));
+        final int limit;
+        if (docCount > docToAddress.length) {
+          limit = docToAddress.length;
+        } else {
+          limit = docCount;
+        }
+        for (int i = 0; i < limit; i++) {
+          w.add(docToAddress[i]);
+        }
+        for (int i = limit; i < docCount; i++) {
+          w.add(0);
+        }
+        w.finish();
+      } finally {
+        hash.close();
+        super.finish(docCount);
+        bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
+            * (-docToAddress.length));
+        docToAddress = null;
       }
-      for (int i = 0; i < limit; i++) {
-        w.add(docToAddress[i]);
-      }
-      for (int i = limit; i < docCount; i++) {
-        w.add(0);
-      }
-      w.finish();
-      hash.close();
-      super.finish(docCount);
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
-          * (-docToAddress.length));
-      docToAddress = null;
     }
   }
 

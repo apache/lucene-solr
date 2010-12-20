@@ -51,13 +51,14 @@ import org.apache.lucene.util.PagedBytes;
  * </p>
  * @lucene.experimental
  */
-// TODO - add bulk copy where possible
 public final class Bytes {
+  //TODO - add bulk copy where possible
+  private Bytes() {  /* don't instantiate! */ }
 
-  // don't instantiate!
-  private Bytes() {
-  }
-
+  /**
+   *  
+   *
+   */
   public static enum Mode {
     STRAIGHT, DEREF, SORTED
   };
@@ -292,13 +293,13 @@ public final class Bytes {
         initIndexOut();
     }
 
-    protected void initDataOut() throws IOException {
+    private void initDataOut() throws IOException {
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           DATA_EXTENSION));
       CodecUtil.writeHeader(datOut, codecName, version);
     }
 
-    protected void initIndexOut() throws IOException {
+    private void initIndexOut() throws IOException {
       idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           INDEX_EXTENSION));
       CodecUtil.writeHeader(idxOut, codecName, version);
@@ -373,7 +374,6 @@ public final class Bytes {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION));
       version = CodecUtil.checkHeader(datIn, codecName, maxVersion, maxVersion);
-
       if (doIndex) {
         idxIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
             Writer.INDEX_EXTENSION));

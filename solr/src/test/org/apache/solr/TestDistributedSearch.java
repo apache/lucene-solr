@@ -130,6 +130,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     query("q","matchesnothing","fl","*,score");  
 
+    // test that a single NOW value is propagated to all shards... if that is true
+    // then the primary sort should always be a tie and then the secondary should always decide
+    query("q","{!func}ms(NOW)", "sort","score desc,"+i1+" desc","fl","id");    
+
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count");
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count", "facet.mincount",2);

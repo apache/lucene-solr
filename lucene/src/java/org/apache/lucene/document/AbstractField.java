@@ -20,6 +20,7 @@ import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.Type;
 import org.apache.lucene.util.StringHelper; // for javadocs
 
 
@@ -301,5 +302,13 @@ public abstract class AbstractField implements Fieldable {
   
   public void setDocValues(PerDocFieldValues docValues) {
     this.docValues = docValues;
+  }
+  
+  public boolean hasDocValues() {
+    return docValues != null;
+  }
+  
+  public Type docValuesType() {
+    return docValues == null? null : docValues.type();
   }
 }

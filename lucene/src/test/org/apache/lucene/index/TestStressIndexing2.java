@@ -74,7 +74,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
   
   public void testRandom() throws Throwable {
     Directory dir1 = newDirectory();
-    // dir1 = FSDirectory.open("foofoofoo");
     Directory dir2 = newDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     int maxThreadStates = 1+random.nextInt(10);
@@ -96,6 +95,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
     int num = 3 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) { // increase iterations for better testing
+      if (VERBOSE) {
+        System.out.println("\n\nTEST: top iter=" + i);
+      }
       sameFieldOrder=random.nextBoolean();
       mergeFactor=random.nextInt(3)+2;
       maxBufferedDocs=random.nextInt(3)+2;
@@ -108,10 +110,17 @@ public class TestStressIndexing2 extends LuceneTestCase {
       int range=random.nextInt(20)+1;
       Directory dir1 = newDirectory();
       Directory dir2 = newDirectory();
+      if (VERBOSE) {
+        System.out.println("  nThreads=" + nThreads + " iter=" + iter + " range=" + range + " doPooling=" + doReaderPooling + " maxThreadStates=" + maxThreadStates + " sameFieldOrder=" + sameFieldOrder + " mergeFactor=" + mergeFactor);
+      }
       Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates, doReaderPooling);
-      //System.out.println("TEST: index serial");
+      if (VERBOSE) {
+        System.out.println("TEST: index serial");
+      }
       indexSerial(random, docs, dir2);
-      //System.out.println("TEST: verify");
+      if (VERBOSE) {
+        System.out.println("TEST: verify");
+      }
       verifyEquals(dir1, dir2, "id");
       dir1.close();
       dir2.close();
@@ -141,10 +150,10 @@ public class TestStressIndexing2 extends LuceneTestCase {
     IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
         0.1).setMaxBufferedDocs(maxBufferedDocs));
+    w.setInfoStream(VERBOSE ? System.out : null);
     w.commit();
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     lmp.setMergeFactor(mergeFactor);
     /***
         w.setMaxMergeDocs(Integer.MAX_VALUE);
@@ -191,13 +200,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
                                           boolean doReaderPooling) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
     for(int iter=0;iter<3;iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
       IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE)
                .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
                .setReaderPooling(doReaderPooling));
+      w.setInfoStream(VERBOSE ? System.out : null);
       LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
-      lmp.setUseCompoundDocStore(false);
       lmp.setMergeFactor(mergeFactor);
 
       threads = new IndexingThread[nThreads];
@@ -273,9 +285,33 @@ public class TestStressIndexing2 extends LuceneTestCase {
     r2.close();
   }
 
+  private static void printDocs(IndexReader r) throws Throwable {
+    IndexReader[] subs = r.getSequentialSubReaders();
+    for(IndexReader sub : subs) {
+      Bits delDocs = sub.getDeletedDocs();
+      System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
+      for(int docID=0;docID<sub.maxDoc();docID++) {
+        Document doc = sub.document(docID);
+        if (delDocs == null || !delDocs.get(docID)) {
+          System.out.println("    docID=" + docID + " id:" + doc.get("id"));
+        } else {
+          System.out.println("    DEL docID=" + docID + " id:" + doc.get("id"));
+        }
+      }
+    }
+  }
+
 
   public static void verifyEquals(IndexReader r1, IndexReader r2, String idField) throws Throwable {
-    assertEquals(r1.numDocs(), r2.numDocs());
+    if (VERBOSE) {
+      System.out.println("\nr1 docs:");
+      printDocs(r1);
+      System.out.println("\nr2 docs:");
+      printDocs(r2);
+    }
+    if (r1.numDocs() != r2.numDocs()) {
+      assert false: "r1.numDocs()=" + r1.numDocs() + " vs r2.numDocs()=" + r2.numDocs();
+    }
     boolean hasDeletes = !(r1.maxDoc()==r2.maxDoc() && r1.numDocs()==r1.maxDoc());
 
     int[] r2r1 = new int[r2.maxDoc()];   // r2 id to r1 id mapping
@@ -693,19 +729,28 @@ public class TestStressIndexing2 extends LuceneTestCase {
       for (int i=0; i<fields.size(); i++) {
         d.add(fields.get(i));
       }
+      if (VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": indexing id:" + idString);
+      }
       w.updateDocument(idTerm.createTerm(idString), d);
-      // System.out.println("indexing "+d);
+      //System.out.println(Thread.currentThread().getName() + ": indexing "+d);
       docs.put(idString, d);
     }
 
     public void deleteDoc() throws IOException {
       String idString = getIdString();
+      if (VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": del id:" + idString);
+      }
       w.deleteDocuments(idTerm.createTerm(idString));
       docs.remove(idString);
     }
 
     public void deleteByQuery() throws IOException {
       String idString = getIdString();
+      if (VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": del query id:" + idString);
+      }
       w.deleteDocuments(new TermQuery(idTerm.createTerm(idString)));
       docs.remove(idString);
     }

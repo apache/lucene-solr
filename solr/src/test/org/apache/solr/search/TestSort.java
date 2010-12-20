@@ -36,7 +36,7 @@ public class TestSort extends AbstractSolrTestCase {
   public String getSchemaFile() { return null; }
   public String getSolrConfigFile() { return null; }
 
-  Random r = new Random();
+  Random r = random;
 
   int ndocs = 77;
   int iter = 50;

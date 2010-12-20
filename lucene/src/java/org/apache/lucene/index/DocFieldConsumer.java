@@ -29,10 +29,6 @@ abstract class DocFieldConsumer {
    *  segment */
   abstract void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException;
 
-  /** Called when DocumentsWriter decides to close the doc
-   *  stores */
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
-  
   /** Called when an aborting exception is hit */
   abstract void abort();
 

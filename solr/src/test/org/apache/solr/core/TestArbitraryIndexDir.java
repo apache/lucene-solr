@@ -97,7 +97,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     }
 
     //add a doc in the new index dir
-    Directory dir = FSDirectory.open(newDir);
+    Directory dir = newFSDirectory(newDir);
     IndexWriter iw = new IndexWriter(
         dir,
         new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40)).
@@ -117,6 +117,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         req("id:2"),
         "*[count(//doc)=1]"
     );
+    dir.close();
     newDir.delete();
   }
 }

@@ -111,7 +111,7 @@ public class State implements Serializable, Comparable<State> {
    */
   public void addTransition(Transition t) {
     if (numTransitions == transitionsArray.length) {
-      final Transition[] newArray = new Transition[ArrayUtil.oversize(1+numTransitions, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+      final Transition[] newArray = new Transition[ArrayUtil.oversize(1+numTransitions, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(transitionsArray, 0, newArray, 0, numTransitions);
       transitionsArray = newArray;
     }

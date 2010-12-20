@@ -51,6 +51,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
@@ -126,20 +128,22 @@ public abstract class LuceneTestCase extends Assert {
   // each test case (non-J4 tests) and each test class (J4
   // tests)
   /** Gets the codec to run tests with. */
-  static final String TEST_CODEC = System.getProperty("tests.codec", "randomPerField");
+  public static final String TEST_CODEC = System.getProperty("tests.codec", "randomPerField");
   /** Gets the locale to run tests with */
-  static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
+  public static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
   /** Gets the timezone to run tests with */
-  static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
+  public static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
   /** Gets the directory to run tests with */
-  static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
+  public static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
   /** Get the number of times to run tests */
-  static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
+  public static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
   /** Get the random seed for tests */
-  static final String TEST_SEED = System.getProperty("tests.seed", "random");
+  public static final String TEST_SEED = System.getProperty("tests.seed", "random");
   /** whether or not nightly tests should run */
-  static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
-  
+  public static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
+  /** the line file used by LineFileDocs */
+  public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
+
   private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
 
   /**
@@ -332,6 +336,11 @@ public abstract class LuceneTestCase extends Assert {
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
+    int rogueThreads = threadCleanup("test class");
+    if (rogueThreads > 0) {
+      // TODO: fail here once the leaks are fixed.
+      System.err.println("RESOURCE LEAK: test class left " + rogueThreads + " thread(s) running");
+    }
     String codecDescription;
     CodecProvider cp = CodecProvider.getDefault();
 
@@ -356,14 +365,24 @@ public abstract class LuceneTestCase extends Assert {
       for (MockDirectoryWrapper d : stores.keySet()) {
         if (d.isOpen()) {
           StackTraceElement elements[] = stores.get(d);
-          StackTraceElement element = (elements.length > 1) ? elements[1] : null;
+          // Look for the first class that is not LuceneTestCase that requested
+          // a Directory. The first two items are of Thread's, so skipping over
+          // them.
+          StackTraceElement element = null;
+          for (int i = 2; i < elements.length; i++) {
+            StackTraceElement ste = elements[i];
+            if (ste.getClassName().indexOf("LuceneTestCase") == -1) {
+              element = ste;
+              break;
+            }
+          }
           fail("directory of test was not closed, opened from: " + element);
         }
       }
     stores = null;
     // if verbose or tests failed, report some information back
     if (VERBOSE || testsFailed)
-      System.out.println("NOTE: test params are: codec=" + codecDescription + 
+      System.err.println("NOTE: test params are: codec=" + codecDescription + 
         ", locale=" + locale + 
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
     if (testsFailed) {
@@ -420,13 +439,13 @@ public abstract class LuceneTestCase extends Assert {
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
+        testsFailed = true;
         uncaughtExceptions.add(new UncaughtExceptionEntry(t, e));
         if (savedUncaughtExceptionHandler != null)
           savedUncaughtExceptionHandler.uncaughtException(t, e);
       }
     });
     
-    ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
   }
 
@@ -455,9 +474,23 @@ public abstract class LuceneTestCase extends Assert {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
+    if (!getClass().getName().startsWith("org.apache.solr")) {
+      int rogueThreads = threadCleanup("test method: '" + getName() + "'");
+      if (rogueThreads > 0) {
+        System.err.println("RESOURCE LEAK: test method: '" + getName() 
+            + "' left " + rogueThreads + " thread(s) running");
+        // TODO: fail, but print seed for now.
+        if (!testsFailed && uncaughtExceptions.isEmpty()) {
+          reportAdditionalFailureInfo();
+        }
+      }
+    }
+    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
     try {
 
       if (!uncaughtExceptions.isEmpty()) {
+        testsFailed = true;
+        reportAdditionalFailureInfo();
         System.err.println("The following exceptions were thrown by threads:");
         for (UncaughtExceptionEntry entry : uncaughtExceptions) {
           System.err.println("*** Thread: " + entry.thread.getName() + " ***");
@@ -480,19 +513,61 @@ public abstract class LuceneTestCase extends Assert {
       // isolated in distinct test methods  
       assertSaneFieldCaches(getTestLabel());
 
-      if (ConcurrentMergeScheduler.anyUnhandledExceptions()) {
-        // Clear the failure so that we don't just keep
-        // failing subsequent test cases
-        ConcurrentMergeScheduler.clearUnhandledExceptions();
-        fail("ConcurrentMergeScheduler hit unhandled exceptions");
-      }
     } finally {
       purgeFieldCache(FieldCache.DEFAULT);
     }
-    
-    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
   }
 
+  private final static int THREAD_STOP_GRACE_MSEC = 1000;
+  // jvm-wide list of 'rogue threads' we found, so they only get reported once.
+  private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
+  
+  /**
+   * Looks for leftover running threads, trying to kill them off,
+   * so they don't fail future tests.
+   * returns the number of rogue threads that it found.
+   */
+  private static int threadCleanup(String context) {
+    // educated guess
+    Thread[] stillRunning = new Thread[Thread.activeCount()+1];
+    int threadCount = 0;
+    int rogueCount = 0;
+    
+    if ((threadCount = Thread.enumerate(stillRunning)) > 1) {
+      while (threadCount == stillRunning.length) {
+        // truncated response
+        stillRunning = new Thread[stillRunning.length*2];
+        threadCount = Thread.enumerate(stillRunning);
+      }
+      
+      for (int i = 0; i < threadCount; i++) {
+        Thread t = stillRunning[i];
+          
+        if (t.isAlive() && 
+            !rogueThreads.containsKey(t) && 
+            t != Thread.currentThread() &&
+            // TODO: TimeLimitingCollector starts a thread statically.... WTF?!
+            !t.getName().equals("TimeLimitedCollector timer thread")) {
+          System.err.println("WARNING: " + context  + " left thread running: " + t);
+          rogueThreads.put(t, true);
+          rogueCount++;
+          // wait on the thread to die of natural causes
+          try {
+            t.join(THREAD_STOP_GRACE_MSEC);
+          } catch (InterruptedException e) { e.printStackTrace(); }
+          // try to stop the thread:
+          t.setUncaughtExceptionHandler(null);
+          Thread.setDefaultUncaughtExceptionHandler(null);
+          t.interrupt();
+          try {
+            t.join(THREAD_STOP_GRACE_MSEC);
+          } catch (InterruptedException e) { e.printStackTrace(); }
+        }
+      }
+    }
+    return rogueCount;
+  }
+  
   /**
    * Asserts that FieldCacheSanityChecker does not detect any
    * problems with FieldCache.DEFAULT.
@@ -672,7 +747,6 @@ public abstract class LuceneTestCase extends Assert {
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
-    logmp.setUseCompoundDocStore(r.nextBoolean());
     logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
     if (r.nextInt(3) == 2) {
@@ -686,14 +760,12 @@ public abstract class LuceneTestCase extends Assert {
   public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setUseCompoundFile(useCFS);
-    logmp.setUseCompoundDocStore(useCFS);
     return logmp;
   }
 
   public static LogMergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setUseCompoundFile(useCFS);
-    logmp.setUseCompoundDocStore(useCFS);
     logmp.setMergeFactor(mergeFactor);
     return logmp;
   }
@@ -705,7 +777,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Returns a new Dictionary instance. Use this when the test does not
+   * Returns a new Directory instance. Use this when the test does not
    * care about the specific Directory implementation (most tests).
    * <p>
    * The Directory is wrapped with {@link MockDirectoryWrapper}.
@@ -719,15 +791,14 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
-    StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
-    stores.put(dir, stack);
+    stores.put(dir, Thread.currentThread().getStackTrace());
     return dir;
   }
   
   /**
-   * Returns a new Dictionary instance, with contents copied from the
+   * Returns a new Directory instance, with contents copied from the
    * provided directory. See {@link #newDirectory()} for more
    * information.
    */
@@ -735,14 +806,51 @@ public abstract class LuceneTestCase extends Assert {
     return newDirectory(random, d);
   }
   
+  /** Returns a new FSDirectory instance over the given file, which must be a folder. */
+  public static MockDirectoryWrapper newFSDirectory(File f) throws IOException {
+    return newFSDirectory(f, null);
+  }
+  
+  /** Returns a new FSDirectory instance over the given file, which must be a folder. */
+  public static MockDirectoryWrapper newFSDirectory(File f, LockFactory lf) throws IOException {
+    String fsdirClass = TEST_DIRECTORY;
+    if (fsdirClass.equals("random")) {
+      fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
+    }
+    
+    if (fsdirClass.indexOf(".") == -1) {// if not fully qualified, assume .store
+      fsdirClass = "org.apache.lucene.store." + fsdirClass;
+    }
+    
+    Class<? extends FSDirectory> clazz;
+    try {
+      try {
+        clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
+      } catch (ClassCastException e) {
+        // TEST_DIRECTORY is not a sub-class of FSDirectory, so draw one at random
+        fsdirClass = FS_DIRECTORIES[random.nextInt(FS_DIRECTORIES.length)];
+        
+        if (fsdirClass.indexOf(".") == -1) {// if not fully qualified, assume .store
+          fsdirClass = "org.apache.lucene.store." + fsdirClass;
+        }
+        
+        clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
+      }
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f, lf));
+      stores.put(dir, Thread.currentThread().getStackTrace());
+      return dir;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+  
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
-    StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file);
     }
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
-    stores.put(dir, stack);
+    stores.put(dir, Thread.currentThread().getStackTrace());
     return dir;
   }
   
@@ -818,11 +926,15 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static String CORE_DIRECTORIES[] = {
-    "RAMDirectory",
+  private static final String FS_DIRECTORIES[] = {
     "SimpleFSDirectory",
     "NIOFSDirectory",
     "MMapDirectory"
+  };
+
+  private static final String CORE_DIRECTORIES[] = {
+    "RAMDirectory",
+    FS_DIRECTORIES[0], FS_DIRECTORIES[1], FS_DIRECTORIES[2]
   };
   
   public static String randomDirectory(Random random) {
@@ -830,6 +942,23 @@ public abstract class LuceneTestCase extends Assert {
       return CORE_DIRECTORIES[random.nextInt(CORE_DIRECTORIES.length)];
     } else {
       return "RAMDirectory";
+    }
+  }
+
+  private static Directory newFSDirectoryImpl(
+      Class<? extends FSDirectory> clazz, File file, LockFactory lockFactory)
+      throws IOException {
+    try {
+      // Assuming every FSDirectory has a ctor(File), but not all may take a
+      // LockFactory too, so setting it afterwards.
+      Constructor<? extends FSDirectory> ctor = clazz.getConstructor(File.class);
+      FSDirectory d = ctor.newInstance(file);
+      if (lockFactory != null) {
+        d.setLockFactory(lockFactory);
+      }
+      return d;
+    } catch (Exception e) {
+      return FSDirectory.open(file);
     }
   }
   
@@ -840,27 +969,22 @@ public abstract class LuceneTestCase extends Assert {
       clazzName = "org.apache.lucene.store." + clazzName;
     try {
       final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
-      try {
-        // try empty ctor
-        return clazz.newInstance();
-      } catch (Exception e) {
+      // If it is a FSDirectory type, try its ctor(File)
+      if (FSDirectory.class.isAssignableFrom(clazz)) {
         final File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
         tmpFile.delete();
         tmpFile.mkdir();
-        try {
-          Constructor<? extends Directory> ctor = clazz.getConstructor(File.class);
-          return ctor.newInstance(tmpFile);
-        } catch (Exception e2) {
-          // try .open(File)
-          Method method = clazz.getMethod("open", new Class[] { File.class });
-          return (Directory) method.invoke(null, tmpFile);
-        }
+        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile, null);
       }
+
+      // try empty ctor
+      return clazz.newInstance();
     } catch (Exception e) {
       throw new RuntimeException(e);
     } 
   }
   
+
   public String getName() {
     return this.name;
   }
@@ -869,6 +993,7 @@ public abstract class LuceneTestCase extends Assert {
    * if a real file is needed. To get a stream, code should prefer
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.
    */
+  
   protected File getDataFile(String name) throws IOException {
     try {
       return new File(this.getClass().getResource(name).toURI());
@@ -879,7 +1004,7 @@ public abstract class LuceneTestCase extends Assert {
 
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
-    System.out.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
+    System.err.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
         + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed)
         + reproduceWithExtraParams());
   }
@@ -887,7 +1012,7 @@ public abstract class LuceneTestCase extends Assert {
   // extra params that were overridden needed to reproduce the command
   private String reproduceWithExtraParams() {
     StringBuilder sb = new StringBuilder();
-    if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
+    if (!TEST_CODEC.equals("randomPerField")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
     if (!TEST_LOCALE.equals("random")) sb.append(" -Dtests.locale=").append(TEST_LOCALE);
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
@@ -901,7 +1026,7 @@ public abstract class LuceneTestCase extends Assert {
   private long seed;
   
   private static final Random seedRand = new Random();
-  protected static final Random random = new Random();
+  protected static final Random random = new Random(0);
 
   private String name = "<unknown>";
   
@@ -922,7 +1047,7 @@ public abstract class LuceneTestCase extends Assert {
       if (testMethods != null)
         return testMethods;
       testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
-      testMethods = getTestClass().getAnnotatedMethods(Test.class);
+      testMethods = new ArrayList<FrameworkMethod>();
       for (Method m : getTestClass().getJavaClass().getMethods()) {
         // check if the current test's class has methods annotated with @Ignore
         final Ignore ignored = m.getAnnotation(Ignore.class);
@@ -931,11 +1056,11 @@ public abstract class LuceneTestCase extends Assert {
         }
         // add methods starting with "test"
         final int mod = m.getModifiers();
-        if (m.getName().startsWith("test") &&
-            m.getAnnotation(Test.class) == null &&
+        if (m.getAnnotation(Test.class) != null ||
+            (m.getName().startsWith("test") &&
             !Modifier.isAbstract(mod) &&
             m.getParameterTypes().length == 0 &&
-            m.getReturnType() == Void.TYPE)
+            m.getReturnType() == Void.TYPE))
         {
           if (Modifier.isStatic(mod))
             throw new RuntimeException("Test methods must not be static.");
@@ -1014,17 +1139,20 @@ public abstract class LuceneTestCase extends Assert {
       Collections.shuffle(knownCodecs, random);
     }
 
+    @Override
     public synchronized void register(Codec codec) {
       if (!codec.name.equals("PreFlex"))
         knownCodecs.add(codec);
       super.register(codec);
     }
 
+    @Override
     public synchronized void unregister(Codec codec) {
       knownCodecs.remove(codec);
       super.unregister(codec);
     }
 
+    @Override
     public synchronized String getFieldCodec(String name) {
       Codec codec = previousMappings.get(name);
       if (codec == null) {
@@ -1034,6 +1162,7 @@ public abstract class LuceneTestCase extends Assert {
       return codec.name;
     }
     
+    @Override
     public String toString() {
       return "RandomCodecProvider: " + previousMappings.toString();
     }

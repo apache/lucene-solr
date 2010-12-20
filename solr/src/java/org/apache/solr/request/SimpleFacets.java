@@ -73,8 +73,6 @@ public class SimpleFacets {
 
   protected SimpleOrderedMap facetResponse;
 
-  public final Date NOW = new Date();
-
   // per-facet values
   SolrParams localParams; // localParams on this particular facet command
   String facetValue;      // the field to or query to facet on (minus local params)
@@ -822,7 +820,7 @@ public class SimpleFacets {
         = required.getFieldParam(f,FacetParams.FACET_DATE_START);
     final Date start;
     try {
-      start = ft.parseMath(NOW, startS);
+      start = ft.parseMath(null, startS);
     } catch (SolrException e) {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -832,7 +830,7 @@ public class SimpleFacets {
         = required.getFieldParam(f,FacetParams.FACET_DATE_END);
     Date end; // not final, hardend may change this
     try {
-      end = ft.parseMath(NOW, endS);
+      end = ft.parseMath(null, endS);
     } catch (SolrException e) {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -847,7 +845,6 @@ public class SimpleFacets {
 
     final String gap = required.getFieldParam(f,FacetParams.FACET_DATE_GAP);
     final DateMathParser dmp = new DateMathParser(ft.UTC, Locale.US);
-    dmp.setNow(NOW);
 
     final int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
 
@@ -1006,7 +1003,7 @@ public class SimpleFacets {
                   "Unable to range facet on tried field of unexpected type:" + f);
       }
     } else if (ft instanceof DateField) {
-      calc = new DateRangeEndpointCalculator(sf, NOW);
+      calc = new DateRangeEndpointCalculator(sf, null);
     } else if (ft instanceof SortableIntField) {
       calc = new IntegerRangeEndpointCalculator(sf);
     } else if (ft instanceof SortableLongField) {

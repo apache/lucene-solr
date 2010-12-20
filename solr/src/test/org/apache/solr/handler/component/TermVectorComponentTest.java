@@ -170,12 +170,6 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     TermVectorComponent tvComp = (TermVectorComponent) core.getSearchComponent("tvComponent");
     assertTrue("tvComp is null and it shouldn't be", tvComp != null);
     ModifiableSolrParams params = new ModifiableSolrParams();
-    ResponseBuilder rb = new ResponseBuilder();
-    rb.stage = ResponseBuilder.STAGE_GET_FIELDS;
-    rb.shards = new String[]{"localhost:0", "localhost:1", "localhost:2", "localhost:3"};//we don't actually call these, since we are going to invoke distributedProcess directly
-    rb.resultIds = new HashMap<Object, ShardDoc>();
-    rb.components = new ArrayList<SearchComponent>();
-    rb.components.add(tvComp);
     params.add(CommonParams.Q, "id:0");
     params.add(CommonParams.QT, "tvrh");
     params.add(TermVectorParams.TF, "true");
@@ -183,7 +177,12 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     params.add(TermVectorParams.OFFSETS, "true");
     params.add(TermVectorParams.POSITIONS, "true");
     params.add(TermVectorComponent.COMPONENT_NAME, "true");
-    rb.req = new LocalSolrQueryRequest(core, params);
+
+    ResponseBuilder rb = new ResponseBuilder(new LocalSolrQueryRequest(core, params), new SolrQueryResponse(), (List)Arrays.asList(tvComp));
+    rb.stage = ResponseBuilder.STAGE_GET_FIELDS;
+    rb.shards = new String[]{"localhost:0", "localhost:1", "localhost:2", "localhost:3"};//we don't actually call these, since we are going to invoke distributedProcess directly
+    rb.resultIds = new HashMap<Object, ShardDoc>();
+
     rb.outgoing = new ArrayList<ShardRequest>();
     //one doc per shard, but make sure there are enough docs to go around
     for (int i = 0; i < rb.shards.length; i++){

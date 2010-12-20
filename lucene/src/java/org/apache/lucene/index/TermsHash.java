@@ -70,13 +70,6 @@ final class TermsHash extends InvertedDocConsumer {
   }
 
   @Override
-  synchronized void closeDocStore(SegmentWriteState state) throws IOException {
-    consumer.closeDocStore(state);
-    if (nextTermsHash != null)
-      nextTermsHash.closeDocStore(state);
-  }
-
-  @Override
   synchronized void flush(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
     Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> childThreadsAndFields = new HashMap<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>>();
     Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> nextThreadsAndFields;
