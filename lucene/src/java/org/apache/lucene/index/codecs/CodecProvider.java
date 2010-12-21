@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.index.codecs.bulkvint.BulkVIntCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
@@ -50,7 +51,7 @@ public class CodecProvider {
 
   private final Set<String> knownExtensions = new HashSet<String>();
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "PatchedFrameOfRef", "FrameOfRef", "PatchedFrameOfRef2"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "PatchedFrameOfRef", "FrameOfRef", "PatchedFrameOfRef2", "BulkVInt"};
 
   public synchronized void register(Codec codec) {
     if (codec.name == null) {
@@ -176,5 +177,6 @@ class DefaultCodecProvider extends CodecProvider {
     register(new PatchedFrameOfRefCodec());
     register(new FrameOfRefCodec());
     register(new PForDeltaFixedIntBlockCodec(128));
+    register(new BulkVIntCodec(128));
   }
 }
