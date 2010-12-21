@@ -681,6 +681,8 @@ Other Changes
   
 * SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
 
+* SOLR-2289: Tweak spatial coords for example docs so they are a bit
+  more spread out (Erick Erickson via hossman)
 
 Build
 ----------------------
