@@ -128,7 +128,7 @@ public class JavaBinUpdateRequestCodec {
 
       private List readOuterMostDocIterator(FastInputStream fis) throws IOException {
         NamedList params = (NamedList) namedList[0].getVal(0);
-        updateRequest.setParams(namedListToSolrParams(params));
+        updateRequest.setParams(new ModifiableSolrParams(SolrParams.toSolrParams(params)));
         if (handler == null) return super.readIterator(fis);
         while (true) {
           Object o = readVal(fis);
@@ -205,17 +205,6 @@ public class JavaBinUpdateRequestCodec {
       nl.add(s, params.getParams(s));
     }
     return nl;
-  }
-
-  private ModifiableSolrParams namedListToSolrParams(NamedList nl) {
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    for (int i = 0; i < nl.size(); i++) {
-      List<String> l = (List) nl.getVal(i);
-      if (l != null)
-        solrParams.add(nl.getName(i),
-                l.toArray(new String[l.size()]));
-    }
-    return solrParams;
   }
 
   public static interface StreamingDocumentHandler {
