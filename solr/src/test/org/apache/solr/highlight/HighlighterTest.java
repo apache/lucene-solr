@@ -158,12 +158,12 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testTermOffsetsTokenStream() throws Exception {
     String[] multivalued = { "a b c d", "e f g", "h", "i j k l m n" };
-    Analyzer a1 = new WhitespaceAnalyzer();
+    Analyzer a1 = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     TermOffsetsTokenStream tots = new TermOffsetsTokenStream(
         a1.tokenStream( "", new StringReader( "a b c d e f g h i j k l m n" ) ) );
     for( String v : multivalued ){
       TokenStream ts1 = tots.getMultiValuedTokenStream( v.length() );
-      Analyzer a2 = new WhitespaceAnalyzer();
+      Analyzer a2 = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
       TokenStream ts2 = a2.tokenStream( "", new StringReader( v ) );
       while (ts1.incrementToken()) {
         assertTrue(ts2.incrementToken());
@@ -700,6 +700,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
 
     TestHarness.LocalRequestFactory lrf = h.getRequestFactory("standard", 0,
         10, args);
+
     SolrQueryRequest request = lrf.makeRequest("test");
     SolrHighlighter highlighter = request.getCore().getHighlighter();
     List<String> highlightFieldNames = Arrays.asList(highlighter
@@ -710,6 +711,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         highlightFieldNames.contains("text"));
     assertFalse("Expected to not highlight on field \"weight\"",
         highlightFieldNames.contains("weight"));
+    request.close();
 
     args.put("hl.fl", "foo_*");
     lrf = h.getRequestFactory("standard", 0, 10, args);
@@ -721,6 +723,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         .size());
     assertEquals("Expected to highlight on field \"foo_s\"", "foo_s",
         highlightFieldNames.get(0));
+    request.close();
   }
 
   @Test

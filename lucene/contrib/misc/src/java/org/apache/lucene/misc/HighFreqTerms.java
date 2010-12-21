@@ -231,30 +231,6 @@ final class TotalTermFreqComparatorSortDescending implements Comparator<TermStat
   }
 }
 
-final class TermStats {
-  BytesRef termtext;
-  String field;
-  int docFreq;
-  long totalTermFreq;
-  
-  TermStats(String field, BytesRef termtext, int df) {
-    this.termtext = new BytesRef(termtext);
-    this.field = field;
-    this.docFreq = df;
-  }
-  
-  TermStats(String field, BytesRef termtext, int df, long tf) {
-    this.termtext = new BytesRef(termtext);
-    this.field = field;
-    this.docFreq = df;
-    this.totalTermFreq = tf;
-  }
-  
-  String getTermText() {
-    return termtext.utf8ToString();
-  }
-}
-
 /**
  * Priority queue for TermStats objects ordered by docFreq
  **/

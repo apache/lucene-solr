@@ -18,10 +18,10 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ArrayUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -190,7 +190,7 @@ public class NearSpansOrdered extends Spans {
 
   /** Advance the subSpans to the same document */
   private boolean toSameDoc() throws IOException {
-    Arrays.sort(subSpansByDoc, spanDocComparator);
+    ArrayUtil.quickSort(subSpansByDoc, spanDocComparator);
     int firstIndex = 0;
     int maxDoc = subSpansByDoc[subSpansByDoc.length - 1].doc();
     while (subSpansByDoc[firstIndex].doc() != maxDoc) {

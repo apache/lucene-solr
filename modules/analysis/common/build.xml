@@ -38,7 +38,7 @@
 
   <target name="compile-core" depends="jflex-notice, common.compile-core"/>
 
-  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-wiki-tokenizer"/>
+  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-UAX29URLEmailTokenizer,jflex-wiki-tokenizer"/>
 
   <target name="jflex-wiki-tokenizer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
@@ -49,27 +49,61 @@
            nobak="on"/>
   </target>
 
-  <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
+  <target name="jflex-StandardAnalyzer" depends="init,jflex-check,gen-tlds" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
 
-    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImplOrig.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
-    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl31.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/ClassicTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
   </target>
 
+  <target name="jflex-UAX29URLEmailTokenizer" depends="jflex-check" if="jflex.present">
+    <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
+			<classpath refid="jflex.classpath"/>
+    </taskdef>
+    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizer.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+  </target>
+  
   <target name="clean-jflex">
     <delete>
       <fileset dir="src/java/org/apache/lucene/analysis/wikipedia" includes="*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
       <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
-    	<containsregexp expression="generated.*by.*JFlex"/>
+        <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
     </delete>
+  </target>
+  
+  <property name="tld.zones" value="http://www.internic.net/zones/root.zone"/>
+  <property name="tld.output" location="src/java/org/apache/lucene/analysis/standard/ASCIITLD.jflex-macro"/>
+
+  <target name="gen-tlds" depends="compile-tools">
+    <java
+      classname="org.apache.lucene.analysis.standard.GenerateJflexTLDMacros"
+      dir="."
+      fork="true"
+      failonerror="true">
+      <classpath>
+      	<pathelement location="${build.dir}/classes/tools"/>
+      </classpath>
+      <arg value="${tld.zones}"/>
+      <arg value="${tld.output}"/>
+    </java>
+  </target>
+
+  <target name="compile-tools">
+    <compile
+      srcdir="src/tools/java"
+      destdir="${build.dir}/classes/tools">
+      <classpath refid="classpath"/>
+    </compile>
   </target>
 </project>

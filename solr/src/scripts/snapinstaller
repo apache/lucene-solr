@@ -36,7 +36,7 @@ PIDFILE="${LOCKDIR}/PID"
 
 # define usage string
 USAGE="\
-usage: $prog [-M master] [-S sdir] [-d dir] [-u username] [-v]
+usage: $prog [-M master] [-S sdir] [-d dir] [-u username] [-v] [-V]
        -M master   specify hostname of master server from where to pull index
                    snapshot
        -S          specify directory holding snapshot status on master server
@@ -92,15 +92,7 @@ fi
 
 fixUser "$@"
 
-# use default value for data_dir if not specified
-# relative path starts at ${solr_root}
-if [[ -z ${data_dir} ]]
-then
-    data_dir=${solr_root}/data
-elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
-then
-    data_dir=${solr_root}/${data_dir}
-fi
+dataDir
 
 # assume relative path to start at ${solr_root}
 if [[ "`echo ${master_status_dir}|cut -c1`" != "/" ]]
@@ -131,7 +123,7 @@ logMessage command: $0 $@
 name=`perl -e 'chdir q|'${data_dir}'|; print ((sort grep {/^snapshot[.][1-9][0-9]{13}$/} <*>)[-1])'`
 
 # clean up after INT/TERM
-trap 'echo "caught INT/TERM, exiting now but partial installation may have already occured";/bin/rm -rf ${data_dir"/index.tmp$$;logExit aborted 13' INT TERM
+trap 'echo "caught INT/TERM, exiting now but partial installation may have already occured";/bin/rm -rf ${data_dir}/index.tmp$$;logExit aborted 13' INT TERM
 
 # is there a snapshot
 if [[ "${name}" == "" ]]

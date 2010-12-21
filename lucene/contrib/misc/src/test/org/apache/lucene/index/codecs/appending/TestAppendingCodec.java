@@ -18,10 +18,10 @@ package org.apache.lucene.index.codecs.appending;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
@@ -32,7 +32,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -42,6 +41,7 @@ import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -53,15 +53,14 @@ public class TestAppendingCodec extends LuceneTestCase {
     Codec appending = new AppendingCodec();
     SegmentInfosWriter infosWriter = new AppendingSegmentInfosWriter();
     SegmentInfosReader infosReader = new AppendingSegmentInfosReader();
-    
+    public AppendingCodecProvider() {
+      setDefaultFieldCodec(appending.name);
+    }
     @Override
     public Codec lookup(String name) {
       return appending;
     }
-    @Override
-    public Codec getWriter(SegmentWriteState state) {
-      return appending;
-    }
+   
     @Override
     public SegmentInfosReader getSegmentInfosReader() {
       return infosReader;
@@ -118,7 +117,11 @@ public class TestAppendingCodec extends LuceneTestCase {
   }
   
   @SuppressWarnings("serial")
-  private static class AppendingRAMDirectory extends RAMDirectory {
+  private static class AppendingRAMDirectory extends MockDirectoryWrapper {
+
+    public AppendingRAMDirectory(Random random, Directory delegate) {
+      super(random, delegate);
+    }
 
     @Override
     public IndexOutput createOutput(String name) throws IOException {
@@ -130,14 +133,14 @@ public class TestAppendingCodec extends LuceneTestCase {
   private static final String text = "the quick brown fox jumped over the lazy dog";
 
   public void testCodec() throws Exception {
-    Directory dir = new AppendingRAMDirectory();
+    Directory dir = new AppendingRAMDirectory(random, new RAMDirectory());
     IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer());
     
     cfg.setCodecProvider(new AppendingCodecProvider());
     ((LogMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
-    doc.add(new Field("f", text, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("f", text, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     writer.commit();
     writer.addDocument(doc);

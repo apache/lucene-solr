@@ -26,12 +26,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.OpenBitSet;
 
 
@@ -40,33 +38,32 @@ import org.apache.lucene.util.OpenBitSet;
  */
 public class TestFilteredSearch extends LuceneTestCase {
 
-  public TestFilteredSearch(String name) {
-    super(name);
-  }
-
   private static final String FIELD = "category";
   
   public void testFilteredSearch() throws CorruptIndexException, LockObtainFailedException, IOException {
     boolean enforceSingleSegment = true;
-    RAMDirectory directory = new RAMDirectory();
+    Directory directory = newDirectory();
     int[] filterBits = {1, 36};
     SimpleDocIdSetFilter filter = new SimpleDocIdSetFilter(filterBits);
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     searchFiltered(writer, directory, filter, enforceSingleSegment);
     // run the test on more than one segment
     enforceSingleSegment = false;
     // reset - it is stateful
     filter.reset();
-    writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
+    writer.close();
+    writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
     // we index 60 docs - this will create 6 segments
     searchFiltered(writer, directory, filter, enforceSingleSegment);
+    writer.close();
+    directory.close();
   }
 
   public void searchFiltered(IndexWriter writer, Directory directory, SimpleDocIdSetFilter filter, boolean optimize) {
     try {
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
-        doc.add(new Field(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(newField(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
         writer.addDocument(doc);
       }
       if(optimize)
@@ -81,7 +78,7 @@ public class TestFilteredSearch extends LuceneTestCase {
       filter.setTopReader(indexSearcher.getIndexReader());
       ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
       assertEquals("Number of matched documents", 1, hits.length);
-
+      indexSearcher.close();
     }
     catch (IOException e) {
       fail(e.getMessage());

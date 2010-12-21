@@ -48,14 +48,12 @@ public class TestPhraseQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private PhraseQuery query;
-  private RAMDirectory directory;
-  private Random random;
+  private Directory directory;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    directory = new RAMDirectory();
+    directory = newDirectory();
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -70,19 +68,19 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, analyzer);
     
     Document doc = new Document();
-    doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.ANALYZED));
-    Fieldable repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.ANALYZED);
+    doc.add(newField("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.ANALYZED));
+    Fieldable repeatedField = newField("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.ANALYZED);
     doc.add(repeatedField);
-    doc.add(new Field("palindrome", "one two three two one", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("palindrome", "one two three two one", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     reader = writer.getReader();
@@ -93,7 +91,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -106,7 +104,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "five"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
   }
 
   public void testBarelyCloseEnough() throws Exception {
@@ -115,7 +113,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "five"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
   }
 
   /**
@@ -127,7 +125,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "five"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("exact match", 1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
 
     query = new PhraseQuery();
@@ -135,7 +133,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "one"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("reverse not exact", 0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
   }
 
   public void testSlop1() throws Exception {
@@ -145,7 +143,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "two"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("in order", 1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
 
     // Ensures slop of 1 does not work for phrases out of order;
@@ -156,7 +154,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "one"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("reversed, slop not 2 or more", 0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
   }
 
   /**
@@ -168,7 +166,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "one"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
 
     query = new PhraseQuery();
@@ -177,7 +175,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "one"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("not sloppy enough", 0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
   }
 
@@ -192,7 +190,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "five"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("two total moves", 1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
 
     query = new PhraseQuery();
@@ -202,23 +200,23 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "one"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("slop of 5 not close enough", 0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
 
     query.setSlop(6);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("slop of 6 just right", 1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
   }
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    Directory directory = newDirectory();
     Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, Version.LUCENE_24, stopAnalyzer));
+        newIndexWriterConfig( Version.LUCENE_40, stopAnalyzer));
     Document doc = new Document();
-    doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -231,7 +229,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field","words"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
 
     // StopAnalyzer as of 2.4 does not leave "holes", so this matches.
@@ -240,7 +238,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("field", "here"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
 
     searcher.close();
@@ -249,16 +247,16 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     Document doc = new Document();
-    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("contents", "foobar", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED)); 
+    doc.add(newField("contents", "foobar", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED)); 
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
@@ -271,7 +269,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     phraseQuery.add(new Term("source", "info"));
     ScoreDoc[] hits = searcher.search(phraseQuery, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
-    QueryUtils.check(phraseQuery,searcher);
+    QueryUtils.check(random, phraseQuery,searcher);
 
     
     TermQuery termQuery = new TermQuery(new Term("contents","foobar"));
@@ -280,24 +278,24 @@ public class TestPhraseQuery extends LuceneTestCase {
     booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
     hits = searcher.search(booleanQuery, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(termQuery,searcher);
+    QueryUtils.check(random, termQuery,searcher);
 
     
     searcher.close();
     reader.close();
     
     writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     doc = new Document();
-    doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "woo map entry", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "woo map entry", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     reader = writer.getReader();
@@ -327,7 +325,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
     hits = searcher.search(booleanQuery, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
-    QueryUtils.check(booleanQuery,searcher);
+    QueryUtils.check(random, booleanQuery,searcher);
 
     
     searcher.close();
@@ -336,19 +334,19 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testSlopScoring() throws IOException {
-    Directory directory = new RAMDirectory();
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     Document doc = new Document();
-    doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     Document doc2 = new Document();
-    doc2.add(new Field("field", "foo firstname zzz lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc2.add(newField("field", "foo firstname zzz lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc2);
     
     Document doc3 = new Document();
-    doc3.add(new Field("field", "foo firstname zzz yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc3.add(newField("field", "foo firstname zzz yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc3);
     
     IndexReader reader = writer.getReader();
@@ -369,7 +367,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals(1, hits[1].doc);
     assertEquals(0.31, hits[2].score, 0.01);
     assertEquals(2, hits[2].doc);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
     searcher.close();
     reader.close();
     directory.close();
@@ -394,13 +392,13 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("slop of 100 just right", 1, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     query.setSlop(99);
 
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("slop of 99 not enough", 0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
   }
 
   // work on two docs like this: "phrase exist notexist exist found"
@@ -413,7 +411,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("phrase without repetitions exists in 2 docs", 2, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     // phrase with repetitions that exists in 2 docs
     query = new PhraseQuery();
@@ -424,7 +422,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("phrase with repetitions exists in two docs", 2, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     // phrase I with repetitions that does not exist in any doc
     query = new PhraseQuery();
@@ -435,7 +433,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("nonexisting phrase with repetitions does not exist in any doc", 0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     // phrase II with repetitions that does not exist in any doc
     query = new PhraseQuery();
@@ -447,7 +445,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("nonexisting phrase with repetitions does not exist in any doc", 0, hits.length);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
   }
 
@@ -470,7 +468,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals("phrase found with exact phrase scorer", 1, hits.length);
     float score0 = hits[0].score;
     //System.out.println("(exact) field: two three: "+score0);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     // search on non palyndrome, find phrase with slop 2, though no slop required here.
     query.setSlop(2); // to use sloppy scorer 
@@ -479,7 +477,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     float score1 = hits[0].score;
     //System.out.println("(sloppy) field: two three: "+score1);
     assertEquals("exact scorer and sloppy scorer score the same when slop does not matter",score0, score1, SCORE_COMP_THRESH);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     // search ordered in palyndrome, find it twice
     query = new PhraseQuery();
@@ -490,7 +488,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals("just sloppy enough", 1, hits.length);
     //float score2 = hits[0].score;
     //System.out.println("palindrome: two three: "+score2);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
     
     //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
     //assertTrue("ordered scores higher in palindrome",score1+SCORE_COMP_THRESH<score2);
@@ -504,7 +502,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals("just sloppy enough", 1, hits.length);
     //float score3 = hits[0].score;
     //System.out.println("palindrome: three two: "+score3);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
     //assertTrue("reversed scores higher in palindrome",score1+SCORE_COMP_THRESH<score3);
@@ -531,7 +529,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals("phrase found with exact phrase scorer", 1, hits.length);
     float score0 = hits[0].score;
     //System.out.println("(exact) field: one two three: "+score0);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     // just make sure no exc:
     searcher.explain(query, 0);
@@ -543,7 +541,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     float score1 = hits[0].score;
     //System.out.println("(sloppy) field: one two three: "+score1);
     assertEquals("exact scorer and sloppy scorer score the same when slop does not matter",score0, score1, SCORE_COMP_THRESH);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     // search ordered in palyndrome, find it twice
     query = new PhraseQuery();
@@ -559,7 +557,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals("just sloppy enough", 1, hits.length);
     //float score2 = hits[0].score;
     //System.out.println("palindrome: one two three: "+score2);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
     
     //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
     //assertTrue("ordered scores higher in palindrome",score1+SCORE_COMP_THRESH<score2);
@@ -574,7 +572,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals("just sloppy enough", 1, hits.length);
     //float score3 = hits[0].score;
     //System.out.println("palindrome: three two one: "+score3);
-    QueryUtils.check(query,searcher);
+    QueryUtils.check(random, query,searcher);
 
     //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
     //assertTrue("reversed scores higher in palindrome",score1+SCORE_COMP_THRESH<score3);
@@ -597,13 +595,13 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testRandomPhrases() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
 
     RandomIndexWriter w  = new RandomIndexWriter(random, dir, analyzer);
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
-    Field f = new Field("f", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field f = newField("f", "", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f);
 
     Random r = random;

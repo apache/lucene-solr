@@ -58,12 +58,12 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     /* NOOP */
   }
 
-  private static class Resolver implements JavaBinCodec.ObjectResolver {
-    private final SolrQueryRequest solrQueryRequest;
-    private IndexSchema schema;
-    private SolrIndexSearcher searcher;
-    private final Set<String> returnFields;
-    private final boolean includeScore;
+  public static class Resolver implements JavaBinCodec.ObjectResolver {
+    protected final SolrQueryRequest solrQueryRequest;
+    protected IndexSchema schema;
+    protected SolrIndexSearcher searcher;
+    protected final Set<String> returnFields;
+    protected final boolean includeScore;
 
     // transmit field values using FieldType.toObject()
     // rather than the String from FieldType.toExternal()
@@ -132,7 +132,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public SolrDocument getDoc(Document doc) {
       SolrDocument solrDoc = new SolrDocument();
-      for (Fieldable f : (List<Fieldable>) doc.getFields()) {
+      for (Fieldable f : doc.getFields()) {
         String fieldName = f.name();
         if (returnFields != null && !returnFields.contains(fieldName)) continue;
         SchemaField sf = schema.getFieldOrNull(fieldName);

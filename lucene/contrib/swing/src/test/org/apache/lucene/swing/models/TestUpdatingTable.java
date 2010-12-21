@@ -16,17 +16,18 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 
-public class TestUpdatingTable extends TestCase {
+public class TestUpdatingTable extends LuceneTestCase {
     private BaseTableModel baseTableModel;
     private TableSearcher tableSearcher;
 
     RestaurantInfo infoToAdd1, infoToAdd2;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
+        super.setUp();
         baseTableModel = new BaseTableModel(DataStore.getRestaurants());
         tableSearcher = new TableSearcher(baseTableModel);
 

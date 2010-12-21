@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * <p> Base class for all implementations of EntityProcessor </p> <p/> <p> Most implementations of EntityProcessor
+ * <p> Base class for all implementations of {@link EntityProcessor} </p> <p/> <p> Most implementations of {@link EntityProcessor}
  * extend this base class which provides common functionality. </p>
  * <p/>
  * <b>This API is experimental and subject to change</b>

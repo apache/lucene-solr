@@ -22,14 +22,11 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -39,26 +36,26 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestLuceneDictionary extends LuceneTestCase {
 
-  private Directory store = new RAMDirectory();
+  private Directory store;
 
   private IndexReader indexReader = null;
-
   private LuceneDictionary ld;
   private Iterator<String> it;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    store = newDirectory();
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     Document doc;
 
     doc = new  Document();
-    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new  Document();
@@ -70,13 +67,21 @@ public class TestLuceneDictionary extends LuceneTestCase {
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("zzz", "bar", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("zzz", "bar", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.optimize();
     writer.close();
   }
 
+  @Override
+  public void tearDown() throws Exception {
+    if (indexReader != null)
+      indexReader.close();
+    store.close();
+    super.tearDown();
+  }
+  
   public void testFieldNonExistent() throws IOException {
     try {
       indexReader = IndexReader.open(store, true);
@@ -187,7 +192,8 @@ public class TestLuceneDictionary extends LuceneTestCase {
   }
   
   public void testSpellchecker() throws IOException {
-    SpellChecker sc = new SpellChecker(new RAMDirectory());
+    Directory dir = newDirectory();
+    SpellChecker sc = new SpellChecker(dir);
     indexReader = IndexReader.open(store, true);
     sc.indexDictionary(new LuceneDictionary(indexReader, "contents"));
     String[] suggestions = sc.suggestSimilar("Tam", 1);
@@ -197,6 +203,8 @@ public class TestLuceneDictionary extends LuceneTestCase {
     assertEquals(1, suggestions.length);
     assertEquals("Jerry", suggestions[0]);
     indexReader.close();
+    sc.close();
+    dir.close();
   }
   
 }

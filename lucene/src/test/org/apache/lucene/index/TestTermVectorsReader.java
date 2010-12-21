@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -43,15 +43,11 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private String[] testTerms = {"this", "is", "a", "test"};
   private int[][] positions = new int[testTerms.length][];
   private TermVectorOffsetInfo[][] offsets = new TermVectorOffsetInfo[testTerms.length][];
-  private MockRAMDirectory dir = new MockRAMDirectory();
+  private Directory dir;
   private String seg;
   private FieldInfos fieldInfos = new FieldInfos();
   private static int TERM_FREQ = 3;
 
-  public TestTermVectorsReader(String s) {
-    super(s);
-  }
-  
   private class TestToken implements Comparable<TestToken> {
     String text;
     int pos;
@@ -65,7 +61,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   TestToken[] tokens = new TestToken[testTerms.length * TERM_FREQ];
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     /*
     for (int i = 0; i < testFields.length; i++) {
@@ -93,8 +89,14 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     Arrays.sort(tokens);
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MyAnalyzer()));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    dir = newDirectory();
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MyAnalyzer()).
+            setMaxBufferedDocs(-1).
+            setMergePolicy(newLogMergePolicy(false, 10))
+    );
+
     Document doc = new Document();
     for(int i=0;i<testFields.length;i++) {
       final Field.TermVector tv;
@@ -120,19 +122,25 @@ public class TestTermVectorsReader extends LuceneTestCase {
     fieldInfos = new FieldInfos(dir, IndexFileNames.segmentFileName(seg, "", IndexFileNames.FIELD_INFOS_EXTENSION));
   }
 
+  @Override
+  public void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
+  }
+
   private class MyTokenStream extends TokenStream {
     int tokenUpto;
-    
+
     CharTermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
     OffsetAttribute offsetAtt;
-    
+
     public MyTokenStream() {
       termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       offsetAtt = addAttribute(OffsetAttribute.class);
     }
-    
+
     @Override
     public boolean incrementToken() {
       if (tokenUpto >= tokens.length)
@@ -159,7 +167,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
   }
 
-  public void test() {
+  public void test() throws IOException {
     //Check to see the files were created properly in setup
     assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION)));
     assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_INDEX_EXTENSION)));
@@ -179,6 +187,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         assertTrue(term.equals(testTerms[i]));
       }
     }
+    reader.close();
   }
 
   public void testPositionReader() throws IOException {
@@ -221,6 +230,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       //System.out.println("Term: " + term);
       assertTrue(term.equals(testTerms[i]));
     }
+    reader.close();
   }
 
   public void testOffsetReader() throws IOException {
@@ -249,6 +259,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
       }
     }
+    reader.close();
   }
 
   public void testMapper() throws IOException {
@@ -363,37 +374,49 @@ public class TestTermVectorsReader extends LuceneTestCase {
     assertEquals(0, docNumAwareMapper.getDocumentNumber());
 
     ir.close();
-
+    reader.close();
   }
 
 
   /**
    * Make sure exceptions and bad params are handled appropriately
    */
-  public void testBadParams() {
+  public void testBadParams() throws IOException {
+    TermVectorsReader reader = null;
     try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      reader = new TermVectorsReader(dir, seg, fieldInfos);
       //Bad document number, good field number
       reader.get(50, testFields[0]);
       fail();
     } catch (IOException e) {
       // expected exception
+    } catch (IllegalArgumentException e) {
+      // mmapdir will give us this from java.nio.Buffer.position()
+    } finally {
+      reader.close();
     }
     try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      reader = new TermVectorsReader(dir, seg, fieldInfos);
       //Bad document number, no field
       reader.get(50);
       fail();
     } catch (IOException e) {
       // expected exception
+    } catch (IllegalArgumentException e) {
+      // mmapdir will give us this from java.nio.Buffer.position()
+    } finally {
+      reader.close();
     }
     try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      reader = new TermVectorsReader(dir, seg, fieldInfos);
       //good document number, bad field number
       TermFreqVector vector = reader.get(0, "f50");
       assertTrue(vector == null);
+      reader.close();
     } catch (IOException e) {
       fail();
+    } finally {
+      reader.close();
     }
   }
 

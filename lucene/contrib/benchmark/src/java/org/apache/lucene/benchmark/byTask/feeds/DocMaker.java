@@ -20,14 +20,21 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+import java.util.Calendar;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Locale;
 import java.util.Random;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.text.SimpleDateFormat;
+import java.text.ParsePosition;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.Format;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
@@ -82,6 +89,7 @@ public class DocMaker {
   static class DocState {
     
     private final Map<String,Field> fields;
+    private final Map<String,NumericField> numericFields;
     private final boolean reuseFields;
     final Document doc;
     DocData docData = new DocData();
@@ -92,6 +100,7 @@ public class DocMaker {
       
       if (reuseFields) {
         fields =  new HashMap<String,Field>();
+        numericFields = new HashMap<String,NumericField>();
         
         // Initialize the map with the default fields.
         fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyStore, bodyIndex, termVector));
@@ -99,9 +108,13 @@ public class DocMaker {
         fields.put(DATE_FIELD, new Field(DATE_FIELD, "", store, index, termVector));
         fields.put(ID_FIELD, new Field(ID_FIELD, "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
         fields.put(NAME_FIELD, new Field(NAME_FIELD, "", store, index, termVector));
+
+        numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD));
+        numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD));
         
         doc = new Document();
       } else {
+        numericFields = null;
         fields = null;
         doc = null;
       }
@@ -124,18 +137,42 @@ public class DocMaker {
       }
       return f;
     }
+
+    NumericField getNumericField(String name) {
+      if (!reuseFields) {
+        return new NumericField(name);
+      }
+
+      NumericField f = numericFields.get(name);
+      if (f == null) {
+        f = new NumericField(name);
+        numericFields.put(name, f);
+      }
+      return f;
+    }
   }
   
-  private int numDocsCreated = 0;
   private boolean storeBytes = false;
+
+  private static class DateUtil {
+    public SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss", Locale.US);
+    public Calendar cal = Calendar.getInstance();
+    public ParsePosition pos = new ParsePosition(0);
+    public DateUtil() {
+      parser.setLenient(true);
+    }
+  }
 
   // leftovers are thread local, because it is unsafe to share residues between threads
   private ThreadLocal<LeftOver> leftovr = new ThreadLocal<LeftOver>();
   private ThreadLocal<DocState> docState = new ThreadLocal<DocState>();
+  private ThreadLocal<DateUtil> dateParsers = new ThreadLocal<DateUtil>();
 
   public static final String BODY_FIELD = "body";
   public static final String TITLE_FIELD = "doctitle";
   public static final String DATE_FIELD = "docdate";
+  public static final String DATE_MSEC_FIELD = "docdatenum";
+  public static final String TIME_SEC_FIELD = "doctimesecnum";
   public static final String ID_FIELD = "docid";
   public static final String BYTES_FIELD = "bytes";
   public static final String NAME_FIELD = "docname";
@@ -155,6 +192,7 @@ public class DocMaker {
   private int lastPrintedNumUniqueTexts = 0;
 
   private long lastPrintedNumUniqueBytes = 0;
+  private final AtomicInteger numDocsCreated = new AtomicInteger();
 
   private int printNum = 0;
 
@@ -169,7 +207,16 @@ public class DocMaker {
     
     // Set ID_FIELD
     Field idField = ds.getField(ID_FIELD, storeVal, Index.NOT_ANALYZED_NO_NORMS, termVecVal);
-    idField.setValue("doc" + (r != null ? r.nextInt(updateDocIDLimit) : incrNumDocsCreated()));
+    int id;
+    if (r != null) {
+      id = r.nextInt(updateDocIDLimit);
+    } else {
+      id = docData.getID();
+      if (id == -1) {
+        id = numDocsCreated.getAndIncrement();
+      }
+    }
+    idField.setValue(Integer.toString(id));
     doc.add(idField);
     
     // Set NAME_FIELD
@@ -181,13 +228,39 @@ public class DocMaker {
     doc.add(nameField);
     
     // Set DATE_FIELD
-    String date = docData.getDate();
-    if (date == null) {
-      date = "";
+    DateUtil util = dateParsers.get();
+    if (util == null) {
+      util = new DateUtil();
+      dateParsers.set(util);
     }
-    Field dateField = ds.getField(DATE_FIELD, storeVal, indexVal, termVecVal);
-    dateField.setValue(date);
+    Date date = null;
+    String dateString = docData.getDate();
+    if (dateString != null) {
+      util.pos.setIndex(0);
+      date = util.parser.parse(dateString, util.pos);
+      //System.out.println(dateString + " parsed to " + date);
+    } else {
+      dateString = "";
+    }
+    Field dateStringField = ds.getField(DATE_FIELD, storeVal, indexVal, termVecVal);
+    dateStringField.setValue(dateString);
+    doc.add(dateStringField);
+
+    if (date == null) {
+      // just set to right now
+      date = new Date();
+    }
+
+    NumericField dateField = ds.getNumericField(DATE_MSEC_FIELD);
+    dateField.setLongValue(date.getTime());
     doc.add(dateField);
+
+    util.cal.setTime(date);
+    final int sec = util.cal.get(Calendar.HOUR_OF_DAY)*3600 + util.cal.get(Calendar.MINUTE)*60 + util.cal.get(Calendar.SECOND);
+
+    NumericField timeSecField = ds.getNumericField(TIME_SEC_FIELD);
+    timeSecField.setIntValue(sec);
+    doc.add(timeSecField);
     
     // Set TITLE_FIELD
     String title = docData.getTitle();
@@ -250,10 +323,6 @@ public class DocMaker {
       docState.set(ds);
     }
     return ds;
-  }
-
-  protected synchronized int incrNumDocsCreated() {
-    return numDocsCreated++;
   }
 
   /**
@@ -363,7 +432,7 @@ public class DocMaker {
     // re-initiate since properties by round may have changed.
     setConfig(config);
     source.resetInputs();
-    numDocsCreated = 0;
+    numDocsCreated.set(0);
     resetLeftovers();
   }
   

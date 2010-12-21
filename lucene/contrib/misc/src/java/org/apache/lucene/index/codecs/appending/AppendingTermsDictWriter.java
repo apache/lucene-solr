@@ -21,18 +21,18 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
-import org.apache.lucene.index.codecs.standard.StandardTermsDictWriter;
-import org.apache.lucene.index.codecs.standard.StandardTermsIndexWriter;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
+import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-public class AppendingTermsDictWriter extends StandardTermsDictWriter {
+public class AppendingTermsDictWriter extends PrefixCodedTermsWriter {
   final static String CODEC_NAME = "APPENDING_TERMS_DICT";
 
-  public AppendingTermsDictWriter(StandardTermsIndexWriter indexWriter,
-          SegmentWriteState state, StandardPostingsWriter postingsWriter,
+  public AppendingTermsDictWriter(TermsIndexWriterBase indexWriter,
+          SegmentWriteState state, PostingsWriterBase postingsWriter,
           Comparator<BytesRef> termComp) throws IOException {
     super(indexWriter, state, postingsWriter, termComp);
   }

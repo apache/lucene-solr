@@ -237,6 +237,7 @@ public class SolrDispatchFilter implements Filter
                  * QueryResponseWriter is selected and we get the correct
                  * Content-Type)
                  */
+                SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
                 this.execute( req, handler, solrReq, solrRsp );
                 HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
               // add info to http headers
@@ -250,7 +251,7 @@ public class SolrDispatchFilter implements Filter
                   log.log(Level.WARNING, "exception adding response header log information", cce);
                 }*/
                QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
-              writeResponse(solrRsp, response, responseWriter, solrReq, reqMethod);
+               writeResponse(solrRsp, response, responseWriter, solrReq, reqMethod);
             }
             return; // we are done with a valid handler
           }
@@ -278,6 +279,7 @@ public class SolrDispatchFilter implements Filter
         if (core != null) {
           core.close();
         }
+        SolrRequestInfo.clearRequestInfo();        
       }
     }
 

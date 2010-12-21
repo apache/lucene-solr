@@ -22,16 +22,22 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.English;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
-import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
+
+import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
 import java.io.Reader;
 import java.io.IOException;
+import java.util.Random;
 
 /**
  *
@@ -45,6 +51,8 @@ public class PayloadHelper {
   public static final String NO_PAYLOAD_FIELD = "noPayloadField";
   public static final String MULTI_FIELD = "multiField";
   public static final String FIELD = "field";
+
+  public IndexReader reader;
 
   public final class PayloadAnalyzer extends Analyzer {
 
@@ -103,9 +111,12 @@ public class PayloadHelper {
    * @return An IndexSearcher
    * @throws IOException
    */
-  public IndexSearcher setUp(Similarity similarity, int numDocs) throws IOException {
-    RAMDirectory directory = new RAMDirectory();
+  // TODO: randomize
+  public IndexSearcher setUp(Random random, Similarity similarity, int numDocs) throws IOException {
+    Directory directory = new MockDirectoryWrapper(random, new RAMDirectory());
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
+
+    // TODO randomize this
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
     // writer.infoStream = System.out;
@@ -116,11 +127,15 @@ public class PayloadHelper {
       doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    //writer.optimize();
+    reader = new SlowMultiReaderWrapper(IndexReader.open(writer));
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setSimilarity(similarity);
     return searcher;
+  }
+
+  public void tearDown() throws Exception {
+    reader.close();
   }
 }

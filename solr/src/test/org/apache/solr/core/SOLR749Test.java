@@ -16,23 +16,22 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.FooQParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
+import org.junit.BeforeClass;
 
 
 /**
  * Test for https://issues.apache.org/jira/browse/SOLR-749
  *
  **/
-public class SOLR749Test extends AbstractSolrTestCase{
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig-SOLR-749.xml";
+public class SOLR749Test extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-SOLR-749.xml","schema.xml");
   }
 
   public void testConstruction() throws Exception {

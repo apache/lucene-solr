@@ -41,7 +41,7 @@ public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory
   }
 
   public GreekLowerCaseFilter create(TokenStream in) {
-    return new GreekLowerCaseFilter(in);
+    return new GreekLowerCaseFilter(luceneMatchVersion, in);
   }
 }
 

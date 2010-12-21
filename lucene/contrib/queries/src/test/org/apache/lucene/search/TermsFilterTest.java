@@ -18,13 +18,15 @@ package org.apache.lucene.search;
  */
 
 import java.util.HashSet;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -50,15 +52,15 @@ public class TermsFilterTest extends LuceneTestCase {
 	
 	public void testMissingTerms() throws Exception {
 		String fieldName="field1";
-		RAMDirectory rd=new RAMDirectory();
-		RandomIndexWriter w = new RandomIndexWriter(newRandom(), rd);
+		Directory rd=newDirectory();
+		RandomIndexWriter w = new RandomIndexWriter(random, rd);
 		for (int i = 0; i < 100; i++) {
 			Document doc=new Document();
 			int term=i*10; //terms are units of 10;
-			doc.add(new Field(fieldName,""+term,Field.Store.YES,Field.Index.NOT_ANALYZED));
+			doc.add(newField(fieldName,""+term,Field.Store.YES,Field.Index.NOT_ANALYZED));
 			w.addDocument(doc);			
 		}
-		IndexReader reader = w.getReader();
+		IndexReader reader = new SlowMultiReaderWrapper(w.getReader());
 		w.close();
 		
 		TermsFilter tf=new TermsFilter();

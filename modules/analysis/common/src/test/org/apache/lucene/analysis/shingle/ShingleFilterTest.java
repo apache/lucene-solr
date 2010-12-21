@@ -73,6 +73,14 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       createToken("shingles", 33, 39),
   };
 
+  public static final int[] UNIGRAM_ONLY_POSITION_INCREMENTS = new int[] {
+    1, 1, 1, 1, 1, 1
+  };
+
+  public static final String[] UNIGRAM_ONLY_TYPES = new String[] {
+    "word", "word", "word", "word", "word", "word"
+  };
+
   public static Token[] testTokenWithHoles;
 
   public static final Token[] BI_GRAM_TOKENS = new Token[] {
@@ -788,7 +796,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   };
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     testTokenWithHoles = new Token[] {
       createToken("please", 0, 6),
@@ -1018,15 +1026,44 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       new int[]{1,0,1,0,1,0,1}
     );
   }
-  
+
+  public void testOutputUnigramsIfNoShinglesSingleTokenCase() throws IOException {
+    // Single token input with outputUnigrams==false is the primary case where
+    // enabling this option should alter program behavior.
+    this.shingleFilterTest(2, 2, TEST_SINGLE_TOKEN, SINGLE_TOKEN,
+                           SINGLE_TOKEN_INCREMENTS, SINGLE_TOKEN_TYPES,
+                           false, true);
+  }
+ 
+  public void testOutputUnigramsIfNoShinglesWithSimpleBigram() throws IOException {
+    // Here we expect the same result as with testBiGramFilter().
+    this.shingleFilterTest(2, 2, TEST_TOKEN, BI_GRAM_TOKENS,
+                           BI_GRAM_POSITION_INCREMENTS, BI_GRAM_TYPES,
+                           true, true);
+  }
+
+  public void testOutputUnigramsIfNoShinglesWithSimpleUnigramlessBigram() throws IOException {
+    // Here we expect the same result as with testBiGramFilterWithoutUnigrams().
+    this.shingleFilterTest(2, 2, TEST_TOKEN, BI_GRAM_TOKENS_WITHOUT_UNIGRAMS,
+                           BI_GRAM_POSITION_INCREMENTS_WITHOUT_UNIGRAMS, BI_GRAM_TYPES_WITHOUT_UNIGRAMS,
+                           false, true);
+  }
+
+  public void testOutputUnigramsIfNoShinglesWithMultipleInputTokens() throws IOException {
+    // Test when the minimum shingle size is greater than the number of input tokens
+    this.shingleFilterTest(7, 7, TEST_TOKEN, TEST_TOKEN, 
+                           UNIGRAM_ONLY_POSITION_INCREMENTS, UNIGRAM_ONLY_TYPES,
+                           false, true);
+  }
+
   protected void shingleFilterTest(int maxSize, Token[] tokensToShingle, Token[] tokensToCompare,
                                    int[] positionIncrements, String[] types,
                                    boolean outputUnigrams)
     throws IOException {
 
     ShingleFilter filter = new ShingleFilter(new TestTokenStream(tokensToShingle), maxSize);
-    shingleFilterTestCommon
-      (filter, tokensToCompare, positionIncrements, types, outputUnigrams);
+    filter.setOutputUnigrams(outputUnigrams);
+    shingleFilterTestCommon(filter, tokensToCompare, positionIncrements, types);
   }
 
   protected void shingleFilterTest(int minSize, int maxSize, Token[] tokensToShingle, 
@@ -1035,8 +1072,20 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     throws IOException {
     ShingleFilter filter 
       = new ShingleFilter(new TestTokenStream(tokensToShingle), minSize, maxSize);
-    shingleFilterTestCommon
-      (filter, tokensToCompare, positionIncrements, types, outputUnigrams);
+    filter.setOutputUnigrams(outputUnigrams);
+    shingleFilterTestCommon(filter, tokensToCompare, positionIncrements, types);
+  }
+
+  protected void shingleFilterTest(int minSize, int maxSize, Token[] tokensToShingle, 
+                                   Token[] tokensToCompare, int[] positionIncrements,
+                                   String[] types, boolean outputUnigrams, 
+                                   boolean outputUnigramsIfNoShingles)
+    throws IOException {
+    ShingleFilter filter 
+      = new ShingleFilter(new TestTokenStream(tokensToShingle), minSize, maxSize);
+    filter.setOutputUnigrams(outputUnigrams);
+    filter.setOutputUnigramsIfNoShingles(outputUnigramsIfNoShingles);
+    shingleFilterTestCommon(filter, tokensToCompare, positionIncrements, types);
   }
 
   protected void shingleFilterTest(String tokenSeparator, int minSize, int maxSize, Token[] tokensToShingle, 
@@ -1046,18 +1095,15 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     ShingleFilter filter 
       = new ShingleFilter(new TestTokenStream(tokensToShingle), minSize, maxSize);
     filter.setTokenSeparator(tokenSeparator);
-    shingleFilterTestCommon
-      (filter, tokensToCompare, positionIncrements, types, outputUnigrams);
+    filter.setOutputUnigrams(outputUnigrams);
+    shingleFilterTestCommon(filter, tokensToCompare, positionIncrements, types);
   }
 
   protected void shingleFilterTestCommon(ShingleFilter filter,
                                          Token[] tokensToCompare,
                                          int[] positionIncrements,
-                                         String[] types, boolean outputUnigrams)
+                                         String[] types)
     throws IOException {
-
-    filter.setOutputUnigrams(outputUnigrams);
-
     String text[] = new String[tokensToCompare.length];
     int startOffsets[] = new int[tokensToCompare.length];
     int endOffsets[] = new int[tokensToCompare.length];

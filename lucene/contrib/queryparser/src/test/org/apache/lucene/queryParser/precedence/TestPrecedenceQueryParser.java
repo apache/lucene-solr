@@ -17,73 +17,81 @@ package org.apache.lucene.queryParser.precedence;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+import java.text.DateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.DateTools;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.queryParser.TestQueryParser;
+import org.apache.lucene.queryParser.core.QueryNodeException;
+import org.apache.lucene.queryParser.core.QueryNodeParseException;
+import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.parser.ParseException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.text.DateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashSet;
-
-public class TestPrecedenceQueryParser extends LocalizedTestCase {
-  
-  public TestPrecedenceQueryParser(String name) {
-    super(name, new HashSet<String>(Arrays.asList(new String[]{
-      "testDateRange", "testNumber"
-    })));
-  }
+/**
+ * <p>
+ * This test case tests {@link PrecedenceQueryParser}.
+ * </p>
+ * <p>
+ * It contains all tests from {@link TestQueryParser} with some adjusted to 
+ * fit the precedence requirement, plus some precedence test cases. 
+ * </p>
+ * 
+ * @see TestQueryParser
+ */
+public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
   public static final class QPTestFilter extends TokenFilter {
     /**
-     * Filter which discards the token 'stop' and which expands the
-     * token 'phrase' into 'phrase1 phrase2'
+     * Filter which discards the token 'stop' and which expands the token
+     * 'phrase' into 'phrase1 phrase2'
      */
     public QPTestFilter(TokenStream in) {
       super(in);
     }
 
     boolean inPhrase = false;
+
     int savedStart = 0, savedEnd = 0;
 
     CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-    
-    @Override
+
     public boolean incrementToken() throws IOException {
-      clearAttributes();
       if (inPhrase) {
         inPhrase = false;
         termAtt.setEmpty().append("phrase2");
         offsetAtt.setOffset(savedStart, savedEnd);
         return true;
       } else
-        while(input.incrementToken())
+        while (input.incrementToken())
           if (termAtt.toString().equals("phrase")) {
             inPhrase = true;
             savedStart = offsetAtt.startOffset();
@@ -100,32 +108,14 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public static final class QPTestAnalyzer extends Analyzer {
 
     /** Filters MockTokenizer with StopFilter. */
-    @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
       return new QPTestFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
     }
   }
 
-  public static class QPTestParser extends PrecedenceQueryParser {
-    public QPTestParser(String f, Analyzer a) {
-      super(f, a);
-    }
-
-    @Override
-    protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException {
-      throw new ParseException("Fuzzy queries not allowed");
-    }
-
-    @Override
-    protected Query getWildcardQuery(String field, String termStr) throws ParseException {
-      throw new ParseException("Wildcard queries not allowed");
-    }
-  }
-
   private int originalMaxClauses;
 
-  @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -133,40 +123,31 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public PrecedenceQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
       a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
-    qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
+    PrecedenceQueryParser qp = new PrecedenceQueryParser();
+    qp.setAnalyzer(a);
+    qp.setDefaultOperator(Operator.OR);
     return qp;
   }
 
   public Query getQuery(String query, Analyzer a) throws Exception {
-    return getParser(a).parse(query);
+    return getParser(a).parse(query, "field");
   }
 
   public void assertQueryEquals(String query, Analyzer a, String result)
-    throws Exception {
+      throws Exception {
     Query q = getQuery(query, a);
     String s = q.toString("field");
     if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
+      fail("Query /" + query + "/ yielded /" + s + "/, expecting /" + result
+          + "/");
     }
   }
 
-  public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
-    throws Exception {
+  public void assertWildcardQueryEquals(String query, boolean lowercase,
+      String result) throws Exception {
     PrecedenceQueryParser qp = getParser(null);
     qp.setLowercaseExpandedTerms(lowercase);
-    Query q = qp.parse(query);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
-  }
-
-  public void assertWildcardQueryEquals(String query, String result) throws Exception {
-    PrecedenceQueryParser qp = getParser(null);
-    Query q = qp.parse(query);
+    Query q = qp.parse(query, "field");
     String s = q.toString("field");
     if (!s.equals(result)) {
       fail("WildcardQuery /" + query + "/ yielded /" + s + "/, expecting /"
@@ -174,36 +155,41 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     }
   }
 
-  public Query getQueryDOA(String query, Analyzer a)
-    throws Exception {
-    if (a == null)
-      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
-    qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
-    return qp.parse(query);
-  }
-
-  public void assertQueryEqualsDOA(String query, Analyzer a, String result)
-    throws Exception {
-    Query q = getQueryDOA(query, a);
+  public void assertWildcardQueryEquals(String query, String result)
+      throws Exception {
+    PrecedenceQueryParser qp = getParser(null);
+    Query q = qp.parse(query, "field");
     String s = q.toString("field");
     if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
+      fail("WildcardQuery /" + query + "/ yielded /" + s + "/, expecting /"
+          + result + "/");
     }
   }
 
-  // failing tests disabled since PrecedenceQueryParser
-  // is currently unmaintained
-  public void _testSimple() throws Exception {
-    assertQueryEquals("", null, "");
+  public Query getQueryDOA(String query, Analyzer a) throws Exception {
+    if (a == null)
+      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
+    PrecedenceQueryParser qp = new PrecedenceQueryParser();
+    qp.setAnalyzer(a);
+    qp.setDefaultOperator(Operator.AND);
+    return qp.parse(query, "field");
+  }
 
+  public void assertQueryEqualsDOA(String query, Analyzer a, String result)
+      throws Exception {
+    Query q = getQueryDOA(query, a);
+    String s = q.toString("field");
+    if (!s.equals(result)) {
+      fail("Query /" + query + "/ yielded /" + s + "/, expecting /" + result
+          + "/");
+    }
+  }
+
+  public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("türm term term", null, "türm term term");
     assertQueryEquals("ümlaut", null, "ümlaut");
 
-    assertQueryEquals("+a", null, "+a");
-    assertQueryEquals("-a", null, "-a");
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");
     assertQueryEquals("c OR (a AND b)", null, "c (+a +b)");
@@ -218,9 +204,9 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
     assertQueryEquals("+term -term term", null, "+term -term term");
     assertQueryEquals("foo:term AND field:anotherTerm", null,
-                      "+foo:term +anotherterm");
+        "+foo:term +anotherterm");
     assertQueryEquals("term AND \"phrase phrase\"", null,
-                      "+term +\"phrase phrase\"");
+        "+term +\"phrase phrase\"");
     assertQueryEquals("\"hello there\"", null, "\"hello there\"");
     assertTrue(getQuery("a AND b", null) instanceof BooleanQuery);
     assertTrue(getQuery("hello", null) instanceof TermQuery);
@@ -235,25 +221,25 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("\"term germ\"^2", null, "\"term germ\"^2.0");
 
     assertQueryEquals("(foo OR bar) AND (baz OR boo)", null,
-                      "+(foo bar) +(baz boo)");
-    assertQueryEquals("((a OR b) AND NOT c) OR d", null,
-                      "(+(a b) -c) d");
+        "+(foo bar) +(baz boo)");
+    assertQueryEquals("((a OR b) AND NOT c) OR d", null, "(+(a b) -c) d");
     assertQueryEquals("+(apple \"steve jobs\") -(foo bar baz)", null,
-                      "+(apple \"steve jobs\") -(foo bar baz)");
+        "+(apple \"steve jobs\") -(foo bar baz)");
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
-                      "+(title:dog title:cat) -author:\"bob dole\"");
-    
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new MockAnalyzer());
-    // make sure OR is the default:
-    assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
-    qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
-    assertEquals(PrecedenceQueryParser.AND_OPERATOR, qp.getDefaultOperator());
-    qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
-    assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
+        "+(title:dog title:cat) -author:\"bob dole\"");
 
-    assertQueryEquals("a OR !b", null, "a (-b)");
-    assertQueryEquals("a OR ! b", null, "a (-b)");
-    assertQueryEquals("a OR -b", null, "a (-b)");
+    PrecedenceQueryParser qp = new PrecedenceQueryParser();
+    qp.setAnalyzer(new MockAnalyzer());
+    // make sure OR is the default:
+    assertEquals(Operator.OR, qp.getDefaultOperator());
+    qp.setDefaultOperator(Operator.AND);
+    assertEquals(Operator.AND, qp.getDefaultOperator());
+    qp.setDefaultOperator(Operator.OR);
+    assertEquals(Operator.OR, qp.getDefaultOperator());
+
+    assertQueryEquals("a OR !b", null, "a -b");
+    assertQueryEquals("a OR ! b", null, "a -b");
+    assertQueryEquals("a OR -b", null, "a -b");
   }
 
   public void testPunct() throws Exception {
@@ -272,110 +258,24 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
   public void testNumber() throws Exception {
-// The numbers go away because SimpleAnalzyer ignores them
+    // The numbers go away because SimpleAnalzyer ignores them
     assertQueryEquals("3", null, "");
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, true);
+    Analyzer a = new MockAnalyzer();
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
   }
 
-  //individual CJK chars as terms, like StandardAnalyzer
-  private class SimpleCJKTokenizer extends Tokenizer {
-    private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-    public SimpleCJKTokenizer(Reader input) {
-      super(input);
-    }
-
-    @Override
-    public boolean incrementToken() throws IOException {
-      int ch = input.read();
-      if (ch < 0)
-        return false;
-      clearAttributes();
-      termAtt.setEmpty().append((char) ch);
-      return true;
-    }
-  }
-
-  private class SimpleCJKAnalyzer extends Analyzer {
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new SimpleCJKTokenizer(reader);
-    }
-  }
-  
-  public void testCJKTerm() throws Exception {
-    // individual CJK chars as terms
-    SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
-    
-    BooleanQuery expected = new BooleanQuery();
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
-    
-    assertEquals(expected, getQuery("中国", analyzer));
-  }
-  
-  public void testCJKBoostedTerm() throws Exception {
-    // individual CJK chars as terms
-    SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
-    
-    BooleanQuery expected = new BooleanQuery();
-    expected.setBoost(0.5f);
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
-    
-    assertEquals(expected, getQuery("中国^0.5", analyzer));
-  }
-  
-  public void testCJKPhrase() throws Exception {
-    // individual CJK chars as terms
-    SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
-    
-    PhraseQuery expected = new PhraseQuery();
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
-    
-    assertEquals(expected, getQuery("\"中国\"", analyzer));
-  }
-  
-  public void testCJKBoostedPhrase() throws Exception {
-    // individual CJK chars as terms
-    SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
-    
-    PhraseQuery expected = new PhraseQuery();
-    expected.setBoost(0.5f);
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
-    
-    assertEquals(expected, getQuery("\"中国\"^0.5", analyzer));
-  }
-  
-  public void testCJKSloppyPhrase() throws Exception {
-    // individual CJK chars as terms
-    SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer(); 
-    
-    PhraseQuery expected = new PhraseQuery();
-    expected.setSlop(3);
-    expected.add(new Term("field", "中"));
-    expected.add(new Term("field", "国"));
-    
-    assertEquals(expected, getQuery("\"中国\"~3", analyzer));
-  }
-
-  // failing tests disabled since PrecedenceQueryParser
-  // is currently unmaintained
-  public void _testWildcard() throws Exception {
+  public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");
-    assertQueryEquals("term~", null, "term~0.5");
+    assertQueryEquals("term~", null, "term~2.0");
     assertQueryEquals("term~0.7", null, "term~0.7");
-    assertQueryEquals("term~^2", null, "term^2.0~0.5");
-    assertQueryEquals("term^2~", null, "term^2.0~0.5");
+    assertQueryEquals("term~^3", null, "term~2.0^3.0");
+    assertQueryEquals("term^3~", null, "term~2.0^3.0");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
@@ -383,24 +283,25 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertTrue(getQuery("term*^2", null) instanceof PrefixQuery);
     assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
     assertTrue(getQuery("term~0.7", null) instanceof FuzzyQuery);
-    FuzzyQuery fq = (FuzzyQuery)getQuery("term~0.7", null);
+    FuzzyQuery fq = (FuzzyQuery) getQuery("term~0.7", null);
     assertEquals(0.7f, fq.getMinSimilarity(), 0.1f);
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
-    fq = (FuzzyQuery)getQuery("term~", null);
-    assertEquals(0.5f, fq.getMinSimilarity(), 0.1f);
+    fq = (FuzzyQuery) getQuery("term~", null);
+    assertEquals(2.0f, fq.getMinSimilarity(), 0.1f);
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     try {
-      getQuery("term~1.1", null);   // value > 1, throws exception
+      getQuery("term~1.1", null); // value > 1, throws exception
       fail();
-    } catch(ParseException pe) {
+    } catch (ParseException pe) {
       // expected exception
     }
     assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
 
-/* Tests to see that wild card terms are (or are not) properly
-	 * lower-cased with propery parser configuration
-	 */
-// First prefix queries:
+    /*
+     * Tests to see that wild card terms are (or are not) properly lower-cased
+     * with propery parser configuration
+     */
+    // First prefix queries:
     // by default, convert to lowercase:
     assertWildcardQueryEquals("Term*", true, "term*");
     // explicitly set lowercase:
@@ -411,7 +312,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertWildcardQueryEquals("term*", false, "term*");
     assertWildcardQueryEquals("Term*", false, "Term*");
     assertWildcardQueryEquals("TERM*", false, "TERM*");
-// Then 'full' wildcard queries:
+    // Then 'full' wildcard queries:
     // by default, convert to lowercase:
     assertWildcardQueryEquals("Te?m", "te?m");
     // explicitly set lowercase:
@@ -424,11 +325,11 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertWildcardQueryEquals("Te?m", false, "Te?m");
     assertWildcardQueryEquals("TE?M", false, "TE?M");
     assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
-//  Fuzzy queries:
-    assertWildcardQueryEquals("Term~", "term~0.5");
-    assertWildcardQueryEquals("Term~", true, "term~0.5");
-    assertWildcardQueryEquals("Term~", false, "Term~0.5");
-//  Range queries:
+    // Fuzzy queries:
+    assertWildcardQueryEquals("Term~", "term~2.0");
+    assertWildcardQueryEquals("Term~", true, "term~2.0");
+    assertWildcardQueryEquals("Term~", false, "Term~2.0");
+    // Range queries:
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", false, "[A TO C]");
@@ -440,11 +341,11 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("term -stop term", qpAnalyzer, "term term");
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
-                      "term (phrase1 phrase2) term");
+        "term (phrase1 phrase2) term");
     // note the parens in this next assertion differ from the original
     // QueryParser behavior
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
-                      "(+term -(phrase1 phrase2)) term");
+        "(+term -(phrase1 phrase2)) term");
     assertQueryEquals("stop", qpAnalyzer, "");
     assertQueryEquals("stop OR stop AND stop", qpAnalyzer, "");
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
@@ -461,9 +362,10 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("[ a TO z] OR bar", null, "[a TO z] bar");
     assertQueryEquals("[ a TO z] AND bar", null, "+[a TO z] +bar");
     assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
-    assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
+    assertQueryEquals("gack ( bar blar { a TO z}) ", null,
+        "gack (bar blar {a TO z})");
   }
-  
+
   private String escapeDateString(String s) {
     if (s.contains(" ")) {
       return "\"" + s + "\"";
@@ -477,53 +379,92 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     return DateTools.dateToString(df.parse(s), DateTools.Resolution.DAY);
   }
 
-  public String getLocalizedDate(int year, int month, int day) {
+  private String getLocalizedDate(int year, int month, int day,
+      boolean extendLastDate) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     Calendar calendar = new GregorianCalendar();
-    calendar.clear();
     calendar.set(year, month, day);
-    calendar.set(Calendar.HOUR_OF_DAY, 23);
-    calendar.set(Calendar.MINUTE, 59);
-    calendar.set(Calendar.SECOND, 59);
-    calendar.set(Calendar.MILLISECOND, 999);
+    if (extendLastDate) {
+      calendar.set(Calendar.HOUR_OF_DAY, 23);
+      calendar.set(Calendar.MINUTE, 59);
+      calendar.set(Calendar.SECOND, 59);
+      calendar.set(Calendar.MILLISECOND, 999);
+    }
     return df.format(calendar.getTime());
   }
 
   public void testDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1);
-    String endDate = getLocalizedDate(2002, 1, 4);
-    assertQueryEquals("[ " + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]", null,
-                      "[" + getDate(startDate) + " TO " + getDate(endDate) + "]");
-    assertQueryEquals("{  " + escapeDateString(startDate) + "    " + escapeDateString(endDate) + "   }", null,
-                      "{" + getDate(startDate) + " TO " + getDate(endDate) + "}");
+    String startDate = getLocalizedDate(2002, 1, 1, false);
+    String endDate = getLocalizedDate(2002, 1, 4, false);
+    Calendar endDateExpected = new GregorianCalendar();
+    endDateExpected.set(2002, 1, 4, 23, 59, 59);
+    endDateExpected.set(Calendar.MILLISECOND, 999);
+    final String defaultField = "default";
+    final String monthField = "month";
+    final String hourField = "hour";
+    PrecedenceQueryParser qp = new PrecedenceQueryParser(new MockAnalyzer());
+
+    Map<CharSequence, DateTools.Resolution> fieldMap = new HashMap<CharSequence,DateTools.Resolution>();
+    // set a field specific date resolution
+    fieldMap.put(monthField, DateTools.Resolution.MONTH);
+    qp.setDateResolution(fieldMap);
+
+    // set default date resolution to MILLISECOND
+    qp.setDateResolution(DateTools.Resolution.MILLISECOND);
+
+    // set second field specific date resolution
+    fieldMap.put(hourField, DateTools.Resolution.HOUR);
+    qp.setDateResolution(fieldMap);
+
+    // for this field no field specific date resolution has been set,
+    // so verify if the default resolution is used
+    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,
+        endDateExpected.getTime(), DateTools.Resolution.MILLISECOND);
+
+    // verify if field specific date resolutions are used for these two fields
+    assertDateRangeQueryEquals(qp, monthField, startDate, endDate,
+        endDateExpected.getTime(), DateTools.Resolution.MONTH);
+
+    assertDateRangeQueryEquals(qp, hourField, startDate, endDate,
+        endDateExpected.getTime(), DateTools.Resolution.HOUR);
+  }
+
+  /** for testing DateTools support */
+  private String getDate(String s, DateTools.Resolution resolution) throws Exception {
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    return getDate(df.parse(s), resolution);
+  }
+
+  /** for testing DateTools support */
+  private String getDate(Date d, DateTools.Resolution resolution) throws Exception {
+    return DateTools.dateToString(d, resolution);
+  }
+
+  public void assertQueryEquals(PrecedenceQueryParser qp, String field, String query,
+      String result) throws Exception {
+    Query q = qp.parse(query, field);
+    String s = q.toString(field);
+    if (!s.equals(result)) {
+      fail("Query /" + query + "/ yielded /" + s + "/, expecting /" + result
+          + "/");
+    }
+  }
+
+  public void assertDateRangeQueryEquals(PrecedenceQueryParser qp, String field,
+      String startDate, String endDate, Date endDateInclusive,
+      DateTools.Resolution resolution) throws Exception {
+    assertQueryEquals(qp, field, field + ":[" + escapeDateString(startDate)
+        + " TO " + escapeDateString(endDate) + "]", "["
+        + getDate(startDate, resolution) + " TO "
+        + getDate(endDateInclusive, resolution) + "]");
+    assertQueryEquals(qp, field, field + ":{" + escapeDateString(startDate)
+        + " TO " + escapeDateString(endDate) + "}", "{"
+        + getDate(startDate, resolution) + " TO "
+        + getDate(endDate, resolution) + "}");
   }
 
   public void testEscaped() throws Exception {
     Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
-    
-    /*assertQueryEquals("\\[brackets", a, "\\[brackets");
-    assertQueryEquals("\\[brackets", null, "brackets");
-    assertQueryEquals("\\\\", a, "\\\\");
-    assertQueryEquals("\\+blah", a, "\\+blah");
-    assertQueryEquals("\\(blah", a, "\\(blah");
-
-    assertQueryEquals("\\-blah", a, "\\-blah");
-    assertQueryEquals("\\!blah", a, "\\!blah");
-    assertQueryEquals("\\{blah", a, "\\{blah");
-    assertQueryEquals("\\}blah", a, "\\}blah");
-    assertQueryEquals("\\:blah", a, "\\:blah");
-    assertQueryEquals("\\^blah", a, "\\^blah");
-    assertQueryEquals("\\[blah", a, "\\[blah");
-    assertQueryEquals("\\]blah", a, "\\]blah");
-    assertQueryEquals("\\\"blah", a, "\\\"blah");
-    assertQueryEquals("\\(blah", a, "\\(blah");
-    assertQueryEquals("\\)blah", a, "\\)blah");
-    assertQueryEquals("\\~blah", a, "\\~blah");
-    assertQueryEquals("\\*blah", a, "\\*blah");
-    assertQueryEquals("\\?blah", a, "\\?blah");
-    //assertQueryEquals("foo \\&\\& bar", a, "foo \\&\\& bar");
-    //assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
-    //assertQueryEquals("foo \\AND bar", a, "foo \\AND bar");*/
 
     assertQueryEquals("a\\-b:c", a, "a-b:c");
     assertQueryEquals("a\\+b:c", a, "a+b:c");
@@ -547,54 +488,39 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
     assertQueryEquals("a:b\\\\?c", a, "a:b\\?c");
 
-    assertQueryEquals("a:b\\-c~", a, "a:b-c~0.5");
-    assertQueryEquals("a:b\\+c~", a, "a:b+c~0.5");
-    assertQueryEquals("a:b\\:c~", a, "a:b:c~0.5");
-    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~0.5");
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~2.0");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~2.0");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~2.0");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~2.0");
 
     assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
     assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
     assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
   }
 
-  public void testTabNewlineCarriageReturn()
-    throws Exception {
-    assertQueryEqualsDOA("+weltbank +worlbank", null,
-      "+weltbank +worlbank");
+  public void testTabNewlineCarriageReturn() throws Exception {
+    assertQueryEqualsDOA("+weltbank +worlbank", null, "+weltbank +worlbank");
 
-    assertQueryEqualsDOA("+weltbank\n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \n +worlbank", null,
-      "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\n+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n +worlbank", null, "+weltbank +worlbank");
 
-    assertQueryEqualsDOA("+weltbank\r+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r +worlbank", null,
-      "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\r+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r +worlbank", null, "+weltbank +worlbank");
 
-    assertQueryEqualsDOA("+weltbank\r\n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r\n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r\n +worlbank", null,
-      "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\r\n+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n +worlbank", null, "+weltbank +worlbank");
     assertQueryEqualsDOA("weltbank \r \n +worlbank", null,
-      "+weltbank +worlbank");
+        "+weltbank +worlbank");
 
-    assertQueryEqualsDOA("+weltbank\t+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \t+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \t +worlbank", null,
-      "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\t+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t+worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t +worlbank", null, "+weltbank +worlbank");
   }
 
-  public void testSimpleDAO()
-    throws Exception {
+  public void testSimpleDAO() throws Exception {
     assertQueryEqualsDOA("term term term", null, "+term +term +term");
     assertQueryEqualsDOA("term +term term", null, "+term +term +term");
     assertQueryEqualsDOA("term term +term", null, "+term +term +term");
@@ -602,23 +528,25 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEqualsDOA("-term term term", null, "-term +term +term");
   }
 
-  public void testBoost()
-    throws Exception {
+  public void testBoost() throws Exception {
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
     Analyzer oneStopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, stopSet, true);
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", oneStopAnalyzer);
-    Query q = qp.parse("on^1.0");
+
+    PrecedenceQueryParser qp = new PrecedenceQueryParser();
+    qp.setAnalyzer(oneStopAnalyzer);
+    Query q = qp.parse("on^1.0", "field");
     assertNotNull(q);
-    q = qp.parse("\"hello\"^2.0");
+    q = qp.parse("\"hello\"^2.0", "field");
     assertNotNull(q);
     assertEquals(q.getBoost(), (float) 2.0, (float) 0.5);
-    q = qp.parse("hello^2.0");
+    q = qp.parse("hello^2.0", "field");
     assertNotNull(q);
     assertEquals(q.getBoost(), (float) 2.0, (float) 0.5);
-    q = qp.parse("\"on\"^1.0");
+    q = qp.parse("\"on\"^1.0", "field");
     assertNotNull(q);
 
-    q = getParser(new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)).parse("the^3");
+    q = getParser(new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)).parse("the^3",
+        "field");
     assertNotNull(q);
   }
 
@@ -626,76 +554,75 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     try {
       assertQueryEquals("\"some phrase", null, "abc");
       fail("ParseException expected, not thrown");
-    } catch (ParseException expected) {
+    } catch (QueryNodeParseException expected) {
     }
-  }
-
-  public void testCustomQueryParserWildcard() {
-    try {
-      new QPTestParser("contents", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("a?t");
-    } catch (ParseException expected) {
-      return;
-    }
-    fail("Wildcard queries should not be allowed");
-  }
-
-  public void testCustomQueryParserFuzzy() throws Exception {
-    try {
-      new QPTestParser("contents", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("xunit~");
-    } catch (ParseException expected) {
-      return;
-    }
-    fail("Fuzzy queries should not be allowed");
   }
 
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      getParser(new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("one two three");
+      getParser(new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("one two three", "field");
       fail("ParseException expected due to too many boolean clauses");
-    } catch (ParseException expected) {
+    } catch (QueryNodeException expected) {
       // too many boolean clauses, so ParseException is expected
     }
   }
 
   /**
-   * This test differs from the original QueryParser, showing how the
-   * precedence issue has been corrected.
+   * This test differs from the original QueryParser, showing how the precedence
+   * issue has been corrected.
    */
-  // failing tests disabled since PrecedenceQueryParser
-  // is currently unmaintained
-  public void _testPrecedence() throws Exception {
+  public void testPrecedence() throws Exception {
     PrecedenceQueryParser parser = getParser(new MockAnalyzer(MockTokenizer.WHITESPACE, false));
-    Query query1 = parser.parse("A AND B OR C AND D");
-    Query query2 = parser.parse("(A AND B) OR (C AND D)");
+    Query query1 = parser.parse("A AND B OR C AND D", "field");
+    Query query2 = parser.parse("(A AND B) OR (C AND D)", "field");
     assertEquals(query1, query2);
 
-    query1 = parser.parse("A OR B C");
-    query2 = parser.parse("A B C");
+    query1 = parser.parse("A OR B C", "field");
+    query2 = parser.parse("(A B) C", "field");
     assertEquals(query1, query2);
 
-    query1 = parser.parse("A AND B C");
-    query2 = parser.parse("(+A +B) C");
+    query1 = parser.parse("A AND B C", "field");
+    query2 = parser.parse("(+A +B) C", "field");
     assertEquals(query1, query2);
 
-    query1 = parser.parse("A AND NOT B");
-    query2 = parser.parse("+A -B");
+    query1 = parser.parse("A AND NOT B", "field");
+    query2 = parser.parse("+A -B", "field");
     assertEquals(query1, query2);
 
-    query1 = parser.parse("A OR NOT B");
-    query2 = parser.parse("A -B");
+    query1 = parser.parse("A OR NOT B", "field");
+    query2 = parser.parse("A -B", "field");
     assertEquals(query1, query2);
 
-    query1 = parser.parse("A OR NOT B AND C");
-    query2 = parser.parse("A (-B +C)");
+    query1 = parser.parse("A OR NOT B AND C", "field");
+    query2 = parser.parse("A (-B +C)", "field");
     assertEquals(query1, query2);
+    
+    parser.setDefaultOperator(Operator.AND);
+    query1 = parser.parse("A AND B OR C AND D", "field");
+    query2 = parser.parse("(A AND B) OR (C AND D)", "field");
+    assertEquals(query1, query2);
+
+    query1 = parser.parse("A AND B C", "field");
+    query2 = parser.parse("(A B) C", "field");
+    assertEquals(query1, query2);
+
+    query1 = parser.parse("A AND B C", "field");
+    query2 = parser.parse("(+A +B) C", "field");
+    assertEquals(query1, query2);
+
+    query1 = parser.parse("A AND NOT B", "field");
+    query2 = parser.parse("+A -B", "field");
+    assertEquals(query1, query2);
+
+    query1 = parser.parse("A AND NOT B OR C", "field");
+    query2 = parser.parse("(+A -B) OR C", "field");
+    assertEquals(query1, query2);
+    
   }
 
-
-  @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
-    super.tearDown();
   }
 
 }

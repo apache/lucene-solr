@@ -67,8 +67,7 @@ class CommitListener implements SolrEventListener {
           // since there could be two commits in a row, don't test for a specific new searcher
           // just test that the old one has been replaced.
           if (s != currentSearcher) return true;
-          Thread.sleep(250);
-          break;
+          // it may be that a commit just happened, but the new searcher hasn't been registered yet.
         }
         Thread.sleep( 250 );
       } catch (InterruptedException e) {}
@@ -207,7 +206,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(30000));
+    assertTrue(trigger.waitForCommit(45000));
     trigger.reset();
     
     req.setContentStreams( toContentStreams(

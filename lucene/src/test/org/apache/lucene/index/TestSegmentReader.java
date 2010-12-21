@@ -28,24 +28,28 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class TestSegmentReader extends LuceneTestCase {
-  private RAMDirectory dir = new RAMDirectory();
+  private Directory dir;
   private Document testDoc = new Document();
   private SegmentReader reader = null;
-
-  public TestSegmentReader(String s) {
-    super(s);
-  }
   
   //TODO: Setup the reader w/ multiple documents
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
+    dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentInfo info = DocHelper.writeDoc(dir, testDoc);
     reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    reader.close();
+    dir.close();
+    super.tearDown();
   }
 
   public void test() {
@@ -78,9 +82,10 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);
     deleteReader.deleteDocument(0);
-    assertTrue(deleteReader.isDeleted(0) == true);
+    assertTrue(deleteReader.getDeletedDocs().get(0));
     assertTrue(deleteReader.hasDeletions() == true);
     assertTrue(deleteReader.numDocs() == 0);
+    deleteReader.close();
   }    
   
   public void testGetFieldNameVariations() {

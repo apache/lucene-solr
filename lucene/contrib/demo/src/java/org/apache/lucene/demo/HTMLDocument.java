@@ -64,11 +64,17 @@ public class HTMLDocument {
     doc.add(new Field("uid", uid(f), Field.Store.NO, Field.Index.NOT_ANALYZED));
 
     FileInputStream fis = new FileInputStream(f);
-    HTMLParser parser = new HTMLParser(fis);
+    InputStreamReader reader = new InputStreamReader(fis, "UTF-8");
+    HTMLParser parser = new HTMLParser(reader);
       
     // Add the tag-stripped contents as a Reader-valued Text field so it will
     // get tokenized and indexed.
     doc.add(new Field("contents", parser.getReader()));
+    
+    // add any document keywords if they exist
+    String keywords = parser.getMetaTags().getProperty("keywords");
+    if (keywords != null)
+      doc.add(new Field("contents", keywords, Field.Store.NO, Field.Index.ANALYZED));
 
     // Add the summary as a field that is stored and returned with
     // hit documents for display.

@@ -36,6 +36,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -143,11 +144,19 @@ public class DirectSolrConnection
       path= pathAndParams;
       params = new MapSolrParams( new HashMap<String, String>() );
     }
-    
+
+    return request(path, params, body);
+  }
+
+
+  public String request(String path, SolrParams params, String body) throws Exception
+  {
     // Extract the handler from the path or params
     SolrRequestHandler handler = core.getRequestHandler( path );
     if( handler == null ) {
       if( "/select".equals( path ) || "/select/".equalsIgnoreCase( path) ) {
+        if (params == null)
+          params = new MapSolrParams( new HashMap<String, String>() );        
         String qt = params.get( CommonParams.QT );
         handler = core.getRequestHandler( qt );
         if( handler == null ) {
@@ -158,22 +167,31 @@ public class DirectSolrConnection
     if( handler == null ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+path );
     }
-    
+
+    return request(handler, params, body);
+  }
+
+  public String request(SolrRequestHandler handler, SolrParams params, String body) throws Exception
+  {
+    if (params == null)
+      params = new MapSolrParams( new HashMap<String, String>() );
+
     // Make a stream for the 'body' content
     List<ContentStream> streams = new ArrayList<ContentStream>( 1 );
     if( body != null && body.length() > 0 ) {
       streams.add( new ContentStreamBase.StringStream( body ) );
     }
-    
+
     SolrQueryRequest req = null;
     try {
       req = parser.buildRequestFrom( core, params, streams );
       SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));      
       core.execute( handler, req, rsp );
       if( rsp.getException() != null ) {
         throw rsp.getException();
       }
-      
+
       // Now write it out
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
       StringWriter out = new StringWriter();
@@ -183,9 +201,12 @@ public class DirectSolrConnection
       if (req != null) {
         req.close();
       }
+      SolrRequestInfo.clearRequestInfo();            
     }
   }
-  
+
+
+
   /**
    * Use this method to close the underlying SolrCore.
    * 

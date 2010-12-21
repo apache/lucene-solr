@@ -95,19 +95,6 @@ public abstract class Directory implements Closeable {
        throws IOException;
 
   /**
-   * Ensure that any writes to this file are moved to
-   * stable storage.  Lucene uses this to properly commit
-   * changes to the index, to prevent a machine/OS crash
-   * from corrupting the index.
-   * @deprecated use {@link #sync(Collection)} instead.
-   * For easy migration you can change your code to call
-   * sync(Collections.singleton(name))
-   */
-  @Deprecated
-  public void sync(String name) throws IOException { // TODO 4.0 kill me
-  }
-
-  /**
    * Ensure that any writes to these files are moved to
    * stable storage.  Lucene uses this to properly commit
    * changes to the index, to prevent a machine/OS crash
@@ -118,10 +105,7 @@ public abstract class Directory implements Closeable {
    * For other impls the operation can be a noop, for various
    * reasons.
    */
-  public void sync(Collection<String> names) throws IOException { // TODO 4.0 make me abstract
-    for (String name : names)
-      sync(name);
-  }
+  public abstract void sync(Collection<String> names) throws IOException;
 
   /** Returns a stream reading an existing file. */
   public abstract IndexInput openInput(String name)
@@ -169,7 +153,7 @@ public abstract class Directory implements Closeable {
    *
    * @param lockFactory instance of {@link LockFactory}.
    */
-  public void setLockFactory(LockFactory lockFactory) {
+  public void setLockFactory(LockFactory lockFactory) throws IOException {
     assert lockFactory != null;
     this.lockFactory = lockFactory;
     lockFactory.setLockPrefix(this.getLockID());
@@ -197,6 +181,11 @@ public abstract class Directory implements Closeable {
       return this.toString();
   }
 
+  @Override
+  public String toString() {
+    return super.toString() + " lockFactory=" + getLockFactory();
+  }
+
   /**
    * Copies the file <i>src</i> to {@link Directory} <i>to</i> under the new
    * file name <i>dest</i>.
@@ -215,64 +204,15 @@ public abstract class Directory implements Closeable {
    * overwrite it if it does.
    */
   public void copy(Directory to, String src, String dest) throws IOException {
-    IndexOutput os = null;
-    IndexInput is = null;
+    IndexOutput os = to.createOutput(dest);
+    IndexInput is = openInput(src);
     IOException priorException = null;
-    int bufSize = BufferedIndexOutput.BUFFER_SIZE;
-    byte[] buf = new byte[bufSize];
     try {
-      // create file in dest directory
-      os = to.createOutput(dest);
-      // read current file
-      is = openInput(src);
-      // and copy to dest directory
-      long len = is.length();
-      long numRead = 0;
-      while (numRead < len) {
-        long left = len - numRead;
-        int toRead = (int) (bufSize < left ? bufSize : left);
-        is.readBytes(buf, 0, toRead);
-        os.writeBytes(buf, toRead);
-        numRead += toRead;
-      }
+      is.copyBytes(os, is.length());
     } catch (IOException ioe) {
       priorException = ioe;
     } finally {
       IOUtils.closeSafely(priorException, os, is);
-    }
-  }
-
-  /**
-   * Copy contents of a directory src to a directory dest. If a file in src
-   * already exists in dest then the one in dest will be blindly overwritten.
-   * <p>
-   * <b>NOTE:</b> the source directory cannot change while this method is
-   * running. Otherwise the results are undefined and you could easily hit a
-   * FileNotFoundException.
-   * <p>
-   * <b>NOTE:</b> this method only copies files that look like index files (ie,
-   * have extensions matching the known extensions of index files).
-   * 
-   * @param src source directory
-   * @param dest destination directory
-   * @param closeDirSrc if <code>true</code>, call {@link #close()} method on 
-   *        source directory
-   * @deprecated should be replaced with calls to
-   *             {@link #copy(Directory, String, String)} for every file that
-   *             needs copying. You can use the following code:
-   * 
-   * <pre>
-   * for (String file : src.listAll()) {
-   *   src.copy(dest, file, file);
-   * }
-   * </pre>
-   */
-  public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
-    for (String file : src.listAll()) {
-      src.copy(dest, file, file);
-    }
-    if (closeDirSrc) {
-      src.close();
     }
   }
 

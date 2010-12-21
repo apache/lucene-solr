@@ -17,10 +17,12 @@ package org.apache.lucene;
  * limitations under the License.
  */
 import java.io.IOException;
+
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -68,9 +70,9 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     }
   }
 
-  private static class FailOnlyOnMerge extends MockRAMDirectory.Failure {
+  private static class FailOnlyOnMerge extends MockDirectoryWrapper.Failure {
     @Override
-    public void eval(MockRAMDirectory dir)  throws IOException {
+    public void eval(MockDirectoryWrapper dir)  throws IOException {
       StackTraceElement[] trace = new Exception().getStackTrace();
       for (int i = 0; i < trace.length; i++) {
         if ("doMerge".equals(trace[i].getMethodName()))
@@ -80,17 +82,19 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   }
 
   public void testSubclassConcurrentMergeScheduler() throws IOException {
-    MockRAMDirectory dir = new MockRAMDirectory();
+    MockDirectoryWrapper dir = newDirectory();
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new MyMergeScheduler())
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
             IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    LogMergePolicy logMP = (LogMergePolicy) writer.getConfig().getMergePolicy();
+    logMP.setMergeFactor(10);
     for(int i=0;i<20;i++)
       writer.addDocument(doc);
 
@@ -101,6 +105,5 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     assertTrue(mergeCalled);
     assertTrue(excCalled);
     dir.close();
-    assertTrue(ConcurrentMergeScheduler.anyUnhandledExceptions());
   }
 }

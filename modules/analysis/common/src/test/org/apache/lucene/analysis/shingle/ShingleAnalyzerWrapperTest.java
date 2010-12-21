@@ -359,4 +359,16 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                           new int[] { 13, 18, 27 },
                           new int[] {  1,  1,  1 });
   }
+  
+  public void testOutputUnigramsIfNoShinglesSingleToken() throws Exception {
+    ShingleAnalyzerWrapper analyzer
+      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    analyzer.setOutputUnigrams(false);
+    analyzer.setOutputUnigramsIfNoShingles(true);
+    assertAnalyzesToReuse(analyzer, "please",
+                          new String[] { "please" },
+                          new int[] { 0 },
+                          new int[] { 6 },
+                          new int[] { 1 });
+  }
 }

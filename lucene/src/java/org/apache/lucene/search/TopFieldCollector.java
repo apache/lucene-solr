@@ -46,12 +46,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private static class OneComparatorNonScoringCollector extends 
       TopFieldCollector {
 
-    final FieldComparator comparator;
+    FieldComparator comparator;
     final int reverseMul;
+    final FieldValueHitQueue queue;
     
     public OneComparatorNonScoringCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
       super(queue, numHits, fillFields);
+      this.queue = queue;
       comparator = queue.getComparators()[0];
       reverseMul = queue.getReverseMul()[0];
     }
@@ -92,7 +94,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
-      comparator.setNextReader(reader, docBase);
+      queue.setComparator(0, comparator.setNextReader(reader, docBase));
+      comparator = queue.firstComparator;
     }
     
     @Override
@@ -381,10 +384,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     
     final FieldComparator[] comparators;
     final int[] reverseMul;
-    
+    final FieldValueHitQueue queue;
     public MultiComparatorNonScoringCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
       super(queue, numHits, fillFields);
+      this.queue = queue;
       comparators = queue.getComparators();
       reverseMul = queue.getReverseMul();
     }
@@ -446,7 +450,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
       for (int i = 0; i < comparators.length; i++) {
-        comparators[i].setNextReader(reader, docBase);
+        queue.setComparator(i, comparators[i].setNextReader(reader, docBase));
       }
     }
 
@@ -909,6 +913,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
     
+    if (numHits <= 0) {
+      throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
+    }
+
     FieldValueHitQueue queue = FieldValueHitQueue.create(sort.fields, numHits);
     if (queue.getComparators().length == 1) {
       if (docsScoredInOrder) {

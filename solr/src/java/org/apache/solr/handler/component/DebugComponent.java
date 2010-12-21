@@ -18,7 +18,8 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.FQ;
-import org.apache.solr.common.params.HighlightParams;
+
+import org.apache.solr.common.params.CommonParams;
 
 import java.io.IOException;
 import java.net.URL;
@@ -51,8 +52,9 @@ public class DebugComponent extends SearchComponent
   public void process(ResponseBuilder rb) throws IOException
   {
     if( rb.isDebug() ) {
+
       NamedList stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
-          rb.getQueryString(), rb.getQuery(), rb.getResults().docList);
+          rb.getQueryString(), rb.getQuery(), rb.getResults().docList, rb.isDebugQuery(), rb.isDebugResults());
       
       NamedList info = rb.getDebugInfo();
       if( info == null ) {
@@ -63,12 +65,12 @@ public class DebugComponent extends SearchComponent
         info.addAll( stdinfo );
       }
       
-      if (rb.getQparser() != null) {
+      if (rb.isDebugQuery() && rb.getQparser() != null) {
         rb.getQparser().addDebugInfo(rb.getDebugInfo());
       }
 
       if (null != rb.getDebugInfo() ) {
-        if (null != rb.getFilters() ) {
+        if (rb.isDebugQuery() && null != rb.getFilters() ) {
           info.add("filter_queries",rb.req.getParams().getParams(FQ));
           List<String> fqs = new ArrayList<String>(rb.getFilters().size());
           for (Query fq : rb.getFilters()) {
@@ -89,10 +91,18 @@ public class DebugComponent extends SearchComponent
 
     // Turn on debug to get explain only when retrieving fields
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
-        sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
-        sreq.params.set("debugQuery", "true");
+      sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
+      if (rb.isDebugAll()) {
+        sreq.params.set(CommonParams.DEBUG_QUERY, "true");
+      } else if (rb.isDebugQuery()){
+        sreq.params.set(CommonParams.DEBUG, CommonParams.QUERY);
+      } else if (rb.isDebugTimings()){
+        sreq.params.set(CommonParams.DEBUG, CommonParams.TIMING);
+      } else if (rb.isDebugResults()){
+        sreq.params.set(CommonParams.DEBUG, CommonParams.RESULTS);
+      }
     } else {
-      sreq.params.set("debugQuery", "false");
+      sreq.params.set(CommonParams.DEBUG_QUERY, "false");
     }
   }
 
@@ -116,30 +126,35 @@ public class DebugComponent extends SearchComponent
           NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
           info = (NamedList)merge(sdebug, info, excludeSet);
 
-          NamedList sexplain = (NamedList)sdebug.get("explain");
-
-          for (int i=0; i<sexplain.size(); i++) {
-            String id = sexplain.getName(i);
-            // TODO: lookup won't work for non-string ids... String vs Float
-            ShardDoc sdoc = rb.resultIds.get(id);
-            int idx = sdoc.positionInResponse;
-            arr[idx] = new NamedList.NamedListEntry<Object>( id, sexplain.getVal(i)); 
+          if (rb.isDebugResults()) {
+            NamedList sexplain = (NamedList)sdebug.get("explain");
+            for (int i = 0; i < sexplain.size(); i++) {
+              String id = sexplain.getName(i);
+              // TODO: lookup won't work for non-string ids... String vs Float
+              ShardDoc sdoc = rb.resultIds.get(id);
+              int idx = sdoc.positionInResponse;
+              arr[idx] = new NamedList.NamedListEntry<Object>(id, sexplain.getVal(i));
+            }
           }
         }
       }
 
-      explain = HighlightComponent.removeNulls(new SimpleOrderedMap(arr));
+      if (rb.isDebugResults()) {
+        explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap(arr));
+      }
 
       if (info == null) {
         info = new SimpleOrderedMap();
       }
-      int idx = info.indexOf("explain",0);
-      if (idx>=0) {
-        info.setVal(idx, explain);
-      } else {
-        info.add("explain", explain);
+      if (rb.isDebugResults()) {
+        int idx = info.indexOf("explain",0);
+        if (idx>=0) {
+          info.setVal(idx, explain);
+        } else {
+          info.add("explain", explain);
+        }
       }
-      
+
       rb.setDebugInfo(info);
       rb.rsp.add("debug", rb.getDebugInfo() );      
     }

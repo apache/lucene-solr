@@ -18,7 +18,6 @@ package org.apache.lucene.search.payloads;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -28,11 +27,11 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
@@ -42,7 +41,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -56,10 +54,6 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   private byte[] payload2 = new byte[]{2};
   private byte[] payload4 = new byte[]{4};
 
-  public TestPayloadNearQuery(String s) {
-    super(s);
-  }
-
   private class PayloadAnalyzer extends Analyzer {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -70,11 +64,13 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
 
   private class PayloadFilter extends TokenFilter {
+    String fieldName;
     int numSeen = 0;
     protected PayloadAttribute payAtt;
 
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
+      this.fieldName = fieldName;
       payAtt = addAttribute(PayloadAttribute.class);
     }
 
@@ -94,29 +90,28 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     }
   }
   
-  private PayloadNearQuery newPhraseQuery (String fieldName, String phrase, boolean inOrder) {
+  private PayloadNearQuery newPhraseQuery (String fieldName, String phrase, boolean inOrder, PayloadFunction function ) {
     String[] words = phrase.split("[\\s]+");
     SpanQuery clauses[] = new SpanQuery[words.length];
     for (int i=0;i<clauses.length;i++) {
       clauses[i] = new SpanTermQuery(new Term(fieldName, words[i]));  
     } 
-    return new PayloadNearQuery(clauses, 0, inOrder);
+    return new PayloadNearQuery(clauses, 0, inOrder, function);
   }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    Random random = newRandom();
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new PayloadAnalyzer())
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
         .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       String txt = English.intToEnglish(i) +' '+English.intToEnglish(i+1);
-      doc.add(new Field("field2",  txt, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field2",  txt, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -127,7 +122,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -138,7 +133,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     PayloadNearQuery query;
     TopDocs hits;
 
-    query = newPhraseQuery("field", "twenty two", true);
+    query = newPhraseQuery("field", "twenty two", true, new AveragePayloadFunction());
     QueryUtils.check(query);
 		
     // all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
@@ -151,7 +146,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
     }
     for (int i=1;i<10;i++) {
-      query = newPhraseQuery("field", English.intToEnglish(i)+" hundred", true);
+      query = newPhraseQuery("field", English.intToEnglish(i)+" hundred", true, new AveragePayloadFunction());
       // all should have score = 3 because adjacent terms have payloads of 2,4
       // and all the similarity factors are set to 1
       hits = searcher.search(query, null, 100);
@@ -187,7 +182,74 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     }
     */
   }
+  
+  public void testAverageFunction() throws IOException {
+	  PayloadNearQuery query;
+	  TopDocs hits;
 
+	  query = newPhraseQuery("field", "twenty two", true, new AveragePayloadFunction());
+	  QueryUtils.check(query);
+	  // all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
+	  // and all the similarity factors are set to 1
+	  hits = searcher.search(query, null, 100);
+	  assertTrue("hits is null and it shouldn't be", hits != null);
+	  assertTrue("should be 10 hits", hits.totalHits == 10);
+	  for (int j = 0; j < hits.scoreDocs.length; j++) {
+		  ScoreDoc doc = hits.scoreDocs[j];
+		  assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
+		  Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
+		  String exp = explain.toString();
+		  assertTrue(exp, exp.indexOf("AveragePayloadFunction") > -1);
+		  assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 3, explain.getValue() == 3f);
+	  }
+  }
+  public void testMaxFunction() throws IOException {
+	  PayloadNearQuery query;
+	  TopDocs hits;
+
+	  query = newPhraseQuery("field", "twenty two", true, new MaxPayloadFunction());
+	  QueryUtils.check(query);
+	  // all 10 hits should have score = 4 (max payload value)
+	  hits = searcher.search(query, null, 100);
+	  assertTrue("hits is null and it shouldn't be", hits != null);
+	  assertTrue("should be 10 hits", hits.totalHits == 10);
+	  for (int j = 0; j < hits.scoreDocs.length; j++) {
+		  ScoreDoc doc = hits.scoreDocs[j];
+		  assertTrue(doc.score + " does not equal: " + 4, doc.score == 4);
+		  Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
+		  String exp = explain.toString();
+		  assertTrue(exp, exp.indexOf("MaxPayloadFunction") > -1);
+		  assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 4, explain.getValue() == 4f);
+	  }
+  }  
+  public void testMinFunction() throws IOException {
+	  PayloadNearQuery query;
+	  TopDocs hits;
+
+	  query = newPhraseQuery("field", "twenty two", true, new MinPayloadFunction());
+	  QueryUtils.check(query);
+	  // all 10 hits should have score = 2 (min payload value)
+	  hits = searcher.search(query, null, 100);
+	  assertTrue("hits is null and it shouldn't be", hits != null);
+	  assertTrue("should be 10 hits", hits.totalHits == 10);
+	  for (int j = 0; j < hits.scoreDocs.length; j++) {
+		  ScoreDoc doc = hits.scoreDocs[j];
+		  assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
+		  Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
+		  String exp = explain.toString();
+		  assertTrue(exp, exp.indexOf("MinPayloadFunction") > -1);
+		  assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 2, explain.getValue() == 2f);
+	  }
+  }  
+  private SpanQuery[] getClauses() {
+	    SpanNearQuery q1, q2;
+	    q1 = spanNearQuery("field2", "twenty two");
+	    q2 = spanNearQuery("field2", "twenty three");
+	    SpanQuery[] clauses = new SpanQuery[2];
+	    clauses[0] = q1;
+	    clauses[1] = q2;
+	    return clauses;
+  }
   private SpanNearQuery spanNearQuery(String fieldName, String words) {
     String[] wordList = words.split("[\\s]+");
     SpanQuery clauses[] = new SpanQuery[wordList.length];
@@ -200,7 +262,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   public void testLongerSpan() throws IOException {
     PayloadNearQuery query;
     TopDocs hits;
-    query = newPhraseQuery("field", "nine hundred ninety nine", true);
+    query = newPhraseQuery("field", "nine hundred ninety nine", true, new AveragePayloadFunction());
     hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     ScoreDoc doc = hits.scoreDocs[0];
@@ -217,10 +279,10 @@ public class TestPayloadNearQuery extends LuceneTestCase {
 
     // combine ordered and unordered spans with some nesting to make sure all payloads are counted
 
-    SpanQuery q1 = newPhraseQuery("field", "nine hundred", true);
-    SpanQuery q2 = newPhraseQuery("field", "ninety nine", true);
-    SpanQuery q3 = newPhraseQuery("field", "nine ninety", false);
-    SpanQuery q4 = newPhraseQuery("field", "hundred nine", false);
+    SpanQuery q1 = newPhraseQuery("field", "nine hundred", true, new AveragePayloadFunction());
+    SpanQuery q2 = newPhraseQuery("field", "ninety nine", true, new AveragePayloadFunction());
+    SpanQuery q3 = newPhraseQuery("field", "nine ninety", false, new AveragePayloadFunction());
+    SpanQuery q4 = newPhraseQuery("field", "hundred nine", false, new AveragePayloadFunction());
     SpanQuery[]clauses = new SpanQuery[] {new PayloadNearQuery(new SpanQuery[] {q1,q2}, 0, true), new PayloadNearQuery(new SpanQuery[] {q3,q4}, 0, false)};
     query = new PayloadNearQuery(clauses, 0, false);
     hits = searcher.search(query, null, 100);
@@ -241,7 +303,6 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       //we know it is size 4 here, so ignore the offset/length
       return payload[0];
     }
-    
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -263,7 +324,6 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     @Override public float tf(float freq) {
       return 1.0f;
     }
-    
     // idf used for phrase queries
     @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
       return new IDFExplanation() {

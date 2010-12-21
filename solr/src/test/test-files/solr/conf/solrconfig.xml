@@ -29,7 +29,7 @@
      tests.  if you need to test something esoteric please add a new
      "solrconfig-your-esoteric-purpose.xml" config file.
 
-     Note in particular that this test is used by MinimalSchemaTest so 
+     Note in particular that this test is used by MinimalSchemaTest so
      Anything added to this file needs to work correctly even if there
      is now uniqueKey or defaultSearch Field.
 
@@ -50,7 +50,7 @@
         solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
-  <luceneMatchVersion>4.0</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default
@@ -115,15 +115,15 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
-    <!-- autocommit pending docs if certain criteria are met 
-    <autoCommit> 
+    <!-- autocommit pending docs if certain criteria are met
+    <autoCommit>
       <maxDocs>10000</maxDocs>
-      <maxTime>3600000</maxTime> 
+      <maxTime>3600000</maxTime>
     </autoCommit>
     -->
     <!-- represents a lower bound on the frequency that commits may
     occur (in seconds). NOTE: not yet implemented
-    
+
     <commitIntervalLowerBound>0</commitIntervalLowerBound>
     -->
 
@@ -304,6 +304,7 @@
     <lst name="lst1"> <str name="op">sqrt</str> <int name="val">2</int> </lst>
     <lst name="lst2"> <str name="op">log</str> <float name="val">10</float> </lst>
   </requestHandler>
+  <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 
@@ -333,14 +334,21 @@
   </requestHandler>
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
-    <str name="queryAnalyzerFieldType">lowerfilt</str>
+    <!-- This is slightly different from the field value so we can test dealing with token offset changes -->
+    <str name="queryAnalyzerFieldType">lowerpunctfilt</str>
 
     <lst name="spellchecker">
       <str name="name">default</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellchecker1</str>
-      <str name="buildOnCommit">true</str>
+      <str name="buildOnCommit">false</str>
     </lst>
+    <lst name="spellchecker">
+			<str name="name">multipleFields</str>
+			<str name="field">lowerfilt1and2</str>
+			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
+			<str name="buildOnCommit">false</str>
+   	</lst>
     <!-- Example of using different distance measure -->
     <lst name="spellchecker">
       <str name="name">jarowinkler</str>
@@ -356,6 +364,31 @@
       <str name="sourceLocation">spellings.txt</str>
       <str name="characterEncoding">UTF-8</str>
       <str name="spellcheckIndexDir">spellchecker3</str>
+    </lst>
+    <!-- Comparator -->
+    <lst name="spellchecker">
+      <str name="name">freq</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerFreq</str>
+      <!-- comparatorClass be one of:
+        1. score (default)
+        2. freq (Frequency first, then score)
+        3. A fully qualified class name
+       -->
+      <str name="comparatorClass">freq</str>
+      <str name="buildOnCommit">false</str>
+    </lst>
+    <lst name="spellchecker">
+      <str name="name">fqcn</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerFQCN</str>
+      <str name="comparatorClass">org.apache.solr.spelling.SampleComparator</str>
+      <str name="buildOnCommit">false</str>
+    </lst>
+    <lst name="spellchecker">
+      <str name="name">perDict</str>
+      <str name="classname">org.apache.solr.handler.component.DummyCustomParamSpellChecker</str>
+      <str name="field">lowerfilt</str>
     </lst>
   </searchComponent>
 
@@ -385,8 +418,17 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
+  <requestHandler name="spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
+			<lst name="defaults">
+				<str name="defType">dismax</str>
+				<str name="qf">lowerfilt1^1</str>
+			</lst>
+			<arr name="last-components">
+				<str>spellcheck</str>
+			</arr>
+ </requestHandler>
 
-  
+
   <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
 
   <requestHandler name="tvrh" class="org.apache.solr.handler.component.SearchHandler">
@@ -397,6 +439,10 @@
       <str>tvComponent</str>
     </arr>
   </requestHandler>
+
+  <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
+  </requestHandler>
+
   <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
    <!-- Configure the standard fragmenter -->
@@ -424,7 +470,7 @@
    <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
 
    <!-- Configure the standard fragmentsBuilder -->
-   <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
+   <fragmentsBuilder name="simple" class="org.apache.solr.highlight.SimpleFragmentsBuilder" default="true"/>
 
    <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>
@@ -472,5 +518,5 @@
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
-  
+
 </config>

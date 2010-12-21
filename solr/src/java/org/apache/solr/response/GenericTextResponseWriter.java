@@ -24,6 +24,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 
+import org.apache.solr.response.BaseResponseWriter.SingleResponseWriter; // javadocs
+
 /**
  * 
  * 
@@ -46,7 +48,7 @@ public abstract class GenericTextResponseWriter extends BaseResponseWriter
    * {@link #getSingleResponseWriter(Writer, SolrQueryRequest, SolrQueryResponse)}
    * .
    * 
-   * @param out
+   * @param writer
    *          The {@link Writer} to write the text output to.
    * @param request
    *          The provided {@link SolrQueryRequest}.

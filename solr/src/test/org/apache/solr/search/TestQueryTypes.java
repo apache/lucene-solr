@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 public class TestQueryTypes extends AbstractSolrTestCase {
@@ -117,6 +118,8 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("q","{!raw f=v_t}hello")
             ,"//result[@numFound='2']"
             );
+
+    // no analysis is done, so these should match nothing
     assertQ("test raw query",
             req("q","{!raw f=v_t}Hello")
             ,"//result[@numFound='0']"
@@ -125,6 +128,23 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("q","{!raw f=v_f}1.5")
             ,"//result[@numFound='0']"
             );
+
+    // test "term" qparser, which should only do readableToIndexed
+    assertQ(
+            req("q","{!term f=v_f}1.5")
+            ,"//result[@numFound='1']"
+            );
+    
+    // text fields are *not* analyzed since they may not be idempotent
+    assertQ(
+           req("q","{!term f=v_t}Hello")
+           ,"//result[@numFound='0']"
+           );
+     assertQ(
+           req("q","{!term f=v_t}hello")
+           ,"//result[@numFound='2']"
+           );
+
 
     //
     // test escapes in quoted strings
@@ -209,6 +229,14 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             ,"//result[@numFound='2']"
     );
 
+    // test wacky param names
+    assertQ(
+            req("q","{!prefix f=$a/b/c v=$'a b/c'}"
+                ,"a/b/c","v_t", "a b/c", "hel"
+            )
+            ,"//result[@numFound='2']"
+    );
+
     assertQ("test param subst with literal",
             req("q","{!prefix f=$myf v=$my.v}"
                 ,"myf","v_s", "my.v", "{!lit"
@@ -262,7 +290,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
                 ,"qf","v_t"
                 ,"bf","sqrt(v_f)^100 log(sum(v_f,1))^50"
                 ,"bq","{!prefix f=v_t}he"
-                ,"debugQuery","on"
+                , CommonParams.DEBUG_QUERY,"on"
              )
              ,"//result[@numFound='2']"
              );

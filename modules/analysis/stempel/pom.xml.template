@@ -27,7 +27,7 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-stempel</artifactId>
+  <artifactId>lucene-analyzers-stempel</artifactId>
   <name>Lucene Stempel Analyzer</name>
   <version>@version@</version>
   <description>Stempel Analyzer</description>

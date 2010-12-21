@@ -39,6 +39,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -182,8 +183,9 @@ public class InstantiatedIndex
     }
 
     // create documents
+    final Bits delDocs = MultiFields.getDeletedDocs(sourceIndexReader);
     for (int i = 0; i < sourceIndexReader.maxDoc(); i++) {
-      if (sourceIndexReader.hasDeletions() && sourceIndexReader.isDeleted(i)) {
+      if (delDocs != null && delDocs.get(i)) {
         deletedDocuments.set(i);
       } else {
         InstantiatedDocument document = new InstantiatedDocument();

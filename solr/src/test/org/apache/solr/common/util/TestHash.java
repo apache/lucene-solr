@@ -17,14 +17,14 @@ package org.apache.solr.common.util;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 
 /** Tests for lookup3ycs hash functions
  * @author yonik
  */
-public class TestHash extends TestCase {
+public class TestHash extends LuceneTestCase {
 
   // Test that the java version produces the same output as the C version
   public void testEqualsLOOKUP3() {
@@ -73,7 +73,7 @@ public class TestHash extends TestCase {
 
 
   public void testHash() {
-    Random r = new Random(0);
+    Random r = random;
     int[] utf32 = new int[20];
     tstEquiv(utf32,0);
 

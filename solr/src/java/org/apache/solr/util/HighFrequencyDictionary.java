@@ -53,7 +53,7 @@ public class HighFrequencyDictionary implements Dictionary {
     return new HighFrequencyIterator();
   }
 
-  final class HighFrequencyIterator implements Iterator {
+  final class HighFrequencyIterator implements TermFreqIterator, SortedIterator {
     private TermsEnum termsEnum;
     private BytesRef actualTerm;
     private boolean hasNextCalled;
@@ -74,8 +74,12 @@ public class HighFrequencyDictionary implements Dictionary {
     private boolean isFrequent(int freq) {
       return freq >= minNumDocs;
     }
-
-    public Object next() {
+    
+    public float freq() {
+      return termsEnum.docFreq();
+    }
+    
+    public String next() {
       if (!hasNextCalled && !hasNext()) {
         return null;
       }

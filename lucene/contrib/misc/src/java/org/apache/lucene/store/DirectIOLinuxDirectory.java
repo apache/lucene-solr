@@ -25,6 +25,9 @@ import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.apache.lucene.store.Directory; // javadoc
+import org.apache.lucene.store.NativeFSLockFactory; // javadoc
+
 /**
  * An {@link Directory} implementation that uses the
  * Linux-specific O_DIRECT flag to bypass all OS level
@@ -46,37 +49,36 @@ public class DirectIOLinuxDirectory extends FSDirectory {
   private final static long ALIGN = 512;
   private final static long ALIGN_NOT_MASK = ~(ALIGN-1);
 
+  private final int forcedBufferSize;
+
   /** Create a new NIOFSDirectory for the named location.
    * 
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
+   * @param forcedBufferSize if this is 0, just use Lucene's
+   *    default buffer size; else, force this buffer size.
+   *    For best performance, force the buffer size to
+   *    something fairly large (eg 1 MB), but note that this
+   *    will eat up the JRE's direct buffer storage space
    * @throws IOException
    */
-  public DirectIOLinuxDirectory(File path, LockFactory lockFactory) throws IOException {
+  public DirectIOLinuxDirectory(File path, LockFactory lockFactory, int forcedBufferSize) throws IOException {
     super(path, lockFactory);
-  }
-
-  /** Create a new NIOFSDirectory for the named location and {@link NativeFSLockFactory}.
-   *
-   * @param path the path of the directory
-   * @throws IOException
-   */
-  public DirectIOLinuxDirectory(File path) throws IOException {
-    super(path, null);
+    this.forcedBufferSize = forcedBufferSize;
   }
 
   @Override
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
-    return new DirectIOLinuxIndexInput(new File(getDirectory(), name), bufferSize);
+    return new DirectIOLinuxIndexInput(new File(getDirectory(), name), forcedBufferSize == 0 ? bufferSize : forcedBufferSize);
   }
 
   @Override
   public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
     ensureCanWrite(name);
-    return new DirectIOLinuxIndexOutput(new File(getDirectory(), name), 4096);
+    return new DirectIOLinuxIndexOutput(new File(getDirectory(), name), forcedBufferSize == 0 ? BufferedIndexOutput.BUFFER_SIZE : forcedBufferSize);
   }
 
   private final static class DirectIOLinuxIndexOutput extends IndexOutput {
@@ -94,7 +96,6 @@ public class DirectIOLinuxDirectory extends FSDirectory {
 
     public DirectIOLinuxIndexOutput(File path, int bufferSize) throws IOException {
       //this.path = path;
-      bufferSize = 1024*1024;
       FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), false);
       fos = new FileOutputStream(fd);
       //fos = new FileOutputStream(path);
@@ -237,7 +238,6 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     private int bufferPos;
 
     public DirectIOLinuxIndexInput(File path, int bufferSize) throws IOException {
-      bufferSize = 1024*1024;
       FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), true);
       fis = new FileInputStream(fd);
       channel = fis.getChannel();

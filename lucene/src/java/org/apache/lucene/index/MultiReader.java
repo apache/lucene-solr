@@ -107,7 +107,7 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   @Override
   public Fields fields() throws IOException {
-    throw new UnsupportedOperationException("please use MultiFields.getFields if you really need a top level Fields (NOTE that it's usually better to work per segment instead)");
+    throw new UnsupportedOperationException("please use MultiFields.getFields, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
   }
 
   /**
@@ -153,8 +153,8 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
   
   @Override
-  public Bits getDeletedDocs() throws IOException {
-    throw new UnsupportedOperationException("please use MultiFields.getDeletedDocs if you really need a top level Bits deletedDocs (NOTE that it's usually better to work per segment instead)");
+  public Bits getDeletedDocs() {
+    throw new UnsupportedOperationException("please use MultiFields.getDeletedDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Bits deletedDocs");
   }
 
   /**
@@ -276,13 +276,6 @@ public class MultiReader extends IndexReader implements Cloneable {
     ensureOpen();
     int i = readerIndex(n);                          // find segment num
     return subReaders[i].document(n - starts[i], fieldSelector);    // dispatch to segment reader
-  }
-
-  @Override
-  public boolean isDeleted(int n) {
-    // Don't call ensureOpen() here (it could affect performance)
-    int i = readerIndex(n);                           // find segment num
-    return subReaders[i].isDeleted(n - starts[i]);    // dispatch to segment reader
   }
 
   @Override

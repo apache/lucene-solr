@@ -28,7 +28,9 @@ import org.apache.lucene.index.IndexReader;
  *
  * @lucene.internal
  */
-public class ReaderUtil {
+public final class ReaderUtil {
+
+  private ReaderUtil() {} // no instance
 
   public static class Slice {
     public static final Slice[] EMPTY_ARRAY = new Slice[0];
@@ -62,7 +64,7 @@ public class ReaderUtil {
     try {
       new Gather(reader) {
         @Override
-          protected void add(int base, IndexReader r) {
+        protected void add(int base, IndexReader r) {
           allSubReaders.add(r);
         }
       }.run();

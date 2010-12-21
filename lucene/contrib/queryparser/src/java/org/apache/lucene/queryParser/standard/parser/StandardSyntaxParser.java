@@ -40,6 +40,7 @@ import org.apache.lucene.queryParser.core.nodes.OpaqueQueryNode;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ProximityQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
@@ -47,7 +48,6 @@ import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 
-@SuppressWarnings("all")
 public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserConstants {
 
         private static final int CONJ_NONE =0;
@@ -166,7 +166,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 //   ConjQuery ::= Clause ( AND Clause )*
 //      Clause ::= [ Modifier ] ... 
   final public QueryNode Query(CharSequence field) throws ParseException {
-  Vector clauses = null;
+  Vector<QueryNode> clauses = null;
   QueryNode c, first=null;
     first = DisjQuery(field);
     label_1:
@@ -178,6 +178,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       case LPAREN:
       case QUOTED:
       case TERM:
+      case REGEXPTERM:
       case RANGEIN_START:
       case RANGEEX_START:
       case NUMBER:
@@ -189,7 +190,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       }
       c = DisjQuery(field);
              if (clauses == null) {
-                 clauses = new Vector();
+                 clauses = new Vector<QueryNode>();
                  clauses.addElement(first);
              }
          clauses.addElement(c);
@@ -204,7 +205,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 
   final public QueryNode DisjQuery(CharSequence field) throws ParseException {
         QueryNode first, c;
-        Vector clauses = null;
+        Vector<QueryNode> clauses = null;
     first = ConjQuery(field);
     label_2:
     while (true) {
@@ -219,7 +220,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       jj_consume_token(OR);
       c = ConjQuery(field);
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first);
      }
      clauses.addElement(c);
@@ -234,7 +235,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 
   final public QueryNode ConjQuery(CharSequence field) throws ParseException {
         QueryNode first, c;
-        Vector clauses = null;
+        Vector<QueryNode> clauses = null;
     first = ModClause(field);
     label_3:
     while (true) {
@@ -249,7 +250,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       jj_consume_token(AND);
       c = ModClause(field);
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first);
      }
      clauses.addElement(c);
@@ -326,6 +327,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case QUOTED:
     case TERM:
+    case REGEXPTERM:
     case RANGEIN_START:
     case RANGEEX_START:
     case NUMBER:
@@ -373,16 +375,22 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   final public QueryNode Term(CharSequence field) throws ParseException {
   Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean fuzzy = false;
+  boolean regexp = false;
   QueryNode q =null;
   ParametricQueryNode qLower, qUpper;
-  float defaultMinSimilarity = 0.5f;
+  float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TERM:
+    case REGEXPTERM:
     case NUMBER:
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case TERM:
         term = jj_consume_token(TERM);
                          q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+        break;
+      case REGEXPTERM:
+        term = jj_consume_token(REGEXPTERM);
+                             regexp=true;
         break;
       case NUMBER:
         term = jj_consume_token(NUMBER);
@@ -424,10 +432,14 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
           try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
           } catch (Exception ignored) { }
-         if(fms < 0.0f || fms > 1.0f){
+         if(fms < 0.0f){
            {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));}
+         } else if (fms >= 1.0f && fms != (int) fms) {
+           {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));}
          }
          q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
+       } else if (regexp) {
+         q = new RegexpQueryNode(field, term.image, term.beginColumn, term.endColumn-1);
        }
       break;
     case RANGEIN_START:
@@ -630,7 +642,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       jj_la1_init_0();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x763c00,0x200,0x100,0x10000,0x762000,0x440000,0x80000,0x80000,0x10000,0x6000000,0x800000,0x6000000,0x10000,0x60000000,0x8000000,0x60000000,0x10000,0x80000,0x10000,0x760000,};
+      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0xf63c00,0x200,0x100,0x10000,0xf62000,0x940000,0x80000,0x80000,0x10000,0xc000000,0x1000000,0xc000000,0x10000,0xc0000000,0x10000000,0xc0000000,0x10000,0x80000,0x10000,0xf60000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -816,7 +828,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[31];
+    boolean[] la1tokens = new boolean[32];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -830,7 +842,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         }
       }
     }
-    for (int i = 0; i < 31; i++) {
+    for (int i = 0; i < 32; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

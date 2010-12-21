@@ -33,16 +33,15 @@ import org.apache.lucene.util._TestUtil;
 
 public class AutomatonTestUtil {
   /** Returns random string, including full unicode range. */
-  public static RegExp randomRegexp(Random r) {
+  public static String randomRegexp(Random r) {
     while (true) {
       String regexp = randomRegexpString(r);
       // we will also generate some undefined unicode queries
       if (!UnicodeUtil.validUTF16String(regexp))
         continue;
       try {
-        // NOTE: we parse-tostring-parse again, because we are
-        // really abusing RegExp.toString() here (its just for debugging)
-        return new RegExp(new RegExp(regexp, RegExp.NONE).toString(), RegExp.NONE);
+        new RegExp(regexp, RegExp.NONE);
+        return regexp;
       } catch (Exception e) {}
     }
   }
@@ -55,7 +54,7 @@ public class AutomatonTestUtil {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      int t = r.nextInt(11);
+      int t = r.nextInt(15);
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate
@@ -73,6 +72,10 @@ public class AutomatonTestUtil {
       else if (8 == t) buffer[i] = '+';
       else if (9 == t) buffer[i] = '(';
       else if (10 == t) buffer[i] = ')';
+      else if (11 == t) buffer[i] = '-';
+      else if (12 == t) buffer[i] = '[';
+      else if (13 == t) buffer[i] = ']';
+      else if (14 == t) buffer[i] = '|';
     }
     return new String(buffer, 0, end);
   }
@@ -89,7 +92,7 @@ public class AutomatonTestUtil {
     } else if (t.min >= UnicodeUtil.UNI_SUR_HIGH_START) {
       if (t.max > UnicodeUtil.UNI_SUR_LOW_END) {
         // after surrogates
-        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(t.max-UnicodeUtil.UNI_SUR_LOW_END+1);
+        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(t.max-UnicodeUtil.UNI_SUR_LOW_END);
       } else {
         throw new IllegalArgumentException("transition accepts only surrogates: " + t);
       }
@@ -246,4 +249,128 @@ public class AutomatonTestUtil {
       return ArrayUtil.toIntArray(soFar);
     }
   }
+  
+  /** return a random NFA/DFA for testing */
+  public static Automaton randomAutomaton(Random random) {
+    // get two random Automata from regexps
+    Automaton a1 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
+    if (random.nextBoolean())
+      a1 = BasicOperations.complement(a1);
+    
+    Automaton a2 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
+    if (random.nextBoolean()) 
+      a2 = BasicOperations.complement(a2);
+    
+    // combine them in random ways
+    switch(random.nextInt(4)) {
+      case 0: return BasicOperations.concatenate(a1, a2);
+      case 1: return BasicOperations.union(a1, a2);
+      case 2: return BasicOperations.intersection(a1, a2);
+      default: return BasicOperations.minus(a1, a2);
+    }
+  }
+  
+  /** 
+   * below are original, unoptimized implementations of DFA operations for testing.
+   * These are from brics automaton, full license (BSD) below:
+   */
+  
+  /*
+   * dk.brics.automaton
+   * 
+   * Copyright (c) 2001-2009 Anders Moeller
+   * All rights reserved.
+   * 
+   * Redistribution and use in source and binary forms, with or without
+   * modification, are permitted provided that the following conditions
+   * are met:
+   * 1. Redistributions of source code must retain the above copyright
+   *    notice, this list of conditions and the following disclaimer.
+   * 2. Redistributions in binary form must reproduce the above copyright
+   *    notice, this list of conditions and the following disclaimer in the
+   *    documentation and/or other materials provided with the distribution.
+   * 3. The name of the author may not be used to endorse or promote products
+   *    derived from this software without specific prior written permission.
+   * 
+   * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+   * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+   * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+   * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+   * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+   * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   */
+
+  /**
+   * Simple, original brics implementation of Brzozowski minimize()
+   */
+  public static void minimizeSimple(Automaton a) {
+    if (a.isSingleton())
+      return;
+    determinizeSimple(a, SpecialOperations.reverse(a));
+    determinizeSimple(a, SpecialOperations.reverse(a));
+  }
+  
+  /**
+   * Simple, original brics implementation of determinize()
+   */
+  public static void determinizeSimple(Automaton a) {
+    if (a.deterministic || a.isSingleton())
+      return;
+    Set<State> initialset = new HashSet<State>();
+    initialset.add(a.initial);
+    determinizeSimple(a, initialset);
+  }
+  
+  /** 
+   * Simple, original brics implementation of determinize()
+   * Determinizes the given automaton using the given set of initial states. 
+   */
+  public static void determinizeSimple(Automaton a, Set<State> initialset) {
+    int[] points = a.getStartPoints();
+    // subset construction
+    Map<Set<State>, Set<State>> sets = new HashMap<Set<State>, Set<State>>();
+    LinkedList<Set<State>> worklist = new LinkedList<Set<State>>();
+    Map<Set<State>, State> newstate = new HashMap<Set<State>, State>();
+    sets.put(initialset, initialset);
+    worklist.add(initialset);
+    a.initial = new State();
+    newstate.put(initialset, a.initial);
+    while (worklist.size() > 0) {
+      Set<State> s = worklist.removeFirst();
+      State r = newstate.get(s);
+      for (State q : s)
+        if (q.accept) {
+          r.accept = true;
+          break;
+        }
+      for (int n = 0; n < points.length; n++) {
+        Set<State> p = new HashSet<State>();
+        for (State q : s)
+          for (Transition t : q.getTransitions())
+            if (t.min <= points[n] && points[n] <= t.max)
+              p.add(t.to);
+        if (!sets.containsKey(p)) {
+          sets.put(p, p);
+          worklist.add(p);
+          newstate.put(p, new State());
+        }
+        State q = newstate.get(p);
+        int min = points[n];
+        int max;
+        if (n + 1 < points.length)
+          max = points[n + 1] - 1;
+        else
+          max = Character.MAX_CODE_POINT;
+        r.addTransition(new Transition(min, max, q));
+      }
+    }
+    a.deterministic = true;
+    a.clearNumberedStates();
+    a.removeDeadTransitions();
+  }
+
 }

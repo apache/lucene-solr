@@ -1,9 +1,11 @@
 #include <jni.h>
-#include <fcntl.h>   // posix_fadvise
+#include <fcntl.h>   // posix_fadvise, constants for open
 #include <string.h>   // strerror
 #include <errno.h>   // errno
 #include <unistd.h>   // pread
 #include <sys/mman.h>   // posix_madvise, madvise
+#include <sys/types.h>  // constants for open
+#include <sys/stat.h>  // constants for open
 
 // java -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/java:./build/classes/demo -Dlucene.version=2.9-dev -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.TestDoc
 
@@ -95,9 +97,9 @@ JNIEXPORT jobject JNICALL Java_org_apache_lucene_store_NativePosixUtil_open_1dir
   fname = (char *) env->GetStringUTFChars(filename, NULL);
 
   if (readOnly) {
-    fd = open(fname, O_RDONLY | O_DIRECT);
+    fd = open(fname, O_RDONLY | O_DIRECT | O_NOATIME);
   } else {
-    fd = open(fname, O_RDWR | O_CREAT | O_DIRECT);
+    fd = open(fname, O_RDWR | O_CREAT | O_DIRECT | O_NOATIME, 0666);
   }
 
   //printf("open %s -> %d; ro %d\n", fname, fd, readOnly); fflush(stdout);

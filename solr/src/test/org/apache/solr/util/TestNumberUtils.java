@@ -17,6 +17,7 @@
 
 package org.apache.solr.util;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.BCDUtils;
 import org.junit.Assert;
@@ -25,9 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import junit.framework.TestCase;
-
-public class TestNumberUtils extends TestCase {
+public class TestNumberUtils extends LuceneTestCase {
 
   private static String arrstr(char[] arr, int start, int end) {
     String str="[";
@@ -35,7 +34,7 @@ public class TestNumberUtils extends TestCase {
     return str+"]";
   }
 
-  static Random rng = new Random();
+  static Random rng = random;
 
   static int[] special = {0,10,100,1000,10000,Integer.MAX_VALUE, Integer.MIN_VALUE};
   static int getSpecial() {

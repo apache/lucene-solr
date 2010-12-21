@@ -40,6 +40,7 @@ public class QueryParserMessages extends NLS {
   public static String INVALID_SYNTAX;
   public static String INVALID_SYNTAX_CANNOT_PARSE;
   public static String INVALID_SYNTAX_FUZZY_LIMITS;
+  public static String INVALID_SYNTAX_FUZZY_EDITS;
   public static String INVALID_SYNTAX_ESCAPE_UNICODE_TRUNCATION;
   public static String INVALID_SYNTAX_ESCAPE_CHARACTER;
   public static String INVALID_SYNTAX_ESCAPE_NONE_HEX_UNICODE;

@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -26,19 +25,20 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class BooleanFilterTest extends LuceneTestCase {
-	private RAMDirectory directory;
+	private Directory directory;
 	private IndexReader reader;
 
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 	  super.setUp();
-		directory = new RAMDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+		directory = newDirectory();
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags
 		addDoc(writer, "admin guest", "010", "20040101","Y");
@@ -46,12 +46,12 @@ public class BooleanFilterTest extends LuceneTestCase {
 		addDoc(writer, "guest", "020", "20050101","Y");
 		addDoc(writer, "admin", "020", "20050101","Maybe");
 		addDoc(writer, "admin guest", "030", "20050101","N");
-		reader = writer.getReader();
+		reader = new SlowMultiReaderWrapper(writer.getReader());
 		writer.close();	
 	}
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 	  reader.close();
 	  directory.close();
 	  super.tearDown();
@@ -60,10 +60,10 @@ public class BooleanFilterTest extends LuceneTestCase {
 	private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException
 	{
 		Document doc=new Document();
-		doc.add(new Field("accessRights",accessRights,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("price",price,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("inStock",inStock,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("accessRights",accessRights,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("price",price,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("date",date,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("inStock",inStock,Field.Store.YES,Field.Index.ANALYZED));
 		writer.addDocument(doc);
 	}
 	

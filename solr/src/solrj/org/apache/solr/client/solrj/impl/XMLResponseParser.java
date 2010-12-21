@@ -357,7 +357,7 @@ public class XMLResponseParser extends ResponseParser
       event = parser.next();
       if( XMLStreamConstants.START_ELEMENT == event ) {
         if( !"doc".equals( parser.getLocalName() ) ) {
-          throw new RuntimeException( "shoudl be doc! "+parser.getLocalName() + " :: " + parser.getLocation() );
+          throw new RuntimeException( "should be doc! "+parser.getLocalName() + " :: " + parser.getLocation() );
         }
         docs.add( readDocument( parser ) );
       }

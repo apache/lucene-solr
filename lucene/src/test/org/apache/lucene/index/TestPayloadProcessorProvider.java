@@ -17,11 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -36,12 +35,11 @@ import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
+public class TestPayloadProcessorProvider extends LuceneTestCase {
 
   private static final class PerDirPayloadProcessor extends PayloadProcessorProvider {
 
@@ -118,29 +116,29 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
 
   private static final int NUM_DOCS = 10;
 
-  private IndexWriterConfig getConfig() {
-    return new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
-  }
-
-  private void populateDirs(Directory[] dirs, boolean multipleCommits)
+  private void populateDirs(Random random, Directory[] dirs, boolean multipleCommits)
       throws IOException {
     for (int i = 0; i < dirs.length; i++) {
-      dirs[i] = new MockRAMDirectory();
-      populateDocs(dirs[i], multipleCommits);
+      dirs[i] = newDirectory();
+      populateDocs(random, dirs[i], multipleCommits);
       verifyPayloadExists(dirs[i], "p", new BytesRef("p1"), NUM_DOCS);
       verifyPayloadExists(dirs[i], "p", new BytesRef("p2"), NUM_DOCS);
     }
   }
 
-  private void populateDocs(Directory dir, boolean multipleCommits)
+  private void populateDocs(Random random, Directory dir, boolean multipleCommits)
       throws IOException {
-    IndexWriter writer = new IndexWriter(dir, getConfig());
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).
+            setMergePolicy(newLogMergePolicy(10))
+    );
     TokenStream payloadTS1 = new PayloadTokenStream("p1");
     TokenStream payloadTS2 = new PayloadTokenStream("p2");
     for (int i = 0; i < NUM_DOCS; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "doc" + i, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field("content", "doc content " + i, Store.NO, Index.ANALYZED));
+      doc.add(newField("id", "doc" + i, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(newField("content", "doc content " + i, Store.NO, Index.ANALYZED));
       doc.add(new Field("p", payloadTS1));
       doc.add(new Field("p", payloadTS2));
       writer.addDocument(doc);
@@ -172,14 +170,14 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     }
   }
 
-  private void doTest(boolean addToEmptyIndex,
+  private void doTest(Random random, boolean addToEmptyIndex,
       int numExpectedPayloads, boolean multipleCommits) throws IOException {
     Directory[] dirs = new Directory[2];
-    populateDirs(dirs, multipleCommits);
+    populateDirs(random, dirs, multipleCommits);
 
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     if (!addToEmptyIndex) {
-      populateDocs(dir, multipleCommits);
+      populateDocs(random, dir, multipleCommits);
       verifyPayloadExists(dir, "p", new BytesRef("p1"), NUM_DOCS);
       verifyPayloadExists(dir, "p", new BytesRef("p2"), NUM_DOCS);
     }
@@ -190,7 +188,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     for (Directory d : dirs) {
       processors.put(d, new PerTermPayloadProcessor());
     }
-    IndexWriter writer = new IndexWriter(dir, getConfig());
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
 
     IndexReader[] readers = new IndexReader[dirs.length];
@@ -210,30 +208,33 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     numExpectedPayloads = NUM_DOCS * dirs.length
         + (addToEmptyIndex ? 0 : NUM_DOCS);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), numExpectedPayloads);
+    for (Directory d : dirs)
+      d.close();
+    dir.close();
   }
 
   @Test
   public void testAddIndexes() throws Exception {
     // addIndexes - single commit in each
-    doTest(true, 0, false);
+    doTest(random, true, 0, false);
 
     // addIndexes - multiple commits in each
-    doTest(true, 0, true);
+    doTest(random, true, 0, true);
   }
 
   @Test
   public void testAddIndexesIntoExisting() throws Exception {
     // addIndexes - single commit in each
-    doTest(false, NUM_DOCS, false);
+    doTest(random, false, NUM_DOCS, false);
 
     // addIndexes - multiple commits in each
-    doTest(false, NUM_DOCS, true);
+    doTest(random, false, NUM_DOCS, true);
   }
 
   @Test
   public void testRegularMerges() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    populateDocs(dir, true);
+    Directory dir = newDirectory();
+    populateDocs(random, dir, true);
     verifyPayloadExists(dir, "p", new BytesRef("p1"), NUM_DOCS);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), NUM_DOCS);
 
@@ -241,13 +242,14 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     // won't get processed.
     Map<Directory, DirPayloadProcessor> processors = new HashMap<Directory, DirPayloadProcessor>();
     processors.put(dir, new PerTermPayloadProcessor());
-    IndexWriter writer = new IndexWriter(dir, getConfig());
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
     writer.optimize();
     writer.close();
 
     verifyPayloadExists(dir, "p", new BytesRef("p1"), 0);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), NUM_DOCS);
+    dir.close();
   }
 
 }

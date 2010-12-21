@@ -135,8 +135,8 @@ public class TestAtomicUpdate extends LuceneTestCase {
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {
       Document d = new Document();
-      d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
-      d.add(new Field("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+      d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      d.add(newField("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
       if ((i-1)%7 == 0) {
         writer.commit();
       }
@@ -185,17 +185,17 @@ public class TestAtomicUpdate extends LuceneTestCase {
     FSDirectory.
   */
   public void testAtomicUpdates() throws Exception {
-    MockIndexWriter.RANDOM = newRandom();
+    MockIndexWriter.RANDOM = random;
     Directory directory;
 
     // First in a RAM directory:
-    directory = new MockRAMDirectory();
+    directory = new MockDirectoryWrapper(random, new RAMDirectory());
     runTest(directory);
     directory.close();
 
     // Second in an FSDirectory:
     File dirPath = _TestUtil.getTempDir("lucene.test.atomic");
-    directory = FSDirectory.open(dirPath);
+    directory = newFSDirectory(dirPath);
     runTest(directory);
     directory.close();
     _TestUtil.rmDir(dirPath);

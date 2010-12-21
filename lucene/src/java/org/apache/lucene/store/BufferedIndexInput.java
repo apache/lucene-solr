@@ -26,9 +26,9 @@ public abstract class BufferedIndexInput extends IndexInput {
   public static final int BUFFER_SIZE = 1024;
 
   private int bufferSize = BUFFER_SIZE;
-
+  
   protected byte[] buffer;
-
+  
   private long bufferStart = 0;			  // position in file of buffer
   private int bufferLength = 0;			  // end of valid bytes
   private int bufferPosition = 0;		  // next byte to read
@@ -205,4 +205,37 @@ public abstract class BufferedIndexInput extends IndexInput {
     return clone;
   }
 
+  /**
+   * Flushes the in-memory bufer to the given output, copying at most
+   * <code>numBytes</code>.
+   * <p>
+   * <b>NOTE:</b> this method does not refill the buffer, however it does
+   * advance the buffer position.
+   * 
+   * @return the number of bytes actually flushed from the in-memory buffer.
+   */
+  protected int flushBuffer(IndexOutput out, long numBytes) throws IOException {
+    int toCopy = bufferLength - bufferPosition;
+    if (toCopy > numBytes) {
+      toCopy = (int) numBytes;
+    }
+    if (toCopy > 0) {
+      out.writeBytes(buffer, bufferPosition, toCopy);
+      bufferPosition += toCopy;
+    }
+    return toCopy;
+  }
+  
+  @Override
+  public void copyBytes(IndexOutput out, long numBytes) throws IOException {
+    assert numBytes >= 0: "numBytes=" + numBytes;
+
+    while (numBytes > 0) {
+      if (bufferLength == bufferPosition) {
+        refill();
+      }
+      numBytes -= flushBuffer(out, numBytes);
+    }
+  }
+  
 }

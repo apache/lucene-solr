@@ -27,7 +27,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -49,7 +48,6 @@ import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCartesian extends LuceneTestCase {
@@ -69,16 +67,22 @@ public class TestCartesian extends LuceneTestCase {
 
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = newDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     setUpPlotter( 2, 15);
     
     addData(writer);
     
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    directory.close();
+    super.tearDown();
   }
   
   
@@ -94,14 +98,14 @@ public class TestCartesian extends LuceneTestCase {
     
     Document doc = new Document();
     
-    doc.add(new Field("name", name,Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("name", name,Field.Store.YES, Field.Index.ANALYZED));
     
     // convert the lat / long to lucene fields
     doc.add(new NumericField(latField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lat));
     doc.add(new NumericField(lngField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
     
     int ctpsize = ctps.size();
     for (int i =0; i < ctpsize; i++){
@@ -110,7 +114,7 @@ public class TestCartesian extends LuceneTestCase {
           Field.Store.YES, 
           true).setDoubleValue(ctp.getTierBoxId(lat,lng)));
       
-      doc.add(new Field(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
+      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
     		  Field.Store.YES, 
     		  Field.Index.NOT_ANALYZED_NO_NORMS));
     }
@@ -144,6 +148,8 @@ public class TestCartesian extends LuceneTestCase {
     addPoint(writer,"North Pole Way",55.0, 4.0);
    
     writer.commit();
+    // TODO: fix CustomScoreQuery usage in testRange/testGeoHashRange so we don't need this.
+    writer.optimize();
     writer.close();
   }
 
@@ -287,6 +293,7 @@ public class TestCartesian extends LuceneTestCase {
       assertTrue(geo_distance >= lastDistance);
       lastDistance = geo_distance;
     }
+    searcher.close();
   }
 
   public void testPoleFlipping() throws IOException, InvalidGeoException {
@@ -383,6 +390,7 @@ public class TestCartesian extends LuceneTestCase {
       assertTrue(geo_distance >= lastDistance);
       lastDistance = geo_distance;
     }
+    searcher.close();
   }
   
   public void testRange() throws IOException, InvalidGeoException {
@@ -477,6 +485,7 @@ public class TestCartesian extends LuceneTestCase {
         lastDistance = geo_distance;
       }
     }
+    searcher.close();
   }
   
   
@@ -570,5 +579,6 @@ public class TestCartesian extends LuceneTestCase {
 	      
       }
     }
+    searcher.close();
   }
 }

@@ -28,7 +28,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -56,15 +55,11 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   private final String FIELD_NAME = "body";
   private Query query;
 
-  public TestTimeLimitingCollector(String name) {
-    super(name);
-  }
-
   /**
    * initializes searcher with a document set
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     final String docText[] = {
         "docThatNeverMatchesSoWeCanRequireLastDocCollectedToBeGreaterThanZero",
@@ -76,8 +71,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry strudel",
         "blueberry pizza",
     };
-    directory = new RAMDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random, directory);
     
     for (int i=0; i<N_DOCS; i++) {
       add(docText[i%docText.length], iw);
@@ -100,7 +95,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -109,7 +104,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
 
   private void add(String value, RandomIndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(new Field(FIELD_NAME, value, Field.Store.NO, Field.Index.ANALYZED));
+    d.add(newField(FIELD_NAME, value, Field.Store.NO, Field.Index.ANALYZED));
     iw.addDocument(d);
   }
 

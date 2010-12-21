@@ -27,7 +27,7 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-smartcn</artifactId>
+  <artifactId>lucene-analyzers-smartcn</artifactId>
   <name>Lucene Smart Chinese Analyzer</name>
   <version>@version@</version>
   <description>Smart Chinese Analyzer</description>

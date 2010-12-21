@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -120,7 +121,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 ,"version", "2.0"
                 ,"bq", "subject:hell^400"
                 ,"bq", "subject:cool^4"
-                ,"debugQuery", "true"
+                , CommonParams.DEBUG_QUERY, "true"
                 )
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='666']"
@@ -179,7 +180,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 ,"qt", "dismax"
                 ,"version", "2.0"
                 ,"bq", "subject:hell OR subject:cool"
-                ,"debugQuery", "true"
+                ,CommonParams.DEBUG_QUERY, "true"
                               ));
     assertTrue(p.matcher(resp).find());
     assertFalse(p_bool.matcher(resp).find());
@@ -189,7 +190,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 ,"version", "2.0"
                 ,"bq", "subject:hell OR subject:cool"
                 ,"bq",""
-                ,"debugQuery", "true"
+                ,CommonParams.DEBUG_QUERY, "true"
                               ));    
     assertTrue(p.matcher(resp).find());
     assertTrue(p_bool.matcher(resp).find());

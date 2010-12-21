@@ -35,47 +35,56 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
   /** query and init param for filtering query
    * @deprecated use SolrParams.FQ or SolrPluginUtils.parseFilterQueries
    */
+  @Deprecated
   public static String FQ = "fq";
   
   /**
    * the default tie breaker to use in DisjunctionMaxQueries
    * @deprecated - use explicit default with SolrParams.getFloat
    */
+  @Deprecated
   public float tiebreaker = 0.0f;
   /**
    * the default query fields to be used
    * @deprecated - use explicit default with SolrParams.get
    */
+  @Deprecated
   public String qf = null;
   /**
    * the default phrase boosting fields to be used
    * @deprecated - use explicit default with SolrParams.get
    */
+  @Deprecated
   public String pf = null;
   /**
    * the default min should match to be used
    * @deprecated - use explicit default with SolrParams.get
    */
+  @Deprecated
   public String mm = "100%";
   /**
    * the default phrase slop to be used 
    * @deprecated - use explicit default with SolrParams.getInt
    */
+  @Deprecated
   public int pslop = 0;
   /**
    * the default boosting query to be used
    * @deprecated - use explicit default with SolrParams.get
    */
+  @Deprecated
   public String bq = null;
   /**
    * the default boosting functions to be used
    * @deprecated - use explicit default with SolrParams.get
    */
+  @Deprecated
   public String bf = null;
   /**
    * the default filtering query to be used
    * @deprecated - use explicit default with SolrParams.get
    */
+  @Deprecated
   public String fq = null;
 
 
@@ -94,6 +103,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
    * </p>
    * @deprecated use SolrParams.toSolrParams
    */
+  @Deprecated
   public void setValues(NamedList args) {
 
     super.setValues(args);

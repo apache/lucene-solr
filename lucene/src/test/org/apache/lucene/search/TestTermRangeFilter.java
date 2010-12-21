@@ -26,7 +26,10 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * A basic 'positive' Unit test class for the TermRangeFilter class.
@@ -39,6 +42,7 @@ import org.apache.lucene.store.RAMDirectory;
  */
 public class TestTermRangeFilter extends BaseTestRangeFilter {
   
+  @Test
   public void testRangeFilterId() throws IOException {
     
     IndexReader reader = signedIndexReader;
@@ -141,6 +145,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     
   }
   
+  @Test
   public void testRangeFilterIdCollating() throws IOException {
     
     IndexReader reader = signedIndexReader;
@@ -242,6 +247,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     assertEquals("med,med,T,T", 1, numHits);
   }
   
+  @Test
   public void testRangeFilterRand() throws IOException {
     
     IndexReader reader = signedIndexReader;
@@ -318,6 +324,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     
   }
   
+  @Test
   public void testRangeFilterRandCollating() throws IOException {
     
     // using the unsigned index because collation seems to ignore hyphens
@@ -395,16 +402,17 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     assertEquals("max,nul,T,T", 1, numHits);
   }
   
+  @Test
   public void testFarsi() throws Exception {
     
     /* build an index */
-    RAMDirectory farsiIndex = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(rand, farsiIndex);
+    Directory farsiIndex = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, farsiIndex);
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
+    doc.add(newField("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
     doc
-        .add(new Field("body", "body", Field.Store.YES,
+        .add(newField("body", "body", Field.Store.YES,
             Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
     
@@ -435,19 +443,20 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     farsiIndex.close();
   }
   
+  @Test
   public void testDanish() throws Exception {
     
     /* build an index */
-    RAMDirectory danishIndex = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(rand, danishIndex);
+    Directory danishIndex = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, danishIndex);
     // Danish collation orders the words below in the given order
     // (example taken from TestSort.testInternationalSort() ).
     String[] words = {"H\u00D8T", "H\u00C5T", "MAND"};
     for (int docnum = 0; docnum < words.length; ++docnum) {
       Document doc = new Document();
-      doc.add(new Field("content", words[docnum], Field.Store.YES,
+      doc.add(newField("content", words[docnum], Field.Store.YES,
           Field.Index.NOT_ANALYZED));
-      doc.add(new Field("body", "body", Field.Store.YES,
+      doc.add(newField("body", "body", Field.Store.YES,
           Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }

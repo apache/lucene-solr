@@ -275,15 +275,19 @@ public final class SolrCore implements SolrInfoMBean {
    }
 
   private void initListeners() {
+    final Class<SolrEventListener> clazz = SolrEventListener.class;
+    final String label = "Event Listener";
     for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
-      SolrEventListener listener = createInitInstance(info, SolrEventListener.class,"Event Listener",null);      
       String event = info.attributes.get("event");
       if("firstSearcher".equals(event) ){
-        firstSearcherListeners.add(listener);
+        SolrEventListener obj = createInitInstance(info,clazz,label,null);
+        firstSearcherListeners.add(obj);
+        log.info(logid + "Added SolrEventListener for firstSearcher: " + obj);
       } else if("newSearcher".equals(event) ){
-        newSearcherListeners.add(listener);
+        SolrEventListener obj = createInitInstance(info,clazz,label,null);
+        newSearcherListeners.add(obj);
+        log.info(logid + "Added SolrEventListener for newSearcher: " + obj);
       }
-      log.info(logid + "Added SolrEventListener: " + listener);
     }
   }
 
@@ -367,12 +371,12 @@ public final class SolrCore implements SolrInfoMBean {
 
   void initIndex() {
     try {
-
       initDirectoryFactory();
-      boolean indexExists = getDirectoryFactory().exists(getNewIndexDir());
+      String indexDir = getNewIndexDir();
+      boolean indexExists = getDirectoryFactory().exists(indexDir);
       boolean firstTime;
       synchronized (SolrCore.class) {
-        firstTime = dirs.add(new File(getNewIndexDir()).getCanonicalPath());
+        firstTime = dirs.add(new File(indexDir).getCanonicalPath());
       }
       boolean removeLocks = solrConfig.unlockOnStartup;
 
@@ -381,10 +385,10 @@ public final class SolrCore implements SolrInfoMBean {
       if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
-        Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), getDirectoryFactory(), solrConfig.mainIndexConfig);
+        Directory dir = SolrIndexWriter.getDirectory(indexDir, getDirectoryFactory(), solrConfig.mainIndexConfig);
         if (dir != null)  {
           if (IndexWriter.isLocked(dir)) {
-            log.warn(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
+            log.warn(logid+"WARNING: Solr index directory '" + indexDir+ "' is locked.  Unlocking...");
             IndexWriter.unlock(dir);
           }
           dir.close();
@@ -393,10 +397,10 @@ public final class SolrCore implements SolrInfoMBean {
 
       // Create the index if it doesn't exist.
       if(!indexExists) {
-        log.warn(logid+"Solr index directory '" + new File(getNewIndexDir()) + "' doesn't exist."
+        log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", getIndexDir(), getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
         writer.close();
       }
 
@@ -418,8 +422,9 @@ public final class SolrCore implements SolrInfoMBean {
     if (msg == null) msg = "SolrCore Object";
     try {
         clazz = getResourceLoader().findClass(className);
-        if (cast != null && !cast.isAssignableFrom(clazz))
+        if (cast != null && !cast.isAssignableFrom(clazz)) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
+        }
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
         Constructor[] cons =  clazz.getConstructors();
@@ -433,7 +438,7 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e, false);
     }
   }
 
@@ -512,7 +517,7 @@ public final class SolrCore implements SolrInfoMBean {
     this.setName( name );
     resourceLoader = config.getResourceLoader();
     if (dataDir == null){
-      dataDir =  config.getDataDir();
+      if(cd.usingDefaultDataDir()) dataDir = config.getDataDir();
       if(dataDir == null) dataDir = cd.getDataDir();
     }
 
@@ -591,7 +596,7 @@ public final class SolrCore implements SolrInfoMBean {
       resourceLoader.inform( this );  // last call before the latch is released.
       instance = this;   // set singleton for backwards compatibility
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e, false);
     } finally {
       // allow firstSearcher events to fire
       latch.countDown();
@@ -684,6 +689,19 @@ public final class SolrCore implements SolrInfoMBean {
       return;
     }
     log.info(logid+" CLOSING SolrCore " + this);
+
+
+    if( closeHooks != null ) {
+       for( CloseHook hook : closeHooks ) {
+         try {
+           hook.close( this );
+         } catch (Throwable e) {
+           SolrException.log(log, e);           
+         }
+      }
+    }
+
+
     try {
       infoRegistry.clear();
     } catch (Exception e) {
@@ -695,20 +713,27 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
     try {
-      closeSearcher();
+      searcherExecutor.shutdown();
+      if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+        log.error("Timeout waiting for searchExecutor to terminate");
+      }
     } catch (Exception e) {
       SolrException.log(log,e);
     }
     try {
-      searcherExecutor.shutdown();
+      // Since we waited for the searcherExecutor to shut down,
+      // there should be no more searchers warming in the background
+      // that we need to take care of.
+      //
+      // For the case that a searcher was registered *before* warming
+      // then the searchExecutor will throw an exception when getSearcher()
+      // tries to use it, and the exception handling code should close it.
+      closeSearcher();
     } catch (Exception e) {
       SolrException.log(log,e);
     }
-    if( closeHooks != null ) {
-       for( CloseHook hook : closeHooks ) {
-         hook.close( this );
-      }
-    }
+
+
   }
 
   /** Current core usage count. */
@@ -841,6 +866,9 @@ public final class SolrCore implements SolrInfoMBean {
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
     if(!registry.containsKey(name)){
       T searchComp = (T) resourceLoader.newInstance(c.getName());
+      if (searchComp instanceof NamedListInitializedPlugin){
+        ((NamedListInitializedPlugin)searchComp).init( new NamedList() );
+      }
       registry.put(name, searchComp);
       if (searchComp instanceof SolrInfoMBean){
         infoRegistry.put(((SolrInfoMBean)searchComp).getName(), (SolrInfoMBean)searchComp);
@@ -1271,6 +1299,18 @@ public final class SolrCore implements SolrInfoMBean {
         _searcher = newSearcherHolder;
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
 
+        /***
+        // a searcher may have been warming asynchronously while the core was being closed.
+        // if this happens, just close the searcher.
+        if (isClosed()) {
+          // NOTE: this should not happen now - see close() for details.
+          // *BUT* if we left it enabled, this could still happen before
+          // close() stopped the executor - so disable this test for now.
+          log.error("Ignoring searcher register on closed core:" + newSearcher);
+          _searcher.decref();
+        }
+        ***/
+
         newSearcher.register(); // register subitems (caches)
         log.info(logid+"Registered new searcher " + newSearcher);
 
@@ -1555,12 +1595,10 @@ public final class SolrCore implements SolrInfoMBean {
         
         // Hide everything...
         Set<String> hide = new HashSet<String>();
-        File configdir = new File( solrConfig.getResourceLoader().getConfigDir() ); 
-        if( configdir.exists() && configdir.isDirectory() ) {
-          for( String file : configdir.list() ) {
-            hide.add( file.toUpperCase(Locale.ENGLISH) );
-          }
-        }
+
+        for (String file : solrConfig.getResourceLoader().listConfigDir()) {
+          hide.add(file.toUpperCase(Locale.ENGLISH));
+        }    
         
         // except the "gettable" list
         StringTokenizer st = new StringTokenizer( gettable );
@@ -1587,16 +1625,7 @@ public final class SolrCore implements SolrInfoMBean {
           "solrconfig.xml uses deprecated <bool name='facet.sort'>. Please "+
           "update your config to use <string name='facet.sort'>.");
     }
-
-    if (!solrConfig.getBool("abortOnConfigurationError",true))
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Setting abortOnConfigurationError==false is no longer supported");
-    if (null != solrConfig.getVal("abortOnConfigurationError", false))
-      log.warn("The abortOnConfigurationError option is no longer supported "+
-               "in solrconfig.xml.  Setting it has no effect.");
-    
-  }
-  
+  } 
 
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;

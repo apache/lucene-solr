@@ -123,7 +123,7 @@ public class ConstantScoreQuery extends Query {
     int doc = -1;
 
     public ConstantScorer(Similarity similarity, IndexReader reader, Weight w) throws IOException {
-      super(similarity);
+      super(similarity,w);
       theScore = w.getValue();
       DocIdSet docIdSet = filter.getDocIdSet(reader);
       if (docIdSet == null) {

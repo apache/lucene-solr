@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonProvider;
@@ -45,10 +44,10 @@ public class TestRegexpQuery extends LuceneTestCase {
   
   public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
-    doc.add(new Field(FN,
+    doc.add(newField(FN,
         "the quick brown fox jumps over the lazy ??? dog 493432 49344",
         Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -100,9 +99,9 @@ public class TestRegexpQuery extends LuceneTestCase {
     AutomatonProvider myProvider = new AutomatonProvider() {
       // automaton that matches quick or brown
       private Automaton quickBrownAutomaton = BasicOperations.union(Arrays
-          .asList(new Automaton[] {BasicAutomata.makeString("quick"),
-              BasicAutomata.makeString("brown"),
-              BasicAutomata.makeString("bob")}));
+          .asList(BasicAutomata.makeString("quick"),
+          BasicAutomata.makeString("brown"),
+          BasicAutomata.makeString("bob")));
       
       public Automaton getAutomaton(String name) throws IOException {
         if (name.equals("quickBrown")) return quickBrownAutomaton;

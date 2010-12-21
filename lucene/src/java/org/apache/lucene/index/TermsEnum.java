@@ -63,14 +63,14 @@ public abstract class TermsEnum {
   /** Seeks to the specified term.  Returns SeekStatus to
    *  indicate whether exact term was found, a different
    *  term was found, or EOF was hit.  The target term may
-   *  be befor or after the current term. */
+   *  be before or after the current term. */
   public final SeekStatus seek(BytesRef text) throws IOException {
     return seek(text, true);
   }
 
   /** Seeks to the specified term by ordinal (position) as
    *  previously returned by {@link #ord}.  The target ord
-   *  may be befor or after the current ord.  See {@link
+   *  may be before or after the current ord.  See {@link
    *  #seek(BytesRef)}. */
   public abstract SeekStatus seek(long ord) throws IOException;
   
@@ -123,6 +123,10 @@ public abstract class TermsEnum {
    *  instance & reuse it. */
   public abstract Comparator<BytesRef> getComparator() throws IOException;
 
+  /** Optional optimization hint: informs the codec that the
+   *  current term is likely to be re-seek'd-to soon.  */
+  public abstract void cacheCurrentTerm() throws IOException;
+
   /** An empty TermsEnum for quickly returning an empty instance e.g.
    * in {@link org.apache.lucene.search.MultiTermQuery}
    * <p><em>Please note:</em> This enum should be unmodifiable,
@@ -136,6 +140,9 @@ public abstract class TermsEnum {
     
     @Override
     public SeekStatus seek(long ord) { return SeekStatus.END; }
+    
+    @Override
+    public void cacheCurrentTerm() {}
     
     @Override
     public BytesRef term() {

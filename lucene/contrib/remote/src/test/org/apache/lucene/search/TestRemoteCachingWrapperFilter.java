@@ -17,13 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.search.FilterManager.FilterItem;
+import org.apache.lucene.store.Directory;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,30 +36,51 @@ import static org.junit.Assert.*;
 /**
  * Tests that the index is cached on the searcher side of things.
  */
-public class TestRemoteCachingWrapperFilter extends RemoteTestCaseJ4 {
+public class TestRemoteCachingWrapperFilter extends RemoteTestCase {
+  private static Directory indexStore;
+  private static Searchable local;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     // construct an index
-    RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+    indexStore = newDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("type", "A", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("type", "A", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     //Need a second document to search for
     doc = new Document();
-    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("type", "B", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("type", "B", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
-    Searchable local = new IndexSearcher(indexStore, true);
+    local = new IndexSearcher(indexStore, true);
     startServer(local);
   }
+  
+  @Before
+  public void setUp () throws Exception {
+    super.setUp();
+    // to support test iteration > 1
+    Map<Integer, FilterItem> cache = FilterManager.getInstance().cache;
+    synchronized(cache){
+      cache.clear();
 
+    }
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    local.close();
+    indexStore.close();
+    indexStore = null;
+  }
+  
   private static void search(Query query, Filter filter, int hitNumber, String typeValue) throws Exception {
     Searchable[] searchables = { lookupRemote() };
     Searcher searcher = new MultiSearcher(searchables);

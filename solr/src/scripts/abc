@@ -33,13 +33,13 @@ log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog [-h hostname] [-p port] [-d dir] [-w webappname] [-u username] [-U url] [-v] [-V]
+usage: $prog [-h hostname] [-p port] [-d dir] [-w webapp_name] [-u username] [-U url] [-v] [-V]
        -h          specify Solr hostname (defaults to localhost)
        -p          specify Solr port number
        -w          specify name of Solr webapp (defaults to solr)
        -u          specify user to sudo to before running script
        -U          specify full update url (overrides -h,-p,-w parameters)
-       -d          specify directory holding index data
+       -d          specify directory holding index data (defaults to data)
        -v          increase verbosity
        -V          output debugging info
 "
@@ -80,40 +80,9 @@ done
 
 [[ -n $debug ]] && set -x
 
-# use default value for data_dir if not specified
-# relative path starts at ${solr_root}
-if [[ -z ${data_dir} ]]
-then
-    data_dir=${solr_root}/data
-elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
-then
-    data_dir=${solr_root}/${data_dir}
-fi
+dataDir
 
-if [[ -n ${solr_url} ]]
-then
-  curl_url=${solr_url}
-else
-  if [[ -z ${solr_port} ]]
-  then
-    echo "Solr port number missing in $confFile or command line."
-    echo "$USAGE"
-    exit 1
-  fi
-
-  # use default hostname if not specified
-  if [[ -z ${solr_hostname} ]]
-  then
-    solr_hostname=localhost
-  fi
-
-  # use default webapp name if not specified
-  if [[ -z ${webapp_name} ]]
-  then
-    webapp_name=solr
-  fi
-  curl_url=http://${solr_hostname}:${solr_port}/${webapp_name}/update
-fi
+curlUrl
 
 fixUser "$@"
 

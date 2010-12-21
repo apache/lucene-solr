@@ -26,6 +26,11 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Create a term query from the input value without any text analysis or transformation whatsoever.
+ * This is useful in debugging, or when raw terms are returned from the terms component (this is not the default).
+ *
+ * <br>For easy filter construction to drill down in faceting, the {@link TermQParserPlugin} is recommended.
+ * <br>For full analysis on all fields, including text fields, see the {@link FieldQParserPlugin}. 
+ *
  * <br>Other parameters: <code>f</code>, the field
  * <br>Example: <code>{!raw f=myfield}Foo Bar</code> creates <code>TermQuery(Term("myfield","Foo Bar"))</code>
  */

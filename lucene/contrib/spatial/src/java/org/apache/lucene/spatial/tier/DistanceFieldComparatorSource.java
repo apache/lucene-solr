@@ -109,12 +109,14 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 		}
 
 		@Override
-                  public void setNextReader(IndexReader reader, int docBase)
+                public FieldComparator setNextReader(IndexReader reader, int docBase)
                   throws IOException {
 			
 			// each reader in a segmented base
 			// has an offset based on the maxDocs of previous readers
 			offset = docBase;
+
+                        return this;
 		}
 
 		@Override

@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -32,7 +31,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 /*******************************************************************************
  * Tests the span query bug in Lucene. It demonstrates that SpanTermQuerys don't
@@ -45,7 +43,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
   protected Directory mDirectory;
   protected IndexReader reader;
   protected IndexSearcher searcher;
-  protected Random random;
   
   // field names in the index
   private final static String FIELD_ID = "ID";
@@ -55,11 +52,10 @@ public class TestSpansAdvanced extends LuceneTestCase {
    * Initializes the tests by adding 4 identical documents to the index.
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
     // create test index
-    mDirectory = new RAMDirectory();
+    mDirectory = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random,
         mDirectory, new MockAnalyzer(MockTokenizer.SIMPLE, true,
                 MockTokenFilter.ENGLISH_STOPSET, true));
@@ -73,7 +69,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     mDirectory.close();
@@ -93,9 +89,9 @@ public class TestSpansAdvanced extends LuceneTestCase {
       final String text) throws IOException {
     
     final Document document = new Document();
-    document.add(new Field(FIELD_ID, id, Field.Store.YES,
+    document.add(newField(FIELD_ID, id, Field.Store.YES,
         Field.Index.NOT_ANALYZED));
-    document.add(new Field(FIELD_TEXT, text, Field.Store.YES,
+    document.add(newField(FIELD_TEXT, text, Field.Store.YES,
         Field.Index.ANALYZED));
     writer.addDocument(document);
   }
@@ -141,7 +137,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
   protected static void assertHits(Searcher s, Query query,
       final String description, final String[] expectedIds,
       final float[] expectedScores) throws IOException {
-    QueryUtils.check(query, s);
+    QueryUtils.check(random, query, s);
     
     final float tolerance = 1e-5f;
     

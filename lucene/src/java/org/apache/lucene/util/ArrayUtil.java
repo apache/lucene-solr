@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.util.Collection;
+import java.util.Comparator;
 
 /**
  * Methods for manipulating arrays.
@@ -27,14 +28,7 @@ import java.util.Collection;
 
 public final class ArrayUtil {
 
-  /**
-   * @deprecated This constructor was not intended to be public and should not be used.
-   *  This class contains solely a static utility methods.
-   *  It will be made private in Lucene 4.0
-   */
-  // make private in 4.0!
-  @Deprecated
-  public ArrayUtil() {} // no instance
+  private ArrayUtil() {} // no instance
 
   /*
      Begin Apache Harmony code
@@ -247,6 +241,19 @@ public final class ArrayUtil {
   public static short[] grow(short[] array) {
     return grow(array, 1 + array.length);
   }
+  
+  public static float[] grow(float[] array, int minSize) {
+    if (array.length < minSize) {
+      float[] newArray = new float[oversize(minSize, RamUsageEstimator.NUM_BYTES_FLOAT)];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static float[] grow(float[] array) {
+    return grow(array, 1 + array.length);
+  }
 
   public static short[] shrink(short[] array, int targetSize) {
     final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_SHORT);
@@ -385,7 +392,7 @@ public final class ArrayUtil {
   }
 
   /**
-   * Returns hash of chars in range start (inclusive) to
+   * Returns hash of bytes in range start (inclusive) to
    * end (inclusive)
    */
   public static int hashCode(byte[] array, int start, int end) {
@@ -421,6 +428,33 @@ public final class ArrayUtil {
     }
     return false;
   }
+
+  /* DISABLE THIS FOR NOW: This has performance problems until Java creates intrinsics for Class#getComponentType() and Array.newInstance()
+  public static <T> T[] grow(T[] array, int minSize) {
+    if (array.length < minSize) {
+      @SuppressWarnings("unchecked") final T[] newArray =
+        (T[]) Array.newInstance(array.getClass().getComponentType(), oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static <T> T[] grow(T[] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static <T> T[] shrink(T[] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+    if (newSize != array.length) {
+      @SuppressWarnings("unchecked") final T[] newArray =
+        (T[]) Array.newInstance(array.getClass().getComponentType(), newSize);
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else
+      return array;
+  }
+  */
 
   // Since Arrays.equals doesn't implement offsets for equals
   /**
@@ -461,4 +495,177 @@ public final class ArrayUtil {
 
     return result;
   }
+  
+  /** SorterTemplate with custom {@link Comparator} */
+  private static <T> SorterTemplate getSorter(final T[] a, final Comparator<? super T> comp) {
+    return new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        final T o = a[i];
+        a[i] = a[j];
+        a[j] = o;
+      }
+      
+      @Override
+      protected int compare(int i, int j) {
+        return comp.compare(a[i], a[j]);
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = a[i];
+      }
+  
+      @Override
+      protected int comparePivot(int j) {
+        return comp.compare(pivot, a[j]);
+      }
+      
+      private T pivot;
+    };
+  }
+  
+  /** Natural SorterTemplate */
+  private static <T extends Comparable<? super T>> SorterTemplate getSorter(final T[] a) {
+    return new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        final T o = a[i];
+        a[i] = a[j];
+        a[j] = o;
+      }
+      
+      @Override
+      protected int compare(int i, int j) {
+        return a[i].compareTo(a[j]);
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = a[i];
+      }
+  
+      @Override
+      protected int comparePivot(int j) {
+        return pivot.compareTo(a[j]);
+      }
+      
+      private T pivot;
+    };
+  }
+
+  // quickSorts (endindex is exclusive!):
+  
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void quickSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    getSorter(a, comp).quickSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T> void quickSort(T[] a, Comparator<? super T> comp) {
+    quickSort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void quickSort(T[] a, int fromIndex, int toIndex) {
+    getSorter(a).quickSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T extends Comparable<? super T>> void quickSort(T[] a) {
+    quickSort(a, 0, a.length);
+  }
+
+  // mergeSorts:
+  
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void mergeSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    getSorter(a, comp).mergeSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T> void mergeSort(T[] a, Comparator<? super T> comp) {
+    mergeSort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void mergeSort(T[] a, int fromIndex, int toIndex) {
+    getSorter(a).mergeSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T extends Comparable<? super T>> void mergeSort(T[] a) {
+    mergeSort(a, 0, a.length);
+  }
+
+  // insertionSorts:
+  
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void insertionSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    getSorter(a, comp).insertionSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   */
+  public static <T> void insertionSort(T[] a, Comparator<? super T> comp) {
+    insertionSort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void insertionSort(T[] a, int fromIndex, int toIndex) {
+    getSorter(a).insertionSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   */
+  public static <T extends Comparable<? super T>> void insertionSort(T[] a) {
+    insertionSort(a, 0, a.length);
+  }
+
 }

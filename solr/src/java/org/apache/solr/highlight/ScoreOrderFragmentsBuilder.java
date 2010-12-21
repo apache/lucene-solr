@@ -18,19 +18,17 @@
 package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
-public class ScoreOrderFragmentsBuilder extends HighlightingPluginBase
-    implements SolrFragmentsBuilder {
+public class ScoreOrderFragmentsBuilder extends SolrFragmentsBuilder {
 
-  public FragmentsBuilder getFragmentsBuilder(SolrParams params) {
-    numRequests++;
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
-
-    return new org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder();
+  @Override
+  protected FragmentsBuilder getFragmentsBuilder( SolrParams params,
+      String[] preTags, String[] postTags ) {
+    org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder sofb =
+      new org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder( preTags, postTags );
+    sofb.setMultiValuedSeparator( getMultiValuedSeparatorChar( params ) );
+    return sofb;
   }
 
   ///////////////////////////////////////////////////////////////////////

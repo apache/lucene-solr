@@ -20,9 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 public class TestMultiReader extends TestDirectoryReader {
-  public TestMultiReader(String s) {
-    super(s);
-  }
 
   @Override
   protected IndexReader openReader() throws IOException {

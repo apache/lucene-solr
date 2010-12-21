@@ -25,9 +25,9 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
-Apache Tika 0.6
+Apache Tika 0.8-SNAPSHOT
 Carrot2 3.1.0
-Velocity 1.6.1
+Velocity 1.6.4 and Velocity Tools 2.0
 
 
 Upgrading from Solr 1.4
@@ -38,6 +38,9 @@ Upgrading from Solr 1.4
   In a master/slave configuration, all searchers/slaves should be upgraded
   before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
+
+* The Solr JavaBin format has changed as of Solr 3.1. If you are using the 
+  JavaBin format, you will need to upgrade your SolrJ client. (SOLR-2034)
 
 * The experimental ALIAS command has been removed (SOLR-1637)
 
@@ -77,6 +80,14 @@ Upgrading from Solr 1.4
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
 
+* LUCENE-2608: Added the ability to specify the accuracy on a per request basis. 
+  Implementations of SolrSpellChecker must change over to the new SolrSpellChecker
+  abstract methods using the new SpellingOptions class.  While this change is not
+  backward compatible, it should be trivial to migrate as the SpellingOptions class
+  just encapsulates the parameters that were passed in to the methods before the change. (gsingers)
+
+* readercycle script was removed. (SOLR-2046)
+
 Detailed Change List
 ----------------------
 
@@ -84,10 +95,10 @@ New Features
 ----------------------
 
 * SOLR-1302: Added several new distance based functions, including
-  Great Circle (haversine), Manhattan, Euclidean and String (using the
-  StringDistance methods in the Lucene spellchecker).
+  Great Circle (haversine) for geo search, Manhattan, Euclidean
+  and String (using the StringDistance methods in the Lucene spellchecker).
   Also added geohash(), deg() and rad() convenience functions.
-  See http://wiki.apache.org/solr/FunctionQuery. (gsingers)
+  See http://wiki.apache.org/solr/FunctionQuery. (yonik, gsingers)
 
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,
@@ -107,7 +118,7 @@ New Features
 
 * SOLR-1625: Add regexp support for TermsComponent (Uri Boness via noble)
 
-* SOLR-1297: Add sort by Function capability (gsingers)
+* SOLR-1297: Add sort by Function capability (gsingers, yonik)
 
 * SOLR-1139: Add TermsComponent Query and Response Support in SolrJ (Matt Weber via shalin)
 
@@ -119,8 +130,10 @@ New Features
 
 * SOLR-1653: Add PatternReplaceCharFilter (koji)
 
-* SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
-  implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
+* SOLR-1131: FieldTypes can now output multiple Fields per Type and still be
+  searched.  This can be handy for hiding the details of a particular
+  implementation such as in the spatial case.
+  (Chris Mattmann, shalin, noble, gsingers, yonik)
 
 * SOLR-1586: Add support for Geohash FieldType (Chris Mattmann, gsingers)
 
@@ -154,6 +167,11 @@ New Features
 * SOLR-1740: ShingleFilterFactory supports the "minShingleSize" and "tokenSeparator"
   parameters for controlling the minimum shingle size produced by the filter, and
   the separator string that it uses, respectively.  (Steven Rowe via rmuir)
+  
+* SOLR-744: ShingleFilterFactory supports the "outputUnigramsIfNoShingles"
+  parameter, to output unigrams if the number of input tokens is fewer than
+  minShingleSize, and no shingles can be generated.  
+  (Chris Harris via Steven Rowe)
   
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
@@ -199,9 +217,10 @@ New Features
 
 * SOLR-1984: Add HyphenationCompoundWordTokenFilterFactory. (PB via rmuir)
 
-* SOLR-1568: Added "native" filtering support for PointType, GeohashField.  Added LatLonType with filtering support too.  See
-  	     http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial. 
-	     Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers) 
+* SOLR-1568: Added native filtering support via geofilt for spatial field
+  types LatLonType, PointType, GeohashField. 
+  See http://wiki.apache.org/solr/SpatialSearch for examples. 
+  (yonik, gsingers)
    
 * SOLR-2015: Add a boolean attribute autoGeneratePhraseQueries to TextField.
   autoGeneratePhraseQueries="true" (the default) causes the query parser to
@@ -214,6 +233,89 @@ New Features
 * SOLR-1925: Add CSVResponseWriter (use wt=csv) that returns the list of documents
   in CSV format. (Chris Mattmann, yonik)
 
+* SOLR-1240: "Range Faceting" has been added.  This is a generalization
+  of the existing "Date Faceting" logic so that it now supports any
+  all stock numeric field types that support range queries in addition
+  to dates.  
+  (Gijs Kunze, hossman)
+
+* SOLR-2021: Add SolrEncoder plugin to Highlighter. (koji)
+
+* SOLR-2030: Make FastVectorHighlighter use of SolrEncoder. (koji)
+
+* SOLR-2053: Add support for custom comparators in Solr spellchecker, per LUCENE-2479 (gsingers)
+
+* SOLR-1682: (SOLR-236, SOLR-237, SOLR-1773, SOLR-1311) Search grouping / Field collapsing.
+  (Martijn van Groningen, Emmanuel Keller, Shalin Shekhar Mangar,
+   Koji Sekiguchi, Iv�n de Prado, Ryan McKinley, Marc Sturlese, Peter Karich,
+   Bojan Smid, Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
+   Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
+   Harish Agarwal, yonik)
+
+* SOLR-1316: Create autosuggest component.
+  (Ankul Garg, Jason Rutherglen, Shalin Shekhar Mangar, gsingers, Robert Muir, ab)
+
+* SOLR-2059: Add "types" attribute to WordDelimiterFilterFactory, which
+  allows you to customize how WordDelimiterFilter tokenizes text with
+  a configuration file.  (Peter Karich, rmuir)
+
+* SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)
+
+* SOLR-2099: Add ability to throttle rsync based replication using rsync option --bwlimit.
+  (Brandon Evans via koji)
+
+* SOLR-2113: Add TermQParserPlugin, registered as "term".  This is useful
+  when generating filter queries from terms returned from field faceting or
+  the terms component. Example: fq={!term f=weight}1.5   (hossman, yonik) 
+
+* SOLR-2001: The query component will substitute an empty query that matches
+  no documents if the query parser returns null.  This also prevents an
+  exception from being thrown by the default parser if "q" is missing. (yonik)
+
+* SOLR-2112: Solrj API now supports streaming results. (ryan)
+
+* SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
+  (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
+
+* SOLR-2128: Full parameter substitution for function queries.
+  Example: q=add($v1,$v2)&v1=mul(popularity,5)&v2=20.0
+  (yonik)
+
+* SOLR-2133: Function query parser can now parse multiple comma separated
+  value sources.  It also now fails if there is extra unexpected text
+  after parsing the functions, instead of silently ignoring it.
+  This allows expressions like q=dist(2,vector(1,2),$pt)&pt=3,4   (yonik)
+
+* LUCENE-2507: Added DirectSolrSpellChecker, which uses Lucene's DirectSpellChecker
+  to retrieve correction candidates directly from the term dictionary using
+  levenshtein automata.  (rmuir)
+
+* SOLR-2010: Added ability to verify that spell checking collations have
+   actual results in the index.  (James Dyer via gsingers)
+   
+* SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
+  built-in load balancing, and infrastructure for future SolrCloud work. 
+  (yonik, Mark Miller)
+
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
+  tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-2211,LUCENE-2763: Added UAX29URLEmailTokenizerFactory, which implements
+  UAX#29, a unicode algorithm with good results for most languages, as well as
+  URL and E-mail tokenization according to the relevant RFCs.
+  (Tom Burton-West via rmuir)
+
+* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
+
+* SOLR-1729: Evaluation of NOW for date math is done only once per request for
+  consistency, and is also propagated to shards in distributed search.
+  Adding a parameter NOW=<time_in_ms> to the request will override the
+  current time.  (Peter Sturge, yonik)
+
+* SOLR-2188: Added "maxTokenLength" argument to the factories for ClassicTokenizer,
+  StandardTokenizer, and UAX29URLEmailTokenizer. (Steven Rowe)
 
 Optimizations
 ----------------------
@@ -243,9 +345,23 @@ Optimizations
   for the first facet request is anywhere from 30% to 32x, depending on how many
   terms are in the field and how many documents match per term.  (yonik) 
 
+* SOLR-2089: Speed up UnInvertedField faceting (facet.method=fc for
+  multi-valued fields) when facet.limit is both high, and a high enough
+  percentage of the number of unique terms in the field.  Extreme cases
+  yield speedups over 3x. (yonik)
+
+* SOLR-2046: Simplify legacy replication scripts by adding common functions
+  to scripts-util. (koji)
+
+* SOLR-2092: Speed up single-valued and multi-valued "fc" faceting. Typical
+  improvement is 5%, but can be much greater (up to 10x faster) when facet.offset
+  is very large (deep paging). (yonik)
+
+* SOLR-2200: Improve the performance of DataImportHandler for large delta-import
+  updates. (Mark Waddle via rmuir)
+
 Bug Fixes
 ----------------------
-
 * SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
   to the original ValueSource.getValues(reader) so custom sources
   will work. (yonik)
@@ -391,7 +507,70 @@ Bug Fixes
 * SOLR-2008: avoid possible RejectedExecutionException w/autoCommit
   by making SolreCore close the UpdateHandler before closing the
   SearchExecutor.  (NarasimhaRaju, hossman)
-  
+
+* SOLR-2036: Avoid expensive fieldCache ram estimation for the
+  admin stats page. (yonik)
+
+* SOLR-2047: ReplicationHandler should accept bool type for enable flag. (koji)
+
+* SOLR-1630: Fix spell checking collation issue related to token positions (rmuir, gsingers) 
+
+* SOLR-2100: The replication handler backup command didn't save the commit
+  point and hence could fail when a newer commit caused the older commit point
+  to be removed before it was finished being copied.  This did not affect
+  normal master/slave replication.  (Peter Sturge via yonik)
+
+* SOLR-2107: MoreLikeThisHandler doesn't work with alternate qparsers. (yonik)
+
+* SOLR-2111: Change exception handling in distributed faceting to work more
+  like non-distributed faceting, change facet_counts/exception from a String
+  to a List<String> to enable listing all exceptions that happened, and
+  prevent an exception in one facet command from affecting another
+  facet command. (yonik)
+
+* SOLR-2110: Remove the restriction on names for local params
+  substitution/dereferencing.  Properly encode local params in
+  distributed faceting.  (yonik)
+
+* SOLR-2083: SpellCheckComponent misreports suggestions when distributed (James Dyer via gsingers)  
+
+* SOLR-2108: Fixed false positives when using wildcard queries on fields with reversed
+  wildcard support. For example, a query of *zemog* would match documents that contain
+  'gomez'.  (Landon Kuhn via Robert Muir)
+
+* SOLR-2135: Fix behavior of ConcurrentLRUCache when asking for
+  getLatestAccessedItems(0) or getOldestAccessedItems(0).
+  (David Smiley via hossman)
+
+* SOLR-2148: Highlighter doesn't support q.alt. (koji)
+
+* SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
+
+* SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
+  defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+
+* SOLR-2173: Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
+
+* SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
+
+* SOLR-1962: SolrCore#initIndex should not use a mix of indexPath and newIndexPath (Mark Miller)
+
+* SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
+  (Drew Farris via koji)
+
+* SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. (koji)
+
+* SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
+  true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
+  (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
+
+* SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
+  (koji)
+
+* SOLR-2219: The init() method of every SolrRequestHandler was being
+  called twice. (ambikeshwar singh and hossman)
+
+* SOLR-2285: duplicate SolrEventListeners no longer created (hossman)
 
 Other Changes
 ----------------------
@@ -406,8 +585,6 @@ Other Changes
 
 * SOLR-1592: Refactor XMLWriter startTag to allow arbitrary attributes to be written
   (Chris A. Mattmann via noble)
-
-* SOLR-1561: Added Lucene 2.9.1 spatial contrib jar to lib. (gsingers)
 
 * SOLR-1570: Log warnings if uniqueKey is multi-valued or not stored (hossman, shalin) 
 
@@ -487,6 +664,19 @@ Other Changes
 * SOLR-2003: SolrResourceLoader will report any encoding errors, rather than
   silently using replacement characters for invalid inputs (blargy via rmuir)
 
+* SOLR-1804: Google collections updated to Google Guava (which is a superset of collections and contains bug fixes) (gsingers)  
+
+* SOLR-2034: Switch to JavaBin codec version 2. Strings are now serialized
+  as the number of UTF-8 bytes, followed by the bytes in UTF-8. Previously
+  Strings were serialized as the number of UTF-16 chars, followed by the
+  bytes in Modified UTF-8. (hossman, yonik, rmuir)
+
+* SOLR-2013: Add mapping-FoldToASCII.txt to example conf directory.
+  (Steven Rowe via koji)
+  
+* SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
+
+
 Build
 ----------------------
 
@@ -496,6 +686,8 @@ Build
   update clean to remove the jars in that directory (Mark Miller)
 
 * LUCENE-2466: Commons-Codec was upgraded from 1.3 to 1.4. (rmuir)
+
+* SOLR-2042: Fixed some Maven deps (Drew Farris via gsingers)
 
 Documentation
 ----------------------
@@ -614,7 +806,8 @@ New Features
  7. SOLR-680: Add StatsComponent. This gets simple statistics on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
-    7.1 SOLR-1380: Added support for multi-valued fields (Harish Agarwal via gsingers)
+    7.1 SOLR-1380: Added support for multi-valued fields to stats component
+        (Harish Agarwal via gsingers)
 
  8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
     as well as configuration replication and exposes detailed statistics and progress information

@@ -29,7 +29,6 @@ import org.apache.lucene.search.Similarity;
  */
 public class SpanScorer extends Scorer {
   protected Spans spans;
-  protected Weight weight;
   protected byte[] norms;
   protected float value;
 
@@ -40,10 +39,9 @@ public class SpanScorer extends Scorer {
 
   protected SpanScorer(Spans spans, Weight weight, Similarity similarity, byte[] norms)
   throws IOException {
-    super(similarity);
+    super(similarity, weight);
     this.spans = spans;
     this.norms = norms;
-    this.weight = weight;
     this.value = weight.getValue();
     if (this.spans.next()) {
       doc = -1;
@@ -96,6 +94,11 @@ public class SpanScorer extends Scorer {
   public float score() throws IOException {
     float raw = getSimilarity().tf(freq) * value; // raw score
     return norms == null? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize
+  }
+  
+  @Override
+  public float freq() throws IOException {
+    return freq;
   }
 
   /** This method is no longer an official member of {@link Scorer},

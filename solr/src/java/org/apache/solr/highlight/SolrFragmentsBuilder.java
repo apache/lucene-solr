@@ -18,26 +18,65 @@
 package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.DefaultSolrParams;
+import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public interface SolrFragmentsBuilder extends SolrInfoMBean, NamedListInitializedPlugin {
-
-  /** <code>init</code> will be called just once, immediately after creation.
-   * <p>The args are user-level initialization parameters that
-   * may be specified when declaring a request handler in
-   * solrconfig.xml
-   */
-  public void init( NamedList args);
+public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
+  implements SolrInfoMBean, NamedListInitializedPlugin {
+  
+  public static final String DEFAULT_PRE_TAGS = "<em>";
+  public static final String DEFAULT_POST_TAGS = "</em>";
 
   /**
-   * Return a FragmentsBuilder appropriate for this field.
+   * Return a {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder} appropriate for this field.
    * 
-   * @param fieldName The name of the field
    * @param params The params controlling Highlighting
-   * @return An appropriate FragmentsBuilder.
+   * @return An appropriate {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder}.
    */
-  public FragmentsBuilder getFragmentsBuilder( SolrParams params );
+  public FragmentsBuilder getFragmentsBuilder(SolrParams params) {
+    numRequests++;
+    if( defaults != null ) {
+      params = new DefaultSolrParams( params, defaults );
+    }
+    return getFragmentsBuilder( params, getPreTags( params, null ), getPostTags( params, null ) );
+  }
+  
+  public String[] getPreTags( SolrParams params, String fieldName ){
+    return getTags( params, HighlightParams.TAG_PRE, fieldName, DEFAULT_PRE_TAGS );
+  }
+  
+  public String[] getPostTags( SolrParams params, String fieldName ){
+    return getTags( params, HighlightParams.TAG_POST, fieldName, DEFAULT_POST_TAGS );
+  }
+  
+  private String[] getTags( SolrParams params, String paramName, String fieldName, String def ){
+    if( defaults != null ) {
+      params = new DefaultSolrParams( params, defaults );
+    }
+    String value = null;
+    if( fieldName == null )
+      value = params.get( paramName, def );
+    else
+      value = params.getFieldParam( fieldName, paramName, def );
+    String[] tags = value.split( "," );
+    for( int i = 0; i < tags.length; i++ ){
+      tags[i] = tags[i].trim();
+    }
+    return tags;
+  }
+  
+  protected abstract FragmentsBuilder getFragmentsBuilder( SolrParams params, String[] preTags, String[] postTags );
+  
+  protected char getMultiValuedSeparatorChar( SolrParams params ){
+    String separator = params.get( HighlightParams.MULTI_VALUED_SEPARATOR, " " );
+    if( separator.length() > 1 ){
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          HighlightParams.MULTI_VALUED_SEPARATOR + " parameter must be a char, but is \"" + separator + "\"" );
+    }
+    return separator.charAt( 0 );
+  }
 }

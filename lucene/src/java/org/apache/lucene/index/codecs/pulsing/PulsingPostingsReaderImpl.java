@@ -22,8 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.codecs.standard.TermState;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
+import org.apache.lucene.index.codecs.TermState;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriterImpl.Document;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriterImpl.Position;
 import org.apache.lucene.store.IndexInput;
@@ -39,13 +39,13 @@ import org.apache.lucene.util.CodecUtil;
 // create two separate docs readers, one that also reads
 // prox and one that doesn't?
 
-public class PulsingPostingsReaderImpl extends StandardPostingsReader {
+public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
   // Fallback reader for non-pulsed terms:
-  final StandardPostingsReader wrappedPostingsReader;
+  final PostingsReaderBase wrappedPostingsReader;
   int maxPulsingDocFreq;
 
-  public PulsingPostingsReaderImpl(StandardPostingsReader wrappedPostingsReader) throws IOException {
+  public PulsingPostingsReaderImpl(PostingsReaderBase wrappedPostingsReader) throws IOException {
     this.wrappedPostingsReader = wrappedPostingsReader;
   }
 
@@ -65,7 +65,7 @@ public class PulsingPostingsReaderImpl extends StandardPostingsReader {
     public Object clone() {
       PulsingTermState clone;
       clone = (PulsingTermState) super.clone();
-      clone.docs = (Document[]) docs.clone();
+      clone.docs = docs.clone();
       for(int i=0;i<clone.docs.length;i++) {
         final Document doc = clone.docs[i];
         if (doc != null) {

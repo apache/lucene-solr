@@ -30,7 +30,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
 class DocHelper {
   public static final String FIELD_1_TEXT = "field one text";

@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -34,7 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 // presumably rare in practice...
 
 /** @lucene.experimental */
-public final class PulsingPostingsWriterImpl extends StandardPostingsWriter {
+public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   final static String CODEC = "PulsedPostings";
 
@@ -110,11 +110,11 @@ public final class PulsingPostingsWriterImpl extends StandardPostingsWriter {
   // TODO: -- lazy init this?  ie, if every single term
   // was pulsed then we never need to use this fallback?
   // Fallback writer for non-pulsed terms:
-  final StandardPostingsWriter wrappedPostingsWriter;
+  final PostingsWriterBase wrappedPostingsWriter;
 
   /** If docFreq <= maxPulsingDocFreq, its postings are
    *  inlined into terms dict */
-  public PulsingPostingsWriterImpl(int maxPulsingDocFreq, StandardPostingsWriter wrappedPostingsWriter) throws IOException {
+  public PulsingPostingsWriterImpl(int maxPulsingDocFreq, PostingsWriterBase wrappedPostingsWriter) throws IOException {
     super();
 
     pendingDocs = new Document[maxPulsingDocFreq];

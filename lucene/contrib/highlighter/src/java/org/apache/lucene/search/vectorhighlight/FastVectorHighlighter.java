@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.highlight.Encoder;
 
 /**
  * Another highlighter implementation.
@@ -43,7 +44,7 @@ public class FastVectorHighlighter {
   }
 
   /**
-   * a constructor. Using SimpleFragListBuilder and ScoreOrderFragmentsBuilder.
+   * a constructor. Using {@link SimpleFragListBuilder} and {@link ScoreOrderFragmentsBuilder}.
    * 
    * @param phraseHighlight true or false for phrase highlighting
    * @param fieldMatch true of false for field matching
@@ -53,12 +54,12 @@ public class FastVectorHighlighter {
   }
 
   /**
-   * a constructor. A FragListBuilder and a FragmentsBuilder can be specified (plugins).
+   * a constructor. A {@link FragListBuilder} and a {@link FragmentsBuilder} can be specified (plugins).
    * 
    * @param phraseHighlight true of false for phrase highlighting
    * @param fieldMatch true of false for field matching
-   * @param fragListBuilder an instance of FragListBuilder
-   * @param fragmentsBuilder an instance of FragmentsBuilder
+   * @param fragListBuilder an instance of {@link FragListBuilder}
+   * @param fragmentsBuilder an instance of {@link FragmentsBuilder}
    */
   public FastVectorHighlighter( boolean phraseHighlight, boolean fieldMatch,
       FragListBuilder fragListBuilder, FragmentsBuilder fragmentsBuilder ){
@@ -69,10 +70,10 @@ public class FastVectorHighlighter {
   }
 
   /**
-   * create a FieldQuery object.
+   * create a {@link FieldQuery} object.
    * 
    * @param query a query
-   * @return the created FieldQuery object
+   * @return the created {@link FieldQuery} object
    */
   public FieldQuery getFieldQuery( Query query ){
     return new FieldQuery( query, phraseHighlight, fieldMatch );
@@ -81,8 +82,8 @@ public class FastVectorHighlighter {
   /**
    * return the best fragment.
    * 
-   * @param fieldQuery FieldQuery object
-   * @param reader IndexReader of the index
+   * @param fieldQuery {@link FieldQuery} object
+   * @param reader {@link IndexReader} of the index
    * @param docId document id to be highlighted
    * @param fieldName field of the document to be highlighted
    * @param fragCharSize the length (number of chars) of a fragment
@@ -91,15 +92,16 @@ public class FastVectorHighlighter {
    */
   public final String getBestFragment( final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize ) throws IOException {
-    FieldFragList fieldFragList = getFieldFragList( fieldQuery, reader, docId, fieldName, fragCharSize );
+    FieldFragList fieldFragList =
+      getFieldFragList( fragListBuilder, fieldQuery, reader, docId, fieldName, fragCharSize );
     return fragmentsBuilder.createFragment( reader, docId, fieldName, fieldFragList );
   }
 
   /**
    * return the best fragments.
    * 
-   * @param fieldQuery FieldQuery object
-   * @param reader IndexReader of the index
+   * @param fieldQuery {@link FieldQuery} object
+   * @param reader {@link IndexReader} of the index
    * @param docId document id to be highlighted
    * @param fieldName field of the document to be highlighted
    * @param fragCharSize the length (number of chars) of a fragment
@@ -110,11 +112,65 @@ public class FastVectorHighlighter {
    */
   public final String[] getBestFragments( final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize, int maxNumFragments ) throws IOException {
-    FieldFragList fieldFragList = getFieldFragList( fieldQuery, reader, docId, fieldName, fragCharSize );
+    FieldFragList fieldFragList =
+      getFieldFragList( fragListBuilder, fieldQuery, reader, docId, fieldName, fragCharSize );
     return fragmentsBuilder.createFragments( reader, docId, fieldName, fieldFragList, maxNumFragments );
   }
+
+  /**
+   * return the best fragment.
+   * 
+   * @param fieldQuery {@link FieldQuery} object
+   * @param reader {@link IndexReader} of the index
+   * @param docId document id to be highlighted
+   * @param fieldName field of the document to be highlighted
+   * @param fragCharSize the length (number of chars) of a fragment
+   * @param fragListBuilder {@link FragListBuilder} object
+   * @param fragmentsBuilder {@link FragmentsBuilder} object
+   * @param preTags pre-tags to be used to highlight terms
+   * @param postTags post-tags to be used to highlight terms
+   * @param encoder an encoder that generates encoded text
+   * @return the best fragment (snippet) string
+   * @throws IOException
+   */
+  public final String getBestFragment( final FieldQuery fieldQuery, IndexReader reader, int docId,
+      String fieldName, int fragCharSize,
+      FragListBuilder fragListBuilder, FragmentsBuilder fragmentsBuilder,
+      String[] preTags, String[] postTags, Encoder encoder ) throws IOException {
+    FieldFragList fieldFragList = getFieldFragList( fragListBuilder, fieldQuery, reader, docId, fieldName, fragCharSize );
+    return fragmentsBuilder.createFragment( reader, docId, fieldName, fieldFragList, preTags, postTags, encoder );
+  }
+
+  /**
+   * return the best fragments.
+   * 
+   * @param fieldQuery {@link FieldQuery} object
+   * @param reader {@link IndexReader} of the index
+   * @param docId document id to be highlighted
+   * @param fieldName field of the document to be highlighted
+   * @param fragCharSize the length (number of chars) of a fragment
+   * @param maxNumFragments maximum number of fragments
+   * @param fragListBuilder {@link FragListBuilder} object
+   * @param fragmentsBuilder {@link FragmentsBuilder} object
+   * @param preTags pre-tags to be used to highlight terms
+   * @param postTags post-tags to be used to highlight terms
+   * @param encoder an encoder that generates encoded text
+   * @return created fragments or null when no fragments created.
+   *         size of the array can be less than maxNumFragments
+   * @throws IOException
+   */
+  public final String[] getBestFragments( final FieldQuery fieldQuery, IndexReader reader, int docId,
+      String fieldName, int fragCharSize, int maxNumFragments,
+      FragListBuilder fragListBuilder, FragmentsBuilder fragmentsBuilder,
+      String[] preTags, String[] postTags, Encoder encoder ) throws IOException {
+    FieldFragList fieldFragList =
+      getFieldFragList( fragListBuilder, fieldQuery, reader, docId, fieldName, fragCharSize );
+    return fragmentsBuilder.createFragments( reader, docId, fieldName, fieldFragList, maxNumFragments,
+        preTags, postTags, encoder );
+  }
   
-  private FieldFragList getFieldFragList( final FieldQuery fieldQuery, IndexReader reader, int docId,
+  private FieldFragList getFieldFragList( FragListBuilder fragListBuilder,
+      final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize ) throws IOException {
     FieldTermStack fieldTermStack = new FieldTermStack( reader, docId, fieldName, fieldQuery );
     FieldPhraseList fieldPhraseList = new FieldPhraseList( fieldTermStack, fieldQuery );

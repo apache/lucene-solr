@@ -24,7 +24,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 /** Document boost unit test.
  *
@@ -32,16 +32,13 @@ import org.apache.lucene.store.RAMDirectory;
  * @version $Revision$
  */
 public class TestDocBoost extends LuceneTestCase {
-  public TestDocBoost(String name) {
-    super(name);
-  }
 
   public void testDocBoost() throws Exception {
-    RAMDirectory store = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store);
+    Directory store = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, store);
 
-    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
-    Fieldable f2 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Fieldable f1 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Fieldable f2 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
     f2.setBoost(2.0f);
 
     Document d1 = new Document();

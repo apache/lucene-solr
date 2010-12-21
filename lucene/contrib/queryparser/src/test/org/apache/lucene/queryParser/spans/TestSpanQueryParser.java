@@ -17,10 +17,6 @@ package org.apache.lucene.queryParser.spans;
  * limitations under the License.
  */
 
-import javax.management.Query;
-
-import junit.framework.TestCase;
-
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
@@ -31,6 +27,8 @@ import org.apache.lucene.queryParser.standard.processors.WildcardQueryNodeProces
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * This test case demonstrates how the new query parser can be used.<br/>
@@ -93,7 +91,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * @see UniqueFieldQueryNodeProcessor
  * @see UniqueFieldAttribute
  */
-public class TestSpanQueryParser extends TestCase {
+public class TestSpanQueryParser extends LuceneTestCase {
 
   private QueryNodeProcessorPipeline spanProcessorPipeline;
 
@@ -108,7 +106,7 @@ public class TestSpanQueryParser extends TestCase {
   }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
 
     this.spanProcessorPipeline = new QueryNodeProcessorPipeline();
@@ -119,11 +117,9 @@ public class TestSpanQueryParser extends TestCase {
     this.spanProcessorPipeline
         .setQueryConfigHandler(this.spanQueryConfigHandler);
 
-    this.spanProcessorPipeline.addProcessor(new WildcardQueryNodeProcessor());
-    this.spanProcessorPipeline
-        .addProcessor(new SpansValidatorQueryNodeProcessor());
-    this.spanProcessorPipeline
-        .addProcessor(new UniqueFieldQueryNodeProcessor());
+    this.spanProcessorPipeline.add(new WildcardQueryNodeProcessor());
+    this.spanProcessorPipeline.add(new SpansValidatorQueryNodeProcessor());
+    this.spanProcessorPipeline.add(new UniqueFieldQueryNodeProcessor());
 
   }
 

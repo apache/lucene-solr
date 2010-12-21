@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.text.Collator;
 import java.text.DateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.HashSet;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -37,12 +35,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
@@ -54,14 +50,14 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -69,15 +65,7 @@ import org.apache.lucene.util.automaton.RegExp;
 /**
  * Tests QueryParser.
  */
-public class TestQueryParser extends LocalizedTestCase {
-
-  public TestQueryParser(String name) {
-    super(name, new HashSet<String>(Arrays.asList(
-      "testLegacyDateRange", "testDateRange",
-      "testCJK", "testNumber", "testFarsiRangeCollating",
-      "testLocalDateFormat"
-    )));
-  }
+public class TestQueryParser extends LuceneTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
@@ -151,7 +139,7 @@ public class TestQueryParser extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -364,13 +352,24 @@ public class TestQueryParser extends LocalizedTestCase {
     assertQueryEquals("a AND -b", null, "+a -b");
     assertQueryEquals("a AND !b", null, "+a -b");
     assertQueryEquals("a && b", null, "+a +b");
-    assertQueryEquals("a && ! b", null, "+a -b");
+//    assertQueryEquals("a && ! b", null, "+a -b");
 
     assertQueryEquals("a OR b", null, "a b");
     assertQueryEquals("a || b", null, "a b");
     assertQueryEquals("a OR !b", null, "a -b");
-    assertQueryEquals("a OR ! b", null, "a -b");
+//    assertQueryEquals("a OR ! b", null, "a -b");
     assertQueryEquals("a OR -b", null, "a -b");
+
+    // +,-,! should be directly adjacent to operand (i.e. not separated by whitespace) to be treated as an operator
+    Analyzer a = new Analyzer() {
+      @Override
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      }
+    };
+    assertQueryEquals("a - b", a, "a - b");
+    assertQueryEquals("a + b", a, "a + b");
+    assertQueryEquals("a ! b", a, "a ! b");
 
     assertQueryEquals("+term -term term", null, "+term -term term");
     assertQueryEquals("foo:term AND field:anotherTerm", null,
@@ -438,10 +437,10 @@ public class TestQueryParser extends LocalizedTestCase {
   public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");
-    assertQueryEquals("term~", null, "term~0.5");
+    assertQueryEquals("term~", null, "term~2.0");
     assertQueryEquals("term~0.7", null, "term~0.7");
-    assertQueryEquals("term~^2", null, "term~0.5^2.0");
-    assertQueryEquals("term^2~", null, "term~0.5^2.0");
+    assertQueryEquals("term~^3", null, "term~2.0^3.0");
+    assertQueryEquals("term^3~", null, "term~2.0^3.0");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
@@ -453,7 +452,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertEquals(0.7f, fq.getMinSimilarity(), 0.1f);
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     fq = (FuzzyQuery)getQuery("term~", null);
-    assertEquals(0.5f, fq.getMinSimilarity(), 0.1f);
+    assertEquals(2.0f, fq.getMinSimilarity(), 0.1f);
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     
     assertParseException("term~1.1"); // value > 1, throws exception
@@ -488,9 +487,9 @@ public class TestQueryParser extends LocalizedTestCase {
     assertWildcardQueryEquals("TE?M", false, "TE?M");
     assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
 //  Fuzzy queries:
-    assertWildcardQueryEquals("Term~", "term~0.5");
-    assertWildcardQueryEquals("Term~", true, "term~0.5");
-    assertWildcardQueryEquals("Term~", false, "Term~0.5");
+    assertWildcardQueryEquals("Term~", "term~2.0");
+    assertWildcardQueryEquals("Term~", true, "term~2.0");
+    assertWildcardQueryEquals("Term~", false, "Term~2.0");
 //  Range queries:
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
@@ -552,7 +551,10 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
-    assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
+    assertQueryEquals("[ a TO z}", null, "[a TO z}");
+    assertQueryEquals("{ a TO z]", null, "{a TO z]"); 
+
+     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.SIMPLE, true));
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
@@ -566,14 +568,18 @@ public class TestQueryParser extends LocalizedTestCase {
     assertQueryEquals("[ a TO z] AND bar", null, "+[a TO z] +bar");
     assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
     assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
-  }
+
+    assertQueryEquals("[* TO Z]",null,"[* TO z]");
+    assertQueryEquals("[A TO *]",null,"[a TO *]");
+    assertQueryEquals("[* TO *]",null,"[* TO *]");
+    assertQueryEquals("[\\* TO \"*\"]",null,"[\\* TO \\*]");
+ }
     
   public void testFarsiRangeCollating() throws Exception {
-    
-    RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    Directory ramDir = newDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     Document doc = new Document();
-    doc.add(new Field("content","\u0633\u0627\u0628", 
+    doc.add(newField("content","\u0633\u0627\u0628", 
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
     iw.addDocument(doc);
     iw.close();
@@ -610,6 +616,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertEquals("The index Term should be included.", 1, result.length);
 
     is.close();
+    ramDir.close();
   }
   
   private String escapeDateString(String s) {
@@ -620,12 +627,6 @@ public class TestQueryParser extends LocalizedTestCase {
     }
   }
   
-  /** for testing legacy DateField support */
-  private String getLegacyDate(String s) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    return DateField.dateToString(df.parse(s));
-  }
-
   /** for testing DateTools support */
   private String getDate(String s, DateTools.Resolution resolution) throws Exception {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
@@ -634,12 +635,8 @@ public class TestQueryParser extends LocalizedTestCase {
   
   /** for testing DateTools support */
   private String getDate(Date d, DateTools.Resolution resolution) throws Exception {
-      if (resolution == null) {
-        return DateField.dateToString(d);      
-      } else {
-        return DateTools.dateToString(d, resolution);
-      }
-    }
+     return DateTools.dateToString(d, resolution);
+  }
   
   private String getLocalizedDate(int year, int month, int day) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
@@ -653,20 +650,6 @@ public class TestQueryParser extends LocalizedTestCase {
     return df.format(calendar.getTime());
   }
 
-  /** for testing legacy DateField support */
-  public void testLegacyDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1);
-    String endDate = getLocalizedDate(2002, 1, 4);
-    Calendar endDateExpected = new GregorianCalendar();
-    endDateExpected.clear();
-    endDateExpected.set(2002, 1, 4, 23, 59, 59);
-    endDateExpected.set(Calendar.MILLISECOND, 999);
-    assertQueryEquals("[ " + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]", null,
-                      "[" + getLegacyDate(startDate) + " TO " + DateField.dateToString(endDateExpected.getTime()) + "]");
-    assertQueryEquals("{  " + escapeDateString(startDate) + "    " + escapeDateString(endDate) + "   }", null,
-                      "{" + getLegacyDate(startDate) + " TO " + getLegacyDate(endDate) + "}");
-  }
-  
   public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1);
     String endDate = getLocalizedDate(2002, 1, 4);
@@ -679,18 +662,10 @@ public class TestQueryParser extends LocalizedTestCase {
     final String hourField = "hour";
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.SIMPLE, true));
     
-    // Don't set any date resolution and verify if DateField is used
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
-                               endDateExpected.getTime(), null);
-    
     // set a field specific date resolution
     qp.setDateResolution(monthField, DateTools.Resolution.MONTH);
     
-    // DateField should still be used for defaultField
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
-                               endDateExpected.getTime(), null);
-    
-    // set default date resolution to MILLISECOND 
+    // set default date resolution to MILLISECOND
     qp.setDateResolution(DateTools.Resolution.MILLISECOND);
     
     // set second field specific date resolution    
@@ -762,16 +737,16 @@ public class TestQueryParser extends LocalizedTestCase {
 
     assertQueryEquals("a:b\\\\c*", a, "a:b\\c*");
 
-    assertQueryEquals("a:b\\-?c", a, "a:b-?c");
-    assertQueryEquals("a:b\\+?c", a, "a:b+?c");
-    assertQueryEquals("a:b\\:?c", a, "a:b:?c");
+    assertQueryEquals("a:b\\-?c", a, "a:b\\-?c");
+    assertQueryEquals("a:b\\+?c", a, "a:b\\+?c");
+    assertQueryEquals("a:b\\:?c", a, "a:b\\:?c");
 
-    assertQueryEquals("a:b\\\\?c", a, "a:b\\?c");
+    assertQueryEquals("a:b\\\\?c", a, "a:b\\\\?c");
 
-    assertQueryEquals("a:b\\-c~", a, "a:b-c~0.5");
-    assertQueryEquals("a:b\\+c~", a, "a:b+c~0.5");
-    assertQueryEquals("a:b\\:c~", a, "a:b:c~0.5");
-    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~0.5");
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~2.0");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~2.0");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~2.0");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~2.0");
 
     assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
     assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
@@ -977,21 +952,33 @@ public class TestQueryParser extends LocalizedTestCase {
     assertEquals(query1, query2);
   }
 
-  public void testLocalDateFormat() throws IOException, ParseException {
-    RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
-    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
-    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
-    iw.close();
-    IndexSearcher is = new IndexSearcher(ramDir, true);
-    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
-    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
-    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
-    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
-    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
-    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
-    is.close();
-  }
+// Todo: convert this from DateField to DateUtil
+//  public void testLocalDateFormat() throws IOException, ParseException {
+//    Directory ramDir = newDirectory();
+//    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+//    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
+//    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
+//    iw.close();
+//    IndexSearcher is = new IndexSearcher(ramDir, true);
+//    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
+//    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
+//    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
+//    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
+//    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
+//    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
+//    is.close();
+//    ramDir.close();
+//  }
+//
+//  private void addDateDoc(String content, int year, int month,
+//                          int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
+//    Document d = new Document();
+//    d.add(newField("f", content, Field.Store.YES, Field.Index.ANALYZED));
+//    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
+//    cal.set(year, month - 1, day, hour, minute, second);
+//    d.add(newField("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.NOT_ANALYZED));
+//    iw.addDocument(d);
+//  }
 
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
@@ -1053,6 +1040,39 @@ public class TestQueryParser extends LocalizedTestCase {
 
   }
 
+  public void testEscapedWildcard() throws Exception {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    WildcardQuery q = new WildcardQuery(new Term("field", "foo\\?ba?r"));
+    assertEquals(q, qp.parse("foo\\?ba?r"));
+  }
+  
+  public void testRegexps() throws Exception {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    RegexpQuery q = new RegexpQuery(new Term("field", "[a-z][123]"));
+    assertEquals(q, qp.parse("/[a-z][123]/"));
+    qp.setLowercaseExpandedTerms(true);
+    assertEquals(q, qp.parse("/[A-Z][123]/"));
+    q.setBoost(0.5f);
+    assertEquals(q, qp.parse("/[A-Z][123]/^0.5"));
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    assertTrue(qp.parse("/[A-Z][123]/^0.5") instanceof RegexpQuery);
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE, ((RegexpQuery)qp.parse("/[A-Z][123]/^0.5")).getRewriteMethod());
+    assertEquals(q, qp.parse("/[A-Z][123]/^0.5"));
+    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    
+    Query escaped = new RegexpQuery(new Term("field", "[a-z]\\/[123]"));
+    assertEquals(escaped, qp.parse("/[a-z]\\/[123]/"));
+    Query escaped2 = new RegexpQuery(new Term("field", "[a-z]\\*[123]"));
+    assertEquals(escaped2, qp.parse("/[a-z]\\*[123]/"));
+    
+    BooleanQuery complex = new BooleanQuery();
+    complex.add(new RegexpQuery(new Term("field", "[a-z]\\/[123]")), Occur.MUST);
+    complex.add(new TermQuery(new Term("path", "/etc/init.d/")), Occur.MUST);
+    complex.add(new TermQuery(new Term("field", "/etc/init[.]d/lucene/")), Occur.SHOULD);
+    assertEquals(complex, qp.parse("/[a-z]\\/[123]/ AND path:/etc/init.d/ OR /etc\\/init\\[.\\]d/lucene/ "));
+  }
+  
   public void testStopwords() throws Exception {
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|foo").toAutomaton());
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "a", new MockAnalyzer(MockTokenizer.SIMPLE, true, stopSet, true));
@@ -1104,18 +1124,8 @@ public class TestQueryParser extends LocalizedTestCase {
     assertEquals(expected, hits.length);
   }
 
-  private static void addDateDoc(String content, int year, int month,
-      int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
-    Document d = new Document();
-    d.add(new Field("f", content, Field.Store.YES, Field.Index.ANALYZED));
-    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-    cal.set(year, month-1, day, hour, minute, second);
-    d.add(new Field("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.NOT_ANALYZED));
-    iw.addDocument(d);
-  }
-
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
     super.tearDown();
   }
@@ -1124,13 +1134,13 @@ public class TestQueryParser extends LocalizedTestCase {
   // enableStopPositionIncr & QueryParser's enablePosIncr
   // "match"
   public void testPositionIncrements() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     Analyzer a = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, a));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, a));
     Document doc = new Document();
-    doc.add(new Field("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
-    IndexReader r = w.getReader();
+    IndexReader r = IndexReader.open(w);
     w.close();
     IndexSearcher s = new IndexSearcher(r);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "f", a);

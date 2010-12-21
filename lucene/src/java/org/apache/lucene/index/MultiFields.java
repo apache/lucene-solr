@@ -19,14 +19,14 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;  // for javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MultiBits;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -46,7 +46,7 @@ import org.apache.lucene.util.MultiBits;
 public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderUtil.Slice[] subSlices;
-  private final Map<String,Terms> terms = new HashMap<String,Terms>();
+  private final Map<String,Terms> terms = new ConcurrentHashMap<String,Terms>();
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
@@ -99,35 +99,78 @@ public final class MultiFields extends Fields {
     }
   }
 
-  public static Bits getDeletedDocs(IndexReader r) throws IOException {
+  private static class MultiReaderBits implements Bits {
+    private final int[] starts;
+    private final IndexReader[] readers;
+    private final Bits[] delDocs;
+
+    public MultiReaderBits(int[] starts, IndexReader[] readers) {
+      assert readers.length == starts.length-1;
+      this.starts = starts;
+      this.readers = readers;
+      delDocs = new Bits[readers.length];
+      for(int i=0;i<readers.length;i++) {
+        delDocs[i] = readers[i].getDeletedDocs();
+      }
+    }
+    
+    public boolean get(int doc) {
+      final int sub = ReaderUtil.subIndex(doc, starts);
+      Bits dels = delDocs[sub];
+      if (dels == null) {
+        // NOTE: this is not sync'd but multiple threads can
+        // come through here; I think this is OK -- worst
+        // case is more than 1 thread ends up filling in the
+        // sub Bits
+        dels = readers[sub].getDeletedDocs();
+        if (dels == null) {
+          return false;
+        } else {
+          delDocs[sub] = dels;
+        }
+      }
+      return dels.get(doc-starts[sub]);
+    }
+
+    public int length() {    
+      return starts[starts.length-1];
+    }
+  }
+
+  public static Bits getDeletedDocs(IndexReader r) {
     Bits result;
     if (r.hasDeletions()) {
 
-      result = r.retrieveDelDocs();
-      if (result == null) {
+      final List<IndexReader> readers = new ArrayList<IndexReader>();
+      final List<Integer> starts = new ArrayList<Integer>();
 
-        final List<Bits> bits = new ArrayList<Bits>();
-        final List<Integer> starts = new ArrayList<Integer>();
-
+      try {
         final int maxDoc = new ReaderUtil.Gather(r) {
-          @Override
-          protected void add(int base, IndexReader r) throws IOException {
-            // record all delDocs, even if they are null
-            bits.add(r.getDeletedDocs());
-            starts.add(base);
-          }
-        }.run();
+            @Override
+            protected void add(int base, IndexReader r) throws IOException {
+              // record all delDocs, even if they are null
+              readers.add(r);
+              starts.add(base);
+            }
+          }.run();
         starts.add(maxDoc);
-
-        assert bits.size() > 0;
-        if (bits.size() == 1) {
-          // Only one actual sub reader -- optimize this case
-          result = bits.get(0);
-        } else {
-          result = new MultiBits(bits, starts);
-        }
-        r.storeDelDocs(result);
+      } catch (IOException ioe) {
+        // should not happen
+        throw new RuntimeException(ioe);
       }
+
+      assert readers.size() > 0;
+      if (readers.size() == 1) {
+        // Only one actual sub reader -- optimize this case
+        result = readers.get(0).getDeletedDocs();
+      } else {
+        int[] startsArray = new int[starts.size()];
+        for(int i=0;i<startsArray.length;i++) {
+          startsArray[i] = starts.get(i);
+        }
+        result = new MultiReaderBits(startsArray, readers.toArray(new IndexReader[readers.size()]));
+      }
+
     } else {
       result = null;
     }
@@ -198,32 +241,32 @@ public final class MultiFields extends Fields {
   @Override
   public Terms terms(String field) throws IOException {
 
-    final Terms result;
+    Terms result = terms.get(field);
+    if (result != null)
+      return result;
 
-    if (!terms.containsKey(field)) {
 
-      // Lazy init: first time this field is requested, we
-      // create & add to terms:
-      final List<Terms> subs2 = new ArrayList<Terms>();
-      final List<ReaderUtil.Slice> slices2 = new ArrayList<ReaderUtil.Slice>();
+    // Lazy init: first time this field is requested, we
+    // create & add to terms:
+    final List<Terms> subs2 = new ArrayList<Terms>();
+    final List<ReaderUtil.Slice> slices2 = new ArrayList<ReaderUtil.Slice>();
 
-      // Gather all sub-readers that share this field
-      for(int i=0;i<subs.length;i++) {
-        final Terms terms = subs[i].terms(field);
-        if (terms != null) {
-          subs2.add(terms);
-          slices2.add(subSlices[i]);
-        }
+    // Gather all sub-readers that share this field
+    for(int i=0;i<subs.length;i++) {
+      final Terms terms = subs[i].terms(field);
+      if (terms != null) {
+        subs2.add(terms);
+        slices2.add(subSlices[i]);
       }
-      if (subs2.size() == 0) {
-        result = null;
-      } else {
-        result = new MultiTerms(subs2.toArray(Terms.EMPTY_ARRAY),
-                                slices2.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
-      }
-      terms.put(field, result);
+    }
+    if (subs2.size() == 0) {
+      result = null;
+      // don't cache this case with an unbounded cache, since the number of fields that don't exist
+      // is unbounded.
     } else {
-      result = terms.get(field);
+      result = new MultiTerms(subs2.toArray(Terms.EMPTY_ARRAY),
+          slices2.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
+      terms.put(field, result);
     }
 
     return result;

@@ -28,7 +28,7 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
 
   /** Default maximum segment size.  A segment of this size
    *  or larger will never be merged.  @see setMaxMergeMB */
-  public static final double DEFAULT_MAX_MERGE_MB = Long.MAX_VALUE;
+  public static final double DEFAULT_MAX_MERGE_MB = 2048;
 
   public LogByteSizeMergePolicy() {
     minMergeSize = (long) (DEFAULT_MIN_MERGE_MB*1024*1024);

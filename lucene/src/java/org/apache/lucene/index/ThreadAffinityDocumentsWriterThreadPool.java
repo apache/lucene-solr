@@ -16,13 +16,13 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterThre
       numAssignedThreads--;
     }
   }
-  
+
   private Map<Thread, AffinityThreadState> threadBindings = new HashMap<Thread, AffinityThreadState>();
 
-  ThreadAffinityDocumentsWriterThreadPool(int maxNumThreadStates) {
+  public ThreadAffinityDocumentsWriterThreadPool(int maxNumThreadStates) {
     super(maxNumThreadStates);
   }
-  
+
   @Override
   protected ThreadState selectThreadState(Thread requestingThread, DocumentsWriter documentsWriter, Document doc) {
     AffinityThreadState threadState = threadBindings.get(requestingThread);
@@ -44,10 +44,10 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterThre
       threadBindings.put(requestingThread, threadState);
     }
     threadState.numAssignedThreads++;
-    
+
     return threadState;
   }
-  
+
   @Override
   protected void clearThreadBindings(ThreadState flushedThread) {
     Iterator<Entry<Thread, AffinityThreadState>> it = threadBindings.entrySet().iterator();

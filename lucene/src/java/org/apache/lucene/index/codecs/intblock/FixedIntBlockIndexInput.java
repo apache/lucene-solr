@@ -37,10 +37,10 @@ import org.apache.lucene.util.IntsRef;
  */
 public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
-  private IndexInput in;
-  protected int blockSize;
-
-  protected void init(final IndexInput in) throws IOException {
+  private final IndexInput in;
+  protected final int blockSize;
+  
+  public FixedIntBlockIndexInput(final IndexInput in) throws IOException {
     this.in = in;
     blockSize = in.readVInt();
   }
@@ -162,6 +162,25 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
           // new block
           fp += delta;
           upto = indexIn.readVInt();
+        }
+      }
+      assert upto < blockSize;
+    }
+
+    @Override
+    public void read(final IntIndexInput.Reader indexIn, final boolean absolute) throws IOException {
+      if (absolute) {
+        fp = indexIn.readVLong();
+        upto = indexIn.next();
+      } else {
+        final long delta = indexIn.readVLong();
+        if (delta == 0) {
+          // same block
+          upto += indexIn.next();
+        } else {
+          // new block
+          fp += delta;
+          upto = indexIn.next();
         }
       }
       assert upto < blockSize;

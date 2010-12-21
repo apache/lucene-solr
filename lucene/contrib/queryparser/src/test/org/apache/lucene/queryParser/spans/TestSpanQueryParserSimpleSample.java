@@ -95,14 +95,6 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestSpanQueryParserSimpleSample extends LuceneTestCase {
 
-  public TestSpanQueryParserSimpleSample() {
-    // empty constructor
-  }
-
-  public TestSpanQueryParserSimpleSample(String testName) {
-    super(testName);
-  }
-
   public void testBasicDemo() throws Exception {
     SyntaxParser queryParser = new StandardSyntaxParser();
 
@@ -121,9 +113,9 @@ public class TestSpanQueryParserSimpleSample extends LuceneTestCase {
     QueryNodeProcessorPipeline spanProcessorPipeline = new QueryNodeProcessorPipeline(
         spanQueryConfigHandler);
     // @see SpansValidatorQueryNodeProcessor
-    spanProcessorPipeline.addProcessor(new SpansValidatorQueryNodeProcessor());
+    spanProcessorPipeline.add(new SpansValidatorQueryNodeProcessor());
     // @see UniqueFieldQueryNodeProcessor
-    spanProcessorPipeline.addProcessor(new UniqueFieldQueryNodeProcessor());
+    spanProcessorPipeline.add(new UniqueFieldQueryNodeProcessor());
 
     // print to show out the QueryNode tree before being processed
     if (VERBOSE) System.out.println(queryTree);

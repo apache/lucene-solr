@@ -24,17 +24,16 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestComplexPhraseQuery extends LuceneTestCase {
-
+  Directory rd;
   Analyzer analyzer = new MockAnalyzer();
 
   DocData docsContent[] = { new DocData("john smith", "1"),
@@ -110,15 +109,15 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    RAMDirectory rd = new RAMDirectory();
-    IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    rd = newDirectory();
+    IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("name", docsContent[i].name, Field.Store.YES,
+      doc.add(newField("name", docsContent[i].name, Field.Store.YES,
           Field.Index.ANALYZED));
-      doc.add(new Field("id", docsContent[i].id, Field.Store.YES,
+      doc.add(newField("id", docsContent[i].id, Field.Store.YES,
           Field.Index.ANALYZED));
       w.addDocument(doc);
     }
@@ -127,8 +126,9 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
+    rd.close();
     super.tearDown();
   }
 

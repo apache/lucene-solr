@@ -1,19 +1,5 @@
-#macro(field $f)
-  #if($response.response.highlighting.get($doc.getFieldValue('id')).get($f).get(0))
-    $!response.response.highlighting.get($doc.getFieldValue('id')).get($f).get(0)
-  #else
-    #foreach($v in $doc.getFieldValues($f))
-      $v
-    #end
-  #end
-#end
+#set($docId = $doc.getFieldValue('id'))
+
 <div class="result-document">
-  <p><b>#field('name')</b> $!number.currency($doc.getFieldValue('price'))</p>
-  
-  <p>#field('features')</p>
-  
-  #if($params.getBool("debugQuery",false))
-    <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle explain</a>
-    <pre style="display:none">$response.getExplainMap().get($doc.getFirstValue('id'))</pre>
-  #end
+  #parse("doc.vm")
 </div>

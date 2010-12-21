@@ -45,8 +45,8 @@ import java.util.ResourceBundle;
  */
 public class NLS {
 
-  private static Map<String, Class<Object>> bundles = 
-    new HashMap<String, Class<Object>>(0);
+  private static Map<String, Class<? extends NLS>> bundles = 
+    new HashMap<String, Class<? extends NLS>>(0);
 
   protected NLS() {
     // Do not instantiate
@@ -89,8 +89,7 @@ public class NLS {
    * @param clazz
    *          where constants will reside
    */
-  @SuppressWarnings("unchecked")
-  protected static void initializeMessages(String bundleName, Class clazz) {
+  protected static void initializeMessages(String bundleName, Class<? extends NLS> clazz) {
     try {
       load(clazz);
       if (!bundles.containsKey(bundleName))
@@ -106,7 +105,7 @@ public class NLS {
     // slow resource checking
     // need to loop thru all registered resource bundles
     for (Iterator<String> it = bundles.keySet().iterator(); it.hasNext();) {
-      Class<Object> clazz = bundles.get(it.next());
+      Class<? extends NLS> clazz = bundles.get(it.next());
       ResourceBundle resourceBundle = ResourceBundle.getBundle(clazz.getName(),
           locale);
       if (resourceBundle != null) {
@@ -126,7 +125,7 @@ public class NLS {
   /**
    * @param clazz
    */
-  private static void load(Class<Object> clazz) {
+  private static void load(Class<? extends NLS> clazz) {
     final Field[] fieldArray = clazz.getDeclaredFields();
 
     boolean isFieldAccessible = (clazz.getModifiers() & Modifier.PUBLIC) != 0;
@@ -145,7 +144,7 @@ public class NLS {
    * @param isFieldAccessible
    */
   private static void loadfieldValue(Field field, boolean isFieldAccessible,
-      Class<Object> clazz) {
+      Class<? extends NLS> clazz) {
     int MOD_EXPECTED = Modifier.PUBLIC | Modifier.STATIC;
     int MOD_MASK = MOD_EXPECTED | Modifier.FINAL;
     if ((field.getModifiers() & MOD_MASK) != MOD_EXPECTED)
@@ -168,7 +167,7 @@ public class NLS {
    * @param key
    *          - Message Key
    */
-  private static void validateMessage(String key, Class<Object> clazz) {
+  private static void validateMessage(String key, Class<? extends NLS> clazz) {
     // Test if the message is present in the resource bundle
     try {
       ResourceBundle resourceBundle = ResourceBundle.getBundle(clazz.getName(),
@@ -192,13 +191,12 @@ public class NLS {
   /*
    * Make a class field accessible
    */
-  @SuppressWarnings("unchecked")
   private static void makeAccessible(final Field field) {
     if (System.getSecurityManager() == null) {
       field.setAccessible(true);
     } else {
-      AccessController.doPrivileged(new PrivilegedAction() {
-        public Object run() {
+      AccessController.doPrivileged(new PrivilegedAction<Void>() {
+        public Void run() {
           field.setAccessible(true);
           return null;
         }

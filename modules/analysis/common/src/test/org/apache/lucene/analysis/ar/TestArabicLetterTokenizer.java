@@ -25,7 +25,9 @@ import org.apache.lucene.util.Version;
 
 /**
  * Testcase for {@link TestArabicLetterTokenizer}
+ * @deprecated (3.1) Remove in Lucene 5.0
  */
+@Deprecated
 public class TestArabicLetterTokenizer extends BaseTokenStreamTestCase {
   
   public void testArabicLetterTokenizer() throws IOException {

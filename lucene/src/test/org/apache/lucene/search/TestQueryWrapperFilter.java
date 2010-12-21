@@ -26,16 +26,15 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestQueryWrapperFilter extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    Directory dir = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(new Field("field", "value", Store.NO, Index.ANALYZED));
+    doc.add(newField("field", "value", Store.NO, Index.ANALYZED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

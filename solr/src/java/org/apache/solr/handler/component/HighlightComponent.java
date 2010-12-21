@@ -27,6 +27,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.core.PluginInfo;
@@ -36,7 +37,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 import java.util.List;
-import java.util.Collections;
 
 /**
  * TODO!
@@ -165,26 +165,10 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
       }
 
       // remove nulls in case not all docs were able to be retrieved
-      rb.rsp.add("highlighting", removeNulls(new SimpleOrderedMap(arr)));      
+      rb.rsp.add("highlighting", SolrPluginUtils.removeNulls(new SimpleOrderedMap(arr)));      
     }
   }
 
-
-  static NamedList removeNulls(NamedList nl) {
-    for (int i=0; i<nl.size(); i++) {
-      if (nl.getName(i)==null) {
-        NamedList newList = nl instanceof SimpleOrderedMap ? new SimpleOrderedMap() : new NamedList();
-        for (int j=0; j<nl.size(); j++) {
-          String n = nl.getName(j);
-          if (n != null) {
-            newList.add(n, nl.getVal(j));
-          }
-        }
-        return newList;
-      }
-    }
-    return nl;
-  }
 
   public SolrHighlighter getHighlighter() {
     return highlighter;

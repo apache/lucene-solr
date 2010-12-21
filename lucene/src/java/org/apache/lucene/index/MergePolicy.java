@@ -68,25 +68,21 @@ public abstract class MergePolicy implements java.io.Closeable {
 
     SegmentInfo info;               // used by IndexWriter
     boolean optimize;               // used by IndexWriter
-    boolean increfDone;             // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
     boolean isExternal;             // used by IndexWriter
     int maxNumSegmentsOptimize;     // used by IndexWriter
     SegmentReader[] readers;        // used by IndexWriter
     SegmentReader[] readersClone;   // used by IndexWriter
-    List<String> mergeFiles;            // used by IndexWriter
-    final SegmentInfos segments;
-    final boolean useCompoundFile;
+    public final SegmentInfos segments;
     boolean aborted;
     Throwable error;
     boolean paused;
 
-    public OneMerge(SegmentInfos segments, boolean useCompoundFile) {
+    public OneMerge(SegmentInfos segments) {
       if (0 == segments.size())
         throw new RuntimeException("segments must include at least one segment");
       this.segments = segments;
-      this.useCompoundFile = useCompoundFile;
     }
 
     /** Record that an exception occurred while executing
@@ -145,7 +141,7 @@ public abstract class MergePolicy implements java.io.Closeable {
       return paused;
     }
 
-    String segString(Directory dir) {
+    public String segString(Directory dir) {
       StringBuilder b = new StringBuilder();
       final int numSegments = segments.size();
       for(int i=0;i<numSegments;i++) {
@@ -156,7 +152,34 @@ public abstract class MergePolicy implements java.io.Closeable {
         b.append(" into ").append(info.name);
       if (optimize)
         b.append(" [optimize]");
+      if (aborted) {
+        b.append(" [ABORTED]");
+      }
       return b.toString();
+    }
+    
+    /**
+     * Returns the total size in bytes of this merge. Note that this does not
+     * indicate the size of the merged segment, but the input total size.
+     * */
+    public long totalBytesSize() throws IOException {
+      long total = 0;
+      for (SegmentInfo info : segments) {
+        total += info.sizeInBytes(true);
+      }
+      return total;
+    }
+
+    /**
+     * Returns the total number of documents that are included with this merge.
+     * Note that this does not indicate the number of documents after the merge.
+     * */
+    public int totalNumDocs() throws IOException {
+      int total = 0;
+      for (SegmentInfo info : segments) {
+        total += info.docCount;
+      }
+      return total;
     }
   }
 
@@ -172,7 +195,7 @@ public abstract class MergePolicy implements java.io.Closeable {
      * The subset of segments to be included in the primitive merge.
      */
 
-    public List<OneMerge> merges = new ArrayList<OneMerge>();
+    public final List<OneMerge> merges = new ArrayList<OneMerge>();
 
     public void add(OneMerge merge) {
       merges.add(merge);
@@ -288,8 +311,7 @@ public abstract class MergePolicy implements java.io.Closeable {
   public abstract void close();
 
   /**
-   * Returns true if a newly flushed (not from merge)
-   * segment should use the compound file format.
+   * Returns true if a new segment (regardless of its origin) should use the compound file format.
    */
-  public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment);
+  public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment) throws IOException;
 }

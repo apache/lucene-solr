@@ -38,10 +38,12 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FunctionQuery;
+import org.apache.solr.search.function.QueryValueSource;
 import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
@@ -65,6 +67,11 @@ public class QueryParsing {
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
   public static final String DOCID = "_docid_";
+  public static final String SCORE = "score";
+
+  // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
+  public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
+
 
   /**
    * Returns the "prefered" default operator for use by Query Parsers, 
@@ -178,15 +185,15 @@ public class QueryParsing {
         // saw equals, so read value
         p.pos++;
         ch = p.peek();
+        boolean deref = false;
+        if (ch == '$') {
+          p.pos++;
+          ch = p.peek();
+          deref = true;  // dereference whatever value is read by treating it as a variable name
+        }
+
         if (ch == '\"' || ch == '\'') {
           val = p.getQuotedString();
-        } else if (ch == '$') {
-          p.pos++;
-          // dereference parameter
-          String pname = p.getId();
-          if (params != null) {
-            val = params.get(pname);
-          }
         } else {
           // read unquoted literal ended by whitespace or '}'
           // there is no escaping.
@@ -203,10 +210,43 @@ public class QueryParsing {
             p.pos++;
           }
         }
+
+        if (deref) {  // dereference parameter
+          if (params != null) {
+            val = params.get(val);
+          }
+        }
       }
       if (target != null) target.put(id, val);
     }
   }
+
+  public static String encodeLocalParamVal(String val) {
+    int len = val.length();
+    int i = 0;
+    if (len > 0 && val.charAt(0) != '$') {
+      for (;i<len; i++) {
+        char ch = val.charAt(i);
+        if (Character.isWhitespace(ch) || ch=='}') break;
+      }
+    }
+
+    if (i>=len) return val;
+
+    // We need to enclose in quotes... but now we need to escape
+    StringBuilder sb = new StringBuilder(val.length() + 4);
+    sb.append('\'');
+    for (i=0; i<len; i++) {
+      char ch = val.charAt(i);
+      if (ch=='\'') {
+        sb.append('\\');
+      }
+      sb.append(ch);
+    }
+    sb.append('\'');
+    return sb.toString();
+  }
+  
 
   /**
    * "foo" returns null
@@ -220,18 +260,15 @@ public class QueryParsing {
     Map<String, String> localParams = new HashMap<String, String>();
     int start = QueryParsing.parseLocalParams(txt, 0, localParams, params);
 
-    String val;
-    if (start >= txt.length()) {
-      // if the rest of the string is empty, check for "v" to provide the value
-      val = localParams.get(V);
-      val = val == null ? "" : val;
-    } else {
+    String val = localParams.get(V);
+    if (val == null) {
       val = txt.substring(start);
+      localParams.put(V, val);
+    } else {
+      // localParams.put(VAL_EXPLICIT, "true");
     }
-    localParams.put(V, val);
     return new MapSolrParams(localParams);
   }
-
 
 
   /**
@@ -254,148 +291,139 @@ public class QueryParsing {
    *   height desc,weight asc   #sort by height descending, using weight ascending as a tiebreaker
    * </pre>
    */
-  public static Sort parseSort(String sortSpec, IndexSchema schema) {
+  public static Sort parseSort(String sortSpec, SolrQueryRequest req) {
     if (sortSpec == null || sortSpec.length() == 0) return null;
-    char[] chars = sortSpec.toCharArray();
-    int i = 0;
-    StringBuilder buffer = new StringBuilder(sortSpec.length());
-    String sort = null;
-    String order = null;
-    int functionDepth = 0;
-    boolean score = true;
-    List<SortField> lst = new ArrayList<SortField>(5);
-    boolean needOrder = false;
-    while (i < chars.length) {
-      if (Character.isWhitespace(chars[i]) && functionDepth == 0) {
-        if (buffer.length() == 0) {
-          //do nothing
-        } else {
-          if (needOrder == false) {
-            sort = buffer.toString().trim();
-            buffer.setLength(0);
-            needOrder = true;
-          } else {
-            order = buffer.toString().trim();
-            buffer.setLength(0);
-            needOrder = false;
-          }
-        }
-      } else if (chars[i] == '(' && functionDepth >= 0) {
-        buffer.append(chars[i]);
-        functionDepth++;
-      } else if (chars[i] == ')' && functionDepth > 0) {
-        buffer.append(chars[i]);
-        functionDepth--;//close up one layer
-      } else if (chars[i] == ',' && functionDepth == 0) {//can either be a separator of sort declarations, or a separator in a function
-        //we have a separator between sort declarations,
-        // We may need an order still, but then evaluate it, as we should have everything we need
-        if (needOrder == true && buffer.length() > 0){
-          order = buffer.toString().trim();
-          buffer.setLength(0);
-          needOrder = false;
-        }
-        score = processSort(schema, sort, order, lst);
-        sort = null;
-        order = null;
-        buffer.setLength(0);//get ready for the next one, if there is one
-      } else if (chars[i] == ',' && functionDepth > 0) {
-        //we are in a function
-        buffer.append(chars[i]);
-      } else {
-        //just a regular old char, add it to the buffer
-        buffer.append(chars[i]);
-      }
-      i++;
-    }
-    if (buffer.length() > 0 && needOrder){//see if we have anything left, at most it should be an order
-      order = buffer.toString().trim();
-      buffer.setLength(0);
-      needOrder = false;
-    }
+    List<SortField> lst = new ArrayList<SortField>(4);
 
-    //do some sanity checks
-    if (functionDepth != 0){
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse sort spec, mismatched parentheses: " + sortSpec);
-    }
-    if (buffer.length() > 0){//there's something wrong, as everything should have been parsed by now
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse sort spec: " + sortSpec);
-    }
-    if (needOrder == false && sort != null && sort.equals("") == false && order != null && order.equals("") == false){//handle the last declaration
-      score = processSort(schema, sort, order, lst);
-    }
-    //If the normal case (by score desc) do nothing
-    if (lst.size() == 1 && score == true && lst.get(0).getReverse() == false) {
-      return null; // do normal scoring...
-    }
-    return new Sort((SortField[]) lst.toArray(new SortField[lst.size()]));
-  }
+    try {
 
-  private static boolean processSort(IndexSchema schema, String sort, String order, List<SortField> lst) {
-    boolean score = false;
-    if (sort != null && order != null) {
-      boolean top = true;
-      if ("desc".equals(order) || "top".equals(order)) {
-        top = true;
-      } else if ("asc".equals(order) || "bottom".equals(order)) {
-        top = false;
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: " + order);
-      }
-      //we got the order, now deal with the sort
-      if ("score".equals(sort)) {
-        score = true;
-        if (top) {
-          lst.add(SortField.FIELD_SCORE);
-        } else {
-          lst.add(new SortField(null, SortField.SCORE, true));
-        }
-      } else if (DOCID.equals(sort)) {
-        lst.add(new SortField(null, SortField.DOC, top));
-      } else {
-        //See if we have a Field first, then see if it is a function, then throw an exception
-        // getField could throw an exception if the name isn't found
-        SchemaField f = null;
-        try {
-          f = schema.getField(sort);
-        }
-        catch (SolrException e) {
-          //Not an error just yet
-        }
-        if (f != null) {
-          if (f == null || !f.indexed()) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on unindexed field: " + sort);
-          }
-          lst.add(f.getType().getSortField(f, top));
-        } else {
-          //See if we have a function:
-          FunctionQuery query = null;
+      StrParser sp = new StrParser(sortSpec);
+      while (sp.pos < sp.end) {
+        sp.eatws();
+
+        final int start = sp.pos;
+
+        // short circuit test for a really simple field name
+        String field = sp.getId(null);
+        ParseException qParserException = null;
+
+        if (field == null || sp.ch() != ' ') {
+          // let's try it as a function instead
+          String funcStr = sp.val.substring(start);
+
+          QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
+          Query q = null;
           try {
-            query = parseFunction(sort, schema);
-            if (query != null) {
-              ValueSource valueSource = query.getValueSource();
-              //We have a function query
-              try {
-                lst.add(valueSource.getSortField(top));
-              } catch (IOException e) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error getting the sort for this function: " + sort, e);
+            if (parser instanceof FunctionQParser) {
+              FunctionQParser fparser = (FunctionQParser)parser;
+              fparser.setParseMultipleSources(false);
+              fparser.setParseToEnd(false);
+              
+              q = fparser.getQuery();
+              
+              if (fparser.localParams != null) {
+                if (fparser.valFollowedParams) {
+                  // need to find the end of the function query via the string parser
+                  int leftOver = fparser.sp.end - fparser.sp.pos;
+                  sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
+                } else {
+                  // the value was via the "v" param in localParams, so we need to find
+                  // the end of the local params themselves to pick up where we left off
+                  sp.pos = start + fparser.localParamsEnd;
+                }
+              } else {
+                // need to find the end of the function query via the string parser
+                int leftOver = fparser.sp.end - fparser.sp.pos;
+                sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
               }
             } else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined function: " + sort);
+              // A QParser that's not for function queries.
+              // It must have been specified via local params.
+              q = parser.getQuery();
+
+              assert parser.getLocalParams() != null;
+              sp.pos = start + parser.localParamsEnd;
+            }
+
+            Boolean top = sp.getSortDirection();
+            if (null != top) {
+              // we have a Query and a valid direction
+              if (q instanceof FunctionQuery) {
+                lst.add(((FunctionQuery)q).getValueSource().getSortField(top));
+              } else {
+                lst.add((new QueryValueSource(q, 0.0f)).getSortField(top));
+              }
+              continue;
             }
           } catch (ParseException e) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined field or function: " + sort, e);
+            // hang onto this in case the string isn't a full field name either
+            qParserException = e;
           }
+        }
 
+        // if we made it here, we either have a "simple" field name,
+        // or there was a problem parsing the string as a complex func/quer
+
+        if (field == null) {
+          // try again, simple rules for a field name with no whitespace
+          sp.pos = start;
+          field = sp.getSimpleString();
+        }
+        Boolean top = sp.getSortDirection();
+        if (null == top) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                                    "Can't determine Sort Order: " + sp);
+        }
+        
+        if (SCORE.equals(field)) {
+          if (top) {
+            lst.add(SortField.FIELD_SCORE);
+          } else {
+            lst.add(new SortField(null, SortField.SCORE, true));
+          }
+        } else if (DOCID.equals(field)) {
+          lst.add(new SortField(null, SortField.DOC, top));
+        } else {
+          // try to find the field
+          SchemaField sf = req.getSchema().getFieldOrNull(field);
+          if (null == sf) {
+            if (null != qParserException) {
+              throw new SolrException
+                (SolrException.ErrorCode.BAD_REQUEST,
+                 "sort param could not be parsed as a query, and is not a "+
+                 "field that exists in the index: " + field,
+                 qParserException);
+            }
+            throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+               "sort param fiedl can't be found: " + field);
+          }
+              
+          // TODO: remove this - it should be up to the FieldType
+          if (!sf.indexed()) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                                    "can not sort on unindexed field: " 
+                                    + field);
+          }
+          lst.add(sf.getType().getSortField(sf, top));
         }
       }
-    } else if (sort == null) {//no sort value
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Must declare sort field or function");
-    } else if (order == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing sort order: ");
+
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
     }
-    return score;
+
+
+    // normalize a sort on score desc to null
+    if (lst.size()==1 && lst.get(0) == SortField.FIELD_SCORE) {
+      return null;
+    }
+
+    return new Sort(lst.toArray(new SortField[lst.size()]));
   }
+
 
 
   ///////////////////////////
@@ -493,7 +521,7 @@ public class QueryParsing {
         out.append('(');
       }
       boolean first = true;
-      for (BooleanClause c : (List<BooleanClause>) q.clauses()) {
+      for (BooleanClause c : q.clauses()) {
         if (!first) {
           out.append(' ');
         } else {
@@ -607,6 +635,10 @@ public class QueryParsing {
       while (pos < end && Character.isWhitespace(val.charAt(pos))) pos++;
     }
 
+    char ch() {
+      return pos < end ? val.charAt(pos) : 0;
+    }
+
     void skip(int nChars) {
       pos = Math.max(pos + nChars, end);
     }
@@ -661,6 +693,27 @@ public class QueryParsing {
       return Float.parseFloat(new String(arr, 0, i));
     }
 
+    Number getNumber() throws ParseException {
+      eatws();
+      int start = pos;
+      boolean flt = false;
+
+      while (pos < end) {
+        char ch = val.charAt(pos);
+        if ((ch >= '0' && ch <= '9') || ch == '+' || ch == '-') {
+          pos++;
+        } else if (ch == '.' || ch =='e' || ch=='E') {
+          flt = true;
+          pos++;
+        } else {
+          break;
+        }
+      }
+
+      String v = val.substring(start,pos);
+      return flt ? Double.parseDouble(v) : Long.parseLong(v);
+    }
+
     double getDouble() throws ParseException {
       eatws();
       char[] arr = new char[end - pos];
@@ -702,12 +755,17 @@ public class QueryParsing {
 
 
     String getId() throws ParseException {
+      return getId("Expected identifier");
+    }
+
+    String getId(String errMessage) throws ParseException {
       eatws();
       int id_start = pos;
-      if (pos < end && Character.isJavaIdentifierStart(val.charAt(pos))) {
+      char ch;
+      if (pos < end && (ch = val.charAt(pos)) != '$' && Character.isJavaIdentifierStart(ch)) {
         pos++;
         while (pos < end) {
-          char ch = val.charAt(pos);
+          ch = val.charAt(pos);
           if (!Character.isJavaIdentifierPart(ch) && ch != '.') {
             break;
           }
@@ -715,7 +773,61 @@ public class QueryParsing {
         }
         return val.substring(id_start, pos);
       }
-      throw new ParseException("Expected identifier at pos " + pos + " str='" + val + "'");
+
+      if (errMessage != null) {
+        throw new ParseException(errMessage + " at pos " + pos + " str='" + val + "'");
+      }
+      return null;
+    }
+
+    /**
+     * Skips leading whitespace and returns whatever sequence of non 
+     * whitespace it can find (or hte empty string)
+     */
+    String getSimpleString() {
+      eatws();
+      int startPos = pos;
+      char ch;
+      while (pos < end) {
+        ch = val.charAt(pos);
+        if (Character.isWhitespace(ch)) break;
+        pos++;
+      }
+      return val.substring(startPos, pos);
+    }
+
+    /**
+     * Sort direction or null if current position does not inidcate a 
+     * sort direction. (True is desc, False is asc).  
+     * Position is advanced to after the comma (or end) when result is non null 
+     */
+    Boolean getSortDirection() throws ParseException {
+      final int startPos = pos;
+      final String order = getId(null);
+
+      Boolean top = null;
+
+      if (null != order) {
+        if ("desc".equals(order) || "top".equals(order)) {
+          top = true;
+        } else if ("asc".equals(order) || "bottom".equals(order)) {
+          top = false;
+        }
+
+        // it's not a legal direction if more stuff comes after it
+        eatws();
+        final char c = ch();
+        if (0 == c) {
+          // :NOOP
+        } else if (',' == c) {
+          pos++;
+        } else {
+          top = null;
+        }
+      }
+
+      if (null == top) pos = startPos; // no direction, reset
+      return top;
     }
 
     // return null if not a string

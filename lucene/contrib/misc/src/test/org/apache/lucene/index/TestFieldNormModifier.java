@@ -30,21 +30,15 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests changing of field norms with a custom similarity and with fake norms.
  */
 public class TestFieldNormModifier extends LuceneTestCase {
-  
-  public TestFieldNormModifier(String name) {
-    super(name);
-  }
-   
   public static int NUM_DOCS = 5;
   
-  public Directory store = new RAMDirectory();
+  public Directory store;
   
   /** inverts the normal notion of lengthNorm */
   public static Similarity s = new DefaultSimilarity() {
@@ -55,24 +49,31 @@ public class TestFieldNormModifier extends LuceneTestCase {
   };
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(
+    store = newDirectory();
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();
-      d.add(new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED));
-      d.add(new Field("nonorm", "word", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-      d.add(new Field("untokfield", "20061212 20071212", Field.Store.YES, Field.Index.ANALYZED));
+      d.add(newField("field", "word", Field.Store.YES, Field.Index.ANALYZED));
+      d.add(newField("nonorm", "word", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+      d.add(newField("untokfield", "20061212 20071212", Field.Store.YES, Field.Index.ANALYZED));
       
       for (int j = 1; j <= i; j++) {
-        d.add(new Field("field", "crap", Field.Store.YES, Field.Index.ANALYZED));
-        d.add(new Field("nonorm", "more words", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+        d.add(newField("field", "crap", Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField("nonorm", "more words", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
       }
       writer.addDocument(d);
     }
     writer.close();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    store.close();
+    super.tearDown();
   }
   
   public void testMissingField() throws Exception {

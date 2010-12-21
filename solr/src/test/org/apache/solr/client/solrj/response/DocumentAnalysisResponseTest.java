@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.response;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -31,7 +32,7 @@ import java.util.List;
  * @version $Id$
  * @since solr 1.4
  */
-public class DocumentAnalysisResponseTest {
+public class DocumentAnalysisResponseTest extends LuceneTestCase {
 
   /**
    * Tests the {@link DocumentAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)} method

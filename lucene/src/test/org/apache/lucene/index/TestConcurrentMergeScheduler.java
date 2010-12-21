@@ -17,8 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -29,7 +28,7 @@ import java.io.IOException;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
-  private static class FailOnlyOnFlush extends MockRAMDirectory.Failure {
+  private static class FailOnlyOnFlush extends MockDirectoryWrapper.Failure {
     boolean doFail;
     boolean hitExc;
 
@@ -44,14 +43,23 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     @Override
-    public void eval(MockRAMDirectory dir)  throws IOException {
-      if (doFail && Thread.currentThread().getName().equals("main")) {
+    public void eval(MockDirectoryWrapper dir)  throws IOException {
+      if (doFail && (Thread.currentThread().getName().equals("main") 
+          || Thread.currentThread().getName().equals("Main Thread"))) {
+        boolean isDoFlush = false;
+        boolean isClose = false;
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
           if ("flush".equals(trace[i].getMethodName())) {
-            hitExc = true;
-            throw new IOException("now failing during flush");
+            isDoFlush = true;
           }
+          if ("close".equals(trace[i].getMethodName())) {
+            isClose = true;
+          }
+        }
+        if (isDoFlush && !isClose && random.nextBoolean()) {
+          hitExc = true;
+          throw new IOException(Thread.currentThread().getName() + ": now failing during flush");
         }
       }
     }
@@ -60,18 +68,22 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // Make sure running BG merges still work fine even when
   // we are hitting exceptions during flushing.
   public void testFlushExceptions() throws IOException {
-
-    MockRAMDirectory directory = new MockRAMDirectory();
+    MockDirectoryWrapper directory = newDirectory();
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     int extraCount = 0;
 
     for(int i=0;i<10;i++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + i);
+      }
+
       for(int j=0;j<20;j++) {
         idField.setValue(Integer.toString(i*20+j));
         writer.addDocument(doc);
@@ -90,10 +102,14 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           }
           extraCount++;
         } catch (IOException ioe) {
+          if (VERBOSE) {
+            ioe.printStackTrace(System.out);
+          }
           failure.clearDoFail();
           break;
         }
       }
+      assertEquals(20*(i+1)+extraCount, writer.numDocs());
     }
 
     writer.close();
@@ -106,20 +122,19 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // Test that deletes committed after a merge started and
   // before it finishes, are correctly merged back:
   public void testDeleteMerging() throws IOException {
-
-    RAMDirectory directory = new MockRAMDirectory();
+    MockDirectoryWrapper directory = newDirectory();
 
     LogDocMergePolicy mp = new LogDocMergePolicy();
     // Force degenerate merging so we can get a mix of
     // merging of segments with and without deletes at the
     // start:
     mp.setMinMergeDocs(1000);
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(mp));
 
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     for(int i=0;i<10;i++) {
       for(int j=0;j<100;j++) {
@@ -145,18 +160,20 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   }
 
   public void testNoExtraFiles() throws IOException {
-
-    RAMDirectory directory = new MockRAMDirectory();
-
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+    MockDirectoryWrapper directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
+    writer.setInfoStream(VERBOSE ? System.out : null);
 
     for(int iter=0;iter<7;iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
 
       for(int j=0;j<21;j++) {
         Document doc = new Document();
-        doc.add(new Field("content", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("content", "a b c", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
       }
         
@@ -164,9 +181,10 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles");
 
       // Reopen
-      writer = new IndexWriter(directory, new IndexWriterConfig(
+      writer = new IndexWriter(directory, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(2));
+      writer.setInfoStream(VERBOSE ? System.out : null);
     }
 
     writer.close();
@@ -175,14 +193,17 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   }
 
   public void testNoWaitClose() throws IOException {
-    RAMDirectory directory = new MockRAMDirectory();
-
+    MockDirectoryWrapper directory = newDirectory();
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
+    IndexWriter writer = new IndexWriter(
+        directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(2).
+            setMergePolicy(newLogMergePolicy(100))
+    );
 
     for(int iter=0;iter<10;iter++) {
 
@@ -210,8 +231,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       reader.close();
 
       // Reopen
-      writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
+      writer = new IndexWriter(
+          directory,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+              setOpenMode(OpenMode.APPEND).
+              setMergePolicy(newLogMergePolicy(100))
+      );
     }
     writer.close();
 

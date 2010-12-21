@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
 import org.junit.After;
@@ -42,7 +43,7 @@ import java.util.Set;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestJmxMonitoredMap {
+public class TestJmxMonitoredMap extends LuceneTestCase {
 
   private int port = 0;
 
@@ -54,6 +55,7 @@ public class TestJmxMonitoredMap {
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     int retries = 5;
     for (int i = 0; i < retries; i++) {
       try {
@@ -90,6 +92,7 @@ public class TestJmxMonitoredMap {
       connector.close();
     } catch (Exception e) {
     }
+    super.tearDown();
   }
 
   @Test

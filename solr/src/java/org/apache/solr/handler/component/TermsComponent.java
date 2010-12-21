@@ -61,6 +61,7 @@ public class TermsComponent extends SearchComponent {
     // TODO: temporary... this should go in a different component.
     String shards = params.get(ShardParams.SHARDS);
     if (shards != null) {
+      rb.isDistrib = true;
       if (params.get(ShardParams.SHARDS_QT) == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No shards.qt parameter specified");
       }
@@ -110,7 +111,7 @@ public class TermsComponent extends SearchComponent {
       NamedList fieldTerms = new NamedList();
       termsResult.add(field, fieldTerms);
 
-      Terms terms = lfields.terms(field);
+      Terms terms = lfields == null ? null : lfields.terms(field);
       if (terms == null) {
         // no terms for this field
         continue;
@@ -298,9 +299,6 @@ public class TermsComponent extends SearchComponent {
     // base shard request on original parameters
     sreq.params = new ModifiableSolrParams(params);
 
-    // don't pass through the shards param
-    sreq.params.remove(ShardParams.SHARDS);
-
     // remove any limits for shards, we want them to return all possible
     // responses
     // we want this so we can calculate the correct counts
@@ -310,11 +308,6 @@ public class TermsComponent extends SearchComponent {
     sreq.params.set(TermsParams.TERMS_LIMIT, -1);
     sreq.params.set(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_INDEX);
 
-    // TODO: is there a better way to handle this?
-    String qt = params.get(CommonParams.QT);
-    if (qt != null) {
-      sreq.params.add(CommonParams.QT, qt);
-    }
     return sreq;
   }
 

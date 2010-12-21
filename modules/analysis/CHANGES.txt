@@ -1,7 +1,7 @@
 Analysis Module Change Log
 
 ======================= Trunk (not yet released) =======================
-
+   
 API Changes
 
  * LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 
@@ -9,6 +9,20 @@ API Changes
 
  * LUCENE-2413: Removed the AnalyzerUtil in common/miscellaneous.  (Robert Muir)
 
+ * LUCENE-2167,LUCENE-2699,LUCENE-2763: StandardTokenizer/Analyzer in 
+   common/standard/ now implement the Word Break rules from the Unicode 6.0.0
+   Text Segmentation algorithm (UAX#29).  
+   
+   ClassicTokenizer/Analyzer retains the old StandardTokenizer/Analyzer
+   implementation and behavior.
+
+   UAX29URLEmailTokenizer tokenizes URLs and E-mail addresses according to the
+   relevant RFCs, in addition to implementing the UAX#29 Word Break rules.
+   (Steven Rowe, Robert Muir, Uwe Schindler)
+
+ * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
+   can be generated. (Chris Harris via Steven Rowe)
+   
 New Features
    
  * LUCENE-2413: Consolidated Solr analysis components into common. 

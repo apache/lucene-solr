@@ -17,21 +17,20 @@ package org.apache.lucene.analysis.fa;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Hashtable;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
 /**
@@ -107,47 +106,24 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public PersianAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public PersianAnalyzer(Version matchVersion, Hashtable<?, ?> stopwords) {
-    this(matchVersion, stopwords.keySet());
-  }
-
-  /**
-   * Builds an analyzer with the given stop words. Lines can be commented out
-   * using {@link #STOPWORDS_COMMENT}
-   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public PersianAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords, STOPWORDS_COMMENT));
-  }
-
-  /**
    * Creates
    * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
-   *         built from a {@link ArabicLetterTokenizer} filtered with
+   *         built from a {@link StandardTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link ArabicNormalizationFilter},
    *         {@link PersianNormalizationFilter} and Persian Stop words
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new ArabicLetterTokenizer(matchVersion, reader);
+    final Tokenizer source;
+    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+      source = new StandardTokenizer(matchVersion, reader);
+    } else {
+      source = new ArabicLetterTokenizer(matchVersion, reader);
+    }
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     result = new ArabicNormalizationFilter(result);
     /* additional persian-specific normalization */
@@ -157,5 +133,15 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
      * above!
      */
     return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
+  }
+  
+  /** 
+   * Wraps the Reader with {@link PersianCharFilter}
+   */
+  @Override
+  protected Reader initReader(Reader reader) {
+    return matchVersion.onOrAfter(Version.LUCENE_31) ? 
+       new PersianCharFilter(CharReader.get(reader)) :
+       reader;
   }
 }

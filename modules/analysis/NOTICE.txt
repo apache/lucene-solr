@@ -52,3 +52,8 @@ See http://project.carrot2.org/license.html.
 
 The SmartChineseAnalyzer source code (smartcn) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
+
+WordBreakTestUnicode_*.java (under modules/analysis/common/src/test/) 
+is derived from Unicode data such as the Unicode Character Database. 
+See http://unicode.org/copyright.html for more details.
+

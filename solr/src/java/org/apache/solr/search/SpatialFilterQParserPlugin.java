@@ -21,18 +21,41 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Creates a {@link org.apache.solr.search.QParser} that can create Spatial {@link org.apache.lucene.search.Filter}s.
- * The filters are tied to implementations of {@link org.apache.solr.schema.SpatialQueryable}
+ * Creates a spatial Filter based on the type of spatial point used.
+ * <p/>
+ * The field must implement {@link org.apache.solr.schema.SpatialQueryable}
+ * <p/>
+ * All units are in Kilometers
+ * <p/>
+ * <p/>
+ * Syntax:
+ * <pre>{!geofilt sfield=&lt;location_field&gt; pt=&lt;lat,lon&gt; d=&lt;distance&gt;}</pre>
+ * <p/>
+ * Parameters:
+ * <ul>
+ * <li>sfield - The field to filter on. Required.</li>
+ * <li>pt - The point to use as a reference.  Must match the dimension of the field. Required.</li>
+ * <li>d - The distance in km.  Requited.</li>
+ * </ul>
+ * The distance measure used currently depends on the FieldType.  LatLonType defaults to using haversine, PointType defaults to Euclidean (2-norm).
+ *
+ * <p/>
+ * Examples:
+ * <pre>fq={!geofilt sfield=store pt=10.312,-20.556 d=3.5}</pre>
+ * <pre>fq={!geofilt sfield=store}&pt=10.312,-20&d=3.5</pre>
+ * <pre>fq={!geofilt}&sfield=store&pt=10.312,-20&d=3.5</pre>
+ * <p/>
+ * Note: The geofilt for LatLonType is capable of also producing scores equal to the computed distance from the point
+ * to the field, making it useful as a component of the main query or a boosting query.
  */
 public class SpatialFilterQParserPlugin extends QParserPlugin {
-  public static String NAME = "sfilt";
-
+  public static String NAME = "geofilt";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams,
                               SolrParams params, SolrQueryRequest req) {
 
-    return new SpatialFilterQParser(qstr, localParams, params, req);
+    return new SpatialFilterQParser(qstr, localParams, params, req, false);
   }
 
   public void init(NamedList args) {
@@ -40,3 +63,4 @@ public class SpatialFilterQParserPlugin extends QParserPlugin {
   }
 
 }
+

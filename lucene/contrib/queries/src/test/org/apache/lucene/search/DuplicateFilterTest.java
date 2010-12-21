@@ -27,22 +27,22 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 
 public class DuplicateFilterTest extends LuceneTestCase {
 	private static final String KEY_FIELD = "url";
-	private RAMDirectory directory;
+	private Directory directory;
 	private IndexReader reader;
 	TermQuery tq=new TermQuery(new Term("text","lucene"));
 	private IndexSearcher searcher;
 
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
     super.setUp();
-		directory = new RAMDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+		directory = newDirectory();
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 		
 		//Add series of docs with filterable fields : url, text and dates  flags
 		addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");
@@ -65,7 +65,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	}
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 		reader.close();
 		searcher.close();
 		directory.close();
@@ -75,9 +75,9 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	private void addDoc(RandomIndexWriter writer, String url, String text, String date) throws IOException
 	{
 		Document doc=new Document();
-		doc.add(new Field(KEY_FIELD,url,Field.Store.YES,Field.Index.NOT_ANALYZED));
-		doc.add(new Field("text",text,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField(KEY_FIELD,url,Field.Store.YES,Field.Index.NOT_ANALYZED));
+		doc.add(newField("text",text,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("date",date,Field.Store.YES,Field.Index.ANALYZED));
 		writer.addDocument(doc);
 	}
 		

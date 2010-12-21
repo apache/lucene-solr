@@ -21,10 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MoreLikeThisParams;
-import org.apache.solr.common.params.MultiMapSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
@@ -33,29 +31,29 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 
 /**
  * TODO -- this needs to actually test the results/query etc
  */
-public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
+public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-  @Override public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void moreLikeThisBeforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("standard", 0, 20 );
   }
-  
-  
+
+  @Test
   public void testInterface() throws Exception
   {
     SolrCore core = h.getCore();
     MoreLikeThisHandler mlt = new MoreLikeThisHandler();
     
-    Map<String,String[]> params = new HashMap<String,String[]>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams( params );
-    SolrQueryRequestBase req = new SolrQueryRequestBase( core, (SolrParams)mmparams ) {};
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequestBase req = new SolrQueryRequestBase( core, params) {};
     
     // requires 'q' or single content stream
     try {
@@ -72,6 +70,9 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
       mlt.handleRequestBody( req, new SolrQueryResponse() );
     }
     catch( Exception ex ) {} // expected
+    finally {
+      req.close();
+    }
     
     assertU(adoc("id","42","name","Tom Cruise","subword","Top Gun","subword","Risky Business","subword","The Color of Money","subword","Minority Report","subword", "Days of Thunder","subword", "Eyes Wide Shut","subword", "Far and Away", "foo_ti","10"));
     assertU(adoc("id","43","name","Tom Hanks","subword","The Green Mile","subword","Forest Gump","subword","Philadelphia Story","subword","Big","subword","Cast Away", "foo_ti","10"));
@@ -80,28 +81,48 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
     assertU(adoc("id","46","name","Nicole Kidman","subword","Batman","subword","Days of Thunder","subword","Eyes Wide Shut","subword","Far and Away"));
     assertU(commit());
 
-    params.put(CommonParams.Q, new String[]{"id:42"});
-    params.put(MoreLikeThisParams.MLT, new String[]{"true"});
-    params.put(MoreLikeThisParams.SIMILARITY_FIELDS, new String[]{"name,subword,foo_ti"});
-    params.put(MoreLikeThisParams.INTERESTING_TERMS,new String[]{"details"});
-    params.put(MoreLikeThisParams.MIN_TERM_FREQ,new String[]{"1"});
-    params.put(MoreLikeThisParams.MIN_DOC_FREQ,new String[]{"1"});
-    params.put("indent",new String[]{"true"});
+    params.set(CommonParams.Q, "id:42");
+    params.set(MoreLikeThisParams.MLT, "true");
+    params.set(MoreLikeThisParams.SIMILARITY_FIELDS, "name,subword,foo_ti");
+    params.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
+    params.set(MoreLikeThisParams.MIN_TERM_FREQ,"1");
+    params.set(MoreLikeThisParams.MIN_DOC_FREQ,"1");
+    params.set("indent","true");
 
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, (SolrParams)mmparams);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/int[@name='id'][.='46']"
         ,"//result/doc[2]/int[@name='id'][.='43']");
     
-    params.put(CommonParams.Q, new String[]{"id:44"});
+    params.set(CommonParams.Q, "id:44");
     assertQ("morelike this - harrison ford",mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
-    
-    params.put(CommonParams.Q, new String[]{"id:42"}); 
-    params.put(MoreLikeThisParams.QF,new String[]{"name^5.0 subword^0.1"});
+
+    // test that qparser plugins work
+    params.set(CommonParams.Q, "{!field f=id}44");
+    assertQ(mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']");
+
+    params.set(CommonParams.Q, "id:42");
+    params.set(MoreLikeThisParams.QF,"name^5.0 subword^0.1");
     assertQ("morelikethis with weights",mltreq
         ,"//result/doc[1]/int[@name='id'][.='43']"
         ,"//result/doc[2]/int[@name='id'][.='46']");
+
+
+    // test that qparser plugins work w/ the MoreLikeThisHandler
+    params.set(CommonParams.QT, "/mlt");
+    params.set(CommonParams.Q, "{!field f=id}44");
+    assertQ(mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']");
+
+    // test that debugging works
+    params.set(CommonParams.QT, "/mlt");
+    params.set("debugQuery", "true");
+    assertQ(mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']"
+        ,"//lst[@name='debug']/lst[@name='explain']"
+    );
 
     // params.put(MoreLikeThisParams.QF,new String[]{"foo_ti"});
     // String response = h.query(mltreq);

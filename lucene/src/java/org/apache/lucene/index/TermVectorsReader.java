@@ -77,35 +77,31 @@ class TermVectorsReader implements Cloneable {
 
     try {
       String idxName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
-      if (d.fileExists(idxName)) {
-        tvx = d.openInput(idxName, readBufferSize);
-        format = checkValidFormat(tvx, idxName);
-        String fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-        tvd = d.openInput(fn, readBufferSize);
-        final int tvdFormat = checkValidFormat(tvd, fn);
-        fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
-        tvf = d.openInput(fn, readBufferSize);
-        final int tvfFormat = checkValidFormat(tvf, fn);
+      tvx = d.openInput(idxName, readBufferSize);
+      format = checkValidFormat(tvx, idxName);
+      String fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+      tvd = d.openInput(fn, readBufferSize);
+      final int tvdFormat = checkValidFormat(tvd, fn);
+      fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      tvf = d.openInput(fn, readBufferSize);
+      final int tvfFormat = checkValidFormat(tvf, fn);
 
-        assert format == tvdFormat;
-        assert format == tvfFormat;
+      assert format == tvdFormat;
+      assert format == tvfFormat;
 
-        assert (tvx.length()-FORMAT_SIZE) % 16 == 0;
-        numTotalDocs = (int) (tvx.length() >> 4);
+      numTotalDocs = (int) (tvx.length() >> 4);
 
-        if (-1 == docStoreOffset) {
-          this.docStoreOffset = 0;
-          this.size = numTotalDocs;
-          assert size == 0 || numTotalDocs == size;
-        } else {
-          this.docStoreOffset = docStoreOffset;
-          this.size = size;
-          // Verify the file is long enough to hold all of our
-          // docs
-          assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
-        }
-      } else
-        format = 0;
+      if (-1 == docStoreOffset) {
+        this.docStoreOffset = 0;
+        this.size = numTotalDocs;
+        assert size == 0 || numTotalDocs == size;
+      } else {
+        this.docStoreOffset = docStoreOffset;
+        this.size = size;
+        // Verify the file is long enough to hold all of our
+        // docs
+        assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
+      }
 
       this.fieldInfos = fieldInfos;
       success = true;
@@ -136,7 +132,9 @@ class TermVectorsReader implements Cloneable {
   }
 
   boolean canReadRawDocs() {
-    return format >= FORMAT_UTF8_LENGTH_IN_BYTES;
+    // we can always read raw docs, unless the term vectors
+    // didn't exist
+    return format != 0;
   }
 
   /** Retrieve the length (in bytes) of the tvd and tvf
@@ -152,11 +150,6 @@ class TermVectorsReader implements Cloneable {
       Arrays.fill(tvfLengths, 0);
       return;
     }
-
-    // SegmentMerger calls canReadRawDocs() first and should
-    // not call us if that returns false.
-    if (format < FORMAT_UTF8_LENGTH_IN_BYTES)
-      throw new IllegalStateException("cannot read raw docs with older term vector formats");
 
     seekTvx(startDocID);
 

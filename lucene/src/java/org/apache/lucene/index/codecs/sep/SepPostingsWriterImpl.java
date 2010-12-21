@@ -2,7 +2,7 @@ package org.apache.lucene.index.codecs.sep;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
-u * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -18,12 +18,13 @@ u * contributor license agreements.  See the NOTICE file distributed with
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -32,8 +33,14 @@ import org.apache.lucene.util.CodecUtil;
  *  to .pyl, skip data to .skp
  *
  * @lucene.experimental */
-public final class SepPostingsWriterImpl extends StandardPostingsWriter {
+public final class SepPostingsWriterImpl extends PostingsWriterBase {
   final static String CODEC = "SepDocFreqSkip";
+
+  final static String DOC_EXTENSION = "doc";
+  final static String SKIP_EXTENSION = "skp";
+  final static String FREQ_EXTENSION = "frq";
+  final static String POS_EXTENSION = "pos";
+  final static String PAYLOAD_EXTENSION = "pyl";
 
   // Increment version to change it:
   final static int VERSION_START = 0;
@@ -72,28 +79,29 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
   long lastPayloadStart;
   int lastDocID;
   int df;
+  private boolean firstDoc;
 
   public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory) throws IOException {
     super();
 
-    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.DOC_EXTENSION);
+    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, DOC_EXTENSION);
     state.flushedFiles.add(docFileName);
     docOut = factory.createOutput(state.directory, docFileName);
     docIndex = docOut.index();
 
     if (state.fieldInfos.hasProx()) {
-      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.FREQ_EXTENSION);
+      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, FREQ_EXTENSION);
       state.flushedFiles.add(frqFileName);
       freqOut = factory.createOutput(state.directory, frqFileName);
       freqIndex = freqOut.index();
 
-      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.POS_EXTENSION);
+      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, POS_EXTENSION);
       posOut = factory.createOutput(state.directory, posFileName);
       state.flushedFiles.add(posFileName);
       posIndex = posOut.index();
 
       // TODO: -- only if at least one field stores payloads?
-      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.PAYLOAD_EXTENSION);
+      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, PAYLOAD_EXTENSION);
       state.flushedFiles.add(payloadFileName);
       payloadOut = state.directory.createOutput(payloadFileName);
 
@@ -105,7 +113,7 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
       payloadOut = null;
     }
 
-    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.SKIP_EXTENSION);
+    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SKIP_EXTENSION);
     state.flushedFiles.add(skipFileName);
     skipOut = state.directory.createOutput(skipFileName);
 
@@ -140,6 +148,7 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
       payloadStart = payloadOut.getFilePointer();
       lastPayloadLength = -1;
     }
+    firstDoc = true;
     skipListWriter.resetSkip(docIndex, freqIndex, posIndex);
   }
 
@@ -161,6 +170,20 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
    *  then we just skip consuming positions/payloads. */
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
+
+    if (firstDoc) {
+      // TODO: we are writing absolute file pointers below,
+      // which is wasteful.  It'd be better compression to
+      // write the "baseline" into each indexed term, then
+      // write only the delta here.
+      if (!omitTF) {
+        freqIndex.write(docOut, true);
+        posIndex.write(docOut, true);
+        docOut.writeVLong(payloadStart);
+      }
+      docOut.writeVLong(skipOut.getFilePointer());
+      firstDoc = false;
+    }
 
     final int delta = docID - lastDocID;
 
@@ -222,40 +245,14 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
   @Override
   public void finishTerm(int docCount, boolean isIndexTerm) throws IOException {
 
-    long skipPos = skipOut.getFilePointer();
-
     // TODO: -- wasteful we are counting this in two places?
     assert docCount > 0;
     assert docCount == df;
 
-    // TODO: -- only do this if once (consolidate the
-    // conditional things that are written)
-    if (!omitTF) {
-      freqIndex.write(termsOut, isIndexTerm);
-    }
     docIndex.write(termsOut, isIndexTerm);
 
     if (df >= skipInterval) {
       skipListWriter.writeSkip(skipOut);
-    }
-
-    if (isIndexTerm) {
-      termsOut.writeVLong(skipPos);
-      lastSkipStart = skipPos;
-    } else if (df >= skipInterval) {
-      termsOut.writeVLong(skipPos-lastSkipStart);
-      lastSkipStart = skipPos;
-    }
-
-    if (!omitTF) {
-      posIndex.write(termsOut, isIndexTerm);
-      if (isIndexTerm) {
-        // Write absolute at seek points
-        termsOut.writeVLong(payloadStart);
-      } else {
-        termsOut.writeVLong(payloadStart-lastPayloadStart);
-      }
-      lastPayloadStart = payloadStart;
     }
 
     lastDocID = 0;
@@ -283,5 +280,13 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
         }
       }
     }
+  }
+
+  public static void getExtensions(Set<String> extensions) {
+    extensions.add(DOC_EXTENSION);
+    extensions.add(FREQ_EXTENSION);
+    extensions.add(SKIP_EXTENSION);
+    extensions.add(POS_EXTENSION);
+    extensions.add(PAYLOAD_EXTENSION);
   }
 }

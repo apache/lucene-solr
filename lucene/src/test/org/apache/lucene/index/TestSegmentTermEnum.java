@@ -27,18 +27,28 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 
 public class TestSegmentTermEnum extends LuceneTestCase {
   
-  Directory dir = new RAMDirectory();
+  Directory dir;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    dir = newDirectory();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
+  }
 
   public void testTermEnum() throws IOException {
     IndexWriter writer = null;
 
-    writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // ADD 100 documents with term : aaa
     // add 100 documents with terms: aaa bbb
@@ -54,7 +64,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     verifyDocFreq();
 
     // merge segments by optimizing the index
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
     writer.optimize();
     writer.close();
 
@@ -64,11 +74,10 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
   public void testPrevTermAtEnd() throws IOException
   {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     addDoc(writer, "aaa bbb");
     writer.close();
-    SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(dir, false));
     TermsEnum terms = reader.fields().terms("content").iterator();
     assertNotNull(terms.next());
     assertEquals("aaa", terms.term().utf8ToString());
@@ -79,6 +88,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seek(ordB));
     assertEquals("bbb", terms.term().utf8ToString());
+    reader.close();
   }
 
   private void verifyDocFreq()
@@ -111,12 +121,13 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     // assert that term is 'bbb'
     assertEquals("bbb", termEnum.term().utf8ToString());
     assertEquals(100, termEnum.docFreq());
+    reader.close();
   }
 
   private void addDoc(IndexWriter writer, String value) throws IOException
   {
     Document doc = new Document();
-    doc.add(new Field("content", value, Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("content", value, Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
 }

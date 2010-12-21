@@ -17,6 +17,7 @@
 # -------------------------------------------------------------------------------------
 # multi val params are iterated by NewRound's, added to reports, start with column name.
 
+writer.version=LUCENE_40
 merge.factor=mrg:10:100:10:100:10:100:10:100
 max.buffered=buf:10:10:100:100:10:10:100:100
 #ram.flush.mb=flush:32:40:48:56:32:40:48:56

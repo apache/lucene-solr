@@ -33,11 +33,11 @@ public interface SolrFormatter extends SolrInfoMBean, NamedListInitializedPlugin
   public void init(NamedList args);
 
   /**
-   * Return a formatter appropriate for this field.
+   * Return a {@link org.apache.lucene.search.highlight.Formatter} appropriate for this field.
    * 
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
-   * @return An appropriate Formatter.
+   * @return An appropriate {@link org.apache.lucene.search.highlight.Formatter}
    */
   public Formatter getFormatter(String fieldName, SolrParams params );
 }

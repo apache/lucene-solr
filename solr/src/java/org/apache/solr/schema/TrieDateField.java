@@ -33,6 +33,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.cache.CachedArrayCreator;
+import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.TokenStream;
@@ -71,18 +73,23 @@ public class TrieDateField extends DateField {
   }
 
   @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    return new Date(NumericUtils.prefixCodedToLong(term));
+  }
+
+  @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top);
+    return new SortField(new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ), top);
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field) {
-    return new TrieDateFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER);
+    return new TrieDateFieldSource( new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ));
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return new TrieDateFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER);
+    return new TrieDateFieldSource( new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ));
   }
 
   @Override
@@ -186,7 +193,7 @@ public class TrieDateField extends DateField {
 
     Field f;
     if (stored) {
-      f = new Field(field.getName(), arr, Field.Store.YES);
+      f = new Field(field.getName(), arr);
       if (indexed) f.setTokenStream(ts);
     } else {
       f = new Field(field.getName(), ts);

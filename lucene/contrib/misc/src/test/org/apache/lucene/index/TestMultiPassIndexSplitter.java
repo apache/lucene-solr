@@ -20,31 +20,40 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 
 public class TestMultiPassIndexSplitter extends LuceneTestCase {
   IndexReader input;
   int NUM_DOCS = 11;
-
+  Directory dir;
+  
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    RAMDirectory dir = new RAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
-      doc.add(new Field("id", i + "", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("f", i + " " + i, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("id", i + "", Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("f", i + " " + i, Field.Store.YES, Field.Index.ANALYZED));
       w.addDocument(doc);
     }
     w.close();
     input = IndexReader.open(dir, false);
     // delete the last doc
     input.deleteDocument(input.maxDoc() - 1);
+    IndexReader inputOld = input;
     input = input.reopen(true);
+    inputOld.close();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    input.close();
+    dir.close();
+    super.tearDown();
   }
   
   /**
@@ -53,9 +62,9 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void testSplitRR() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
     Directory[] dirs = new Directory[]{
-            new RAMDirectory(),
-            new RAMDirectory(),
-            new RAMDirectory()
+            newDirectory(),
+            newDirectory(),
+            newDirectory()
     };
     splitter.split(input, dirs, false);
     IndexReader ir;
@@ -86,7 +95,10 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     assertNotSame("1", te.term());
 
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("0")));
-    assertNotSame("0", te.term().utf8ToString());    
+    assertNotSame("0", te.term().utf8ToString());
+    ir.close();
+    for (Directory d : dirs)
+      d.close();
   }
   
   /**
@@ -95,9 +107,9 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void testSplitSeq() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
     Directory[] dirs = new Directory[]{
-            new RAMDirectory(),
-            new RAMDirectory(),
-            new RAMDirectory()
+            newDirectory(),
+            newDirectory(),
+            newDirectory()
     };
     splitter.split(input, dirs, true);
     IndexReader ir;
@@ -122,5 +134,8 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     Term t = new Term("id", (NUM_DOCS - 1) + "");
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef(t.text())));
     assertNotSame(t.text(), te.term().utf8ToString());
+    ir.close();
+    for (Directory d : dirs)
+      d.close();
   }
 }

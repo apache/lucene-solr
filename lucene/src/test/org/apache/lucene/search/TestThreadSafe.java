@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -31,12 +30,9 @@ import java.util.List;
 import java.io.IOException;
 
 public class TestThreadSafe extends LuceneTestCase {
-  Random r;
   Directory dir1;
-  Directory dir2;
 
   IndexReader ir1;
-  IndexReader ir2;
 
   String failure=null;
 
@@ -110,15 +106,15 @@ public class TestThreadSafe extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
     for (int j=0; j<nDocs; j++) {
       Document d = new Document();
-      int nFields = r.nextInt(maxFields);
+      int nFields = random.nextInt(maxFields);
       for (int i=0; i<nFields; i++) {
-        int flen = r.nextInt(maxFieldLen);
+        int flen = random.nextInt(maxFieldLen);
         StringBuilder sb = new StringBuilder("^ ");
-        while (sb.length() < flen) sb.append(' ').append(words[r.nextInt(words.length)]);
+        while (sb.length() < flen) sb.append(' ').append(words[random.nextInt(words.length)]);
         sb.append(" $");
         Field.Store store = Field.Store.YES;  // make random later
         Field.Index index = Field.Index.ANALYZED;  // make random later
-        d.add(new Field("f"+i, sb.toString(), store, index));
+        d.add(newField("f"+i, sb.toString(), store, index));
       }
       iw.addDocument(d);
     }
@@ -129,7 +125,7 @@ public class TestThreadSafe extends LuceneTestCase {
   void doTest(int iter, int nThreads) throws Exception {
     Thr[] tarr = new Thr[nThreads];
     for (int i=0; i<nThreads; i++) {
-      tarr[i] = new Thr(iter, new Random(r.nextLong()));
+      tarr[i] = new Thr(iter, new Random(random.nextLong()));
       tarr[i].start();
     }
     for (int i=0; i<nThreads; i++) {
@@ -141,8 +137,7 @@ public class TestThreadSafe extends LuceneTestCase {
   }
 
   public void testLazyLoadThreadSafety() throws Exception{
-    r = newRandom();
-    dir1 = new RAMDirectory();
+    dir1 = newDirectory();
     // test w/ field sizes bigger than the buffer of an index input
     buildDir(dir1, 15, 5, 2000);
 
@@ -150,8 +145,10 @@ public class TestThreadSafe extends LuceneTestCase {
     int num = 100 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       ir1 = IndexReader.open(dir1, false);
-      doTest(10,100);
+      doTest(10,10);
+      ir1.close();
     }
+    dir1.close();
   }
 
 }

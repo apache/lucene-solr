@@ -22,7 +22,9 @@ import java.io.IOException;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
@@ -38,7 +40,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
   int maxNumPostings;
   OffsetAttribute offsetAttribute = null;
-  
+
   public TermVectorsTermsWriterPerField(TermsHashPerField termsHashPerField, TermVectorsTermsWriter termsWriter, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
     this.termsWriter = termsWriter;
@@ -69,11 +71,12 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     if (doVectors) {
       if (termsWriter.tvx != null) {
-        if (termsHashPerField.numPostings != 0)
+        if (termsHashPerField.bytesHash.size() != 0) {
           // Only necessary if previous doc hit a
           // non-aborting exception while writing vectors in
           // this field:
           termsHashPerField.reset();
+        }
       }
     }
 
@@ -81,22 +84,25 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     //perThread.postingsCount = 0;
 
     return doVectors;
-  }     
+  }
 
   public void abort() {}
 
-  @Override
+  /** Called once per field per document if term vectors
+   *  are enabled, to write the vectors to
+   *  RAMOutputStream, which is then quickly flushed to
+   *  the real term vectors files in the Directory. */  @Override
   void finish() throws IOException {
-    if (!doVectors || termsHashPerField.numPostings == 0)
+    if (!doVectors || termsHashPerField.bytesHash.size() == 0)
       return;
 
     termsWriter.addFieldToFlush(this);
   }
-  
+
   void finishDocument() throws IOException {
     assert docState.testPoint("TermVectorsTermsWriterPerField.finish start");
 
-    final int numPostings = termsHashPerField.numPostings;
+    final int numPostings = termsHashPerField.bytesHash.size();
 
     final BytesRef flushTerm = termsWriter.flushTerm;
 
@@ -123,21 +129,21 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     byte bits = 0x0;
     if (doVectorPositions)
       bits |= TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
-    if (doVectorOffsets) 
+    if (doVectorOffsets)
       bits |= TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
     tvf.writeByte(bits);
 
     int lastLen = 0;
     byte[] lastBytes = null;
     int lastStart = 0;
-      
+
     final ByteSliceReader reader = termsWriter.vectorSliceReader;
     final ByteBlockPool termBytePool = termsHashPerField.termBytePool;
 
     for(int j=0;j<numPostings;j++) {
       final int termID = termIDs[j];
       final int freq = postings.freqs[termID];
-          
+
       // Get BytesRef
       termBytePool.setBytesRef(flushTerm, postings.textStarts[termID]);
 
@@ -181,7 +187,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     termsHashPerField.shrinkHash(maxNumPostings);
     maxNumPostings = 0;
   }
-  
+
   @Override
   void start(Fieldable f) {
     if (doVectorOffsets) {
@@ -201,7 +207,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     if (doVectorOffsets) {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
-      
+
       termsHashPerField.writeVInt(1, startOffset);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
       postings.lastOffsets[termID] = endOffset;
@@ -219,13 +225,13 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     assert docState.testPoint("TermVectorsTermsWriterPerField.addTerm start");
 
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
-    
+
     postings.freqs[termID]++;
 
     if (doVectorOffsets) {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
-      
+
       termsHashPerField.writeVInt(1, startOffset - postings.lastOffsets[termID]);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
       postings.lastOffsets[termID] = endOffset;
@@ -256,7 +262,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     int[] freqs;                                       // How many times this term occurred in the current doc
     int[] lastOffsets;                                 // Last offset we saw
     int[] lastPositions;                               // Last position where this term occurred
-    
+
     ParallelPostingsArray newInstance(int size) {
       return new TermVectorsPostingsArray(size);
     }
@@ -275,7 +281,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     @Override
     int bytesPerPosting() {
-      return super.bytesPerPosting() + 3 * DocumentsWriterRAMAllocator.INT_NUM_BYTE;
+      return super.bytesPerPosting() + 3 * RamUsageEstimator.NUM_BYTES_INT;
     }
   }
 }

@@ -25,11 +25,11 @@ public class TestQueryNode extends LuceneTestCase {
  
   /* LUCENE-2227 bug in QueryNodeImpl.add() */
   public void testAddChildren() throws Exception {
-    FieldQueryNode nodeA = new FieldQueryNode("foo", "A", 0, 1);
-    FieldQueryNode nodeB = new FieldQueryNode("foo", "B", 1, 2);
+    QueryNode nodeA = new FieldQueryNode("foo", "A", 0, 1);
+    QueryNode nodeB = new FieldQueryNode("foo", "B", 1, 2);
     BooleanQueryNode bq = new BooleanQueryNode(
-        Arrays.asList(new QueryNode[] { nodeA }));
-    bq.add(Arrays.asList(new QueryNode[] { nodeB }));
+        Arrays.asList(nodeA));
+    bq.add(Arrays.asList(nodeB));
     assertEquals(2, bq.getChildren().size());
   }
 }

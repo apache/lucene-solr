@@ -23,6 +23,9 @@
 
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
+  <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
+  <property name="tests.luceneMatchVersion" value="4.0"/>
+
   <!-- Initialize property values: allow easy customization via build.properties -->
   <property file="build.properties" />
 
@@ -38,13 +41,32 @@
     <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
+  <property name="junit.details" value="1"/>
+
   <!-- default arguments to pass to jvm executing tests -->
   <property name="args" value="" />
 
   <!-- TODO: measure toning this down by default to 1 -->
-  <property name="threadsPerProcessor" value="2"/>
+  <property name="tests.threadspercpu" value="2"/>
+  <condition property="tests.sequential">
+    <or>
+      <isset property="testcase"/>
+      <equals arg1="${tests.threadspercpu}" arg2="0"/>
+    </or>
+  </condition>
 
-  <property name="tests.codec" value="random" />
+  <property name="tests.multiplier" value="1" />
+  <property name="tests.codec" value="randomPerField" />
+  <property name="tests.locale" value="random" />
+  <property name="tests.timezone" value="random" />
+  <property name="tests.iter" value="1" />
+  <property name="tests.seed" value="random" />
+  <property name="tests.nightly" value="false" />
+  <property name="tests.verbose" value="false" />
+
+  <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
+    <isset property="use.fsdir"/>
+  </condition>
 
   <!-- Example directory -->
   <property name="example" value="${common-solr.dir}/example" />
@@ -64,10 +86,10 @@
        This can be any string value that does not include spaces
        This will be used when creating build artifact file names.
 
-       By default, this should be set to "X.Y.N-dev" where X.Y.N is
+       By default, this should be set to "X.Y.N-SNAPSHOT" where X.Y.N is
        "1 greater" then the last version released (on this branch).
     -->
-  <property name="version" value="4.0-dev" />
+  <property name="version" value="4.0-SNAPSHOT" />
   
   <!-- Solr Specification Version -->
   <!--
@@ -77,7 +99,7 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="specversion" value="3.0.0.${dateversion}" />
+  <property name="specversion" value="4.0.0.${dateversion}" />
 
   
     <!-- Type of checksum to compute for distribution files -->
@@ -100,18 +122,23 @@
   <property name="javadoc.link.junit"
             value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.link.lucene"
-            value="http://lucene.apache.org/java/3_1_0/api/all/"/>
+            value="https://hudson.apache.org/hudson/job/Lucene-trunk/javadoc/all/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
   <property name="build.docs" value="${dest}/docs"/>
   <property name="build.javadoc" value="${common-solr.dir}/${build.docs}/api"/>
   <property name="build.javadoc.solrj" value="${build.docs}/api-solrj"/>
   
   <!-- JUnit properties -->
+  <property name="testmethod" value=""/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.output.dir" location="${common-solr.dir}/${dest}/test-results"/>
   <property name="junit.reports" location="${common-solr.dir}/${dest}/test-results/reports"/>
   <property name="junit.formatter" value="plain"/>
-  <property name="junit.details.formatter" value="org.apache.lucene.util.LuceneJUnitResultFormatter"/>
+  <condition property="junit.details.formatter"
+      value="org.apache.tools.ant.taskdefs.optional.junit.PlainJUnitResultFormatter"
+      else="org.apache.lucene.util.LuceneJUnitResultFormatter">
+    <isset property="tests.sequential"/>
+  </condition>
   <property name="junit.parallel.selector" value="org.apache.lucene.util.LuceneJUnitDividingSelector"/>
 
   <!-- Maven properties -->
@@ -239,6 +266,7 @@
              sourcepath=""
              classpathref="@{classpathref}">
          <nested />
+      	<compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
       </javac>
     </sequential>
   </macrodef>
@@ -327,6 +355,10 @@
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="todo" description="To Do:"/>
         <tag name="uml.property" description="UML Property:"/>
+        <tag name="lucene.experimental" 
+      	description="WARNING: This API is experimental and might change in incompatible ways in the next release."/>
+        <tag name="lucene.internal"
+        description="NOTE: This API is for Lucene internal purposes only and might change in incompatible ways in the next release."/>
       	<link offline="true" packagelistLoc="${build.javadoc}"/>
         <link href="${javadoc.link.java}"/>
         <link href="${javadoc.link.junit}"/>

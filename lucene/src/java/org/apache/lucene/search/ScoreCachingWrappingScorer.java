@@ -32,7 +32,7 @@ import java.io.IOException;
  */
 public class ScoreCachingWrappingScorer extends Scorer {
 
-  private Scorer scorer;
+  private final Scorer scorer;
   private int curDoc = -1;
   private float curScore;
   

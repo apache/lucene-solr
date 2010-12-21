@@ -1,35 +1,26 @@
 package org.apache.lucene.analysis.core;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
-import org.apache.lucene.util.BytesRef;
-
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Arrays;
 
 /**
- * Copyright 2004 The Apache Software Foundation
- * <p/>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,277 +29,176 @@ import org.apache.lucene.util.BytesRef;
  */
 
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
-
-  private Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
-
-  public void testMaxTermLength() throws Exception {
-    StandardAnalyzer sa = new StandardAnalyzer(TEST_VERSION_CURRENT);
-    sa.setMaxTokenLength(5);
-    assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"});
+  
+  public void testHugeDoc() throws IOException {
+    StringBuilder sb = new StringBuilder();
+    char whitespace[] = new char[4094];
+    Arrays.fill(whitespace, ' ');
+    sb.append(whitespace);
+    sb.append("testing 1234");
+    String input = sb.toString();
+    StandardTokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
-  public void testMaxTermLength2() throws Exception {
-    StandardAnalyzer sa = new StandardAnalyzer(TEST_VERSION_CURRENT);
-    assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "toolong", "xy", "z"});
-    sa.setMaxTokenLength(5);
-    
-    assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"}, new int[]{1, 1, 2, 1});
-  }
+  private Analyzer a = new ReusableAnalyzerBase() {
+    @Override
+    protected TokenStreamComponents createComponents
+      (String fieldName, Reader reader) {
 
-  public void testMaxTermLength3() throws Exception {
-    char[] chars = new char[255];
-    for(int i=0;i<255;i++)
-      chars[i] = 'a';
-    String longTerm = new String(chars, 0, 255);
-    
-    assertAnalyzesTo(a, "ab cd " + longTerm + " xy z", new String[]{"ab", "cd", longTerm, "xy", "z"});
-    assertAnalyzesTo(a, "ab cd " + longTerm + "a xy z", new String[]{"ab", "cd", "xy", "z"});
-  }
-
-  public void testAlphanumeric() throws Exception {
-    // alphanumeric tokens
-    assertAnalyzesTo(a, "B2B", new String[]{"b2b"});
-    assertAnalyzesTo(a, "2B", new String[]{"2b"});
-  }
-
-  public void testUnderscores() throws Exception {
-    // underscores are delimiters, but not in email addresses (below)
-    assertAnalyzesTo(a, "word_having_underscore", new String[]{"word", "having", "underscore"});
-    assertAnalyzesTo(a, "word_with_underscore_and_stopwords", new String[]{"word", "underscore", "stopwords"});
-  }
-
-  public void testDelimiters() throws Exception {
-    // other delimiters: "-", "/", ","
-    assertAnalyzesTo(a, "some-dashed-phrase", new String[]{"some", "dashed", "phrase"});
-    assertAnalyzesTo(a, "dogs,chase,cats", new String[]{"dogs", "chase", "cats"});
-    assertAnalyzesTo(a, "ac/dc", new String[]{"ac", "dc"});
-  }
-
-  public void testApostrophes() throws Exception {
-    // internal apostrophes: O'Reilly, you're, O'Reilly's
-    // possessives are actually removed by StardardFilter, not the tokenizer
-    assertAnalyzesTo(a, "O'Reilly", new String[]{"o'reilly"});
-    assertAnalyzesTo(a, "you're", new String[]{"you're"});
-    assertAnalyzesTo(a, "she's", new String[]{"she"});
-    assertAnalyzesTo(a, "Jim's", new String[]{"jim"});
-    assertAnalyzesTo(a, "don't", new String[]{"don't"});
-    assertAnalyzesTo(a, "O'Reilly's", new String[]{"o'reilly"});
-  }
-
-  public void testTSADash() throws Exception {
-    // t and s had been stopwords in Lucene <= 2.0, which made it impossible
-    // to correctly search for these terms:
-    assertAnalyzesTo(a, "s-class", new String[]{"s", "class"});
-    assertAnalyzesTo(a, "t-com", new String[]{"t", "com"});
-    // 'a' is still a stopword:
-    assertAnalyzesTo(a, "a-class", new String[]{"class"});
-  }
-
-  public void testCompanyNames() throws Exception {
-    // company names
-    assertAnalyzesTo(a, "AT&T", new String[]{"at&t"});
-    assertAnalyzesTo(a, "Excite@Home", new String[]{"excite@home"});
-  }
-
-  public void testLucene1140() throws Exception {
-    try {
-      StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
-      assertAnalyzesTo(analyzer, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
-    } catch (NullPointerException e) {
-      fail("Should not throw an NPE and it did");
+      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      return new TokenStreamComponents(tokenizer);
     }
+  };
 
+  public void testArmenian() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "Վիքիպեդիայի 13 միլիոն հոդվածները (4,600` հայերեն վիքիպեդիայում) գրվել են կամավորների կողմից ու համարյա բոլոր հոդվածները կարող է խմբագրել ցանկաց մարդ ով կարող է բացել Վիքիպեդիայի կայքը։",
+        new String[] { "Վիքիպեդիայի", "13", "միլիոն", "հոդվածները", "4,600", "հայերեն", "վիքիպեդիայում", "գրվել", "են", "կամավորների", "կողմից", 
+        "ու", "համարյա", "բոլոր", "հոդվածները", "կարող", "է", "խմբագրել", "ցանկաց", "մարդ", "ով", "կարող", "է", "բացել", "Վիքիպեդիայի", "կայքը" } );
+  }
+  
+  public void testAmharic() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "ዊኪፔድያ የባለ ብዙ ቋንቋ የተሟላ ትክክለኛና ነጻ መዝገበ ዕውቀት (ኢንሳይክሎፒዲያ) ነው። ማንኛውም",
+        new String[] { "ዊኪፔድያ", "የባለ", "ብዙ", "ቋንቋ", "የተሟላ", "ትክክለኛና", "ነጻ", "መዝገበ", "ዕውቀት", "ኢንሳይክሎፒዲያ", "ነው", "ማንኛውም" } );
+  }
+  
+  public void testArabic() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "الفيلم الوثائقي الأول عن ويكيبيديا يسمى \"الحقيقة بالأرقام: قصة ويكيبيديا\" (بالإنجليزية: Truth in Numbers: The Wikipedia Story)، سيتم إطلاقه في 2008.",
+        new String[] { "الفيلم", "الوثائقي", "الأول", "عن", "ويكيبيديا", "يسمى", "الحقيقة", "بالأرقام", "قصة", "ويكيبيديا",
+        "بالإنجليزية", "Truth", "in", "Numbers", "The", "Wikipedia", "Story", "سيتم", "إطلاقه", "في", "2008" } ); 
+  }
+  
+  public void testAramaic() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "ܘܝܩܝܦܕܝܐ (ܐܢܓܠܝܐ: Wikipedia) ܗܘ ܐܝܢܣܩܠܘܦܕܝܐ ܚܐܪܬܐ ܕܐܢܛܪܢܛ ܒܠܫܢ̈ܐ ܣܓܝܐ̈ܐ܂ ܫܡܗ ܐܬܐ ܡܢ ܡ̈ܠܬܐ ܕ\"ܘܝܩܝ\" ܘ\"ܐܝܢܣܩܠܘܦܕܝܐ\"܀",
+        new String[] { "ܘܝܩܝܦܕܝܐ", "ܐܢܓܠܝܐ", "Wikipedia", "ܗܘ", "ܐܝܢܣܩܠܘܦܕܝܐ", "ܚܐܪܬܐ", "ܕܐܢܛܪܢܛ", "ܒܠܫܢ̈ܐ", "ܣܓܝܐ̈ܐ", "ܫܡܗ",
+        "ܐܬܐ", "ܡܢ", "ܡ̈ܠܬܐ", "ܕ", "ܘܝܩܝ", "ܘ", "ܐܝܢܣܩܠܘܦܕܝܐ"});
+  }
+  
+  public void testBengali() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "এই বিশ্বকোষ পরিচালনা করে উইকিমিডিয়া ফাউন্ডেশন (একটি অলাভজনক সংস্থা)। উইকিপিডিয়ার শুরু ১৫ জানুয়ারি, ২০০১ সালে। এখন পর্যন্ত ২০০টিরও বেশী ভাষায় উইকিপিডিয়া রয়েছে।",
+        new String[] { "এই", "বিশ্বকোষ", "পরিচালনা", "করে", "উইকিমিডিয়া", "ফাউন্ডেশন", "একটি", "অলাভজনক", "সংস্থা", "উইকিপিডিয়ার",
+        "শুরু", "১৫", "জানুয়ারি", "২০০১", "সালে", "এখন", "পর্যন্ত", "২০০টিরও", "বেশী", "ভাষায়", "উইকিপিডিয়া", "রয়েছে" });
+  }
+  
+  public void testFarsi() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "ویکی پدیای انگلیسی در تاریخ ۲۵ دی ۱۳۷۹ به صورت مکملی برای دانشنامهٔ تخصصی نوپدیا نوشته شد.",
+        new String[] { "ویکی", "پدیای", "انگلیسی", "در", "تاریخ", "۲۵", "دی", "۱۳۷۹", "به", "صورت", "مکملی",
+        "برای", "دانشنامهٔ", "تخصصی", "نوپدیا", "نوشته", "شد" });
+  }
+  
+  public void testGreek() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "Γράφεται σε συνεργασία από εθελοντές με το λογισμικό wiki, κάτι που σημαίνει ότι άρθρα μπορεί να προστεθούν ή να αλλάξουν από τον καθένα.",
+        new String[] { "Γράφεται", "σε", "συνεργασία", "από", "εθελοντές", "με", "το", "λογισμικό", "wiki", "κάτι", "που",
+        "σημαίνει", "ότι", "άρθρα", "μπορεί", "να", "προστεθούν", "ή", "να", "αλλάξουν", "από", "τον", "καθένα" });
   }
 
-  public void testDomainNames() throws Exception {
-    // Current lucene should not show the bug
-    StandardAnalyzer a2 = new StandardAnalyzer(TEST_VERSION_CURRENT);
-
-    // domain names
-    assertAnalyzesTo(a2, "www.nutch.org", new String[]{"www.nutch.org"});
-    //Notice the trailing .  See https://issues.apache.org/jira/browse/LUCENE-1068.
-    // the following should be recognized as HOST:
-    assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
-
-    // 2.3 should show the bug
-    a2 = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_23);
-    assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
-
-    // 2.4 should not show the bug
-    a2 = new StandardAnalyzer(Version.LUCENE_24);
-    assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
+  public void testThai() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "การที่ได้ต้องแสดงว่างานดี. แล้วเธอจะไปไหน? ๑๒๓๔",
+        new String[] { "การที่ได้ต้องแสดงว่างานดี", "แล้วเธอจะไปไหน", "๑๒๓๔" });
+  }
+  
+  public void testLao() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "ສາທາລະນະລັດ ປະຊາທິປະໄຕ ປະຊາຊົນລາວ", 
+        new String[] { "ສາທາລະນະລັດ", "ປະຊາທິປະໄຕ", "ປະຊາຊົນລາວ" });
+  }
+  
+  public void testTibetan() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "སྣོན་མཛོད་དང་ལས་འདིས་བོད་ཡིག་མི་ཉམས་གོང་འཕེལ་དུ་གཏོང་བར་ཧ་ཅང་དགེ་མཚན་མཆིས་སོ། །",
+                     new String[] { "སྣོན", "མཛོད", "དང", "ལས", "འདིས", "བོད", "ཡིག", 
+                                    "མི", "ཉམས", "གོང", "འཕེལ", "དུ", "གཏོང", "བར", 
+                                    "ཧ", "ཅང", "དགེ", "མཚན", "མཆིས", "སོ" });
+  }
+  
+  /*
+   * For chinese, tokenize as char (these can later form bigrams or whatever)
+   */
+  public void testChinese() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "我是中国人。 １２３４ Ｔｅｓｔｓ ",
+        new String[] { "我", "是", "中", "国", "人", "１２３４", "Ｔｅｓｔｓ"});
+  }
+  
+  public void testEmpty() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "", new String[] {});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, ".", new String[] {});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, " ", new String[] {});
+  }
+  
+  /* test various jira issues this analyzer is related to */
+  
+  public void testLUCENE1545() throws Exception {
+    /*
+     * Standard analyzer does not correctly tokenize combining character U+0364 COMBINING LATIN SMALL LETTRE E.
+     * The word "moͤchte" is incorrectly tokenized into "mo" "chte", the combining character is lost.
+     * Expected result is only on token "moͤchte".
+     */
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "moͤchte", new String[] { "moͤchte" }); 
+  }
+  
+  /* Tests from StandardAnalyzer, just to show behavior is similar */
+  public void testAlphanumericSA() throws Exception {
+    // alphanumeric tokens
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "B2B", new String[]{"B2B"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "2B", new String[]{"2B"});
   }
 
-  public void testEMailAddresses() throws Exception {
-    // email addresses, possibly with underscores, periods, etc
-    assertAnalyzesTo(a, "test@example.com", new String[]{"test@example.com"});
-    assertAnalyzesTo(a, "first.lastname@example.com", new String[]{"first.lastname@example.com"});
-    assertAnalyzesTo(a, "first_lastname@example.com", new String[]{"first_lastname@example.com"});
+  public void testDelimitersSA() throws Exception {
+    // other delimiters: "-", "/", ","
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "some-dashed-phrase", new String[]{"some", "dashed", "phrase"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "dogs,chase,cats", new String[]{"dogs", "chase", "cats"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "ac/dc", new String[]{"ac", "dc"});
   }
 
-  public void testNumeric() throws Exception {
+  public void testApostrophesSA() throws Exception {
+    // internal apostrophes: O'Reilly, you're, O'Reilly's
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "O'Reilly", new String[]{"O'Reilly"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "you're", new String[]{"you're"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "she's", new String[]{"she's"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "Jim's", new String[]{"Jim's"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "don't", new String[]{"don't"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "O'Reilly's", new String[]{"O'Reilly's"});
+  }
+
+  public void testNumericSA() throws Exception {
     // floating point, serial, model numbers, ip addresses, etc.
-    // every other segment must have at least one digit
-    assertAnalyzesTo(a, "21.35", new String[]{"21.35"});
-    assertAnalyzesTo(a, "R2D2 C3PO", new String[]{"r2d2", "c3po"});
-    assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
-    assertAnalyzesTo(a, "1-2-3", new String[]{"1-2-3"});
-    assertAnalyzesTo(a, "a1-b2-c3", new String[]{"a1-b2-c3"});
-    assertAnalyzesTo(a, "a1-b-c3", new String[]{"a1-b-c3"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "21.35", new String[]{"21.35"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "R2D2 C3PO", new String[]{"R2D2", "C3PO"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
   }
 
-  public void testTextWithNumbers() throws Exception {
+  public void testTextWithNumbersSA() throws Exception {
     // numbers
-    assertAnalyzesTo(a, "David has 5000 bones", new String[]{"david", "has", "5000", "bones"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "David has 5000 bones", new String[]{"David", "has", "5000", "bones"});
   }
 
-  public void testVariousText() throws Exception {
+  public void testVariousTextSA() throws Exception {
     // various
-    assertAnalyzesTo(a, "C embedded developers wanted", new String[]{"c", "embedded", "developers", "wanted"});
-    assertAnalyzesTo(a, "foo bar FOO BAR", new String[]{"foo", "bar", "foo", "bar"});
-    assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", new String[]{"foo", "bar", "foo", "bar"});
-    assertAnalyzesTo(a, "\"QUOTED\" word", new String[]{"quoted", "word"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "C embedded developers wanted", new String[]{"C", "embedded", "developers", "wanted"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "foo bar FOO BAR", new String[]{"foo", "bar", "FOO", "BAR"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", new String[]{"foo", "bar", "FOO", "BAR"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "\"QUOTED\" word", new String[]{"QUOTED", "word"});
   }
 
-  public void testAcronyms() throws Exception {
-    // acronyms have their dots stripped
-    assertAnalyzesTo(a, "U.S.A.", new String[]{"usa"});
-  }
-
-  public void testCPlusPlusHash() throws Exception {
-    // It would be nice to change the grammar in StandardTokenizer.jj to make "C#" and "C++" end up as tokens.
-    assertAnalyzesTo(a, "C++", new String[]{"c"});
-    assertAnalyzesTo(a, "C#", new String[]{"c"});
-  }
-
-  public void testKorean() throws Exception {
+  public void testKoreanSA() throws Exception {
     // Korean words
-    assertAnalyzesTo(a, "안녕하세요 한글입니다", new String[]{"안녕하세요", "한글입니다"});
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "안녕하세요 한글입니다", new String[]{"안녕하세요", "한글입니다"});
   }
-
-  // Compliance with the "old" JavaCC-based analyzer, see:
-  // https://issues.apache.org/jira/browse/LUCENE-966#action_12516752
-
-  public void testComplianceFileName() throws Exception {
-    assertAnalyzesTo(a, "2004.jpg",
-            new String[]{"2004.jpg"},
-            new String[]{"<HOST>"});
+  
+  public void testOffsets() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "David has 5000 bones", 
+        new String[] {"David", "has", "5000", "bones"},
+        new int[] {0, 6, 10, 15},
+        new int[] {5, 9, 14, 20});
   }
-
-  public void testComplianceNumericIncorrect() throws Exception {
-    assertAnalyzesTo(a, "62.46",
-            new String[]{"62.46"},
-            new String[]{"<HOST>"});
+  
+  public void testTypes() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "David has 5000 bones", 
+        new String[] {"David", "has", "5000", "bones"},
+        new String[] { "<ALPHANUM>", "<ALPHANUM>", "<NUM>", "<ALPHANUM>" });
   }
-
-  public void testComplianceNumericLong() throws Exception {
-    assertAnalyzesTo(a, "978-0-94045043-1",
-            new String[]{"978-0-94045043-1"},
-            new String[]{"<NUM>"});
-  }
-
-  public void testComplianceNumericFile() throws Exception {
-    assertAnalyzesTo(
-            a,
-            "78academyawards/rules/rule02.html",
-            new String[]{"78academyawards/rules/rule02.html"},
-            new String[]{"<NUM>"});
-  }
-
-  public void testComplianceNumericWithUnderscores() throws Exception {
-    assertAnalyzesTo(
-            a,
-            "2006-03-11t082958z_01_ban130523_rtridst_0_ozabs",
-            new String[]{"2006-03-11t082958z_01_ban130523_rtridst_0_ozabs"},
-            new String[]{"<NUM>"});
-  }
-
-  public void testComplianceNumericWithDash() throws Exception {
-    assertAnalyzesTo(a, "mid-20th", new String[]{"mid-20th"},
-            new String[]{"<NUM>"});
-  }
-
-  public void testComplianceManyTokens() throws Exception {
-    assertAnalyzesTo(
-            a,
-            "/money.cnn.com/magazines/fortune/fortune_archive/2007/03/19/8402357/index.htm "
-                    + "safari-0-sheikh-zayed-grand-mosque.jpg",
-            new String[]{"money.cnn.com", "magazines", "fortune",
-                    "fortune", "archive/2007/03/19/8402357", "index.htm",
-                    "safari-0-sheikh", "zayed", "grand", "mosque.jpg"},
-            new String[]{"<HOST>", "<ALPHANUM>", "<ALPHANUM>",
-                    "<ALPHANUM>", "<NUM>", "<HOST>", "<NUM>", "<ALPHANUM>",
-                    "<ALPHANUM>", "<HOST>"});
-  }
-
-  public void testJava14BWCompatibility() throws Exception {
-    StandardAnalyzer sa = new StandardAnalyzer(Version.LUCENE_30);
-    assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test", "test" });
-    sa = new StandardAnalyzer(Version.LUCENE_31);
-    assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test\u02C6test" });
-  }
-
-  /**
-   * Make sure we skip wicked long terms.
-  */
-  public void testWickedLongTerm() throws IOException {
-    RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-      TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
-
-    char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
-    Arrays.fill(chars, 'x');
-    Document doc = new Document();
-    final String bigTerm = new String(chars);
-
-    // This produces a too-long term:
-    String contents = "abc xyz x" + bigTerm + " another term";
-    doc.add(new Field("content", contents, Field.Store.NO, Field.Index.ANALYZED));
-    writer.addDocument(doc);
-
-    // Make sure we can add another normal document
-    doc = new Document();
-    doc.add(new Field("content", "abc bbb ccc", Field.Store.NO, Field.Index.ANALYZED));
-    writer.addDocument(doc);
-    writer.close();
-
-    IndexReader reader = IndexReader.open(dir, true);
-
-    // Make sure all terms < max size were indexed
-    assertEquals(2, reader.docFreq(new Term("content", "abc")));
-    assertEquals(1, reader.docFreq(new Term("content", "bbb")));
-    assertEquals(1, reader.docFreq(new Term("content", "term")));
-    assertEquals(1, reader.docFreq(new Term("content", "another")));
-
-    // Make sure position is still incremented when
-    // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader,
-                                                                MultiFields.getDeletedDocs(reader),
-                                                                "content",
-                                                                new BytesRef("another"));
-    assertTrue(tps.nextDoc() != DocsEnum.NO_MORE_DOCS);
-    assertEquals(1, tps.freq());
-    assertEquals(3, tps.nextPosition());
-
-    // Make sure the doc that has the massive term is in
-    // the index:
-    assertEquals("document with wicked long term should is not in the index!", 2, reader.numDocs());
-
-    reader.close();
-
-    // Make sure we can add a document with exactly the
-    // maximum length term, and search on that term:
-    doc = new Document();
-    doc.add(new Field("content", bigTerm, Field.Store.NO, Field.Index.ANALYZED));
-    StandardAnalyzer sa = new StandardAnalyzer(TEST_VERSION_CURRENT);
-    sa.setMaxTokenLength(100000);
-    writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, sa));
-    writer.addDocument(doc);
-    writer.close();
-    reader = IndexReader.open(dir, true);
-    assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
-    reader.close();
-
-    dir.close();
+  
+  public void testUnicodeWordBreaks() throws Exception {
+    WordBreakTestUnicode_6_0_0 wordBreakTest = new WordBreakTestUnicode_6_0_0();
+    wordBreakTest.test(a);
   }
 }

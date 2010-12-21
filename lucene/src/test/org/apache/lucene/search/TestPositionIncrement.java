@@ -18,17 +18,16 @@ package org.apache.lucene.search;
  */
 
 import java.io.Reader;
-import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -36,12 +35,10 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -89,10 +86,10 @@ public class TestPositionIncrement extends LuceneTestCase {
         };
       }
     };
-    Directory store = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, analyzer);
+    Directory store = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, store, analyzer);
     Document d = new Document();
-    d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
+    d.add(newField("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -199,7 +196,7 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     // should not find "1 2" because there is a gap of 1 in the index
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field",
-        new MockAnalyzer(MockTokenizer.WHITESPACE, false, stopStopList, false));
+        new MockAnalyzer(MockTokenizer.WHITESPACE, false, stopStopList, false, false));
     q = (PhraseQuery) qp.parse("\"1 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
@@ -223,7 +220,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       
     // when both qp qnd stopFilter propagate increments, we should find the doc.
     qp = new QueryParser(TEST_VERSION_CURRENT, "field",
-                         new MockAnalyzer(MockTokenizer.WHITESPACE, false, stopStopList, true));
+                         new MockAnalyzer(MockTokenizer.WHITESPACE, false, stopStopList, true, false));
     qp.setEnablePositionIncrements(true);
     q = (PhraseQuery) qp.parse("\"1 stop 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
@@ -239,19 +236,18 @@ public class TestPositionIncrement extends LuceneTestCase {
     new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
   
   public void testPayloadsPos0() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, new TestPayloadAnalyzer());
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockPayloadAnalyzer());
     Document doc = new Document();
     doc.add(new Field("content", new StringReader(
         "a a b c d e a f g h i j a b k k")));
     writer.addDocument(doc);
 
-    IndexReader r = writer.getReader();
+    IndexReader r = new SlowMultiReaderWrapper(writer.getReader());
 
-    DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(r,
-                                                               MultiFields.getDeletedDocs(r),
-                                                               "content",
-                                                               new BytesRef("a"));
+    DocsAndPositionsEnum tp = r.termPositionsEnum(r.getDeletedDocs(),
+                                                     "content",
+                                                     new BytesRef("a"));
     
     int count = 0;
     assertTrue(tp.nextDoc() != tp.NO_MORE_DOCS);
@@ -286,12 +282,10 @@ public class TestPositionIncrement extends LuceneTestCase {
       }
       Collection<byte[]> payloads = pspans.getPayload();
       sawZero |= pspans.start() == 0;
-      for (@SuppressWarnings("unused") byte[] bytes : payloads) {
+      for (byte[] bytes : payloads) {
         count++;
-        if (!VERBOSE) {
-          // do nothing
-        } else {
-          System.out.println("  payload: " + new String((byte[]) bytes));
+        if (VERBOSE) {
+          System.out.println("  payload: " + new String(bytes));
         }
       }
     }
@@ -327,58 +321,5 @@ public class TestPositionIncrement extends LuceneTestCase {
     writer.close();
     is.getIndexReader().close();
     dir.close();
-  }
-}
-
-final class TestPayloadAnalyzer extends Analyzer {
-
-  @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
-    return new PayloadFilter(result, fieldName);
-  }
-}
-
-final class PayloadFilter extends TokenFilter {
-  String fieldName;
-
-  int pos;
-
-  int i;
-
-  final PositionIncrementAttribute posIncrAttr;
-  final PayloadAttribute payloadAttr;
-  final CharTermAttribute termAttr;
-
-  public PayloadFilter(TokenStream input, String fieldName) {
-    super(input);
-    this.fieldName = fieldName;
-    pos = 0;
-    i = 0;
-    posIncrAttr = input.addAttribute(PositionIncrementAttribute.class);
-    payloadAttr = input.addAttribute(PayloadAttribute.class);
-    termAttr = input.addAttribute(CharTermAttribute.class);
-  }
-
-  @Override
-  public boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      payloadAttr.setPayload(new Payload(("pos: " + pos).getBytes()));
-      int posIncr;
-      if (i % 2 == 1) {
-        posIncr = 1;
-      } else {
-        posIncr = 0;
-      }
-      posIncrAttr.setPositionIncrement(posIncr);
-      pos += posIncr;
-      if (TestPositionIncrement.VERBOSE) {
-        System.out.println("term=" + termAttr + " pos=" + pos);
-      }
-      i++;
-      return true;
-    } else {
-      return false;
-    }
   }
 }

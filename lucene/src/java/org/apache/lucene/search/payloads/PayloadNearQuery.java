@@ -79,7 +79,7 @@ public class PayloadNearQuery extends SpanNearQuery {
       newClauses[i] = (SpanQuery) clauses.get(i).clone();
     }
     PayloadNearQuery boostingNearQuery = new PayloadNearQuery(newClauses, slop,
-        inOrder);
+        inOrder, function);
     boostingNearQuery.setBoost(getBoost());
     return boostingNearQuery;
   }
@@ -152,7 +152,6 @@ public class PayloadNearQuery extends SpanNearQuery {
 
   public class PayloadNearSpanScorer extends SpanScorer {
     Spans spans;
-
     protected float payloadScore;
     private int payloadsSeen;
     Similarity similarity = getSimilarity();
@@ -204,18 +203,24 @@ public class PayloadNearQuery extends SpanNearQuery {
     //
     @Override
     protected boolean setFreqCurrentDoc() throws IOException {
-      if (!more) {
-        return false;
-      }
-      Spans[] spansArr = new Spans[1];
-      spansArr[0] = spans;
-      payloadScore = 0;
-      payloadsSeen = 0;
-      getPayloads(spansArr);
-      return super.setFreqCurrentDoc();
+        if (!more) {
+            return false;
+          }
+          doc = spans.doc();
+          freq = 0.0f;
+          payloadScore = 0;
+          payloadsSeen = 0;
+          do {
+            int matchLength = spans.end() - spans.start();
+            freq += getSimilarity().sloppyFreq(matchLength);
+            Spans[] spansArr = new Spans[1];
+            spansArr[0] = spans;
+            getPayloads(spansArr);            
+            more = spans.next();
+          } while (more && (doc == spans.doc()));
+          return true;    	
     }
 
-    @Override
     public float score() throws IOException {
 
       return super.score()
@@ -225,16 +230,14 @@ public class PayloadNearQuery extends SpanNearQuery {
     @Override
     protected Explanation explain(int doc) throws IOException {
       Explanation result = new Explanation();
+      // Add detail about tf/idf...
       Explanation nonPayloadExpl = super.explain(doc);
       result.addDetail(nonPayloadExpl);
-      Explanation payloadBoost = new Explanation();
-      result.addDetail(payloadBoost);
-      float avgPayloadScore = (payloadsSeen > 0 ? (payloadScore / payloadsSeen)
-          : 1);
-      payloadBoost.setValue(avgPayloadScore);
-      payloadBoost.setDescription("scorePayload(...)");
-      result.setValue(nonPayloadExpl.getValue() * avgPayloadScore);
-      result.setDescription("bnq, product of:");
+      // Add detail about payload
+      Explanation payloadExpl = function.explain(doc, payloadsSeen, payloadScore);
+      result.addDetail(payloadExpl);
+      result.setValue(nonPayloadExpl.getValue() * payloadExpl.getValue());
+      result.setDescription("PayloadNearQuery, product of:");
       return result;
     }
   }

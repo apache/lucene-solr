@@ -105,7 +105,7 @@ public class TestRequestHandler implements SolrRequestHandler {
       // we can use the Lucene sort ability.
       Sort sort = null;
       if (commands.size() >= 2) {
-        sort = QueryParsing.parseSort(commands.get(1), req.getSchema());
+        sort = QueryParsing.parseSort(commands.get(1), req);
       }
 
       SolrIndexSearcher searcher = req.getSearcher();

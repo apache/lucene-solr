@@ -25,8 +25,8 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
-import org.apache.lucene.index.codecs.standard.TermState;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.TermState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
@@ -43,7 +43,7 @@ import org.apache.lucene.util.CodecUtil;
 // create two separate docs readers, one that also reads
 // prox and one that doesn't?
 
-public class SepPostingsReaderImpl extends StandardPostingsReader {
+public class SepPostingsReaderImpl extends PostingsReaderBase {
 
   final IntIndexInput freqIn;
   final IntIndexInput docIn;
@@ -54,20 +54,20 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
   int skipInterval;
   int maxSkipLevels;
 
-  public SepPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize, IntStreamFactory intFactory) throws IOException {
+  public SepPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize, IntStreamFactory intFactory, String codecId) throws IOException {
 
     boolean success = false;
     try {
 
-      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.DOC_EXTENSION);
+      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.DOC_EXTENSION);
       docIn = intFactory.openInput(dir, docFileName);
 
-      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.SKIP_EXTENSION), readBufferSize);
+      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.SKIP_EXTENSION), readBufferSize);
 
       if (segmentInfo.getHasProx()) {
-        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.FREQ_EXTENSION));
-        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.POS_EXTENSION), readBufferSize);
-        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.PAYLOAD_EXTENSION), readBufferSize);
+        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.FREQ_EXTENSION));
+        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.POS_EXTENSION), readBufferSize);
+        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.PAYLOAD_EXTENSION), readBufferSize);
       } else {
         posIn = null;
         payloadIn = null;
@@ -81,14 +81,14 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
     }
   }
 
-  public static void files(SegmentInfo segmentInfo, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.DOC_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.SKIP_EXTENSION));
+  public static void files(SegmentInfo segmentInfo, String codecId, Collection<String> files) {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.DOC_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.SKIP_EXTENSION));
 
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.FREQ_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.POS_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.PAYLOAD_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.FREQ_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.POS_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.PAYLOAD_EXTENSION));
     }
   }
 
@@ -130,21 +130,14 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
   }
 
   private static class SepTermState extends TermState {
+    // We store only the seek point to the docs file because
+    // the rest of the info (freqIndex, posIndex, etc.) is
+    // stored in the docs file:
     IntIndexInput.Index docIndex;
-    IntIndexInput.Index freqIndex;
-    IntIndexInput.Index posIndex;
-    long skipOffset;
-    long payloadOffset;
 
     public Object clone() {
       SepTermState other = (SepTermState) super.clone();
       other.docIndex = (IntIndexInput.Index) docIndex.clone();
-      if (freqIndex != null) {
-        other.freqIndex = (IntIndexInput.Index) freqIndex.clone();
-      }
-      if (posIndex != null) {
-        other.posIndex = (IntIndexInput.Index) posIndex.clone();
-      }
       return other;
     }
 
@@ -152,22 +145,11 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
       super.copy(_other);
       SepTermState other = (SepTermState) _other;
       docIndex.set(other.docIndex);
-      if (other.posIndex != null) {
-        if (posIndex == null) {
-          posIndex = (IntIndexInput.Index) other.posIndex.clone();
-        } else {
-          posIndex.set(other.posIndex);
-        }
-      }
-      if (other.freqIndex != null) {
-        if (freqIndex == null) {
-          freqIndex = (IntIndexInput.Index) other.freqIndex.clone();
-        } else {
-          freqIndex.set(other.freqIndex);
-        }
-      }
-      skipOffset = other.skipOffset;
-      payloadOffset = other.payloadOffset;
+    }
+
+    @Override
+    public String toString() {
+      return "tis.fp=" + filePointer + " docFreq=" + docFreq + " ord=" + ord + " docIndex=" + docIndex;
     }
   }
 
@@ -179,39 +161,8 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
   }
 
   @Override
-  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState _termState, boolean isIndexTerm) throws IOException {
-    final SepTermState termState = (SepTermState) _termState;
-
-    // read freq index
-    if (!fieldInfo.omitTermFreqAndPositions) {
-      if (termState.freqIndex == null) {
-        assert isIndexTerm;
-        termState.freqIndex = freqIn.index();
-        termState.posIndex = posIn.index();
-      }
-      termState.freqIndex.read(termsIn, isIndexTerm);
-    }
-
-    // read doc index
-    termState.docIndex.read(termsIn, isIndexTerm);
-
-    // read skip index
-    if (isIndexTerm) {    
-      termState.skipOffset = termsIn.readVLong();
-    } else if (termState.docFreq >= skipInterval) {
-      termState.skipOffset += termsIn.readVLong();
-    }
-
-    // read pos, payload index
-    if (!fieldInfo.omitTermFreqAndPositions) {
-      termState.posIndex.read(termsIn, isIndexTerm);
-      final long v = termsIn.readVLong();
-      if (isIndexTerm) {
-        termState.payloadOffset = v;
-      } else {
-        termState.payloadOffset += v;
-      }
-    }
+  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState termState, boolean isIndexTerm) throws IOException {
+    ((SepTermState) termState).docIndex.read(termsIn, isIndexTerm);
   }
 
   @Override
@@ -306,14 +257,18 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
       docIndex.set(termState.docIndex);
       docIndex.seek(docReader);
 
-      skipOffset = termState.skipOffset;
-
       if (!omitTF) {
-        freqIndex.set(termState.freqIndex);
+        freqIndex.read(docReader, true);
         freqIndex.seek(freqReader);
+        
+        posIndex.read(docReader, true);
+        // skip payload offset
+        docReader.readVLong();
       } else {
         freq = 1;
       }
+      skipOffset = docReader.readVLong();
+
       docFreq = termState.docFreq;
       count = 0;
       doc = 0;
@@ -493,16 +448,15 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
       docIndex.set(termState.docIndex);
       docIndex.seek(docReader);
 
-      freqIndex.set(termState.freqIndex);
+      freqIndex.read(docReader, true);
       freqIndex.seek(freqReader);
 
-      posIndex.set(termState.posIndex);
+      posIndex.read(docReader, true);
       posSeekPending = true;
-      //posIndex.seek(posReader);
+      payloadPending = false;
 
-      skipOffset = termState.skipOffset;
-      payloadOffset = termState.payloadOffset;
-      //payloadIn.seek(payloadOffset);
+      payloadOffset = docReader.readVLong();
+      skipOffset = docReader.readVLong();
 
       docFreq = termState.docFreq;
       count = 0;
@@ -629,15 +583,12 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
       // positions
       while (pendingPosCount > freq) {
         final int code = posReader.next();
-        if (storePayloads) {
-          if ((code & 1) != 0) {
-            // Payload length has changed
-            payloadLength = posReader.next();
-            assert payloadLength >= 0;
-          }
+        if (storePayloads && (code & 1) != 0) {
+          // Payload length has changed
+          payloadLength = posReader.next();
+          assert payloadLength >= 0;
         }
         pendingPosCount--;
-        payloadPending = true;
         position = 0;
         pendingPayloadBytes += payloadLength;
       }
@@ -650,14 +601,13 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
           assert payloadLength >= 0;
         }
         position += code >> 1;
+        pendingPayloadBytes += payloadLength;
+        payloadPending = payloadLength > 0;
       } else {
         position += code;
       }
     
-      pendingPayloadBytes += payloadLength;
-      payloadPending = payloadLength > 0;
       pendingPosCount--;
-      payloadPending = true;
       assert pendingPosCount >= 0;
       return position;
     }

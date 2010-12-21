@@ -1,12 +1,9 @@
-  #if($response.facetFields)
-    <h2>Facets</h2>
-    #foreach($field in $response.facetFields)
-      <span class="facet-field">$field.name</span>
-      
-      <ul>
-        #foreach($facet in $field.values)
-            <li><a href="#url_for_facet_filter($field.name, $facet.name)">$facet.name</a> ($facet.count)</li>
-        #end
-      </ul>
-    #end
-  #end
+#parse('facet_fields.vm')  
+#parse('facet_queries.vm')
+#parse('facet_ranges.vm')
+#parse('facet_dates.vm')
+#parse('facet_pivot.vm')
+#parse('cluster.vm')        
+
+
+

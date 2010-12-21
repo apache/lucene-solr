@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.request;
 
 import junit.framework.Assert;
+
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.junit.Test;
@@ -38,7 +40,7 @@ import java.util.ArrayList;
  * @version $Id$
  * @see org.apache.solr.client.solrj.request.UpdateRequest
  */
-public class TestUpdateRequestCodec {
+public class TestUpdateRequestCodec extends LuceneTestCase {
 
   @Test
   public void simple() throws IOException {

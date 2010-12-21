@@ -17,26 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 
 /**
- * Test demonstrating EOF bug on the last field of the last doc 
+ * Test demonstrating EOF bug on the last field of the last doc
  * if other docs have allready been accessed.
  */
 public class TestLazyBug extends LuceneTestCase {
@@ -54,10 +46,10 @@ public class TestLazyBug extends LuceneTestCase {
     "this string is a bigger string, mary had a little lamb, little lamb, little lamb!"
   };
 
-  private static Set<String> dataset = new HashSet<String>(Arrays.asList(data));
-  
+  private static Set<String> dataset = asSet(data);
+
   private static String MAGIC_FIELD = "f"+(NUM_FIELDS/3);
-  
+
   private static FieldSelector SELECTOR = new FieldSelector() {
       public FieldSelectorResult accept(String f) {
         if (f.equals(MAGIC_FIELD)) {
@@ -66,23 +58,21 @@ public class TestLazyBug extends LuceneTestCase {
         return FieldSelectorResult.LAZY_LOAD;
       }
     };
-  
-  private Directory makeIndex() throws RuntimeException { 
-    Directory dir = new RAMDirectory();
+
+  private Directory makeIndex() throws Exception {
+    Directory dir = newDirectory();
     try {
-      Random r = newRandom();
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
-      
       for (int d = 1; d <= NUM_DOCS; d++) {
         Document doc = new Document();
         for (int f = 1; f <= NUM_FIELDS; f++ ) {
-          doc.add(new Field("f"+f, 
-                            data[f % data.length] 
-                            + '#' + data[r.nextInt(data.length)], 
-                            Field.Store.YES, 
+          doc.add(newField("f"+f,
+                            data[f % data.length]
+                            + '#' + data[random.nextInt(data.length)],
+                            Field.Store.YES,
                             Field.Index.ANALYZED));
         }
         writer.addDocument(doc);
@@ -93,14 +83,14 @@ public class TestLazyBug extends LuceneTestCase {
     }
     return dir;
   }
-  
+
   public void doTest(int[] docs) throws Exception {
     Directory dir = makeIndex();
     IndexReader reader = IndexReader.open(dir, true);
     for (int i = 0; i < docs.length; i++) {
       Document d = reader.document(docs[i], SELECTOR);
       d.get(MAGIC_FIELD);
-      
+
       List<Fieldable> fields = d.getFields();
       for (Iterator<Fieldable> fi = fields.iterator(); fi.hasNext(); ) {
         Fieldable f=null;
@@ -110,7 +100,7 @@ public class TestLazyBug extends LuceneTestCase {
           String fval = f.stringValue();
           assertNotNull(docs[i]+" FIELD: "+fname, fval);
           String[] vals = fval.split("#");
-          if (!dataset.contains(vals[0]) || !dataset.contains(vals[1])) {        
+          if (!dataset.contains(vals[0]) || !dataset.contains(vals[1])) {
             fail("FIELD:"+fname+",VAL:"+fval);
           }
         } catch (Exception e) {
@@ -119,12 +109,13 @@ public class TestLazyBug extends LuceneTestCase {
       }
     }
     reader.close();
+    dir.close();
   }
 
   public void testLazyWorks() throws Exception {
     doTest(new int[] { 399 });
   }
-  
+
   public void testLazyAlsoWorks() throws Exception {
     doTest(new int[] { 399, 150 });
   }

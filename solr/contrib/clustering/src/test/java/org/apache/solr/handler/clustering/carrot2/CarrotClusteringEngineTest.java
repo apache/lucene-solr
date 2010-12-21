@@ -25,7 +25,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.clustering.AbstractClusteringTest;
+import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
 import org.apache.solr.handler.clustering.ClusteringComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
@@ -43,10 +43,13 @@ import static org.junit.Assert.*;
  *
  */
 @SuppressWarnings("unchecked")
-public class CarrotClusteringEngineTest extends AbstractClusteringTest {
+public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testCarrotLingo() throws Exception {
-    checkEngine(getClusteringEngine("default"), 10);
+  	// Note: the expected number of clusters may change after upgrading Carrot2
+  	// due to e.g. internal improvements or tuning of Carrot2 clustering.
+    final int expectedNumClusters = 10;
+		checkEngine(getClusteringEngine("default"), expectedNumClusters);
   }
 
   @Test
@@ -54,7 +57,11 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
     solrParams.add(CarrotParams.SUMMARY_FRAGSIZE, "200");//how do we validate this?
-    checkEngine(getClusteringEngine("default"), numberOfDocs -2 /*two don't have mining in the snippet*/, 15, new TermQuery(new Term("snippet", "mine")), solrParams);
+    
+  	// Note: the expected number of clusters may change after upgrading Carrot2
+  	// due to e.g. internal improvements or tuning of Carrot2 clustering.
+    final int expectedNumClusters = 15;
+    checkEngine(getClusteringEngine("default"), numberOfDocs -2 /*two don't have mining in the snippet*/, expectedNumClusters, new TermQuery(new Term("snippet", "mine")), solrParams);
   }
 
   @Test

@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import junit.framework.Assert;
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.createMap;
-
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 import java.io.StringReader;
@@ -32,16 +28,15 @@ import java.util.Properties;
  * @see org.apache.solr.handler.dataimport.PlainTextEntityProcessor
  * @since solr 1.4
  */
-public class TestPlainTextEntityProcessor extends SolrTestCaseJ4 {
+public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestCase {
   @Test
-  public void simple() {
+  public void testSimple() {
     DataImporter di = new DataImporter();
     di.loadAndInit(DATA_CONFIG);
     TestDocBuilder.SolrWriterImpl sw = new TestDocBuilder.SolrWriterImpl();
     DataImporter.RequestParams rp = new DataImporter.RequestParams(createMap("command", "full-import"));
     di.runCmd(rp, sw);
-    Assert.assertEquals(DS.s, sw.docs.get(0).getFieldValue("x"));
-
+    assertEquals(DS.s, sw.docs.get(0).getFieldValue("x"));
   }
 
   public static class DS extends DataSource {

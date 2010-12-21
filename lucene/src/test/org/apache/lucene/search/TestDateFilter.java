@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -24,7 +25,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 
@@ -35,26 +35,23 @@ import java.io.IOException;
  * @version $Revision$
  */
 public class TestDateFilter extends LuceneTestCase {
-  public TestDateFilter(String name) {
-    super(name);
-  }
-  
+ 
   /**
    *
    */
   public void testBefore() throws IOException {
     // create an index
-    RAMDirectory indexStore = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     
     long now = System.currentTimeMillis();
     
     Document doc = new Document();
     // add time that is in the past
-    doc.add(new Field("datefield", DateTools.timeToString(now - 1000,
+    doc.add(newField("datefield", DateTools.timeToString(now - 1000,
         DateTools.Resolution.MILLISECOND), Field.Store.YES,
         Field.Index.NOT_ANALYZED));
-    doc.add(new Field("body", "Today is a very sunny day in New York City",
+    doc.add(newField("body", "Today is a very sunny day in New York City",
         Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
@@ -110,17 +107,17 @@ public class TestDateFilter extends LuceneTestCase {
    */
   public void testAfter() throws IOException {
     // create an index
-    RAMDirectory indexStore = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     
     long now = System.currentTimeMillis();
     
     Document doc = new Document();
     // add time that is in the future
-    doc.add(new Field("datefield", DateTools.timeToString(now + 888888,
+    doc.add(newField("datefield", DateTools.timeToString(now + 888888,
         DateTools.Resolution.MILLISECOND), Field.Store.YES,
         Field.Index.NOT_ANALYZED));
-    doc.add(new Field("body", "Today is a very sunny day in New York City",
+    doc.add(newField("body", "Today is a very sunny day in New York City",
         Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     

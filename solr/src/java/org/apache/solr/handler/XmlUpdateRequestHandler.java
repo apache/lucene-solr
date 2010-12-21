@@ -23,6 +23,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
@@ -60,16 +61,19 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
   /**
    * @deprecated use {@link #OVERWRITE}
    */
+  @Deprecated
   public static final String OVERWRITE_COMMITTED = "overwriteCommitted";
   
   /**
    * @deprecated use {@link #OVERWRITE}
    */
+  @Deprecated
   public static final String OVERWRITE_PENDING = "overwritePending";
 
   /**
    * @deprecated use {@link #OVERWRITE}
    */
+  @Deprecated
   public static final String ALLOW_DUPS = "allowDups";
 
   XMLInputFactory inputFactory;
@@ -114,15 +118,13 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
    */
   @Deprecated
   public void doLegacyUpdate(Reader input, Writer output) {
-    try {
-      SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = SolrCore.getSolrCore();
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new HashMap<String,String[]>());
 
+    try {
       // Old style requests do not choose a custom handler
       UpdateRequestProcessorChain processorFactory = core.getUpdateProcessingChain(null);
 
-      SolrParams params = new MapSolrParams(new HashMap<String, String>());
-      SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {
-      };
       SolrQueryResponse rsp = new SolrQueryResponse(); // ignored
       XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
       UpdateRequestProcessor processor = processorFactory.createProcessor(req, rsp);
@@ -138,6 +140,9 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
       } catch (Exception ee) {
         log.error("Error writing to output stream: " + ee);
       }
+    }
+    finally {
+      req.close();
     }
   }
   //////////////////////// SolrInfoMBeans methods //////////////////////

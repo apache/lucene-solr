@@ -24,10 +24,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestNoMergePolicy extends LuceneTestCaseJ4 {
+public class TestNoMergePolicy extends LuceneTestCase {
 
   @Test
   public void testNoMergePolicy() throws Exception {

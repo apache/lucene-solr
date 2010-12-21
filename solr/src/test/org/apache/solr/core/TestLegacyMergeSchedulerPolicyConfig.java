@@ -5,22 +5,24 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class TestLegacyMergeSchedulerPolicyConfig extends AbstractSolrTestCase {
-  public String getSchemaFile() {
-    return "schema.xml";
+public class TestLegacyMergeSchedulerPolicyConfig extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-legacy.xml", "schema.xml");
   }
 
-  public String getSolrConfigFile() {
-    return "solrconfig-legacy.xml";
-  }
-  
+  @Test
   public void testLegacy() throws Exception {
-    IndexWriter writer = new ExposeWriterHandler().getWriter();
-    assertTrue(writer.getMergePolicy().getClass().getName().equals(LogDocMergePolicy.class.getName()));
-    assertTrue(writer.getMergeScheduler().getClass().getName().equals(SerialMergeScheduler.class.getName()));
+    ExposeWriterHandler duh = new ExposeWriterHandler();
+    IndexWriter writer = duh.getWriter();
+    assertTrue(writer.getConfig().getMergePolicy().getClass().getName().equals(LogDocMergePolicy.class.getName()));
+    assertTrue(writer.getConfig().getMergeScheduler().getClass().getName().equals(SerialMergeScheduler.class.getName()));
+    duh.close();
   }
   
   class ExposeWriterHandler extends DirectUpdateHandler2 {

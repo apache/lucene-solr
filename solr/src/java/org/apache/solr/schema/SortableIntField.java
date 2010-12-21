@@ -20,6 +20,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
+import org.apache.solr.search.MutableValueInt;
+import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -109,6 +111,8 @@ class SortableIntFieldSource extends FieldCacheSource {
     final int def = defVal;
 
     return new StringIndexDocValues(this, reader, field) {
+      private final BytesRef spare = new BytesRef();
+
       protected String toTerm(String readableValue) {
         return NumberUtils.int2sortableStr(readableValue);
       }
@@ -119,7 +123,7 @@ class SortableIntFieldSource extends FieldCacheSource {
 
       public int intVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? def  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, new BytesRef()),0,3);
+        return ord==0 ? def  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare),0,3);
       }
 
       public long longVal(int doc) {
@@ -137,6 +141,31 @@ class SortableIntFieldSource extends FieldCacheSource {
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final MutableValueInt mval = new MutableValueInt();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            int ord=termsIndex.getOrd(doc);
+            if (ord == 0) {
+              mval.value = def;
+              mval.exists = false;
+            } else {
+              mval.value = NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare),0,3);
+              mval.exists = true;
+            }
+          }
+        };
+      }
+
     };
   }
 

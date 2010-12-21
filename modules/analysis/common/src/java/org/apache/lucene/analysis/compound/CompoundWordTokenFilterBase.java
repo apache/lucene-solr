@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Token;
@@ -77,54 +78,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
   
   private final Token wrapper = new Token();
-  /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], int, int, int, boolean)} instead
-   */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    this(Version.LUCENE_30, input, makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
-  }
-  
-  /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], boolean)} instead
-   */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary, boolean onlyLongestMatch) {
-    this(Version.LUCENE_30, input, makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
-  }
-  
-  /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set, boolean)} instead
-   */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary, boolean onlyLongestMatch) {
-    this(Version.LUCENE_30, input, dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
-  }
-  
-  /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[])} instead
-   */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary) {
-    this(Version.LUCENE_30, input, makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
-  }
-  
-  /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set)} instead
-   */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary) {
-    this(Version.LUCENE_30, input, dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
-  }
 
-  /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set, int, int, int, boolean)} instead
-   */
-  @Deprecated
-  protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    this(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
-  }
-  
   protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     this(matchVersion, input,makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
   }
@@ -133,7 +87,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary, boolean onlyLongestMatch) {
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary, boolean onlyLongestMatch) {
     this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
 
@@ -141,11 +95,11 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary) {
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary) {
     this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(input);
     
     this.tokens=new LinkedList<Token>();
@@ -169,11 +123,11 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
    * @param dictionary 
    * @return {@link Set} of lowercased terms 
    */
-  public static final Set<?> makeDictionary(final String[] dictionary) {
+  public static Set<?> makeDictionary(final String[] dictionary) {
     return makeDictionary(Version.LUCENE_30, dictionary);
   }
   
-  public static final Set<?> makeDictionary(final Version matchVersion, final String[] dictionary) {
+  public static Set<?> makeDictionary(final Version matchVersion, final String[] dictionary) {
     if (dictionary == null) {
       return null;
     }
@@ -183,7 +137,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     return dict;
   }
   
-  private final void setToken(final Token token) throws IOException {
+  private void setToken(final Token token) throws IOException {
     clearAttributes();
     termAtt.copyBuffer(token.buffer(), 0, token.length());
     flagsAtt.setFlags(token.getFlags());
@@ -221,9 +175,10 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     }
   }
   
-  protected static final void addAllLowerCase(Set<Object> target, Collection<String> col) {
-    for (String string : col) {
-      target.add(string.toLowerCase());
+  protected static void addAllLowerCase(CharArraySet target, Collection<?> col) {
+    for (Object obj : col) {
+      String string = (String) obj;
+      target.add(string.toLowerCase(Locale.ENGLISH));
     }
   }
   

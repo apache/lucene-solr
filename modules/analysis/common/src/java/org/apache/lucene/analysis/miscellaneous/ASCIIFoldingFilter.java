@@ -54,10 +54,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *  
  * See: <a href="http://en.wikipedia.org/wiki/Latin_characters_in_Unicode">http://en.wikipedia.org/wiki/Latin_characters_in_Unicode</a>
  *
- * The set of character conversions supported by this class is a superset of
- * those supported by Lucene's {@link ISOLatin1AccentFilter} which strips
- * accents from Latin1 characters.  For example, '&agrave;' will be replaced by
- * 'a'.
+ * For example, '&agrave;' will be replaced by 'a'.
  */
 public final class ASCIIFoldingFilter extends TokenFilter {
   public ASCIIFoldingFilter(TokenStream input)

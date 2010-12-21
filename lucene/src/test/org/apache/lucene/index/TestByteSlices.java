@@ -14,45 +14,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Random;
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RecyclingByteBlockAllocator;
 
 public class TestByteSlices extends LuceneTestCase {
 
-  private static class ByteBlockAllocator extends ByteBlockPool.Allocator {
-    ArrayList<byte[]> freeByteBlocks = new ArrayList<byte[]>();
-    
-    /* Allocate another byte[] from the shared pool */
-    @Override
-    synchronized byte[] getByteBlock() {
-      final int size = freeByteBlocks.size();
-      final byte[] b;
-      if (0 == size)
-        b = new byte[DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE];
-      else
-        b =  freeByteBlocks.remove(size-1);
-      return b;
-    }
-
-    /* Return a byte[] to the pool */
-    @Override
-    synchronized void recycleByteBlocks(byte[][] blocks, int start, int end) {
-      for(int i=start;i<end;i++)
-        freeByteBlocks.add(blocks[i]);
-    }
-
-    @Override
-    synchronized void recycleByteBlocks(List<byte[]> blocks) {
-      final int size = blocks.size();
-      for(int i=0;i<size;i++)
-        freeByteBlocks.add(blocks.get(i));
-    }
-  }
-
   public void testBasic() throws Throwable {
-    ByteBlockPool pool = new ByteBlockPool(new ByteBlockAllocator());
+    ByteBlockPool pool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, Integer.MAX_VALUE));
 
     final int NUM_STREAM = 100 * RANDOM_MULTIPLIER;
 
@@ -62,8 +31,6 @@ public class TestByteSlices extends LuceneTestCase {
     int[] uptos = new int[NUM_STREAM];
     int[] counters = new int[NUM_STREAM];
 
-    Random r = newRandom();
-
     ByteSliceReader reader = new ByteSliceReader();
 
     for(int ti=0;ti<100;ti++) {
@@ -72,10 +39,10 @@ public class TestByteSlices extends LuceneTestCase {
         starts[stream] = -1;
         counters[stream] = 0;
       }
-      
+
       int num = 10000 * RANDOM_MULTIPLIER;
       for (int iter = 0; iter < num; iter++) {
-        int stream = r.nextInt(NUM_STREAM);
+        int stream = random.nextInt(NUM_STREAM);
         if (VERBOSE)
           System.out.println("write stream=" + stream);
 
@@ -87,12 +54,12 @@ public class TestByteSlices extends LuceneTestCase {
         }
 
         writer.init(uptos[stream]);
-        int numValue = r.nextInt(20);
+        int numValue = random.nextInt(20);
         for(int j=0;j<numValue;j++) {
           if (VERBOSE)
             System.out.println("    write " + (counters[stream]+j));
           // write some large (incl. negative) ints:
-          writer.writeVInt(r.nextInt());
+          writer.writeVInt(random.nextInt());
           writer.writeVInt(counters[stream]+j);
         }
         counters[stream] += numValue;
@@ -100,7 +67,7 @@ public class TestByteSlices extends LuceneTestCase {
         if (VERBOSE)
           System.out.println("    addr now " + uptos[stream]);
       }
-    
+
       for(int stream=0;stream<NUM_STREAM;stream++) {
         if (VERBOSE)
           System.out.println("  stream=" + stream + " count=" + counters[stream]);
@@ -109,7 +76,7 @@ public class TestByteSlices extends LuceneTestCase {
           reader.init(pool, starts[stream], uptos[stream]);
           for(int j=0;j<counters[stream];j++) {
             reader.readVInt();
-            assertEquals(j, reader.readVInt()); 
+            assertEquals(j, reader.readVInt());
           }
         }
       }

@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * <code>ConstValueSource</code> returns a constant for all documents
  */
-public class ConstValueSource extends ValueSource {
+public class ConstValueSource extends ConstNumberSource {
   final float constant;
   private final double dv;
 
@@ -66,8 +66,33 @@ public class ConstValueSource extends ValueSource {
   }
 
   public boolean equals(Object o) {
-    if (ConstValueSource.class != o.getClass()) return false;
+    if (!(o instanceof ConstValueSource)) return false;
     ConstValueSource other = (ConstValueSource)o;
     return  this.constant == other.constant;
+  }
+
+  @Override
+  public int getInt() {
+    return (int)constant;
+  }
+
+  @Override
+  public long getLong() {
+    return (long)constant;
+  }
+
+  @Override
+  public float getFloat() {
+    return constant;
+  }
+
+  @Override
+  public double getDouble() {
+    return dv;
+  }
+
+  @Override
+  public Number getNumber() {
+    return constant;
   }
 }

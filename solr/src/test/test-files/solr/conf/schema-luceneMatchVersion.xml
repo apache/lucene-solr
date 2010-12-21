@@ -18,12 +18,12 @@
 <schema name="luceneMatchVersionTest" version="1.1">
  <types>
   <fieldtype name="string" class="solr.StrField"/>
-  <fieldtype name="text20" class="solr.TextField">
+  <fieldtype name="text30" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.StandardTokenizerFactory" luceneMatchVersion="LUCENE_20"/>
+      <tokenizer class="solr.StandardTokenizerFactory" luceneMatchVersion="LUCENE_30"/>
       <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.StopFilterFactory" luceneMatchVersion="2.4"/>
+      <filter class="solr.StopFilterFactory" luceneMatchVersion="3.1"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldtype>
@@ -36,8 +36,8 @@
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldtype>
-  <fieldtype name="textStandardAnalyzer20" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer" luceneMatchVersion="LUCENE_20"/>
+  <fieldtype name="textStandardAnalyzer30" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer" luceneMatchVersion="LUCENE_30"/>
   </fieldtype>
   <fieldtype name="textStandardAnalyzerDefault" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
@@ -45,9 +45,9 @@
  </types>
  <fields>
    <field name="signatureField" type="string" indexed="true" stored="false"/>
-   <field name="text20" type="text20" indexed="true" stored="false" />
+   <field name="text30" type="text30" indexed="true" stored="false" />
    <field name="textDefault" type="textDefault" indexed="true" stored="false" />
-   <field name="textStandardAnalyzer20" type="textStandardAnalyzer20" indexed="true" stored="false" />
+   <field name="textStandardAnalyzer30" type="textStandardAnalyzer30" indexed="true" stored="false" />
    <field name="textStandardAnalyzerDefault" type="textStandardAnalyzerDefault" indexed="true" stored="false" />
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
  </fields>

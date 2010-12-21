@@ -21,13 +21,14 @@ import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
+
 /**
  * 
  * Test for {@link CartesianShapeFilter}
  *
  */
-public class TestCartesianShapeFilter extends TestCase {
+public class TestCartesianShapeFilter extends LuceneTestCase {
 
   public void testSerializable() throws IOException {
     CartesianShapeFilter filter = new CartesianShapeFilter(new Shape("1"),

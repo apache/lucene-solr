@@ -28,6 +28,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -65,7 +66,7 @@ import java.util.Map;
  * distribution, in order to encourage plugin writers to create unit 
  * tests for their plugins.
  *
- * @version $Id:$
+ * @version $Id$
  */
 public class TestHarness {
   protected CoreContainer container;
@@ -175,12 +176,21 @@ public class TestHarness {
     }
     @Override
     public CoreContainer initialize() {
-      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()));
+      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())) {
+        {
+          hostPort = System.getProperty("hostPort");
+          hostContext = "solr";
+          defaultCoreName = "collection1";
+          initZooKeeper(System.getProperty("zkHost"), 10000);
+        }
+      };
+      
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
       dcore.setConfigName(solrConfig.getResourceName());
       dcore.setSchemaName(indexSchema.getResourceName());
-      SolrCore core = new SolrCore( null, dataDirectory, solrConfig, indexSchema, dcore);
+      SolrCore core = new SolrCore("collection1", dataDirectory, solrConfig, indexSchema, dcore);
       container.register(coreName, core, false);
+
       return container;
     }
   }
@@ -308,7 +318,7 @@ public class TestHarness {
   }
 
   /**
-   * Processes a "query" using a user constructed SolrQueryRequest
+   * Processes a "query" using a user constructed SolrQueryRequest, and closes the request at the end.
    *
    * @param handler the name of the request handler to process the request
    * @param req the Query to process, will be closed.
@@ -318,17 +328,28 @@ public class TestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(String handler, SolrQueryRequest req) throws IOException, Exception {
-    SolrQueryResponse rsp = queryAndResponse(handler, req);
+    try {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      core.execute(core.getRequestHandler(handler),req,rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
+      StringWriter sw = new StringWriter(32000);
+      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
+      responseWriter.write(sw,req,rsp);
 
-    StringWriter sw = new StringWriter(32000);
-    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    responseWriter.write(sw,req,rsp);
+      req.close();
 
-    req.close();
-
-    return sw.toString();
+      return sw.toString();
+    } finally {
+      req.close();
+      SolrRequestInfo.clearRequestInfo();
+    }
   }
 
+  /** It is the users responsibility to close the request object when done with it.
+   * This method does not set/clear SolrRequestInfo */
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(handler),req,rsp);
@@ -409,6 +430,7 @@ public class TestHarness {
    * to a StringBuffer.
    * @deprecated see {@link #appendSimpleDoc(StringBuilder, String...)}
    */
+  @Deprecated
   public void appendSimpleDoc(StringBuffer buf, String... fieldsAndValues)
     throws IOException {
 

@@ -19,10 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -36,37 +33,37 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestFieldsReader extends LuceneTestCase {
-  private RAMDirectory dir = new RAMDirectory();
+  private Directory dir;
   private Document testDoc = new Document();
   private FieldInfos fieldInfos = null;
-
   private final static String TEST_SEGMENT_NAME = "_0";
 
-  public TestFieldsReader(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
     writer.close();
+    FaultyIndexInput.doFail = false;
   }
 
+  @Override
+  public void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
+  }
   public void test() throws IOException {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
@@ -154,13 +151,13 @@ public class TestFieldsReader extends LuceneTestCase {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
 
     }
+    reader.close();
   }
 
   public void testLatentFields() throws Exception {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
-    assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Set<String> loadFieldNames = new HashSet<String>();
     loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
@@ -174,6 +171,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     // Use LATENT instead of LAZY
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames) {
+        @Override
         public FieldSelectorResult accept(String fieldName) {
           final FieldSelectorResult result = super.accept(fieldName);
           if (result == FieldSelectorResult.LAZY_LOAD) {
@@ -223,6 +221,7 @@ public class TestFieldsReader extends LuceneTestCase {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
 
     }
+    reader.close();
   }
 
 
@@ -275,6 +274,7 @@ public class TestFieldsReader extends LuceneTestCase {
       count++;
     }
     assertTrue(count + " does not equal: " + 1, count == 1);
+    reader.close();
   }
 
   /**
@@ -288,10 +288,10 @@ public class TestFieldsReader extends LuceneTestCase {
     String userName = System.getProperty("user.name");
     File file = new File(TEMP_DIR, "lazyDir" + userName);
     _TestUtil.rmDir(file);
-    FSDirectory tmpDir = FSDirectory.open(file);
+    Directory tmpDir = newFSDirectory(file);
     assertTrue(tmpDir != null);
 
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE);
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(tmpDir, conf);
     writer.addDocument(testDoc);
@@ -343,6 +343,7 @@ public class TestFieldsReader extends LuceneTestCase {
       reader.close();
 
     }
+    tmpDir.close();
     if (VERBOSE) {
       System.out.println("Average Non-lazy time (should be very close to zero): " + regularTime / length + " ms for " + length + " reads");
       System.out.println("Average Lazy Time (should be greater than zero): " + lazyTime / length + " ms for " + length + " reads");
@@ -386,9 +387,10 @@ public class TestFieldsReader extends LuceneTestCase {
 
   public static class FaultyFSDirectory extends Directory {
 
-    FSDirectory fsDir;
+    Directory fsDir;
+    
     public FaultyFSDirectory(File dir) throws IOException {
-      fsDir = FSDirectory.open(dir);
+      fsDir = newFSDirectory(dir);
       lockFactory = fsDir.getLockFactory();
     }
     @Override
@@ -422,6 +424,10 @@ public class TestFieldsReader extends LuceneTestCase {
     @Override
     public IndexOutput createOutput(String name) throws IOException {
       return fsDir.createOutput(name);
+    }
+    @Override
+    public void sync(Collection<String> names) throws IOException {
+      fsDir.sync(names);
     }
     @Override
     public void close() throws IOException {
@@ -471,7 +477,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
           TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);

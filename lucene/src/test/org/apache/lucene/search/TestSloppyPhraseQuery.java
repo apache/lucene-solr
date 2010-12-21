@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -29,7 +27,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
 
@@ -47,14 +45,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   private static final PhraseQuery QUERY_1 = makePhraseQuery( S_1 );
   private static final PhraseQuery QUERY_2 = makePhraseQuery( S_2 );
   private static final PhraseQuery QUERY_4 = makePhraseQuery( "X A A");
-
-  private Random random;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    random = newRandom();
-  }
 
   /**
    * Test DOC_4 and QUERY_4.
@@ -125,7 +115,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   private float  checkPhraseQuery(Document doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
     query.setSlop(slop);
 
-    RAMDirectory ramDir = new RAMDirectory();
+    Directory ramDir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
     writer.addDocument(doc);
 

@@ -19,6 +19,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.cache.ByteValuesCreator;
+import org.apache.lucene.search.cache.CachedArrayCreator;
+import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.function.IntFieldSource;
@@ -43,8 +46,7 @@ public class LongField extends FieldType {
   }
 
   public ValueSource getValueSource(SchemaField field) {
-
-    return new LongFieldSource(field.name);
+    return new LongFieldSource( new LongValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }
 
 

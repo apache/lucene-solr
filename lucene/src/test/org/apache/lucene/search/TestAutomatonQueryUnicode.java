@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -26,7 +25,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -45,15 +43,14 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = new RAMDirectory();
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
-    Field titleField = new Field("title", "some title", Field.Store.NO,
+    Field titleField = newField("title", "some title", Field.Store.NO,
         Field.Index.ANALYZED);
-    Field field = new Field(FN, "", Field.Store.NO,
+    Field field = newField(FN, "", Field.Store.NO,
         Field.Index.ANALYZED);
-    Field footerField = new Field("footer", "a footer", Field.Store.NO,
+    Field footerField = newField("footer", "a footer", Field.Store.NO,
         Field.Index.ANALYZED);
     doc.add(titleField);
     doc.add(field);

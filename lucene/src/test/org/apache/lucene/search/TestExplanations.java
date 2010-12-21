@@ -32,7 +32,6 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -58,7 +57,7 @@ public class TestExplanations extends LuceneTestCase {
     new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer());
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -66,14 +65,14 @@ public class TestExplanations extends LuceneTestCase {
   }
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -99,7 +98,7 @@ public class TestExplanations extends LuceneTestCase {
   
   /** check the expDocNrs first, then check the query (and the explanations) */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
-    CheckHits.checkHitCollector(q, FIELD, searcher, expDocNrs);
+    CheckHits.checkHitCollector(random, q, FIELD, searcher, expDocNrs);
   }
 
   /**
@@ -166,7 +165,7 @@ public class TestExplanations extends LuceneTestCase {
   }
   /** MACRO for SpanOrQuery containing two SpanQueries */
   public SpanOrQuery sor(SpanQuery s, SpanQuery e) {
-    return new SpanOrQuery(new SpanQuery[] { s, e });
+    return new SpanOrQuery(s, e);
   }
   
   /** MACRO for SpanOrQuery containing three SpanTerm queries */
@@ -175,7 +174,7 @@ public class TestExplanations extends LuceneTestCase {
   }
   /** MACRO for SpanOrQuery containing two SpanQueries */
   public SpanOrQuery sor(SpanQuery s, SpanQuery m, SpanQuery e) {
-    return new SpanOrQuery(new SpanQuery[] { s, m, e });
+    return new SpanOrQuery(s, m, e);
   }
   
   /** MACRO for SpanNearQuery containing two SpanTerm queries */

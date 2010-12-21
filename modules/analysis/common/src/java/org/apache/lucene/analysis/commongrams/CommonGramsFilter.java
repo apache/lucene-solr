@@ -61,16 +61,6 @@ public final class CommonGramsFilter extends TokenFilter {
   private boolean lastWasCommon;
   private State savedState;
 
-  /** @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set)} instead */
-  public CommonGramsFilter(TokenStream input, Set<?> commonWords) {
-    this(Version.LUCENE_29, input, commonWords);
-  }
-  
-  /** @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set, boolean)} instead */
-  public CommonGramsFilter(TokenStream input, Set<?> commonWords, boolean ignoreCase) {
-    this(Version.LUCENE_29, input, commonWords, ignoreCase);
-  }
-  
   /**
    * Construct a token stream filtering the given input using a Set of common
    * words to create bigrams. Outputs both unigrams with position increment and
@@ -109,66 +99,6 @@ public final class CommonGramsFilter extends TokenFilter {
       this.commonWords = new CharArraySet(matchVersion, commonWords.size(), ignoreCase);
       this.commonWords.addAll(commonWords);
     }
-  }
-
-  /**
-   * Construct a token stream filtering the given input using an Array of common
-   * words to create bigrams.
-   * 
-   * @param input Tokenstream in filter chain
-   * @param commonWords words to be used in constructing bigrams
-   * @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set)} instead.
-   */
-  @Deprecated
-  public CommonGramsFilter(TokenStream input, String[] commonWords) {
-    this(input, commonWords, false);
-  }
-
-  /**
-   * Construct a token stream filtering the given input using an Array of common
-   * words to create bigrams and is case-sensitive if ignoreCase is false.
-   * 
-   * @param input Tokenstream in filter chain
-   * @param commonWords words to be used in constructing bigrams
-   * @param ignoreCase -Ignore case when constructing bigrams for common words.
-   * @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set, boolean)} instead.
-   */
-  @Deprecated
-  public CommonGramsFilter(TokenStream input, String[] commonWords, boolean ignoreCase) {
-    super(input);
-    this.commonWords = makeCommonSet(commonWords, ignoreCase);
-  }
-
-  /**
-   * Build a CharArraySet from an array of common words, appropriate for passing
-   * into the CommonGramsFilter constructor. This permits this commonWords
-   * construction to be cached once when an Analyzer is constructed.
-   *
-   * @param commonWords Array of common words which will be converted into the CharArraySet
-   * @return CharArraySet of the given words, appropriate for passing into the CommonGramFilter constructor
-   * @see #makeCommonSet(java.lang.String[], boolean) passing false to ignoreCase
-   * @deprecated create a CharArraySet with CharArraySet instead
-   */
-  @Deprecated
-  public static CharArraySet makeCommonSet(String[] commonWords) {
-    return makeCommonSet(commonWords, false);
-  }
-
-  /**
-   * Build a CharArraySet from an array of common words, appropriate for passing
-   * into the CommonGramsFilter constructor,case-sensitive if ignoreCase is
-   * false.
-   * 
-   * @param commonWords Array of common words which will be converted into the CharArraySet
-   * @param ignoreCase If true, all words are lower cased first.
-   * @return a Set containing the words
-   * @deprecated create a CharArraySet with CharArraySet instead
-   */
-  @Deprecated
-  public static CharArraySet makeCommonSet(String[] commonWords, boolean ignoreCase) {
-    CharArraySet commonSet = new CharArraySet(commonWords.length, ignoreCase);
-    commonSet.addAll(Arrays.asList(commonWords));
-    return commonSet;
   }
 
   /**

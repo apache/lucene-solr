@@ -17,9 +17,9 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestJaroWinklerDistance extends TestCase {
+public class TestJaroWinklerDistance extends LuceneTestCase {
 
   private StringDistance sd = new JaroWinklerDistance();
   

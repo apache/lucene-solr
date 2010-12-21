@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.cloud.ZkController;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -170,19 +172,30 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
               "QueryElevationComponent must specify argument: '"+CONFIG_FILE
               +"' -- path to elevate.xml" );
         }
-        File fC = new File( core.getResourceLoader().getConfigDir(), f );
-        File fD = new File( core.getDataDir(), f );
-        if( fC.exists() == fD.exists() ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-              "QueryElevationComponent missing config file: '"+f + "\n"
-              +"either: "+fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both." );
+        boolean exists = false;
+
+        // check if using ZooKeeper
+        ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+        if(zkController != null) {
+          // TODO : shouldn't have to keep reading the config name when it has been read before
+          exists = zkController.configFileExists(zkController.readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), f);
+        } else {
+          File fC = new File( core.getResourceLoader().getConfigDir(), f );
+          File fD = new File( core.getDataDir(), f );
+          if( fC.exists() == fD.exists() ) {
+            throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+                "QueryElevationComponent missing config file: '"+f + "\n"
+                +"either: "+fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both." );
+          }
+          if( fC.exists() ) {
+            exists = true;
+            log.info( "Loading QueryElevation from: "+ fC.getAbsolutePath() );
+            Config cfg = new Config( core.getResourceLoader(), f );
+            elevationCache.put(null, loadElevationMap( cfg ));
+          } 
         }
-        if( fC.exists() ) {
-          log.info( "Loading QueryElevation from: "+fC.getAbsolutePath() );
-          Config cfg = new Config( core.getResourceLoader(), f );
-          elevationCache.put(null, loadElevationMap( cfg ));
-        }
-        else {
+        
+        if (!exists){
           // preload the first data
           RefCounted<SolrIndexSearcher> searchHolder = null;
           try {
@@ -406,7 +419,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<Object>();
       dbg.add( "q", qstr );
       dbg.add( "match", match );
-      rb.addDebugInfo( "queryBoosting", dbg );
+      if (rb.isDebugQuery()) {
+        rb.addDebugInfo("queryBoosting", dbg );
+      }
     }
   }
 
@@ -489,8 +504,9 @@ class ElevationComparatorSource extends FieldComparatorSource {
         values[slot] = docVal(doc);
       }
 
-      public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
         idIndex = FieldCache.DEFAULT.getTermsIndex(reader, fieldname);
+        return this;
       }
 
       public Comparable value(int slot) {

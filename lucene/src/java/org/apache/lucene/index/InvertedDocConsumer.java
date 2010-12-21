@@ -29,11 +29,11 @@ abstract class InvertedDocConsumer {
   abstract void flush(Map<FieldInfo, InvertedDocConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
 
   abstract InvertedDocConsumerPerField addField(DocInverterPerField docInverterPerField, FieldInfo fieldInfo);
-  
+
   abstract void startDocument() throws IOException;
-  
+
   abstract void finishDocument() throws IOException;
-  
+
   /** Attempt to free RAM, returning true if any RAM was
    *  freed */
   abstract boolean freeRAM();

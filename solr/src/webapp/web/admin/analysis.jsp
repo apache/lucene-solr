@@ -16,7 +16,9 @@
  limitations under the License.
 --%>
 <%@ page import="org.apache.lucene.analysis.Analyzer,
-                 org.apache.lucene.analysis.Token,
+                 org.apache.lucene.util.AttributeSource,
+                 org.apache.lucene.util.Attribute,
+                 org.apache.lucene.util.BytesRef,
                  org.apache.lucene.analysis.TokenStream,
                  org.apache.lucene.index.Payload,
                  org.apache.lucene.analysis.CharReader,
@@ -152,9 +154,9 @@
       Analyzer analyzer =  field.getType().getQueryAnalyzer();
       TokenStream tstream = analyzer.reusableTokenStream(field.getName(),reader);
       tstream.reset();
-      List<Token> tokens = getTokens(tstream);
+      List<AttributeSource> tokens = getTokens(tstream);
       matches = new HashSet<Tok>();
-      for (Token t : tokens) { matches.add( new Tok(t,0)); }
+      for (AttributeSource t : tokens) { matches.add( new Tok(t,0)); }
     }
 
     if (val!="") {
@@ -199,7 +201,7 @@
        }
 
        TokenStream tstream = tfac.create(tchain.charStream(new StringReader(val)));
-       List<Token> tokens = getTokens(tstream);
+       List<AttributeSource> tokens = getTokens(tstream);
        if (verbose) {
          writeHeader(out, tfac.getClass(), tfac.getArgs());
        }
@@ -211,24 +213,16 @@
            writeHeader(out, filtfac.getClass(), filtfac.getArgs());
          }
 
-         final Iterator<Token> iter = tokens.iterator();
-         tstream = filtfac.create( new TokenStream() {
-           CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-           OffsetAttribute offsetAtt = addAttribute (OffsetAttribute.class);
-           TypeAttribute typeAtt = addAttribute (TypeAttribute.class);
-           FlagsAttribute flagsAtt = addAttribute (FlagsAttribute.class);
-           PayloadAttribute payloadAtt = addAttribute (PayloadAttribute.class);
-           PositionIncrementAttribute posIncAtt = addAttribute (PositionIncrementAttribute.class);
+         final Iterator<AttributeSource> iter = tokens.iterator();
+         tstream = filtfac.create( new TokenStream(tstream.getAttributeFactory()) {
            
            public boolean incrementToken() throws IOException {
              if (iter.hasNext()) {
-               Token token = iter.next();
-               termAtt.copyBuffer(token.buffer(), 0, token.length());
-               offsetAtt.setOffset(token.startOffset(), token.endOffset());
-               typeAtt.setType(token.type());
-               flagsAtt.setFlags(token.getFlags());
-               posIncAtt.setPositionIncrement(token.getPositionIncrement());
-               payloadAtt.setPayload(token.getPayload());
+               AttributeSource token = iter.next();
+               Iterator<Class<? extends Attribute>> atts = token.getAttributeClassesIterator();
+               while (atts.hasNext()) // make sure all att impls in the token exist here
+                 addAttribute(atts.next());
+               token.copyTo(this);
                return true;
              } else {
                return false;
@@ -244,7 +238,7 @@
      } else {
        TokenStream tstream = analyzer.reusableTokenStream(field.getName(),new StringReader(val));
        tstream.reset();
-       List<Token> tokens = getTokens(tstream);
+       List<AttributeSource> tokens = getTokens(tstream);
        if (verbose) {
          writeHeader(out, analyzer.getClass(), new HashMap<String,String>());
        }
@@ -253,27 +247,14 @@
   }
 
 
-  static List<Token> getTokens(TokenStream tstream) throws IOException {
-    List<Token> tokens = new ArrayList<Token>();
-    CharTermAttribute termAtt = tstream.addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = tstream.addAttribute (OffsetAttribute.class);
-    TypeAttribute typeAtt = tstream.addAttribute (TypeAttribute.class);
-    FlagsAttribute flagsAtt = tstream.addAttribute (FlagsAttribute.class);
-    PayloadAttribute payloadAtt = tstream.addAttribute (PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = tstream.addAttribute (PositionIncrementAttribute.class);
+  static List<AttributeSource> getTokens(TokenStream tstream) throws IOException {
+    List<AttributeSource> tokens = new ArrayList<AttributeSource>();
    
     while (true) {
       if (!tstream.incrementToken())
         break;
       else {
-      	Token token = new Token();
-      	token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
-      	token.setType(typeAtt.type());
-      	token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
-      	token.setPayload(payloadAtt.getPayload());
-      	token.setFlags(flagsAtt.getFlags());
-      	token.setPositionIncrement(posIncAtt.getPositionIncrement());
-      	tokens.add(token);
+      	tokens.add(tstream.cloneAttributes());
       }
     }
     return tokens;
@@ -281,9 +262,9 @@
 
 
   private static class Tok {
-    Token token;
+    AttributeSource token;
     int pos;
-    Tok(Token token, int pos) {
+    Tok(AttributeSource token, int pos) {
       this.token=token;
       this.pos=pos;
     }
@@ -296,6 +277,16 @@
     }
     public String toString() {
       return token.toString();
+    }
+    public String toPrintableString() {
+      TermToBytesRefAttribute att = token.addAttribute(TermToBytesRefAttribute.class);
+      if (att instanceof CharTermAttribute)
+        return att.toString();
+      else {
+        BytesRef bytes = new BytesRef();
+        att.toBytesRef(bytes);
+        return bytes.toString();
+      }
     }
   }
 
@@ -368,7 +359,7 @@
 
 
   // readable, raw, pos, type, start/end
-  static void writeTokens(JspWriter out, List<Token> tokens, final FieldType ft, boolean verbose, Set<Tok> match) throws IOException {
+  static void writeTokens(JspWriter out, List<AttributeSource> tokens, final FieldType ft, boolean verbose, Set<Tok> match) throws IOException {
 
     // Use a map to tell what tokens are in what positions
     // because some tokenizers/filters may do funky stuff with
@@ -376,12 +367,12 @@
     HashMap<Integer,List<Tok>> map = new HashMap<Integer,List<Tok>>();
     boolean needRaw=false;
     int pos=0;
-    for (Token t : tokens) {
+    for (AttributeSource t : tokens) {
       if (!t.toString().equals(ft.indexedToReadable(t.toString()))) {
         needRaw=true;
       }
 
-      pos += t.getPositionIncrement();
+      pos += t.addAttribute(PositionIncrementAttribute.class).getPositionIncrement();
       List lst = map.get(pos);
       if (lst==null) {
         lst = new ArrayList(1);
@@ -426,7 +417,7 @@
 
     printRow(out,"term text", arr, new ToStr() {
       public String toStr(Object o) {
-        return ft.indexedToReadable( ((Tok)o).token.toString() );
+        return ft.indexedToReadable( ((Tok)o).toPrintableString() );
       }
     }
             ,true
@@ -438,7 +429,7 @@
       printRow(out,"raw text", arr, new ToStr() {
         public String toStr(Object o) {
           // page is UTF-8, so anything goes.
-          return ((Tok)o).token.toString();
+          return ((Tok)o).toPrintableString();
         }
       }
               ,true
@@ -450,7 +441,7 @@
     if (verbose) {
       printRow(out,"term type", arr, new ToStr() {
         public String toStr(Object o) {
-          String tt =  ((Tok)o).token.type();
+          String tt =  ((Tok)o).token.addAttribute(TypeAttribute.class).type();
           if (tt == null) {
              return "null";
           } else {
@@ -467,8 +458,8 @@
     if (verbose) {
       printRow(out,"source start,end", arr, new ToStr() {
         public String toStr(Object o) {
-          Token t = ((Tok)o).token;
-          return Integer.toString(t.startOffset()) + ',' + t.endOffset() ;
+          AttributeSource t = ((Tok)o).token;
+          return Integer.toString(t.addAttribute(OffsetAttribute.class).startOffset()) + ',' + t.addAttribute(OffsetAttribute.class).endOffset() ;
         }
       }
               ,true
@@ -480,8 +471,8 @@
     if (verbose) {
       printRow(out,"payload", arr, new ToStr() {
         public String toStr(Object o) {
-          Token t = ((Tok)o).token;
-          Payload p = t.getPayload();
+          AttributeSource t = ((Tok)o).token;
+          Payload p = t.addAttribute(PayloadAttribute.class).getPayload();
           if( null != p ) {
             BigInteger bi = new BigInteger( p.getData() );
             String ret = bi.toString( 16 );

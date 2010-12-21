@@ -19,12 +19,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CollectionUtil;
 
 final class FreqProxTermsWriter extends TermsHashConsumer {
 
@@ -45,21 +45,20 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
     for (TermsHashConsumerPerField f : fieldsToFlush.values()) {
         final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) f;
-        if (perField.termsHashPerField.numPostings > 0) {
+        if (perField.termsHashPerField.bytesHash.size() > 0) {
           allFields.add(perField);
         }
     }
 
     final int numAllFields = allFields.size();
-    
-    // sort by field name
-    Collections.sort(allFields);
 
-    // TODO: allow Lucene user to customize this codec:
-    final FieldsConsumer consumer = state.codec.fieldsConsumer(state);
+    // sort by field name
+    CollectionUtil.quickSort(allFields);
+
+    final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
 
     TermsHash termsHash = null;
-    
+
     /*
     Current writer chain:
       FieldsConsumer
@@ -74,7 +73,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
     for (int fieldNumber = 0; fieldNumber < numAllFields; fieldNumber++) {
       final FieldInfo fieldInfo = allFields.get(fieldNumber).fieldInfo;
-      
+
       FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
       fieldInfo.storePayloads |= fieldWriter.hasPayloads;
 
@@ -85,7 +84,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       TermsHashPerField perField = fieldWriter.termsHashPerField;
       assert termsHash == null || termsHash == perField.termsHash;
       termsHash = perField.termsHash;
-      int numPostings = perField.numPostings;
+      int numPostings = perField.bytesHash.size();
       perField.reset();
       perField.shrinkHash(numPostings);
       fieldWriter.reset();

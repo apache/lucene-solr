@@ -21,7 +21,7 @@ import java.io.File;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -33,8 +33,16 @@ public class TestIndexSplitter extends LuceneTestCase {
     File destDir = new File(TEMP_DIR, "testfilesplitterdest");
     _TestUtil.rmDir(destDir);
     destDir.mkdirs();
-    FSDirectory fsDir = FSDirectory.open(dir);
-    IndexWriter iw = new IndexWriter(fsDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+    Directory fsDir = newFSDirectory(dir);
+
+    LogMergePolicy mergePolicy = new LogByteSizeMergePolicy();
+    mergePolicy.setNoCFSRatio(1);
+    IndexWriter iw = new IndexWriter(
+        fsDir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setOpenMode(OpenMode.CREATE).
+            setMergePolicy(mergePolicy)
+    );
     for (int x=0; x < 100; x++) {
       Document doc = TestIndexWriterReader.createDocument(x, "index", 5);
       iw.addDocument(doc);
@@ -50,14 +58,19 @@ public class TestIndexSplitter extends LuceneTestCase {
       iw.addDocument(doc);
     }
     iw.commit();
-    assertEquals(3, iw.getReader().getSequentialSubReaders().length);
+    IndexReader iwReader = iw.getReader();
+    assertEquals(3, iwReader.getSequentialSubReaders().length);
+    iwReader.close();
     iw.close();
     // we should have 2 segments now
     IndexSplitter is = new IndexSplitter(dir);
     String splitSegName = is.infos.info(1).name;
     is.split(destDir, new String[] {splitSegName});
-    IndexReader r = IndexReader.open(FSDirectory.open(destDir), true);
+    Directory fsDirDest = newFSDirectory(destDir);
+    IndexReader r = IndexReader.open(fsDirDest, true);
     assertEquals(50, r.maxDoc());
+    r.close();
+    fsDirDest.close();
     
     // now test cmdline
     File destDir2 = new File(TEMP_DIR, "testfilesplitterdest2");
@@ -65,12 +78,17 @@ public class TestIndexSplitter extends LuceneTestCase {
     destDir2.mkdirs();
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
     assertEquals(3, destDir2.listFiles().length);
-    r = IndexReader.open(FSDirectory.open(destDir2), true);
+    Directory fsDirDest2 = newFSDirectory(destDir2);
+    r = IndexReader.open(fsDirDest2, true);
     assertEquals(50, r.maxDoc());
+    r.close();
+    fsDirDest2.close();
     
     // now remove the copied segment from src
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), "-d", splitSegName});
-    r = IndexReader.open(FSDirectory.open(dir), true);
+    r = IndexReader.open(fsDir, true);
     assertEquals(2, r.getSequentialSubReaders().length);
+    r.close();
+    fsDir.close();
   }
 }

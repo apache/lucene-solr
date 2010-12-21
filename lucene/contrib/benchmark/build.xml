@@ -9,7 +9,7 @@
     <property name="working.dir" location="work"/>
 
     <!-- the tests have some parallel problems -->
-    <property name="runsequential" value="true"/>
+    <property name="tests.threadspercpu" value="0"/>
 
     <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
     <module-uptodate name="analysis/icu" jarfile="${common.dir}/../modules/analysis/build/icu/lucene-analyzers-icu-${version}.jar"
@@ -255,6 +255,6 @@
       </subant>
     </target>
 
-    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter,compile-analyzers-common"/>
+    <target name="init" depends="contrib-build.init,compile-demo,compile-memory,compile-highlighter,compile-analyzers-common"/>
     
 </project>

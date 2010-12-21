@@ -17,28 +17,32 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.request.UnInvertedField;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.solr.search.function.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -49,6 +53,12 @@ import org.slf4j.LoggerFactory;
  * @since solr 0.9
  */
 public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
+
+  // These should *only* be used for debugging or monitoring purposes
+  public static final AtomicLong numOpens = new AtomicLong();
+  public static final AtomicLong numCloses = new AtomicLong();
+
+
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
@@ -89,6 +99,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * 
    * @deprecated use alternate constructor
    */
+  @Deprecated
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, String path, boolean enableCache) throws IOException {
     this(core, schema,name, core.getIndexReaderFactory().newReader(core.getDirectoryFactory().open(path), false), true, enableCache);
   }
@@ -138,7 +149,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     if (r.directory() instanceof FSDirectory) {
       FSDirectory fsDirectory = (FSDirectory) r.directory();
-      indexDir = fsDirectory.getFile().getAbsolutePath();
+      indexDir = fsDirectory.getDirectory().getAbsolutePath();
     }
 
     this.closeReader = closeReader;
@@ -188,6 +199,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
 
     fieldNames = r.getFieldNames(IndexReader.FieldOption.ALL);
+
+    // do this at the end since an exception in the constructor means we won't close    
+    numOpens.incrementAndGet();
   }
 
 
@@ -236,6 +250,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     for (SolrCache cache : cacheList) {
       cache.close();
     }
+
+    // do this at the end so it only gets done if there are no exceptions
+    numCloses.incrementAndGet();
   }
 
   /** Direct access to the IndexReader used by this searcher */
@@ -419,7 +436,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     
     Document d;
     if (documentCache != null) {
-      d = (Document)documentCache.get(i);
+      d = documentCache.get(i);
       if (d!=null) return d;
     }
 
@@ -536,7 +553,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     boolean positive = query==absQ;
 
     if (filterCache != null) {
-      DocSet absAnswer = (DocSet)filterCache.get(absQ);
+      DocSet absAnswer = filterCache.get(absQ);
       if (absAnswer!=null) {
         if (positive) return absAnswer;
         else return getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
@@ -562,7 +579,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     boolean positive = query==absQ;
 
     if (filterCache != null) {
-      DocSet absAnswer = (DocSet)filterCache.get(absQ);
+      DocSet absAnswer = filterCache.get(absQ);
       if (absAnswer!=null) {
         if (positive) return absAnswer;
         else return getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
@@ -584,7 +601,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   DocSet getPositiveDocSet(Query q) throws IOException {
     DocSet answer;
     if (filterCache != null) {
-      answer = (DocSet)filterCache.get(q);
+      answer = filterCache.get(q);
       if (answer!=null) return answer;
     }
     answer = getDocSetNC(q,null);
@@ -596,7 +613,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   DocSet getPositiveDocSet(Query q, DocsEnumState deState) throws IOException {
     DocSet answer;
     if (filterCache != null) {
-      answer = (DocSet)filterCache.get(q);
+      answer = filterCache.get(q);
       if (answer!=null) return answer;
     }
     answer = getDocSetNC(q,null,deState);
@@ -658,6 +675,80 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
 
     return answer;
+  }
+
+  Filter getFilter(Query q) throws IOException {
+    if (q == null) return null;
+    // TODO: support pure negative queries?
+
+    // if (q instanceof) {
+    // }
+
+    return getDocSet(q).getTopFilter();
+  }
+
+
+  Filter getFilter(DocSet setFilter, List<Query> queries) throws IOException {
+    Filter answer = setFilter == null ? null : setFilter.getTopFilter();
+
+    if (queries == null || queries.size() == 0) {
+      return answer;
+    }
+
+    if (answer == null && queries.size() == 1) {
+      return getFilter(queries.get(0));  
+    }
+
+
+    DocSet finalSet=null;
+
+    int nDocSets =0;
+    boolean[] neg = new boolean[queries.size()];
+    DocSet[] sets = new DocSet[queries.size()];
+    Query[] nocache = new Query[queries.size()];
+
+    int smallestIndex = -1;
+    int smallestCount = Integer.MAX_VALUE;
+    for (Query q : queries) {
+      // if (q instanceof)
+
+
+      Query posQuery = QueryUtils.getAbs(q);
+      sets[nDocSets] = getPositiveDocSet(posQuery);
+      // Negative query if absolute value different from original
+      if (q==posQuery) {
+        neg[nDocSets] = false;
+        // keep track of the smallest positive set.
+        // This optimization is only worth it if size() is cached, which it would
+        // be if we don't do any set operations.
+        int sz = sets[nDocSets].size();
+        if (sz<smallestCount) {
+          smallestCount=sz;
+          smallestIndex=nDocSets;
+          finalSet = sets[nDocSets];
+        }
+      } else {
+        neg[nDocSets] = true;
+      }
+
+      nDocSets++;
+    }
+
+    // if no positive queries, start off with all docs
+    if (finalSet==null) finalSet = getPositiveDocSet(matchAllDocsQuery);
+
+    // do negative queries first to shrink set size
+    for (int i=0; i<sets.length; i++) {
+      if (neg[i]) finalSet = finalSet.andNot(sets[i]);
+    }
+
+    for (int i=0; i<sets.length; i++) {
+      if (!neg[i] && i!=smallestIndex) finalSet = finalSet.intersection(sets[i]);
+    }
+
+    return finalSet.getTopFilter();
+
+
   }
 
   // query must be positive
@@ -804,7 +895,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     DocSet first;
     if (filterCache != null) {
-      first = (DocSet)filterCache.get(absQ);
+      first = filterCache.get(absQ);
       if (first==null) {
         first = getDocSetNC(absQ,null);
         filterCache.put(absQ,first);
@@ -892,18 +983,19 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return qr.getDocList();
   }
 
-  private static final int NO_CHECK_QCACHE       = 0x80000000;
-  private static final int GET_DOCSET            = 0x40000000;
-  private static final int NO_CHECK_FILTERCACHE  = 0x20000000;
-
+  static final int NO_CHECK_QCACHE       = 0x80000000;
+  static final int GET_DOCSET            = 0x40000000;
+  static final int NO_CHECK_FILTERCACHE  = 0x20000000;
+  
+  public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
+
 
   /**
    * getDocList version that uses+populates query and filter caches.
    * In the event of a timeout, the cache is not populated.
    */
   private void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
-    // old parameters: DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags, long timeAllowed, NamedList<Object> responseHeader
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
     QueryResultKey key=null;
@@ -921,7 +1013,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         // so set all of them on the cache key.
         key = new QueryResultKey(cmd.getQuery(), cmd.getFilterList(), cmd.getSort(), cmd.getFlags());
         if ((cmd.getFlags() & NO_CHECK_QCACHE)==0) {
-          superset = (DocList)queryResultCache.get(key);
+          superset = queryResultCache.get(key);
 
           if (superset != null) {
             // check that the cache entry has scores recorded if we need them
@@ -1714,6 +1806,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     private int flags;
     private long timeAllowed = -1;
 
+    // public List<Grouping.Command> groupCommands;
+
     public Query getQuery() { return query; }
     public QueryCommand setQuery(Query query) {
       this.query = query;
@@ -1814,12 +1908,15 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
   }
 
+
   /**
    * The result of a search.
    */
   public static class QueryResult {
     private boolean partialResults;
     private DocListAndSet docListAndSet;
+
+    public Object groupedResults;   // TODO: currently for testing
     
     public DocList getDocList() { return docListAndSet.docList; }
     public void setDocList(DocList list) {
@@ -1845,7 +1942,5 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
 }
-
-
 
 

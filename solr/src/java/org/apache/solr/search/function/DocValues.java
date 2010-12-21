@@ -19,6 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueFloat;
 
 /**
  * Represents field values as different types.
@@ -44,7 +46,45 @@ public abstract class DocValues {
   public double doubleVal(int doc) { throw new UnsupportedOperationException(); }
   // TODO: should we make a termVal, returns BytesRef?
   public String strVal(int doc) { throw new UnsupportedOperationException(); }
+
+  /**
+   * @param doc The doc to retrieve to sort ordinal for
+   * @return the sort ordinal for the specified doc
+   * TODO: Maybe we can just use intVal for this...
+   */
+  public int ordVal(int doc) { throw new UnsupportedOperationException(); }
+
+  /**
+   * @return the number of unique sort ordinals this instance has
+   */
+  public int numOrd() { throw new UnsupportedOperationException(); }
   public abstract String toString(int doc);
+
+  /** @lucene.experimental  */
+  public static abstract class ValueFiller {
+    /** MutableValue will be reused across calls */
+    public abstract MutableValue getValue();
+
+    /** MutableValue will be reused across calls.  Returns true if the value exists. */
+    public abstract void fillValue(int doc);
+  }
+
+  /** @lucene.experimental  */
+  public ValueFiller getValueFiller() {
+    return new ValueFiller() {
+      private final MutableValueFloat mval = new MutableValueFloat();
+
+      @Override
+      public MutableValue getValue() {
+        return mval;
+      }
+
+      @Override
+      public void fillValue(int doc) {
+        mval.value = floatVal(doc);
+      }
+    };
+  }
 
   //For Functions that can work with multiple values from the same document.  This does not apply to all functions
   public void byteVal(int doc, byte [] vals) { throw new UnsupportedOperationException(); }

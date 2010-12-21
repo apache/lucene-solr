@@ -1,5 +1,6 @@
 package org.apache.lucene.search.payloads;
 
+import org.apache.lucene.search.Explanation;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,12 +25,12 @@ package org.apache.lucene.search.payloads;
 public class MinPayloadFunction extends PayloadFunction {
 
   @Override
-  public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
+	public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
     if (numPayloadsSeen == 0) {
       return currentPayloadScore;
     } else {
-      return Math.min(currentPayloadScore, currentScore);
-    }
+		return Math.min(currentPayloadScore, currentScore);
+	}
   }
 
   @Override
@@ -37,6 +38,14 @@ public class MinPayloadFunction extends PayloadFunction {
     return numPayloadsSeen > 0 ? payloadScore : 1;
   }
   
+  @Override
+  public Explanation explain(int doc, int numPayloadsSeen, float payloadScore) {
+	  Explanation expl = new Explanation();
+	  float minPayloadScore = (numPayloadsSeen > 0 ? payloadScore : 1);
+	  expl.setValue(minPayloadScore);
+	  expl.setDescription("MinPayloadFunction(...)");
+	  return expl;
+  }  
   @Override
   public int hashCode() {
     final int prime = 31;

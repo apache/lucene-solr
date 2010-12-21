@@ -20,12 +20,11 @@ package org.apache.solr.handler.admin;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 
-public class SystemInfoHandlerTest extends TestCase {
+public class SystemInfoHandlerTest extends LuceneTestCase {
 
   public void testMagickGetter() {
 

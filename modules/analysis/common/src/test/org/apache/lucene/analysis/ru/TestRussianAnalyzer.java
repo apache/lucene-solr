@@ -18,12 +18,9 @@ package org.apache.lucene.analysis.ru;
  */
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -31,65 +28,16 @@ import org.apache.lucene.util.Version;
  * Test case for RussianAnalyzer.
  */
 
-public class TestRussianAnalyzer extends BaseTokenStreamTestCase
-{
-    private InputStreamReader inWords;
+public class TestRussianAnalyzer extends BaseTokenStreamTestCase {
 
-    private InputStreamReader sampleUnicode;
-
-    /**
-     * @deprecated remove this test and its datafiles in Lucene 4.0
-     * the Snowball version has its own data tests.
-     */
-    @Deprecated
-    public void testUnicode30() throws IOException
-    {
-        RussianAnalyzer ra = new RussianAnalyzer(Version.LUCENE_30);
-        inWords =
-            new InputStreamReader(
-                getClass().getResourceAsStream("testUTF8.txt"),
-                "UTF-8");
-
-        sampleUnicode =
-            new InputStreamReader(
-                getClass().getResourceAsStream("resUTF8.htm"),
-                "UTF-8");
-
-        TokenStream in = ra.tokenStream("all", inWords);
-
-        RussianLetterTokenizer sample =
-            new RussianLetterTokenizer(TEST_VERSION_CURRENT,
-                sampleUnicode);
-
-        CharTermAttribute text = in.getAttribute(CharTermAttribute.class);
-        CharTermAttribute sampleText = sample.getAttribute(CharTermAttribute.class);
-
-        for (;;)
-        {
-          if (in.incrementToken() == false)
-            break;
-
-            boolean nextSampleToken = sample.incrementToken();
-            assertEquals(
-                "Unicode",
-                text.toString(),
-                nextSampleToken == false
-                ? null
-                : sampleText.toString());
-        }
-
-        inWords.close();
-        sampleUnicode.close();
-    }
-    
-    /** Check that RussianAnalyzer doesnt discard any numbers */
+     /** Check that RussianAnalyzer doesnt discard any numbers */
     public void testDigitsInRussianCharset() throws IOException
     {
       RussianAnalyzer ra = new RussianAnalyzer(TEST_VERSION_CURRENT);
       assertAnalyzesTo(ra, "text 1000", new String[] { "text", "1000" });
     }
     
-    /** @deprecated remove this test in Lucene 4.0: stopwords changed */
+    /** @deprecated (3.1) remove this test in Lucene 5.0: stopwords changed */
     @Deprecated
     public void testReusableTokenStream30() throws Exception {
       Analyzer a = new RussianAnalyzer(Version.LUCENE_30);

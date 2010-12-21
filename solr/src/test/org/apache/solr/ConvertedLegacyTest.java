@@ -902,13 +902,16 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("id:42 AND subword:\"bar foo\"")
             ,"*[count(//doc)=0]"
             );
+    assertQ(req("id:42 AND subword:bar-foo")
+            ,"*[count(//doc)=0]"
+            );
     assertQ(req("id:42 AND subword:\"bar foo\"~2")
             ,"*[count(//doc)=1]"
             );
-    assertQ(req("id:42 AND subword:\"foo/bar\"")
+    assertQ(req("id:42 AND subword:foo/bar")
             ,"*[count(//doc)=1]"
             );
-    assertQ(req("id:42 AND subword:\"foobar\"")
+    assertQ(req("id:42 AND subword:foobar")
             ,"*[count(//doc)=0]"
             );
 
@@ -926,10 +929,13 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("id:42 AND subword:\"bar foo\"")
             ,"*[count(//doc)=0]"
             );
+    assertQ(req("id:42 AND subword:bar-foo")
+            ,"*[count(//doc)=0]"
+            );
     assertQ(req("id:42 AND subword:\"bar foo\"~2")
             ,"*[count(//doc)=1]"
             );
-    assertQ(req("id:42 AND subword:\"foo/bar\"")
+    assertQ(req("id:42 AND subword:foo/bar")
             ,"*[count(//doc)=1]"
             );
     assertQ(req("id:42 AND subword:foobar")
@@ -1150,7 +1156,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             ,"//str[.='Yonik']  "
             ,"//float[.='1.4142135'] "
             ,"//float[@name='score'] "
-            ,"*[count(//doc/*)=13]"
+            ,"*[count(//doc/*)>=13]"
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");
@@ -1161,7 +1167,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             ,"//str[.='Yonik']  "
             ,"//float[.='1.4142135'] "
             ,"//float[@name='score'] "
-            ,"*[count(//doc/*)=13]"
+            ,"*[count(//doc/*)>=13]"
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");

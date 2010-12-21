@@ -58,7 +58,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   /**
    * Carrot2 controller that manages instances of clustering algorithms
    */
-  private CachingController controller = new CachingController();
+  private Controller controller = ControllerFactory.createPooling();
   private Class<? extends IClusteringAlgorithm> clusteringAlgorithmClass;
 
   private String idFieldName;
@@ -91,6 +91,12 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // Initialize Carrot2 controller. Pass initialization attributes, if any.
     HashMap<String, Object> initAttributes = new HashMap<String, Object>();
     extractCarrotAttributes(initParams, initAttributes);
+    
+    // Customize the language model factory. The implementation we provide here
+    // is included in the code base of Solr, so that it's possible to refactor
+    // the Lucene APIs the factory relies on if needed.
+    initAttributes.put("PreprocessingPipeline.languageModelFactory",
+      new LuceneLanguageModelFactory());
     this.controller.init(initAttributes);
 
     this.idFieldName = core.getSchema().getUniqueKeyField().getName();

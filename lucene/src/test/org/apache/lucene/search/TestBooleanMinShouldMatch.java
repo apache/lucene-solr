@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.text.DecimalFormat;
 import java.util.Random;
@@ -33,17 +32,14 @@ import java.util.Random;
  */
 public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
-    private Random rnd;
     private Directory index;
     private IndexReader r;
     private IndexSearcher s;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
-        rnd = newRandom();
-        
         String[] data = new String [] {
             "A 1 2 3 4 5 6",
             "Z       4 5 6",
@@ -55,15 +51,15 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             "X       4 5 6"
         };
 
-        index = new RAMDirectory();
-        RandomIndexWriter w = new RandomIndexWriter(rnd, index);
+        index = newDirectory();
+        RandomIndexWriter w = new RandomIndexWriter(random, index);
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
-            doc.add(new Field("id", String.valueOf(i), Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id",String.valueOf(i)));
-            doc.add(new Field("all", "all", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("all","all"));
+            doc.add(newField("id", String.valueOf(i), Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id",String.valueOf(i)));
+            doc.add(newField("all", "all", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("all","all"));
             if (null != data[i]) {
-                doc.add(new Field("data", data[i], Field.Store.YES, Field.Index.ANALYZED));//Field.Text("data",data[i]));
+                doc.add(newField("data", data[i], Field.Store.YES, Field.Index.ANALYZED));//Field.Text("data",data[i]));
             }
             w.addDocument(doc);
         }
@@ -75,7 +71,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
     
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
       s.close();
       r.close();
       index.close();
@@ -89,7 +85,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             printHits(getName(), h, s);
         }
         assertEquals("result count", expected, h.length);
-        QueryUtils.check(q,s);
+        QueryUtils.check(random, q,s);
     }
 
     public void testAllOptional() throws Exception {
@@ -309,7 +305,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
           for (int i=0; i<c.length;i++) {
             if (c[i].getOccur() == BooleanClause.Occur.SHOULD) opt++;
           }
-          q.setMinimumNumberShouldMatch(rnd.nextInt(opt+2));
+          q.setMinimumNumberShouldMatch(random.nextInt(opt+2));
         }
       };
 
@@ -318,8 +314,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
       // increase number of iterations for more complete testing      
       int num = 50 * RANDOM_MULTIPLIER;
       for (int i=0; i<num; i++) {
-        int lev = rnd.nextInt(maxLev);
-        final long seed = rnd.nextLong();
+        int lev = random.nextInt(maxLev);
+        final long seed = random.nextLong();
         BooleanQuery q1 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);
         // BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), lev, field, vals, minNrCB);
         BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);
@@ -333,8 +329,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         TopDocs top1 = s.search(q1,null,100);
         TopDocs top2 = s.search(q2,null,100);
         if (i < 100) {
-          QueryUtils.check(q1,s);
-          QueryUtils.check(q2,s);
+          QueryUtils.check(random, q1,s);
+          QueryUtils.check(random, q2,s);
         }
         // The constrained query
         // should be a superset to the unconstrained query.

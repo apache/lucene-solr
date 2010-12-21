@@ -18,15 +18,14 @@
 
 package org.apache.lucene.misc;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test of the SweetSpotSimilarity
  */
-public class SweetSpotSimilarityTest extends TestCase {
+public class SweetSpotSimilarityTest extends LuceneTestCase {
 
   public void testSweetSpotLengthNorm() {
   

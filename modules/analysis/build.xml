@@ -81,7 +81,7 @@
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
-  <target name="dist-maven" depends="default">
+  <target name="dist-maven" depends="default,javadocs">
     <ant dir="common" target="dist-maven" />
     <ant dir="icu" target="dist-maven" />
     <ant dir="phonetic" target="dist-maven" />

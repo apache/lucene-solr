@@ -7,9 +7,9 @@ package org.apache.lucene.index;
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,11 +29,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
 abstract class DocumentsWriterThreadPool {
   public static abstract class Task<T> {
     private boolean clearThreadBindings = false;
-    
+
     protected void clearThreadBindings() {
       this.clearThreadBindings = true;
     }
-    
+
     boolean doClearThreadBindings() {
       return clearThreadBindings;
     }
@@ -42,28 +42,24 @@ abstract class DocumentsWriterThreadPool {
   public static abstract class PerThreadTask<T> extends Task<T> {
     abstract T process(final DocumentsWriterPerThread perThread) throws IOException;
   }
-  
+
   public static abstract class AllThreadsTask<T> extends Task<T> {
     abstract T process(final Iterator<DocumentsWriterPerThread> threadsIterator) throws IOException;
   }
 
-  public static abstract class AbortTask {
-    abstract void abort() throws IOException;
-  }
-  
   protected abstract static class ThreadState {
     private DocumentsWriterPerThread perThread;
     private boolean isIdle = true;
-    
+
     void start() {/* extension hook */}
     void finish() {/* extension hook */}
   }
-  
+
   private int pauseThreads = 0;
-  
+
   protected final int maxNumThreadStates;
   protected ThreadState[] allThreadStates = new ThreadState[0];
-  
+
   private final Lock lock = new ReentrantLock();
   private final Condition threadStateAvailable = lock.newCondition();
   private boolean globalLock;
@@ -72,11 +68,11 @@ abstract class DocumentsWriterThreadPool {
   DocumentsWriterThreadPool(int maxNumThreadStates) {
     this.maxNumThreadStates = (maxNumThreadStates < 1) ? IndexWriterConfig.DEFAULT_MAX_THREAD_STATES : maxNumThreadStates;
   }
-  
+
   public final int getMaxThreadStates() {
     return this.maxNumThreadStates;
   }
-  
+
   void pauseAllThreads() {
     lock.lock();
     try {
@@ -112,11 +108,11 @@ abstract class DocumentsWriterThreadPool {
         return false;
       }
     }
-    
+
     return true;
   }
-  
-  void abort(AbortTask task) throws IOException {
+
+  void abort() throws IOException {
     lock.lock();
     try {
       if (!aborting) {
@@ -130,8 +126,7 @@ abstract class DocumentsWriterThreadPool {
           for (ThreadState state : allThreadStates) {
             state.perThread.abort();
           }
-          
-          task.abort();
+
         } finally {
           aborting = false;
           resumeAllThreads();
@@ -141,7 +136,7 @@ abstract class DocumentsWriterThreadPool {
       lock.unlock();
     }
   }
-  
+
   void finishAbort() {
     aborting = false;
     resumeAllThreads();
@@ -149,7 +144,7 @@ abstract class DocumentsWriterThreadPool {
 
   public <T> T executeAllThreads(DocumentsWriter documentsWriter, AllThreadsTask<T> task) throws IOException {
     T result = null;
-    
+
     lock.lock();
     try {
       try {
@@ -164,34 +159,17 @@ abstract class DocumentsWriterThreadPool {
       globalLock = true;
 
       pauseAllThreads();
-      
+
     } finally {
       lock.unlock();
     }
 
     final ThreadState[] localAllThreads = allThreadStates;
-    
+
     // all threads are idle now
     boolean success = false;
     try {
-      result = task.process(new Iterator<DocumentsWriterPerThread>() {
-        int i = 0;
-  
-        @Override
-        public boolean hasNext() {
-          return i < localAllThreads.length;
-        }
-  
-        @Override
-        public DocumentsWriterPerThread next() {
-          return localAllThreads[i++].perThread;
-        }
-  
-        @Override
-        public void remove() {
-          throw new UnsupportedOperationException("remove() not supported.");
-        }
-      });
+      result = task.process(getPerThreadIterator(localAllThreads));
       success = true;
       return result;
     } finally {
@@ -203,7 +181,7 @@ abstract class DocumentsWriterThreadPool {
           }
         }
       }
-      
+
       lock.lock();
       try {
         try {
@@ -218,15 +196,15 @@ abstract class DocumentsWriterThreadPool {
       } finally {
         lock.unlock();
       }
-      
+
       if (!aborting && abort) {
         documentsWriter.abort();
       }
-      
+
     }
   }
 
-  
+
   public final <T> T executePerThread(DocumentsWriter documentsWriter, Document doc, PerThreadTask<T> task) throws IOException {
     ThreadState state = acquireThreadState(documentsWriter, doc);
     boolean success = false;
@@ -241,25 +219,50 @@ abstract class DocumentsWriterThreadPool {
       }
 
       returnDocumentsWriterPerThread(state, task.doClearThreadBindings());
-      
+
       if (!aborting && abort) {
         documentsWriter.abort();
       }
     }
   }
-  
+
+  final Iterator<DocumentsWriterPerThread> getPerThreadIterator() {
+    return getPerThreadIterator(allThreadStates);
+  }
+
+  private static final Iterator<DocumentsWriterPerThread> getPerThreadIterator(final ThreadState[] localAllThreads) {
+    return new Iterator<DocumentsWriterPerThread>() {
+      int i = 0;
+
+      @Override
+      public boolean hasNext() {
+        return i < localAllThreads.length;
+      }
+
+      @Override
+      public DocumentsWriterPerThread next() {
+        return localAllThreads[i++].perThread;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove() not supported.");
+      }
+    };
+  }
+
   protected final <T extends ThreadState> T addNewThreadState(DocumentsWriter documentsWriter, T threadState) {
     // Just create a new "private" thread state
     ThreadState[] newArray = new ThreadState[1+allThreadStates.length];
     if (allThreadStates.length > 0)
       System.arraycopy(allThreadStates, 0, newArray, 0, allThreadStates.length);
-    threadState.perThread = documentsWriter.newDocumentsWriterPerThread(); 
+    threadState.perThread = documentsWriter.newDocumentsWriterPerThread();
     newArray[allThreadStates.length] = threadState;
 
     allThreadStates = newArray;
     return threadState;
   }
-  
+
   protected abstract ThreadState selectThreadState(Thread requestingThread, DocumentsWriter documentsWriter, Document doc);
   protected void clearThreadBindings(ThreadState flushedThread) {
     // subclasses can optionally override this to cleanup after a thread flushed
@@ -268,13 +271,13 @@ abstract class DocumentsWriterThreadPool {
   protected void clearAllThreadBindings() {
     // subclasses can optionally override this to cleanup after a thread flushed
   }
-  
-  
+
+
   private final ThreadState acquireThreadState(DocumentsWriter documentsWriter, Document doc) {
     lock.lock();
     try {
       ThreadState threadState = selectThreadState(Thread.currentThread(), documentsWriter, doc);
-      
+
       try {
         while (!threadState.isIdle || globalLock || aborting || threadState.perThread.aborting) {
           threadStateAvailable.await();
@@ -282,19 +285,19 @@ abstract class DocumentsWriterThreadPool {
       } catch (InterruptedException ie) {
         throw new ThreadInterruptedException(ie);
       }
-      
+
       assert threadState.isIdle;
-      
+
       threadState.isIdle = false;
       threadState.start();
-      
+
       return threadState;
-      
+
     } finally {
       lock.unlock();
     }
   }
-  
+
   private final void returnDocumentsWriterPerThread(ThreadState state, boolean clearThreadBindings) {
     lock.lock();
     try {

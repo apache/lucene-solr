@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -39,15 +38,18 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     Set<String> fileExtensions = new HashSet<String>();
     fileExtensions.add(IndexFileNames.FIELDS_EXTENSION);
     fileExtensions.add(IndexFileNames.FIELDS_INDEX_EXTENSION);
-    
-    Directory primaryDir = new MockRAMDirectory();
-    RAMDirectory secondaryDir = new MockRAMDirectory();
-    
+
+    Directory primaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    Directory secondaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
-    IndexWriter writer = new IndexWriter(fsd, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    IndexWriter writer = new IndexWriter(
+        fsd,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMergePolicy(newLogMergePolicy(false))
+    );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
-    IndexReader reader = writer.getReader();
+    IndexReader reader = IndexReader.open(writer);
     assertEquals(100, reader.maxDoc());
     writer.commit();
     // we should see only fdx,fdt files here

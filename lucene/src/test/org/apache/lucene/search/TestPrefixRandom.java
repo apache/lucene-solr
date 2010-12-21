@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -26,10 +25,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -42,21 +43,23 @@ public class TestPrefixRandom extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory dir;
-  private Random random;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = new MockRAMDirectory();
-    // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
+    dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
-    Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(field);
 
-    int num = 2000 * RANDOM_MULTIPLIER;
+    // we generate aweful prefixes: good for testing.
+    // but for preflex codec, the test can be very slow, so use less iterations.
+    final String codec = CodecProvider.getDefault().getFieldCodec("field");
+    int num = codec.equals("PreFlex") ? 200 * RANDOM_MULTIPLIER : 2000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       field.setValue(_TestUtil.randomUnicodeString(random, 10));
       writer.addDocument(doc);
@@ -67,7 +70,7 @@ public class TestPrefixRandom extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     searcher.close();
     dir.close();
@@ -84,16 +87,15 @@ public class TestPrefixRandom extends LuceneTestCase {
     }
     
     @Override
-    protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
-      return new SimplePrefixTermsEnum(reader, field, prefix);
+    protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+      return new SimplePrefixTermsEnum(terms.iterator(), prefix);
     }
 
     private class SimplePrefixTermsEnum extends FilteredTermsEnum {
       private final BytesRef prefix;
 
-      private SimplePrefixTermsEnum(IndexReader reader, 
-          String field, BytesRef prefix) throws IOException {
-        super(reader, field);
+      private SimplePrefixTermsEnum(TermsEnum tenum, BytesRef prefix) throws IOException {
+        super(tenum);
         this.prefix = prefix;
         setInitialSeekTerm(new BytesRef(""));
       }

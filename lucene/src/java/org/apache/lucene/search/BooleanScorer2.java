@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.search.BooleanClause.Occur;
+
 /* See the description in BooleanScorer.java, comparing
  * BooleanScorer & BooleanScorer2 */
 
@@ -41,9 +43,9 @@ class BooleanScorer2 extends Scorer {
     int nrMatchers; // to be increased by score() of match counting scorers.
     
     void init() { // use after all scorers have been added.
-      coordFactors = new float[maxCoord + 1];
+      coordFactors = new float[optionalScorers.size() + requiredScorers.size() + 1];
       Similarity sim = getSimilarity();
-      for (int i = 0; i <= maxCoord; i++) {
+      for (int i = 0; i < coordFactors.length; i++) {
         coordFactors[i] = sim.coord(i, maxCoord);
       }
     }
@@ -59,7 +61,7 @@ class BooleanScorer2 extends Scorer {
 
   /** The number of optionalScorers that need to match (if there are any) */
   private final int minNrShouldMatch;
-  
+
   private int doc = -1;
 
   /**
@@ -80,21 +82,18 @@ class BooleanScorer2 extends Scorer {
    * @param optional
    *          the list of optional scorers.
    */
-  public BooleanScorer2(Similarity similarity, int minNrShouldMatch,
-      List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional) throws IOException {
-    super(similarity);
+  public BooleanScorer2(Weight weight, Similarity similarity, int minNrShouldMatch,
+      List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional, int maxCoord) throws IOException {
+    super(similarity, weight);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
     }
     coordinator = new Coordinator();
     this.minNrShouldMatch = minNrShouldMatch;
+    coordinator.maxCoord = maxCoord;
 
     optionalScorers = optional;
-    coordinator.maxCoord += optional.size();
-
-    requiredScorers = required;
-    coordinator.maxCoord += required.size();
-    
+    requiredScorers = required;    
     prohibitedScorers = prohibited;
     
     coordinator.init();
@@ -194,7 +193,7 @@ class BooleanScorer2 extends Scorer {
   }
 
   private Scorer dualConjunctionSumScorer(Scorer req1, Scorer req2) throws IOException { // non counting.
-    return new ConjunctionScorer(defaultSimilarity, new Scorer[]{req1, req2});
+    return new ConjunctionScorer(defaultSimilarity, req1, req2);
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers
@@ -305,9 +304,27 @@ class BooleanScorer2 extends Scorer {
   }
 
   @Override
+  public float freq() {
+    return coordinator.nrMatchers;
+  }
+
+  @Override
   public int advance(int target) throws IOException {
     return doc = countingSumScorer.advance(target);
   }
+
+  @Override
+  protected void visitSubScorers(Query parent, Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
+    super.visitSubScorers(parent, relationship, visitor);
+    final Query q = weight.getQuery();
+    for (Scorer s : optionalScorers) {
+      s.visitSubScorers(q, Occur.SHOULD, visitor);
+    }
+    for (Scorer s : prohibitedScorers) {
+      s.visitSubScorers(q, Occur.MUST_NOT, visitor);
+    }
+    for (Scorer s : requiredScorers) {
+      s.visitSubScorers(q, Occur.MUST, visitor);
+    }
+  }
 }
-
-

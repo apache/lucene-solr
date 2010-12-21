@@ -17,6 +17,11 @@ package org.apache.solr.search.function;
  */
 
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.cache.FloatValuesCreator;
+import org.apache.lucene.search.cache.ShortValuesCreator;
+import org.apache.lucene.search.cache.CachedArray.FloatValues;
+import org.apache.lucene.search.cache.CachedArray.LongValues;
+import org.apache.lucene.search.cache.CachedArray.ShortValues;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
@@ -27,26 +32,21 @@ import java.util.Map;
  *
  *
  **/
-public class ShortFieldSource extends FieldCacheSource{
-  FieldCache.ShortParser parser;
+public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
 
-  public ShortFieldSource(String field) {
-    this(field, null);
+  public ShortFieldSource(ShortValuesCreator creator) {
+    super(creator);
   }
 
-  public ShortFieldSource(String field, FieldCache.ShortParser parser) {
-    super(field);
-    this.parser = parser;
-  }
 
   public String description() {
     return "short(" + field + ')';
   }
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final short[] arr = (parser == null) ?
-            cache.getShorts(reader, field) :
-            cache.getShorts(reader, field, parser);
+    final ShortValues vals = cache.getShorts(reader, field, creator);
+    final short[] arr = vals.values;
+    
     return new DocValues() {
       @Override
       public byte byteVal(int doc) {
@@ -55,7 +55,7 @@ public class ShortFieldSource extends FieldCacheSource{
 
       @Override
       public short shortVal(int doc) {
-        return (short) arr[doc];
+        return arr[doc];
       }
 
       public float floatVal(int doc) {
@@ -83,20 +83,5 @@ public class ShortFieldSource extends FieldCacheSource{
       }
 
     };
-  }
-
-  public boolean equals(Object o) {
-    if (o.getClass() != ShortFieldSource.class) return false;
-    ShortFieldSource
-            other = (ShortFieldSource) o;
-    return super.equals(other)
-            && this.parser == null ? other.parser == null :
-            this.parser.getClass() == other.parser.getClass();
-  }
-
-  public int hashCode() {
-    int h = parser == null ? Short.class.hashCode() : parser.getClass().hashCode();
-    h += super.hashCode();
-    return h;
   }
 }

@@ -47,27 +47,29 @@ public interface StandardSyntaxParserConstants {
   /** RegularExpression Id. */
   int FUZZY_SLOP = 19;
   /** RegularExpression Id. */
-  int RANGEIN_START = 20;
+  int REGEXPTERM = 20;
   /** RegularExpression Id. */
-  int RANGEEX_START = 21;
+  int RANGEIN_START = 21;
   /** RegularExpression Id. */
-  int NUMBER = 22;
+  int RANGEEX_START = 22;
   /** RegularExpression Id. */
-  int RANGEIN_TO = 23;
+  int NUMBER = 23;
   /** RegularExpression Id. */
-  int RANGEIN_END = 24;
+  int RANGEIN_TO = 24;
   /** RegularExpression Id. */
-  int RANGEIN_QUOTED = 25;
+  int RANGEIN_END = 25;
   /** RegularExpression Id. */
-  int RANGEIN_GOOP = 26;
+  int RANGEIN_QUOTED = 26;
   /** RegularExpression Id. */
-  int RANGEEX_TO = 27;
+  int RANGEIN_GOOP = 27;
   /** RegularExpression Id. */
-  int RANGEEX_END = 28;
+  int RANGEEX_TO = 28;
   /** RegularExpression Id. */
-  int RANGEEX_QUOTED = 29;
+  int RANGEEX_END = 29;
   /** RegularExpression Id. */
-  int RANGEEX_GOOP = 30;
+  int RANGEEX_QUOTED = 30;
+  /** RegularExpression Id. */
+  int RANGEEX_GOOP = 31;
 
   /** Lexical state. */
   int Boost = 0;
@@ -100,6 +102,7 @@ public interface StandardSyntaxParserConstants {
     "<QUOTED>",
     "<TERM>",
     "<FUZZY_SLOP>",
+    "<REGEXPTERM>",
     "\"[\"",
     "\"{\"",
     "<NUMBER>",

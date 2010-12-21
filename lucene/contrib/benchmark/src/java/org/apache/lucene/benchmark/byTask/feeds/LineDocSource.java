@@ -48,6 +48,7 @@ public class LineDocSource extends ContentSource {
 
   private File file;
   private BufferedReader reader;
+  private int readCount;
 
   private synchronized void openFile() {
     try {
@@ -71,9 +72,12 @@ public class LineDocSource extends ContentSource {
   
   @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
-    String line;
+    final String line;
+    final int myID;
+    
     synchronized(this) {
       line = reader.readLine();
+      myID = readCount++;
       if (line == null) {
         if (!forever) {
           throw new NoMoreDataException();
@@ -96,6 +100,7 @@ public class LineDocSource extends ContentSource {
     }
     // The date String was written in the format of DateTools.dateToString.
     docData.clear();
+    docData.setID(myID);
     docData.setBody(line.substring(1 + spot2, line.length()));
     docData.setTitle(line.substring(0, spot));
     docData.setDate(line.substring(1 + spot, spot2));

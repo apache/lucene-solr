@@ -18,10 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.LuceneTestCase;
 
-import junit.framework.TestCase;
-
-public class BoostingQueryTest extends TestCase {
+public class BoostingQueryTest extends LuceneTestCase {
   public void testBoostingQueryEquals() {
     TermQuery q1 = new TermQuery(new Term("subject:", "java"));
     TermQuery q2 = new TermQuery(new Term("subject:", "java"));

@@ -35,17 +35,16 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.Reader;
 import java.io.IOException;
-import java.util.Random;
 
 
 /**
@@ -59,11 +58,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private byte[] payloadField = new byte[]{1};
   private byte[] payloadMultiField1 = new byte[]{2};
   private byte[] payloadMultiField2 = new byte[]{4};
-  protected RAMDirectory directory;
-
-  public TestPayloadTermQuery(String s) {
-    super(s);
-  }
+  protected Directory directory;
 
   private class PayloadAnalyzer extends Analyzer {
 
@@ -110,24 +105,23 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    Random random = newRandom();
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new PayloadAnalyzer())
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
         .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field noPayloadField = new Field(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED);
+      Field noPayloadField = newField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED);
       //noPayloadField.setBoost(0);
       doc.add(noPayloadField);
-      doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = writer.getReader();
+    reader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
 
     searcher = new IndexSearcher(reader);
@@ -135,7 +129,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -261,6 +255,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     while (spans.next()) {
       count++;
     }
+    theSearcher.close();
   }
 
   public void testNoMatch() throws Exception {
@@ -287,7 +282,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
     int[] results = new int[1];
     results[0] = 0;//hits.scoreDocs[0].doc;
-    CheckHits.checkHitCollector(query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
+    CheckHits.checkHitCollector(random, query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
   // must be static for weight serialization tests 

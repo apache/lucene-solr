@@ -39,7 +39,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
@@ -56,7 +55,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   CloseableThreadLocal<FieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
   CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
-  BitVector deletedDocs = null;
+  volatile BitVector deletedDocs;
   AtomicInteger deletedDocsRef = null;
   private boolean deletedDocsDirty = false;
   private boolean normsDirty = false;
@@ -65,6 +64,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private boolean rollbackHasChanges = false;
   private boolean rollbackDeletedDocsDirty = false;
   private boolean rollbackNormsDirty = false;
+  private SegmentInfo rollbackSegmentInfo;
   private int rollbackPendingDeleteCount;
 
   // optionally used for the .nrm file shared by multiple norms
@@ -89,7 +89,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     final FieldInfos fieldInfos;
 
     final FieldsProducer fields;
-    final CodecProvider codecs;
     
     final Directory dir;
     final Directory cfsDir;
@@ -103,17 +102,14 @@ public class SegmentReader extends IndexReader implements Cloneable {
     CompoundFileReader cfsReader;
     CompoundFileReader storeCFSReader;
 
-    CoreReaders(SegmentReader origInstance, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor, CodecProvider codecs) throws IOException {
+    CoreReaders(SegmentReader origInstance, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
 
-      if (termsIndexDivisor < 1 && termsIndexDivisor != -1) {
-        throw new IllegalArgumentException("indexDivisor must be -1 (don't load terms index) or greater than 0: got " + termsIndexDivisor);
+      if (termsIndexDivisor == 0) {
+        throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
       }
 
       segment = si.name;
-      if (codecs == null) {
-        codecs = CodecProvider.getDefault();
-      }
-      this.codecs = codecs;      
+      final SegmentCodecs segmentCodecs = si.getSegmentCodecs();
       this.readBufferSize = readBufferSize;
       this.dir = dir;
 
@@ -128,11 +124,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
         cfsDir = dir0;
 
         fieldInfos = new FieldInfos(cfsDir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELD_INFOS_EXTENSION));
-
+        
         this.termsIndexDivisor = termsIndexDivisor;
-
+        
         // Ask codec for its Fields
-        fields = si.getCodec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
+        fields = segmentCodecs.codec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
         assert fields != null;
 
         success = true;
@@ -247,7 +243,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
         }
 
-        if (fieldInfos.hasVectors()) { // open term vector files only as needed
+        if (si.getHasVectors()) { // open term vector files only as needed
           termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
         }
       }
@@ -474,11 +470,25 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
       // NOTE: norms are re-written in regular directory, not cfs
       si.advanceNormGen(this.number);
-      IndexOutput out = directory().createOutput(si.getNormFileName(this.number));
+      final String normFileName = si.getNormFileName(this.number);
+      IndexOutput out = directory().createOutput(normFileName);
+      boolean success = false;
       try {
-        out.writeBytes(bytes, maxDoc());
+        try {
+          out.writeBytes(bytes, maxDoc());
+        } finally {
+          out.close();
+        }
+        success = true;
       } finally {
-        out.close();
+        if (!success) {
+          try {
+            directory().deleteFile(normFileName);
+          } catch (Throwable t) {
+            // suppress this so we keep throwing the
+            // original exception
+          }
+        }
       }
       this.dirty = false;
     }
@@ -491,7 +501,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, termInfosIndexDivisor, null);
+    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, termInfosIndexDivisor);
   }
 
   /**
@@ -503,14 +513,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
                                   SegmentInfo si,
                                   int readBufferSize,
                                   boolean doOpenStores,
-                                  int termInfosIndexDivisor,
-                                  CodecProvider codecs)
+                                  int termInfosIndexDivisor)
     throws CorruptIndexException, IOException {
-    if (codecs == null)  {
-      codecs = CodecProvider.getDefault();
-    }
     
-    SegmentReader instance = readOnly ? new ReadOnlySegmentReader() : new SegmentReader();
+    SegmentReader instance = new SegmentReader();
     instance.readOnly = readOnly;
     instance.si = si;
     instance.readBufferSize = readBufferSize;
@@ -518,7 +524,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     boolean success = false;
 
     try {
-      instance.core = new CoreReaders(instance, dir, si, readBufferSize, termInfosIndexDivisor, codecs);
+      instance.core = new CoreReaders(instance, dir, si, readBufferSize, termInfosIndexDivisor);
       if (doOpenStores) {
         instance.core.openDocStores(si);
       }
@@ -544,7 +550,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public synchronized Bits getDeletedDocs() {
+  public Bits getDeletedDocs() {
     return deletedDocs;
   }
 
@@ -611,6 +617,18 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return reopenSegment(si, true, openReadOnly);
   }
 
+  @Override
+  public synchronized IndexReader reopen()
+    throws CorruptIndexException, IOException {
+    return reopenSegment(si, false, readOnly);
+  }
+
+  @Override
+  public synchronized IndexReader reopen(boolean openReadOnly)
+    throws CorruptIndexException, IOException {
+    return reopenSegment(si, false, openReadOnly);
+  }
+
   synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
@@ -636,7 +654,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     assert !doClone || (normsUpToDate && deletionsUpToDate);
 
     // clone reader
-    SegmentReader clone = openReadOnly ? new ReadOnlySegmentReader() : new SegmentReader();
+    SegmentReader clone = new SegmentReader();
 
     boolean success = false;
     try {
@@ -706,33 +724,62 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     if (hasChanges) {
-      if (deletedDocsDirty) {               // re-write deleted
-        si.advanceDelGen();
-
-        // We can write directly to the actual name (vs to a
-        // .tmp & renaming it) because the file is not live
-        // until segments file is written:
-        deletedDocs.write(directory(), si.getDelFileName());
-
-        si.setDelCount(si.getDelCount()+pendingDeleteCount);
-        pendingDeleteCount = 0;
-        assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
-      } else {
-        assert pendingDeleteCount == 0;
+      startCommit();
+      boolean success = false;
+      try {
+        commitChanges(commitUserData);
+        success = true;
+      } finally {
+        if (!success) {
+          rollbackCommit();
+        }
       }
+    }
+  }
 
-      if (normsDirty) {               // re-write norms
-        si.initNormGen(core.fieldInfos.size());
-        for (final Norm norm : norms.values()) {
-          if (norm.dirty) {
-            norm.reWrite(si);
+  private void commitChanges(Map<String,String> commitUserData) throws IOException {
+    if (deletedDocsDirty) {               // re-write deleted
+      si.advanceDelGen();
+
+      assert deletedDocs.length() == si.docCount;
+
+      // We can write directly to the actual name (vs to a
+      // .tmp & renaming it) because the file is not live
+      // until segments file is written:
+      final String delFileName = si.getDelFileName();
+      boolean success = false;
+      try {
+        deletedDocs.write(directory(), delFileName);
+        success = true;
+      } finally {
+        if (!success) {
+          try {
+            directory().deleteFile(delFileName);
+          } catch (Throwable t) {
+            // suppress this so we keep throwing the
+            // original exception
           }
         }
       }
-      deletedDocsDirty = false;
-      normsDirty = false;
-      hasChanges = false;
+
+      si.setDelCount(si.getDelCount()+pendingDeleteCount);
+      pendingDeleteCount = 0;
+      assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
+    } else {
+      assert pendingDeleteCount == 0;
     }
+
+    if (normsDirty) {               // re-write norms
+      si.initNormGen(core.fieldInfos.size());
+      for (final Norm norm : norms.values()) {
+        if (norm.dirty) {
+          norm.reWrite(si);
+        }
+      }
+    }
+    deletedDocsDirty = false;
+    normsDirty = false;
+    hasChanges = false;
   }
 
   FieldsReader getFieldsReader() {
@@ -826,11 +873,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     return getFieldsReader().doc(n, fieldSelector);
-  }
-
-  @Override
-  public synchronized boolean isDeleted(int n) {
-    return (deletedDocs != null && deletedDocs.get(n));
   }
 
   @Override
@@ -1161,6 +1203,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   void startCommit() {
+    rollbackSegmentInfo = (SegmentInfo) si.clone();
     rollbackHasChanges = hasChanges;
     rollbackDeletedDocsDirty = deletedDocsDirty;
     rollbackNormsDirty = normsDirty;
@@ -1171,6 +1214,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   void rollbackCommit() {
+    si.reset(rollbackSegmentInfo);
     hasChanges = rollbackHasChanges;
     deletedDocsDirty = rollbackDeletedDocsDirty;
     normsDirty = rollbackNormsDirty;
@@ -1195,33 +1239,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   public final Object getCoreCacheKey() {
     return core;
-  }
-  
-  /**
-   * Lotsa tests did hacks like:<br/>
-   * SegmentReader reader = (SegmentReader) IndexReader.open(dir);<br/>
-   * They broke. This method serves as a hack to keep hacks working
-   * We do it with R/W access for the tests (BW compatibility)
-   * @deprecated Remove this when tests are fixed!
-   */
-  @Deprecated
-  static SegmentReader getOnlySegmentReader(Directory dir) throws IOException {
-    return getOnlySegmentReader(IndexReader.open(dir, false));
-  }
-
-  static SegmentReader getOnlySegmentReader(IndexReader reader) {
-    if (reader instanceof SegmentReader)
-      return (SegmentReader) reader;
-
-    if (reader instanceof DirectoryReader) {
-      IndexReader[] subReaders = reader.getSequentialSubReaders();
-      if (subReaders.length != 1)
-        throw new IllegalArgumentException(reader + " has " + subReaders.length + " segments instead of exactly one");
-
-      return (SegmentReader) subReaders[0];
-    }
-
-    throw new IllegalArgumentException(reader + " is not a SegmentReader or a single-segment DirectoryReader");
   }
 
   @Override

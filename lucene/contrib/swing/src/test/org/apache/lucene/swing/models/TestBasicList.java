@@ -21,17 +21,18 @@ import java.util.List;
 
 import javax.swing.ListModel;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  **/
-public class TestBasicList extends TestCase {
+public class TestBasicList extends LuceneTestCase {
     private ListModel baseListModel;
     private ListSearcher listSearcher;
     private List<RestaurantInfo> list;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
+        super.setUp();
         list = new ArrayList<RestaurantInfo>();
         list.add(DataStore.canolis);
         list.add(DataStore.chris);
@@ -39,7 +40,6 @@ public class TestBasicList extends TestCase {
         baseListModel = new BaseListModel(list.iterator());
         listSearcher = new ListSearcher(baseListModel);
     }
-
 
     public void testRows(){
         assertEquals(list.size(), listSearcher.getSize());

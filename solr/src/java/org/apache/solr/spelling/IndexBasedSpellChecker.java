@@ -102,8 +102,8 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   }
 
   @Override
-  public void reload() throws IOException {
-    super.reload();
+  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
+    super.reload(core, searcher);
     //reload the source
     initSourceReader();
   }

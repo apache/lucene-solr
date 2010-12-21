@@ -102,8 +102,8 @@ algorithm.
   </li>
   <li>
     Effective Locale-specific normalization (case differences, diacritics, etc.).
-    ({@link org.apache.lucene.analysis.LowerCaseFilter} and 
-    {@link org.apache.lucene.analysis.ASCIIFoldingFilter} provide these services
+    ({@link org.apache.lucene.analysis.core.LowerCaseFilter} and 
+    {@link org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter} provide these services
     in a generic way that doesn't take into account locale-specific needs.)
   </li>
 </ul>
@@ -358,7 +358,7 @@ and
 <h1><a name="backcompat">Backwards Compatibility</a></h1>
 <p>
 This module exists to provide up-to-date Unicode functionality that supports
-the most recent version of Unicode (currently 5.2). However, some users who wish 
+the most recent version of Unicode (currently 6.0). However, some users who wish 
 for stronger backwards compatibility can restrict
 {@link org.apache.lucene.analysis.icu.ICUNormalizer2Filter} to operate on only
 a specific Unicode Version by using a {@link com.ibm.icu.text.FilteredNormalizer2}. 

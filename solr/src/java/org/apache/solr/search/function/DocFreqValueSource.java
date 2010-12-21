@@ -20,8 +20,9 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.search.MutableValueInt;
+import org.apache.solr.search.MutableValue;
 import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
@@ -192,12 +193,29 @@ abstract class IntDocValues extends DocValues {
   public String toString(int doc) {
     return vs.description() + '=' + strVal(doc);
   }
+
+  @Override
+  public ValueFiller getValueFiller() {
+    return new ValueFiller() {
+      private final MutableValueInt mval = new MutableValueInt();
+
+      @Override
+      public MutableValue getValue() {
+        return mval;
+      }
+
+      @Override
+      public void fillValue(int doc) {
+        mval.value = intVal(doc);
+      }
+    };
+  }
 }
 
 
 /**
  * <code>DocFreqValueSource</code> returns the number of documents containing the term.
- * @internal
+ * @lucene.internal
  */
 public class DocFreqValueSource extends ValueSource {
   protected String field;

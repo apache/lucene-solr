@@ -31,7 +31,7 @@ log=${solr_root}/logs/snappuller.log
 
 # define usage string
 USAGE="\
-usage: $prog [-u username] [-v]
+usage: $prog [-u username] [-v] [-V]
        -u          specify user to sudo to before running script
        -v          increase verbosity
        -V          output debugging info

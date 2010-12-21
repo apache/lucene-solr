@@ -18,10 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -30,24 +26,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.store.Directory;
 
 /**
  *
  **/
 
 public class TestBooleanPrefixQuery extends LuceneTestCase {
-
-  public static void main(String[] args) {
-    TestRunner.run(suite());
-  }
-
-  public static Test suite() {
-    return new TestSuite(TestBooleanPrefixQuery.class);
-  }
-
-  public TestBooleanPrefixQuery(String name) {
-    super(name);
-  }
 
   private int getCount(IndexReader r, Query q) throws Exception {
     if (q instanceof BooleanQuery) {
@@ -65,7 +50,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
   }
 
   public void testMethod() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    Directory directory = newDirectory();
 
     String[] categories = new String[]{"food",
                                        "foodanddrink",
@@ -75,10 +60,10 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
     Query rw1 = null;
     Query rw2 = null;
     IndexReader reader = null;
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

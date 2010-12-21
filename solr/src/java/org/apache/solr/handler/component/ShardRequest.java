@@ -41,8 +41,6 @@ public class ShardRequest {
   public int purpose;  // the purpose of this request
 
   public String[] shards;  // the shards this request should be sent to, null for all
-// TODO: how to request a specific shard address?
-
 
   public ModifiableSolrParams params;
 

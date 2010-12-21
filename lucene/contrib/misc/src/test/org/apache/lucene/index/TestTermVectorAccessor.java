@@ -4,10 +4,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.util.Collections;
 /*
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,40 +24,39 @@ import java.util.Collections;
 public class TestTermVectorAccessor extends LuceneTestCase {
 
   public void test() throws Exception {
-
-    Directory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document doc;
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
     iw.addDocument(doc);
 
     iw.close();

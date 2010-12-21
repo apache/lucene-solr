@@ -54,9 +54,9 @@ public class TestApp {
             return;
         }
 
-	Class stemClass = Class.forName("org.tartarus.snowball.ext." +
-					args[0] + "Stemmer");
-        SnowballProgram stemmer = (SnowballProgram) stemClass.newInstance();
+	Class<? extends SnowballProgram> stemClass = Class.forName("org.tartarus.snowball.ext." +
+					args[0] + "Stemmer").asSubclass(SnowballProgram.class);
+        SnowballProgram stemmer = stemClass.newInstance();
 	Method stemMethod = stemClass.getMethod("stem", new Class[0]);
 
 	Reader reader;
@@ -89,7 +89,7 @@ public class TestApp {
 	int character;
 	while ((character = reader.read()) != -1) {
 	    char ch = (char) character;
-	    if (Character.isWhitespace((char) ch)) {
+	    if (Character.isWhitespace(ch)) {
 		if (input.length() > 0) {
 		    stemmer.setCurrent(input.toString());
 		    for (int i = repeat; i != 0; i--) {

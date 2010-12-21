@@ -37,7 +37,7 @@
   -->
 
 <config>
-
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <jmx />
 
   <!-- Used to specify an alternate directory to hold all index data.

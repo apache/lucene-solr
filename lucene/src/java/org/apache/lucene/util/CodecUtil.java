@@ -31,9 +31,11 @@ import java.io.IOException;
  */
 
 public final class CodecUtil {
+  private CodecUtil() {} // no instance
+
   private final static int CODEC_MAGIC = 0x3fd76c17;
 
-  public static void writeHeader(IndexOutput out, String codec, int version)
+  public static IndexOutput writeHeader(IndexOutput out, String codec, int version)
     throws IOException {
     final long start = out.getFilePointer();
     out.writeInt(CODEC_MAGIC);
@@ -44,6 +46,8 @@ public final class CodecUtil {
     if (out.getFilePointer()-start != codec.length()+9) {
       throw new IllegalArgumentException("codec must be simple ASCII, less than 128 characters in length [got " + codec + "]");
     }
+
+    return out;
   }
 
   public static int headerLength(String codec) {

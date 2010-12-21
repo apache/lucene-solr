@@ -17,9 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestRamUsageEstimator extends TestCase {
+public class TestRamUsageEstimator extends LuceneTestCase {
 
   public void testBasic() {
     RamUsageEstimator rue = new RamUsageEstimator();

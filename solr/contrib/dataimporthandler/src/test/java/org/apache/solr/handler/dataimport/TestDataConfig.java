@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import junit.framework.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Document;
 
@@ -34,25 +34,9 @@ import java.util.List;
  * @since solr 1.3
  */
 public class TestDataConfig extends AbstractDataImportHandlerTestCase {
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  @Override
-  public String getSchemaFile() {
-    return "dataimport-schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "dataimport-nodatasource-solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("dataimport-nodatasource-solrconfig.xml", "dataimport-schema.xml");
   }
 
   @Test
@@ -62,20 +46,20 @@ public class TestDataConfig extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(loadDataConfig("data-config-with-datasource.xml"));
+    runFullImport(loadDataConfig("data-config-with-datasource.xml"));
 
     assertQ(req("id:1"), "//*[@numFound='1']");
   }
 
   @Test
-  public void basic() throws Exception {
+  public void testBasic() throws Exception {
     javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory
             .newInstance().newDocumentBuilder();
     Document doc = builder.parse(new ByteArrayInputStream(xml.getBytes()));
 
     DataConfig dc = new DataConfig();
     dc.readFromXml(doc.getDocumentElement());
-    Assert.assertEquals("atrimlisting", dc.document.entities.get(0).name);
+    assertEquals("atrimlisting", dc.document.entities.get(0).name);
   }
 
   private static final String xml = "<dataConfig>\n"

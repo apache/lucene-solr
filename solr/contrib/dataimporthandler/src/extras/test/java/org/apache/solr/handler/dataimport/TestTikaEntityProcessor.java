@@ -16,31 +16,16 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 
 /**Testcase for TikaEntityProcessor
  * @version $Id$
  * @since solr 1.5 
  */
 public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
-
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  public String getSchemaFile() {
-    return "dataimport-schema-no-unique-key.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "dataimport-solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml");
   }
 
   public void testIndexingWithTikaEntityProcessor() throws Exception {
@@ -55,7 +40,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
                     "     </entity>" +
                     "  </document>" +
                     "</dataConfig>";
-    super.runFullImport(conf);
+    runFullImport(conf);
     assertQ(req("*:*"), "//*[@numFound='1']");
   }
 }

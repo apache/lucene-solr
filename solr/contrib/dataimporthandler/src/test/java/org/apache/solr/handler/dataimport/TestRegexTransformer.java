@@ -20,11 +20,7 @@ import static org.apache.solr.handler.dataimport.RegexTransformer.REGEX;
 import static org.apache.solr.handler.dataimport.RegexTransformer.GROUP_NAMES;
 import static org.apache.solr.handler.dataimport.RegexTransformer.REPLACE_WITH;
 import static org.apache.solr.handler.dataimport.DataImporter.COLUMN;
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.createMap;
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.getContext;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -38,26 +34,26 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestRegexTransformer extends SolrTestCaseJ4 {
+public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
-  public void commaSeparated() {
+  public void testCommaSeparated() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
     // <field column="col1" sourceColName="a" splitBy="," />
     fields.add(getField("col1", "string", null, "a", ","));
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, fields, null);
+    Context context = getContext(null, null, null, Context.FULL_DUMP, fields, null);
 
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("a", "a,bb,cc,d");
 
     Map<String, Object> result = new RegexTransformer().transformRow(src, context);
-    Assert.assertEquals(2, result.size());
-    Assert.assertEquals(4, ((List) result.get("col1")).size());
+    assertEquals(2, result.size());
+    assertEquals(4, ((List) result.get("col1")).size());
   }
 
 
   @Test
-  public void groupNames() {
+  public void testGroupNames() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
     // <field column="col1" regex="(\w*)(\w*) (\w*)" groupNames=",firstName,lastName"/>
     Map<String ,String > m = new HashMap<String, String>();
@@ -65,13 +61,13 @@ public class TestRegexTransformer extends SolrTestCaseJ4 {
     m.put(GROUP_NAMES,",firstName,lastName");
     m.put(REGEX,"(\\w*) (\\w*) (\\w*)");
     fields.add(m);
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, fields, null);
+    Context context = getContext(null, null, null, Context.FULL_DUMP, fields, null);
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("fullName", "Mr Noble Paul");
 
     Map<String, Object> result = new RegexTransformer().transformRow(src, context);
-    Assert.assertEquals("Noble", result.get("firstName"));
-    Assert.assertEquals("Paul", result.get("lastName"));
+    assertEquals("Noble", result.get("firstName"));
+    assertEquals("Paul", result.get("lastName"));
     src= new HashMap<String, Object>();
     List<String> l= new ArrayList();
     l.add("Mr Noble Paul") ;
@@ -80,21 +76,20 @@ public class TestRegexTransformer extends SolrTestCaseJ4 {
     result = new RegexTransformer().transformRow(src, context);
     List l1 = (List) result.get("firstName");
     List l2 = (List) result.get("lastName");
-    Assert.assertEquals("Noble", l1.get(0));
-    Assert.assertEquals("Shalin", l1.get(1));
-    Assert.assertEquals("Paul", l2.get(0));
-    Assert.assertEquals("Mangar", l2.get(1));
+    assertEquals("Noble", l1.get(0));
+    assertEquals("Shalin", l1.get(1));
+    assertEquals("Paul", l2.get(0));
+    assertEquals("Mangar", l2.get(1));
   }
 
   @Test
-  public void replaceWith() {
+  public void testReplaceWith() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
     // <field column="name" regexp="'" replaceWith="''" />
     Map<String, String> fld = getField("name", "string", "'", null, null);
     fld.put(REPLACE_WITH, "''");
     fields.add(fld);
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, null,
-            null, Context.FULL_DUMP, fields, null);
+    Context context = getContext(null, null, null, Context.FULL_DUMP, fields, null);
 
     Map<String, Object> src = new HashMap<String, Object>();
     String s = "D'souza";
@@ -102,11 +97,11 @@ public class TestRegexTransformer extends SolrTestCaseJ4 {
 
     Map<String, Object> result = new RegexTransformer().transformRow(src,
             context);
-    Assert.assertEquals("D''souza", result.get("name"));
+    assertEquals("D''souza", result.get("name"));
   }
 
   @Test
-  public void mileage() {
+  public void testMileage() {
     // init a whole pile of fields
     List<Map<String, String>> fields = getFields();
 
@@ -141,16 +136,16 @@ public class TestRegexTransformer extends SolrTestCaseJ4 {
 
     VariableResolverImpl resolver = new VariableResolverImpl();
     resolver.addNamespace("e", row);
-    Map<String, String> eAttrs = AbstractDataImportHandlerTestCase.createMap("name", "e");
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
+    Map<String, String> eAttrs = createMap("name", "e");
+    Context context = getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
 
     Map<String, Object> result = new RegexTransformer().transformRow(row, context);
-    Assert.assertEquals(5, result.size());
-    Assert.assertEquals(s, result.get("rowdata"));
-    Assert.assertEquals("26", result.get("highway_mileage"));
-    Assert.assertEquals("19", result.get("city_mileage"));
-    Assert.assertEquals("*** 19 *** mpg City", result.get("hltCityMPG"));
-    Assert.assertEquals("Fuel Economy range: 26 mpg Hwy, 19 mpg City", result.get("t3"));
+    assertEquals(5, result.size());
+    assertEquals(s, result.get("rowdata"));
+    assertEquals("26", result.get("highway_mileage"));
+    assertEquals("19", result.get("city_mileage"));
+    assertEquals("*** 19 *** mpg City", result.get("hltCityMPG"));
+    assertEquals("Fuel Economy range: 26 mpg Hwy, 19 mpg City", result.get("t3"));
   }
 
   @Test
@@ -166,9 +161,7 @@ public class TestRegexTransformer extends SolrTestCaseJ4 {
     strings.add("hello");
     strings.add("world");
     Map<String, Object> result = new RegexTransformer().transformRow(createMap("person", strings), context);
-    Assert.assertEquals(strings,result.get("participant"));
-
-
+    assertEquals(strings,result.get("participant"));
   }
 
   public static List<Map<String, String>> getFields() {
@@ -196,16 +189,5 @@ public class TestRegexTransformer extends SolrTestCaseJ4 {
     // <field column="rowdata" sourceColName="rowdata" />
     fields.add(getField("rowdata", "string", null, "rowdata", null));
     return fields;
-  }
-
-  public static Map<String, String> getField(String col, String type,
-                                             String re, String srcCol, String splitBy) {
-    HashMap<String, String> vals = new HashMap<String, String>();
-    vals.put("column", col);
-    vals.put("type", type);
-    vals.put("regex", re);
-    vals.put("sourceColName", srcCol);
-    vals.put("splitBy", splitBy);
-    return vals;
   }
 }

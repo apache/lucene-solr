@@ -20,8 +20,10 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
@@ -30,8 +32,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Closeable;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,9 +66,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
  <b>NOTE</b>: as of 2.4, it's possible to open a read-only
  IndexReader using the static open methods that accept the 
- boolean readOnly parameter.  Such a reader has better 
- concurrency as it's not necessary to synchronize on the 
- isDeleted method.  You must specify false if you want to 
+ boolean readOnly parameter.  Such a reader may have better 
+ concurrency.  You must specify false if you want to 
  make changes with the resulting IndexReader.
  </p>
 
@@ -233,6 +234,27 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
     return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
   }
+
+  /**
+   * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
+   *
+   *
+   * @param writer The IndexWriter to open from
+   * @return The new IndexReader
+   * @throws CorruptIndexException
+   * @throws IOException if there is a low-level IO error
+   *
+   * @see #reopen(IndexWriter)
+   *
+   * @lucene.experimental
+   */
+  public static IndexReader open(final IndexWriter writer) throws CorruptIndexException, IOException {
+    return writer.getReader();
+  }
+
+  
+
+
 
   /** Expert: returns an IndexReader reading the index in the given
    *  {@link IndexCommit}.  You should pass readOnly=true, since it
@@ -484,6 +506,70 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /**
+   * Expert: returns a readonly reader, covering all
+   * committed as well as un-committed changes to the index.
+   * This provides "near real-time" searching, in that
+   * changes made during an IndexWriter session can be
+   * quickly made available for searching without closing
+   * the writer nor calling {@link #commit}.
+   *
+   * <p>Note that this is functionally equivalent to calling
+   * {#flush} (an internal IndexWriter operation) and then using {@link IndexReader#open} to
+   * open a new reader.  But the turnaround time of this
+   * method should be faster since it avoids the potentially
+   * costly {@link #commit}.</p>
+   *
+   * <p>You must close the {@link IndexReader} returned by
+   * this method once you are done using it.</p>
+   *
+   * <p>It's <i>near</i> real-time because there is no hard
+   * guarantee on how quickly you can get a new reader after
+   * making changes with IndexWriter.  You'll have to
+   * experiment in your situation to determine if it's
+   * fast enough.  As this is a new and experimental
+   * feature, please report back on your findings so we can
+   * learn, improve and iterate.</p>
+   *
+   * <p>The resulting reader supports {@link
+   * IndexReader#reopen}, but that call will simply forward
+   * back to this method (though this may change in the
+   * future).</p>
+   *
+   * <p>The very first time this method is called, this
+   * writer instance will make every effort to pool the
+   * readers that it opens for doing merges, applying
+   * deletes, etc.  This means additional resources (RAM,
+   * file descriptors, CPU time) will be consumed.</p>
+   *
+   * <p>For lower latency on reopening a reader, you should
+   * call {@link #setMergedSegmentWarmer} to
+   * pre-warm a newly merged segment before it's committed
+   * to the index.  This is important for minimizing
+   * index-to-search delay after a large merge.  </p>
+   *
+   * <p>If an addIndexes* call is running in another thread,
+   * then this reader will only search those segments from
+   * the foreign index that have been successfully copied
+   * over, so far</p>.
+   *
+   * <p><b>NOTE</b>: Once the writer is closed, any
+   * outstanding readers may continue to be used.  However,
+   * if you attempt to reopen any of those readers, you'll
+   * hit an {@link AlreadyClosedException}.</p>
+   *
+   * @lucene.experimental
+   *
+   * @return IndexReader that covers entire index plus all
+   * changes made so far by this IndexWriter instance
+   *
+   * @throws IOException
+   */
+  public IndexReader reopen(IndexWriter writer) throws CorruptIndexException, IOException {
+    return writer.getReader();
+  }
+
+
+  /**
    * Efficiently clones the IndexReader (sharing most
    * internal state).
    * <p>
@@ -554,7 +640,22 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentVersion(directory, CodecProvider.getDefault());
+    return getCurrentVersion(directory, CodecProvider.getDefault());
+  }
+  
+  /**
+   * Reads version number from segments files. The version number is
+   * initialized with a timestamp and then increased by one for each change of
+   * the index.
+   * 
+   * @param directory where the index resides.
+   * @param codecs the {@link CodecProvider} holding all {@link Codec}s required to open the index
+   * @return version number.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static long getCurrentVersion(Directory directory, CodecProvider codecs) throws CorruptIndexException, IOException {
+    return SegmentInfos.readCurrentVersion(directory, codecs);
   }
 
   /**
@@ -572,7 +673,27 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #getCommitUserData()
    */
   public static Map<String,String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentUserData(directory, CodecProvider.getDefault());
+    return getCommitUserData(directory,  CodecProvider.getDefault());
+  }
+  
+  
+  /**
+   * Reads commitUserData, previously passed to {@link
+   * IndexWriter#commit(Map)}, from current index
+   * segments file.  This will return null if {@link
+   * IndexWriter#commit(Map)} has never been called for
+   * this index.
+   * 
+   * @param directory where the index resides.
+   * @param codecs the {@link CodecProvider} provider holding all {@link Codec}s required to open the index
+   * @return commit userData.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @see #getCommitUserData()
+   */
+  public static Map<String, String> getCommitUserData(Directory directory, CodecProvider codecs) throws CorruptIndexException, IOException {
+    return SegmentInfos.readCurrentUserData(directory, codecs);
   }
 
   /**
@@ -714,13 +835,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /**
    * Returns <code>true</code> if an index exists at the specified directory.
-   * If the directory does not exist or if there is no index in it.
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean indexExists(Directory directory) throws IOException {
-    return SegmentInfos.getCurrentSegmentGeneration(directory) != -1;
+    try {
+      new SegmentInfos().read(directory);
+      return true;
+    } catch (IOException ioe) {
+      return false;
+    }
   }
 
   /** Returns the number of documents in this index. */
@@ -744,8 +869,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * <b>NOTE:</b> for performance reasons, this method does not check if the
    * requested document is deleted, and therefore asking for a deleted document
    * may yield unspecified results. Usually this is not required, however you
-   * can call {@link #isDeleted(int)} with the requested document ID to verify
-   * the document is not deleted.
+   * can test if the doc is deleted by checking the {@link
+   * Bits} returned from {@link MultiFields#getDeletedDocs}.
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -769,8 +894,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * <b>NOTE:</b> for performance reasons, this method does not check if the
    * requested document is deleted, and therefore asking for a deleted document
    * may yield unspecified results. Usually this is not required, however you
-   * can call {@link #isDeleted(int)} with the requested document ID to verify
-   * the document is not deleted.
+   * can test if the doc is deleted by checking the {@link
+   * Bits} returned from {@link MultiFields#getDeletedDocs}.
    * 
    * @param n Get the document at the <code>n</code><sup>th</sup> position
    * @param fieldSelector The {@link FieldSelector} to use to determine what
@@ -788,9 +913,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   // TODO (1.5): When we convert to JDK 1.5 make this Set<String>
   public abstract Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException;
   
-  /** Returns true if document <i>n</i> has been deleted */
-  public abstract boolean isDeleted(int n);
-
   /** Returns true if any documents have been deleted */
   public abstract boolean hasDeletions();
 
@@ -1119,8 +1241,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  method should return null when there are no deleted
    *  docs.
    *
+   *  The returned instance has been safely published for use by
+   *  multiple threads without additional synchronization.
    * @lucene.experimental */
-  public abstract Bits getDeletedDocs() throws IOException;
+  public abstract Bits getDeletedDocs();
 
   /**
    * Expert: return the IndexCommit that this reader has
@@ -1169,7 +1293,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
       cfr = new CompoundFileReader(dir, filename);
 
       String [] files = cfr.listAll();
-      Arrays.sort(files);   // sort the array of filename so that the output is more readable
+      ArrayUtil.quickSort(files);   // sort the array of filename so that the output is more readable
 
       for (int i = 0; i < files.length; ++i) {
         long len = cfr.fileLength(files[i]);
@@ -1223,8 +1347,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  the Directory, else this method throws {@link
    *  IndexNotFoundException}.  Note that if a commit is in
    *  progress while this method is running, that commit
-   *  may or may not be returned array.  */
-  public static Collection<IndexCommit> listCommits(Directory dir) throws IOException {
+   *  may or may not be returned.
+   *  
+   *  @return a sorted list of {@link IndexCommit}s, from oldest 
+   *  to latest. */
+  public static List<IndexCommit> listCommits(Directory dir) throws IOException {
     return DirectoryReader.listCommits(dir);
   }
 
@@ -1293,7 +1420,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
 
-  private Fields fields;
+  private volatile Fields fields;
 
   /** @lucene.internal */
   void storeFields(Fields fields) {
@@ -1303,17 +1430,5 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** @lucene.internal */
   Fields retrieveFields() {
     return fields;
-  }
-
-  private Bits storedDelDocs;
-
-  /** @lucene.internal */
-  void storeDelDocs(Bits delDocs) {
-    this.storedDelDocs = delDocs;
-  }
-
-  /** @lucene.internal */
-  Bits retrieveDelDocs() {
-    return storedDelDocs;
   }
 }

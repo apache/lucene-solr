@@ -72,4 +72,8 @@ public final class NoMergePolicy extends MergePolicy {
   @Override
   public void setIndexWriter(IndexWriter writer) {}
 
+  @Override
+  public String toString() {
+    return "NoMergePolicy";
+  }
 }

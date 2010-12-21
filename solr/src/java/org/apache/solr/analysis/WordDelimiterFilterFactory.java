@@ -16,14 +16,23 @@
  */
 
 package org.apache.solr.analysis;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.util.StrUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.io.IOException;
 
 
@@ -32,12 +41,27 @@ import java.io.IOException;
  */
 public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
-
+  public static final String TYPES = "types";
+  
   public void inform(ResourceLoader loader) {
     String wordFiles = args.get(PROTECTED_TOKENS);
     if (wordFiles != null) {  
       try {
         protectedWords = getWordSet(loader, wordFiles, false);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    String types = args.get(TYPES);
+    if (types != null) {
+      try {
+        List<String> files = StrUtils.splitFileNames( types );
+        List<String> wlist = new ArrayList<String>();
+        for( String file : files ){
+          List<String> lines = loader.getLines( file.trim() );
+          wlist.addAll( lines );
+        }
+      typeTable = parseTypes(wlist);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -55,6 +79,7 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
   int splitOnNumerics=0;
   int preserveOriginal=0;
   int stemEnglishPossessive=0;
+  byte[] typeTable = null;
 
   @Override
   public void init(Map<String, String> args) {
@@ -71,10 +96,87 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
   }
 
   public WordDelimiterFilter create(TokenStream input) {
-    return new WordDelimiterFilter(input,
+    return new WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
                                    generateWordParts, generateNumberParts,
                                    catenateWords, catenateNumbers, catenateAll,
                                    splitOnCaseChange, preserveOriginal,
                                    splitOnNumerics, stemEnglishPossessive, protectedWords);
+  }
+  
+  // source => type
+  private static Pattern typePattern = Pattern.compile( "(.*)\\s*=>\\s*(.*)\\s*$" );
+  
+  /** parses a list of MappingCharFilter style rules into a custom byte[] type table */
+  private byte[] parseTypes(List<String> rules) {
+    SortedMap<Character,Byte> typeMap = new TreeMap<Character,Byte>();
+    for( String rule : rules ){
+      Matcher m = typePattern.matcher(rule);
+      if( !m.find() )
+        throw new RuntimeException("Invalid Mapping Rule : [" + rule + "]");
+      String lhs = parseString(m.group(1).trim());
+      Byte rhs = parseType(m.group(2).trim());
+      if (lhs.length() != 1)
+        throw new RuntimeException("Invalid Mapping Rule : [" + rule + "]. Only a single character is allowed.");
+      if (rhs == null)
+        throw new RuntimeException("Invalid Mapping Rule : [" + rule + "]. Illegal type.");
+      typeMap.put(lhs.charAt(0), rhs);
+    }
+    
+    // ensure the table is always at least as big as DEFAULT_WORD_DELIM_TABLE for performance
+    byte types[] = new byte[Math.max(typeMap.lastKey()+1, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE.length)];
+    for (int i = 0; i < types.length; i++)
+      types[i] = WordDelimiterIterator.getType(i);
+    for (Map.Entry<Character,Byte> mapping : typeMap.entrySet())
+      types[mapping.getKey()] = mapping.getValue();
+    return types;
+  }
+  
+  private Byte parseType(String s) {
+    if (s.equals("LOWER"))
+      return WordDelimiterFilter.LOWER;
+    else if (s.equals("UPPER"))
+      return WordDelimiterFilter.UPPER;
+    else if (s.equals("ALPHA"))
+      return WordDelimiterFilter.ALPHA;
+    else if (s.equals("DIGIT"))
+      return WordDelimiterFilter.DIGIT;
+    else if (s.equals("ALPHANUM"))
+      return WordDelimiterFilter.ALPHANUM;
+    else if (s.equals("SUBWORD_DELIM"))
+      return WordDelimiterFilter.SUBWORD_DELIM;
+    else
+      return null;
+  }
+  
+  char[] out = new char[256];
+  
+  private String parseString(String s){
+    int readPos = 0;
+    int len = s.length();
+    int writePos = 0;
+    while( readPos < len ){
+      char c = s.charAt( readPos++ );
+      if( c == '\\' ){
+        if( readPos >= len )
+          throw new RuntimeException( "Invalid escaped char in [" + s + "]" );
+        c = s.charAt( readPos++ );
+        switch( c ) {
+          case '\\' : c = '\\'; break;
+          case 'n' : c = '\n'; break;
+          case 't' : c = '\t'; break;
+          case 'r' : c = '\r'; break;
+          case 'b' : c = '\b'; break;
+          case 'f' : c = '\f'; break;
+          case 'u' :
+            if( readPos + 3 >= len )
+              throw new RuntimeException( "Invalid escaped char in [" + s + "]" );
+            c = (char)Integer.parseInt( s.substring( readPos, readPos + 4 ), 16 );
+            readPos += 4;
+            break;
+        }
+      }
+      out[writePos++] = c;
+    }
+    return new String( out, 0, writePos );
   }
 }

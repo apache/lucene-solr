@@ -25,28 +25,23 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBooleanScorer extends LuceneTestCase
 {
-
-  public TestBooleanScorer(String name) {
-    super(name);
-  }
-
   private static final String FIELD = "category";
   
   public void testMethod() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    Directory directory = newDirectory();
 
     String[] values = new String[] { "1", "2", "3", "4" };
 
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     IndexReader ir = writer.getReader();
@@ -88,7 +83,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
     }};
-    BooleanScorer bs = new BooleanScorer(sim, 1, Arrays.asList(scorers), null);
+    BooleanScorer bs = new BooleanScorer(null, sim, 1, Arrays.asList(scorers), null, scorers.length);
     
     assertEquals("should have received 3000", 3000, bs.nextDoc());
     assertEquals("should have received NO_MORE_DOCS", DocIdSetIterator.NO_MORE_DOCS, bs.nextDoc());

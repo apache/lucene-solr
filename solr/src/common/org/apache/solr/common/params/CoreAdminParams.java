@@ -59,6 +59,12 @@ public interface CoreAdminParams
    * The directories are specified by multiple indexDir parameters. */
   public final static String INDEX_DIR = "indexDir";
 
+  /** The collection name in solr cloud */
+  public final static String COLLECTION = "collection";
+
+  /** The shard id in solr cloud */
+  public final static String SHARD = "shard";
+
   public enum CoreAdminAction {
     STATUS,  
     LOAD,

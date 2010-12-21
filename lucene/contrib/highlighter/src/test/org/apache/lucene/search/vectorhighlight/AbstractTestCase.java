@@ -44,7 +44,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class AbstractTestCase extends LuceneTestCase {
@@ -61,6 +60,8 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   protected QueryParser paB;
   
   protected static final String[] shortMVValues = {
+    "",
+    "",
     "a b c",
     "",   // empty data in multi valued field
     "d e"
@@ -84,22 +85,23 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   };
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     analyzerW = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
     analyzerB = new BigramAnalyzer();
     analyzerK = new MockAnalyzer(MockTokenizer.KEYWORD, false);
     paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
     paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
-    dir = new RAMDirectory();
+    dir = newDirectory();
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     if( reader != null ){
       reader.close();
       reader = null;
     }
+    dir.close();
     super.tearDown();
   }
 
@@ -334,7 +336,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       doc.add( new Field( F, value, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
     writer.close();
-
+    if (reader != null) reader.close();
     reader = IndexReader.open( dir, true );
   }
   
@@ -347,19 +349,26 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
     writer.close();
-
+    if (reader != null) reader.close();
     reader = IndexReader.open( dir, true );
   }
   
   protected void makeIndexShortMV() throws Exception {
-
-    //  012345
-    // "a b c"
-    //  0 1 2
     
+    //  0
+    // ""
+    //  1
     // ""
 
-    //  6789
+    //  234567
+    // "a b c"
+    //  0 1 2
+
+    //  8
+    // ""
+
+    //   111
+    //  9012
     // "d e"
     //  3 4
     make1dmfIndex( shortMVValues );

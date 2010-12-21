@@ -30,7 +30,7 @@
     that you fully re-index after changing this setting as it can affect both how text is indexed
     and queried.
   -->
-  <luceneMatchVersion>LUCENE_31</luceneMatchVersion>
+  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
 
   <!-- lib directives can be used to instruct Solr to load an Jars identified
        and use them to resolve any "plugins" specified in your solrconfig.xml or
@@ -56,7 +56,6 @@
   <!-- If a dir option (with or without a regex) is used and nothing is found
        that matches, it will be ignored
     -->
-  <lib dir="../../contrib/clustering/lib/downloads/" />
   <lib dir="../../contrib/clustering/lib/" />
   <lib dir="/total/crap/dir/ignored" /> 
   <!-- an exact path can be used to specify a specific file.  This will cause
@@ -284,9 +283,9 @@
     Parameters as required by the implementation
   </indexReaderFactory >
   -->
-  <!-- To set the setTermIndexInterval, do this: -->
+  <!-- To set the setTermIndexDivisor, do this: -->
   <!--<indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory">
-    <int name="setTermIndexInterval">12</int>
+    <int name="setTermIndexDivisor">12</int>
   </indexReaderFactory >-->
 
 
@@ -505,6 +504,7 @@
   -->
   <requestHandler name="/browse" class="solr.SearchHandler">
      <lst name="defaults">
+       <str name="echoParams">explicit</str>
 
        <!-- VelocityResponseWriter settings -->
        <str name="wt">velocity</str>
@@ -513,19 +513,40 @@
        <str name="title">Solritas</str>
 
        <!-- Query settings -->
-       <str name="defType">dismax</str>
+       <str name="defType">edismax</str>
        <str name="qf">
           text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
        </str>
        <str name="q.alt">*:*</str>
        <str name="rows">10</str>
        <str name="fl">*,score</str>
+       <str name="mlt.qf">
+         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+       </str>
+       <str name="mlt.fl">text,features,name,sku,id,manu,cat</str>
+       <int name="mlt.count">3</int>
 
        <!-- Faceting defaults -->
        <str name="facet">on</str>
        <str name="facet.field">cat</str>
        <str name="facet.field">manu_exact</str>
+       <str name="facet.query">ipod</str>
+       <str name="facet.query">GB</str>
        <str name="facet.mincount">1</str>
+       <str name="facet.pivot">cat,inStock</str>
+       <str name="facet.range">price</str>
+       <int name="facet.range.start">0</int>
+       <int name="facet.range.end">600</int>
+       <int name="facet.range.gap">50</int>
+       <str name="facet.range.other">after</str>
+       <str name="facet.date">manufacturedate_dt</str>
+       <str name="facet.date.start">NOW/YEAR-10YEARS</str>
+       <str name="facet.date.end">NOW</str>
+       <str name="facet.mincount">1</str>
+       <str name="facet.date.gap">+1YEAR</str>
+       <str name="facet.date.other">before</str>
+       <str name="facet.date.other">after</str>
+
 
        <!-- Highlighting defaults -->
        <str name="hl">on</str>
@@ -543,6 +564,9 @@
      <arr name="last-components">
        <str>spellcheck</str>
      </arr>
+     <!--
+     <str name="url-scheme">httpx</str>
+     -->
   </requestHandler>
   
 
@@ -689,7 +713,7 @@
       <str>myLastComponentName</str>
     </arr>
   -->
-
+  
    <!-- The spell check component can return a list of alternative spelling
   suggestions.  -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
@@ -702,6 +726,18 @@
       <str name="spellcheckIndexDir">./spellchecker</str>
     </lst>
 
+    <!-- a spellchecker that uses no auxiliary index
+    <lst name="spellchecker">
+      <str name="name">default</str>
+      <str name="field">name</str>
+      <str name="classname">solr.DirectSolrSpellChecker</str>
+      &lt;!&ndash; Note: this value is just for the example,
+      to correct hell to dell. In practice a value of 1
+      is highly recommended.
+       &ndash;&gt;
+      <str name="minPrefix">0</str>
+    </lst>
+    -->
     <!-- a spellchecker that uses a different distance measure
     <lst name="spellchecker">
       <str name="name">jarowinkler</str>
@@ -710,6 +746,19 @@
       <str name="spellcheckIndexDir">./spellchecker2</str>
     </lst>
      -->
+    <!-- Use an alternate comparator -->
+    <!--<lst name="spellchecker">
+      <str name="name">freq</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerFreq</str>
+      &lt;!&ndash; comparatorClass be one of:
+        1. score (default)
+        2. freq (Frequency first, then score)
+        3. A fully qualified class name
+       &ndash;&gt;
+      <str name="comparatorClass">freq</str>
+      <str name="buildOnCommit">true</str>
+    -->
 
     <!-- a file based spell checker
     <lst name="spellchecker">
@@ -792,6 +841,12 @@
            parameter name and attribute value as parameter value.
         -->
       <str name="LingoClusteringAlgorithm.desiredClusterCountBase">20</str>
+      
+      <!--
+           The language to assume for the documents. For a list of allowed values, see:
+           http://download.carrot2.org/stable/manual/#section.attribute.lingo.MultilingualClustering.defaultLanguage
+       -->
+      <str name="MultilingualClustering.defaultLanguage">ENGLISH</str>
     </lst>
     <lst name="engine">
       <str name="name">stc</str>
@@ -816,6 +871,14 @@
        <!--<int name="carrot.numDescriptions">5</int>-->
        <!-- produce sub clusters -->
        <bool name="carrot.outputSubClusters">false</bool>
+       
+       <str name="defType">edismax</str>
+       <str name="qf">
+          text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+       </str>
+       <str name="q.alt">*:*</str>
+       <str name="rows">10</str>
+       <str name="fl">*,score</str>
     </lst>     
     <arr name="last-components">
       <str>clusteringComponent</str>
@@ -978,45 +1041,68 @@
      <str name="echoHandler">true</str>
     </lst>
   </requestHandler>
+  
   <searchComponent class="solr.HighlightComponent" name="highlight">
-  <highlighting>
-   <!-- Configure the standard fragmenter -->
-   <!-- This could most likely be commented out in the "default" case -->
-   <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
-    <lst name="defaults">
-     <int name="hl.fragsize">100</int>
-    </lst>
-   </fragmenter>
+    <highlighting>
+      <!-- Configure the standard fragmenter -->
+      <!-- This could most likely be commented out in the "default" case -->
+      <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
+        <lst name="defaults">
+          <int name="hl.fragsize">100</int>
+        </lst>
+      </fragmenter>
 
-   <!-- A regular-expression-based fragmenter (f.i., for sentence extraction) -->
-   <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
-    <lst name="defaults">
-      <!-- slightly smaller fragsizes work better because of slop -->
-      <int name="hl.fragsize">70</int>
-      <!-- allow 50% slop on fragment sizes -->
-      <float name="hl.regex.slop">0.5</float>
-      <!-- a basic sentence pattern -->
-      <str name="hl.regex.pattern">[-\w ,/\n\&quot;&apos;]{20,200}</str>
-    </lst>
-   </fragmenter>
+      <!-- A regular-expression-based fragmenter (f.i., for sentence extraction) -->
+      <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
+        <lst name="defaults">
+          <!-- slightly smaller fragsizes work better because of slop -->
+          <int name="hl.fragsize">70</int>
+          <!-- allow 50% slop on fragment sizes -->
+          <float name="hl.regex.slop">0.5</float>
+          <!-- a basic sentence pattern -->
+          <str name="hl.regex.pattern">[-\w ,/\n\&quot;&apos;]{20,200}</str>
+        </lst>
+      </fragmenter>
 
-   <!-- Configure the standard formatter -->
-   <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
-    <lst name="defaults">
-     <str name="hl.simple.pre"><![CDATA[<em>]]></str>
-     <str name="hl.simple.post"><![CDATA[</em>]]></str>
-    </lst>
-   </formatter>
+      <!-- Configure the standard formatter -->
+      <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
+        <lst name="defaults">
+          <str name="hl.simple.pre"><![CDATA[<em>]]></str>
+          <str name="hl.simple.post"><![CDATA[</em>]]></str>
+        </lst>
+      </formatter>
 
-   <!-- Configure the standard fragListBuilder -->
-   <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
+      <!-- Configure the standard encoder -->
+      <encoder name="html" class="org.apache.solr.highlight.HtmlEncoder" default="true"/>
 
-   <!-- Configure the single fragListBuilder -->
-   <fragListBuilder name="single" class="org.apache.solr.highlight.SingleFragListBuilder"/>
+      <!-- Configure the standard fragListBuilder -->
+      <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
 
-   <!-- multi-colored tag FragmentsBuilder -->
-   <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
-  </highlighting>
+      <!-- Configure the single fragListBuilder -->
+      <fragListBuilder name="single" class="org.apache.solr.highlight.SingleFragListBuilder"/>
+
+      <!-- default tag FragmentsBuilder -->
+      <fragmentsBuilder name="default" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true">
+        <!-- 
+        <lst name="defaults">
+          <str name="hl.multiValuedSeparatorChar">/</str>
+        </lst>
+        -->
+      </fragmentsBuilder>
+
+      <!-- multi-colored tag FragmentsBuilder -->
+      <fragmentsBuilder name="colored" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder">
+        <lst name="defaults">
+          <str name="hl.tag.pre"><![CDATA[
+               <b style="background:yellow">,<b style="background:lawgreen">,
+               <b style="background:aquamarine">,<b style="background:magenta">,
+               <b style="background:palegreen">,<b style="background:coral">,
+               <b style="background:wheat">,<b style="background:khaki">,
+               <b style="background:lime">,<b style="background:deepskyblue">]]></str>
+          <str name="hl.tag.post"><![CDATA[</b>]]></str>
+        </lst>
+      </fragmentsBuilder>
+    </highlighting>
   </searchComponent>
 
   <!-- An example dedup update processor that creates the "id" field on the fly

@@ -214,6 +214,19 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
+  /** Add field(s) for pivot computation.
+   * 
+   * pivot fields are comma separated
+   * 
+   * @param fields Array of field names from the IndexSchema
+   * @return this
+   */
+  public SolrQuery addFacetPivotField(String ... fields) {
+    add(FacetParams.FACET_PIVOT, fields);
+    this.set(FacetParams.FACET, true);
+    return this;
+  }
+
   /** get the facet fields
    * 
    * @return string array of facet fields or null if not set/empty
@@ -351,6 +364,7 @@ public class SolrQuery extends ModifiableSolrParams
   /**
    * @deprecated use {@link #setFacetMissing(Boolean)}
    */
+  @Deprecated
   public SolrQuery setMissing(String fld) {
     return setFacetMissing(Boolean.valueOf(fld));
   }

@@ -17,37 +17,36 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import java.util.Collection;
-import java.util.Set;
-import java.util.ArrayList;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ToStringUtils;
 
-/** Matches spans near the beginning of a field. */
-public class SpanFirstQuery extends SpanQuery implements Cloneable {
-  private SpanQuery match;
-  private int end;
+import java.io.IOException;
+
+/** Matches spans near the beginning of a field.
+ * <p/> 
+ * This class is a simple extension of {@link SpanPositionRangeQuery} in that it assumes the
+ * start to be zero and only checks the end boundary.
+ *
+ *
+ *  */
+public class SpanFirstQuery extends SpanPositionRangeQuery {
 
   /** Construct a SpanFirstQuery matching spans in <code>match</code> whose end
    * position is less than or equal to <code>end</code>. */
   public SpanFirstQuery(SpanQuery match, int end) {
-    this.match = match;
-    this.end = end;
+    super(match, 0, end);
   }
 
-  /** Return the SpanQuery whose matches are filtered. */
-  public SpanQuery getMatch() { return match; }
-
-  /** Return the maximum end position permitted in a match. */
-  public int getEnd() { return end; }
-
   @Override
-  public String getField() { return match.getField(); }
+  protected AcceptStatus acceptPosition(Spans spans) throws IOException {
+    assert spans.start() != spans.end();
+    if (spans.start() >= end)
+      return AcceptStatus.NO_AND_ADVANCE;
+    else if (spans.end() <= end)
+      return AcceptStatus.YES;
+    else
+      return AcceptStatus.NO;
+  }
+
 
   @Override
   public String toString(String field) {
@@ -60,88 +59,12 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
-  
+
   @Override
   public Object clone() {
     SpanFirstQuery spanFirstQuery = new SpanFirstQuery((SpanQuery) match.clone(), end);
     spanFirstQuery.setBoost(getBoost());
     return spanFirstQuery;
-  }
-  
-  @Override
-  public void extractTerms(Set<Term> terms) {
-	    match.extractTerms(terms);
-  }
-
-  @Override
-  public Spans getSpans(final IndexReader reader) throws IOException {
-    return new Spans() {
-        private Spans spans = match.getSpans(reader);
-
-        @Override
-        public boolean next() throws IOException {
-          while (spans.next()) {                  // scan to next match
-            if (end() <= end)
-              return true;
-          }
-          return false;
-        }
-
-        @Override
-        public boolean skipTo(int target) throws IOException {
-          if (!spans.skipTo(target))
-            return false;
-
-          return spans.end() <= end || next();
-
-        }
-
-        @Override
-        public int doc() { return spans.doc(); }
-        @Override
-        public int start() { return spans.start(); }
-        @Override
-        public int end() { return spans.end(); }
-
-      // TODO: Remove warning after API has been finalized
-      @Override
-      public Collection<byte[]> getPayload() throws IOException {
-        ArrayList<byte[]> result = null;
-        if (spans.isPayloadAvailable()) {
-          result = new ArrayList<byte[]>(spans.getPayload());
-        }
-        return result;//TODO: any way to avoid the new construction?
-      }
-
-      // TODO: Remove warning after API has been finalized
-      @Override
-      public boolean isPayloadAvailable() {
-        return spans.isPayloadAvailable();
-      }
-
-      @Override
-      public String toString() {
-          return "spans(" + SpanFirstQuery.this.toString() + ")";
-        }
-
-      };
-  }
-
-  @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    SpanFirstQuery clone = null;
-
-    SpanQuery rewritten = (SpanQuery) match.rewrite(reader);
-    if (rewritten != match) {
-      clone = (SpanFirstQuery) this.clone();
-      clone.match = rewritten;
-    }
-
-    if (clone != null) {
-      return clone;                        // some clauses rewrote
-    } else {
-      return this;                         // no clauses rewrote
-    }
   }
 
   @Override

@@ -22,26 +22,21 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanQueryFilter extends LuceneTestCase {
 
-
-  public TestSpanQueryFilter(String s) {
-    super(s);
-  }
-
   public void testFilterWorks() throws Exception {
-    Directory dir = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
-      document.add(new Field("field", English.intToEnglish(i) + " equals " + English.intToEnglish(i),
+      document.add(newField("field", English.intToEnglish(i) + " equals " + English.intToEnglish(i),
               Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(document);
     }
@@ -50,7 +45,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
 
     SpanTermQuery query = new SpanTermQuery(new Term("field", English.intToEnglish(10).trim()));
     SpanQueryFilter filter = new SpanQueryFilter(query);
-    SpanFilterResult result = filter.bitSpans(reader);
+    SpanFilterResult result = filter.bitSpans(new SlowMultiReaderWrapper(reader));
     DocIdSet docIdSet = result.getDocIdSet();
     assertTrue("docIdSet is null and it shouldn't be", docIdSet != null);
     assertContainsDocId("docIdSet doesn't contain docId 10", docIdSet, 10);

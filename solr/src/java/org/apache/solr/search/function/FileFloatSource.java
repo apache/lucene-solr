@@ -211,8 +211,6 @@ public class FileFloatSource extends ValueSource {
 
     String idName = StringHelper.intern(ffs.keyField.getName());
     FieldType idType = ffs.keyField.getType();
-    boolean sorted=true;   // assume sorted until we discover it's not
-
 
     // warning: lucene's termEnum.skipTo() is not optimized... it simply does a next()
     // because of this, simply ask the reader for a new termEnum rather than
@@ -222,38 +220,25 @@ public class FileFloatSource extends ValueSource {
     int notFoundCount=0;
     int otherErrors=0;
 
-    // Number of times to try termEnum.next() before resorting to skip
-    int numTimesNext = 10;
-
     char delimiter='=';
 
-    BytesRef lastVal=new BytesRef("\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF");
     BytesRef internalKey = new BytesRef();
-    BytesRef prevKey=new BytesRef();
-    BytesRef tmp;
 
     try {
       TermsEnum termsEnum = MultiFields.getTerms(reader, idName).iterator();
       DocsEnum docsEnum = null;
-      BytesRef t = termsEnum.next();
-      if (t==null) t=lastVal;
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+
+      // removing deleted docs shouldn't matter
+      // final Bits delDocs = MultiFields.getDeletedDocs(reader);
 
       for (String line; (line=r.readLine())!=null;) {
         int delimIndex = line.indexOf(delimiter);
         if (delimIndex < 0) continue;
 
         int endIndex = line.length();
-        /* EOLs should already be removed for BufferedReader.readLine()
-        for(int endIndex = line.length();endIndex>delimIndex+1; endIndex--) {
-          char ch = line.charAt(endIndex-1);
-          if (ch!='\n' && ch!='\r') break;
-        }
-        */
         String key = line.substring(0, delimIndex);
         String val = line.substring(delimIndex+1, endIndex);
 
-        tmp = prevKey; prevKey=internalKey; internalKey=tmp;
         idType.readableToIndexed(key, internalKey);
 
         float fval;
@@ -262,71 +247,27 @@ public class FileFloatSource extends ValueSource {
         } catch (Exception e) {
           if (++otherErrors<=10) {
             SolrCore.log.error( "Error loading external value source + fileName + " + e
-              + (otherErrors<10 ? "" : "\tSkipping future errors for this file.")                    
+              + (otherErrors<10 ? "" : "\tSkipping future errors for this file.")
             );
           }
           continue;  // go to next line in file.. leave values as default.
         }
 
-        if (sorted) {
-          // make sure this key is greater than the previous key
-          sorted = internalKey.compareTo(prevKey) >= 0;
-
-          if (sorted) {
-            int countNext = 0;
-            for(;;) {
-              int cmp = internalKey.compareTo(t);
-              if (cmp == 0) {
-                docsEnum = termsEnum.docs(delDocs, docsEnum);
-                int doc;
-                while ((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
-                  vals[doc] = fval;
-                }
-                break;
-              } else if (cmp < 0) {
-                // term enum has already advanced past current key... we didn't find it.
-                if (notFoundCount<10) {  // collect first 10 not found for logging
-                  notFound.add(key);
-                }
-                notFoundCount++;
-                break;
-              } else {
-                // termEnum is less than our current key, so skip ahead
-
-                // try next() a few times to see if we hit or pass the target.
-                // Lucene's termEnum.skipTo() is currently unoptimized (it just does next())
-                // so the best thing is to simply ask the reader for a new termEnum(target)
-                // if we really need to skip.
-                if (++countNext > numTimesNext) {
-                  termsEnum.seek(internalKey);
-                  t = termsEnum.term();
-                } else {
-                  t = termsEnum.next();
-                }
-
-                if (t==null) t = lastVal;
-              }
-            } // end for(;;)
+        if (termsEnum.seek(internalKey, false) != TermsEnum.SeekStatus.FOUND) {
+          if (notFoundCount<10) {  // collect first 10 not found for logging
+            notFound.add(key);
           }
+          notFoundCount++;
+          continue;
         }
 
-        if (!sorted) {
-          TermsEnum.SeekStatus result = termsEnum.seek(internalKey);
-          t = termsEnum.term();
-          if (result == TermsEnum.SeekStatus.FOUND) {
-            docsEnum = termsEnum.docs(delDocs, docsEnum);
-            int doc;
-            while ((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
-              vals[doc] = fval;
-            }
-          } else {
-            if (notFoundCount<10) {  // collect first 10 not found for logging
-              notFound.add(key);
-            }
-            notFoundCount++;
-          }
+        docsEnum = termsEnum.docs(null, docsEnum);
+        int doc;
+        while ((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+          vals[doc] = fval;
         }
       }
+
     } catch (IOException e) {
       // log, use defaults
       SolrCore.log.error("Error loading external value source: " +e);

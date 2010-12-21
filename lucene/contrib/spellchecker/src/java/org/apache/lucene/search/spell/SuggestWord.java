@@ -1,5 +1,7 @@
 package org.apache.lucene.search.spell;
 
+import java.util.Comparator;
+
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,10 +22,13 @@ package org.apache.lucene.search.spell;
 
 /**
  *  SuggestWord, used in suggestSimilar method in SpellChecker class.
+ * <p/>
+ * Default sort is first by score, then by frequency.
  * 
  *
  */
-final class SuggestWord {
+public final class SuggestWord{
+  
   /**
    * the score of the word
    */
@@ -39,23 +44,4 @@ final class SuggestWord {
    */
   public String string;
 
-  public final int compareTo(SuggestWord a) {
-    // first criteria: the edit distance
-    if (score > a.score) {
-      return 1;
-    }
-    if (score < a.score) {
-      return -1;
-    }
-
-    // second criteria (if first criteria is equal): the popularity
-    if (freq > a.freq) {
-      return 1;
-    }
-
-    if (freq < a.freq) {
-      return -1;
-    }
-    return 0;
-  }
 }

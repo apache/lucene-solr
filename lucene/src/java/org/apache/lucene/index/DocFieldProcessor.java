@@ -38,7 +38,7 @@ import org.apache.lucene.document.Fieldable;
 
 final class DocFieldProcessor extends DocConsumer {
 
-  final FieldInfos fieldInfos = new FieldInfos();
+  final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
 
@@ -51,7 +51,7 @@ final class DocFieldProcessor extends DocConsumer {
   int hashMask = 1;
   int totalFieldCount;
 
-  
+
   float docBoost;
   int fieldGen;
   final DocumentsWriterPerThread.DocState docState;
@@ -60,6 +60,7 @@ final class DocFieldProcessor extends DocConsumer {
   public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
     this.docState = docWriter.docState;
     this.consumer = consumer;
+    fieldInfos = docWriter.getFieldInfos();
     consumer.setFieldInfos(fieldInfos);
     fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
   }
@@ -108,7 +109,7 @@ final class DocFieldProcessor extends DocConsumer {
   public boolean freeRAM() {
     return consumer.freeRAM();
   }
-  
+
   public Collection<DocFieldConsumerPerField> fields() {
     Collection<DocFieldConsumerPerField> fields = new HashSet<DocFieldConsumerPerField>();
     for(int i=0;i<fieldHash.length;i++) {
@@ -193,7 +194,7 @@ final class DocFieldProcessor extends DocConsumer {
     final Document doc = docState.doc;
 
     fieldCount = 0;
-    
+
     final int thisFieldGen = fieldGen++;
 
     final List<Fieldable> docFields = doc.getFields();
@@ -214,7 +215,7 @@ final class DocFieldProcessor extends DocConsumer {
       while(fp != null && !fp.fieldInfo.name.equals(fieldName)) {
         fp = fp.next;
       }
-        
+
       if (fp == null) {
 
         // TODO FI: we need to genericize the "flags" that a
@@ -238,7 +239,7 @@ final class DocFieldProcessor extends DocConsumer {
                             field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
                             field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
       }
-      
+
       if (thisFieldGen != fp.lastGen) {
 
         // First time we're seeing this field for this doc
@@ -254,7 +255,7 @@ final class DocFieldProcessor extends DocConsumer {
         fields[fieldCount++] = fp;
         fp.lastGen = thisFieldGen;
       }
-      
+
       fp.addField(field);
 
       if (field.isStored()) {
@@ -274,11 +275,11 @@ final class DocFieldProcessor extends DocConsumer {
       fields[i].consumer.processFields(fields[i].fields, fields[i].fieldCount);
 
     if (docState.maxTermPrefix != null && docState.infoStream != null) {
-      docState.infoStream.println("WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriterRAMAllocator.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'"); 
+      docState.infoStream.println("WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'");
       docState.maxTermPrefix = null;
     }
   }
-  
+
   @Override
   void finishDocument() throws IOException {
     try {

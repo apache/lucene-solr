@@ -23,6 +23,7 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -159,7 +160,7 @@ public class CompoundFileReader extends Directory {
         id = IndexFileNames.stripSegmentName(id);
         FileEntry entry = entries.get(id);
         if (entry == null)
-            throw new IOException("No sub-file with id " + id + " found");
+          throw new IOException("No sub-file with id " + id + " found (files: " + entries.keySet() + ")");
 
         return new CSIndexInput(stream, entry.offset, entry.length, readBufferSize);
     }
@@ -225,6 +226,10 @@ public class CompoundFileReader extends Directory {
     public IndexOutput createOutput(String name)
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void sync(Collection<String> names) throws IOException {
     }
 
     /** Not implemented
@@ -303,6 +308,22 @@ public class CompoundFileReader extends Directory {
           return length;
         }
 
+        @Override
+        public void copyBytes(IndexOutput out, long numBytes) throws IOException {
+          // Copy first whatever is in the buffer
+          numBytes -= flushBuffer(out, numBytes);
+          
+          // If there are more bytes left to copy, delegate the copy task to the
+          // base IndexInput, in case it can do an optimized copy.
+          if (numBytes > 0) {
+            long start = getFilePointer();
+            if (start + numBytes > length) {
+              throw new IOException("read past EOF");
+            }
+            base.seek(fileOffset + start);
+            base.copyBytes(out, numBytes);
+          }
+        }
 
     }
     

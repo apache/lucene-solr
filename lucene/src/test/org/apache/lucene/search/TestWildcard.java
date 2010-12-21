@@ -17,31 +17,30 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * TestWildcard tests the '*' and '?' wildcard characters.
  */
 public class TestWildcard
     extends LuceneTestCase {
-  private Random random;
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
   }
 
   public void testEquals() {
@@ -70,7 +69,7 @@ public class TestWildcard
    * a ConstantScoreQuery if the WildcardQuery had a ConstantScore rewriteMethod.
    */
   public void testTermWithoutWildcard() throws IOException {
-      RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
+      Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
       IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
       MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
@@ -99,13 +98,15 @@ public class TestWildcard
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
       assertEquals(q.getBoost(), wq.getBoost());
+      searcher.close();
+      indexStore.close();
   }
   
   /**
    * Tests if a WildcardQuery with an empty term is rewritten to an empty BooleanQuery
    */
   public void testEmptyTerm() throws IOException {
-    RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
+    Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
@@ -114,6 +115,8 @@ public class TestWildcard
     Query q = searcher.rewrite(wq);
     assertTrue(q instanceof BooleanQuery);
     assertEquals(0, ((BooleanQuery) q).clauses().size());
+    searcher.close();
+    indexStore.close();
   }
   
   /**
@@ -122,18 +125,20 @@ public class TestWildcard
    * preserved.
    */
   public void testPrefixTerm() throws IOException {
-    RAMDirectory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
+    Directory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
-    
-    assertTrue(wq.getTermsEnum(searcher.getIndexReader()) instanceof PrefixTermsEnum);
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
+    assertTrue(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
     
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
-    assertFalse(wq.getTermsEnum(searcher.getIndexReader()) instanceof PrefixTermsEnum);
-    assertFalse(wq.getTermsEnum(searcher.getIndexReader()) instanceof AutomatonTermsEnum);
+    assertFalse(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
+    assertFalse(wq.getTermsEnum(terms) instanceof AutomatonTermsEnum);
+    searcher.close();
+    indexStore.close();
   }
 
   /**
@@ -141,7 +146,7 @@ public class TestWildcard
    */
   public void testAsterisk()
       throws IOException {
-    RAMDirectory indexStore = getIndexStore("body", new String[]
+    Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
     Query query1 = new TermQuery(new Term("body", "metal"));
@@ -171,6 +176,8 @@ public class TestWildcard
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tall")), 0);
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal")), 1);
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal*")), 2);
+    searcher.close();
+    indexStore.close();
   }
 
   /**
@@ -180,7 +187,7 @@ public class TestWildcard
    */
   public void testQuestionmark()
       throws IOException {
-    RAMDirectory indexStore = getIndexStore("body", new String[]
+    Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals", "mXtals", "mXtXls"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
     Query query1 = new WildcardQuery(new Term("body", "m?tal"));
@@ -196,15 +203,49 @@ public class TestWildcard
     assertMatches(searcher, query4, 3);
     assertMatches(searcher, query5, 0);
     assertMatches(searcher, query6, 1); // Query: 'meta??' matches 'metals' not 'metal'
+    searcher.close();
+    indexStore.close();
   }
 
-  private RAMDirectory getIndexStore(String field, String[] contents)
+  /**
+   * Tests if wildcard escaping works
+   */
+  public void testEscapes() throws Exception {
+    Directory indexStore = getIndexStore("field", 
+        new String[]{"foo*bar", "foo??bar", "fooCDbar", "fooSOMETHINGbar", "foo\\"});
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+
+    // without escape: matches foo??bar, fooCDbar, foo*bar, and fooSOMETHINGbar
+    WildcardQuery unescaped = new WildcardQuery(new Term("field", "foo*bar"));
+    assertMatches(searcher, unescaped, 4);
+    
+    // with escape: only matches foo*bar
+    WildcardQuery escaped = new WildcardQuery(new Term("field", "foo\\*bar"));
+    assertMatches(searcher, escaped, 1);
+    
+    // without escape: matches foo??bar and fooCDbar
+    unescaped = new WildcardQuery(new Term("field", "foo??bar"));
+    assertMatches(searcher, unescaped, 2);
+    
+    // with escape: matches foo??bar only
+    escaped = new WildcardQuery(new Term("field", "foo\\?\\?bar"));
+    assertMatches(searcher, escaped, 1);
+    
+    // check escaping at end: lenient parse yields "foo\"
+    WildcardQuery atEnd = new WildcardQuery(new Term("field", "foo\\"));
+    assertMatches(searcher, atEnd, 1);
+    
+    searcher.close();
+    indexStore.close();
+  }
+  
+  private Directory getIndexStore(String field, String[] contents)
       throws IOException {
-    RAMDirectory indexStore = new RAMDirectory();
+    Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
-      doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();
@@ -256,11 +297,11 @@ public class TestWildcard
     };
 
     // prepare the index
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field,docs[i],Store.NO,Index.ANALYZED));
+      doc.add(newField(field,docs[i],Store.NO,Index.ANALYZED));
       iw.addDocument(doc);
     }
     iw.close();
@@ -312,5 +353,6 @@ public class TestWildcard
     }
 
     searcher.close();
+    dir.close();
   }
 }

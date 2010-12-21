@@ -29,11 +29,9 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -61,9 +59,8 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
 		Document doc = getDocumentFromString(xml);
 		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
-
-		RAMDirectory ramDir = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+		Directory ramDir = newDirectory();
+		IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
 		writer.commit();
 		try
 		{
@@ -81,6 +78,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		{
 			writer.commit();
 			writer.close();
+			ramDir.close();
 		}
 	}
 

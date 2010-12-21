@@ -1,5 +1,7 @@
 package org.apache.lucene.search.payloads;
 
+import java.io.IOException;
+import org.apache.lucene.search.Explanation;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -35,6 +37,14 @@ public class AveragePayloadFunction extends PayloadFunction{
   public float docScore(int docId, String field, int numPayloadsSeen, float payloadScore) {
     return numPayloadsSeen > 0 ? (payloadScore / numPayloadsSeen) : 1;
   }
+  @Override
+  public Explanation explain(int doc, int numPayloadsSeen, float payloadScore) {
+      Explanation payloadBoost = new Explanation();
+      float avgPayloadScore = (numPayloadsSeen > 0 ? (payloadScore / numPayloadsSeen) : 1);
+      payloadBoost.setValue(avgPayloadScore);
+      payloadBoost.setDescription("AveragePayloadFunction(...)");
+      return payloadBoost;
+  } 
 
   @Override
   public int hashCode() {

@@ -4,7 +4,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,14 +37,6 @@ public class TestBinaryDocument extends LuceneTestCase {
     Fieldable binaryFldStored = new Field("binaryStored", binaryValStored.getBytes());
     Fieldable stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
 
-    try {
-      // binary fields with store off are not allowed
-      new Field("fail", binaryValStored.getBytes(), Field.Store.NO);
-      fail();
-    }
-    catch (IllegalArgumentException iae) {
-    }
-    
     Document doc = new Document();
     
     doc.add(binaryFldStored);
@@ -55,8 +47,8 @@ public class TestBinaryDocument extends LuceneTestCase {
     assertEquals(2, doc.fields.size());
     
     /** add the doc to a ram index */
-    MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 
@@ -94,8 +86,8 @@ public class TestBinaryDocument extends LuceneTestCase {
     doc.add(stringFldCompressed);
     
     /** add the doc to a ram index */
-    MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 

@@ -17,8 +17,8 @@ package org.apache.lucene.analysis.fa;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 /**
  * Test the Persian Analyzer
@@ -215,9 +215,8 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * Test that custom stopwords work, and are not case-sensitive.
    */
   public void testCustomStopwords() throws Exception {
-    PersianAnalyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT, new String[] { "the", "and", "a" });
+    PersianAnalyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT, asSet("the", "and", "a"));
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }
-
 }

@@ -101,7 +101,7 @@ public final class Term implements Comparable<Term>, java.io.Serializable {
    * Therefore the bytes should not be modified after construction, for
    * example, you should clone a copy rather than pass reused bytes from
    * a TermsEnum.
-   * @param text The bytes of the new term (field is implicitly same as this Term instance)
+   * @param bytes The bytes of the new term (field is implicitly same as this Term instance)
    * @return A new Term
    */
   public Term createTerm(BytesRef bytes)
@@ -168,7 +168,7 @@ public final class Term implements Comparable<Term>, java.io.Serializable {
     BytesRef.getUTF8SortedAsUTF16Comparator();
 
   /** 
-   * @deprecated For internal backwards compatibility use only
+   * @deprecated (4.0) For internal backwards compatibility use only
    * @lucene.internal
    */
   @Deprecated

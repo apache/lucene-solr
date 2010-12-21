@@ -17,15 +17,8 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Iterator;
+import java.util.*;
 
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 
@@ -167,7 +160,7 @@ public class TestCharArraySet extends LuceneTestCase {
     }
     
     try{
-      set.addAll(Arrays.asList(new String[]{NOT_IN_SET}));  
+      set.addAll(Arrays.asList(NOT_IN_SET));
       fail("Modified unmodifiable set");
     }catch (UnsupportedOperationException e) {
       // expected
@@ -258,7 +251,7 @@ public class TestCharArraySet extends LuceneTestCase {
   }
   
   /**
-   * @deprecated remove this test when lucene 3.0 "broken unicode 4" support is
+   * @deprecated (3.1) remove this test when lucene 3.0 "broken unicode 4" support is
    *             no longer needed.
    */
   @Deprecated
@@ -290,7 +283,7 @@ public class TestCharArraySet extends LuceneTestCase {
   }
 
   /**
-   * @deprecated remove this test when lucene 3.0 "broken unicode 4" support is
+   * @deprecated (3.1) remove this test when lucene 3.0 "broken unicode 4" support is
    *             no longer needed.
    */
   @Deprecated
@@ -343,9 +336,8 @@ public class TestCharArraySet extends LuceneTestCase {
     setCaseSensitive.addAll(Arrays.asList(TEST_STOP_WORDS));
     setCaseSensitive.add(Integer.valueOf(1));
 
-    // This should use the deprecated methods, because it checks a bw compatibility.
-    CharArraySet copy = CharArraySet.copy(setIngoreCase);
-    CharArraySet copyCaseSens = CharArraySet.copy(setCaseSensitive);
+    CharArraySet copy = CharArraySet.copy(TEST_VERSION_CURRENT, setIngoreCase);
+    CharArraySet copyCaseSens = CharArraySet.copy(TEST_VERSION_CURRENT, setCaseSensitive);
 
     assertEquals(setIngoreCase.size(), copy.size());
     assertEquals(setCaseSensitive.size(), copy.size());
@@ -500,32 +492,6 @@ public class TestCharArraySet extends LuceneTestCase {
       set.contains((Object) null);
       fail("null value must raise NPE");
     } catch (NullPointerException e) {}
-  }
-  
-  @Deprecated @SuppressWarnings("unchecked")
-  public void testIterator() {
-    HashSet<String> hset = new HashSet<String>();
-    hset.addAll(Arrays.asList(TEST_STOP_WORDS));
-
-    assertTrue("in 3.0 version, iterator should be CharArraySetIterator",
-      ((Iterator) CharArraySet.copy(Version.LUCENE_30, hset).iterator()) instanceof CharArraySet.CharArraySetIterator);
-
-    CharArraySet set = CharArraySet.copy(TEST_VERSION_CURRENT, hset);
-    assertFalse("in current version, iterator should not be CharArraySetIterator",
-      ((Iterator) set.iterator()) instanceof CharArraySet.CharArraySetIterator);
-    
-    Iterator<String> it = set.stringIterator();
-    assertTrue(it instanceof CharArraySet.CharArraySetIterator);
-    while (it.hasNext()) {
-      // as the set returns String instances, this must work:
-      assertTrue(hset.contains(it.next()));
-      try {
-        it.remove();
-        fail("remove() should not work on CharArraySetIterator");
-      } catch (UnsupportedOperationException uoe) {
-        // pass
-      }
-    }
   }
   
   public void testToString() {

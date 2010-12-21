@@ -31,7 +31,6 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDocIdSet extends LuceneTestCase {
@@ -101,10 +100,10 @@ public class TestDocIdSet extends LuceneTestCase {
   public void testNullDocIdSet() throws Exception {
     // Tests that if a Filter produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
-    Directory dir = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(new Field("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

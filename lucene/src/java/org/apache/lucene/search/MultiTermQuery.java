@@ -19,20 +19,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.PriorityQueue;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.queryParser.QueryParser; // for javadoc
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * An abstract {@link Query} that matches documents
@@ -40,7 +33,7 @@ import org.apache.lucene.util.PagedBytes;
  * FilteredTermsEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getTermsEnum} to provide a {@link
+ * it and define {@link #getTermsEnum(IndexReader,AttributeSource)} to provide a {@link
  * FilteredTermsEnum} that iterates through the terms to be
  * matched.
  *
@@ -71,94 +64,10 @@ public abstract class MultiTermQuery extends Query {
   protected final String field;
   protected RewriteMethod rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   transient int numberOfTerms = 0;
-  
-  /** Add this {@link Attribute} to a {@link TermsEnum} returned by {@link #getTermsEnum}
-   * and update the boost on each returned term. This enables to control the boost factor
-   * for each matching term in {@link #SCORING_BOOLEAN_QUERY_REWRITE} or
-   * {@link TopTermsBooleanQueryRewrite} mode.
-   * {@link FuzzyQuery} is using this to take the edit distance into account.
-   */
-  public static interface BoostAttribute extends Attribute {
-    /** Sets the boost in this attribute */
-    public void setBoost(float boost);
-    /** Retrieves the boost, default is {@code 1.0f}. */
-    public float getBoost();
-    /** Sets the maximum boost for terms that would never get
-     * into the priority queue of {@link MultiTermQuery.TopTermsBooleanQueryRewrite}.
-     * This value is not changed by {@link AttributeImpl#clear}
-     * and not used in {@code equals()} and {@code hashCode()}.
-     * Do not change the value in the {@link TermsEnum}!
-     */
-    public void setMaxNonCompetitiveBoost(float maxNonCompetitiveBoost);
-    /** Retrieves the maximum boost that is not competitive,
-     * default is megative infinity. You can use this boost value
-     * as a hint when writing the {@link TermsEnum}.
-     */
-    public float getMaxNonCompetitiveBoost();
-  }
-
-  /** Implementation class for {@link BoostAttribute}. */
-  public static final class BoostAttributeImpl extends AttributeImpl implements BoostAttribute {
-    private float boost = 1.0f, maxNonCompetitiveBoost = Float.NEGATIVE_INFINITY;
-  
-    public void setBoost(float boost) {
-      this.boost = boost;
-    }
-    
-    public float getBoost() {
-      return boost;
-    }
-  
-    public void setMaxNonCompetitiveBoost(float maxNonCompetitiveBoost) {
-      this.maxNonCompetitiveBoost = maxNonCompetitiveBoost;
-    }
-    
-    public float getMaxNonCompetitiveBoost() {
-      return maxNonCompetitiveBoost;
-    }
-
-    @Override
-    public void clear() {
-      boost = 1.0f;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      if (this == other)
-        return true;
-      if (other instanceof BoostAttributeImpl)
-        return ((BoostAttributeImpl) other).boost == boost;
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return Float.floatToIntBits(boost);
-    }
-    
-    @Override
-    public void copyTo(AttributeImpl target) {
-      ((BoostAttribute) target).setBoost(boost);
-    }
-  }
 
   /** Abstract class that defines how the query is rewritten. */
   public static abstract class RewriteMethod implements Serializable {
     public abstract Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException;
-  }
-
-  private static final class ConstantScoreFilterRewrite extends RewriteMethod {
-    @Override
-    public Query rewrite(IndexReader reader, MultiTermQuery query) {
-      Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
-      result.setBoost(query.getBoost());
-      return result;
-    }
-
-    // Make sure we are still a singleton even after deserializing
-    protected Object readResolve() {
-      return CONSTANT_SCORE_FILTER_REWRITE;
-    }
   }
 
   /** A rewrite method that first creates a private Filter,
@@ -173,80 +82,19 @@ public abstract class MultiTermQuery extends Query {
    *  exception.
    *
    *  @see #setRewriteMethod */
-  public final static RewriteMethod CONSTANT_SCORE_FILTER_REWRITE = new ConstantScoreFilterRewrite();
-
-  private abstract static class BooleanQueryRewrite extends RewriteMethod {
-  
-    protected final int collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
-      final Fields fields = MultiFields.getFields(reader);
-      if (fields == null) {
-        // reader has no fields
-        return 0;
-      }
-
-      final Terms terms = fields.terms(query.field);
-      if (terms == null) {
-        // field does not exist
-        return 0;
-      }
-
-      final TermsEnum termsEnum = query.getTermsEnum(reader);
-      assert termsEnum != null;
-
-      if (termsEnum == TermsEnum.EMPTY)
-        return 0;
-      final BoostAttribute boostAtt =
-        termsEnum.attributes().addAttribute(BoostAttribute.class);
-      collector.boostAtt = boostAtt;
-      int count = 0;
-      BytesRef bytes;
-      while ((bytes = termsEnum.next()) != null) {
-        if (collector.collect(bytes, boostAtt.getBoost())) {
-          count++;
-        } else {
-          break;
-        }
-      }
-      collector.boostAtt = null;
-      return count;
-    }
-    
-    protected static abstract class TermCollector {
-      private BoostAttribute boostAtt = null;
-    
-      /** return false to stop collecting */
-      public abstract boolean collect(BytesRef bytes, float boost) throws IOException;
-      
-      /** set the minimum boost as a hint for the term producer */
-      protected final void setMaxNonCompetitiveBoost(float maxNonCompetitiveBoost) {
-        assert boostAtt != null;
-        boostAtt.setMaxNonCompetitiveBoost(maxNonCompetitiveBoost);
-      }
-    }
-  }
-  
-  private static class ScoringBooleanQueryRewrite extends BooleanQueryRewrite {
+  public static final RewriteMethod CONSTANT_SCORE_FILTER_REWRITE = new RewriteMethod() {
     @Override
-    public Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
-      final BooleanQuery result = new BooleanQuery(true);
-      final Term placeholderTerm = new Term(query.field);
-      query.incTotalNumberOfTerms(collectTerms(reader, query, new TermCollector() {
-        public boolean collect(BytesRef bytes, float boost) {
-          // add new TQ, we must clone the term, else it may get overwritten!
-          TermQuery tq = new TermQuery(placeholderTerm.createTerm(new BytesRef(bytes)));
-          tq.setBoost(query.getBoost() * boost); // set the boost
-          result.add(tq, BooleanClause.Occur.SHOULD); // add to query
-          return true;
-        }
-      }));
+    public Query rewrite(IndexReader reader, MultiTermQuery query) {
+      Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
+      result.setBoost(query.getBoost());
       return result;
     }
 
     // Make sure we are still a singleton even after deserializing
     protected Object readResolve() {
-      return SCORING_BOOLEAN_QUERY_REWRITE;
+      return CONSTANT_SCORE_FILTER_REWRITE;
     }
-  }
+  };
 
   /** A rewrite method that first translates each term into
    *  {@link BooleanClause.Occur#SHOULD} clause in a
@@ -261,104 +109,19 @@ public abstract class MultiTermQuery extends Query {
    *  exceeds {@link BooleanQuery#getMaxClauseCount}.
    *
    *  @see #setRewriteMethod */
-  public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = new ScoringBooleanQueryRewrite();
-
-
-  /**
-   * Base rewrite method for collecting only the top terms
-   * via a priority queue.
-   */
-  public static abstract class TopTermsBooleanQueryRewrite extends BooleanQueryRewrite {
-    private final int size;
-    
-    /** 
-     * Create a TopTermsBooleanQueryRewrite for 
-     * at most <code>size</code> terms.
-     * <p>
-     * NOTE: if {@link BooleanQuery#getMaxClauseCount} is smaller than 
-     * <code>size</code>, then it will be used instead. 
-     */
-    public TopTermsBooleanQueryRewrite(int size) {
-      this.size = size;
-    }
-    
-    /** 
-     * Create a TopTermsBooleanQueryRewrite that is limited
-     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
-     */
-    public TopTermsBooleanQueryRewrite() {
-      this(Integer.MAX_VALUE);
-    }
-    
-    /** Return a suitable Query for a MultiTermQuery term. */
-    protected abstract Query getQuery(Term term);
-
-    @Override
-    public Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
-      final int maxSize = Math.min(size, BooleanQuery.getMaxClauseCount());
-      final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
-      collectTerms(reader, query, new TermCollector() {
-        public boolean collect(BytesRef bytes, float boost) {
-          // ignore uncompetetive hits
-          if (stQueue.size() >= maxSize && boost <= stQueue.peek().boost)
-            return true;
-          // add new entry in PQ, we must clone the term, else it may get overwritten!
-          st.bytes.copy(bytes);
-          st.boost = boost;
-          stQueue.offer(st);
-          // possibly drop entries from queue
-          st = (stQueue.size() > maxSize) ? stQueue.poll() : new ScoreTerm();
-          setMaxNonCompetitiveBoost((stQueue.size() >= maxSize) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
-          return true;
-        }
-        
-        // reusable instance
-        private ScoreTerm st = new ScoreTerm();
-      });
-      
-      final Term placeholderTerm = new Term(query.field);
-      final BooleanQuery bq = new BooleanQuery(true);
-      for (final ScoreTerm st : stQueue) {
-        // add new query, we must clone the term, else it may get overwritten!
-        Query tq = getQuery(placeholderTerm.createTerm(st.bytes));
-        tq.setBoost(query.getBoost() * st.boost); // set the boost
-        bq.add(tq, BooleanClause.Occur.SHOULD);   // add to query
-      }
-      query.incTotalNumberOfTerms(bq.clauses().size());
-      return bq;
-    }
+  public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = ScoringRewrite.SCORING_BOOLEAN_QUERY_REWRITE;
   
-    @Override
-    public int hashCode() {
-      final int prime = 17;
-      int result = 1;
-      result = prime * result + size;
-      return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
-      TopTermsBooleanQueryRewrite other = (TopTermsBooleanQueryRewrite) obj;
-      if (size != other.size) return false;
-      return true;
-    }
-  
-    private static class ScoreTerm implements Comparable<ScoreTerm> {
-      public final BytesRef bytes = new BytesRef();
-      public float boost;
-      
-      public int compareTo(ScoreTerm other) {
-        if (this.boost == other.boost)
-          // TODO: is it OK to use default compare here?
-          return other.bytes.compareTo(this.bytes);
-        else
-          return Float.compare(this.boost, other.boost);
-      }
-    }
-  }
+  /** Like {@link #SCORING_BOOLEAN_QUERY_REWRITE} except
+   *  scores are not computed.  Instead, each matching
+   *  document receives a constant score equal to the
+   *  query's boost.
+   * 
+   *  <p><b>NOTE</b>: This rewrite method will hit {@link
+   *  BooleanQuery.TooManyClauses} if the number of terms
+   *  exceeds {@link BooleanQuery#getMaxClauseCount}.
+   *
+   *  @see #setRewriteMethod */
+  public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE = ScoringRewrite.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE;
 
   /**
    * A rewrite method that first translates each term into
@@ -366,22 +129,13 @@ public abstract class MultiTermQuery extends Query {
    * scores as computed by the query.
    * 
    * <p>
-   * This rewrite mode only uses the top scoring terms so it will not overflow
-   * the boolean max clause count. It is the default rewrite mode for
+   * This rewrite method only uses the top scoring terms so it will not overflow
+   * the boolean max clause count. It is the default rewrite method for
    * {@link FuzzyQuery}.
    * 
    * @see #setRewriteMethod
    */
-  public static final class TopTermsScoringBooleanQueryRewrite extends
-      TopTermsBooleanQueryRewrite {
-
-    /** 
-     * Create a TopTermsScoringBooleanQueryRewrite that is limited
-     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
-     */
-    public TopTermsScoringBooleanQueryRewrite() {
-      super();
-    }
+  public static final class TopTermsScoringBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery> {
 
     /** 
      * Create a TopTermsScoringBooleanQueryRewrite for 
@@ -395,8 +149,20 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected Query getQuery(Term term) {
-      return new TermQuery(term);
+    protected int getMaxSize() {
+      return BooleanQuery.getMaxClauseCount();
+    }
+    
+    @Override
+    protected BooleanQuery getTopLevelQuery() {
+      return new BooleanQuery(true);
+    }
+    
+    @Override
+    protected void addClause(BooleanQuery topLevel, Term term, int docCount, float boost) {
+      final TermQuery tq = new TermQuery(term, docCount);
+      tq.setBoost(boost);
+      topLevel.add(tq, BooleanClause.Occur.SHOULD);
     }
   }
   
@@ -410,17 +176,8 @@ public abstract class MultiTermQuery extends Query {
    * 
    * @see #setRewriteMethod
    */
-  public static final class TopTermsBoostOnlyBooleanQueryRewrite extends
-      TopTermsBooleanQueryRewrite {
+  public static final class TopTermsBoostOnlyBooleanQueryRewrite extends TopTermsRewrite<BooleanQuery> {
     
-    /** 
-     * Create a TopTermsBoostOnlyBooleanQueryRewrite that is limited
-     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
-     */
-    public TopTermsBoostOnlyBooleanQueryRewrite() {
-      super();
-    }
-
     /** 
      * Create a TopTermsBoostOnlyBooleanQueryRewrite for 
      * at most <code>size</code> terms.
@@ -433,45 +190,23 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected Query getQuery(Term term) {
-      return new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(term)));
+    protected int getMaxSize() {
+      return BooleanQuery.getMaxClauseCount();
+    }
+    
+    @Override
+    protected BooleanQuery getTopLevelQuery() {
+      return new BooleanQuery(true);
+    }
+    
+    @Override
+    protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost) {
+      final Query q = new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(term, docFreq)));
+      q.setBoost(boost);
+      topLevel.add(q, BooleanClause.Occur.SHOULD);
     }
   }
-  
-  private static class ConstantScoreBooleanQueryRewrite extends ScoringBooleanQueryRewrite implements Serializable {
-    @Override
-    public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      Query result = super.rewrite(reader, query);
-      assert result instanceof BooleanQuery;
-      // TODO: if empty boolean query return NullQuery?
-      if (!((BooleanQuery) result).clauses().isEmpty()) {
-        // strip the scores off
-        result = new ConstantScoreQuery(new QueryWrapperFilter(result));
-        result.setBoost(query.getBoost());
-      }
-      return result;
-    }
-
-    // Make sure we are still a singleton even after deserializing
-    @Override
-    protected Object readResolve() {
-      return CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE;
-    }
-  }
-
-  /** Like {@link #SCORING_BOOLEAN_QUERY_REWRITE} except
-   *  scores are not computed.  Instead, each matching
-   *  document receives a constant score equal to the
-   *  query's boost.
-   * 
-   *  <p><b>NOTE</b>: This rewrite method will hit {@link
-   *  BooleanQuery.TooManyClauses} if the number of terms
-   *  exceeds {@link BooleanQuery#getMaxClauseCount}.
-   *
-   *  @see #setRewriteMethod */
-  public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE = new ConstantScoreBooleanQueryRewrite();
-
-
+    
   /** A rewrite method that tries to pick the best
    *  constant-score rewrite method based on term and
    *  document counts from the query.  If both the number of
@@ -480,146 +215,7 @@ public abstract class MultiTermQuery extends Query {
    *  Otherwise, {@link #CONSTANT_SCORE_FILTER_REWRITE} is
    *  used.
    */
-  public static class ConstantScoreAutoRewrite extends BooleanQueryRewrite {
-
-    // Defaults derived from rough tests with a 20.0 million
-    // doc Wikipedia index.  With more than 350 terms in the
-    // query, the filter method is fastest:
-    public static int DEFAULT_TERM_COUNT_CUTOFF = 350;
-
-    // If the query will hit more than 1 in 1000 of the docs
-    // in the index (0.1%), the filter method is fastest:
-    public static double DEFAULT_DOC_COUNT_PERCENT = 0.1;
-
-    private int termCountCutoff = DEFAULT_TERM_COUNT_CUTOFF;
-    private double docCountPercent = DEFAULT_DOC_COUNT_PERCENT;
-
-    /** If the number of terms in this query is equal to or
-     *  larger than this setting then {@link
-     *  #CONSTANT_SCORE_FILTER_REWRITE} is used. */
-    public void setTermCountCutoff(int count) {
-      termCountCutoff = count;
-    }
-
-    /** @see #setTermCountCutoff */
-    public int getTermCountCutoff() {
-      return termCountCutoff;
-    }
-
-    /** If the number of documents to be visited in the
-     *  postings exceeds this specified percentage of the
-     *  maxDoc() for the index, then {@link
-     *  #CONSTANT_SCORE_FILTER_REWRITE} is used.
-     *  @param percent 0.0 to 100.0 */
-    public void setDocCountPercent(double percent) {
-      docCountPercent = percent;
-    }
-
-    /** @see #setDocCountPercent */
-    public double getDocCountPercent() {
-      return docCountPercent;
-    }
-
-    @Override
-    public Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
-
-      // Get the enum and start visiting terms.  If we
-      // exhaust the enum before hitting either of the
-      // cutoffs, we use ConstantBooleanQueryRewrite; else,
-      // ConstantFilterRewrite:
-      final int docCountCutoff = (int) ((docCountPercent / 100.) * reader.maxDoc());
-      final int termCountLimit = Math.min(BooleanQuery.getMaxClauseCount(), termCountCutoff);
-
-      final CutOffTermCollector col = new CutOffTermCollector(reader, query.field, docCountCutoff, termCountLimit);
-      collectTerms(reader, query, col);
-      
-      if (col.hasCutOff) {
-        return CONSTANT_SCORE_FILTER_REWRITE.rewrite(reader, query);
-      } else if (col.termCount == 0) {
-        return new BooleanQuery(true);
-      } else {
-        final PagedBytes.Reader bytesReader = col.pendingTerms.freeze(false);
-        try {
-          final BooleanQuery bq = new BooleanQuery(true);
-          final Term placeholderTerm = new Term(query.field);
-          long start = col.startOffset;
-          for(int i = 0; i < col.termCount; i++) {
-            final BytesRef bytes = new BytesRef();
-            start = bytesReader.fillUsingLengthPrefix3(bytes, start);
-            bq.add(new TermQuery(placeholderTerm.createTerm(bytes)), BooleanClause.Occur.SHOULD);
-          }
-          // Strip scores
-          final Query result = new ConstantScoreQuery(new QueryWrapperFilter(bq));
-          result.setBoost(query.getBoost());
-          query.incTotalNumberOfTerms(col.termCount);
-          return result;
-        } finally {
-          bytesReader.close();
-        }
-      }
-    }
-    
-    private static final class CutOffTermCollector extends TermCollector {
-      CutOffTermCollector(IndexReader reader, String field, int docCountCutoff, int termCountLimit) {
-        this.reader = reader;
-        this.field = field;
-        this.docCountCutoff = docCountCutoff;
-        this.termCountLimit = termCountLimit;
-      }
-    
-      public boolean collect(BytesRef bytes, float boost) throws IOException {
-        termCount++;
-        if (termCount >= termCountLimit || docVisitCount >= docCountCutoff) {
-          hasCutOff = true;
-          return false;
-        }
-        pendingTerms.copyUsingLengthPrefix(bytes);
-        // Loading the TermInfo from the terms dict here
-        // should not be costly, because 1) the
-        // query/filter will load the TermInfo when it
-        // runs, and 2) the terms dict has a cache:
-        docVisitCount += reader.docFreq(field, bytes);
-        return true;
-      }
-      
-      int docVisitCount = 0;
-      boolean hasCutOff = false;
-      int termCount = 0;
-      
-      final IndexReader reader;
-      final String field;
-      final int docCountCutoff, termCountLimit;
-      final PagedBytes pendingTerms = new PagedBytes(15); // max term size is 32 KiB
-      final long startOffset = pendingTerms.getPointer();
-    }
-
-    @Override
-    public int hashCode() {
-      final int prime = 1279;
-      return (int) (prime * termCountCutoff + Double.doubleToLongBits(docCountPercent));
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-
-      ConstantScoreAutoRewrite other = (ConstantScoreAutoRewrite) obj;
-      if (other.termCountCutoff != termCountCutoff) {
-        return false;
-      }
-
-      if (Double.doubleToLongBits(other.docCountPercent) != Double.doubleToLongBits(docCountPercent)) {
-        return false;
-      }
-      
-      return true;
-    }
-  }
+  public static class ConstantScoreAutoRewrite extends org.apache.lucene.search.ConstantScoreAutoRewrite {}
 
   /** Read-only default instance of {@link
    *  ConstantScoreAutoRewrite}, with {@link
@@ -668,8 +264,20 @@ public abstract class MultiTermQuery extends Query {
    *  field does exist).  This method should not return null
    *  (should instead return {@link TermsEnum#EMPTY} if no
    *  terms match).  The TermsEnum must already be
-   *  positioned to the first matching term. */
-  protected abstract TermsEnum getTermsEnum(IndexReader reader) throws IOException;
+   *  positioned to the first matching term.
+   * The given {@link AttributeSource} is passed by the {@link RewriteMethod} to
+   * provide attributes, the rewrite method uses to inform about e.g. maximum competitive boosts.
+   * This is currently only used by {@link TopTermsRewrite}
+   */
+  protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
+
+  /** Convenience method, if no attributes are needed:
+   * This simply passes empty attributes and is equal to:
+   * <code>getTermsEnum(terms, new AttributeSource())</code>
+   */
+  protected final TermsEnum getTermsEnum(Terms terms) throws IOException {
+    return getTermsEnum(terms, new AttributeSource());
+  }
 
   /**
    * Expert: Return the number of unique terms visited during execution of the query.

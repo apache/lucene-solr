@@ -28,15 +28,14 @@ import org.apache.lucene.search.Query;
 
 import org.apache.lucene.queryParser.surround.parser.QueryParser;
 
-import junit.framework.TestCase;
-import junit.framework.Assert;
+import org.junit.Assert;
 
 public class BooleanQueryTst {
   String queryText;
   final int[] expectedDocNrs;
   SingleFieldTestDb dBase;
   String fieldName;
-  TestCase testCase;
+  Assert testCase;
   BasicQueryFactory qf;
   boolean verbose = true;
 
@@ -45,7 +44,7 @@ public class BooleanQueryTst {
       int[] expectedDocNrs,
       SingleFieldTestDb dBase,
       String fieldName,
-      TestCase testCase,
+      Assert testCase,
       BasicQueryFactory qf) {
     this.queryText = queryText;
     this.expectedDocNrs = expectedDocNrs;

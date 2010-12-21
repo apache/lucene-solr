@@ -33,11 +33,11 @@ public interface SolrFragmenter extends SolrInfoMBean, NamedListInitializedPlugi
   public void init(NamedList args);
 
   /**
-   * Return a fragmenter appropriate for this field. 
+   * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field. 
    * 
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
-   * @return An appropriate Fragmenter.
+   * @return An appropriate {@link org.apache.lucene.search.highlight.Fragmenter}.
    */
   public Fragmenter getFragmenter(String fieldName, SolrParams params);
 }

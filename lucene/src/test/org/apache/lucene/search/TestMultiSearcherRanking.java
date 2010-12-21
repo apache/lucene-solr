@@ -22,11 +22,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import java.io.IOException;
 
 /**
@@ -109,15 +107,15 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
    * initializes multiSearcher and singleSearcher with the same document set
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     // create MultiSearcher from two seperate searchers
-    Directory d1 = new RAMDirectory();
-    IndexWriter iw1 = new IndexWriter(d1, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d1 = newDirectory();
+    IndexWriter iw1 = new IndexWriter(d1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw1);
     iw1.close();
-    Directory d2 = new RAMDirectory();
-    IndexWriter iw2 = new IndexWriter(d2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d2 = newDirectory();
+    IndexWriter iw2 = new IndexWriter(d2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection2(iw2);
     iw2.close();
 
@@ -127,12 +125,24 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     multiSearcher = new MultiSearcher(s);
 
     // create IndexSearcher which contains all documents
-    Directory d = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d = newDirectory();
+    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw);
     addCollection2(iw);
     iw.close();
     singleSearcher = new IndexSearcher(d, true);
+  }
+  
+  Directory d1, d2, d;
+  
+  @Override
+  public void tearDown() throws Exception {
+    multiSearcher.close();
+    singleSearcher.close();
+    d1.close();
+    d2.close();
+    d.close();
+    super.tearDown();
   }
   
   private void addCollection1(IndexWriter iw) throws IOException {
@@ -156,7 +166,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   
   private void add(String value, IndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(new Field(FIELD_NAME, value, Field.Store.YES, Field.Index.ANALYZED));
+    d.add(newField(FIELD_NAME, value, Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(d);
   }
   

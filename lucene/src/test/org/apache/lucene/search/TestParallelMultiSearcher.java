@@ -18,20 +18,34 @@ package org.apache.lucene.search;
  */
  
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Unit tests for the ParallelMultiSearcher 
  */
 public class TestParallelMultiSearcher extends TestMultiSearcher {
+  List<ExecutorService> pools = new ArrayList<ExecutorService>();
 
-  public TestParallelMultiSearcher(String name) {
-    super(name);
+  @Override
+  public void tearDown() throws Exception {
+    for (ExecutorService exec : pools)
+      exec.awaitTermination(1000, TimeUnit.MILLISECONDS);
+    pools.clear();
+    super.tearDown();
   }
 
   @Override
   protected MultiSearcher getMultiSearcherInstance(Searcher[] searchers)
     throws IOException {
-    return new ParallelMultiSearcher(searchers);
+    ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
+    pools.add(exec);
+    return new ParallelMultiSearcher(exec, searchers);
   }
 
 }

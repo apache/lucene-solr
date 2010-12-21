@@ -17,24 +17,19 @@ package org.apache.lucene.benchmark.quality;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-
 import org.apache.lucene.benchmark.BenchmarkTestCase;
-import org.apache.lucene.benchmark.byTask.TestPerfTasksLogic;
-import org.apache.lucene.benchmark.quality.Judge;
-import org.apache.lucene.benchmark.quality.QualityQuery;
-import org.apache.lucene.benchmark.quality.QualityQueryParser;
-import org.apache.lucene.benchmark.quality.QualityBenchmark;
 import org.apache.lucene.benchmark.quality.trec.TrecJudge;
 import org.apache.lucene.benchmark.quality.trec.TrecTopicsReader;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 
 /**
  * Test that quality run does its job.
@@ -46,7 +41,7 @@ import org.apache.lucene.store.FSDirectory;
 public class TestQualityRun extends BenchmarkTestCase {
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     copyToWorkDir("reuters.578.lines.txt.bz2");
   }
@@ -72,7 +67,8 @@ public class TestQualityRun extends BenchmarkTestCase {
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
     
-    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(getWorkDir(),"index")), true);
+    Directory dir = newFSDirectory(new File(getWorkDir(),"index"));
+    IndexSearcher searcher = new IndexSearcher(dir, true);
 
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
@@ -136,8 +132,9 @@ public class TestQualityRun extends BenchmarkTestCase {
     for (int j = 1; j <= QualityStats.MAX_POINTS; j++) {
       assertTrue("avg p_at_"+j+" should be hurt: "+avg.getPrecisionAt(j), 1.0 > avg.getPrecisionAt(j));
     }
-
     
+    searcher.close();
+    dir.close();
   }
   
   public void testTrecTopicsReader() throws Exception {    
@@ -177,6 +174,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     String algLines[] = {
         "# ----- properties ",
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "analyzer=org.apache.lucene.analysis.standard.ClassicAnalyzer",
         "docs.file=" + getWorkDirResourcePath("reuters.578.lines.txt.bz2"),
         "content.source.log.step=2500",
         "doc.term.vector=false",

@@ -32,6 +32,7 @@ public final class FieldInfo {
   public boolean omitTermFreqAndPositions;
 
   public boolean storePayloads; // whether this field stores payloads together with term positions
+  int codecId = 0; // set inside SegmentCodecs#build() during segment flush - this is used to identify the codec used to write this field 
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 

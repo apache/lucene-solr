@@ -130,6 +130,11 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
+    public void cacheCurrentTerm() throws IOException {
+      in.cacheCurrentTerm();
+    }
+
+    @Override
     public SeekStatus seek(long ord) throws IOException {
       return in.seek(ord);
     }
@@ -155,7 +160,7 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
       return in.docs(skipDocs, reuse);
     }
 
@@ -273,8 +278,8 @@ public class FilterIndexReader extends IndexReader {
   }
   
   @Override
-  public Bits getDeletedDocs() throws IOException {
-    return MultiFields.getDeletedDocs(in);
+  public Bits getDeletedDocs() {
+    return in.getDeletedDocs();
   }
   
   @Override
@@ -321,12 +326,6 @@ public class FilterIndexReader extends IndexReader {
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     return in.document(n, fieldSelector);
-  }
-
-  @Override
-  public boolean isDeleted(int n) {
-    // Don't call ensureOpen() here (it could affect performance)
-    return in.isDeleted(n);
   }
 
   @Override
@@ -416,12 +415,12 @@ public class FilterIndexReader extends IndexReader {
   
   @Override
   public IndexReader[] getSequentialSubReaders() {
-    return null;
+    return in.getSequentialSubReaders();
   }
 
   @Override
   public Fields fields() throws IOException {
-    return MultiFields.getFields(in);
+    return in.fields();
   }
 
   /** If the subclass of FilteredIndexReader modifies the

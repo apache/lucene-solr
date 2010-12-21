@@ -29,15 +29,6 @@ import org.apache.lucene.util.LuceneTestCase;
  * Base class for all Lucene unit tests that use TokenStreams.  
  */
 public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
-
-  public BaseTokenStreamTestCase() {
-    super();
-  }
-
-  public BaseTokenStreamTestCase(String name) {
-    super(name);
-  }
-  
   // some helpers to test Analyzers and TokenStreams:
   
   public static interface CheckClearAttributesAttribute extends Attribute {

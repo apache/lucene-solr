@@ -17,10 +17,10 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
-import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 
 // TODO: Remove the commented out methods before release!
 
@@ -130,32 +130,6 @@ public final class NumericUtils {
     return hash;
   }
 
-  /*
-   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
-   * This is method is used by {@link LongRangeBuilder}.
-   * @param val the numeric value
-   * @param shift how many bits to strip from the right
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static String longToPrefixCoded(final long val, final int shift) {
-    final BytesRef buffer = new BytesRef(BUF_SIZE_LONG);
-    longToPrefixCoded(val, shift, buffer);
-    return buffer.utf8ToString();
-  }*/
-
-  /*
-   * This is a convenience method, that returns prefix coded bits of a long without
-   * reducing the precision. It can be used to store the full precision value as a
-   * stored field in index.
-   * <p>To decode, use {@link #prefixCodedToLong}.
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static String longToPrefixCoded(final long val) {
-    return longToPrefixCoded(val, 0);
-  }*/
-  
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link NumericTokenStream}.
@@ -190,46 +164,6 @@ public final class NumericUtils {
     return hash;
   }
 
-  /*
-   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
-   * This is method is used by {@link IntRangeBuilder}.
-   * @param val the numeric value
-   * @param shift how many bits to strip from the right
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static String intToPrefixCoded(final int val, final int shift) {
-    final BytesRef buffer = new BytesRef(BUF_SIZE_INT);
-    intToPrefixCoded(val, shift, buffer);
-    return buffer.utf8ToString();
-  }*/
-
-  /*
-   * This is a convenience method, that returns prefix coded bits of an int without
-   * reducing the precision. It can be used to store the full precision value as a
-   * stored field in index.
-   * <p>To decode, use {@link #prefixCodedToInt}.
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static String intToPrefixCoded(final int val) {
-    return intToPrefixCoded(val, 0);
-  }*/
-
-  /*
-   * Returns a long from prefixCoded characters.
-   * Rightmost bits will be zero for lower precision codes.
-   * This method can be used to decode e.g. a stored field.
-   * @throws NumberFormatException if the supplied string is
-   * not correctly prefix encoded.
-   * @see #longToPrefixCoded(long)
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static long prefixCodedToLong(final String prefixCoded) {
-    return prefixCodedToLong(new BytesRef(prefixCoded));
-  }*/
-
   /**
    * Returns the shift value from a prefix encoded {@code long}.
    * @throws NumberFormatException if the supplied {@link BytesRef} is
@@ -238,7 +172,7 @@ public final class NumericUtils {
   public static int getPrefixCodedLongShift(final BytesRef val) {
     final int shift = val.bytes[val.offset] - SHIFT_START_LONG;
     if (shift > 63 || shift < 0)
-      throw new NumberFormatException("Invalid shift value in prefixCoded bytes (is encoded value really an INT?)");
+      throw new NumberFormatException("Invalid shift value (" + shift + ") in prefixCoded bytes (is encoded value really an INT?)");
     return shift;
   }
 
@@ -278,21 +212,7 @@ public final class NumericUtils {
     return (sortableBits << getPrefixCodedLongShift(val)) ^ 0x8000000000000000L;
   }
 
-  /*
-   * Returns an int from prefixCoded characters.
-   * Rightmost bits will be zero for lower precision codes.
-   * This method can be used to decode a term's value.
-   * @throws NumberFormatException if the supplied string is
-   * not correctly prefix encoded.
-   * @see #intToPrefixCoded(int)
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static int prefixCodedToInt(final String prefixCoded) {
-    return prefixCodedToInt(new BytesRef(prefixCoded));
-  }*/
-
-  /*
+  /**
    * Returns an int from prefixCoded bytes.
    * Rightmost bits will be zero for lower precision codes.
    * This method can be used to decode a term's value.
@@ -329,16 +249,6 @@ public final class NumericUtils {
     return f;
   }
 
-  /*
-   * Convenience method: this just returns:
-   *   longToPrefixCoded(doubleToSortableLong(val))
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static String doubleToPrefixCoded(double val) {
-    return longToPrefixCoded(doubleToSortableLong(val));
-  }*/
-
   /**
    * Converts a sortable <code>long</code> back to a <code>double</code>.
    * @see #doubleToSortableLong
@@ -347,16 +257,6 @@ public final class NumericUtils {
     if (val<0) val ^= 0x7fffffffffffffffL;
     return Double.longBitsToDouble(val);
   }
-
-  /*
-   * Convenience method: this just returns:
-   *    sortableLongToDouble(prefixCodedToLong(val))
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static double prefixCodedToDouble(String val) {
-    return sortableLongToDouble(prefixCodedToLong(val));
-  }*/
 
   /**
    * Converts a <code>float</code> value to a sortable signed <code>int</code>.
@@ -371,16 +271,6 @@ public final class NumericUtils {
     return f;
   }
 
-  /*
-   * Convenience method: this just returns:
-   *   intToPrefixCoded(floatToSortableInt(val))
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static String floatToPrefixCoded(float val) {
-    return intToPrefixCoded(floatToSortableInt(val));
-  }*/
-
   /**
    * Converts a sortable <code>int</code> back to a <code>float</code>.
    * @see #floatToSortableInt
@@ -389,16 +279,6 @@ public final class NumericUtils {
     if (val<0) val ^= 0x7fffffff;
     return Float.intBitsToFloat(val);
   }
-
-  /*
-   * Convenience method: this just returns:
-   *    sortableIntToFloat(prefixCodedToInt(val))
-   * @deprecated This method is no longer needed!
-   *
-  @Deprecated
-  public static float prefixCodedToFloat(String val) {
-    return sortableIntToFloat(prefixCodedToInt(val));
-  }*/
 
   /**
    * Splits a long range recursively.

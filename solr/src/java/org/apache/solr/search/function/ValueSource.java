@@ -24,12 +24,13 @@ import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.MultiFields;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Collections;
 
 /**
@@ -156,8 +157,9 @@ public abstract class ValueSource implements Serializable {
       values[slot] = docVals.doubleVal(doc);
     }
 
-    public void setNextReader(IndexReader reader, int docBase) throws IOException {
+    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
       docVals = getValues(Collections.emptyMap(), reader);
+      return this;
     }
 
     public void setBottom(final int bottom) {
@@ -177,6 +179,7 @@ class ValueSourceScorer extends Scorer {
   protected final int maxDoc;
   protected final DocValues values;
   protected boolean checkDeletes;
+  private final Bits delDocs;
 
   protected ValueSourceScorer(IndexReader reader, DocValues values) {
     super(null);
@@ -184,6 +187,7 @@ class ValueSourceScorer extends Scorer {
     this.maxDoc = reader.maxDoc();
     this.values = values;
     setCheckDeletes(true);
+    this.delDocs = MultiFields.getDeletedDocs(reader);
   }
 
   public IndexReader getReader() {
@@ -195,7 +199,7 @@ class ValueSourceScorer extends Scorer {
   }
 
   public boolean matches(int doc) {
-    return (!checkDeletes || !reader.isDeleted(doc)) && matchesValue(doc);
+    return (!checkDeletes || !delDocs.get(doc)) && matchesValue(doc);
   }
 
   public boolean matchesValue(int doc) {
@@ -223,30 +227,9 @@ class ValueSourceScorer extends Scorer {
     return nextDoc();
   }
 
-  public int doc() {
-    return doc;
-  }
-
-  public boolean next() {
-    for (; ;) {
-      doc++;
-      if (doc >= maxDoc) return false;
-      if (matches(doc)) return true;
-    }
-  }
-
-  public boolean skipTo(int target) {
-    doc = target - 1;
-    return next();
-  }
-
-
+  @Override
   public float score() throws IOException {
     return values.floatVal(doc);
-  }
-
-  public Explanation explain(int doc) throws IOException {
-    return values.explain(doc);
   }
 }
 

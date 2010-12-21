@@ -23,8 +23,8 @@ import java.util.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.PriorityQueue;
@@ -171,12 +171,12 @@ public class MultiPhraseQuery extends Query {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
 
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      final Bits delDocs = reader.getDeletedDocs();
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
 
-      for (int i=0; i<postingsFreqs.length; i++) {
-        Term[] terms = termArrays.get(i);
+      for (int pos=0; pos<postingsFreqs.length; pos++) {
+        Term[] terms = termArrays.get(pos);
 
         final DocsAndPositionsEnum postingsEnum;
         int docFreq;
@@ -187,34 +187,34 @@ public class MultiPhraseQuery extends Query {
           // coarse -- this overcounts since a given doc can
           // have more than one terms:
           docFreq = 0;
-          for(int j=0;j<terms.length;j++) {
-            docFreq += reader.docFreq(terms[i]);
+          for(int termIdx=0;termIdx<terms.length;termIdx++) {
+            docFreq += reader.docFreq(terms[termIdx]);
           }
         } else {
-          final BytesRef text = new BytesRef(terms[0].text());
+          final Term term = terms[0];
           postingsEnum = reader.termPositionsEnum(delDocs,
-                                                  terms[0].field(),
-                                                  text);
+                                                  term.field(),
+                                                  term.bytes());
 
           if (postingsEnum == null) {
-            if (MultiFields.getTermDocsEnum(reader, delDocs, terms[0].field(), text) != null) {
+            if (reader.termDocsEnum(delDocs, term.field(), term.bytes()) != null) {
               // term does exist, but has no positions
-              throw new IllegalStateException("field \"" + terms[0].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[0].text() + ")");
+              throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + term.text() + ")");
             } else {
               // term does not exist
               return null;
             }
           }
 
-          docFreq = reader.docFreq(terms[0].field(), text);
+          docFreq = reader.docFreq(term.field(), term.bytes());
         }
 
-        postingsFreqs[i] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(i).intValue());
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue());
       }
 
       // sort by increasing docFreq order
       if (slop == 0) {
-        Arrays.sort(postingsFreqs);
+        ArrayUtil.quickSort(postingsFreqs);
       }
 
       if (slop == 0) {
@@ -263,7 +263,7 @@ public class MultiPhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = (Scorer) scorer(reader, true, false);
+      Scorer scorer = scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
@@ -272,11 +272,7 @@ public class MultiPhraseQuery extends Query {
       int d = scorer.advance(doc);
       float phraseFreq;
       if (d == doc) {
-        if (slop == 0) {
-          phraseFreq = ((ExactPhraseScorer) scorer).currentFreq();
-        } else {
-          phraseFreq = ((SloppyPhraseScorer) scorer).currentFreq();
-        }
+        phraseFreq = scorer.freq();
       } else {
         phraseFreq = 0.0f;
       }
@@ -435,7 +431,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
       Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
       while (i.hasNext()) {
-        DocsAndPositionsEnum postings = (DocsAndPositionsEnum) i.next();
+        DocsAndPositionsEnum postings = i.next();
         if (postings.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
           add(postings);
         }
@@ -497,7 +493,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   public UnionDocsAndPositionsEnum(IndexReader indexReader, Term[] terms) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
-    final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+    final Bits delDocs = indexReader.getDeletedDocs();
     for (int i = 0; i < terms.length; i++) {
       DocsAndPositionsEnum postings = indexReader.termPositionsEnum(delDocs,
                                                                     terms[i].field(),
@@ -505,7 +501,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
       if (postings != null) {
         docsEnums.add(postings);
       } else {
-        if (MultiFields.getTermDocsEnum(indexReader, delDocs, terms[i].field(), terms[i].bytes()) != null) {
+        if (indexReader.termDocsEnum(delDocs, terms[i].field(), terms[i].bytes()) != null) {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[i].text() + ")");
         }

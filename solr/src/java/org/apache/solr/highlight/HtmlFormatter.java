@@ -23,7 +23,7 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * Use the SimpleHTMLFormatter
+ * Use the {@link org.apache.lucene.search.highlight.SimpleHTMLFormatter}
  */
 public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatter 
 {

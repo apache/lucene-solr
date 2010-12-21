@@ -19,20 +19,23 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Random;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
+import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.jetty.webapp.WebAppContext;
 
 /**
  * @version $Id$
  * @since solr 1.3
  */
-public class JettyWebappTest extends TestCase 
+public class JettyWebappTest extends LuceneTestCase 
 {
   int port = 0;
   static final String context = "/test";
@@ -42,16 +45,18 @@ public class JettyWebappTest extends TestCase
   @Override
   public void setUp() throws Exception 
   {
+    super.setUp();
     System.setProperty("solr.solr.home", "../../../example/solr");
     
-    File dataDir = new File(System.getProperty("java.io.tmpdir")
-        + System.getProperty("file.separator")
-        + getClass().getName() + "-" + System.currentTimeMillis());
+    File dataDir = new File(SolrTestCaseJ4.TEMP_DIR,
+        getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
     System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
     String path = "../../webapp/web";
 
     server = new Server(port);
+    // insecure: only use for tests!!!!
+    server.setSessionIdManager(new HashSessionIdManager(new Random(random.nextLong())));
     new WebAppContext(server, path, context );
 
     SocketConnector connector = new SocketConnector();
@@ -71,6 +76,7 @@ public class JettyWebappTest extends TestCase
     try {
       server.stop();
     } catch( Exception ex ) {}
+    super.tearDown();
   }
   
   public void testJSP() throws Exception

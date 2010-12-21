@@ -23,31 +23,30 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestRollback extends LuceneTestCase {
 
   // LUCENE-2536
   public void testRollbackIntegrityWithBufferFlush() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    RandomIndexWriter rw = new RandomIndexWriter(newRandom(), dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter rw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
-      doc.add(new Field("pk", Integer.toString(i), Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("pk", Integer.toString(i), Store.YES, Index.ANALYZED_NO_NORMS));
       rw.addDocument(doc);
     }
     rw.close();
 
     // If buffer size is small enough to cause a flush, errors ensue...
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
 
     Term pkTerm = new Term("pk", "");
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       String value = Integer.toString(i);
-      doc.add(new Field("pk", value, Store.YES, Index.ANALYZED_NO_NORMS));
-      doc.add(new Field("text", "foo", Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("pk", value, Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("text", "foo", Store.YES, Index.ANALYZED_NO_NORMS));
       w.updateDocument(pkTerm.createTerm(value), doc);
     }
     w.rollback();

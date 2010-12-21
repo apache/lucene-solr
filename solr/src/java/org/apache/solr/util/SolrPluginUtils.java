@@ -22,7 +22,6 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -34,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -61,7 +61,7 @@ import java.lang.reflect.InvocationTargetException;
  * <p>:TODO: refactor StandardRequestHandler to use these utilities</p>
  *
  * <p>:TODO: Many "standard" functionality methods are not cognisant of
- * default parameter settings.  
+ * default parameter settings.
  */
 public class SolrPluginUtils {
   final static Logger log = LoggerFactory.getLogger( SolrPluginUtils.class );
@@ -75,7 +75,7 @@ public class SolrPluginUtils {
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults) {
     setDefaults(req, defaults, null, null);
   }
-  
+
   /**
    * Set default-ish params on a SolrQueryRequest.
    *
@@ -89,7 +89,7 @@ public class SolrPluginUtils {
    */
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults,
                                  SolrParams appends, SolrParams invariants) {
-    
+
       SolrParams p = req.getParams();
       if (defaults != null) {
         p = new DefaultSolrParams(p,defaults);
@@ -120,16 +120,17 @@ public class SolrPluginUtils {
     throws IOException {
 
     return (null == f) ? s.getDocSet(q).size() : s.numDocs(q,f);
-        
+
   }
-    
+
   /**
    * Returns the param, or the default if it's empty or not specified.
    * @deprecated use SolrParam.get(String,String)
    */
+  @Deprecated
   public static String getParam(SolrQueryRequest req,
                                 String param, String def) {
-        
+
     String v = req.getParam(param);
     // Note: parameters passed but given only white-space value are
     // considered equivalent to passing nothing for that parameter.
@@ -138,15 +139,16 @@ public class SolrPluginUtils {
     }
     return v;
   }
-    
+
   /**
    * Treats the param value as a Number, returns the default if nothing is
    * there or if it's not a number.
    * @deprecated use SolrParam.getFloat(String,float)
    */
+  @Deprecated
   public static Number getNumberParam(SolrQueryRequest req,
                                       String param, Number def) {
-        
+
     Number r = def;
     String v = req.getParam(param);
     if (null == v || "".equals(v.trim())) {
@@ -159,23 +161,24 @@ public class SolrPluginUtils {
     }
     return r;
   }
-        
+
   /**
-   * Treats parameter value as a boolean.  The string 'false' is false; 
+   * Treats parameter value as a boolean.  The string 'false' is false;
    * any other non-empty string is true.
    * @deprecated use SolrParam.getBool(String,boolean)
    */
+  @Deprecated
   public static boolean getBooleanParam(SolrQueryRequest req,
-                                       String param, boolean def) {        
+                                       String param, boolean def) {
     String v = req.getParam(param);
     if (null == v || "".equals(v.trim())) {
       return def;
     }
     return !"false".equals(v.trim());
   }
-    
+
   private final static Pattern splitList=Pattern.compile(",| ");
-  
+
   /** Split a value that may contain a comma, space of bar separated list. */
   public static String[] split(String value){
      return splitList.split(value.trim(), 0);
@@ -226,7 +229,7 @@ public class SolrPluginUtils {
    * <ul>
    *     <li>Locates the document-retrieval costs in one spot, which helps
    *     detailed performance measurement</li>
-   *   
+   *
    *     <li>Determines a priori what fields will be needed to be fetched by
    *     various subtasks, like response writing and highlighting.  This
    *     minimizes the chance that many needed fields will be loaded lazily.
@@ -253,13 +256,13 @@ public class SolrPluginUtils {
       // add highlight fields
       SolrHighlighter highligher = req.getCore().getHighlighter();
       if(highligher.isHighlightingEnabled(req.getParams())) {
-        for(String field: highligher.getHighlightFields(query, req, null)) 
-          fieldFilter.add(field);        
+        for(String field: highligher.getHighlightFields(query, req, null))
+          fieldFilter.add(field);
       }
       // fetch unique key if one exists.
       SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
       if(null != keyField)
-          fieldFilter.add(keyField.getName());  
+          fieldFilter.add(keyField.getName());
     }
 
     // get documents
@@ -269,85 +272,26 @@ public class SolrPluginUtils {
     }
   }
 
-  /**
-   * <p>
-   * Returns a NamedList containing many "standard" pieces of debugging
-   * information.
-   * </p>
-   *
-   * <ul>
-   * <li>rawquerystring - the 'q' param exactly as specified by the client
-   * </li>
-   * <li>querystring - the 'q' param after any preprocessing done by the plugin
-   * </li>
-   * <li>parsedquery - the main query executed formated by the Solr
-   *     QueryParsing utils class (which knows about field types)
-   * </li>
-   * <li>parsedquery_toString - the main query executed formated by it's
-   *     own toString method (in case it has internal state Solr
-   *     doesn't know about)
-   * </li>
-   * <li>expain - the list of score explanations for each document in
-   *     results against query.
-   * </li>
-   * <li>otherQuery - the query string specified in 'explainOther' query param.
-   * </li>
-   * <li>explainOther - the list of score explanations for each document in
-   *     results against 'otherQuery'
-   * </li>
-   * </ul>
-   *
-   * @param req the request we are dealing with
-   * @param userQuery the users query as a string, after any basic
-   *                  preprocessing has been done
-   * @param query the query built from the userQuery
-   *              (and perhaps other clauses) that identifies the main
-   *              result set of the response.
-   * @param results the main result set of the response
-   * @deprecated Use doStandardDebug(SolrQueryRequest,String,Query,DocList) with setDefaults
-   */
-  public static NamedList doStandardDebug(SolrQueryRequest req,
-                                          String userQuery,
-                                          Query query,
-                                          DocList results,
-                                          org.apache.solr.util.CommonParams params)
-    throws IOException {
-        
-    String debug = getParam(req, CommonParams.DEBUG_QUERY, params.debugQuery);
 
-    NamedList dbg = null;
-    if (debug!=null) {
-      dbg = new SimpleOrderedMap();
-
-      /* userQuery may have been pre-processes .. expose that */
-      dbg.add("rawquerystring", req.getQueryString());
-      dbg.add("querystring", userQuery);
-
-      /* QueryParsing.toString isn't perfect, use it to see converted
-       * values, use regular toString to see any attributes of the
-       * underlying Query it may have missed.
-       */
-      dbg.add("parsedquery",QueryParsing.toString(query, req.getSchema()));
-      dbg.add("parsedquery_toString", query.toString());
-            
-      dbg.add("explain", getExplainList
-              (query, results, req.getSearcher(), req.getSchema()));
-      String otherQueryS = req.getParam("explainOther");
-      if (otherQueryS != null && otherQueryS.length() > 0) {
-        DocList otherResults = doSimpleQuery
-          (otherQueryS,req.getSearcher(), req.getSchema(),0,10);
-        dbg.add("otherQuery",otherQueryS);
-        dbg.add("explainOther", getExplainList
-                (query, otherResults,
-                 req.getSearcher(),
-                 req.getSchema()));
+  public static Set<String> getDebugInterests(String[] params, ResponseBuilder rb){
+    Set<String> debugInterests = new HashSet<String>();
+    if (params != null) {
+      for (int i = 0; i < params.length; i++) {
+        if (params[i].equalsIgnoreCase("all") || params[i].equalsIgnoreCase("true")){
+          rb.setDebug(true);
+          break;
+          //still might add others
+        } else if (params[i].equals(CommonParams.TIMING)){
+          rb.setDebugTimings(true);
+        } else if (params[i].equals(CommonParams.QUERY)){
+          rb.setDebugQuery(true);
+        } else if (params[i].equals(CommonParams.RESULTS)){
+          rb.setDebugResults(true);
+        }
       }
     }
-
-    return dbg;
+    return debugInterests;
   }
-
-
   /**
    * <p>
    * Returns a NamedList containing many "standard" pieces of debugging
@@ -383,54 +327,58 @@ public class SolrPluginUtils {
    *              (and perhaps other clauses) that identifies the main
    *              result set of the response.
    * @param results the main result set of the response
+   * @return The debug info
+   * @throws java.io.IOException if there was an IO error
    */
   public static NamedList doStandardDebug(SolrQueryRequest req,
                                           String userQuery,
                                           Query query,
-                                          DocList results)
+                                          DocList results, boolean dbgQuery, boolean dbgResults)
     throws IOException {
 
-    String debug = req.getParams().get(CommonParams.DEBUG_QUERY);
-
     NamedList dbg = null;
-    if (debug!=null) {
-      dbg = new SimpleOrderedMap();
 
-      SolrIndexSearcher searcher = req.getSearcher();
-      IndexSchema schema = req.getSchema();
+    dbg = new SimpleOrderedMap();
 
-      boolean explainStruct
-        = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT,false);
-      
-      /* userQuery may have been pre-processes .. expose that */
+    SolrIndexSearcher searcher = req.getSearcher();
+    IndexSchema schema = req.getSchema();
+
+    boolean explainStruct
+            = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
+
+    /* userQuery may have been pre-processes .. expose that */
+    if (dbgQuery) {
       dbg.add("rawquerystring", req.getParams().get(CommonParams.Q));
       dbg.add("querystring", userQuery);
 
       /* QueryParsing.toString isn't perfect, use it to see converted
-       * values, use regular toString to see any attributes of the
-       * underlying Query it may have missed.
-       */
-      dbg.add("parsedquery",QueryParsing.toString(query, schema));
+      * values, use regular toString to see any attributes of the
+      * underlying Query it may have missed.
+      */
+      dbg.add("parsedquery", QueryParsing.toString(query, schema));
       dbg.add("parsedquery_toString", query.toString());
+    }
 
-      NamedList<Explanation> explain 
-        = getExplanations(query, results, searcher, schema);
+    if (dbgResults) {
+      NamedList<Explanation> explain
+              = getExplanations(query, results, searcher, schema);
       dbg.add("explain", explainStruct ?
-              explanationsToNamedLists(explain) : 
+              explanationsToNamedLists(explain) :
               explanationsToStrings(explain));
 
       String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery
-          (otherQueryS,req.getSearcher(), req.getSchema(),0,10);
-        dbg.add("otherQuery",otherQueryS);
+                (otherQueryS, req, 0, 10);
+        dbg.add("otherQuery", otherQueryS);
         NamedList<Explanation> explainO
-          = getExplanations(query, otherResults, searcher, schema);
+                = getExplanations(query, otherResults, searcher, schema);
         dbg.add("explainOther", explainStruct ?
-                explanationsToNamedLists(explainO) : 
+                explanationsToNamedLists(explainO) :
                 explanationsToStrings(explainO));
       }
     }
+
 
     return dbg;
   }
@@ -456,11 +404,11 @@ public class SolrPluginUtils {
 
     return out;
   }
-  
+
   public static NamedList<NamedList<Object>> explanationsToNamedLists
     (NamedList<Explanation> explanations) {
 
-    NamedList<NamedList<Object>> out 
+    NamedList<NamedList<Object>> out
       = new SimpleOrderedMap<NamedList<Object>>();
     for (Map.Entry<String,Explanation> entry : explanations) {
       out.add(entry.getKey(), explanationToNamedList(entry.getValue()));
@@ -475,11 +423,11 @@ public class SolrPluginUtils {
    * @param docs The Documents you want explained relative that query
    */
   public static NamedList<Explanation> getExplanations
-    (Query query, 
-     DocList docs, 
-     SolrIndexSearcher searcher, 
+    (Query query,
+     DocList docs,
+     SolrIndexSearcher searcher,
      IndexSchema schema) throws IOException {
-    
+
     NamedList<Explanation> explainList = new SimpleOrderedMap<Explanation>();
     DocIterator iterator = docs.iterator();
     for (int i=0; i<docs.size(); i++) {
@@ -508,8 +456,8 @@ public class SolrPluginUtils {
    *
    * @param query The Query you want explanations in the context of
    * @param docs The Documents you want explained relative that query
-   * @deprecated this returns the explanations as Strings, instead it 
-   *    is recommeded to use getExplanations and call toString() 
+   * @deprecated this returns the explanations as Strings, instead it
+   *    is recommeded to use getExplanations and call toString()
    *    yourself, or use explanationsToNamedLists
    */
   @Deprecated
@@ -522,28 +470,32 @@ public class SolrPluginUtils {
   }
 
   /**
-   * Executes a basic query in lucene syntax
+   * Executes a basic query
    */
   public static DocList doSimpleQuery(String sreq,
-                                      SolrIndexSearcher searcher,
-                                      IndexSchema schema,
+                                      SolrQueryRequest req,
                                       int start, int limit) throws IOException {
     List<String> commands = StrUtils.splitSmart(sreq,';');
 
     String qs = commands.size() >= 1 ? commands.get(0) : "";
-    Query query = QueryParsing.parseQuery(qs, schema);
+    try {
+    Query query = QParser.getParser(qs, null, req).getQuery();
 
     // If the first non-query, non-filter command is a simple sort on an indexed field, then
     // we can use the Lucene sort ability.
     Sort sort = null;
     if (commands.size() >= 2) {
-      sort = QueryParsing.parseSort(commands.get(1), schema);
+      sort = QueryParsing.parseSort(commands.get(1), req);
     }
 
-    DocList results = searcher.getDocList(query,(DocSet)null, sort, start, limit);
+    DocList results = req.getSearcher().getDocList(query,(DocSet)null, sort, start, limit);
     return results;
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
+    }
+
   }
-    
+
   /**
    * Given a string containing fieldNames and boost info,
    * converts it to a Map from field name to boost info.
@@ -594,9 +546,10 @@ public class SolrPluginUtils {
    * @see #parseFieldBoosts
    * @deprecated
    */
+  @Deprecated
   public static List<Query> parseFuncs(IndexSchema s, String in)
     throws ParseException {
-  
+
     Map<String,Float> ff = parseFieldBoosts(in);
     List<Query> funcs = new ArrayList<Query>(ff.keySet().size());
     for (String f : ff.keySet()) {
@@ -610,7 +563,7 @@ public class SolrPluginUtils {
     return funcs;
   }
 
-    
+
   /**
    * Checks the number of optional clauses in the query, and compares it
    * with the specification string to determine the proper value to use.
@@ -643,7 +596,7 @@ public class SolrPluginUtils {
   public static void setMinShouldMatch(BooleanQuery q, String spec) {
 
     int optionalClauses = 0;
-    for (BooleanClause c : (List<BooleanClause>)q.clauses()) {
+    for (BooleanClause c : q.clauses()) {
       if (c.getOccur() == Occur.SHOULD) {
         optionalClauses++;
       }
@@ -662,11 +615,11 @@ public class SolrPluginUtils {
   static int calculateMinShouldMatch(int optionalClauseCount, String spec) {
 
     int result = optionalClauseCount;
-        
+
 
     if (-1 < spec.indexOf("<")) {
       /* we have conditional spec(s) */
-            
+
       for (String s : spec.trim().split(" ")) {
         String[] parts = s.split("<");
         int upperBound = (new Integer(parts[0])).intValue();
@@ -694,10 +647,10 @@ public class SolrPluginUtils {
 
     return (optionalClauseCount < result ?
             optionalClauseCount : (result < 0 ? 0 : result));
-                  
+
   }
-    
-    
+
+
   /**
    * Recursively walks the "from" query pulling out sub-queries and
    * adding them to the "to" query.
@@ -710,18 +663,18 @@ public class SolrPluginUtils {
    */
   public static void flattenBooleanQuery(BooleanQuery to, BooleanQuery from) {
 
-    for (BooleanClause clause : (List<BooleanClause>)from.clauses()) {
-      
+    for (BooleanClause clause : from.clauses()) {
+
       Query cq = clause.getQuery();
       cq.setBoost(cq.getBoost() * from.getBoost());
-            
+
       if (cq instanceof BooleanQuery
           && !clause.isRequired()
           && !clause.isProhibited()) {
-                
+
         /* we can recurse */
         flattenBooleanQuery(to, (BooleanQuery)cq);
-                
+
       } else {
         to.add(clause);
       }
@@ -753,7 +706,7 @@ public class SolrPluginUtils {
   private final static Pattern DANGLING_OP_PATTERN = Pattern.compile( "\\s+[-+\\s]+$" );
   // Pattern to detect consecutive + and/or - operators
   // \s+[+-](?:\s*[+-]+)+
-  private final static Pattern CONSECUTIVE_OP_PATTERN = Pattern.compile( "\\s+[+-](?:\\s*[+-]+)+" );    
+  private final static Pattern CONSECUTIVE_OP_PATTERN = Pattern.compile( "\\s+[+-](?:\\s*[+-]+)+" );
 
   /**
    * Strips operators that are used illegally, otherwise reuturns it's
@@ -779,6 +732,22 @@ public class SolrPluginUtils {
       return s;
     }
     return s.toString().replace("\"","");
+  }
+
+  public static NamedList removeNulls(NamedList nl) {
+    for (int i=0; i<nl.size(); i++) {
+      if (nl.getName(i)==null) {
+        NamedList newList = nl instanceof SimpleOrderedMap ? new SimpleOrderedMap() : new NamedList();
+        for (int j=0; j<nl.size(); j++) {
+          String n = nl.getName(j);
+          if (n != null) {
+            newList.add(n, nl.getVal(j));
+          }
+        }
+        return newList;
+      }
+    }
+    return nl;
   }
 
   /**
@@ -844,9 +813,9 @@ public class SolrPluginUtils {
      */
     protected Query getFieldQuery(String field, String queryText, boolean quoted)
       throws ParseException {
-            
+
       if (aliases.containsKey(field)) {
-                
+
         Alias a = aliases.get(field);
         DisjunctionMaxQuery q = new DisjunctionMaxQuery(a.tie);
 
@@ -854,7 +823,7 @@ public class SolrPluginUtils {
          * in which case we should return null
          */
         boolean ok = false;
-                
+
         for (String f : a.fields.keySet()) {
 
           Query sub = getFieldQuery(f,queryText,quoted);
@@ -876,7 +845,7 @@ public class SolrPluginUtils {
         }
       }
     }
-        
+
   }
 
   /**
@@ -894,7 +863,7 @@ public class SolrPluginUtils {
     SolrException sortE = null;
     Sort ss = null;
     try {
-      ss = QueryParsing.parseSort(sort, req.getSchema());
+      ss = QueryParsing.parseSort(sort, req);
     } catch (SolrException e) {
       sortE = e;
     }
@@ -906,7 +875,7 @@ public class SolrPluginUtils {
       SolrCore.log.warn("Invalid sort \""+sort+"\" was specified, ignoring", sortE);
       return null;
     }
-        
+
     return ss;
   }
 
@@ -923,8 +892,8 @@ public class SolrPluginUtils {
    *
    * @return null if no queries are generated
    */
-  public static List<Query> parseQueryStrings(SolrQueryRequest req, 
-                                              String[] queries) throws ParseException {    
+  public static List<Query> parseQueryStrings(SolrQueryRequest req,
+                                              String[] queries) throws ParseException {
     if (null == queries || 0 == queries.length) return null;
     List<Query> out = new ArrayList<Query>(queries.length);
     for (String q : queries) {
@@ -971,9 +940,9 @@ public class SolrPluginUtils {
    * @since solr 1.4
    */
   public static SolrDocumentList docListToSolrDocumentList(
-      DocList docs, 
-      SolrIndexSearcher searcher, 
-      Set<String> fields, 
+      DocList docs,
+      SolrIndexSearcher searcher,
+      Set<String> fields,
       Map<SolrDocument, Integer> ids ) throws IOException
   {
     DocumentBuilder db = new DocumentBuilder(searcher.getSchema());
@@ -1011,12 +980,12 @@ public class SolrPluginUtils {
 
 
   /**
-   * Given a SolrQueryResponse replace the DocList if it is in the result.  
+   * Given a SolrQueryResponse replace the DocList if it is in the result.
    * Otherwise add it to the response
-   * 
+   *
    * @since solr 1.4
    */
-  public static void addOrReplaceResults(SolrQueryResponse rsp, SolrDocumentList docs) 
+  public static void addOrReplaceResults(SolrQueryResponse rsp, SolrDocumentList docs)
   {
     NamedList vals = rsp.getValues();
     int idx = vals.indexOf( "response", 0 );
@@ -1029,7 +998,7 @@ public class SolrPluginUtils {
       vals.add( "response", docs );
     }
   }
-  
+
   public static void invokeSetters(Object bean, NamedList initArgs) {
     if (initArgs == null) return;
     Class clazz = bean.getClass();
@@ -1042,7 +1011,7 @@ public class SolrPluginUtils {
       Method method = null;
       try {
         for (Method m : methods) {
-          if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) { 
+          if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) {
             method = m;
             break;
           }

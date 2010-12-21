@@ -52,7 +52,7 @@ import org.apache.solr.core.SolrCore;
  *
  * @deprecated Use {@link DirectUpdateHandler2} instead.  This is only kept around for back-compatibility (way back).
  */
-
+@Deprecated
 public class DirectUpdateHandler extends UpdateHandler {
 
   // the set of ids in the "pending set" (those docs that have been added, but

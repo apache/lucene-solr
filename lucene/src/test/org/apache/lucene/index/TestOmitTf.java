@@ -29,12 +29,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 
 
 public class TestOmitTf extends LuceneTestCase {
-    
+  
   public static class SimpleSimilarity extends Similarity {
     @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
     @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
@@ -59,17 +58,17 @@ public class TestOmitTf extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
   // omitTermFreqAndPositions bit in the FieldInfo
   public void testOmitTermFreqAndPositions() throws Exception {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
     f2.setOmitTermFreqAndPositions(true);
     d.add(f2);
         
@@ -94,7 +93,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
     _TestUtil.checkIndex(ram);
 
-    SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
@@ -106,19 +105,22 @@ public class TestOmitTf extends LuceneTestCase {
   // Tests whether merging of docs that have different
   // omitTermFreqAndPositions for the same field works
   public void testMixedMerge() throws Exception {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
+    IndexWriter writer = new IndexWriter(
+        ram,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
+            setMaxBufferedDocs(3).
+            setMergePolicy(newLogMergePolicy(2))
+    );
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
     f2.setOmitTermFreqAndPositions(true);
     d.add(f2);
 
@@ -146,7 +148,7 @@ public class TestOmitTf extends LuceneTestCase {
 
     _TestUtil.checkIndex(ram);
 
-    SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
@@ -159,19 +161,22 @@ public class TestOmitTf extends LuceneTestCase {
   // field X, then adding docs that do omitTermFreqAndPositions for that same
   // field, 
   public void testMixedRAM() throws Exception {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
+    IndexWriter writer = new IndexWriter(
+        ram,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
+            setMaxBufferedDocs(10).
+            setMergePolicy(newLogMergePolicy(2))
+    );
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f2);
 
     for(int i=0;i<5;i++)
@@ -190,7 +195,7 @@ public class TestOmitTf extends LuceneTestCase {
 
     _TestUtil.checkIndex(ram);
 
-    SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
+    SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should not be set.", !fi.fieldInfo("f1").omitTermFreqAndPositions);
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
@@ -207,16 +212,16 @@ public class TestOmitTf extends LuceneTestCase {
 
   // Verifies no *.prx exists when all fields omit term freq:
   public void testNoPrxFile() throws Throwable {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setUseCompoundFile(false);
     Document d = new Document();
         
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     f1.setOmitTermFreqAndPositions(true);
     d.add(f1);
 
@@ -239,12 +244,15 @@ public class TestOmitTf extends LuceneTestCase {
  
   // Test scores with one field with Term Freqs and one without, otherwise with equal content 
   public void testBasic() throws Exception {
-    Directory dir = new MockRAMDirectory();  
+    Directory dir = newDirectory();  
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2)
-        .setSimilarity(new SimpleSimilarity()));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
+            setMaxBufferedDocs(2).
+            setSimilarity(new SimpleSimilarity()).
+            setMergePolicy(newLogMergePolicy(2))
+    );
         
     StringBuilder sb = new StringBuilder(265);
     String term = "term";
@@ -252,11 +260,11 @@ public class TestOmitTf extends LuceneTestCase {
       Document d = new Document();
       sb.append(term).append(" ");
       String content  = sb.toString();
-      Field noTf = new Field("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.ANALYZED);
+      Field noTf = newField("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.ANALYZED);
       noTf.setOmitTermFreqAndPositions(true);
       d.add(noTf);
           
-      Field tf = new Field("tf", content + (i%2==0 ? " tf" : ""), Field.Store.NO, Field.Index.ANALYZED);
+      Field tf = newField("tf", content + (i%2==0 ? " tf" : ""), Field.Store.NO, Field.Index.ANALYZED);
       d.add(tf);
           
       writer.addDocument(d);

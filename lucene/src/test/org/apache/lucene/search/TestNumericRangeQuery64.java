@@ -17,27 +17,25 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util._TestUtil;
 
 import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
 
-public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
+public class TestNumericRangeQuery64 extends LuceneTestCase {
   // distance of entries
   private static final long distance = 66666L;
   // shift the starting of the values to the left, to also have negative values:
@@ -45,15 +43,16 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   // number of docs to generate for testing
   private static final int noDocs = 10000 * RANDOM_MULTIPLIER;
   
-  private static RAMDirectory directory = null;
+  private static Directory directory = null;
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    directory = new RAMDirectory();
-    Random random = newStaticRandom(TestNumericRangeQuery64.class);
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
@@ -88,7 +87,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
       ascfield2.setLongValue(val);
       writer.addDocument(doc);
     }
-  
     reader = writer.getReader();
     searcher=new IndexSearcher(reader);
     writer.close();
@@ -298,8 +296,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   
   @Test
   public void testInfiniteValues() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
@@ -348,13 +346,12 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   }
   
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
-    final Random rnd=newRandom();
     String field="field"+precisionStep;
     int termCountT=0,termCountC=0;
     int num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
-      long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
+      long lower=(long)(random.nextDouble()*noDocs*distance)+startOffset;
+      long upper=(long)(random.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
@@ -401,8 +398,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
       assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
     } else if (VERBOSE) {
       System.out.println("Average number of terms during random search on '" + field + "':");
-      System.out.println(" Trie query: " + (((double)termCountT)/(10*4)));
-      System.out.println(" Classical query: " + (((double)termCountC)/(10*4)));
+      System.out.println(" Trie query: " + (((double)termCountT)/(num * 4)));
+      System.out.println(" Classical query: " + (((double)termCountC)/(num * 4)));
     }
   }
   
@@ -432,13 +429,12 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   }
   
   private void testRangeSplit(int precisionStep) throws Exception {
-    final Random rnd=newRandom();
     String field="ascfield"+precisionStep;
     // 10 random tests
     int num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      long lower=(long)(rnd.nextDouble()*noDocs - noDocs/2);
-      long upper=(long)(rnd.nextDouble()*noDocs - noDocs/2);
+      long lower=(long)(random.nextDouble()*noDocs - noDocs/2);
+      long upper=(long)(random.nextDouble()*noDocs - noDocs/2);
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
@@ -518,14 +514,13 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   }
   
   private void testSorting(int precisionStep) throws Exception {
-    final Random rnd=newRandom();
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
     int num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
-      long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
+      long lower=(long)(random.nextDouble()*noDocs*distance)+startOffset;
+      long upper=(long)(random.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }

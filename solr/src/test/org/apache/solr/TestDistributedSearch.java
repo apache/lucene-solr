@@ -20,6 +20,7 @@ package org.apache.solr;
 import junit.framework.TestCase;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.params.CommonParams;
 
 /**
  * TODO? perhaps use:
@@ -95,7 +96,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       query("q","*:*", "sort",f+" asc");
     }
 
-
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
     query("q","*:*", "sort",i1+" asc");
@@ -128,21 +128,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","now their fox sat had put","fl","foofoofoo",
             "hl","true","hl.fl",t1);
 
-
-    handle.put("debug", UNORDERED);
-    handle.put("time", SKIPVAL);
-
-    query("q","now their fox sat had put","fl","*,score",
-            "debugQuery", "true");
-
-    // TODO: This test currently fails because debug info is obtained only
-    // on shards with matches.
-    /***
-    query("q","matchesnothing","fl","*,score",
-            "debugQuery", "true");    
-    ***/
     query("q","matchesnothing","fl","*,score");  
 
+    // test that a single NOW value is propagated to all shards... if that is true
+    // then the primary sort should always be a tie and then the secondary should always decide
+    query("q","{!func}ms(NOW)", "sort","score desc,"+i1+" desc","fl","id");    
 
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count");
@@ -175,6 +165,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
 
+    /*** TODO: the failure may come back in "exception"
     try {
       // test error produced for field that is invalid for schema
       query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);
@@ -182,6 +173,18 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     } catch (SolrServerException ex) {
       // expected
     }
+    ***/
+
+    // Try to get better coverage for refinement queries by turning off over requesting.
+    // This makes it much more likely that we may not get the top facet values and hence
+    // we turn of that checking.
+    handle.put("facet_fields", SKIPVAL);    
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",5, "facet.shard.limit",5);
+    // check a complex key name
+    query("q","*:*", "rows",0, "facet","true", "facet.field","{!key='$a b/c \\' \\} foo'}"+t1,"facet.limit",5, "facet.shard.limit",5);
+    query("q","*:*", "rows",0, "facet","true", "facet.field","{!key='$a'}"+t1,"facet.limit",5, "facet.shard.limit",5);
+    handle.remove("facet_fields");
+
 
     // index the same document to two servers and make sure things
     // don't blow up.
@@ -195,6 +198,20 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       query("q","fox duplicate horses", "hl","true", "hl.fl", t1);
       query("q","*:*", "rows",100);
     }
+
+    // test debugging
+    handle.put("explain", UNORDERED);
+    handle.put("debug", UNORDERED);
+    handle.put("time", SKIPVAL);
+    query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+
+    // TODO: This test currently fails because debug info is obtained only
+    // on shards with matches.
+    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
 
     // Thread.sleep(10000000000L);
   }

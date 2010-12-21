@@ -17,9 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.Analyzer;
@@ -33,8 +33,6 @@ import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -65,12 +63,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private float normDelta = (float) 0.001;
 
-  public TestIndexReaderCloneNorms(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
     anlzr = new MockAnalyzer();
@@ -83,15 +77,14 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
    */
   public void testNorms() throws IOException {
     // test with a single index: index1
-    File indexDir1 = new File(TEMP_DIR, "lucenetestindex1");
-    Directory dir1 = FSDirectory.open(indexDir1);
+    Directory dir1 = newDirectory();
     IndexWriter.unlock(dir1);
 
     norms = new ArrayList<Float>();
     modifiedNorms = new ArrayList<Float>();
 
-    createIndex(dir1);
-    doTestNorms(dir1);
+    createIndex(random, dir1);
+    doTestNorms(random, dir1);
 
     // test with a single index: index2
     ArrayList<Float> norms1 = norms;
@@ -102,22 +95,23 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     modifiedNorms = new ArrayList<Float>();
     numDocNorms = 0;
 
-    File indexDir2 = new File(TEMP_DIR, "lucenetestindex2");
-    Directory dir2 = FSDirectory.open(indexDir2);
+    Directory dir2 = newDirectory();
 
-    createIndex(dir2);
-    doTestNorms(dir2);
+    createIndex(random, dir2);
+    doTestNorms(random, dir2);
 
     // add index1 and index2 to a third index: index3
-    File indexDir3 = new File(TEMP_DIR, "lucenetestindex3");
-    Directory dir3 = FSDirectory.open(indexDir3);
+    Directory dir3 = newDirectory();
 
-    createIndex(dir3);
-    IndexWriter iw = new IndexWriter(dir3, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
-    iw.addIndexes(new Directory[] { dir1, dir2 });
+    createIndex(random, dir3);
+    IndexWriter iw = new IndexWriter(
+        dir3,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
+            setOpenMode(OpenMode.APPEND).
+            setMaxBufferedDocs(5).
+            setMergePolicy(newLogMergePolicy(3))
+    );
+    iw.addIndexes(dir1, dir2);
     iw.optimize();
     iw.close();
 
@@ -129,12 +123,16 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
     // test with index3
     verifyIndex(dir3);
-    doTestNorms(dir3);
+    doTestNorms(random, dir3);
 
     // now with optimize
-    iw = new IndexWriter(dir3, new IndexWriterConfig(TEST_VERSION_CURRENT,
-        anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
+    iw = new IndexWriter(
+        dir3,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
+            setOpenMode(OpenMode.APPEND).
+            setMaxBufferedDocs(5).
+            setMergePolicy(newLogMergePolicy(3))
+    );
     iw.optimize();
     iw.close();
     verifyIndex(dir3);
@@ -145,8 +143,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
 
   // try cloning and reopening the norms
-  private void doTestNorms(Directory dir) throws IOException {
-    addDocs(dir, 12, true);
+  private void doTestNorms(Random random, Directory dir) throws IOException {
+    addDocs(random, dir, 12, true);
     IndexReader ir = IndexReader.open(dir, false);
     verifyIndex(ir);
     modifyNormsForF1(ir);
@@ -160,13 +158,16 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     modifyNormsForF1(irc3);
     verifyIndex(irc3);
     irc3.flush();
+    
+    ir.close();
+    irc.close();
     irc3.close();
   }
   
   public void testNormsClose() throws IOException { 
-    Directory dir1 = new MockRAMDirectory(); 
-    TestIndexReaderReopen.createIndex(dir1, false);
-    SegmentReader reader1 = SegmentReader.getOnlySegmentReader(dir1);
+    Directory dir1 = newDirectory(); 
+    TestIndexReaderReopen.createIndex(random, dir1, false);
+    SegmentReader reader1 = getOnlySegmentReader(IndexReader.open(dir1, false));
     reader1.norms("field1");
     Norm r1norm = reader1.norms.get("field1");
     AtomicInteger r1BytesRef = r1norm.bytesRef();
@@ -180,12 +181,12 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   public void testNormsRefCounting() throws IOException { 
-    Directory dir1 = new MockRAMDirectory(); 
-    TestIndexReaderReopen.createIndex(dir1, false);
+    Directory dir1 = newDirectory(); 
+    TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader reader1 = IndexReader.open(dir1, false);
         
     IndexReader reader2C = (IndexReader) reader1.clone();
-    SegmentReader segmentReader2C = SegmentReader.getOnlySegmentReader(reader2C);
+    SegmentReader segmentReader2C = getOnlySegmentReader(reader2C);
     segmentReader2C.norms("field1"); // load the norms for the field
     Norm reader2CNorm = segmentReader2C.norms.get("field1");
     assertTrue("reader2CNorm.bytesRef()=" + reader2CNorm.bytesRef(), reader2CNorm.bytesRef().get() == 2);
@@ -193,13 +194,13 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     
     
     IndexReader reader3C = (IndexReader) reader2C.clone();
-    SegmentReader segmentReader3C = SegmentReader.getOnlySegmentReader(reader3C);
+    SegmentReader segmentReader3C = getOnlySegmentReader(reader3C);
     Norm reader3CCNorm = segmentReader3C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().get());
     
     // edit a norm and the refcount should be 1
     IndexReader reader4C = (IndexReader) reader3C.clone();
-    SegmentReader segmentReader4C = SegmentReader.getOnlySegmentReader(reader4C);
+    SegmentReader segmentReader4C = getOnlySegmentReader(reader4C);
     assertEquals(4, reader3CCNorm.bytesRef().get());
     reader4C.setNorm(5, "field1", 0.33f);
     
@@ -219,7 +220,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     assertEquals(1, reader4CCNorm.bytesRef().get());
         
     IndexReader reader5C = (IndexReader) reader4C.clone();
-    SegmentReader segmentReader5C = SegmentReader.getOnlySegmentReader(reader5C);
+    SegmentReader segmentReader5C = getOnlySegmentReader(reader5C);
     Norm reader5CCNorm = segmentReader5C.norms.get("field1");
     reader5C.setNorm(5, "field1", 0.7f);
     assertEquals(1, reader5CCNorm.bytesRef().get());
@@ -232,8 +233,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     dir1.close();
   }
   
-  private void createIndex(Directory dir) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
+  private void createIndex(Random random, Directory dir) throws IOException {
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
         .setMaxBufferedDocs(5).setSimilarity(similarityOne));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
@@ -283,9 +284,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     }
   }
 
-  private void addDocs(Directory dir, int ndocs, boolean compound)
+  private void addDocs(Random random, Directory dir, int ndocs, boolean compound)
       throws IOException {
-    IndexWriterConfig conf = new IndexWriterConfig(
+    IndexWriterConfig conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
             .setMaxBufferedDocs(5).setSimilarity(similarityOne);
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
@@ -303,7 +304,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     Document d = new Document();
     float boost = nextNorm();
     for (int i = 0; i < 10; i++) {
-      Field f = new Field("f" + i, "v" + i, Store.NO, Index.NOT_ANALYZED);
+      Field f = newField("f" + i, "v" + i, Store.NO, Index.NOT_ANALYZED);
       f.setBoost(boost);
       d.add(f);
     }

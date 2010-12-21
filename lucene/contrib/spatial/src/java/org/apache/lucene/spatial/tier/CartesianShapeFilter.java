@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -47,7 +46,7 @@ public class CartesianShapeFilter extends Filter {
   
   @Override
   public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    final Bits delDocs = reader.getDeletedDocs();
     final List<Double> area = shape.getArea();
     final int sz = area.size();
     
@@ -59,7 +58,7 @@ public class CartesianShapeFilter extends Filter {
       return new DocIdSet() {
         @Override
         public DocIdSetIterator iterator() throws IOException {
-          return MultiFields.getTermDocsEnum(reader, delDocs, fieldName, bytesRef);
+          return reader.termDocsEnum(delDocs, fieldName, bytesRef);
         }
         
         @Override
@@ -72,7 +71,7 @@ public class CartesianShapeFilter extends Filter {
       for (int i =0; i< sz; i++) {
         double boxId = area.get(i).doubleValue();
         NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
-        final DocsEnum docsEnum = MultiFields.getTermDocsEnum(reader, delDocs, fieldName, bytesRef);
+        final DocsEnum docsEnum = reader.termDocsEnum(delDocs, fieldName, bytesRef);
         if (docsEnum == null) continue;
         // iterate through all documents
         // which have this boxId

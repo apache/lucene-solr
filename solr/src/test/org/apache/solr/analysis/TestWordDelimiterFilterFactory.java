@@ -17,7 +17,15 @@
 
 package org.apache.solr.analysis;
 
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.core.SolrResourceLoader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -182,5 +190,52 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
             ,"//result[@numFound=0]"
     );
     clearIndex();
+  }
+  
+  @Test
+  public void testCustomTypes() throws Exception {
+    String testText = "I borrowed $5,400.00 at 25% interest-rate";
+    WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("generateWordParts", "1");
+    args.put("generateNumberParts", "1");
+    args.put("catenateWords", "1");
+    args.put("catenateNumbers", "1");
+    args.put("catenateAll", "0");
+    args.put("splitOnCaseChange", "1");
+    
+    /* default behavior */
+    factoryDefault.init(args);
+    factoryDefault.inform(loader);
+    
+    TokenStream ts = factoryDefault.create(
+        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader(testText)));
+    BaseTokenTestCase.assertTokenStreamContents(ts, 
+        new String[] { "I", "borrowed", "5", "400", "00", "540000", "at", "25", "interest", "rate", "interestrate" });
+
+    ts = factoryDefault.create(
+        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader("foo\u200Dbar")));
+    BaseTokenTestCase.assertTokenStreamContents(ts, 
+        new String[] { "foo", "bar", "foobar" });
+
+    
+    /* custom behavior */
+    WordDelimiterFilterFactory factoryCustom = new WordDelimiterFilterFactory();
+    // use a custom type mapping
+    args.put("types", "wdftypes.txt");
+    factoryCustom.init(args);
+    factoryCustom.inform(loader);
+    
+    ts = factoryCustom.create(
+        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader(testText)));
+    BaseTokenTestCase.assertTokenStreamContents(ts, 
+        new String[] { "I", "borrowed", "$5,400.00", "at", "25%", "interest", "rate", "interestrate" });
+    
+    /* test custom behavior with a char > 0x7F, because we had to make a larger byte[] */
+    ts = factoryCustom.create(
+        new WhitespaceTokenizer(BaseTokenTestCase.DEFAULT_VERSION, new StringReader("foo\u200Dbar")));
+    BaseTokenTestCase.assertTokenStreamContents(ts, 
+        new String[] { "foo\u200Dbar" });
   }
 }

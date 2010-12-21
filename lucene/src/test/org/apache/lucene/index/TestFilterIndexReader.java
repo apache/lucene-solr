@@ -19,11 +19,8 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -110,7 +107,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     }
     
     public TestReader(IndexReader reader) {
-      super(reader);
+      super(new SlowMultiReaderWrapper(reader));
     }
 
     @Override
@@ -118,46 +115,36 @@ public class TestFilterIndexReader extends LuceneTestCase {
       return new TestFields(super.fields());
     }
   }
-
-
-  /** Main for running test case by itself. */
-  public static void main(String args[]) {
-    TestRunner.run (new TestSuite(TestIndexReader.class));
-  }
     
   /**
    * Tests the IndexReader.getFieldNames implementation
    * @throws Exception on error
    */
   public void testFilterIndexReader() throws Exception {
-    RAMDirectory directory = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document d1 = new Document();
-    d1.add(new Field("default","one two", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("default","one two", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d1);
 
     Document d2 = new Document();
-    d2.add(new Field("default","one three", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(newField("default","one three", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d2);
 
     Document d3 = new Document();
-    d3.add(new Field("default","two four", Field.Store.YES, Field.Index.ANALYZED));
+    d3.add(newField("default","two four", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d3);
 
     writer.close();
 
-    //IndexReader reader = new TestReader(IndexReader.open(directory, true));
-    RAMDirectory target = new MockRAMDirectory();
-    writer = new IndexWriter(target, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory target = newDirectory();
+    writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
     writer.addIndexes(reader);
     writer.close();
     reader.close();
     reader = IndexReader.open(target, true);
-    
-
-    assertTrue(reader.isOptimized());
     
     TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
     while (terms.next() != null) {
@@ -174,5 +161,6 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     reader.close();
     directory.close();
+    target.close();
   }
 }

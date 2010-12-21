@@ -33,12 +33,7 @@
 
   <property name="clover.db.dir" location="${dest}/tests/clover/db"/>
   <property name="clover.report.dir" location="${dest}/tests/clover/reports"/>
-
-  <property name="junit.details" value="1"/>
   
-  <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
-  <property name="tests.luceneMatchVersion" value="4.0"/>
-
     <available
             property="clover.present"
             classname="com.cenqua.clover.tasks.CloverReportTask"
@@ -223,6 +218,7 @@
           <packageset dir="contrib/dataimporthandler/src/main/java" />
           <!--<packageset dir="contrib/clustering/src/main/java" />-->
           <packageset dir="contrib/extraction/src/main/java" />
+          <packageset dir="contrib/analysis-extras/src/java" />
           <group title="Core" packages="org.apache.*" />
           <group title="Common" packages="org.apache.solr.common.*" />
           <group title="SolrJ" packages="org.apache.solr.client.solrj*" />
@@ -377,21 +373,14 @@
         description="Runs the core unit tests."
         depends="test-core, test-contrib" />
 
-  <condition property="runsequential">
-    <or>
-      <isset property="testcase"/>
-      <isset property="sequential-tests"/>
-    </or>
-  </condition>
-
   <target name="junit" depends="compileTests,junit-mkdir,junit-sequential,junit-parallel"/>
 
-  <target name="junit-sequential" if="runsequential">
+  <target name="junit-sequential" if="tests.sequential">
     <junit-macro/>
   </target>
 
-  <target name="junit-parallel" unless="runsequential">
-   <parallel threadsPerProcessor="${threadsPerProcessor}">
+  <target name="junit-parallel" unless="tests.sequential">
+   <parallel threadsPerProcessor="${tests.threadspercpu}">
     <junit-macro threadNum="1" threadTotal="8"/>
     <junit-macro threadNum="2" threadTotal="8"/>
     <junit-macro threadNum="3" threadTotal="8"/>
@@ -410,6 +399,7 @@
   <macrodef name="junit-macro">
   <attribute name="threadNum" default="1"/>
   <attribute name="threadTotal" default="1"/>
+  <attribute name="tempDir" default="${junit.output.dir}/temp"/>
     <sequential>
     <!-- no description so it doesn't show up in -projecthelp -->  
     <condition property="runall">
@@ -421,9 +411,10 @@
         </or>
       </not>
     </condition>
-    <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
-      <isset property="use.fsdir"/>
-    </condition>
+    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
+       This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
+    -->
+    <touch file="@{tempDir}/@{threadNum}/quiet.ant" verbose="false" mkdirs="true"/>
     <property name="dir.prop" value=""/>
     <junit printsummary="no"
            haltonfailure="no"
@@ -431,12 +422,26 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/test/test-files/"
-           tempdir="${junit.output.dir}"
+           tempdir="@{tempDir}/@{threadNum}"
+           forkmode="perBatch"
            >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
       <sysproperty key="tests.codec" value="${tests.codec}"/>
-      <jvmarg line="${dir.prop}"/>
+      <sysproperty key="tests.locale" value="${tests.locale}"/>
+      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
+      <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
+      <sysproperty key="tests.iter" value="${tests.iter}"/>
+      <sysproperty key="tests.seed" value="${tests.seed}"/>
+      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+      <sysproperty key="jetty.testMode" value="1"/>
+      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
+      <sysproperty key="testmethod" value="${testmethod}"/>
+      <!-- set whether or not nightly tests should run -->
+      <sysproperty key="tests.nightly" value="${tests.nightly}"/>
+      <!-- TODO: why is this unconditionally set to "" above? disable for now
+         <jvmarg line="${dir.prop}"/>
+      -->
       <jvmarg line="${args}"/>
 
       <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>
@@ -505,6 +510,7 @@
       <fileset dir="contrib/dataimporthandler/src/main/java" />
       <fileset dir="contrib/clustering/src/main/java" />
       <fileset dir="contrib/extraction/src/main/java" />
+      <fileset dir="contrib/analysis-extras/src/java" />
     </clover-setup>
   </target>
 
@@ -605,6 +611,8 @@
               basedir="contrib/extraction/src" />
     <!--<solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
               basedir="contrib/clustering/src" />-->
+    <solr-jar destfile="${dist}/apache-solr-analysis-extras-src-${version}.jar"
+              basedir="contrib/analysis-extras/src" />
   </target>
 
   <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
@@ -621,6 +629,8 @@
               basedir="${build.javadoc}/contrib-solr-clustering" />-->
     <solr-jar destfile="${dist}/apache-solr-cell-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-cell" />
+    <solr-jar destfile="${dist}/apache-solr-analysis-extras-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-analysis-extras" />
   </target>
 
   <!-- Creates the solr jar. -->
@@ -717,7 +727,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lucene-libs/** lib/** src/** example/** client/** contrib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/**" />
+        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/**" />
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="src/test/test-files/solr/lib/classes/empty-file-main-lib.txt" />
@@ -850,9 +860,12 @@
 
       <!-- ========== SOLR SPECIFIC COMMONS CSV ========== -->
       <m2-deploy  pom.xml="lib/solr-commons-csv-pom.xml.template"
-                  jar.file="lib/commons-csv-1.0-SNAPSHOT-r609327.jar" />
+                  jar.file="lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
 
       <!-- ========== SOLR ARTIFACTS ========== -->
+
+      <m2-deploy  pom.xml="lib/apache-solr-noggit-pom.xml.template"
+                 jar.file="lib/apache-solr-noggit-r944541.jar" />
 
       <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-pom.xml.template"
                  jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">
@@ -945,6 +958,8 @@
       <fileset dir="contrib/clustering/src/test/java"/>
       <fileset dir="contrib/extraction/src/main/java"/>
       <fileset dir="contrib/extraction/src/test/java"/>
+      <fileset dir="contrib/analysis-extras/src/test"/>
+      <fileset dir="contrib/analysis-extras/src/test"/>
     </rat:report>
   </target>
 

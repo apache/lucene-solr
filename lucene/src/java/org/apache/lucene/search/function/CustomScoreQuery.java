@@ -145,6 +145,10 @@ public class CustomScoreQuery extends Query {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (!super.equals(o))
+      return false;
     if (getClass() != o.getClass()) {
       return false;
     }
@@ -300,7 +304,7 @@ public class CustomScoreQuery extends Query {
     // constructor
     private CustomScorer(Similarity similarity, IndexReader reader, CustomWeight w,
         Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
-      super(similarity);
+      super(similarity,w);
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;

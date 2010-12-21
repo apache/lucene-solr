@@ -17,15 +17,15 @@
 
 package org.apache.solr.highlight;
 
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
 
@@ -49,11 +49,11 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
     // Make sure we loaded the one fragmentsBuilder
     SolrFragmentsBuilder solrFbNull = highlighter.fragmentsBuilders.get( null );
     SolrFragmentsBuilder solrFbEmpty = highlighter.fragmentsBuilders.get( "" );
-    SolrFragmentsBuilder solrFbColored = highlighter.fragmentsBuilders.get( "colored" );
+    SolrFragmentsBuilder solrFbSimple = highlighter.fragmentsBuilders.get( "simple" );
     SolrFragmentsBuilder solrFbSO = highlighter.fragmentsBuilders.get( "scoreOrder" );
     assertSame( solrFbNull, solrFbEmpty );
     assertTrue( solrFbNull instanceof ScoreOrderFragmentsBuilder );
-    assertTrue( solrFbColored instanceof MultiColoredScoreOrderFragmentsBuilder );
+    assertTrue( solrFbSimple instanceof SimpleFragmentsBuilder );
     assertTrue( solrFbSO instanceof ScoreOrderFragmentsBuilder );
   }
 
@@ -74,7 +74,7 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
     assertQ("Basic summarization",
             sumLRF.makeRequest("tv_text:vector"),
             "//lst[@name='highlighting']/lst[@name='1']",
-            "//lst[@name='1']/arr[@name='tv_text']/str[.=' fast <b>vector</b> highlighter test']"
+            "//lst[@name='1']/arr[@name='tv_text']/str[.=' fast <em>vector</em> highlighter test ']"
             );
   }
 }

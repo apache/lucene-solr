@@ -22,8 +22,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
@@ -32,7 +30,8 @@ import org.apache.lucene.util.ToStringUtils;
   This may be combined with other terms with a {@link BooleanQuery}.
   */
 public class TermQuery extends Query {
-  private Term term;
+  private final Term term;
+  private final int docFreq;
 
   private class TermWeight extends Weight {
     private final Similarity similarity;
@@ -45,7 +44,11 @@ public class TermQuery extends Query {
     public TermWeight(Searcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
-      idfExp = similarity.idfExplain(term, searcher);
+      if (docFreq != -1) {
+        idfExp = similarity.idfExplain(term, searcher, docFreq);
+      } else {
+        idfExp = similarity.idfExplain(term, searcher);
+      }
       idf = idfExp.getIdf();
     }
 
@@ -73,9 +76,10 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      // NOTE: debateably, the caller should never pass in a
-      // multi reader...
-      DocsEnum docs = MultiFields.getTermDocsEnum(reader, MultiFields.getDeletedDocs(reader), term.field(), term.bytes());
+      DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(),
+                                          term.field(),
+                                          term.bytes());
+
       if (docs == null) {
         return null;
       }
@@ -118,7 +122,7 @@ public class TermQuery extends Query {
 
       Explanation tfExplanation = new Explanation();
       int tf = 0;
-      DocsEnum docs = reader.termDocsEnum(MultiFields.getDeletedDocs(reader), term.field(), term.bytes());
+      DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), term.field(), term.bytes());
       if (docs != null) {
           int newDoc = docs.advance(doc);
           if (newDoc == doc) {
@@ -161,7 +165,15 @@ public class TermQuery extends Query {
 
   /** Constructs a query for the term <code>t</code>. */
   public TermQuery(Term t) {
+    this(t, -1);
+  }
+
+  /** Expert: constructs a TermQuery that will use the
+   *  provided docFreq instead of looking up the docFreq
+   *  against the searcher. */
+  public TermQuery(Term t, int docFreq) {
     term = t;
+    this.docFreq = docFreq;
   }
 
   /** Returns the term of this query. */

@@ -35,9 +35,8 @@ import org.apache.lucene.util.Version;
  *
  */
 public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
-  
   /**
-   * @deprecated Remove this test when support for 3.0 indexes is no longer needed.
+   * @deprecated (3.1) Remove this test when support for 3.0 indexes is no longer needed.
    */
   @Deprecated
   public void testStopWordLegacy() throws Exception {
@@ -51,7 +50,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   }
   
   /**
-   * @deprecated Remove this test when support for 3.0 indexes is no longer needed.
+   * @deprecated (3.1) Remove this test when support for 3.0 indexes is no longer needed.
    */
   @Deprecated
   public void testReusableTokenStreamLegacy() throws Exception {
@@ -66,49 +65,6 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česk", "republik" });
   }
 
-  /**
-   * An input stream that always throws IOException for testing.
-   * @deprecated Remove this class when the loadStopWords method is removed.
-   */
-  @Deprecated
-  private class UnreliableInputStream extends InputStream {
-    @Override
-    public int read() throws IOException {
-      throw new IOException();
-    }
-  }
-  
-  /**
-   * The loadStopWords method does not throw IOException on error,
-   * instead previously it set the stoptable to null (versus empty)
-   * this would cause a NPE when it is time to create the StopFilter.
-   * @deprecated Remove this test when the loadStopWords method is removed.
-   */
-  @Deprecated
-  public void testInvalidStopWordFile() throws Exception {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_30);
-    cz.loadStopWords(new UnreliableInputStream(), "UTF-8");
-    assertAnalyzesTo(cz, "Pokud mluvime o volnem",
-        new String[] { "pokud", "mluvime", "o", "volnem" });
-  }
-  
-  /** 
-   * Test that changes to the stop table via loadStopWords are applied immediately
-   * when using reusable token streams.
-   * @deprecated Remove this test when the loadStopWords method is removed.
-   */
-  @Deprecated
-  public void testStopWordFileReuse() throws Exception {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_30);
-    assertAnalyzesToReuse(cz, "Česká Republika", 
-      new String[] { "česká", "republika" });
-    
-    InputStream stopwords = getClass().getResourceAsStream("customStopWordFile.txt");
-    cz.loadStopWords(stopwords, "UTF-8");
-    
-    assertAnalyzesToReuse(cz, "Česká Republika", new String[] { "česká" });
-  }
-  
   public void testWithStemExclusionSet() throws IOException{
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("hole");

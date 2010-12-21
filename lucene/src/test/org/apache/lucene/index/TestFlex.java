@@ -17,12 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.*;
 import org.apache.lucene.store.*;
-import org.apache.lucene.index.codecs.*;
-import org.apache.lucene.index.codecs.standard.*;
-import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.*;
@@ -31,21 +26,23 @@ public class TestFlex extends LuceneTestCase {
 
   // Test non-flex API emulated on flex index
   public void testNonFlex() throws Exception {
-    Directory d = new MockRAMDirectory();
+    Directory d = newDirectory();
 
     final int DOC_COUNT = 177;
 
-    IndexWriter w = new IndexWriter(d, new MockAnalyzer(),
-                                    IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(
+        d,
+        new IndexWriterConfig(Version.LUCENE_31, new MockAnalyzer()).
+            setMaxBufferedDocs(7)
+    );
 
     for(int iter=0;iter<2;iter++) {
       if (iter == 0) {
-        w.setMaxBufferedDocs(7);
         Document doc = new Document();
-        doc.add(new Field("field1", "this is field1", Field.Store.NO, Field.Index.ANALYZED));
-        doc.add(new Field("field2", "this is field2", Field.Store.NO, Field.Index.ANALYZED));
-        doc.add(new Field("field3", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-        doc.add(new Field("field4", "bbb", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("field1", "this is field1", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("field2", "this is field2", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("field3", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("field4", "bbb", Field.Store.NO, Field.Index.ANALYZED));
         for(int i=0;i<DOC_COUNT;i++) {
           w.addDocument(doc);
         }
@@ -65,11 +62,11 @@ public class TestFlex extends LuceneTestCase {
   }
 
   public void testTermOrd() throws Exception {
-    Directory d = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT,
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
                                                              new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
-    doc.add(new Field("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     TermsEnum terms = r.getSequentialSubReaders()[0].fields().terms("f").iterator();

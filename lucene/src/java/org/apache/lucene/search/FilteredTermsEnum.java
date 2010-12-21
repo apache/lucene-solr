@@ -20,11 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.AttributeSource;
@@ -46,7 +43,6 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   private BytesRef initialSeekTerm = null;
   private boolean doSeek = true;        
   private BytesRef actualTerm = null;
-  private boolean useTermsCache = false;
 
   private final TermsEnum tenum;
 
@@ -63,22 +59,11 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   protected abstract AcceptStatus accept(BytesRef term) throws IOException;
 
   /**
-   * Creates a filtered {@link TermsEnum} for the given field name and reader.
-   */
-  public FilteredTermsEnum(final IndexReader reader, final String field) throws IOException {
-    final Terms terms = MultiFields.getTerms(reader, field);
-    if (terms != null) {
-      tenum = terms.iterator();
-    } else {
-      tenum = null;
-    }
-  }
-
-  /**
    * Creates a filtered {@link TermsEnum} on a terms enum.
-   * @param tenum the terms enumeration to filter, if {@code null} this is the null iterator.
+   * @param tenum the terms enumeration to filter.
    */
   public FilteredTermsEnum(final TermsEnum tenum) {
+    assert tenum != null;
     this.tenum = tenum;
   }
 
@@ -116,42 +101,27 @@ public abstract class FilteredTermsEnum extends TermsEnum {
     return t;
   }
 
-  /** Expert: enable or disable the terms cache when seeking. */
-  protected final void setUseTermsCache(boolean useTermsCache) {
-    this.useTermsCache = useTermsCache;
-  }
-
-  /** Expert: enable or disable the terms cache when seeking. */
-  protected final boolean getUseTermsCache() {
-    return useTermsCache;
-  }
-
   /**
    * Returns the related attributes, the returned {@link AttributeSource}
    * is shared with the delegate {@code TermsEnum}.
    */
   @Override
   public AttributeSource attributes() {
-    /* if we have no tenum, we return a new attributes instance,
-     * to prevent NPE in subclasses that use attributes.
-     * in all other cases we share the attributes with our delegate. */
-    return (tenum == null) ? super.attributes() : tenum.attributes();
+    return tenum.attributes();
   }
   
   @Override
   public BytesRef term() throws IOException {
-    assert tenum != null;
     return tenum.term();
   }
 
   @Override
   public Comparator<BytesRef> getComparator() throws IOException {
-    return (tenum == null) ? null : tenum.getComparator();
+    return tenum.getComparator();
   }
     
   @Override
   public int docFreq() {
-    assert tenum != null;
     return tenum.docFreq();
   }
 
@@ -173,32 +143,35 @@ public abstract class FilteredTermsEnum extends TermsEnum {
 
   @Override
   public long ord() throws IOException {
-    assert tenum != null;
     return tenum.ord();
   }
 
   @Override
   public DocsEnum docs(Bits bits, DocsEnum reuse) throws IOException {
-    assert tenum != null;
     return tenum.docs(bits, reuse);
   }
     
   @Override
   public DocsAndPositionsEnum docsAndPositions(Bits bits, DocsAndPositionsEnum reuse) throws IOException {
-    assert tenum != null;
     return tenum.docsAndPositions(bits, reuse);
   }
+
+  @Override
+  public void cacheCurrentTerm() throws IOException {
+    tenum.cacheCurrentTerm();
+  }
     
+  @SuppressWarnings("fallthrough")
   @Override
   public BytesRef next() throws IOException {
-    if (tenum == null)
-      return null;
     for (;;) {
       // Seek or forward the iterator
       if (doSeek) {
         doSeek = false;
         final BytesRef t = nextSeekTerm(actualTerm);
-        if (t == null || tenum.seek(t, useTermsCache) == SeekStatus.END) {
+        // Make sure we always seek forward:
+        assert actualTerm == null || t == null || getComparator().compare(t, actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
+        if (t == null || tenum.seek(t, false) == SeekStatus.END) {
           // no more terms to seek to or enum exhausted
           return null;
         }

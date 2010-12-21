@@ -194,7 +194,7 @@
         <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
-        <filter class="solr.PorterStemFilterFactory"/>
+        <filter class="solr.EnglishMinimalStemFilterFactory"/>
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
     </fieldType>
@@ -257,8 +257,14 @@
     <!-- Poly field -->
     <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
     <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-
     <fieldtype name="geohash" class="solr.GeoHashField"/>
+
+    <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
+
+    <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multi
+valued. -->
+    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+
 
  </types>
 

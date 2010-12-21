@@ -122,7 +122,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private static class CustomMulAddQuery extends CustomScoreQuery {
     // constructor
     CustomMulAddQuery(Query q, ValueSourceQuery qValSrc1, ValueSourceQuery qValSrc2) {
-      super(q, new ValueSourceQuery[]{qValSrc1, qValSrc2});
+      super(q, qValSrc1, qValSrc2);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */
@@ -281,6 +281,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     verifyResults(boost, s, 
         h1, h2CustomNeutral, h3CustomMul, h4CustomAdd, h5CustomMulAdd,
         q1, q2CustomNeutral, q3CustomMul, q4CustomAdd, q5CustomMulAdd);
+    s.close();
   }
 
   // verify results are as expected.
@@ -295,11 +296,11 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     assertEquals("queries should have same #hits",h1.size(),h4CustomAdd.size());
     assertEquals("queries should have same #hits",h1.size(),h5CustomMulAdd.size());
 
-    QueryUtils.check(q1,s);
-    QueryUtils.check(q2,s);
-    QueryUtils.check(q3,s);
-    QueryUtils.check(q4,s);
-    QueryUtils.check(q5,s);
+    QueryUtils.check(random, q1,s);
+    QueryUtils.check(random, q2,s);
+    QueryUtils.check(random, q3,s);
+    QueryUtils.check(random, q4,s);
+    QueryUtils.check(random, q5,s);
 
     // verify scores ratios
     for (final Integer doc : h1.keySet()) {

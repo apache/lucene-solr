@@ -27,10 +27,6 @@ import java.io.StringReader;
 
 public class TestToken extends LuceneTestCase {
 
-  public TestToken(String name) {
-    super(name);
-  }
-
   public void testCtor() throws Exception {
     Token t = new Token();
     char[] content = "hello".toCharArray();
@@ -180,20 +176,20 @@ public class TestToken extends LuceneTestCase {
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, 5);
     char[] buf = t.buffer();
-    Token copy = (Token) TestSimpleAttributeImpls.assertCloneIsEqual(t);
+    Token copy = assertCloneIsEqual(t);
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
 
     Payload pl = new Payload(new byte[]{1,2,3,4});
     t.setPayload(pl);
-    copy = (Token) TestSimpleAttributeImpls.assertCloneIsEqual(t);
+    copy = assertCloneIsEqual(t);
     assertEquals(pl, copy.getPayload());
     assertNotSame(pl, copy.getPayload());
   }
   
   public void testCopyTo() throws Exception {
     Token t = new Token();
-    Token copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    Token copy = assertCopyIsEqual(t);
     assertEquals("", t.toString());
     assertEquals("", copy.toString());
 
@@ -201,13 +197,13 @@ public class TestToken extends LuceneTestCase {
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, 5);
     char[] buf = t.buffer();
-    copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    copy = assertCopyIsEqual(t);
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
 
     Payload pl = new Payload(new byte[]{1,2,3,4});
     t.setPayload(pl);
-    copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    copy = assertCopyIsEqual(t);
     assertEquals(pl, copy.getPayload());
     assertNotSame(pl, copy.getPayload());
   }
@@ -243,5 +239,22 @@ public class TestToken extends LuceneTestCase {
       ts.addAttribute(PositionIncrementAttribute.class) instanceof Token);
     assertTrue("TypeAttribute is not implemented by Token",
       ts.addAttribute(TypeAttribute.class) instanceof Token);
+  }
+
+  public static <T extends AttributeImpl> T assertCloneIsEqual(T att) {
+    @SuppressWarnings("unchecked")
+    T clone = (T) att.clone();
+    assertEquals("Clone must be equal", att, clone);
+    assertEquals("Clone's hashcode must be equal", att.hashCode(), clone.hashCode());
+    return clone;
+  }
+
+  public static <T extends AttributeImpl> T assertCopyIsEqual(T att) throws Exception {
+    @SuppressWarnings("unchecked")
+    T copy = (T) att.getClass().newInstance();
+    att.copyTo(copy);
+    assertEquals("Copied instance must be equal", att, copy);
+    assertEquals("Copied instance's hashcode must be equal", att.hashCode(), copy.hashCode());
+    return copy;
   }
 }

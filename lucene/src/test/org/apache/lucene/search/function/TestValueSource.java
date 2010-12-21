@@ -20,7 +20,6 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.function.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.document.*;
@@ -28,10 +27,10 @@ import org.apache.lucene.document.*;
 public class TestValueSource extends LuceneTestCase {
 
   public void testMultiValueSource() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    Field f = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(f);
 
     for(int i=0;i<17;i++) {
@@ -40,7 +39,7 @@ public class TestValueSource extends LuceneTestCase {
       w.commit();
     }
 
-    IndexReader r = w.getReader();
+    IndexReader r = IndexReader.open(w);
     w.close();
 
     assertTrue(r.getSequentialSubReaders().length > 1);

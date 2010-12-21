@@ -22,3 +22,8 @@ automatically generated with the moman/finenight FSA library, created by
 Jean-Philippe Barrette-LaPierre. This library is available under an MIT license,
 see http://sites.google.com/site/rrettesite/moman and 
 http://bitbucket.org/jpbarrette/moman/overview/
+
+The class org.apache.lucene.SorterTemplate was inspired by CGLIB's class with
+the same name. The implementation part is mainly done using pre-existing
+Lucene sorting code. In-place stable mergesort was borrowed from CGLIB,
+which is Apache-licensed.

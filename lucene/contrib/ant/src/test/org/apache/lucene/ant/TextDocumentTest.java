@@ -24,10 +24,6 @@ import org.apache.lucene.ant.TextDocument;
 
 public class TextDocumentTest extends DocumentTestCase
 {
-    public TextDocumentTest (String name) {
-        super(name);
-    }
-    
     TextDocument doc;
     
     @Override

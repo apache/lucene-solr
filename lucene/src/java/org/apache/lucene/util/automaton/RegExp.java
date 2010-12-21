@@ -785,6 +785,8 @@ public class RegExp {
   }
   
   static RegExp makeCharRange(int from, int to) {
+    if (from > to) 
+      throw new IllegalArgumentException("invalid range: from (" + from + ") cannot be > to (" + to + ")");
     RegExp r = new RegExp();
     r.kind = Kind.REGEXP_CHAR_RANGE;
     r.from = from;

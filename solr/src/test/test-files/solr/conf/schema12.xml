@@ -418,6 +418,15 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true" />  
   
+    <!-- Poly field -->
+    <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
+    <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
+    <fieldtype name="geohash" class="solr.GeoHashField"/>
+
+   <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
+    <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
+    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+
  </types>
 
 
@@ -508,7 +517,12 @@
    -->
    <field name="timestamp" type="date" indexed="true" stored="true"/>
 
-
+   <!-- Test a point field for distances -->
+   <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
+   <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
+   <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
+   <field name="store" type="location" indexed="true" stored="true"/>
+   <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false"/>
 
 
    <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true"/>
@@ -529,6 +543,7 @@
    <dynamicField name="*_sw" type="text_sw" indexed="true" stored="true" multiValued="true"/>
 
    <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
+   <dynamicField name="*_is"  type="int"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_ss"  type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>

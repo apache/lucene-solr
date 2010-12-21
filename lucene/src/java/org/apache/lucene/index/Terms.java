@@ -85,7 +85,7 @@ public abstract class Terms {
   }
 
   protected TermsEnum getThreadTermsEnum() throws IOException {
-    TermsEnum termsEnum = (TermsEnum) threadEnums.get();
+    TermsEnum termsEnum = threadEnums.get();
     if (termsEnum == null) {
       termsEnum = iterator();
       threadEnums.set(termsEnum);

@@ -40,22 +40,22 @@ final class DocInverter extends DocFieldConsumer {
   final FieldInvertState fieldState = new FieldInvertState();
 
   final SingleTokenAttributeSource singleToken = new SingleTokenAttributeSource();
-  
+
   static class SingleTokenAttributeSource extends AttributeSource {
     final CharTermAttribute termAttribute;
     final OffsetAttribute offsetAttribute;
-    
+
     private SingleTokenAttributeSource() {
       termAttribute = addAttribute(CharTermAttribute.class);
       offsetAttribute = addAttribute(OffsetAttribute.class);
     }
-    
+
     public void reinit(String stringValue, int startOffset,  int endOffset) {
       termAttribute.setEmpty().append(stringValue);
       offsetAttribute.setOffset(startOffset, endOffset);
     }
   }
-  
+
   // Used to read a string value for a field
   final ReusableStringReader stringReader = new ReusableStringReader();
 
@@ -83,18 +83,17 @@ final class DocInverter extends DocFieldConsumer {
       childFieldsToFlush.put(fieldToFlush.getKey(), perField.consumer);
       endChildFieldsToFlush.put(fieldToFlush.getKey(), perField.endConsumer);
     }
-    
+
     consumer.flush(childFieldsToFlush, state);
     endConsumer.flush(endChildFieldsToFlush, state);
   }
-  
+
   @Override
   public void startDocument() throws IOException {
     consumer.startDocument();
     endConsumer.startDocument();
   }
 
-  @Override
   public void finishDocument() throws IOException {
     // TODO: allow endConsumer.finishDocument to also return
     // a DocWriter
@@ -115,7 +114,7 @@ final class DocInverter extends DocFieldConsumer {
   public boolean freeRAM() {
     return consumer.freeRAM();
   }
-  
+
   @Override
   public DocFieldConsumerPerField addField(FieldInfo fi) {
     return new DocInverterPerField(this, fi);

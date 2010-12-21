@@ -134,7 +134,7 @@ public class ValueSourceQuery extends Query {
 
     // constructor
     private ValueSourceScorer(Similarity similarity, IndexReader reader, ValueSourceWeight w) throws IOException {
-      super(similarity);
+      super(similarity,w);
       qWeight = w.getValue();
       // this is when/where the values are first created.
       vals = valSrc.getValues(reader);
@@ -185,6 +185,10 @@ public class ValueSourceQuery extends Query {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (!super.equals(o))
+      return false;
     if (getClass() != o.getClass()) {
       return false;
     }

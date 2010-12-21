@@ -17,12 +17,12 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
+import org.apache.lucene.util.LuceneTestCase;
 
-public class Test02Boolean extends TestCase {
+public class Test02Boolean extends LuceneTestCase {
   public static void main(String args[]) {
     TestRunner.run(new TestSuite(Test02Boolean.class));
   }
@@ -39,7 +39,7 @@ public class Test02Boolean extends TestCase {
     "a c e a b c"
   };
 
-  SingleFieldTestDb db1 = new SingleFieldTestDb(docs1, fieldName);
+  SingleFieldTestDb db1 = new SingleFieldTestDb(random, docs1, fieldName);
 
   public void normalTest1(String query, int[] expdnrs) throws Exception {
     BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db1, fieldName, this,

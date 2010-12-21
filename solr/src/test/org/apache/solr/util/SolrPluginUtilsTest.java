@@ -66,7 +66,8 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertU("", adoc("id", "3235", "val_t", "quick green fox"));
     assertU("", adoc("id", "3236", "val_t", "quick brown fox"));
     commit();
-    SolrIndexSearcher srchr = h.getCore().getSearcher().get();
+    RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
+    SolrIndexSearcher srchr = holder.get();
     SolrIndexSearcher.QueryResult qr = new SolrIndexSearcher.QueryResult();
     SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
     cmd.setQuery(new MatchAllDocsQuery());
@@ -82,7 +83,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     for (SolrDocument document : list) {
       assertNotNull(document.get("val_t"));
     }
-
+    holder.decref();
   }
 
   @Test

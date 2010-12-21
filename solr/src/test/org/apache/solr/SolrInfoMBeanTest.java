@@ -16,7 +16,7 @@
  */
 package org.apache.solr;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -24,6 +24,8 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.search.LRUCache;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import java.io.File;
 import java.net.URL;
@@ -34,8 +36,13 @@ import java.util.List;
 /**
  * A simple test used to increase code coverage for some standard things...
  */
-public class SolrInfoMBeanTest extends TestCase 
+public class SolrInfoMBeanTest extends SolrTestCaseJ4
 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+
   /**
    * Gets a list of everything we can find in the classpath and makes sure it has
    * a name, description, etc...
@@ -82,14 +89,20 @@ public class SolrInfoMBeanTest extends TestCase
     }
     assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath, found " + checked, checked > 10 );
   }
+  
+  static final String FOLDER = File.separator + "build" + File.separator + "solr" + File.separator + "org" + File.separator + "apache" + File.separator + "solr" + File.separator;
 
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<File>();
-    ClassLoader cld = Thread.currentThread().getContextClassLoader();
+    ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      directories.add(new File(resources.nextElement().toURI()));
+      final File f = new File(resources.nextElement().toURI());
+      // only iterate classes from the core, not the tests (must be in dir "/build/solr/org"
+      if (!f.toString().contains(FOLDER))
+        continue;
+      directories.add(f);
     }
       
     ArrayList<Class> classes = new ArrayList<Class>();

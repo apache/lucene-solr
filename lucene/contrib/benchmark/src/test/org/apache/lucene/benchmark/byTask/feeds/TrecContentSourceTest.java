@@ -23,12 +23,11 @@ import java.io.StringReader;
 import java.text.ParseException;
 import java.util.Date;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.DateTools;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TrecContentSourceTest extends TestCase {
+public class TrecContentSourceTest extends LuceneTestCase {
 
   /** A TrecDocMaker which works on a String and not files. */
   private static class StringableTrecSource extends TrecContentSource {

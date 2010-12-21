@@ -22,7 +22,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+
+import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
+import org.apache.lucene.search.spell.SuggestWordQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +42,12 @@ import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.SolrIndexSearcher;
 
 
 /**
@@ -60,6 +69,11 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public static final String ACCURACY = "accuracy";
   public static final String STRING_DISTANCE = "distanceMeasure";
   public static final String FIELD_TYPE = "fieldType";
+  public static final String COMPARATOR_CLASS = "comparatorClass";
+
+  public static final String SCORE_COMP = "score";
+  public static final String FREQ_COMP = "freq";
+
   protected String field;
   protected String fieldTypeName;
   protected org.apache.lucene.search.spell.SpellChecker spellChecker;
@@ -89,6 +103,19 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       }
     }
     sourceLocation = (String) config.get(LOCATION);
+    String compClass = (String) config.get(COMPARATOR_CLASS);
+    Comparator<SuggestWord> comp = null;
+    if (compClass != null){
+      if (compClass.equalsIgnoreCase(SCORE_COMP)){
+        comp = SuggestWordQueue.DEFAULT_COMPARATOR;
+      } else if (compClass.equalsIgnoreCase(FREQ_COMP)){
+        comp = new SuggestWordFrequencyComparator();
+      } else{//must be a FQCN
+        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass);
+      }
+    } else {
+      comp = SuggestWordQueue.DEFAULT_COMPARATOR;
+    }
     field = (String) config.get(FIELD);
     String strDistanceName = (String)config.get(STRING_DISTANCE);
     if (strDistanceName != null) {
@@ -99,7 +126,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     }
     try {
       initIndex();
-      spellChecker = new SpellChecker(index, sd);
+      spellChecker = new SpellChecker(index, sd, comp);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -122,45 +149,61 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     }
     if (analyzer == null)   {
       log.info("Using WhitespaceAnalzyer for dictionary: " + name);
-      analyzer = new WhitespaceAnalyzer();
+      analyzer = new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion);
     }
     return name;
   }
   
-  @SuppressWarnings("unchecked")
-  public SpellingResult getSuggestions(Collection<Token> tokens,
-                                       IndexReader reader, int count, boolean onlyMorePopular,
-                                       boolean extendedResults)
-          throws IOException {
-    SpellingResult result = new SpellingResult(tokens);
-    reader = determineReader(reader);
+  @Override
+  public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
+  	boolean shardRequest = false;
+  	SolrParams params = options.customParams;
+  	if(params!=null)
+  	{
+  		shardRequest = "true".equals(params.get(ShardParams.IS_SHARD));
+  	}
+    SpellingResult result = new SpellingResult(options.tokens);
+    IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
-    for (Token token : tokens) {
+    float theAccuracy = (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
+    
+    int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
+    for (Token token : options.tokens) {
       String tokenText = new String(token.buffer(), 0, token.length());
-      String[] suggestions = spellChecker.suggestSimilar(tokenText, (int) Math.max(count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT),
+      String[] suggestions = spellChecker.suggestSimilar(tokenText,
+              count,
             field != null ? reader : null, //workaround LUCENE-1295
             field,
-            onlyMorePopular);
+            options.onlyMorePopular, theAccuracy);
       if (suggestions.length == 1 && suggestions[0].equals(tokenText)) {
-        //These are spelled the same, continue on
+      	//These are spelled the same, continue on
         continue;
       }
 
-      if (extendedResults == true && reader != null && field != null) {
+      if (options.extendedResults == true && reader != null && field != null) {
         term = term.createTerm(tokenText);
         result.add(token, reader.docFreq(term));
-        int countLimit = Math.min(count, suggestions.length);
-        for (int i = 0; i < countLimit; i++) {
-          term = term.createTerm(suggestions[i]);
-          result.add(token, suggestions[i], reader.docFreq(term));
+        int countLimit = Math.min(options.count, suggestions.length);
+        if(countLimit>0)
+        {
+	        for (int i = 0; i < countLimit; i++) {
+	          term = term.createTerm(suggestions[i]);
+	          result.add(token, suggestions[i], reader.docFreq(term));
+	        }
+        } else if(shardRequest) {
+        	List<String> suggList = Collections.emptyList();
+        	result.add(token, suggList);
         }
       } else {
         if (suggestions.length > 0) {
           List<String> suggList = Arrays.asList(suggestions);
-          if (suggestions.length > count) {
-            suggList = suggList.subList(0, count);
+          if (suggestions.length > options.count) {
+            suggList = suggList.subList(0, options.count);
           }
           result.add(token, suggList);
+        } else if(shardRequest) {
+        	List<String> suggList = Collections.emptyList();
+        	result.add(token, suggList);
         }
       }
     }
@@ -171,7 +214,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     return reader;
   }
 
-  public void reload() throws IOException {
+  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     spellChecker.setSpellIndex(index);
 
   }
@@ -229,5 +272,9 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
   public StringDistance getStringDistance() {
     return sd;
+  }
+
+  public SpellChecker getSpellChecker() {
+    return spellChecker;
   }
 }

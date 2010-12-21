@@ -18,20 +18,22 @@
 package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
-public class SimpleFragmentsBuilder extends HighlightingPluginBase implements
-    SolrFragmentsBuilder {
+public class SimpleFragmentsBuilder extends SolrFragmentsBuilder {
 
-  public FragmentsBuilder getFragmentsBuilder(SolrParams params) {
-    numRequests++;
-    if( defaults != null ) {
-      params = new DefaultSolrParams( params, defaults );
-    }
-    
-    return new org.apache.lucene.search.vectorhighlight.SimpleFragmentsBuilder();
+  @Override
+  protected FragmentsBuilder getFragmentsBuilder( SolrParams params,
+      String[] preTags, String[] postTags ) {
+    org.apache.lucene.search.vectorhighlight.SimpleFragmentsBuilder sfb =
+      new org.apache.lucene.search.vectorhighlight.SimpleFragmentsBuilder( preTags, postTags );
+    sfb.setMultiValuedSeparator( getMultiValuedSeparatorChar( params ) );
+    return sfb;
   }
+
+  ///////////////////////////////////////////////////////////////////////
+  //////////////////////// SolrInfoMBeans methods ///////////////////////
+  ///////////////////////////////////////////////////////////////////////
 
   @Override
   public String getDescription() {

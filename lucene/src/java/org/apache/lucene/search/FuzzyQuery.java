@@ -17,19 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import java.io.IOException;
 
 /** Implements the fuzzy search query. The similarity measurement
  * is based on the Levenshtein (edit distance) algorithm.
- * 
- * <p><em>Warning:</em> this query is not very scalable with its default prefix
- * length of 0 - in this case, *every* term will be enumerated and
- * cause an edit score calculation.
  * 
  * <p>This query uses {@link MultiTermQuery.TopTermsScoringBooleanQueryRewrite}
  * as default. So terms will be collected and scored according to their
@@ -38,9 +36,9 @@ import java.io.IOException;
  */
 public class FuzzyQuery extends MultiTermQuery {
   
-  public final static float defaultMinSimilarity = 0.5f;
+  public final static float defaultMinSimilarity = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   public final static int defaultPrefixLength = 0;
-  public final static int defaultMaxExpansions = Integer.MAX_VALUE;
+  public final static int defaultMaxExpansions = 50;
   
   private float minimumSimilarity;
   private int prefixLength;
@@ -60,6 +58,12 @@ public class FuzzyQuery extends MultiTermQuery {
    *  <code>minimumSimilarity</code> of <code>0.5</code> a term of the same length
    *  as the query term is considered similar to the query term if the edit distance
    *  between both terms is less than <code>length(term)*0.5</code>
+   *  <p>
+   *  Alternatively, if <code>minimumSimilarity</code> is >= 1f, it is interpreted 
+   *  as a pure Levenshtein edit distance. For example, a value of <code>2f</code>
+   *  will match all terms within an edit distance of <code>2</code> from the 
+   *  query term. Edit distances specified in this way may not be fractional.
+   *  
    * @param prefixLength length of common (non-fuzzy) prefix
    * @param maxExpansions the maximum number of terms to match. If this number is
    *  greater than {@link BooleanQuery#getMaxClauseCount} when the query is rewritten, 
@@ -72,9 +76,9 @@ public class FuzzyQuery extends MultiTermQuery {
     super(term.field());
     this.term = term;
     
-    if (minimumSimilarity >= 1.0f)
-      throw new IllegalArgumentException("minimumSimilarity >= 1");
-    else if (minimumSimilarity < 0.0f)
+    if (minimumSimilarity >= 1.0f && minimumSimilarity != (int)minimumSimilarity)
+      throw new IllegalArgumentException("fractional edit distances are not allowed");
+    if (minimumSimilarity < 0.0f)
       throw new IllegalArgumentException("minimumSimilarity < 0");
     if (prefixLength < 0)
       throw new IllegalArgumentException("prefixLength < 0");
@@ -84,7 +88,8 @@ public class FuzzyQuery extends MultiTermQuery {
     setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(maxExpansions));
     
     String text = term.text();
-    if (text.codePointCount(0, text.length()) > 1.0f / (1.0f - minimumSimilarity)) {
+    int len = text.codePointCount(0, text.length());
+    if (len > 0 && (minimumSimilarity >= 1f || len > 1.0f / (1.0f - minimumSimilarity))) {
       this.termLongEnough = true;
     }
     
@@ -93,21 +98,21 @@ public class FuzzyQuery extends MultiTermQuery {
   }
   
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, prefixLength, Integer.MAX_VALUE)}.
+   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, prefixLength, defaultMaxExpansions)}.
    */
   public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
     this(term, minimumSimilarity, prefixLength, defaultMaxExpansions);
   }
   
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, 0, Integer.MAX_VALUE)}.
+   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, 0, defaultMaxExpansions)}.
    */
   public FuzzyQuery(Term term, float minimumSimilarity) {
     this(term, minimumSimilarity, defaultPrefixLength, defaultMaxExpansions);
   }
 
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, 0.5f, 0, Integer.MAX_VALUE)}.
+   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, defaultMinSimilarity, 0, defaultMaxExpansions)}.
    */
   public FuzzyQuery(Term term) {
     this(term, defaultMinSimilarity, defaultPrefixLength, defaultMaxExpansions);
@@ -131,11 +136,13 @@ public class FuzzyQuery extends MultiTermQuery {
   }
 
   @Override
-  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+    TermsEnum tenum = terms.iterator();
+    
     if (!termLongEnough) {  // can only match if it's exact
-      return new SingleTermsEnum(reader, term);
+      return new SingleTermsEnum(tenum, term);
     }
-    return new FuzzyTermsEnum(reader, getTerm(), minimumSimilarity, prefixLength);
+    return new FuzzyTermsEnum(tenum, atts, getTerm(), minimumSimilarity, prefixLength);
   }
   
   /**

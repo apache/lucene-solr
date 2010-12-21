@@ -128,7 +128,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
 
       do this:
       
-        if ((doc=td.skipTo(target)) != DocsEnum.NO_MORE_DOCS) {
+        if ((doc=td.advance(target)) != DocsEnum.NO_MORE_DOCS) {
 	  ...
 	}
 
@@ -265,4 +265,66 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     DocsEnum docsEnum = reader.termDocsEnum(reader.getDeletedDocs(), field, text);
 
   Likewise for DocsAndPositionsEnum.
+
+* LUCENE-2600: remove IndexReader.isDeleted
+
+  Instead of IndexReader.isDeleted, do this:
+
+    import org.apache.lucene.util.Bits;
+    import org.apache.lucene.index.MultiFields;
+
+    Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+    if (delDocs.get(docID)) {
+      // document is deleted...
+    }
     
+* LUCENE-2674: A new idfExplain method was added to Similarity, that
+  accepts an incoming docFreq.  If you subclass Similarity, make sure
+  you also override this method on upgrade, otherwise your
+  customizations won't run for certain MultiTermQuerys.
+
+* LUCENE-2413: Lucene's core and contrib analyzers, along with Solr's analyzers,
+  were consolidated into modules/analysis. During the refactoring some
+  package names have changed:
+    - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
+    - o.a.l.analysis.KeywordTokenizer -> o.a.l.analysis.core.KeywordTokenizer
+    - o.a.l.analysis.LetterTokenizer -> o.a.l.analysis.core.LetterTokenizer
+    - o.a.l.analysis.LowerCaseFilter -> o.a.l.analysis.core.LowerCaseFilter
+    - o.a.l.analysis.LowerCaseTokenizer -> o.a.l.analysis.core.LowerCaseTokenizer
+    - o.a.l.analysis.SimpleAnalyzer -> o.a.l.analysis.core.SimpleAnalyzer
+    - o.a.l.analysis.StopAnalyzer -> o.a.l.analysis.core.StopAnalyzer
+    - o.a.l.analysis.StopFilter -> o.a.l.analysis.core.StopFilter
+    - o.a.l.analysis.WhitespaceAnalyzer -> o.a.l.analysis.core.WhitespaceAnalyzer
+    - o.a.l.analysis.WhitespaceTokenizer -> o.a.l.analysis.core.WhitespaceTokenizer
+    - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
+    - o.a.l.analysis.ASCIIFoldingFilter -> o.a.l.analysis.miscellaneous.ASCIIFoldingFilter
+    - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
+    - o.a.l.analysis.KeywordMarkerFilter -> o.a.l.analysis.miscellaneous.KeywordMarkerFilter
+    - o.a.l.analysis.LengthFilter -> o.a.l.analysis.miscellaneous.LengthFilter
+    - o.a.l.analysis.PerFieldAnalyzerWrapper -> o.a.l.analysis.miscellaneous.PerFieldAnalyzerWrapper
+    - o.a.l.analysis.TeeSinkTokenFilter -> o.a.l.analysis.sinks.TeeSinkTokenFilter
+    - o.a.l.analysis.CharFilter -> o.a.l.analysis.charfilter.CharFilter
+    - o.a.l.analysis.BaseCharFilter -> o.a.l.analysis.charfilter.BaseCharFilter
+    - o.a.l.analysis.MappingCharFilter -> o.a.l.analysis.charfilter.MappingCharFilter
+    - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
+    - o.a.l.analysis.CharArraySet -> o.a.l.analysis.util.CharArraySet
+    - o.a.l.analysis.CharArrayMap -> o.a.l.analysis.util.CharArrayMap
+    - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
+    - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
+    - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
+
+* LUCENE-2691: The near-real-time API has moved from IndexWriter to
+  IndexReader.  Instead of IndexWriter.getReader(), call
+  IndexReader.open(IndexWriter) or IndexReader.reopen(IndexWriter).
+
+* LUCENE-2690: MultiTermQuery boolean rewrites per segment.
+  Also MultiTermQuery.getTermsEnum() now takes an AttributeSource. FuzzyTermsEnum
+  is both consumer and producer of attributes: MTQ.BoostAttribute is
+  added to the FuzzyTermsEnum and MTQ's rewrite mode consumes it.
+  The other way round MTQ.TopTermsBooleanQueryRewrite supplys a
+  global AttributeSource to each segments TermsEnum. The TermsEnum is consumer
+  and gets the current minimum competitive boosts (MTQ.MaxNonCompetitiveBoostAttribute).
+
+* LUCENE-2761: DataInput.readVInt/readVLong and DataOutput.writeVInt/writeVLong
+  are final. If you subclassed this code before to encode variable-length
+  integers in some specialized way, use the Codec API instead.

@@ -45,7 +45,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   private String[] fuzzyExpected;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     wildcardInput = new String[] { "übersetzung über*ung",
         "Mötley Cr\u00fce Mötl?* Crü?", "Renée Zellweger Ren?? Zellw?ger" };
@@ -64,7 +64,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
         "Mötley Crüe Mötley~0.75 Crüe~0.5",
         "Renée Zellweger Renée~0.9 Zellweger~" };
     fuzzyExpected = new String[] { "ubersetzung ubersetzung~0.9",
-        "motley crue motley~0.75 crue~0.5", "renee zellweger renee~0.9 zellweger~0.5" };
+        "motley crue motley~0.75 crue~0.5", "renee zellweger renee~0.9 zellweger~2.0" };
 
     a = new ASCIIAnalyzer();
   }

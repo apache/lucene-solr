@@ -39,3 +39,6 @@ var host_name="<%= hostname %>"
 
 <%= hostname %>:<%= port %><br/>
 cwd=<%= cwd %>  SolrHome=<%= solrHome %>
+<br/>
+<%String cachingStatus = " HTTP caching is ";  %>
+<%= cachingEnabled ? cachingStatus + " ON": cachingStatus + " OFF" %>

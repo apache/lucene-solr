@@ -19,6 +19,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -30,6 +32,8 @@ import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
 
 import java.io.BufferedOutputStream;
@@ -49,7 +53,7 @@ import java.io.PrintStream;
  * org.apache.lucene.index.ConcurrentMergeScheduler),
  * concurrent.merge.scheduler.max.thread.count and
  * concurrent.merge.scheduler.max.merge.count (defaults per
- * ConcurrentMergeScheduler) </code>.
+ * ConcurrentMergeScheduler), default.codec </code>.
  * <p>
  * This task also supports a "writer.info.stream" property with the following
  * values:
@@ -70,72 +74,7 @@ public class CreateIndexTask extends PerfTask {
     super(runData);
   }
 
-  public static void setIndexWriterConfig(IndexWriter writer, Config config) throws IOException {
-
-    final String mergeScheduler = config.get("merge.scheduler",
-                                             "org.apache.lucene.index.ConcurrentMergeScheduler");
-    if (mergeScheduler.equals(NoMergeScheduler.class.getName())) {
-      writer.getConfig().setMergeScheduler(NoMergeScheduler.INSTANCE);
-    } else {
-      try {
-        writer.getConfig().setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).newInstance());
-      } catch (Exception e) {
-        throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
-      }
-      
-      if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
-        ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler();
-        int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
-        if (v != -1) {
-          cms.setMaxThreadCount(v);
-        }
-        v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
-        if (v != -1) {
-          cms.setMaxMergeCount(v);
-        }
-      }
-    }
-
-    final String mergePolicy = config.get("merge.policy",
-                                          "org.apache.lucene.index.LogByteSizeMergePolicy");
-    boolean isCompound = config.get("compound", true);
-    if (mergePolicy.equals(NoMergePolicy.class.getName())) {
-      writer.getConfig().setMergePolicy(isCompound ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES);
-    } else {
-      try {
-        writer.getConfig().setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
-      } catch (Exception e) {
-        throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
-      }
-      if (writer.getConfig().getMergePolicy() instanceof LogMergePolicy) {
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(isCompound);
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
-      }
-    }
-    writer.getConfig().setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
-
-    final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
-    final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
-    if (maxBuffered == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-      writer.setRAMBufferSizeMB(ramBuffer);
-      writer.setMaxBufferedDocs(maxBuffered);
-    } else {
-      writer.setMaxBufferedDocs(maxBuffered);
-      writer.setRAMBufferSizeMB(ramBuffer);
-    }
-    
-    String infoStreamVal = config.get("writer.info.stream", null);
-    if (infoStreamVal != null) {
-      if (infoStreamVal.equals("SystemOut")) {
-        writer.setInfoStream(System.out);
-      } else if (infoStreamVal.equals("SystemErr")) {
-        writer.setInfoStream(System.err);
-      } else {
-        File f = new File(infoStreamVal).getAbsoluteFile();
-        writer.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f))));
-      }
-    }
-  }
+  
   
   public static IndexDeletionPolicy getIndexDeletionPolicy(Config config) {
     String deletionPolicyName = config.get("deletion.policy", "org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy");
@@ -154,13 +93,93 @@ public class CreateIndexTask extends PerfTask {
   public int doLogic() throws IOException {
     PerfRunData runData = getRunData();
     Config config = runData.getConfig();
-    
-    IndexWriter writer = new IndexWriter(runData.getDirectory(),
-        new IndexWriterConfig(Version.LUCENE_31, runData.getAnalyzer())
-            .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(
-                getIndexDeletionPolicy(config)));
-    setIndexWriterConfig(writer, config);
-    runData.setIndexWriter(writer);
+    runData.setIndexWriter(configureWriter(config, runData, OpenMode.CREATE, null));
     return 1;
+  }
+  
+  public static IndexWriterConfig createWriterConfig(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) {
+    Version version = Version.valueOf(config.get("writer.version", Version.LUCENE_40.toString()));
+    IndexWriterConfig iwConf = new IndexWriterConfig(version, runData.getAnalyzer());
+    iwConf.setOpenMode(mode);
+    IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
+    iwConf.setIndexDeletionPolicy(indexDeletionPolicy);
+    if(commit != null)
+      iwConf.setIndexCommit(commit);
+    
+
+    final String mergeScheduler = config.get("merge.scheduler",
+                                             "org.apache.lucene.index.ConcurrentMergeScheduler");
+    if (mergeScheduler.equals(NoMergeScheduler.class.getName())) {
+      iwConf.setMergeScheduler(NoMergeScheduler.INSTANCE);
+    } else {
+      try {
+        iwConf.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).newInstance());
+      } catch (Exception e) {
+        throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
+      }
+      
+      if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
+        ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) iwConf.getMergeScheduler();
+        int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
+        if (v != -1) {
+          cms.setMaxThreadCount(v);
+        }
+        v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
+        if (v != -1) {
+          cms.setMaxMergeCount(v);
+        }
+      }
+    }
+
+    final String defaultCodec = config.get("default.codec", null);
+    if (defaultCodec != null) {
+      CodecProvider.getDefault().setDefaultFieldCodec(defaultCodec);
+    }
+
+    final String mergePolicy = config.get("merge.policy",
+                                          "org.apache.lucene.index.LogByteSizeMergePolicy");
+    boolean isCompound = config.get("compound", true);
+    if (mergePolicy.equals(NoMergePolicy.class.getName())) {
+      iwConf.setMergePolicy(isCompound ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES);
+    } else {
+      try {
+        iwConf.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
+      } catch (Exception e) {
+        throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
+      }
+      if(iwConf.getMergePolicy() instanceof LogMergePolicy) {
+        LogMergePolicy logMergePolicy = (LogMergePolicy) iwConf.getMergePolicy();
+        logMergePolicy.setUseCompoundFile(isCompound);
+        logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
+      }
+    }
+    iwConf.setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
+    final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
+    final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
+    if (maxBuffered == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
+      iwConf.setRAMBufferSizeMB(ramBuffer);
+      iwConf.setMaxBufferedDocs(maxBuffered);
+    } else {
+      iwConf.setMaxBufferedDocs(maxBuffered);
+      iwConf.setRAMBufferSizeMB(ramBuffer);
+    }
+    
+    return iwConf;
+  }
+  
+  public static IndexWriter configureWriter(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) throws CorruptIndexException, LockObtainFailedException, IOException {
+    IndexWriter writer = new IndexWriter(runData.getDirectory(), createWriterConfig(config, runData, mode, commit));
+    String infoStreamVal = config.get("writer.info.stream", null);
+    if (infoStreamVal != null) {
+      if (infoStreamVal.equals("SystemOut")) {
+        writer.setInfoStream(System.out);
+      } else if (infoStreamVal.equals("SystemErr")) {
+        writer.setInfoStream(System.err);
+      } else {
+        File f = new File(infoStreamVal).getAbsoluteFile();
+        writer.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f))));
+      }
+    }
+    return writer;
   }
 }

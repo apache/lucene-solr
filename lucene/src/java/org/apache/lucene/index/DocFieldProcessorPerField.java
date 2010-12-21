@@ -43,7 +43,7 @@ final class DocFieldProcessorPerField {
 
   public void addField(Fieldable field) {
     if (fieldCount == fields.length) {
-      int newSize = ArrayUtil.oversize(fieldCount + 1, RamUsageEstimator.NUM_BYTES_OBJ_REF);
+      int newSize = ArrayUtil.oversize(fieldCount + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       Fieldable[] newArray = new Fieldable[newSize];
       System.arraycopy(fields, 0, newArray, 0, fieldCount);
       fields = newArray;
@@ -51,7 +51,7 @@ final class DocFieldProcessorPerField {
 
     fields[fieldCount++] = field;
   }
-  
+
   public void abort() {
     consumer.abort();
   }

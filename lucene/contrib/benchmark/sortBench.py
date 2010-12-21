@@ -227,7 +227,7 @@ content.source=org.apache.lucene.benchmark.byTask.feeds.SortableSingleDocSource
       print '  mkdir %s' % LOG_DIR
       os.makedirs(LOG_DIR)
 
-    command = '%s -classpath ../../build/classes/java:../../build/classes/demo:../../build/contrib/highlighter/classes/java:lib/commons-digester-1.7.jar:lib/commons-collections-3.1.jar:lib/commons-compress-1.0.jar:lib/commons-logging-1.0.4.jar:lib/commons-beanutils-1.7.0.jar:lib/xerces-2.9.0.jar:lib/xml-apis-2.9.0.jar:../../build/contrib/benchmark/classes/java org.apache.lucene.benchmark.byTask.Benchmark %s > "%s" 2>&1' % (JAVA_COMMAND, algFile, fullLogFileName)
+    command = '%s -classpath ../../build/classes/java:../../build/classes/demo:../../build/contrib/highlighter/classes/java:lib/commons-digester-1.7.jar:lib/commons-collections-3.1.jar:lib/commons-compress-1.0.jar:lib/commons-logging-1.0.4.jar:lib/commons-beanutils-1.7.0.jar:lib/xerces-2.10.0.jar:lib/xml-apis-2.10.0.jar:../../build/contrib/benchmark/classes/java org.apache.lucene.benchmark.byTask.Benchmark %s > "%s" 2>&1' % (JAVA_COMMAND, algFile, fullLogFileName)
 
     if DEBUG:
       print 'command=%s' % command

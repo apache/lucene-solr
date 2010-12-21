@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
 import org.apache.lucene.search.BooleanClause;
@@ -36,7 +35,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -101,7 +99,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     assertEquals("((b:one t:one)^2.0) (b:two t:two)", q.toString());
 
     q = mfqp.parse("one~ two", null);
-    assertEquals("(b:one~0.5 t:one~0.5) (b:two t:two)", q.toString());
+    assertEquals("(b:one~2.0 t:one~2.0) (b:two t:two)", q.toString());
 
     q = mfqp.parse("one~0.8 two^2", null);
     assertEquals("(b:one~0.8 t:one~0.8) ((b:two t:two)^2.0)", q.toString());
@@ -145,7 +143,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
   }
 
   public void testBoostsSimple() throws Exception {
-    Map<CharSequence,Float> boosts = new HashMap<CharSequence,Float>();
+    Map<String,Float> boosts = new HashMap<String,Float>();
     boosts.put("b", Float.valueOf(5));
     boosts.put("t", Float.valueOf(10));
     String[] fields = { "b", "t" };
@@ -312,17 +310,17 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     q = parser.parse("bla*", null);
     assertEquals("f1:bla* f2:bla* f3:bla*", q.toString());
     q = parser.parse("bla~", null);
-    assertEquals("f1:bla~0.5 f2:bla~0.5 f3:bla~0.5", q.toString());
+    assertEquals("f1:bla~2.0 f2:bla~2.0 f3:bla~2.0", q.toString());
     q = parser.parse("[a TO c]", null);
     assertEquals("f1:[a TO c] f2:[a TO c] f3:[a TO c]", q.toString());
   }
 
   public void testStopWordSearching() throws Exception {
     Analyzer analyzer = new MockAnalyzer();
-    Directory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    Directory ramDir = newDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(new Field("body", "blah the footest blah", Field.Store.NO,
+    doc.add(newField("body", "blah the footest blah", Field.Store.NO,
         Field.Index.ANALYZED));
     iw.addDocument(doc);
     iw.close();
@@ -337,6 +335,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     is.close();
+    ramDir.close();
   }
 
   /**

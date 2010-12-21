@@ -1,6 +1,7 @@
 package org.apache.lucene.xmlparser;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -11,11 +12,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -44,6 +46,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	CoreParser builder;
 	Analyzer analyzer=new MockAnalyzer();
 	private IndexSearcher searcher;
+	private Directory dir;
 	
 	//A collection of documents' field values for use in our tests
 	String docFieldValues []=
@@ -69,6 +72,11 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	
 	public void testFormTransforms() throws SAXException, IOException, ParserConfigurationException, TransformerException, ParserException 
 	{
+	  // Sun 1.5 suffers from http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6240963
+	  if (Constants.JAVA_VENDOR.startsWith("Sun") && Constants.JAVA_VERSION.startsWith("1.5")) {
+	    String defLang = Locale.getDefault().getLanguage();
+	    assumeFalse("Sun JRE 1.5 suffers from http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6240963 under Turkish locale", defLang.equals("tr") || defLang.equals("az"));
+	  }
 		//Cache all the query templates we will be referring to.
 		QueryTemplateManager qtm=new QueryTemplateManager();
 		qtm.addQueryTemplate("albumBooleanQuery", getClass().getResourceAsStream("albumBooleanQuery.xsl"));
@@ -126,7 +134,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 			if(st.hasMoreTokens())
 			{
 				String value=st.nextToken().trim();
-				result.add(new Field(name,value,Field.Store.YES,Field.Index.ANALYZED));
+				result.add(newField(name,value,Field.Store.YES,Field.Index.ANALYZED));
 			}
 		}
 		return result;
@@ -136,13 +144,13 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	 * @see TestCase#setUp()
 	 */
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 		super.setUp();
 		
 		
 		//Create an index
-		RAMDirectory dir=new RAMDirectory();
-		IndexWriter w=new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+		dir=newDirectory();
+		IndexWriter w=new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 		for (int i = 0; i < docFieldValues.length; i++)
 		{
 			w.addDocument(getDocumentFromString(docFieldValues[i]));
@@ -158,8 +166,9 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 		searcher.close();
+		dir.close();
     super.tearDown();
 	}
 }

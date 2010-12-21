@@ -22,6 +22,7 @@
         solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
   <indexDefaults>
     <useCompoundFile>false</useCompoundFile>
@@ -91,6 +92,33 @@
      <str name="sp.dictionary.threshold">0.0</str>
 
    </requestHandler>
+
+  <!-- Suggest component -->
+  <searchComponent class="solr.SpellCheckComponent" name="suggest">
+    <lst name="spellchecker">
+      <str name="name">suggest</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.jaspell.JaspellLookup</str>
+      <str name="field">suggest</str>
+      <str name="buildOnCommit">true</str>
+
+      <!-- Suggester properties -->
+      <float name="threshold">0.0</float>
+<!--
+      <str name="sourceLocation">american-english</str>
+-->
+    </lst>
+  </searchComponent>
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">suggest</str>
+      <str name="spellcheck.collate">true</str>
+    </lst>
+    <arr name="components">
+      <str>suggest</str>
+    </arr>
+  </requestHandler>
 
   
 

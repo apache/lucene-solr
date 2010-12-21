@@ -126,7 +126,7 @@ extends Query {
           return null;
         }
 
-        return new Scorer(similarity) {
+        return new Scorer(similarity, this) {
 
           private int doc = -1;
           

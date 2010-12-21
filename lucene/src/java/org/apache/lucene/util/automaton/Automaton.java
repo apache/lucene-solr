@@ -115,7 +115,6 @@ public class Automaton implements Serializable, Cloneable {
    * constructor, automata can be constructed manually from {@link State} and
    * {@link Transition} objects.
    * 
-   * @see #setInitialState(State)
    * @see State
    * @see Transition
    */
@@ -282,7 +281,7 @@ public class Automaton implements Serializable, Cloneable {
             worklist.add(t.to);
             t.to.number = upto;
             if (upto == numberedStates.length) {
-              final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+              final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
               System.arraycopy(numberedStates, 0, newArray, 0, upto);
               numberedStates = newArray;
             }
@@ -488,7 +487,7 @@ public class Automaton implements Serializable, Cloneable {
    * Returns a sorted array of transitions for each state (and sets state
    * numbers).
    */
-  Transition[][] getSortedTransitions() {
+  public Transition[][] getSortedTransitions() {
     final State[] states = getNumberedStates();
     Transition[][] transitions = new Transition[states.length][];
     for (State s : states) {

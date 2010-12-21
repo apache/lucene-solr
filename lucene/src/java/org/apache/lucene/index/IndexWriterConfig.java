@@ -54,8 +54,8 @@ public final class IndexWriterConfig implements Cloneable {
    */
   public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
   
-  /** Default value is 128. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 128;
+  /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
 
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;
@@ -78,9 +78,6 @@ public final class IndexWriterConfig implements Cloneable {
    * @see #setDefaultWriteLockTimeout(long)
    */
   public static long WRITE_LOCK_TIMEOUT = 1000;
-
-  /** Default {@link CodecProvider}. */
-  public final static CodecProvider DEFAULT_CODEC_PROVIDER = CodecProvider.getDefault();
 
   /** The maximum number of simultaneous threads that may be
    *  indexing documents at once in IndexWriter; if more
@@ -158,7 +155,7 @@ public final class IndexWriterConfig implements Cloneable {
     maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
     indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     mergedSegmentWarmer = null;
-    codecProvider = DEFAULT_CODEC_PROVIDER;
+    codecProvider = CodecProvider.getDefault();
     mergePolicy = new LogByteSizeMergePolicy();
     readerPooling = DEFAULT_READER_POOLING;
     indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(DEFAULT_MAX_THREAD_STATES);
@@ -605,7 +602,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** @see #setReaderTermsIndexDivisor() */
+  /** @see #setReaderTermsIndexDivisor(int) */
   public int getReaderTermsIndexDivisor() {
     return readerTermsIndexDivisor;
   }
@@ -614,9 +611,9 @@ public final class IndexWriterConfig implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("matchVersion=").append(matchVersion).append("\n");
-    sb.append("analyzer=").append(analyzer.getClass().getName()).append("\n");
+    sb.append("analyzer=").append(analyzer == null ? "null" : analyzer.getClass().getName()).append("\n");
     sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
-    sb.append("commit=").append(commit == null ? "null" : commit.getClass().getName()).append("\n");
+    sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
     sb.append("openMode=").append(openMode).append("\n");
     sb.append("maxFieldLength=").append(maxFieldLength).append("\n");
     sb.append("similarity=").append(similarity.getClass().getName()).append("\n");

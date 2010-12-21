@@ -25,12 +25,10 @@ import org.apache.lucene.util.UnicodeUtil;
 import java.util.Random;
 
 public class TestUTF32ToUTF8 extends LuceneTestCase {
-  private Random random;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
   }
 
   private static final int MAX_UNICODE = 0x10FFFF;
@@ -206,7 +204,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   public void testRandomRegexes() throws Exception {
     int num = 250 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      assertAutomaton(AutomatonTestUtil.randomRegexp(random).toAutomaton());
+      assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton());
     }
   }
   

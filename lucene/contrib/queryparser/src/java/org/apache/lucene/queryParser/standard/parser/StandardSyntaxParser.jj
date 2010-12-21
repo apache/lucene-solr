@@ -52,6 +52,7 @@ import org.apache.lucene.queryParser.core.nodes.OpaqueQueryNode;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ProximityQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
@@ -59,7 +60,6 @@ import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 
-@SuppressWarnings("all")
 public class StandardSyntaxParser implements SyntaxParser {
 
 	private static final int CONJ_NONE =0;
@@ -132,6 +132,7 @@ PARSER_END(StandardSyntaxParser)
 | <QUOTED:     "\"" (<_QUOTED_CHAR>)* "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
+| <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
 | <RANGEIN_START: "[" > : RangeIn
 | <RANGEEX_START: "{" > : RangeEx
 }
@@ -206,7 +207,7 @@ QueryNode TopLevelQuery(CharSequence field) :
 
 QueryNode Query(CharSequence field) :
 {
-  Vector clauses = null;
+  Vector<QueryNode> clauses = null;
   QueryNode c, first=null;
 }
 {
@@ -215,7 +216,7 @@ QueryNode Query(CharSequence field) :
     c=DisjQuery(field)
     { 
 	     if (clauses == null) {
-	         clauses = new Vector();
+	         clauses = new Vector<QueryNode>();
 	         clauses.addElement(first); 
 	     } 
     	 clauses.addElement(c);
@@ -232,7 +233,7 @@ QueryNode Query(CharSequence field) :
 
 QueryNode DisjQuery(CharSequence field) : {
 	QueryNode first, c;
-	Vector clauses = null;
+	Vector<QueryNode> clauses = null;
 }
 {
   first = ConjQuery(field)
@@ -240,7 +241,7 @@ QueryNode DisjQuery(CharSequence field) : {
    <OR> c=ConjQuery(field)
    { 
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first); 
      } 
      clauses.addElement(c);
@@ -257,7 +258,7 @@ QueryNode DisjQuery(CharSequence field) : {
 
 QueryNode ConjQuery(CharSequence field) : {
 	QueryNode first, c;
-	Vector clauses = null;
+	Vector<QueryNode> clauses = null;
 }
 {
   first = ModClause(field)
@@ -265,7 +266,7 @@ QueryNode ConjQuery(CharSequence field) : {
    <AND> c=ModClause(field)
    { 
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first);
      } 
      clauses.addElement(c); 
@@ -374,14 +375,16 @@ QueryNode Clause(CharSequence field) : {
 QueryNode Term(CharSequence field) : {
   Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean fuzzy = false;
+  boolean regexp = false;
   QueryNode q =null; 
   ParametricQueryNode qLower, qUpper;
-  float defaultMinSimilarity = 0.5f;
+  float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
 }
 {
   (
      (
  	   term=<TERM> { q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
+       | term=<REGEXPTERM> { regexp=true; }
        | term=<NUMBER>
      )
      [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ]
@@ -392,10 +395,14 @@ QueryNode Term(CharSequence field) : {
        	  try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
        	  } catch (Exception ignored) { }
-       	 if(fms < 0.0f || fms > 1.0f){
+       	 if(fms < 0.0f){
        	   throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));
+       	 } else if (fms >= 1.0f && fms != (int) fms) {
+       	   throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));
        	 }
        	 q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
+       } else if (regexp) {
+         q = new RegexpQueryNode(field, term.image, term.beginColumn, term.endColumn-1);
        }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )

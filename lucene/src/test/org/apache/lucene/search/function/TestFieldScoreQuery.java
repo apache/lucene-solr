@@ -80,7 +80,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     IndexSearcher s = new IndexSearcher(dir, true);
     Query q = new FieldScoreQuery(field,tp);
     log("test: "+q);
-    QueryUtils.check(q,s);
+    QueryUtils.check(random, q,s);
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!",N_DOCS,h.length);
     String prevID = "ID"+(N_DOCS+1); // greater than all ids of docs in this test
@@ -91,6 +91,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       assertTrue("res id "+resID+" should be < prev res id "+prevID, resID.compareTo(prevID)<0);
       prevID = resID;
     }
+    s.close();
   }
 
   /** Test that FieldScoreQuery of Type.BYTE returns the expected scores. */
@@ -136,6 +137,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       float expectedScore = expectedFieldScore(id); // "ID7" --> 7.0
       assertEquals("score of " + id + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
     }
+    s.close();
   }
 
   /** Test that FieldScoreQuery of Type.BYTE caches/reuses loaded values and consumes the proper RAM resources. */
@@ -210,7 +212,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
         }
       }
     }
-    
+    s.close();
     // verify new values are reloaded (not reused) for a new reader
     s = new IndexSearcher(dir, true);
     FieldScoreQuery q = new FieldScoreQuery(field,tp);
@@ -233,6 +235,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
         }
       }
     }
+    s.close();
   }
 
   private String testName() {

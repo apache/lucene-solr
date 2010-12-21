@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.lucene.util.ScorerDocQueue;
 
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
- * This Scorer implements {@link Scorer#skipTo(int)} and uses skipTo() on the given Scorers. 
+ * This Scorer implements {@link Scorer#advance(int)} and uses advance() on the given Scorers. 
  */
 class DisjunctionSumScorer extends Scorer {
   /** The number of subscorers. */ 
@@ -37,12 +37,12 @@ class DisjunctionSumScorer extends Scorer {
   
   /** The scorerDocQueue contains all subscorers ordered by their current doc(),
    * with the minimum at the top.
-   * <br>The scorerDocQueue is initialized the first time next() or skipTo() is called.
+   * <br>The scorerDocQueue is initialized the first time nextDoc() or advance() is called.
    * <br>An exhausted scorer is immediately removed from the scorerDocQueue.
    * <br>If less than the minimumNrMatchers scorers
-   * remain in the scorerDocQueue next() and skipTo() return false.
+   * remain in the scorerDocQueue nextDoc() and advance() return false.
    * <p>
-   * After each to call to next() or skipTo()
+   * After each to call to nextDoc() or advance()
    * <code>currentSumScore</code> is the total score of the current matching doc,
    * <code>nrMatchers</code> is the number of matching scorers,
    * and all scorers are after the matching doc, or are exhausted.
@@ -92,7 +92,7 @@ class DisjunctionSumScorer extends Scorer {
     this(subScorers, 1);
   }
 
-  /** Called the first time next() or skipTo() is called to
+  /** Called the first time nextDoc() or advance() is called to
    * initialize <code>scorerDocQueue</code>.
    */
   private void initScorerDocQueue() throws IOException {
@@ -116,7 +116,7 @@ class DisjunctionSumScorer extends Scorer {
   }
 
   /** Expert: Collects matching documents in a range.  Hook for optimization.
-   * Note that {@link #next()} must be called once before this method is called
+   * Note that {@link #nextDoc()} must be called once before this method is called
    * for the first time.
    * @param collector The collector to which all matching documents are passed through.
    * @param max Do not score documents past this.
@@ -153,7 +153,7 @@ class DisjunctionSumScorer extends Scorer {
    * <br>In case there is a match, </code>currentDoc</code>, </code>currentSumScore</code>,
    * and </code>nrMatchers</code> describe the match.
    *
-   * TODO: Investigate whether it is possible to use skipTo() when
+   * TODO: Investigate whether it is possible to use advance() when
    * the minimum number of matchers is bigger than one, ie. try and use the
    * character of ConjunctionScorer for the minimum number of matchers.
    * Also delay calling score() on the sub scorers until the minimum number of
@@ -208,7 +208,7 @@ class DisjunctionSumScorer extends Scorer {
   /**
    * Advances to the first match beyond the current whose document number is
    * greater than or equal to a given target. <br>
-   * The implementation uses the skipTo() method on the subscorers.
+   * The implementation uses the advance() method on the subscorers.
    * 
    * @param target
    *          The target document number.

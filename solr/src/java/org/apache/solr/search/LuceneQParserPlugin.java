@@ -58,6 +58,7 @@ class LuceneQParser extends QParser {
 
   public Query parse() throws ParseException {
     String qstr = getString();
+    if (qstr == null) return null;
 
     String defaultField = getParam(CommonParams.DF);
     if (defaultField==null) {
@@ -74,7 +75,7 @@ class LuceneQParser extends QParser {
 
 
   public String[] getDefaultHighlightFields() {
-    return new String[]{lparser.getField()};
+    return lparser == null ? new String[]{} : new String[]{lparser.getField()};
   }
   
 }
@@ -116,7 +117,7 @@ class OldLuceneQParser extends LuceneQParser {
   public SortSpec getSort(boolean useGlobal) throws ParseException {
     SortSpec sort = super.getSort(useGlobal);
     if (sortStr != null && sortStr.length()>0 && sort.getSort()==null) {
-      Sort oldSort = QueryParsing.parseSort(sortStr, getReq().getSchema());
+      Sort oldSort = QueryParsing.parseSort(sortStr, getReq());
       if( oldSort != null ) {
         sort.sort = oldSort;
       }

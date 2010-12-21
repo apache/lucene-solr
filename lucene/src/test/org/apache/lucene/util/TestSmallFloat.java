@@ -16,8 +16,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 public class TestSmallFloat extends LuceneTestCase {
 
   // original lucene byteToFloat
@@ -70,11 +68,10 @@ public class TestSmallFloat extends LuceneTestCase {
   }
 
   public void testFloatToByte() {
-    Random rand = newRandom();
     // up iterations for more exhaustive test after changing something
     int num = 100000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      float f = Float.intBitsToFloat(rand.nextInt());
+      float f = Float.intBitsToFloat(random.nextInt());
       if (Float.isNaN(f)) continue;    // skip NaN
       byte b1 = orig_floatToByte(f);
       byte b2 = SmallFloat.floatToByte(f,3,15);

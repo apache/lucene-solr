@@ -18,9 +18,10 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -28,22 +29,23 @@ import org.apache.lucene.document.Field;
 
 public class TestCrash extends LuceneTestCase {
 
-  private IndexWriter initIndex(boolean initialCommit) throws IOException {
-    return initIndex(new MockRAMDirectory(), initialCommit);
+  private IndexWriter initIndex(Random random, boolean initialCommit) throws IOException {
+    return initIndex(random, newDirectory(), initialCommit);
   }
 
-  private IndexWriter initIndex(MockRAMDirectory dir, boolean initialCommit) throws IOException {
+  private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit) throws IOException {
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
 
-    IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     if (initialCommit) {
       writer.commit();
     }
     
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "0", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("id", "0", Field.Store.YES, Field.Index.ANALYZED));
     for(int i=0;i<157;i++)
       writer.addDocument(doc);
 
@@ -51,8 +53,9 @@ public class TestCrash extends LuceneTestCase {
   }
 
   private void crash(final IndexWriter writer) throws IOException {
-    final MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    final MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler();
+    cms.sync();
     dir.crash();
     cms.sync();
     dir.clearCrash();
@@ -62,33 +65,37 @@ public class TestCrash extends LuceneTestCase {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
-    IndexWriter writer = initIndex(true);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    IndexWriter writer = initIndex(random, true);
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     crash(writer);
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 157);
+    reader.close();
+    dir.close();
   }
 
   public void testWriterAfterCrash() throws IOException {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
-    IndexWriter writer = initIndex(true);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    IndexWriter writer = initIndex(random, true);
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     dir.setPreventDoubleWrite(false);
     crash(writer);
-    writer = initIndex(dir, false);
+    writer = initIndex(random, dir, false);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 314);
+    reader.close();
+    dir.close();
   }
 
   public void testCrashAfterReopen() throws IOException {
-    IndexWriter writer = initIndex(false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    IndexWriter writer = initIndex(random, false);
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     writer.close();
-    writer = initIndex(dir, false);
+    writer = initIndex(random, dir, false);
     assertEquals(314, writer.maxDoc());
     crash(writer);
 
@@ -103,12 +110,14 @@ public class TestCrash extends LuceneTestCase {
 
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() >= 157);
+    reader.close();
+    dir.close();
   }
 
   public void testCrashAfterClose() throws IOException {
     
-    IndexWriter writer = initIndex(false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    IndexWriter writer = initIndex(random, false);
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close();
     dir.crash();
@@ -122,12 +131,14 @@ public class TestCrash extends LuceneTestCase {
 
     IndexReader reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 
   public void testCrashAfterCloseNoWait() throws IOException {
     
-    IndexWriter writer = initIndex(false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    IndexWriter writer = initIndex(random, false);
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
 
@@ -141,12 +152,14 @@ public class TestCrash extends LuceneTestCase {
     */
     IndexReader reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 
   public void testCrashReaderDeletes() throws IOException {
     
-    IndexWriter writer = initIndex(false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    IndexWriter writer = initIndex(random, false);
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
     IndexReader reader = IndexReader.open(dir, false);
@@ -162,12 +175,14 @@ public class TestCrash extends LuceneTestCase {
     */
     reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 
   public void testCrashReaderDeletesAfterClose() throws IOException {
     
-    IndexWriter writer = initIndex(false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    IndexWriter writer = initIndex(random, false);
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
     IndexReader reader = IndexReader.open(dir, false);
@@ -184,5 +199,7 @@ public class TestCrash extends LuceneTestCase {
     */
     reader = IndexReader.open(dir, false);
     assertEquals(156, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 }

@@ -20,7 +20,9 @@ package org.apache.lucene.util;
 /**
  * @lucene.internal
  */ 
-public class English {
+public final class English {
+
+  private English() {} // no instance
 
   public static String longToEnglish(long i) {
     StringBuilder result = new StringBuilder();

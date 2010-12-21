@@ -18,18 +18,17 @@ package org.apache.lucene.store.instantiated;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestEmptyIndex extends LuceneTestCase {
@@ -60,9 +59,8 @@ public class TestEmptyIndex extends LuceneTestCase {
     ii.close();
 
     // make sure a Directory acts the same
-
-    Directory d = new RAMDirectory();
-    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
+    Directory d = newDirectory();
+    new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     testNorms(r);
     r.close();
@@ -93,9 +91,8 @@ public class TestEmptyIndex extends LuceneTestCase {
     ii.close();
 
     // make sure a Directory acts the same
-
-    Directory d = new RAMDirectory();
-    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
+    Directory d = newDirectory();
+    new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     termsEnumTest(r);
     r.close();

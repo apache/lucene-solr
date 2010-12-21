@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.handler.extraction.ExtractingRequestHandler;
 import org.apache.solr.handler.extraction.ExtractingDocumentLoader;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.io.File;
 
 
@@ -58,8 +60,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testExtraction() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
-    loadLocal("solr-word.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("solr-word.pdf",
+            "fmap.created", "extractedDate",
+            "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Creation-Date", "extractedDate",
+            "fmap.AAPL:Keywords", "ignored_a",
+            "fmap.xmpTPg:NPages", "ignored_a",
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
            "literal.id", "one",
@@ -141,11 +148,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   }
 
+
   @Test
   public void testDefaultField() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
     try {
+      ignoreException("unknown field 'a'");
       loadLocal("simple.html",
       "literal.id","simple2",
       "lowernames", "true",
@@ -157,6 +166,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     } catch (SolrException e) {
       //do nothing
+    } finally {
+      resetExceptionIgnores();
     }
     
 
@@ -341,6 +352,9 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     loadLocal("arabic.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+        "fmap.Creation-Date", "extractedDate",
+        "fmap.AAPL:Keywords", "ignored_a",
+        "fmap.xmpTPg:NPages", "ignored_a",
         "fmap.Author", "extractedAuthor",
         "fmap.content", "wdf_nocase",
        "literal.id", "one",
@@ -352,13 +366,16 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
-
-    // TODO: stop using locally defined streams once stream.file and
-    // stream.body work everywhere
-    List<ContentStream> cs = new ArrayList<ContentStream>();
-    cs.add(new ContentStreamBase.FileStream(new File(filename)));
-    req.setContentStreams(cs);
-    return h.queryAndResponse("/update/extract", req);
+    try {
+      // TODO: stop using locally defined streams once stream.file and
+      // stream.body work everywhere
+      List<ContentStream> cs = new ArrayList<ContentStream>();
+      cs.add(new ContentStreamBase.FileStream(new File(filename)));
+      req.setContentStreams(cs);
+      return h.queryAndResponse("/update/extract", req);
+    } finally {
+      req.close();
+    }
   }
 
 

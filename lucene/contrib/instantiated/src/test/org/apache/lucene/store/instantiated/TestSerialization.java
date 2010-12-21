@@ -17,12 +17,10 @@ package org.apache.lucene.store.instantiated;
  */
 
 
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,10 +31,9 @@ import java.io.ObjectOutputStream;
 public class TestSerialization extends LuceneTestCase {
 
   public void test() throws Exception {
+    Directory dir = newDirectory();
 
-    Directory dir = new RAMDirectory();
-
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("foo", "bar rab abr bra rba", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("moo", "bar rab abr bra rba", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -52,7 +49,7 @@ public class TestSerialization extends LuceneTestCase {
     oos.writeObject(ii);
     oos.close();
     baos.close();
-
+    dir.close();
     
   }
 

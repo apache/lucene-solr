@@ -17,9 +17,44 @@
 -->
 <html>
 <head>
-   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 </head>
 <body>
-A fast grammar-based tokenizer constructed with JFlex.
+<p>The <code>org.apache.lucene.analysis.standard</code> package contains three
+    fast grammar-based tokenizers constructed with JFlex:</p>
+<ul>
+    <li><code><a href="StandardTokenizer.html">StandardTokenizer</a></code>:
+        as of Lucene 3.1, implements the Word Break rules from the Unicode Text 
+        Segmentation algorithm, as specified in 
+        <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>.
+        Unlike <code>UAX29URLEmailTokenizer</code>, URLs and email addresses are
+        <b>not</b> tokenized as single tokens, but are instead split up into 
+        tokens according to the UAX#29 word break rules.
+        <br/>
+        <code><a href="StandardAnalyzer">StandardAnalyzer</a></code> includes
+        <code>StandardTokenizer</code>, 
+        <code><a href="StandardFilter">StandardFilter</a></code>, 
+        <code><a href="../../../../../../all/org/apache/lucene/analysis/LowerCaseFilter.html">LowerCaseFilter</a></code>
+        and <code><a href="../../../../../../all/org/apache/lucene/analysis/StopFilter.html">StopFilter</a></code>.
+        When the <code>Version</code> specified in the constructor is lower than 
+        3.1, the <code><a href="ClassicTokenizer.html">ClassicTokenizer</a></code>
+        implementation is invoked.</li>
+    <li><code><a href="ClassicTokenizer.html">ClassicTokenizer</a></code>:
+        this class was formerly (prior to Lucene 3.1) named 
+        <code>StandardTokenizer</code>.  (Its tokenization rules are not
+        based on the Unicode Text Segmentation algorithm.)
+        <code><a href="ClassicAnalyzer">ClassicAnalyzer</a></code> includes
+        <code>ClassicTokenizer</code>,
+        <code><a href="StandardFilter">StandardFilter</a></code>, 
+        <code><a href="../../../../../../all/org/apache/lucene/analysis/LowerCaseFilter.html">LowerCaseFilter</a></code>
+        and <code><a href="../../../../../../all/org/apache/lucene/analysis/StopFilter.html">StopFilter</a></code>.
+    </li>
+    <li><code><a href="UAX29URLEmailTokenizer.html">UAX29URLEmailTokenizer</a></code>: 
+        implements the Word Break rules from the Unicode Text Segmentation
+        algorithm, as specified in 
+        <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>.
+        URLs and email addresses are also tokenized according to the relevant RFCs.
+    </li>
+</ul>
 </body>
 </html>

@@ -111,12 +111,12 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 		assertAnalyzesTo(
 			fa,
 			"33Bis 1940-1945 1940:1945 (---i+++)*",
-			new String[] { "33bis", "1940-1945", "1940", "1945", "i" });
+			new String[] { "33bis", "1940", "1945", "1940", "1945", "i" });
 
 	}
 	
 	/**
-	 * @deprecated remove this test for Lucene 4.0
+	 * @deprecated (3.1) remove this test for Lucene 5.0
 	 */
 	@Deprecated
 	public void testAnalyzer30() throws Exception {
@@ -224,17 +224,6 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
               "captif" });
 	}
 
-	/* 
-	 * Test that changes to the exclusion table are applied immediately
-	 * when using reusable token streams.
-	 */
-	public void testExclusionTableReuse() throws Exception {
-	  FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
-	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habit" });
-	  fa.setStemExclusionTable(new String[] { "habitable" });
-	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habitable" });
-	}
-	
   public void testExclusionTableViaCtor() throws Exception {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("habitable");
@@ -256,7 +245,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
   /**
    * Prior to 3.1, this analyzer had no lowercase filter.
    * stopwords were case sensitive. Preserve this for back compat.
-   * @deprecated Remove this test in Lucene 4.0
+   * @deprecated (3.1) Remove this test in Lucene 5.0
    */
   @Deprecated
   public void testBuggyStopwordsCasing() throws IOException {

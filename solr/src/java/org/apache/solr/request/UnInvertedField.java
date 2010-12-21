@@ -37,7 +37,9 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
-import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.ByteUtils;
+import org.apache.solr.util.LongPriorityQueue;
+import org.apache.solr.util.PrimUtils;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.lucene.util.OpenBitSet;
@@ -469,7 +471,9 @@ public class UnInvertedField {
     if (baseSize >= mincount) {
 
       final int[] index = this.index;
-      final int[] counts = new int[numTermsInField];
+      // tricky: we add more more element than we need because we will reuse this array later
+      // for ordering term ords before converting to term labels.
+      final int[] counts = new int[numTermsInField + 1];
 
       //
       // If there is prefix, find it's start and end term numbers
@@ -479,9 +483,11 @@ public class UnInvertedField {
 
       NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
       if (prefix != null && prefix.length() > 0) {
-        te.skipTo(new BytesRef(prefix));
+        BytesRef prefixBr = new BytesRef(prefix);
+        te.skipTo(prefixBr);
         startTerm = te.getTermNumber();
-        te.skipTo(new BytesRef(prefix + "\uffff\uffff\uffff\uffff"));
+        prefixBr.append(ByteUtils.bigTerm);
+        te.skipTo(prefixBr);
         endTerm = te.getTermNumber();
       }
 
@@ -574,7 +580,8 @@ public class UnInvertedField {
       if (sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
         int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
         maxsize = Math.min(maxsize, numTermsInField);
-        final BoundedTreeSet<Long> queue = new BoundedTreeSet<Long>(maxsize);
+        LongPriorityQueue queue = new LongPriorityQueue(Math.min(maxsize,1000), maxsize, Long.MIN_VALUE);
+
         int min=mincount-1;  // the smallest value in the top 'N' values
         for (int i=startTerm; i<endTerm; i++) {
           int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
@@ -583,29 +590,65 @@ public class UnInvertedField {
             // index order, so we already know that the keys are ordered.  This can be very
             // important if a lot of the counts are repeated (like zero counts would be).
 
-            // minimize object creation and speed comparison by creating a long that
-            // encompases both count and term number.
-            // Since smaller values are kept in the TreeSet, make higher counts smaller.
-            //
-            //   for equal counts, lower term numbers
-            // should come first and hence be "greater"
-
-            //long pair = (((long)c)<<32) | (0x7fffffff-i) ;   // use if priority queue
-            long pair = (((long)-c)<<32) | i;
-            queue.add(new Long(pair));
-            if (queue.size()>=maxsize) min=-(int)(queue.last().longValue() >>> 32);
+            // smaller term numbers sort higher, so subtract the term number instead
+            long pair = (((long)c)<<32) + (Integer.MAX_VALUE - i);
+            boolean displaced = queue.insert(pair);
+            if (displaced) min=(int)(queue.top() >>> 32);
           }
         }
+
         // now select the right page from the results
-        for (Long p : queue) {
-          if (--off>=0) continue;
-          if (--lim<0) break;
-          int c = -(int)(p.longValue() >>> 32);
-          //int tnum = 0x7fffffff - (int)p.longValue();  // use if priority queue
-          int tnum = (int)p.longValue();
-          String label = getReadableValue(getTermValue(te, tnum), ft, spare);
-          res.add(label, c);
+
+        // if we are deep paging, we don't have to order the highest "offset" counts.
+        int collectCount = Math.max(0, queue.size() - off);
+        assert collectCount <= lim;
+
+        // the start and end indexes of our list "sorted" (starting with the highest value)
+        int sortedIdxStart = queue.size() - (collectCount - 1);
+        int sortedIdxEnd = queue.size() + 1;
+        final long[] sorted = queue.sort(collectCount);
+
+        final int[] indirect = counts;  // reuse the counts array for the index into the tnums array
+        assert indirect.length >= sortedIdxEnd;
+
+        for (int i=sortedIdxStart; i<sortedIdxEnd; i++) {
+          long pair = sorted[i];
+          int c = (int)(pair >>> 32);
+          int tnum = Integer.MAX_VALUE - (int)pair;
+
+          indirect[i] = i;   // store the index for indirect sorting
+          sorted[i] = tnum;  // reuse the "sorted" array to store the term numbers for indirect sorting
+
+          // add a null label for now... we'll fill it in later.
+          res.add(null, c);
         }
+
+        // now sort the indexes by the term numbers
+        PrimUtils.sort(sortedIdxStart, sortedIdxEnd, indirect, new PrimUtils.IntComparator() {
+          @Override
+          public int compare(int a, int b) {
+            return (int)sorted[a] - (int)sorted[b];
+          }
+
+          @Override
+          public boolean lessThan(int a, int b) {
+            return sorted[a] < sorted[b];
+          }
+
+          @Override
+          public boolean equals(int a, int b) {
+            return sorted[a] == sorted[b];
+          }
+        });
+
+        // convert the term numbers to term values and set as the label
+        for (int i=sortedIdxStart; i<sortedIdxEnd; i++) {
+          int idx = indirect[i];
+          int tnum = (int)sorted[idx];
+          String label = getReadableValue(getTermValue(te, tnum), ft, spare);
+          res.setName(idx - sortedIdxStart, label);
+        }
+
       } else {
         // add results in index order
         int i=startTerm;
@@ -956,6 +999,11 @@ class NumberedTermsEnum extends TermsEnum {
   @Override
   public int docFreq() {
     return tenum.docFreq();
+  }
+
+  @Override
+  public void cacheCurrentTerm() {
+    throw new UnsupportedOperationException();
   }
 
   public BytesRef skipTo(BytesRef target) throws IOException {

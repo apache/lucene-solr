@@ -25,9 +25,11 @@ import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
+import org.apache.lucene.queryParser.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.util.UnescapedCharSequence;
 import org.apache.lucene.queryParser.standard.config.LowercaseExpandedTermsAttribute;
+import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 
 /**
@@ -70,10 +72,10 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof WildcardQueryNode || node instanceof FuzzyQueryNode
-        || node instanceof ParametricQueryNode) {
+        || node instanceof ParametricQueryNode || node instanceof RegexpQueryNode) {
 
-      FieldQueryNode fieldNode = (FieldQueryNode) node;
-      fieldNode.setText(UnescapedCharSequence.toLowerCase(fieldNode.getText()));
+      TextableQueryNode txtNode = (TextableQueryNode) node;
+      txtNode.setText(UnescapedCharSequence.toLowerCase(txtNode.getText()));
     }
 
     return node;

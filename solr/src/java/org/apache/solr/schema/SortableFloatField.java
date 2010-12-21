@@ -20,6 +20,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
+import org.apache.solr.search.MutableValueFloat;
+import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -105,13 +107,15 @@ class SortableFloatFieldSource extends FieldCacheSource {
     final float def = defVal;
 
     return new StringIndexDocValues(this, reader, field) {
+      private final BytesRef spare = new BytesRef();
+
       protected String toTerm(String readableValue) {
         return NumberUtils.float2sortableStr(readableValue);
       }
 
       public float floatVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? def  : NumberUtils.SortableStr2float(termsIndex.lookup(ord, new BytesRef()));
+        return ord==0 ? def  : NumberUtils.SortableStr2float(termsIndex.lookup(ord, spare));
       }
 
       public int intVal(int doc) {
@@ -132,6 +136,30 @@ class SortableFloatFieldSource extends FieldCacheSource {
 
       public String toString(int doc) {
         return description() + '=' + floatVal(doc);
+      }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final MutableValueFloat mval = new MutableValueFloat();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            int ord=termsIndex.getOrd(doc);
+            if (ord == 0) {
+              mval.value = def;
+              mval.exists = false;
+            } else {
+              mval.value = NumberUtils.SortableStr2float(termsIndex.lookup(ord, spare));
+              mval.exists = true;
+            }
+          }
+        };
       }
     };
   }

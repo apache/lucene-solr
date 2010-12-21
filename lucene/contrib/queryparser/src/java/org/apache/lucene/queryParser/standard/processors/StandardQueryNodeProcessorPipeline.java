@@ -48,23 +48,23 @@ public class StandardQueryNodeProcessorPipeline extends
   public StandardQueryNodeProcessorPipeline(QueryConfigHandler queryConfig) {
     super(queryConfig);
 
-    addProcessor(new WildcardQueryNodeProcessor());    
-    addProcessor(new MultiFieldQueryNodeProcessor());
-    addProcessor(new FuzzyQueryNodeProcessor());
-    addProcessor(new MatchAllDocsQueryNodeProcessor());
-    addProcessor(new LowercaseExpandedTermsQueryNodeProcessor());
-    addProcessor(new ParametricRangeQueryNodeProcessor());
-    addProcessor(new AllowLeadingWildcardProcessor());    
-    addProcessor(new AnalyzerQueryNodeProcessor());
-    addProcessor(new PhraseSlopQueryNodeProcessor());
-    addProcessor(new GroupQueryNodeProcessor());
-    addProcessor(new NoChildOptimizationQueryNodeProcessor());
-    addProcessor(new RemoveDeletedQueryNodesProcessor());
-    addProcessor(new RemoveEmptyNonLeafQueryNodeProcessor());
-    addProcessor(new BooleanSingleChildOptimizationQueryNodeProcessor());
-    addProcessor(new DefaultPhraseSlopQueryNodeProcessor());
-    addProcessor(new BoostQueryNodeProcessor());    
-    addProcessor(new MultiTermRewriteMethodProcessor());
+    add(new WildcardQueryNodeProcessor());    
+    add(new MultiFieldQueryNodeProcessor());
+    add(new FuzzyQueryNodeProcessor());
+    add(new MatchAllDocsQueryNodeProcessor());
+    add(new LowercaseExpandedTermsQueryNodeProcessor());
+    add(new ParametricRangeQueryNodeProcessor());
+    add(new AllowLeadingWildcardProcessor());    
+    add(new AnalyzerQueryNodeProcessor());
+    add(new PhraseSlopQueryNodeProcessor());
+    add(new GroupQueryNodeProcessor());
+    add(new NoChildOptimizationQueryNodeProcessor());
+    add(new RemoveDeletedQueryNodesProcessor());
+    add(new RemoveEmptyNonLeafQueryNodeProcessor());
+    add(new BooleanSingleChildOptimizationQueryNodeProcessor());
+    add(new DefaultPhraseSlopQueryNodeProcessor());
+    add(new BoostQueryNodeProcessor());    
+    add(new MultiTermRewriteMethodProcessor());
   }
 
 }

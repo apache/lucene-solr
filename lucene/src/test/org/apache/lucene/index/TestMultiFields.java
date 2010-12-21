@@ -27,36 +27,34 @@ public class TestMultiFields extends LuceneTestCase {
 
   public void testRandom() throws Exception {
 
-    Random r = newRandom();
-
     int num = 2 * RANDOM_MULTIPLIER;
     for (int iter = 0; iter < num; iter++) {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory();
 
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
       Map<BytesRef,List<Integer>> docs = new HashMap<BytesRef,List<Integer>>();
       Set<Integer> deleted = new HashSet<Integer>();
       List<BytesRef> terms = new ArrayList<BytesRef>();
 
-      int numDocs = _TestUtil.nextInt(r, 1, 100 * RANDOM_MULTIPLIER);
+      int numDocs = _TestUtil.nextInt(random, 1, 100 * RANDOM_MULTIPLIER);
       Document doc = new Document();
-      Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+      Field f = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
       doc.add(f);
-      Field id = new Field("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+      Field id = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
       doc.add(id);
 
-      boolean onlyUniqueTerms = r.nextBoolean();
+      boolean onlyUniqueTerms = random.nextBoolean();
       Set<BytesRef> uniqueTerms = new HashSet<BytesRef>();
       for(int i=0;i<numDocs;i++) {
 
-        if (!onlyUniqueTerms && r.nextBoolean() && terms.size() > 0) {
+        if (!onlyUniqueTerms && random.nextBoolean() && terms.size() > 0) {
           // re-use existing term
-          BytesRef term = terms.get(r.nextInt(terms.size()));
+          BytesRef term = terms.get(random.nextInt(terms.size()));
           docs.get(term).add(i);
           f.setValue(term.utf8ToString());
         } else {
-          String s = _TestUtil.randomUnicodeString(r, 10);
+          String s = _TestUtil.randomUnicodeString(random, 10);
           BytesRef term = new BytesRef(s);
           if (!docs.containsKey(term)) {
             docs.put(term, new ArrayList<Integer>());
@@ -68,11 +66,11 @@ public class TestMultiFields extends LuceneTestCase {
         }
         id.setValue(""+i);
         w.addDocument(doc);
-        if (r.nextInt(4) == 1) {
+        if (random.nextInt(4) == 1) {
           w.commit();
         }
-        if (i > 0 && r.nextInt(20) == 1) {
-          int delID = r.nextInt(i);
+        if (i > 0 && random.nextInt(20) == 1) {
+          int delID = random.nextInt(i);
           deleted.add(delID);
           w.deleteDocuments(new Term("id", ""+delID));
         }
@@ -98,7 +96,7 @@ public class TestMultiFields extends LuceneTestCase {
       Terms terms2 = MultiFields.getTerms(reader, "field");
 
       for(int i=0;i<100;i++) {
-        BytesRef term = terms.get(r.nextInt(terms.size()));
+        BytesRef term = terms.get(random.nextInt(terms.size()));
         
         DocsEnum docsEnum = terms2.docs(delDocs, term, null);
         assertNotNull(docsEnum);
@@ -131,10 +129,10 @@ public class TestMultiFields extends LuceneTestCase {
   */
 
   public void testSeparateEnums() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d = new Document();
-    d.add(new Field("f", "j", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    d.add(newField("f", "j", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(d);
     w.commit();
     w.addDocument(d);

@@ -30,7 +30,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
@@ -41,10 +40,10 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 /**
  * Asserts equality of content and behaviour of two index readers.
@@ -61,10 +60,10 @@ public class TestIndicesEquals extends LuceneTestCase {
 
 
   public void testLoadIndexReader() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = newDirectory();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
@@ -79,17 +78,17 @@ public class TestIndicesEquals extends LuceneTestCase {
     ir.close();
 
     testEqualBehaviour(dir, ii);
+    dir.close();
   }
 
 
   public void testInstantiatedIndexWriter() throws Exception {
 
-
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     InstantiatedIndex ii = new InstantiatedIndex();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
@@ -110,7 +109,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     testEqualBehaviour(dir, ii);
 
-
+    dir.close();
 
   }
 
@@ -300,8 +299,14 @@ public class TestIndicesEquals extends LuceneTestCase {
     assertEquals(air.numDocs(), tir.numDocs());
     assertEquals(air.numDeletedDocs(), tir.numDeletedDocs());
 
-    for (int d =0; d<air.maxDoc(); d++) {
-      assertEquals(air.isDeleted(d), tir.isDeleted(d));
+    final Bits aDelDocs = MultiFields.getDeletedDocs(air);
+    final Bits tDelDocs = MultiFields.getDeletedDocs(tir);
+    assertTrue((aDelDocs != null && tDelDocs != null) || 
+               (aDelDocs == null && tDelDocs == null));
+    if (aDelDocs != null) {
+      for (int d =0; d<air.maxDoc(); d++) {
+        assertEquals(aDelDocs.get(d), tDelDocs.get(d));
+      }
     }
 
     air.close();
@@ -375,11 +380,16 @@ public class TestIndicesEquals extends LuceneTestCase {
           assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
         }
       }
-
     }
 
-    for (int docIndex = 0; docIndex < aprioriReader.numDocs(); docIndex++) {
-      assertEquals(aprioriReader.isDeleted(docIndex), testReader.isDeleted(docIndex));
+    final Bits apDelDocs = MultiFields.getDeletedDocs(aprioriReader);
+    final Bits testDelDocs = MultiFields.getDeletedDocs(testReader);
+    assertTrue((apDelDocs != null && testDelDocs != null) || 
+               (apDelDocs == null && testDelDocs == null));
+    if (apDelDocs != null) {
+      for (int docIndex = 0; docIndex < aprioriReader.numDocs(); docIndex++) {
+        assertEquals(apDelDocs.get(docIndex), testDelDocs.get(docIndex));
+      }
     }
 
     // compare term enumeration stepping

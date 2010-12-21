@@ -20,7 +20,6 @@ package org.apache.lucene.util.automaton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -32,10 +31,8 @@ import org.apache.lucene.util._TestUtil;
 public class TestDeterminizeLexicon extends LuceneTestCase {
   private List<Automaton> automata = new ArrayList<Automaton>();
   private List<String> terms = new ArrayList<String>();
-  private Random random;
   
   public void testLexicon() throws Exception {
-    random = newRandom();
     int num = 3 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       automata.clear();

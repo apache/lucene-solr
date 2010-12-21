@@ -41,11 +41,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * A point type that indexes a point in an n-dimensional space as separate fields and uses
- * range queries for bounding box calculations.
- * <p/>
- * <p/>
- * NOTE: There can only be one sub type
+ * A point type that indexes a point in an n-dimensional space as separate fields and supports range queries.
+ * See {@link LatLonType} for geo-spatial queries.
  */
 public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
@@ -132,7 +129,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not suported on PointType " + field.getName());
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on PointType " + field.getName());
   }
 
   @Override

@@ -27,36 +27,20 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpatialParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialQueryable;
 
 
 
 /**
- * Creates a spatial Filter based on the type of spatial point used.
- * <p/>
- * The field must implement XXXX
- * <p/>
- * <p/>
- * <p/>
- * Syntax:
- * <pre>{!sfilt fl=location [units=[K|M]] [meas=[0-INF|hsin|sqe]] }&pt=49.32,-79.0&d=20</pre>
- * <p/>
- * Parameters:
- * <ul>
- * <li>fl - The fields to filter on.  Must implement XXXX. Required.  If more than one, XXXX</li>
- * <li>pt - The point to use as a reference.  Must match the dimension of the field. Required.</li>
- * <li>d - The distance in the units specified. Required.</li>
- * <li>units - The units of the distance.  K - kilometers, M - Miles.  Optional.  Default is miles.</li>
- * <li>meas - The distance measure to use.  Default is Euclidean (2-norm).  If a number between 0-INF is used, then the Vector Distance is used.  hsin = Haversine, sqe = Squared Euclidean</li>
- * </ul>
+ * @see SpatialFilterQParserPlugin
  */
 public class SpatialFilterQParser extends QParser {
+  boolean bbox;  // do bounding box only
 
-
-  public SpatialFilterQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public SpatialFilterQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req, boolean bbox) {
     super(qstr, localParams, params, req);
+    this.bbox = bbox;
   }
 
   
@@ -65,32 +49,39 @@ public class SpatialFilterQParser extends QParser {
   public Query parse() throws ParseException {
     //if more than one, we need to treat them as a point...
     //TODO: Should we accept multiple fields
-    String[] fields = localParams.getParams(CommonParams.FL);
+    String[] fields = localParams.getParams("f");
     if (fields == null || fields.length == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, CommonParams.FL + " is not properly specified");
+      String field = getParam(SpatialParams.FIELD);
+      if (field == null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " missing sfield for spatial request");
+      fields = new String[] {field};
     }
-    String pointStr = params.get(SpatialParams.POINT);
+    
+    String pointStr = getParam(SpatialParams.POINT);
     if (pointStr == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.POINT + " is not properly specified");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.POINT + " missing.");
     }
 
-    double dist = params.getDouble(SpatialParams.DISTANCE, -1);
+    double dist = -1;
+    String distS = getParam(SpatialParams.DISTANCE);
+    if (distS != null) dist = Double.parseDouble(distS);
+
     if (dist < 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.DISTANCE + " must be >= 0");
     }
-    IndexSchema schema = req.getSchema();
 
     String measStr = localParams.get(SpatialParams.MEASURE);
     //TODO: Need to do something with Measures
     Query result = null;
     //fields is valid at this point
     if (fields.length == 1) {
-      SchemaField sf = schema.getField(fields[0]);
+      SchemaField sf = req.getSchema().getField(fields[0]);
       FieldType type = sf.getType();
 
       if (type instanceof SpatialQueryable) {
         double radius = localParams.getDouble(SpatialParams.SPHERE_RADIUS, DistanceUtils.EARTH_MEAN_RADIUS_KM);
         SpatialOptions opts = new SpatialOptions(pointStr, dist, sf, measStr, radius, DistanceUnits.KILOMETERS);
+        opts.bbox = bbox;
         result = ((SpatialQueryable)type).createSpatialQuery(this, opts);
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field " + fields[0]

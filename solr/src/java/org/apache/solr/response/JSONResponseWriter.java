@@ -447,7 +447,7 @@ class JSONWriter extends TextResponseWriter {
       other = scoreMap;
       scoreMap.put("score",score);
     }
-    writeDoc(name, (List<Fieldable>)(doc.getFields()), returnFields, other);
+    writeDoc(name, doc.getFields(), returnFields, other);
   }
 
   public void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException {
@@ -483,6 +483,8 @@ class JSONWriter extends TextResponseWriter {
     boolean first=true;
 
     SolrIndexSearcher searcher = req.getSearcher();
+    // be defensive... write out the doc even if we don't have the scores like we should
+    includeScore = includeScore && ids.hasScores();
     DocIterator iterator = ids.iterator();
     for (int i=0; i<sz; i++) {
       int id = iterator.nextDoc();

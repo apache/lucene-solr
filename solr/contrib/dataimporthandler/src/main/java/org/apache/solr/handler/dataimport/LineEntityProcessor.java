@@ -25,7 +25,7 @@ import org.apache.commons.io.IOUtils;
 
 /**
  * <p>
- * An EntityProcessor instance which can stream lines of text read from a 
+ * An {@link EntityProcessor} instance which can stream lines of text read from a 
  * datasource. Options allow lines to be explicitly skipped or included in the index.
  * </p>
  * <p/>
@@ -54,6 +54,7 @@ import org.apache.commons.io.IOUtils;
  *
  * @version $Id$
  * @since solr 1.4
+ * @see Pattern
  */
 public class LineEntityProcessor extends EntityProcessorBase {
   private Pattern acceptLineRegex, skipLineRegex;

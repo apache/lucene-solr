@@ -22,7 +22,6 @@ orig_dir=$(pwd)
 cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
-curl_url=""
 
 unset solr_hostname solr_port data_dir webapp_name user verbose debug solr_url
 . ${solr_root}/bin/scripts-util
@@ -80,40 +79,9 @@ done
 
 [[ -n $debug ]] && set -x
 
-# use default value for data_dir if not specified
-# relative path starts at ${solr_root}
-if [[ -z ${data_dir} ]]
-then
-    data_dir=${solr_root}/data
-elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
-then
-    data_dir=${solr_root}/${data_dir}
-fi
+dataDir
 
-if [[ -n ${solr_url} ]]
-then
-  curl_url=${solr_url}
-else
-  if [[ -z ${solr_port} ]]
-  then
-    echo "Solr port number missing in $confFile or command line."
-    echo "$USAGE"
-    exit 1
-  fi
-
-  # use default hostname if not specified
-  if [[ -z ${solr_hostname} ]]
-  then
-    solr_hostname=localhost
-  fi
-
-  # use default webapp name if not specified
-  if [[ -z ${webapp_name} ]]
-  then
-    webapp_name=solr
-  fi
-  curl_url=http://${solr_hostname}:${solr_port}/${webapp_name}/update
-fi
+curlUrl
 
 fixUser "$@"
 
@@ -175,7 +143,7 @@ trap 'echo cleaning up, please wait ...;/bin/rm -rf ${data_dir}/${name} ${data_d
 
 # make a backup using hard links into temporary location
 # then move it into place atomically
-if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin"  || "${OS}" == "FreeBSD"]]
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" || "${OS}" == "FreeBSD" ]]
 then
   orig_dir=$(pwd)
   mkdir ${data_dir}/${temp}

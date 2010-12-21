@@ -20,9 +20,6 @@ package org.apache.lucene.util;
 import java.util.Random;
 
 public class TestPriorityQueue extends LuceneTestCase {
-    public TestPriorityQueue(String name) {
-        super(name);
-    }
 
     private static class IntegerQueue extends PriorityQueue<Integer> {
         public IntegerQueue(int count) {
@@ -37,7 +34,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     }
 
     public void testPQ() throws Exception {
-        testPQ(10000 * RANDOM_MULTIPLIER, newRandom());
+        testPQ(10000 * RANDOM_MULTIPLIER, random);
     }
 
     public static void testPQ(int count, Random gen) {

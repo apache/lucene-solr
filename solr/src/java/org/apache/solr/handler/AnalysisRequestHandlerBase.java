@@ -263,18 +263,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     private final List<Token> tokens;
     private Iterator<Token> tokenIterator;
 
-    private final CharTermAttribute termAtt = (CharTermAttribute) 
-      addAttribute(CharTermAttribute.class);
-    private final OffsetAttribute offsetAtt = (OffsetAttribute) 
-      addAttribute(OffsetAttribute.class);
-    private final TypeAttribute typeAtt = (TypeAttribute) 
-      addAttribute(TypeAttribute.class);
-    private final FlagsAttribute flagsAtt = (FlagsAttribute) 
-      addAttribute(FlagsAttribute.class);
-    private final PayloadAttribute payloadAtt = (PayloadAttribute) 
-      addAttribute(PayloadAttribute.class);
-    private final PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) 
-      addAttribute(PositionIncrementAttribute.class);
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+    private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
+    private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+    private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     /**
      * Creates a new ListBasedTokenStream which uses the given tokens as its token source.
      *

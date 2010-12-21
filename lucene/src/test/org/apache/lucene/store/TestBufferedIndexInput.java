@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -78,10 +79,8 @@ public class TestBufferedIndexInput extends LuceneTestCase {
   // Our input comes from a dynamically generated "file" -
   // see MyBufferedIndexInput below.
   public void testReadBytes() throws Exception {
-    final Random r = newRandom();
-
     MyBufferedIndexInput input = new MyBufferedIndexInput();
-    runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, r);
+    runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random);
 
     // This tests the workaround code for LUCENE-1566 where readBytesInternal
     // provides a workaround for a JVM Bug that incorrectly raises a OOM Error
@@ -95,11 +94,11 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
-                                                inputBufferSize, 10), inputBufferSize, r);
+                                                inputBufferSize, 10), inputBufferSize, random);
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-                                             inputBufferSize, 10), inputBufferSize, r);
+                                             inputBufferSize, 10), inputBufferSize, random);
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
@@ -243,16 +242,18 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     public void testSetBufferSize() throws IOException {
       File indexDir = new File(TEMP_DIR, "testSetBufferSize");
-      MockFSDirectory dir = new MockFSDirectory(indexDir, newRandom());
+      MockFSDirectory dir = new MockFSDirectory(indexDir, random);
       try {
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer())
-          .setOpenMode(OpenMode.CREATE));
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+        IndexWriter writer = new IndexWriter(
+            dir,
+            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+                setOpenMode(OpenMode.CREATE).
+                setMergePolicy(newLogMergePolicy(false))
+        );
         for(int i=0;i<37;i++) {
           Document doc = new Document();
-          doc.add(new Field("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.ANALYZED));
-          doc.add(new Field("id", "" + i, Field.Store.YES, Field.Index.ANALYZED));
+          doc.add(newField("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.ANALYZED));
+          doc.add(newField("id", "" + i, Field.Store.YES, Field.Index.ANALYZED));
           writer.addDocument(doc);
         }
         writer.close();
@@ -368,12 +369,13 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       {
         return dir.listAll();
       }
-
+      @Override
+      public void sync(Collection<String> names) throws IOException {
+        dir.sync(names);
+      }
       @Override
       public long fileLength(String name) throws IOException {
         return dir.fileLength(name);
       }
-
-
     }
 }

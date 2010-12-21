@@ -27,7 +27,7 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-icu</artifactId>
+  <artifactId>lucene-analyzers-icu</artifactId>
   <name>
     Lucene ICUCollationKeyFilter/Analyzer
   </name>

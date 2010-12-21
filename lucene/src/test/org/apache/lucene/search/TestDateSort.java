@@ -33,7 +33,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Test date sorting, i.e. auto-sorting of fields with type "long".
@@ -48,11 +47,11 @@ public class TestDateSort extends LuceneTestCase {
   private IndexReader reader;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     // Create an index writer.
-    directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     // oldest doc:
     // Add the first document.  text = "Document 1"  dateTime = Oct 10 03:25:22 EDT 2007
@@ -72,7 +71,7 @@ public class TestDateSort extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     directory.close();
     super.tearDown();
@@ -107,16 +106,16 @@ public class TestDateSort extends LuceneTestCase {
     assertEquals(Arrays.asList(expectedOrder), Arrays.asList(actualOrder));
   }
 
-  private static Document createDocument(String text, long time) {
+  private Document createDocument(String text, long time) {
     Document document = new Document();
 
     // Add the text field.
-    Field textField = new Field(TEXT_FIELD, text, Field.Store.YES, Field.Index.ANALYZED);
+    Field textField = newField(TEXT_FIELD, text, Field.Store.YES, Field.Index.ANALYZED);
     document.add(textField);
 
     // Add the date/time field.
     String dateTimeString = DateTools.timeToString(time, DateTools.Resolution.SECOND);
-    Field dateTimeField = new Field(DATE_TIME_FIELD, dateTimeString, Field.Store.YES,
+    Field dateTimeField = newField(DATE_TIME_FIELD, dateTimeString, Field.Store.YES,
         Field.Index.NOT_ANALYZED);
     document.add(dateTimeField);
 

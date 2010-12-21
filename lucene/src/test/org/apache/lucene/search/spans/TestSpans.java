@@ -26,12 +26,11 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -44,17 +43,17 @@ public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory directory;
-
+  
   public static final String field = "field";
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -63,7 +62,7 @@ public class TestSpans extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -90,7 +89,7 @@ public class TestSpans extends LuceneTestCase {
   }
   
   private void checkHits(Query query, int[] results) throws IOException {
-    CheckHits.checkHits(query, field, searcher, results);
+    CheckHits.checkHits(random, query, field, searcher, results);
   }
   
   private void orderedSlopTest3SQ(
@@ -197,7 +196,7 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("t3") },
                               slop,
                               ordered);
-    Spans spans = snq.getSpans(searcher.getIndexReader());
+    Spans spans = snq.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
 
     assertTrue("first range", spans.next());
     assertEquals("first doc", 11, spans.doc());
@@ -223,7 +222,7 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("u2") },
                               0,
                               false);
-    Spans spans = snq.getSpans(searcher.getIndexReader());
+    Spans spans = snq.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
     assertTrue("Does not have next and it should", spans.next());
     assertEquals("doc", 4, spans.doc());
     assertEquals("start", 1, spans.start());
@@ -259,7 +258,7 @@ public class TestSpans extends LuceneTestCase {
                               },
                               1,
                               false);
-    spans = snq.getSpans(searcher.getIndexReader());
+    spans = snq.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
     assertTrue("Does not have next and it should", spans.next());
     assertEquals("doc", 4, spans.doc());
     assertEquals("start", 0, spans.start());
@@ -317,7 +316,7 @@ public class TestSpans extends LuceneTestCase {
     for (int i = 0; i < terms.length; i++) {
       sqa[i] = makeSpanTermQuery(terms[i]);
     }
-    return (new SpanOrQuery(sqa)).getSpans(searcher.getIndexReader());
+    return (new SpanOrQuery(sqa)).getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
   }
 
   private void tstNextSpans(Spans spans, int doc, int start, int end)
@@ -332,8 +331,8 @@ public class TestSpans extends LuceneTestCase {
     Spans spans = orSpans(new String[0]);
     assertFalse("empty next", spans.next());
 
-    SpanOrQuery a = new SpanOrQuery( new SpanQuery[0] );
-    SpanOrQuery b = new SpanOrQuery( new SpanQuery[0] );
+    SpanOrQuery a = new SpanOrQuery();
+    SpanOrQuery b = new SpanOrQuery();
     assertTrue("empty should equal", a.equals(b));
   }
 
@@ -422,7 +421,7 @@ public class TestSpans extends LuceneTestCase {
       }
     };
 
-    Scorer spanScorer = snq.weight(searcher).scorer(searcher.getIndexReader(), true, false);
+    Scorer spanScorer = snq.weight(searcher).scorer(new SlowMultiReaderWrapper(searcher.getIndexReader()), true, false);
 
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);
@@ -434,8 +433,8 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
     final Document doc = new Document();
-    doc.add( new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED) );
-    doc.add( new Field("text", text, Field.Store.YES, Field.Index.ANALYZED) );
+    doc.add( newField("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED) );
+    doc.add( newField("text", text, Field.Store.YES, Field.Index.ANALYZED) );
     writer.addDocument(doc);
   }
 
@@ -461,7 +460,7 @@ public class TestSpans extends LuceneTestCase {
 
   // LUCENE-1404
   public void testNPESpanQuery() throws Throwable {
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 

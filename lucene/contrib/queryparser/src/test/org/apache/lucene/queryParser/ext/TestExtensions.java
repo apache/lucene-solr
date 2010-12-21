@@ -27,7 +27,7 @@ public class TestExtensions extends LuceneTestCase {
   private Extensions ext;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     this.ext = new Extensions();
   }

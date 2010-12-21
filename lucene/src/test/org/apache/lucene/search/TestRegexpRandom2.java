@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -28,15 +27,18 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -50,20 +52,16 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory dir;
-  private Random random;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = new MockRAMDirectory();
-    // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.
-    // currently, this means 'empty tokens' arent created/tested in the enumeration:
-    // <mikemccand> it's like having a big hairy scary monster in the basement but being upset that it doesn't have fangs
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
-    
+    dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
-    Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(field);
     List<String> terms = new ArrayList<String>();
     int num = 2000 * RANDOM_MULTIPLIER;
@@ -89,7 +87,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     searcher.close();
     dir.close();
@@ -107,16 +105,16 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     }
     
     @Override
-    protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
-      return new SimpleAutomatonTermsEnum(reader, field);
+    protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+      return new SimpleAutomatonTermsEnum(terms.iterator());
     }
 
     private class SimpleAutomatonTermsEnum extends FilteredTermsEnum {
       CharacterRunAutomaton runAutomaton = new CharacterRunAutomaton(automaton);
       UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
 
-      private SimpleAutomatonTermsEnum(IndexReader reader, String field) throws IOException {
-        super(reader, field);
+      private SimpleAutomatonTermsEnum(TermsEnum tenum) throws IOException {
+        super(tenum);
         setInitialSeekTerm(new BytesRef(""));
       }
       
@@ -136,10 +134,11 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-
-    int num = 1000 * RANDOM_MULTIPLIER;
+    // we generate aweful regexps: good for testing.
+    // but for preflex codec, the test can be very slow, so use less iterations.
+    int num = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String reg = AutomatonTestUtil.randomRegexp(random).toString();
+      String reg = AutomatonTestUtil.randomRegexp(random);
       assertSame(reg);
     }
   }
@@ -156,7 +155,10 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     // a\uda07* prefixquery. Prefixquery then does the "wrong" thing, which
     // isn't really wrong as the query was undefined to begin with... but not
     // automatically comparable.
-    if (!(smart.getTermsEnum(searcher.getIndexReader()) instanceof AutomatonTermsEnum))
+    
+    // TODO: does this check even matter anymore?!
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
+    if (!(smart.getTermsEnum(terms) instanceof AutomatonTermsEnum))
       return;
     
     TopDocs smartDocs = searcher.search(smart, 25);

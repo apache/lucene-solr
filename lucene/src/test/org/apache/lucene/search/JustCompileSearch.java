@@ -239,7 +239,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase)
+    public FieldComparator setNextReader(IndexReader reader, int docBase)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

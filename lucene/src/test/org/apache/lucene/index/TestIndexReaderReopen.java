@@ -22,38 +22,37 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-
-import java.util.List;
-import java.util.Random;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
   private File indexDir;
   
   public void testReopen() throws Exception {
-    final Directory dir1 = new MockRAMDirectory();
+    final Directory dir1 = newDirectory();
     
-    createIndex(dir1, false);
+    createIndex(random, dir1, false);
     performDefaultTests(new TestReopen() {
 
       @Override
@@ -69,9 +68,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     });
     dir1.close();
     
-    final Directory dir2 = new MockRAMDirectory();
+    final Directory dir2 = newDirectory();
     
-    createIndex(dir2, true);
+    createIndex(random, dir2, true);
     performDefaultTests(new TestReopen() {
 
       @Override
@@ -89,10 +88,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testParallelReaderReopen() throws Exception {
-    final Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, true);
-    final Directory dir2 = new MockRAMDirectory();
-    createIndex(dir2, true);
+    final Directory dir1 = newDirectory();
+    createIndex(random, dir1, true);
+    final Directory dir2 = newDirectory();
+    createIndex(random, dir2, true);
     
     performDefaultTests(new TestReopen() {
 
@@ -114,10 +113,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     dir1.close();
     dir2.close();
     
-    final Directory dir3 = new MockRAMDirectory();
-    createIndex(dir3, true);
-    final Directory dir4 = new MockRAMDirectory();
-    createIndex(dir4, true);
+    final Directory dir3 = newDirectory();
+    createIndex(random, dir3, true);
+    final Directory dir4 = newDirectory();
+    createIndex(random, dir4, true);
 
     performTestsWithExceptionInReopen(new TestReopen() {
 
@@ -149,27 +148,28 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // in each iteration verify the work of previous iteration. 
   // try this once with reopen once recreate, on both RAMDir and FSDir.
   public void testCommitReopenFS () throws IOException {
-    Directory dir = FSDirectory.open(indexDir);
-    doTestReopenWithCommit(dir, true);
+    Directory dir = newFSDirectory(indexDir);
+    doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
   public void testCommitRecreateFS () throws IOException {
-    Directory dir = FSDirectory.open(indexDir);
-    doTestReopenWithCommit(dir, false);
+    Directory dir = newFSDirectory(indexDir);
+    doTestReopenWithCommit(random, dir, false);
     dir.close();
   }
   public void testCommitReopenRAM () throws IOException {
-    Directory dir = new MockRAMDirectory();
-    doTestReopenWithCommit(dir, true);
+    Directory dir = newDirectory();
+    doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
   public void testCommitRecreateRAM () throws IOException {
-    Directory dir = new MockRAMDirectory();
-    doTestReopenWithCommit(dir, false);
+    Directory dir = newDirectory();
+    doTestReopenWithCommit(random, dir, false);
+    dir.close();
   }
 
-  private void doTestReopenWithCommit (Directory dir, boolean withReopen) throws IOException {
-    IndexWriter iwriter = new IndexWriter(dir, new IndexWriterConfig(
+  private void doTestReopenWithCommit (Random random, Directory dir, boolean withReopen) throws IOException {
+    IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
         OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()));
     iwriter.commit();
@@ -179,9 +179,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       for (int i=0; i<4; i++) {
         for (int j=0; j<M; j++) {
           Document doc = new Document();
-          doc.add(new Field("id", i+"_"+j, Store.YES, Index.NOT_ANALYZED));
-          doc.add(new Field("id2", i+"_"+j, Store.YES, Index.NOT_ANALYZED_NO_NORMS));
-          doc.add(new Field("id3", i+"_"+j, Store.YES, Index.NO));
+          doc.add(newField("id", i+"_"+j, Store.YES, Index.NOT_ANALYZED));
+          doc.add(newField("id2", i+"_"+j, Store.YES, Index.NOT_ANALYZED_NO_NORMS));
+          doc.add(newField("id3", i+"_"+j, Store.YES, Index.NO));
           iwriter.addDocument(doc);
           if (i>0) {
             int k = i-1;
@@ -213,12 +213,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testMultiReaderReopen() throws Exception {
+    final Directory dir1 = newDirectory();
+    createIndex(random, dir1, true);
 
-    final Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, true);
-
-    final Directory dir2 = new MockRAMDirectory();
-    createIndex(dir2, true);
+    final Directory dir2 = newDirectory();
+    createIndex(random, dir2, true);
 
     performDefaultTests(new TestReopen() {
 
@@ -230,9 +229,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected IndexReader openReader() throws IOException {
-        return new MultiReader(new IndexReader[] 
-                        {IndexReader.open(dir1, false), 
-                         IndexReader.open(dir2, false)});
+        return new MultiReader(IndexReader.open(dir1, false),
+            IndexReader.open(dir2, false));
       }
       
     });
@@ -240,11 +238,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     dir1.close();
     dir2.close();
     
-    final Directory dir3 = new MockRAMDirectory();
-    createIndex(dir3, true);
+    final Directory dir3 = newDirectory();
+    createIndex(random, dir3, true);
 
-    final Directory dir4 = new MockRAMDirectory();
-    createIndex(dir4, true);
+    final Directory dir4 = newDirectory();
+    createIndex(random, dir4, true);
 
     performTestsWithExceptionInReopen(new TestReopen() {
 
@@ -256,12 +254,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       @Override
       protected IndexReader openReader() throws IOException {
-        return new MultiReader(new IndexReader[] 
-                        {IndexReader.open(dir3, false), 
-                         IndexReader.open(dir4, false),
-                         // Does not implement reopen, so
-                         // hits exception:
-                         new FilterIndexReader(IndexReader.open(dir3, false))});
+        return new MultiReader(IndexReader.open(dir3, false),
+            IndexReader.open(dir4, false),
+            // Does not implement reopen, so
+            // hits exception:
+            new FilterIndexReader(IndexReader.open(dir3, false)));
       }
       
     });
@@ -270,16 +267,16 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testMixedReaders() throws Exception {
-    final Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, true);
-    final Directory dir2 = new MockRAMDirectory();
-    createIndex(dir2, true);
-    final Directory dir3 = new MockRAMDirectory();
-    createIndex(dir3, false);
-    final Directory dir4 = new MockRAMDirectory();
-    createIndex(dir4, true);
-    final Directory dir5 = new MockRAMDirectory();
-    createIndex(dir5, false);
+    final Directory dir1 = newDirectory();
+    createIndex(random, dir1, true);
+    final Directory dir2 = newDirectory();
+    createIndex(random, dir2, true);
+    final Directory dir3 = newDirectory();
+    createIndex(random, dir3, false);
+    final Directory dir4 = newDirectory();
+    createIndex(random, dir4, true);
+    final Directory dir5 = newDirectory();
+    createIndex(random, dir5, false);
     
     performDefaultTests(new TestReopen() {
 
@@ -297,10 +294,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         ParallelReader pr = new ParallelReader();
         pr.add(IndexReader.open(dir1, false));
         pr.add(IndexReader.open(dir2, false));
-        MultiReader mr = new MultiReader(new IndexReader[] {
-            IndexReader.open(dir3, false), IndexReader.open(dir4, false)});
-        return new MultiReader(new IndexReader[] {
-           pr, mr, IndexReader.open(dir5, false)});
+        MultiReader mr = new MultiReader(IndexReader.open(dir3, false), IndexReader.open(dir4, false));
+        return new MultiReader(pr, mr, IndexReader.open(dir5, false));
       }
     });
     dir1.close();
@@ -357,10 +352,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testReferenceCounting() throws IOException {
-   
     for (int mode = 0; mode < 4; mode++) {
-      Directory dir1 = new MockRAMDirectory();
-      createIndex(dir1, true);
+      Directory dir1 = newDirectory();
+      createIndex(random, dir1, true);
      
       IndexReader reader0 = IndexReader.open(dir1, false);
       assertRefCountEquals(1, reader0);
@@ -464,10 +458,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testReferenceCountingMultiReader() throws IOException {
     for (int mode = 0; mode <=1; mode++) {
-      Directory dir1 = new MockRAMDirectory();
-      createIndex(dir1, false);
-      Directory dir2 = new MockRAMDirectory();
-      createIndex(dir2, true);
+      Directory dir1 = newDirectory();
+      createIndex(random, dir1, false);
+      Directory dir2 = newDirectory();
+      createIndex(random, dir2, true);
       
       IndexReader reader1 = IndexReader.open(dir1, false);
       assertRefCountEquals(1, reader1);
@@ -535,10 +529,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testReferenceCountingParallelReader() throws IOException {
     for (int mode = 0; mode <=1; mode++) {
-      Directory dir1 = new MockRAMDirectory();
-      createIndex(dir1, false);
-      Directory dir2 = new MockRAMDirectory();
-      createIndex(dir2, true);
+      Directory dir1 = newDirectory();
+      createIndex(random, dir1, false);
+      Directory dir2 = newDirectory();
+      createIndex(random, dir2, true);
       
       IndexReader reader1 = IndexReader.open(dir1, false);
       assertRefCountEquals(1, reader1);
@@ -609,11 +603,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testNormsRefCounting() throws IOException {
-    Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, false);
+    Directory dir1 = newDirectory();
+    createIndex(random, dir1, false);
     
     IndexReader reader1 = IndexReader.open(dir1, false);
-    SegmentReader segmentReader1 = SegmentReader.getOnlySegmentReader(reader1);
+    SegmentReader segmentReader1 = getOnlySegmentReader(reader1);
     IndexReader modifier = IndexReader.open(dir1, false);
     modifier.deleteDocument(0);
     modifier.close();
@@ -625,7 +619,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     modifier.close();
     
     IndexReader reader3 = reader2.reopen();
-    SegmentReader segmentReader3 = SegmentReader.getOnlySegmentReader(reader3);
+    SegmentReader segmentReader3 = getOnlySegmentReader(reader3);
     modifier = IndexReader.open(dir1, false);
     modifier.deleteDocument(2);
     modifier.close();
@@ -699,10 +693,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testThreadSafety() throws Exception {
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory();
     final int n = 30 * RANDOM_MULTIPLIER;
-
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
@@ -738,7 +731,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final List<ReaderCouple> readers = Collections.synchronizedList(new ArrayList<ReaderCouple>());
     IndexReader firstReader = IndexReader.open(dir, false);
     IndexReader reader = firstReader;
-    final Random rnd = newRandom();
+    final Random rnd = random;
     
     ReaderThread[] threads = new ReaderThread[n];
     final Set<IndexReader> readersToClose = Collections.synchronizedSet(new HashSet<IndexReader>());
@@ -757,7 +750,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       ReaderThreadTask task;
       
-      if (i < 4 ||( i >=10 && i < 14) || i > 18) {
+      if (i < 4 || (i >=10 && i < 14) || i > 18) {
         task = new ReaderThreadTask() {
           
           @Override
@@ -775,7 +768,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 // not synchronized
                 IndexReader refreshed = r.reopen();
                 
-                
                 IndexSearcher searcher = new IndexSearcher(refreshed);
                 ScoreDoc[] hits = searcher.search(
                     new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))),
@@ -784,19 +776,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                   searcher.doc(hits[0].doc);
                 }
                 
-                // r might have changed because this is not a 
-                // synchronized method. However we don't want
-                // to make it synchronized to test 
-                // thread-safety of IndexReader.close().
-                // That's why we add refreshed also to 
-                // readersToClose, because double closing is fine
                 if (refreshed != r) {
                   refreshed.close();
                 }
-                readersToClose.add(refreshed);
               }
               synchronized(this) {
-                wait(1000);
+                wait(_TestUtil.nextInt(random, 1, 100));
               }
             }
           }
@@ -814,12 +799,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
               }
               
               synchronized(this) {
-                wait(100);
+                wait(_TestUtil.nextInt(random, 1, 100));
               }
             }
-                        
           }
-          
         };
       }
       
@@ -876,7 +859,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   private abstract static class ReaderThreadTask {
-    protected boolean stopped;
+    protected volatile boolean stopped;
     public void stop() {
       this.stopped = true;
     }
@@ -946,9 +929,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
   }
   
-  public static void createIndex(Directory dir, boolean multiSegment) throws IOException {
+  public static void createIndex(Random random, Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(new LogDocMergePolicy()));
     
@@ -1094,14 +1077,14 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     indexDir = new File(TEMP_DIR, "IndexReaderReopen");
   }
   
   public void testCloseOrig() throws Throwable {
-    Directory dir = new MockRAMDirectory();
-    createIndex(dir, false);
+    Directory dir = newDirectory();
+    createIndex(random, dir, false);
     IndexReader r1 = IndexReader.open(dir, false);
     IndexReader r2 = IndexReader.open(dir, false);
     r2.deleteDocument(0);
@@ -1121,8 +1104,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testDeletes() throws Throwable {
-    Directory dir = new MockRAMDirectory();
-    createIndex(dir, false); // Create an index with a bunch of docs (1 segment)
+    Directory dir = newDirectory();
+    createIndex(random, dir, false); // Create an index with a bunch of docs (1 segment)
 
     modifyIndex(0, dir); // Get delete bitVector on 1st segment
     modifyIndex(5, dir); // Add a doc (2 segments)
@@ -1143,7 +1126,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     r2.deleteDocument(0);
 
     // r1 should not see the delete
-    assertFalse(r1.isDeleted(0));
+    final Bits r1DelDocs = MultiFields.getDeletedDocs(r1);
+    assertFalse(r1DelDocs != null && r1DelDocs.get(0));
 
     // Now r2 should have made a private copy of deleted docs:
     assertTrue(sr1.deletedDocs!=sr2.deletedDocs);
@@ -1154,8 +1138,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testDeletes2() throws Throwable {
-    Directory dir = new MockRAMDirectory();
-    createIndex(dir, false);
+    Directory dir = newDirectory();
+    createIndex(random, dir, false);
     // Get delete bitVector
     modifyIndex(0, dir);
     IndexReader r1 = IndexReader.open(dir, false);
@@ -1168,7 +1152,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     IndexReader[] rs2 = r2.getSequentialSubReaders();
 
-    SegmentReader sr1 = SegmentReader.getOnlySegmentReader(r1);
+    SegmentReader sr1 = getOnlySegmentReader(r1);
     SegmentReader sr2 = (SegmentReader) rs2[0];
 
     // At this point they share the same BitVector
@@ -1190,12 +1174,17 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testReopenOnCommit() throws Throwable {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(new KeepAllCommits()));
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setIndexDeletionPolicy(new KeepAllCommits()).
+            setMaxBufferedDocs(-1).
+            setMergePolicy(newLogMergePolicy(10))
+    );
     for(int i=0;i<4;i++) {
       Document doc = new Document();
-      doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
       Map<String,String> data = new HashMap<String,String>();
       data.put("index", i+"");

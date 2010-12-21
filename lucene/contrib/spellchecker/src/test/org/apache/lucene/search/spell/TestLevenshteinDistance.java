@@ -17,9 +17,9 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestLevenshteinDistance extends TestCase {
+public class TestLevenshteinDistance extends LuceneTestCase {
 
   private StringDistance sd = new LevensteinDistance();
   

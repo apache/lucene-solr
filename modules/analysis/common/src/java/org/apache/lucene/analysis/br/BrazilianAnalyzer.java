@@ -17,21 +17,17 @@ package org.apache.lucene.analysis.br;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -52,34 +48,9 @@ import org.apache.lucene.util.Version;
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
-
-	/**
-	 * List of typical Brazilian Portuguese stopwords.
-	 * @deprecated use {@link #getDefaultStopSet()} instead
-	 */
-  // TODO make this private in 3.1
-	@Deprecated
-	public final static String[] BRAZILIAN_STOP_WORDS = {
-      "a","ainda","alem","ambas","ambos","antes",
-      "ao","aonde","aos","apos","aquele","aqueles",
-      "as","assim","com","como","contra","contudo",
-      "cuja","cujas","cujo","cujos","da","das","de",
-      "dela","dele","deles","demais","depois","desde",
-      "desta","deste","dispoe","dispoem","diversa",
-      "diversas","diversos","do","dos","durante","e",
-      "ela","elas","ele","eles","em","entao","entre",
-      "essa","essas","esse","esses","esta","estas",
-      "este","estes","ha","isso","isto","logo","mais",
-      "mas","mediante","menos","mesma","mesmas","mesmo",
-      "mesmos","na","nas","nao","nas","nem","nesse","neste",
-      "nos","o","os","ou","outra","outras","outro","outros",
-      "pelas","pelas","pelo","pelos","perante","pois","por",
-      "porque","portanto","proprio","propios","quais","qual",
-      "qualquer","quando","quanto","que","quem","quer","se",
-      "seja","sem","sendo","seu","seus","sob","sobre","sua",
-      "suas","tal","tambem","teu","teus","toda","todas","todo",
-      "todos","tua","tuas","tudo","um","uma","umas","uns"};
-
+  /** File containing default Brazilian Portuguese stopwords. */
+  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  
 	/**
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
@@ -89,16 +60,25 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET = CharArraySet
-        .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
-            Arrays.asList(BRAZILIAN_STOP_WORDS), false));
+    static final Set<?> DEFAULT_STOP_SET;
+    
+    static {
+      try {
+        DEFAULT_STOP_SET = CharArraySet.unmodifiableSet(new CharArraySet(
+            Version.LUCENE_CURRENT, WordlistLoader.getWordSet(BrazilianAnalyzer.class, 
+                DEFAULT_STOPWORD_FILE, "#"), false));
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
+    }
   }
 
 
 	/**
 	 * Contains words that should be indexed but not stemmed.
 	 */
-	// TODO make this private in 3.1
 	private Set<?> excltable = Collections.emptySet();
 	
 	/**
@@ -135,62 +115,6 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
         .copy(matchVersion, stemExclusionSet));
   }
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
-	 */
-  @Deprecated
-  public BrazilianAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words. 
-   * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public BrazilianAnalyzer(Version matchVersion, Map<?,?> stopwords) {
-    this(matchVersion, stopwords.keySet());
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public BrazilianAnalyzer(Version matchVersion, File stopwords)
-      throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet(stopwords));
-  }
-
-	/**
-	 * Builds an exclusionlist from an array of Strings.
-	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
-	 */
-	@Deprecated
-	public void setStemExclusionTable( String... exclusionlist ) {
-		excltable = StopFilter.makeStopSet( matchVersion, exclusionlist );
-		setPreviousTokenStream(null); // force a new stemmer to be created
-	}
-	/**
-	 * Builds an exclusionlist from a {@link Map}.
-	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
-	 */
-	@Deprecated
-	public void setStemExclusionTable( Map<?,?> exclusionlist ) {
-		excltable = new HashSet<Object>(exclusionlist.keySet());
-		setPreviousTokenStream(null); // force a new stemmer to be created
-	}
-	/**
-	 * Builds an exclusionlist from the words contained in the given file.
-	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
-	 */
-	@Deprecated
-	public void setStemExclusionTable( File exclusionlist ) throws IOException {
-		excltable = WordlistLoader.getWordSet( exclusionlist );
-		setPreviousTokenStream(null); // force a new stemmer to be created
-	}
-
   /**
    * Creates
    * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
@@ -206,7 +130,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
-    result = new StandardFilter(result);
+    result = new StandardFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(excltable != null && !excltable.isEmpty())
       result = new KeywordMarkerFilter(result, excltable);

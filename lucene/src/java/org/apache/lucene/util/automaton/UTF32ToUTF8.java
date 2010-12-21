@@ -299,7 +299,7 @@ final class UTF32ToUTF8 {
   private State newUTF8State() {
     State s = new State();
     if (utf8StateCount == utf8States.length) {
-      final State[] newArray = new State[ArrayUtil.oversize(1+utf8StateCount, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+      final State[] newArray = new State[ArrayUtil.oversize(1+utf8StateCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(utf8States, 0, newArray, 0, utf8StateCount);
       utf8States = newArray;
     }

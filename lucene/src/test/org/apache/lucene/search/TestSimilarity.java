@@ -20,14 +20,11 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Random;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,9 +36,6 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
  * @version $Revision$
  */
 public class TestSimilarity extends LuceneTestCase {
-  public TestSimilarity(String name) {
-    super(name);
-  }
   
   public static class SimpleSimilarity extends Similarity {
     @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
@@ -65,17 +59,16 @@ public class TestSimilarity extends LuceneTestCase {
   }
 
   public void testSimilarity() throws Exception {
-    RAMDirectory store = new RAMDirectory();
-    Random random = newRandom();
+    Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
         .setSimilarity(new SimpleSimilarity()));
     
     Document d1 = new Document();
-    d1.add(new Field("field", "a c", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("field", "a c", Field.Store.YES, Field.Index.ANALYZED));
 
     Document d2 = new Document();
-    d2.add(new Field("field", "a b c", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(newField("field", "a b c", Field.Store.YES, Field.Index.ANALYZED));
     
     writer.addDocument(d1);
     writer.addDocument(d2);

@@ -39,10 +39,12 @@ import java.util.Set;
  * <p>You must specify the required {@link Version}
  * compatibility when creating StandardAnalyzer:
  * <ul>
- *   <li> As of 3.1, StopFilter correctly handles Unicode 4.0
- *         supplementary characters in stopwords
- *   <li> As of 2.9, StopFilter preserves position
- *        increments
+ *   <li> As of 3.1, StandardTokenizer implements Unicode text segmentation,
+ *        and StopFilter correctly handles Unicode 4.0 supplementary characters
+ *        in stopwords.  {@link ClassicTokenizer} and {@link ClassicAnalyzer} 
+ *        are the pre-3.1 implementations of StandardTokenizer and
+ *        StandardAnalyzer.
+ *   <li> As of 2.9, StopFilter preserves position increments
  *   <li> As of 2.4, Tokens incorrectly identified as acronyms
  *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1068</a>)
  * </ul>
@@ -54,12 +56,6 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
 
   private int maxTokenLength = DEFAULT_MAX_TOKEN_LENGTH;
 
-  /**
-   * Specifies whether deprecated acronyms should be replaced with HOST type.
-   * See {@linkplain "https://issues.apache.org/jira/browse/LUCENE-1068"}
-   */
-  private final boolean replaceInvalidAcronym;
-
   /** An unmodifiable set containing some common English words that are usually not
   useful for searching. */
   public static final Set<?> STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
@@ -70,7 +66,6 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
    * @param stopWords stop words */
   public StandardAnalyzer(Version matchVersion, Set<?> stopWords) {
     super(matchVersion, stopWords);
-    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_24);
   }
 
   /** Builds an analyzer with the default stop words ({@link
@@ -121,8 +116,7 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
     final StandardTokenizer src = new StandardTokenizer(matchVersion, reader);
     src.setMaxTokenLength(maxTokenLength);
-    src.setReplaceInvalidAcronym(replaceInvalidAcronym);
-    TokenStream tok = new StandardFilter(src);
+    TokenStream tok = new StandardFilter(matchVersion, src);
     tok = new LowerCaseFilter(matchVersion, tok);
     tok = new StopFilter(matchVersion, tok, stopwords);
     return new TokenStreamComponents(src, tok) {

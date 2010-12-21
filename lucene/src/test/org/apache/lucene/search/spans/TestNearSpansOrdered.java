@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
@@ -30,7 +31,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNearSpansOrdered extends LuceneTestCase {
@@ -43,7 +43,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer());
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -51,16 +51,16 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   }
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = writer.getReader();
+    reader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
     searcher = new IndexSearcher(reader);
   }
@@ -88,7 +88,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   
   public void testSpanNearQuery() throws Exception {
     SpanNearQuery q = makeQuery();
-    CheckHits.checkHits(q, FIELD, searcher, new int[] {0,1});
+    CheckHits.checkHits(random, q, FIELD, searcher, new int[] {0,1});
   }
 
   public String s(Spans span) {

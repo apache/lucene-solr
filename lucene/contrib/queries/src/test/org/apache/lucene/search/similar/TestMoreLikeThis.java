@@ -33,19 +33,19 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMoreLikeThis extends LuceneTestCase {
-  private RAMDirectory directory;
+  private Directory directory;
   private IndexReader reader;
   private IndexSearcher searcher;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     // Add series of docs with specific information for MoreLikeThis
     addDoc(writer, "lucene");
@@ -57,7 +57,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     searcher.close();
     directory.close();
@@ -66,7 +66,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   
   private void addDoc(RandomIndexWriter writer, String text) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("text", text, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("text", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
   

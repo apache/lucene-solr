@@ -22,8 +22,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -38,13 +38,10 @@ import java.util.LinkedList;
  * 
  */
 public class TestMultiPhraseQuery extends LuceneTestCase {
-  public TestMultiPhraseQuery(String name) {
-    super(name);
-  }
   
   public void testPhrasePrefix() throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry pie", writer);
     add("blueberry strudel", writer);
     add("blueberry pizza", writer);
@@ -132,12 +129,30 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     searcher.close();
     reader.close();
     indexStore.close();
-    
+  }
+
+  // LUCENE-2580
+  public void testTall() throws IOException {
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    add("blueberry chocolate pie", writer);
+    add("blueberry chocolate tart", writer);
+    IndexReader r = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = new IndexSearcher(r);
+    MultiPhraseQuery q = new MultiPhraseQuery();
+    q.add(new Term("body", "blueberry"));
+    q.add(new Term("body", "chocolate"));
+    q.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
+    assertEquals(2, searcher.search(q, 1).totalHits);
+    r.close();
+    indexStore.close();
   }
   
   private void add(String s, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
   
@@ -147,9 +162,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // In order to cause the bug, the outer query must have more than one term
     // and all terms required.
     // The contained PhraseMultiQuery must contain exactly one term array.
-    
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry pie", writer);
     add("blueberry chewing gum", writer);
     add("blue raspberry pie", writer);
@@ -180,8 +194,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("This is a test", "object", writer);
     add("a note", "note", writer);
     
@@ -208,8 +222,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   public void testNoDocs() throws Exception {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("a note", "note", writer);
     
     IndexReader reader = writer.getReader();
@@ -261,8 +275,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   private void add(String s, String type, RandomIndexWriter writer)
       throws IOException {
     Document doc = new Document();
-    doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("type", type, Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("type", type, Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
   }
   

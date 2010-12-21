@@ -20,15 +20,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 
 /** A Query that matches documents containing a particular sequence of terms.
@@ -181,17 +179,16 @@ public class PhraseQuery extends Query {
         return null;
 
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      final Bits delDocs = reader.getDeletedDocs();
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
-        DocsAndPositionsEnum postingsEnum = MultiFields.getTermPositionsEnum(reader,
-                                                                             delDocs,
-                                                                             t.field(),
-                                                                             t.bytes());
+        DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(delDocs,
+                                                                     t.field(),
+                                                                     t.bytes());
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (MultiFields.getTermDocsEnum(reader, delDocs, t.field(), t.bytes()) != null) {
+          if (reader.termDocsEnum(delDocs, t.field(), t.bytes()) != null) {
             // term does exist, but has no positions
             throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
           } else {
@@ -204,7 +201,7 @@ public class PhraseQuery extends Query {
 
       // sort by increasing docFreq order
       if (slop == 0) {
-        Arrays.sort(postingsFreqs);
+        ArrayUtil.quickSort(postingsFreqs);
       }
 
       if (slop == 0) {				  // optimize exact case
@@ -270,7 +267,7 @@ public class PhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = (Scorer) scorer(reader, true, false);
+      Scorer scorer = scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
@@ -278,11 +275,7 @@ public class PhraseQuery extends Query {
       int d = scorer.advance(doc);
       float phraseFreq;
       if (d == doc) {
-        if (slop == 0) {
-          phraseFreq = ((ExactPhraseScorer) scorer).currentFreq();
-        } else {
-          phraseFreq = ((SloppyPhraseScorer) scorer).currentFreq();
-        }
+        phraseFreq = scorer.freq();
       } else {
         phraseFreq = 0.0f;
       }

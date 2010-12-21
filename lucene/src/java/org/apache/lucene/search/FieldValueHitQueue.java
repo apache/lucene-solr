@@ -52,8 +52,6 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
    * there is just one comparator.
    */
   private static final class OneComparatorFieldValueHitQueue extends FieldValueHitQueue {
-
-    private final FieldComparator comparator;
     private final int oneReverseMul;
     
     public OneComparatorFieldValueHitQueue(SortField[] fields, int size)
@@ -64,10 +62,9 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
       }
 
       SortField field = fields[0];
-      comparator = field.getComparator(size, 0);
+      setComparator(0,field.getComparator(size, 0));
       oneReverseMul = field.reverse ? -1 : 1;
 
-      comparators[0] = comparator;
       reverseMul[0] = oneReverseMul;
       
       initialize(size);
@@ -85,7 +82,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
       assert hitA != hitB;
       assert hitA.slot != hitB.slot;
 
-      final int c = oneReverseMul * comparator.compare(hitA.slot, hitB.slot);
+      final int c = oneReverseMul * firstComparator.compare(hitA.slot, hitB.slot);
       if (c != 0) {
         return c > 0;
       }
@@ -111,7 +108,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
         SortField field = fields[i];
 
         reverseMul[i] = field.reverse ? -1 : 1;
-        comparators[i] = field.getComparator(size, i);
+        setComparator(i, field.getComparator(size, i));
       }
 
       initialize(size);
@@ -182,9 +179,15 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
 
   int[] getReverseMul() { return reverseMul; }
 
+  protected void setComparator(int pos, FieldComparator comparator) {
+    if (pos==0) firstComparator = comparator;
+    comparators[pos] = comparator;
+  }
+
   /** Stores the sort criteria being used. */
   protected final SortField[] fields;
-  protected final FieldComparator[] comparators;
+  protected final FieldComparator[] comparators;  // use setComparator to change this array
+  protected FieldComparator firstComparator;      // this must always be equal to comparators[0]
   protected final int[] reverseMul;
 
   @Override

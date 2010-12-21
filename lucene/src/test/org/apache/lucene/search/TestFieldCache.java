@@ -21,17 +21,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
-import java.util.Random;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
@@ -39,17 +35,13 @@ public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
   private static final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
   private String[] unicodeStrings;
-
-  public TestFieldCache(String s) {
-    super(s);
-  }
+  private Directory directory;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    Random r = newRandom();
-    RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(r, directory);
+    directory = newDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     byte theByte = Byte.MAX_VALUE;
@@ -59,29 +51,29 @@ public class TestFieldCache extends LuceneTestCase {
     unicodeStrings = new String[NUM_DOCS];
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(new Field("theLong", String.valueOf(theLong--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("theDouble", String.valueOf(theDouble--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("theByte", String.valueOf(theByte--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("theShort", String.valueOf(theShort--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("theInt", String.valueOf(theInt--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("theFloat", String.valueOf(theFloat--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("theLong", String.valueOf(theLong--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("theDouble", String.valueOf(theDouble--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("theByte", String.valueOf(theByte--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("theShort", String.valueOf(theShort--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("theInt", String.valueOf(theInt--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("theFloat", String.valueOf(theFloat--), Field.Store.NO, Field.Index.NOT_ANALYZED));
 
       // sometimes skip the field:
-      if (r.nextInt(40) != 17) {
+      if (random.nextInt(40) != 17) {
         String s = null;
-        if (i > 0 && r.nextInt(3) == 1) {
+        if (i > 0 && random.nextInt(3) == 1) {
           // reuse past string -- try to find one that's not null
           for(int iter=0;iter<10 && s==null;iter++) {
-            s = unicodeStrings[r.nextInt(i)];
+            s = unicodeStrings[random.nextInt(i)];
           }
           if (s == null) {
-            s = _TestUtil.randomUnicodeString(r, 250);
+            s = _TestUtil.randomUnicodeString(random, 250);
           }
         } else {
-          s = _TestUtil.randomUnicodeString(r, 250);
+          s = _TestUtil.randomUnicodeString(random, 250);
         }
         unicodeStrings[i] = s;
-        doc.add(new Field("theRandomUnicodeString", unicodeStrings[i], Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+        doc.add(newField("theRandomUnicodeString", unicodeStrings[i], Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
       }
       writer.addDocument(doc);
     }
@@ -89,6 +81,13 @@ public class TestFieldCache extends LuceneTestCase {
     writer.close();
   }
 
+  @Override
+  public void tearDown() throws Exception {
+    reader.close();
+    directory.close();
+    super.tearDown();
+  }
+  
   public void testInfoStream() throws Exception {
     try {
       FieldCache cache = FieldCache.DEFAULT;
@@ -202,9 +201,9 @@ public class TestFieldCache extends LuceneTestCase {
   }
 
   public void testEmptyIndex() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer= new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
-    IndexReader r = writer.getReader();
+    Directory dir = newDirectory();
+    IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
+    IndexReader r = IndexReader.open(writer);
     FieldCache.DocTerms terms = FieldCache.DEFAULT.getTerms(r, "foobar");
     FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(r, "foobar");
     r.close();

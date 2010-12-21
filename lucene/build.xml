@@ -116,12 +116,12 @@
   	</sequential>
   </macrodef>
 
-  <target name="junit-backwards-sequential" if="runsequential">
+  <target name="junit-backwards-sequential" if="tests.sequential">
     <backwards-test-macro/>
   </target>
 
-  <target name="junit-backwards-parallel" unless="runsequential">
-    <parallel threadsPerProcessor="${threadsPerProcessor}">
+  <target name="junit-backwards-parallel" unless="tests.sequential">
+    <parallel threadsPerProcessor="${tests.threadspercpu}">
      <backwards-test-macro threadNum="1" threadTotal="8"/>
      <backwards-test-macro threadNum="2" threadTotal="8"/>
      <backwards-test-macro threadNum="3" threadTotal="8"/>
@@ -209,6 +209,7 @@
           <packageset dir="contrib/benchmark/src/java"/>
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
+          <packageset dir="contrib/demo/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>
           <packageset dir="contrib/instantiated/src/java"/>
           <packageset dir="contrib/lucli/src/java"/>
@@ -235,7 +236,7 @@
           <group title="contrib: Demo" packages="org.apache.lucene.demo*"/>
           <group title="contrib: ICU" packages="org.apache.lucene.collation*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
-          <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight:*org.apache.lucene.search.vectorhighlight*"/>
+          <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Lucli" packages="lucli*"/>
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
@@ -299,7 +300,6 @@
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
-      <tarfileset dir="${build.dir}" includes="build-demo.xml" fullpath="lucene-${version}/build.xml"/>
       <tarfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </tarfileset>
@@ -463,10 +463,13 @@
       <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
+      <fileset dir="contrib/demo/src/java/org/apache/lucene/demo/html" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
     </delete>
   </target>
 
-  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-contrib-queryparser"/>
+  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-contrib-queryparser,javacc-contrib-demo"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <sequential>
@@ -491,6 +494,13 @@
       dir="contrib/queryparser"
       antfile="build.xml" 
     />
+  </target>
+
+  <target name="javacc-contrib-demo" depends="init,javacc-check" if="javacc.present">
+	<ant target="javacc"
+	  dir="contrib/demo"
+	  antfile="build.xml" 
+	/>
   </target>
 
   <macrodef name="createLevAutomaton">

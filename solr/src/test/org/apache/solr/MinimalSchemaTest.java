@@ -111,6 +111,9 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
         if (handler.startsWith("/update")) {
           continue;
         }
+        if (handler.startsWith("/mlt")) {
+          continue;
+        }
 
         assertQ("failure w/handler: '" + handler + "'",
                 req("qt", handler,

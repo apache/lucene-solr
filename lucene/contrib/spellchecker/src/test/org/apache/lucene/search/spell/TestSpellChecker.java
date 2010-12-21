@@ -20,8 +20,8 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -46,29 +45,38 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestSpellChecker extends LuceneTestCase {
   private SpellCheckerMock spellChecker;
   private Directory userindex, spellindex;
-  private final Random random = newRandom();
   private List<IndexSearcher> searchers;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     
     //create a user index
-    userindex = new RAMDirectory();
+    userindex = newDirectory();
     IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(new Field("field1", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field("field2", English.intToEnglish(i + 1), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
+      doc.add(newField("field1", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field2", English.intToEnglish(i + 1), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
+      doc.add(newField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
       writer.addDocument(doc);
     }
     writer.close();
     searchers = Collections.synchronizedList(new ArrayList<IndexSearcher>());
     // create the spellChecker
-    spellindex = new RAMDirectory();
+    spellindex = newDirectory();
     spellChecker = new SpellCheckerMock(spellindex);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    userindex.close();
+    if (!spellChecker.isClosed())
+      spellChecker.close();
+    spellindex.close();
+    super.tearDown();
   }
 
 
@@ -77,10 +85,10 @@ public class TestSpellChecker extends LuceneTestCase {
 
     spellChecker.clearIndex();
 
-    addwords(r, "field1");
+    addwords(r, spellChecker, "field1");
     int num_field1 = this.numdoc();
 
-    addwords(r, "field2");
+    addwords(r, spellChecker, "field2");
     int num_field2 = this.numdoc();
 
     assertEquals(num_field2, num_field1 + 1);
@@ -94,12 +102,39 @@ public class TestSpellChecker extends LuceneTestCase {
     spellChecker.setAccuracy(0.8f);
     checkCommonSuggestions(r);
     checkJaroWinklerSuggestions();
+    // the accuracy is set to 0.8 by default, but the best result has a score of 0.925
+    String[] similar = spellChecker.suggestSimilar("fvie", 2, 0.93f);
+    assertTrue(similar.length == 0);
+    similar = spellChecker.suggestSimilar("fvie", 2, 0.92f);
+    assertTrue(similar.length == 1);
+
+    similar = spellChecker.suggestSimilar("fiv", 2);
+    assertTrue(similar.length > 0);
+    assertEquals(similar[0], "five");
     
     spellChecker.setStringDistance(new NGramDistance(2));
     spellChecker.setAccuracy(0.5f);
     checkCommonSuggestions(r);
     checkNGramSuggestions();
-    
+
+    r.close();
+  }
+
+  public void testComparator() throws Exception {
+    IndexReader r = IndexReader.open(userindex, true);
+    Directory compIdx = newDirectory();
+    SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
+    addwords(r, compareSP, "field3");
+
+    String[] similar = compareSP.suggestSimilar("fvie", 2, r, "field3", false);
+    assertTrue(similar.length == 2);
+    //five and fvei have the same score, but different frequencies.
+    assertEquals("fvei", similar[0]);
+    assertEquals("five", similar[1]);
+    r.close();
+    if (!compareSP.isClosed())
+      compareSP.close();
+    compIdx.close();
   }
 
   private void checkCommonSuggestions(IndexReader r) throws IOException {
@@ -196,9 +231,9 @@ public class TestSpellChecker extends LuceneTestCase {
     assertEquals(similar[1], "ninety");
   }
 
-  private void addwords(IndexReader r, String field) throws IOException {
+  private void addwords(IndexReader r, SpellChecker sc, String field) throws IOException {
     long time = System.currentTimeMillis();
-    spellChecker.indexDictionary(new LuceneDictionary(r, field));
+    sc.indexDictionary(new LuceneDictionary(r, field));
     time = System.currentTimeMillis() - time;
     //System.out.println("time to build " + field + ": " + time);
   }
@@ -216,9 +251,9 @@ public class TestSpellChecker extends LuceneTestCase {
     IndexReader r = IndexReader.open(userindex, true);
     spellChecker.clearIndex();
     String field = "field1";
-    addwords(r, "field1");
+    addwords(r, spellChecker, "field1");
     int num_field1 = this.numdoc();
-    addwords(r, "field2");
+    addwords(r, spellChecker, "field2");
     int num_field2 = this.numdoc();
     assertEquals(num_field2, num_field1 + 1);
     checkCommonSuggestions(r);
@@ -260,6 +295,7 @@ public class TestSpellChecker extends LuceneTestCase {
     }
     assertEquals(4, searchers.size());
     assertSearchersClosed();
+    r.close();
   }
   
   /*
@@ -271,10 +307,10 @@ public class TestSpellChecker extends LuceneTestCase {
     final IndexReader r = IndexReader.open(userindex, true);
     spellChecker.clearIndex();
     assertEquals(2, searchers.size());
-    addwords(r, "field1");
+    addwords(r, spellChecker, "field1");
     assertEquals(3, searchers.size());
     int num_field1 = this.numdoc();
-    addwords(r, "field2");
+    addwords(r, spellChecker, "field2");
     assertEquals(4, searchers.size());
     int num_field2 = this.numdoc();
     assertEquals(num_field2, num_field1 + 1);
@@ -311,7 +347,7 @@ public class TestSpellChecker extends LuceneTestCase {
     // 2. and 3. during addwords
     assertEquals(iterations + 4, searchers.size());
     assertSearchersClosed();
-    
+    r.close();
   }
   
   private void assertLastSearcherOpen(int numSearchers) {
@@ -385,6 +421,10 @@ public class TestSpellChecker extends LuceneTestCase {
     public SpellCheckerMock(Directory spellIndex, StringDistance sd)
         throws IOException {
       super(spellIndex, sd);
+    }
+
+    public SpellCheckerMock(Directory spellIndex, StringDistance sd, Comparator<SuggestWord> comparator) throws IOException {
+      super(spellIndex, sd, comparator);
     }
 
     @Override

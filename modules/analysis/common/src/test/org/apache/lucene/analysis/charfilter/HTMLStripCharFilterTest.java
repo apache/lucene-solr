@@ -18,8 +18,6 @@ package org.apache.lucene.analysis.charfilter;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,20 +28,18 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CharReader;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class HTMLStripCharFilterTest extends TestCase {
+public class HTMLStripCharFilterTest extends LuceneTestCase {
 
-
-  public HTMLStripCharFilterTest(String s) {
-    super(s);
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
   }
 
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
   //this is some text  here is a  link  and another  link . This is an entity: & plus a <.  Here is an &
   //

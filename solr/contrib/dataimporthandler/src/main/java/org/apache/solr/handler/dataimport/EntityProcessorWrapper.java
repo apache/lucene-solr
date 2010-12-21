@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A Wrapper over EntityProcessor instance which performs transforms and handles multi-row outputs correctly.
+ * A Wrapper over {@link EntityProcessor} instance which performs transforms and handles multi-row outputs correctly.
  *
  * @version $Id$
  * @since solr 1.4

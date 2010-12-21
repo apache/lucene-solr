@@ -21,14 +21,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 
 /**
@@ -307,19 +305,19 @@ public class TestSimpleExplanations extends TestExplanations {
   
   public void testTermQueryMultiSearcherExplain() throws Exception {
     // creating two directories for indices
-    Directory indexStoreA = new MockRAMDirectory();
-    Directory indexStoreB = new MockRAMDirectory();
+    Directory indexStoreA = newDirectory();
+    Directory indexStoreB = newDirectory();
 
     Document lDoc = new Document();
-    lDoc.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    lDoc.add(newField("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
     Document lDoc2 = new Document();
-    lDoc2.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    lDoc2.add(newField("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
     Document lDoc3 = new Document();
-    lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    lDoc3.add(newField("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
 
-    IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(
+    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     writerA.addDocument(lDoc);
@@ -368,6 +366,8 @@ public class TestSimpleExplanations extends TestExplanations {
     assertTrue(exp, exp.indexOf("1=3") > -1);
     assertTrue(exp, exp.indexOf("2=3") > -1);
     mSearcher.close();
+    indexStoreA.close();
+    indexStoreB.close();
   }
   
 }

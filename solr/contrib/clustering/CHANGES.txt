@@ -8,11 +8,14 @@ CHANGES
 
 $Id:$
 
-================== Release 1.5-dev ==================
+================== Release XXXX ==================
 
 * SOLR-1684: Switch to use the SolrIndexSearcher.doc(int, Set<String>) method b/c it can use the document cache (gsingers)
 
 * SOLR-1692: Fix bug relating to carrot.produceSummary option (gsingers)
+
+* SOLR-1804: Re-enabled clustering on trunk, updated to latest version of Carrot2.  No more LGPL run-time dependencies.
+  This release of C2 also does not have a specific Lucene dependency.  (Stanislaw Osinski, gsingers)
 
 ================== Release 1.4.0 ==================
 

@@ -40,6 +40,8 @@ public abstract class SolrRequest implements Serializable
   private String path = null;
 
   private ResponseParser responseParser;
+  private StreamingResponseCallback callback;
+  
   //---------------------------------------------------------
   //---------------------------------------------------------
 
@@ -83,6 +85,14 @@ public abstract class SolrRequest implements Serializable
     this.responseParser = responseParser;
   }
 
+  public StreamingResponseCallback getStreamingResponseCallback() {
+    return callback;
+  }
+
+  public void setStreamingResponseCallback(StreamingResponseCallback callback) {
+    this.callback = callback;
+  }
+  
   public abstract SolrParams getParams();
   public abstract Collection<ContentStream> getContentStreams() throws IOException;
   public abstract SolrResponse process( SolrServer server ) throws SolrServerException, IOException;

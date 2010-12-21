@@ -27,7 +27,7 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-phonetic</artifactId>
+  <artifactId>lucene-analyzers-phonetic</artifactId>
   <name>
     Lucene Phonetic Filters
   </name>
@@ -38,9 +38,9 @@
   <packaging>jar</packaging>
   <dependencies>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>codec</artifactId>
-      <version>${codec-version}</version>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.4</version>
     </dependency>
   </dependencies>
 </project>

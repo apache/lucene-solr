@@ -160,5 +160,12 @@ public class SimpleFSDirectory extends FSDirectory {
     boolean isFDValid() throws IOException {
       return file.getFD().valid();
     }
+    
+    @Override
+    public void copyBytes(IndexOutput out, long numBytes) throws IOException {
+      numBytes -= flushBuffer(out, numBytes);
+      // If out is FSIndexOutput, the copy will be optimized
+      out.copyBytes(this, numBytes);
+    }
   }
 }

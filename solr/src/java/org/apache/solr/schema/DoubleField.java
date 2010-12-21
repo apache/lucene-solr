@@ -19,9 +19,13 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.cache.CachedArrayCreator;
+import org.apache.lucene.search.cache.DoubleValuesCreator;
+import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.function.DoubleFieldSource;
+import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
@@ -42,7 +46,7 @@ public class DoubleField extends FieldType {
 
   public ValueSource getValueSource(SchemaField field) {
     // fieldCache doesn't support double
-    return new DoubleFieldSource(field.name);
+    return new DoubleFieldSource( new DoubleValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }
 
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {

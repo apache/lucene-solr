@@ -30,6 +30,6 @@ public interface FieldBoostMapAttribute extends Attribute {
   /**
    * @param boosts a mapping from field name to its default boost
    */
-  public void setFieldBoostMap(Map<CharSequence, Float> boosts);
-  public Map<CharSequence, Float> getFieldBoostMap();
+  public void setFieldBoostMap(Map<String, Float> boosts);
+  public Map<String, Float> getFieldBoostMap();
 }

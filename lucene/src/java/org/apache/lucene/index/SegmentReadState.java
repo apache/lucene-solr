@@ -34,16 +34,24 @@ public class SegmentReadState {
   // that must do so), then it should negate this value to
   // get the app's terms divisor:
   public final int termsIndexDivisor;
+  public final String codecId;
 
+  public SegmentReadState(Directory dir, SegmentInfo info,
+      FieldInfos fieldInfos, int readBufferSize, int termsIndexDivisor) {
+    this(dir, info, fieldInfos, readBufferSize, termsIndexDivisor, "");
+  }
+  
   public SegmentReadState(Directory dir,
                           SegmentInfo info,
                           FieldInfos fieldInfos,
                           int readBufferSize,
-                          int termsIndexDivisor) {
+                          int termsIndexDivisor,
+                          String codecId) {
     this.dir = dir;
     this.segmentInfo = info;
     this.fieldInfos = fieldInfos;
     this.readBufferSize = readBufferSize;
     this.termsIndexDivisor = termsIndexDivisor;
+    this.codecId = codecId;
   }
 }

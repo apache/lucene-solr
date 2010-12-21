@@ -29,16 +29,20 @@ import org.apache.lucene.spatial.tier.InvalidGeoException;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
-//TODO: Move this up one package level
+
 public class DistanceUtils {
 
   public static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
   public static final double RADIANS_TO_DEGREES = 180.0 / Math.PI;
-  public static final double DEG_45 = Math.PI / 4.0;
-  public static final double DEG_225 = 5 * DEG_45;
-  public static final double DEG_90 = Math.PI / 2;
-  public static final double DEG_180 = Math.PI;
-  public static final double SIN_45 = Math.sin(DEG_45);
+  //pre-compute some angles that are commonly used
+  public static final double DEG_45_AS_RADS = Math.PI / 4.0;
+  public static final double SIN_45_AS_RADS = Math.sin(DEG_45_AS_RADS);
+  public static final double DEG_90_AS_RADS = Math.PI / 2;
+  public static final double DEG_180_AS_RADS = Math.PI;
+  public static final double DEG_225_AS_RADS = 5 * DEG_45_AS_RADS;
+  public static final double DEG_270_AS_RADS = 3*DEG_90_AS_RADS;
+
+
   public static final double KM_TO_MILES = 0.621371192;
   public static final double MILES_TO_KM = 1.609344;
     /**
@@ -162,7 +166,7 @@ public class DistanceUtils {
     //We don't care about the power here,
     // b/c we are always in a rectangular coordinate system, so any norm can be used by
     //using the definition of sine
-    distance = SIN_45 * distance; // sin(Pi/4) == (2^0.5)/2 == opp/hyp == opp/distance, solve for opp, similarily for cosine
+    distance = SIN_45_AS_RADS * distance; // sin(Pi/4) == (2^0.5)/2 == opp/hyp == opp/distance, solve for opp, similarily for cosine
     for (int i = 0; i < center.length; i++) {
       result[i] = center[i] + distance;
     }
@@ -175,41 +179,68 @@ public class DistanceUtils {
    * @param distance The distance
    * @param result A preallocated array to hold the results.  If null, a new one is constructed.
    * @param upperRight If true, calculate the upper right corner, else the lower left
-   * @param radius The radius of the sphere to use.
+   * @param sphereRadius The radius of the sphere to use.
    * @return The Lat/Lon in degrees
    *
    * @see #latLonCorner(double, double, double, double[], boolean, double)
    */
   public static double[] latLonCornerDegs(double latCenter, double lonCenter,
                                           double distance, double [] result,
-                                          boolean upperRight, double radius) {
+                                          boolean upperRight, double sphereRadius) {
     result = latLonCorner(latCenter * DEGREES_TO_RADIANS,
-            lonCenter * DEGREES_TO_RADIANS, distance, result, upperRight, radius);
+            lonCenter * DEGREES_TO_RADIANS, distance, result, upperRight, sphereRadius);
     result[0] = result[0] * RADIANS_TO_DEGREES;
     result[1] = result[1] * RADIANS_TO_DEGREES;
     return result;
   }
 
   /**
-   * Uses Haversine to calculate the corner
+   * Uses Haversine to calculate the corner of a box (upper right or lower left) that is the <i>distance</i> away, given a sphere of the specified <i>radius</i>.
+   *
+   * NOTE: This is not the same as calculating a box that transcribes a circle of the given distance.
    *
    * @param latCenter  In radians
    * @param lonCenter  In radians
    * @param distance   The distance
    * @param result A preallocated array to hold the results.  If null, a new one is constructed.
    * @param upperRight If true, give lat/lon for the upper right corner, else lower left
-   * @param radius     The radius to use for the calculation
+   * @param sphereRadius     The radius to use for the calculation
    * @return The Lat/Lon in Radians
 
    */
   public static double[] latLonCorner(double latCenter, double lonCenter,
-                                      double distance, double [] result, boolean upperRight, double radius) {
+                                      double distance, double [] result, boolean upperRight, double sphereRadius) {
     // Haversine formula
-    double brng = upperRight ? DEG_45 : DEG_225;
-    double lat2 = Math.asin(Math.sin(latCenter) * Math.cos(distance / radius) +
-            Math.cos(latCenter) * Math.sin(distance / radius) * Math.cos(brng));
-    double lon2 = lonCenter + Math.atan2(Math.sin(brng) * Math.sin(distance / radius) * Math.cos(latCenter),
-            Math.cos(distance / radius) - Math.sin(latCenter) * Math.sin(lat2));
+    double brng = upperRight ? DEG_45_AS_RADS : DEG_225_AS_RADS;
+    result = pointOnBearing(latCenter, lonCenter, distance, brng, result, sphereRadius);
+
+    return result;
+  }
+
+  /**
+   * Given a start point (startLat, startLon) and a bearing on a sphere of radius <i>sphereRadius</i>, return the destination point.
+   * @param startLat The starting point latitude, in radians
+   * @param startLon The starting point longitude, in radians
+   * @param distance The distance to travel along the bearing.  The units are assumed to be the same as the sphereRadius units, both of which is up to the caller to know
+   * @param bearing The bearing, in radians.  North is a 0 deg. bearing, east is 90 deg, south is 180 deg, west is 270 deg. 
+   * @param result A preallocated array to hold the results.  If null, a new one is constructed.
+   * @param sphereRadius The radius of the sphere to use for the calculation.
+   * @return The destination point, in radians.  First entry is latitude, second is longitude
+   */
+  public static double[] pointOnBearing(double startLat, double startLon, double distance, double bearing, double[] result, double sphereRadius) {
+    /*
+ 	lat2 = asin(sin(lat1)*cos(d/R) + cos(lat1)*sin(d/R)*cos(θ))
+  	lon2 = lon1 + atan2(sin(θ)*sin(d/R)*cos(lat1), cos(d/R)−sin(lat1)*sin(lat2))    
+
+     */
+    double cosAngDist = Math.cos(distance / sphereRadius);
+    double cosStartLat = Math.cos(startLat);
+    double sinAngDist = Math.sin(distance / sphereRadius);
+    double lat2 = Math.asin(Math.sin(startLat) * cosAngDist +
+            cosStartLat * sinAngDist * Math.cos(bearing));
+    
+    double lon2 = startLon + Math.atan2(Math.sin(bearing) * sinAngDist * cosStartLat,
+            cosAngDist - Math.sin(startLat) * Math.sin(lat2));
 
     /*lat2 = (lat2*180)/Math.PI;
     lon2 = (lon2*180)/Math.PI;*/
@@ -224,7 +255,6 @@ public class DistanceUtils {
 
     // normalize lat - could flip poles
     normLat(result);
-
     return result;
   }
 
@@ -233,19 +263,19 @@ public class DistanceUtils {
    */
   public static void normLat(double[] latLng) {
 
-    if (latLng[0] > DEG_90) {
-      latLng[0] = DEG_90 - (latLng[0] - DEG_90);
+    if (latLng[0] > DEG_90_AS_RADS) {
+      latLng[0] = DEG_90_AS_RADS - (latLng[0] - DEG_90_AS_RADS);
       if (latLng[1] < 0) {
-        latLng[1] = latLng[1] + DEG_180;
+        latLng[1] = latLng[1] + DEG_180_AS_RADS;
       } else {
-        latLng[1] = latLng[1] - DEG_180;
+        latLng[1] = latLng[1] - DEG_180_AS_RADS;
       }
-    } else if (latLng[0] < -DEG_90) {
-      latLng[0] = -DEG_90 - (latLng[0] + DEG_90);
+    } else if (latLng[0] < -DEG_90_AS_RADS) {
+      latLng[0] = -DEG_90_AS_RADS - (latLng[0] + DEG_90_AS_RADS);
       if (latLng[1] < 0) {
-        latLng[1] = latLng[1] + DEG_180;
+        latLng[1] = latLng[1] + DEG_180_AS_RADS;
       } else {
-        latLng[1] = latLng[1] - DEG_180;
+        latLng[1] = latLng[1] - DEG_180_AS_RADS;
       }
     }
 
@@ -257,10 +287,10 @@ public class DistanceUtils {
    * @param latLng The lat/lon, in radians, lat in position 0, long in position 1
    */
   public static void normLng(double[] latLng) {
-    if (latLng[1] > DEG_180) {
-      latLng[1] = -1.0 * (DEG_180 - (latLng[1] - DEG_180));
-    } else if (latLng[1] < -DEG_180) {
-      latLng[1] = (latLng[1] + DEG_180) + DEG_180;
+    if (latLng[1] > DEG_180_AS_RADS) {
+      latLng[1] = -1.0 * (DEG_180_AS_RADS - (latLng[1] - DEG_180_AS_RADS));
+    } else if (latLng[1] < -DEG_180_AS_RADS) {
+      latLng[1] = (latLng[1] + DEG_180_AS_RADS) + DEG_180_AS_RADS;
     }
   }
 

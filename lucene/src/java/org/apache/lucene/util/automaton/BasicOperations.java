@@ -34,7 +34,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,6 +60,8 @@ final public class BasicOperations {
   static public Automaton concatenate(Automaton a1, Automaton a2) {
     if (a1.isSingleton() && a2.isSingleton()) return BasicAutomata
         .makeString(a1.singleton + a2.singleton);
+    if (isEmpty(a1) || isEmpty(a2))
+      return BasicAutomata.makeEmpty();
     // adding epsilon transitions with the NFA concatenation algorithm
     // in this case always produces a resulting DFA, preventing expensive
     // redundant determinize() calls for this common case.
@@ -458,7 +459,7 @@ final public class BasicOperations {
 
     public void add(Transition t) {
       if (transitions.length == count) {
-        Transition[] newArray = new Transition[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+        Transition[] newArray = new Transition[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(transitions, 0, newArray, 0, count);
         transitions = newArray;
       }
@@ -502,7 +503,7 @@ final public class BasicOperations {
     private PointTransitions next(int point) {
       // 1st time we are seeing this point
       if (count == points.length) {
-        final PointTransitions[] newArray = new PointTransitions[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+        final PointTransitions[] newArray = new PointTransitions[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(points, 0, newArray, 0, count);
         points = newArray;
       }
@@ -553,9 +554,8 @@ final public class BasicOperations {
     }
 
     public void sort() {
-      if (count > 1) {
-        Arrays.sort(points, 0, count);
-      }
+      // mergesort seems to perform better on already sorted arrays:
+      if (count > 1) ArrayUtil.mergeSort(points, 0, count);
     }
 
     public void add(Transition t) {
@@ -650,7 +650,7 @@ final public class BasicOperations {
             final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
             worklist.add(p);
             if (newStateUpto == newStatesArray.length) {
-              final State[] newArray = new State[ArrayUtil.oversize(1+newStateUpto, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+              final State[] newArray = new State[ArrayUtil.oversize(1+newStateUpto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
               System.arraycopy(newStatesArray, 0, newArray, 0, newStateUpto);
               newStatesArray = newArray;
             }

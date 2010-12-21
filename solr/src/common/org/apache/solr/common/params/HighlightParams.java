@@ -29,6 +29,7 @@ public interface HighlightParams {
   public static final String INCREMENT   = HIGHLIGHT+".increment";
   public static final String MAX_CHARS   = HIGHLIGHT+".maxAnalyzedChars";
   public static final String FORMATTER   = HIGHLIGHT+".formatter";
+  public static final String ENCODER     = HIGHLIGHT+".encoder";
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter";
   public static final String FRAG_LIST_BUILDER = HIGHLIGHT+".fragListBuilder";
   public static final String FRAGMENTS_BUILDER = HIGHLIGHT+".fragmentsBuilder";
@@ -41,7 +42,10 @@ public interface HighlightParams {
 
   public static final String MERGE_CONTIGUOUS_FRAGMENTS = HIGHLIGHT + ".mergeContiguous";
 
-  public static final String USE_FVH = HIGHLIGHT + ".useFastVectorHighlighter";
+  public static final String USE_FVH  = HIGHLIGHT + ".useFastVectorHighlighter";
+  public static final String TAG_PRE  = HIGHLIGHT + ".tag.pre";
+  public static final String TAG_POST = HIGHLIGHT + ".tag.post";
+  public static final String MULTI_VALUED_SEPARATOR = HIGHLIGHT + ".multiValuedSeparatorChar";
   
   // Formatter
   public static final String SIMPLE = "simple";

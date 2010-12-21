@@ -26,30 +26,22 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.SortedSet;
 
 public class TestTermVectors extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
-  private Directory directory = new MockRAMDirectory();
-
-  private Random random;
-
-  public TestTermVectors(String s) {
-    super(s);
-  }
+  private Directory directory;
 
   @Override
-  protected void setUp() throws Exception {                  
+  public void setUp() throws Exception {                  
     super.setUp();
-    random = newRandom();
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
@@ -83,7 +75,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
@@ -115,7 +107,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
   
   public void testTermVectorsFieldOrder() throws IOException {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     Document doc = new Document();
     doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -243,10 +235,10 @@ public class TestTermVectors extends LuceneTestCase {
     Document testDoc4 = new Document();
     setupDoc(testDoc4, test4);
     
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))
         .setOpenMode(OpenMode.CREATE));
     writer.addDocument(testDoc1);
     writer.addDocument(testDoc2);
@@ -359,13 +351,20 @@ public class TestTermVectors extends LuceneTestCase {
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))
         .setOpenMode(OpenMode.CREATE));
+    writer.w.setInfoStream(VERBOSE ? System.out : null);
+    if (VERBOSE) {
+      System.out.println("TEST: now add non-vectors");
+    }
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(new Field("field", English.intToEnglish(i),
                         Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
       writer.addDocument(doc);
+    }
+    if (VERBOSE) {
+      System.out.println("TEST: now add vectors");
     }
     for(int i=0;i<10;i++) {
       Document doc = new Document();
@@ -374,6 +373,9 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
+    if (VERBOSE) {
+      System.out.println("TEST: now getReader");
+    }
     IndexReader reader = writer.getReader();
     writer.close();
     searcher = new IndexSearcher(reader);
@@ -382,6 +384,7 @@ public class TestTermVectors extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(10, hits.length);
     for (int i = 0; i < hits.length; i++) {
+
       TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
       assertTrue(vector != null);
       assertTrue(vector.length == 1);
@@ -394,7 +397,7 @@ public class TestTermVectors extends LuceneTestCase {
   // vectors up
   public void testMixedVectrosVectors() throws IOException {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     doc.add(new Field("field", "one",

@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,13 +38,12 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class ChainedFilterTest extends LuceneTestCase {
   public static final int MAX = 500;
 
-  private RAMDirectory directory;
+  private Directory directory;
   private IndexSearcher searcher;
   private IndexReader reader;
   private Query query;
@@ -54,13 +52,10 @@ public class ChainedFilterTest extends LuceneTestCase {
   private QueryWrapperFilter bobFilter;
   private QueryWrapperFilter sueFilter;
 
-  private Random random;
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    directory = new RAMDirectory();
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -68,9 +63,9 @@ public class ChainedFilterTest extends LuceneTestCase {
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      doc.add(new Field("key", "" + (i + 1), Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("date", cal.getTime().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("key", "" + (i + 1), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("date", cal.getTime().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);
@@ -195,7 +190,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   */
   
   public void testWithCachingFilter() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     IndexReader reader = writer.getReader();
     writer.close();

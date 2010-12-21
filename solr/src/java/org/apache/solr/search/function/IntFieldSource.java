@@ -18,8 +18,15 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.function.DocValues;
+import org.apache.lucene.util.Bits;
+import org.apache.solr.search.MutableValueInt;
+import org.apache.solr.search.MutableValue;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.cache.FloatValuesCreator;
+import org.apache.lucene.search.cache.IntValuesCreator;
+import org.apache.lucene.search.cache.CachedArray.DoubleValues;
+import org.apache.lucene.search.cache.CachedArray.FloatValues;
+import org.apache.lucene.search.cache.CachedArray.IntValues;
 
 import java.io.IOException;
 import java.util.Map;
@@ -31,16 +38,10 @@ import java.util.Map;
  * @version $Id$
  */
 
-public class IntFieldSource extends FieldCacheSource {
-  FieldCache.IntParser parser;
+public class IntFieldSource extends NumericFieldCacheSource<IntValues> {
 
-  public IntFieldSource(String field) {
-    this(field, null);
-  }
-
-  public IntFieldSource(String field, FieldCache.IntParser parser) {
-    super(field);
-    this.parser = parser;
+  public IntFieldSource(IntValuesCreator creator) {
+    super(creator);
   }
 
   public String description() {
@@ -49,16 +50,19 @@ public class IntFieldSource extends FieldCacheSource {
 
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final int[] arr = (parser==null) ?
-            cache.getInts(reader, field) :
-            cache.getInts(reader, field, parser);
+    final IntValues vals = cache.getInts(reader, field, creator);
+    final int[] arr = vals.values;
+	final Bits valid = vals.valid;
+    
     return new DocValues() {
+      final MutableValueInt val = new MutableValueInt();
+      
       public float floatVal(int doc) {
         return (float)arr[doc];
       }
 
       public int intVal(int doc) {
-        return (int)arr[doc];
+        return arr[doc];
       }
 
       public long longVal(int doc) {
@@ -110,21 +114,27 @@ public class IntFieldSource extends FieldCacheSource {
           }
         };
       }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final int[] intArr = arr;
+          private final MutableValueInt mval = new MutableValueInt();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            mval.value = intArr[doc];
+            mval.exists = valid.get(doc);
+          }
+        };
+      }
+
+      
     };
   }
-
-  public boolean equals(Object o) {
-    if (o.getClass() !=  IntFieldSource.class) return false;
-    IntFieldSource other = (IntFieldSource)o;
-    return super.equals(other)
-           && this.parser==null ? other.parser==null :
-              this.parser.getClass() == other.parser.getClass();
-  }
-
-  public int hashCode() {
-    int h = parser==null ? Integer.class.hashCode() : parser.getClass().hashCode();
-    h += super.hashCode();
-    return h;
-  };
-
 }

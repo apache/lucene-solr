@@ -22,7 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,16 +33,13 @@ import org.apache.lucene.document.Field;
  * @version $Revision$
  */
 public class TestNot extends LuceneTestCase {
-  public TestNot(String name) {
-    super(name);
-  }
 
   public void testNot() throws Exception {
-    RAMDirectory store = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store);
+    Directory store = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, store);
 
     Document d1 = new Document();
-    d1.add(new Field("field", "a b", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("field", "a b", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(d1);
     IndexReader reader = writer.getReader();

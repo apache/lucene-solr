@@ -18,7 +18,6 @@
 package org.apache.solr.response;
 
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.util.NamedList;
@@ -55,7 +54,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     // to bare bones SolrResponseBase.
     // TODO: Can this writer know what the handler class is?  With echoHandler=true it can get its string name at least
     SolrResponse rsp = new QueryResponse();
-    NamedList<Object> parsedResponse = new EmbeddedSolrServer(request.getCore()).getParsedResponse(request, response);
+    NamedList<Object> parsedResponse = BinaryResponseWriter.getParsedResponse(request, response);
     try {
       rsp.setResponse(parsedResponse);
 

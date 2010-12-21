@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @deprecated use org.apache.solr.response.PythonResponseWriter
  */
+@Deprecated
 public class PythonResponseWriter extends org.apache.solr.response.PythonResponseWriter 
 {
   private static Logger log = LoggerFactory.getLogger(PythonResponseWriter.class.getName());

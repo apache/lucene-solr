@@ -35,9 +35,12 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
    *  diagnostics storage, and switches userData to Map */
   public static final int FORMAT_DIAGNOSTICS = -9;
 
+  /** Each segment records whether it has term vectors */
+  public static final int FORMAT_HAS_VECTORS = -10;
+
   /** Each segment records whether its postings are written
    *  in the new flex format */
-  public static final int FORMAT_4_0 = -10;
+  public static final int FORMAT_4_0 = -11;
 
   /** This must always point to the most recent file format.
    * whenever you add a new format, make it 1 smaller (negative version logic)! */
@@ -51,8 +54,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
           throws IOException {
     IndexOutput out = createOutput(dir, segmentFileName);
     out.writeInt(FORMAT_CURRENT); // write FORMAT
-    out.writeLong(++infos.version); // every write changes
-                                 // the index
+    out.writeLong(infos.version);
     out.writeInt(infos.counter); // write counter
     out.writeInt(infos.size()); // write infos
     for (SegmentInfo si : infos) {

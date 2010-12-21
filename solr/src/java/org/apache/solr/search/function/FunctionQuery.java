@@ -19,11 +19,12 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.IdentityHashMap;
 import java.util.Map;
 
 
@@ -50,10 +51,12 @@ public class FunctionQuery extends Query {
     return func;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
 
+  @Override
   public void extractTerms(Set terms) {}
 
   protected class FunctionWeight extends Weight {
@@ -68,10 +71,12 @@ public class FunctionQuery extends Query {
       func.createWeight(context, searcher);
     }
 
+    @Override
     public Query getQuery() {
       return FunctionQuery.this;
     }
 
+    @Override
     public float getValue() {
       return queryWeight;
     }
@@ -112,6 +117,7 @@ public class FunctionQuery extends Query {
     int doc=-1;
     final DocValues vals;
     final boolean hasDeletions;
+    final Bits delDocs;
 
     public AllScorer(Similarity similarity, IndexReader reader, FunctionWeight w) throws IOException {
       super(similarity);
@@ -120,6 +126,8 @@ public class FunctionQuery extends Query {
       this.reader = reader;
       this.maxDoc = reader.maxDoc();
       this.hasDeletions = reader.hasDeletions();
+      this.delDocs = MultiFields.getDeletedDocs(reader);
+      assert !hasDeletions || delDocs != null;
       vals = func.getValues(weight.context, reader);
     }
 
@@ -128,18 +136,18 @@ public class FunctionQuery extends Query {
       return doc;
     }
 
-    @Override
     // instead of matching all docs, we could also embed a query.
     // the score could either ignore the subscore, or boost it.
     // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)
     // Boost:        foo:myTerm^floatline("myFloatField",1.0,0.0f)
+    @Override
     public int nextDoc() throws IOException {
       for(;;) {
         ++doc;
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (hasDeletions && reader.isDeleted(doc)) continue;
+        if (hasDeletions && delDocs.get(doc)) continue;
         return doc;
       }
     }
@@ -151,29 +159,7 @@ public class FunctionQuery extends Query {
       return nextDoc();
     }
 
-    // instead of matching all docs, we could also embed a query.
-    // the score could either ignore the subscore, or boost it.
-    // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)
-    // Boost:        foo:myTerm^floatline("myFloatField",1.0,0.0f)
-    public boolean next() throws IOException {
-      for(;;) {
-        ++doc;
-        if (doc>=maxDoc) {
-          return false;
-        }
-        if (hasDeletions && reader.isDeleted(doc)) continue;
-        // todo: maybe allow score() to throw a specific exception
-        // and continue on to the next document if it is thrown...
-        // that may be useful, but exceptions aren't really good
-        // for flow control.
-        return true;
-      }
-    }
-
-    public int doc() {
-      return doc;
-    }
-
+    @Override
     public float score() throws IOException {
       float score = qWeight * vals.floatVal(doc);
 
@@ -181,11 +167,6 @@ public class FunctionQuery extends Query {
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
       // and NaN since comparisons with NaN are always false.
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
-    }
-
-    public boolean skipTo(int target) throws IOException {
-      doc=target-1;
-      return next();
     }
 
     public Explanation explain(int doc) throws IOException {
@@ -202,12 +183,14 @@ public class FunctionQuery extends Query {
   }
 
 
+  @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field)
   {
     float boost = getBoost();
@@ -217,6 +200,7 @@ public class FunctionQuery extends Query {
 
 
   /** Returns true if <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (FunctionQuery.class != o.getClass()) return false;
     FunctionQuery other = (FunctionQuery)o;
@@ -225,6 +209,7 @@ public class FunctionQuery extends Query {
   }
 
   /** Returns a hash code value for this object. */
+  @Override
   public int hashCode() {
     return func.hashCode()*31 + Float.floatToIntBits(getBoost());
   }

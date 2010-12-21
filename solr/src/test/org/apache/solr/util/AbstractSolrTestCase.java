@@ -110,9 +110,8 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     if (factoryProp == null) {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
     }
-    dataDir = new File(System.getProperty("java.io.tmpdir")
-            + System.getProperty("file.separator")
-            + getClass().getName() + "-" + System.currentTimeMillis());
+    dataDir = new File(TEMP_DIR,
+            getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
 
     String configFile = getSolrConfigFile();

@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @deprecated use org.apache.solr.response.BinaryResponseWriter
  */
+@Deprecated
 public class BinaryResponseWriter extends org.apache.solr.response.BinaryResponseWriter 
 {
   private static Logger log =  LoggerFactory.getLogger(BinaryResponseWriter.class.getName());

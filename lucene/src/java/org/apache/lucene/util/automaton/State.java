@@ -32,7 +32,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -112,7 +111,7 @@ public class State implements Serializable, Comparable<State> {
    */
   public void addTransition(Transition t) {
     if (numTransitions == transitionsArray.length) {
-      final Transition[] newArray = new Transition[ArrayUtil.oversize(1+numTransitions, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+      final Transition[] newArray = new Transition[ArrayUtil.oversize(1+numTransitions, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(transitionsArray, 0, newArray, 0, numTransitions);
       transitionsArray = newArray;
     }
@@ -232,13 +231,14 @@ public class State implements Serializable, Comparable<State> {
   
   /** Sorts transitions array in-place. */
   public void sortTransitions(Comparator<Transition> comparator) {
-    Arrays.sort(transitionsArray, 0, numTransitions, comparator);
+    // mergesort seems to perform better on already sorted arrays:
+    if (numTransitions > 1) ArrayUtil.mergeSort(transitionsArray, 0, numTransitions, comparator);
   }
   
   /**
    * Return this state's number. 
    * <p>
-   * Expert: Will be useless unless {@link Automaton#setStateNumbers(Set)}
+   * Expert: Will be useless unless {@link Automaton#getNumberedStates}
    * has been called first to number the states.
    * @return the number
    */
@@ -269,4 +269,9 @@ public class State implements Serializable, Comparable<State> {
   public int compareTo(State s) {
     return s.id - id;
   }
+
+  @Override
+  public int hashCode() {
+    return id;
+  }  
 }

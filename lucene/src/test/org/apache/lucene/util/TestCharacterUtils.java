@@ -18,7 +18,7 @@ package org.apache.lucene.util;
  */
 
 import static org.junit.Assert.*;
-import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -30,7 +30,7 @@ import org.junit.Test;
 /**
  * TestCase for the {@link CharacterUtils} class.
  */
-public class TestCharacterUtils {
+public class TestCharacterUtils extends LuceneTestCase {
 
   @Test
   public void testCodePointAtCharArrayInt() {
@@ -43,7 +43,7 @@ public class TestCharacterUtils {
     try {
       java4.codePointAt(highSurrogateAt3, 4);
       fail("array index out of bounds");
-    } catch (ArrayIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
 
     CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
@@ -54,7 +54,7 @@ public class TestCharacterUtils {
     try {
       java5.codePointAt(highSurrogateAt3, 4);
       fail("array index out of bounds");
-    } catch (ArrayIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
   }
 
@@ -69,7 +69,7 @@ public class TestCharacterUtils {
     try {
       java4.codePointAt(highSurrogateAt3, 4);
       fail("string index out of bounds");
-    } catch (StringIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
 
     CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
@@ -80,7 +80,7 @@ public class TestCharacterUtils {
     try {
       java5.codePointAt(highSurrogateAt3, 4);
       fail("string index out of bounds");
-    } catch (StringIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
 
   }

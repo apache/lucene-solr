@@ -17,10 +17,12 @@
 
 package org.apache.solr.client.solrj;
 
-import junit.framework.TestCase;
 import junit.framework.Assert;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
@@ -42,11 +44,15 @@ import java.util.Set;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestLBHttpSolrServer extends TestCase {
+public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
-  HttpClient httpClient = new HttpClient();
+  HttpClient httpClient;
 
   public void setUp() throws Exception {
+    super.setUp();
+    httpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
+
+    httpClient.getParams().setParameter("http.connection.timeout", new Integer(1000));
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr" + i, 0);
       solr[i].setUp();
@@ -75,6 +81,7 @@ public class TestLBHttpSolrServer extends TestCase {
     for (SolrInstance aSolr : solr) {
       aSolr.tearDown();
     }
+    super.tearDown();
   }
 
   public void testSimple() throws Exception {
@@ -148,6 +155,43 @@ public class TestLBHttpSolrServer extends TestCase {
     Assert.assertEquals("solr0", name);
   }
 
+  public void testReliability() throws Exception {
+    String[] s = new String[solr.length];
+    for (int i = 0; i < solr.length; i++) {
+      s[i] = solr[i].getUrl();
+    }
+    HttpClient myHttpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
+
+    myHttpClient.getParams().setParameter("http.connection.timeout", new Integer(100));
+    myHttpClient.getParams().setParameter("http.socket.timeout", new Integer(100));
+    LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(myHttpClient, s);
+    lbHttpSolrServer.setAliveCheckInterval(500);
+
+    // Kill a server and test again
+    solr[1].jetty.stop();
+    solr[1].jetty = null;
+
+    // query the servers
+    for (String value : s)
+      lbHttpSolrServer.query(new SolrQuery("*:*"));
+
+    // Start the killed server once again
+    solr[1].startJetty();
+    // Wait for the alive check to complete
+    waitForServer(30000, lbHttpSolrServer, 3, "solr1");
+  }
+  
+  // wait maximum ms for serverName to come back up
+  private void waitForServer(int maximum, LBHttpSolrServer server, int nServers, String serverName) throws Exception {
+    long endTime = System.currentTimeMillis() + maximum;
+    while (System.currentTimeMillis() < endTime) {
+      QueryResponse resp = server.query(new SolrQuery("*:*"));
+      String name = resp.getResults().get(0).getFieldValue("name").toString();
+      if (name.equals(serverName))
+        return;
+    }
+  }
+  
   private class SolrInstance {
     String name;
     File homeDir;
@@ -188,9 +232,8 @@ public class TestLBHttpSolrServer extends TestCase {
     }
 
     public void setUp() throws Exception {
-      String home = System.getProperty("java.io.tmpdir")
-              + File.separator
-              + getClass().getName() + "-" + System.currentTimeMillis();
+      File home = new File(SolrTestCaseJ4.TEMP_DIR,
+              getClass().getName() + "-" + System.currentTimeMillis());
 
 
       homeDir = new File(home, name);
@@ -223,7 +266,7 @@ public class TestLBHttpSolrServer extends TestCase {
       jetty.start();
       int newPort = jetty.getLocalPort();
       if (port != 0 && newPort != port) {
-        TestCase.fail("TESTING FAILURE: could not grab requested port.");
+        fail("TESTING FAILURE: could not grab requested port.");
       }
       this.port = newPort;
 //      System.out.println("waiting.........");

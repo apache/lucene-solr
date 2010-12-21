@@ -13,15 +13,15 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,30 +40,21 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 
 public class TestParser extends LuceneTestCase {
+	private static CoreParser builder;
+	private static Directory dir;
+	private static IndexReader reader;
+	private static IndexSearcher searcher;
 
-	CoreParser builder;
-	static Directory dir;
-  // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-	Analyzer analyzer=new MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
-	IndexReader reader;
-	private IndexSearcher searcher;
-
-	/*
-	 * @see TestCase#setUp()
-	 */
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
+	@BeforeClass
+	public static void beforeClass() throws Exception {
+	  // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
+	  Analyzer analyzer=new MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
+    //initialize the parser
+	  builder=new CorePlusExtensionsParser("contents",analyzer);
 		
-		//initialize the parser
-		builder=new CorePlusExtensionsParser("contents",analyzer);
-		
-		//initialize the index (done once, then cached in static data for use with ALL tests)		
-		if(dir==null)
-		{
 			BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt"))); 
-			dir=new RAMDirectory();
-			IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_24, analyzer));
+			dir=newDirectory();
+			IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(Version.LUCENE_40, analyzer));
 			String line = d.readLine();		
 			while(line!=null)
 			{
@@ -71,8 +62,8 @@ public class TestParser extends LuceneTestCase {
 				String date=line.substring(0,endOfDate).trim();
 				String content=line.substring(endOfDate).trim();
 				org.apache.lucene.document.Document doc =new org.apache.lucene.document.Document();
-				doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
-				doc.add(new Field("contents",content,Field.Store.YES,Field.Index.ANALYZED));
+				doc.add(newField("date",date,Field.Store.YES,Field.Index.ANALYZED));
+				doc.add(newField("contents",content,Field.Store.YES,Field.Index.ANALYZED));
 				NumericField numericField = new NumericField("date2");
 				numericField.setIntValue(Integer.valueOf(date));
 				doc.add(numericField);
@@ -81,7 +72,6 @@ public class TestParser extends LuceneTestCase {
 			}			
 			d.close();
       writer.close();
-		}
 		reader=IndexReader.open(dir, true);
 		searcher=new IndexSearcher(reader);
 		
@@ -90,13 +80,17 @@ public class TestParser extends LuceneTestCase {
 	
 	
 	
-	@Override
-	protected void tearDown() throws Exception {
+	@AfterClass
+	public static void afterClass() throws Exception {
 		reader.close();
 		searcher.close();
-//		dir.close();
-		super.tearDown();
+		dir.close();
+		reader = null;
+		searcher = null;
+		dir = null;
+		builder = null;
 	}
+	
 	public void testSimpleXML() throws ParserException, IOException
 	{
 			Query q=parse("TermQuery.xml");

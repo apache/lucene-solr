@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -34,9 +33,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -46,24 +45,22 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.payloads.PayloadHelper;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
   private IndexSearcher searcher;
   private Similarity similarity = new DefaultSimilarity();
   protected IndexReader indexReader;
-
-  public TestPayloadSpans(String s) {
-    super(s);
-  }
+  private IndexReader closeIndexReader;
+  private Directory directory;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     PayloadHelper helper = new PayloadHelper();
-    searcher = helper.setUp(similarity, 1000);
+    searcher = helper.setUp(random, similarity, 1000);
     indexReader = searcher.getIndexReader();
   }
 
@@ -109,27 +106,23 @@ public class TestPayloadSpans extends LuceneTestCase {
     clauses[1] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "three"));
     SpanQuery spq = new SpanNearQuery(clauses, 5, true);
     SpanNotQuery snq = new SpanNotQuery(spq, new SpanTermQuery(new Term(PayloadHelper.FIELD, "two")));
-    checkSpans(snq.getSpans(getSpanNotSearcher().getIndexReader()), 1,new int[]{2});
-  }
-  
-  public IndexSearcher getSpanNotSearcher()
-      throws IOException {
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(
-        similarity));
+
+
+
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = new Document();
-    doc.add(new Field(PayloadHelper.FIELD, "one two three one four three",
+    doc.add(newField(PayloadHelper.FIELD, "one two three one four three",
         Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
-
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory, true);
-    searcher.setSimilarity(similarity);
-    return searcher;
-
+    checkSpans(snq.getSpans(new SlowMultiReaderWrapper(reader)), 1,new int[]{2});
+    reader.close();
+    directory.close();
   }
   
   public void testNestedSpans() throws Exception {
@@ -185,6 +178,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     spans = nestedSpanNearQuery.getSpans(searcher.getIndexReader());
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{3,3});
+    closeIndexReader.close();
+    directory.close();
   }
   
   public void testFirstClauseWithoutPayload() throws Exception {
@@ -215,6 +210,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     spans = nestedSpanNearQuery.getSpans(searcher.getIndexReader());
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 1, new int[]{3});
+    closeIndexReader.close();
+    directory.close();
   }
   
   public void testHeavilyNestedSpanQuery() throws Exception {
@@ -250,19 +247,23 @@ public class TestPayloadSpans extends LuceneTestCase {
     spans = nestedSpanNearQuery.getSpans(searcher.getIndexReader());
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{8, 8});
+    closeIndexReader.close();
+    directory.close();
   }
   
   public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("a b c d e f g h i j a k")));
     writer.addDocument(doc);
-    writer.close();
 
-    IndexSearcher is = new IndexSearcher(directory, true);
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
+    IndexSearcher is = new IndexSearcher(reader);
+    writer.close();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -284,19 +285,22 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals(2, payloadSet.size());
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
+    reader.close();
+    directory.close();
   }
   
   public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("a b a d k f a h i k a k")));
     writer.addDocument(doc);
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
+    IndexSearcher is = new IndexSearcher(reader);
     writer.close();
-
-    IndexSearcher is = new IndexSearcher(directory, true);
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -317,19 +321,22 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals(2, payloadSet.size());
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
+    reader.close();
+    directory.close();
   }
   
   public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("j k a l f k k p a t a k l k t a")));
     writer.addDocument(doc);
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
+    IndexSearcher is = new IndexSearcher(reader);
     writer.close();
-
-    IndexSearcher is = new IndexSearcher(directory, true);
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -356,23 +363,24 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
+    reader.close();
+    directory.close();
   }
   
   public void testPayloadSpanUtil() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(
-        similarity));
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
+
     Document doc = new Document();
-    doc.add(new Field(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   
+    IndexReader reader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
+    IndexSearcher searcher = new IndexSearcher(reader);
 
-    IndexSearcher searcher = new IndexSearcher(directory, true);
-
-    IndexReader reader = searcher.getIndexReader();
-    PayloadSpanUtil psu = new PayloadSpanUtil(reader);
+    PayloadSpanUtil psu = new PayloadSpanUtil(searcher.getIndexReader());
     
     Collection<byte[]> payloads = psu.getPayloadsForQuery(new TermQuery(new Term(PayloadHelper.FIELD, "rr")));
     if(VERBOSE)
@@ -381,7 +389,8 @@ public class TestPayloadSpans extends LuceneTestCase {
       if(VERBOSE)
         System.out.println(new String(bytes));
     }
-    
+    reader.close();
+    directory.close();
   }
 
   private void checkSpans(Spans spans, int expectedNumSpans, int expectedNumPayloads,
@@ -418,22 +427,23 @@ public class TestPayloadSpans extends LuceneTestCase {
   }
   
   private IndexSearcher getSearcher() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    directory = newDirectory();
     String[] docs = new String[]{"xx rr yy mm  pp","xx yy mm rr pp", "nopayload qq ss pp np", "one two three four five six seven eight nine ten eleven", "nine one two three four five six seven eight eleven ten"};
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = null;
     for(int i = 0; i < docs.length; i++) {
       doc = new Document();
       String docText = docs[i];
-      doc.add(new Field(PayloadHelper.FIELD,docText, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(PayloadHelper.FIELD,docText, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
 
+    closeIndexReader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexSearcher searcher = new IndexSearcher(closeIndexReader);
     return searcher;
   }
   

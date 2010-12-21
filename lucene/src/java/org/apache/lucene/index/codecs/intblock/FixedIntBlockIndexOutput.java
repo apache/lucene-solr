@@ -36,19 +36,19 @@ import org.apache.lucene.store.IndexOutput;
  */
 public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
 
-  private IndexOutput out;
-  private int blockSize;
-  private int[] pending;
+  protected final IndexOutput out;
+  private final int blockSize;
+  protected final int[] buffer;
   private int upto;
 
-  protected void init(IndexOutput out, int fixedBlockSize) throws IOException {
+  protected FixedIntBlockIndexOutput(IndexOutput out, int fixedBlockSize) throws IOException {
     blockSize = fixedBlockSize;
-    out.writeVInt(blockSize);
     this.out = out;
-    pending = new int[blockSize];
+    out.writeVInt(blockSize);
+    buffer = new int[blockSize];
   }
 
-  protected abstract void flushBlock(int[] buffer, IndexOutput out) throws IOException;
+  protected abstract void flushBlock() throws IOException;
 
   @Override
   public Index index() throws IOException {
@@ -83,11 +83,30 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
         // same block
         indexOut.writeVLong(0);
         assert upto >= lastUpto;
-        indexOut.writeVLong(upto - lastUpto);
+        indexOut.writeVInt(upto - lastUpto);
       } else {      
         // new block
         indexOut.writeVLong(fp - lastFP);
-        indexOut.writeVLong(upto);
+        indexOut.writeVInt(upto);
+      }
+      lastUpto = upto;
+      lastFP = fp;
+    }
+
+    @Override
+    public void write(IntIndexOutput indexOut, boolean absolute) throws IOException {
+      if (absolute) {
+        indexOut.writeVLong(fp);
+        indexOut.write(upto);
+      } else if (fp == lastFP) {
+        // same block
+        indexOut.writeVLong(0);
+        assert upto >= lastUpto;
+        indexOut.write(upto - lastUpto);
+      } else {      
+        // new block
+        indexOut.writeVLong(fp - lastFP);
+        indexOut.write(upto);
       }
       lastUpto = upto;
       lastFP = fp;
@@ -96,9 +115,9 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
 
   @Override
   public void write(int v) throws IOException {
-    pending[upto++] = v;
+    buffer[upto++] = v;
     if (upto == blockSize) {
-      flushBlock(pending, out);
+      flushBlock();
       upto = 0;
     }
   }
@@ -107,9 +126,9 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
   public void close() throws IOException {
     try {
       if (upto > 0) {
-      // NOTE: entries in the block after current upto are
-      // invalid
-        flushBlock(pending, out);
+        // NOTE: entries in the block after current upto are
+        // invalid
+        flushBlock();
       }
     } finally {
       out.close();

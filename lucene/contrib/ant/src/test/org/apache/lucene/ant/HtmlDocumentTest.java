@@ -24,10 +24,6 @@ import org.apache.lucene.ant.HtmlDocument;
 
 public class HtmlDocumentTest extends DocumentTestCase
 {
-    public HtmlDocumentTest (String name) {
-        super(name);
-    }
-    
     HtmlDocument doc;
     
     @Override

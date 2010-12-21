@@ -24,58 +24,72 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.spans.SpanFirstQuery;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanRegexQuery extends LuceneTestCase {
   
-  Directory indexStoreA = new RAMDirectory();
-
-  Directory indexStoreB = new RAMDirectory();
-
+  Directory indexStoreA;
+  Directory indexStoreB;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    indexStoreA = newDirectory();
+    indexStoreB = newDirectory();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    indexStoreA.close();
+    indexStoreB.close();
+    super.tearDown();
+  }
+  
   public void testSpanRegex() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    // doc.add(new Field("field", "the quick brown fox jumps over the lazy dog",
+    // doc.add(newField("field", "the quick brown fox jumps over the lazy dog",
     // Field.Store.NO, Field.Index.ANALYZED));
     // writer.addDocument(doc);
     // doc = new Document();
-    doc.add(new Field("field", "auto update", Field.Store.NO,
+    doc.add(newField("field", "auto update", Field.Store.NO,
         Field.Index.ANALYZED));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new Field("field", "first auto update", Field.Store.NO,
+    doc.add(newField("field", "first auto update", Field.Store.NO,
         Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(directory, true);
-    SpanRegexQuery srq = new SpanRegexQuery(new Term("field", "aut.*"));
+    SpanQuery srq = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term("field", "aut.*")));
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);
     // SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6,
     // true);
     int numHits = searcher.search(sfq, null, 1000).totalHits;
     assertEquals(1, numHits);
+    searcher.close();
+    directory.close();
   }
-
+  
   public void testSpanRegexBug() throws CorruptIndexException, IOException {
     createRAMDirectories();
 
-    SpanRegexQuery srq = new SpanRegexQuery(new Term("field", "a.*"));
-    SpanRegexQuery stq = new SpanRegexQuery(new Term("field", "b.*"));
+    SpanQuery srq = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term("field", "a.*")));
+    SpanQuery stq = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term("field", "b.*")));
     SpanNearQuery query = new SpanNearQuery(new SpanQuery[] { srq, stq }, 6,
         true);
 
@@ -97,28 +111,28 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     indexStoreA.close();
     indexStoreB.close();
   }
-
+  
   private void createRAMDirectories() throws CorruptIndexException,
       LockObtainFailedException, IOException {
     // creating a document to store
     Document lDoc = new Document();
-    lDoc.add(new Field("field", "a1 b1", Field.Store.NO,
+    lDoc.add(newField("field", "a1 b1", Field.Store.NO,
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating a document to store
     Document lDoc2 = new Document();
-    lDoc2.add(new Field("field", "a2 b2", Field.Store.NO,
+    lDoc2.add(newField("field", "a2 b2", Field.Store.NO,
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating first index writer
-    IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(
+    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     writerA.addDocument(lDoc);
     writerA.optimize();
     writerA.close();
 
     // creating second index writer
-    IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     writerB.addDocument(lDoc2);
     writerB.optimize();

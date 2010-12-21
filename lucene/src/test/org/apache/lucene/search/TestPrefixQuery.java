@@ -17,11 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -31,15 +33,15 @@ import org.apache.lucene.document.Field;
  */
 public class TestPrefixQuery extends LuceneTestCase {
   public void testPrefixQuery() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    Directory directory = newDirectory();
 
     String[] categories = new String[] {"/Computers",
                                         "/Computers/Mac",
                                         "/Computers/Windows"};
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -54,7 +56,8 @@ public class TestPrefixQuery extends LuceneTestCase {
     assertEquals("One in /Computers/Mac", 1, hits.length);
 
     query = new PrefixQuery(new Term("category", ""));
-    assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof PrefixTermsEnum);
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "category");
+    assertFalse(query.getTermsEnum(terms) instanceof PrefixTermsEnum);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("everything", 3, hits.length);
     writer.close();

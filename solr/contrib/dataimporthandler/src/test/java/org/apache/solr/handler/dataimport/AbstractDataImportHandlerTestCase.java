@@ -16,11 +16,23 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.common.util.NamedList;
+import org.junit.After;
+import org.junit.Before;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.File;
 import java.util.HashMap;
@@ -38,14 +50,16 @@ import java.util.Map;
  * @since solr 1.3
  */
 public abstract class AbstractDataImportHandlerTestCase extends
-        AbstractSolrTestCase {
+        SolrTestCaseJ4 {
 
   @Override
+  @Before
   public void setUp() throws Exception {
     super.setUp();
   }
 
   @Override
+  @After
   public void tearDown() throws Exception {
     // remove dataimport.properties
     File f = new File("solr/conf/dataimport.properties");
@@ -140,6 +154,29 @@ public abstract class AbstractDataImportHandlerTestCase extends
     return result;
   }
 
+  public static File createFile(File tmpdir, String name, byte[] content,
+                                boolean changeModifiedTime) throws IOException {
+    File file = new File(tmpdir.getAbsolutePath() + File.separator + name);
+    file.deleteOnExit();
+    FileOutputStream f = new FileOutputStream(file);
+    f.write(content);
+    f.close();
+    if (changeModifiedTime)
+      file.setLastModified(System.currentTimeMillis() - 3600000);
+    return file;
+  }
+  
+  public static Map<String, String> getField(String col, String type,
+                                             String re, String srcCol, String splitBy) {
+    HashMap<String, String> vals = new HashMap<String, String>();
+    vals.put("column", col);
+    vals.put("type", type);
+    vals.put("regex", re);
+    vals.put("sourceColName", srcCol);
+    vals.put("splitBy", splitBy);
+    return vals;
+  }
+  
   static class TestContext extends Context {
     private final Map<String, String> entityAttrs;
     private final Context delegate;
@@ -241,5 +278,70 @@ public abstract class AbstractDataImportHandlerTestCase extends
     public String replaceTokens(String template) {
       return delegate.replaceTokens(template);
     }
+  }
+
+  public static class TestUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
+
+    @Override
+    public UpdateRequestProcessor getInstance(SolrQueryRequest req,
+        SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      return new TestUpdateRequestProcessor(next);
+    }
+    
+  }
+  
+  public static class TestUpdateRequestProcessor extends UpdateRequestProcessor {
+  
+    public static boolean finishCalled = false;
+    public static boolean processAddCalled = false;
+    public static boolean processCommitCalled = false;
+    public static boolean processDeleteCalled = false;
+    public static boolean mergeIndexesCalled = false;
+    public static boolean rollbackCalled = false;
+  
+    public static void reset() {
+      finishCalled = false;
+      processAddCalled = false;
+      processCommitCalled = false;
+      processDeleteCalled = false;
+      mergeIndexesCalled = false;
+      rollbackCalled = false;
+    }
+    
+    public TestUpdateRequestProcessor(UpdateRequestProcessor next) {
+      super(next);
+      reset();
+    }
+
+    public void finish() throws IOException {
+      finishCalled = true;
+      super.finish();
+    }
+
+    public void processAdd(AddUpdateCommand cmd) throws IOException {
+      processAddCalled = true;
+      super.processAdd(cmd);
+    }
+
+    public void processCommit(CommitUpdateCommand cmd) throws IOException {
+      processCommitCalled = true;
+      super.processCommit(cmd);
+    }
+
+    public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+      processDeleteCalled = true;
+      super.processDelete(cmd);
+    }
+
+    public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
+      mergeIndexesCalled = true;
+      super.processMergeIndexes(cmd);
+    }
+
+    public void processRollback(RollbackUpdateCommand cmd) throws IOException {
+      rollbackCalled = true;
+      super.processRollback(cmd);
+    }
+    
   }
 }

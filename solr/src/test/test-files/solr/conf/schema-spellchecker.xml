@@ -68,8 +68,12 @@
  <fields>
    <field name="id" type="string" indexed="true" stored="true"/>
    <field name="spell" type="spellText" indexed="true" stored="true" />
+   <field name="suggest" type="spellText" indexed="true" stored="true" />
    <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
  </fields>
+
+ <copyField source="text" dest="spell"/>
+ <copyField source="text" dest="suggest"/>
 
  <!-- field to use to determine and enforce document uniqueness. -->
  <uniqueKey>id</uniqueKey>

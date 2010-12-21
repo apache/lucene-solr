@@ -20,6 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -30,6 +33,12 @@ public final class MockAnalyzer extends Analyzer {
   private final boolean lowerCase;
   private final CharacterRunAutomaton filter;
   private final boolean enablePositionIncrements;
+  private final boolean payload;
+  private int positionIncrementGap;
+
+  public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
+    this(runAutomaton, lowerCase, filter, enablePositionIncrements, true);    
+  }
 
   /**
    * Creates a new MockAnalyzer.
@@ -38,12 +47,14 @@ public final class MockAnalyzer extends Analyzer {
    * @param lowerCase true if the tokenizer should lowercase terms
    * @param filter DFA describing how terms should be filtered (set of stopwords, etc)
    * @param enablePositionIncrements true if position increments should reflect filtered terms.
+   * @param payload if payloads should be added
    */
-  public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
+  public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements, boolean payload) {
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.filter = filter;
     this.enablePositionIncrements = enablePositionIncrements;
+    this.payload = payload;
   }
 
   /**
@@ -53,7 +64,11 @@ public final class MockAnalyzer extends Analyzer {
    * @param lowerCase true if the tokenizer should lowercase terms
    */
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false);
+    this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, true);
+  }
+
+  public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, boolean payload) {
+    this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, payload);
   }
   
   /** 
@@ -66,12 +81,16 @@ public final class MockAnalyzer extends Analyzer {
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     MockTokenizer tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
-    return new MockTokenFilter(tokenizer, filter, enablePositionIncrements);
+    TokenFilter filt = new MockTokenFilter(tokenizer, filter, enablePositionIncrements);
+    if (payload){
+      filt = new SimplePayloadFilter(filt, fieldName);
+    }
+    return filt;
   }
 
   private class SavedStreams {
     MockTokenizer tokenizer;
-    MockTokenFilter filter;
+    TokenFilter filter;
   }
 
   @Override
@@ -82,11 +101,56 @@ public final class MockAnalyzer extends Analyzer {
       saved = new SavedStreams();
       saved.tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
       saved.filter = new MockTokenFilter(saved.tokenizer, filter, enablePositionIncrements);
+      if (payload){
+        saved.filter = new SimplePayloadFilter(saved.filter, fieldName);
+      }
       setPreviousTokenStream(saved);
       return saved.filter;
     } else {
       saved.tokenizer.reset(reader);
+      saved.filter.reset();
       return saved.filter;
     }
+  }
+  
+  public void setPositionIncrementGap(int positionIncrementGap){
+    this.positionIncrementGap = positionIncrementGap;
+  }
+  
+  @Override
+  public int getPositionIncrementGap(String fieldName){
+    return positionIncrementGap;
+  }
+}
+
+final class SimplePayloadFilter extends TokenFilter {
+  String fieldName;
+  int pos;
+  final PayloadAttribute payloadAttr;
+  final CharTermAttribute termAttr;
+
+  public SimplePayloadFilter(TokenStream input, String fieldName) {
+    super(input);
+    this.fieldName = fieldName;
+    pos = 0;
+    payloadAttr = input.addAttribute(PayloadAttribute.class);
+    termAttr = input.addAttribute(CharTermAttribute.class);
+  }
+
+  @Override
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      payloadAttr.setPayload(new Payload(("pos: " + pos).getBytes()));
+      pos++;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    pos = 0;
   }
 }

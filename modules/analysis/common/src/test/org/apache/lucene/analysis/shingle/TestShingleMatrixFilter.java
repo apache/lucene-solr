@@ -40,10 +40,6 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
-  public TestShingleMatrixFilter(String name) {
-    super(name);
-  }
-
   public void testIterator() throws IOException {
 
     WhitespaceTokenizer wst = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("one two three four five"));

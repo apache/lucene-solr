@@ -17,33 +17,41 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.Version;
 
-/** Normalizes tokens extracted with {@link StandardTokenizer}. */
-
-public final class StandardFilter extends TokenFilter {
-
-  /** Construct filtering <i>in</i>. */
-  public StandardFilter(TokenStream in) {
+/**
+ * Normalizes tokens extracted with {@link StandardTokenizer}.
+ */
+public class StandardFilter extends TokenFilter {
+  private final Version matchVersion;
+  
+  public StandardFilter(Version matchVersion, TokenStream in) {
     super(in);
+    this.matchVersion = matchVersion;
   }
-
-  private static final String APOSTROPHE_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.APOSTROPHE];
-  private static final String ACRONYM_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ACRONYM];
+  
+  private static final String APOSTROPHE_TYPE = ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.APOSTROPHE];
+  private static final String ACRONYM_TYPE = ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.ACRONYM];
 
   // this filters uses attribute type
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
-  /** Returns the next token in the stream, or null at EOS.
-   * <p>Removes <tt>'s</tt> from the end of words.
-   * <p>Removes dots from acronyms.
-   */
   @Override
-  public final boolean incrementToken() throws java.io.IOException {
+  public final boolean incrementToken() throws IOException {
+    if (matchVersion.onOrAfter(Version.LUCENE_31))
+      return input.incrementToken(); // TODO: add some niceties for the new grammar
+    else
+      return incrementTokenClassic();
+  }
+  
+  public final boolean incrementTokenClassic() throws IOException {
     if (!input.incrementToken()) {
       return false;
     }

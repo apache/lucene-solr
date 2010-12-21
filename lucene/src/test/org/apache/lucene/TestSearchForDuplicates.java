@@ -20,6 +20,7 @@ package org.apache.lucene;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Random;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
@@ -58,7 +59,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   public void testRun() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
-      doTest(pw, false);
+      doTest(random, pw, false);
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -66,7 +67,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
-      doTest(pw, true);
+      doTest(random, pw, true);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
@@ -75,23 +76,27 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   }
 
 
-  private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
-      Directory directory = new RAMDirectory();
+  private void doTest(Random random, PrintWriter out, boolean useCompoundFiles) throws Exception {
+      Directory directory = newDirectory();
       Analyzer analyzer = new MockAnalyzer();
-      IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFiles);
       IndexWriter writer = new IndexWriter(directory, conf);
+      if (VERBOSE) {
+        System.out.println("TEST: now build index");
+        writer.setInfoStream(System.out);
+      }
 
       final int MAX_DOCS = 225;
 
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
-        d.add(new Field(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES, Field.Index.ANALYZED));
 
         // NOTE: this ID_FIELD produces no tokens since
         // MockAnalyzer discards numbers
-        d.add(new Field(ID_FIELD, Integer.toString(j), Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField(ID_FIELD, Integer.toString(j), Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(d);
       }
       writer.close();
@@ -124,6 +129,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       checkHits(hits, MAX_DOCS, searcher);
 
       searcher.close();
+      directory.close();
   }
 
 

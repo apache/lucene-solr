@@ -155,8 +155,8 @@ public class ParallelReader extends IndexReader {
     @Override
     public String next() throws IOException {
       if (keys.hasNext()) {
-        currentField = (String) keys.next();
-        currentReader = (IndexReader) fieldToReader.get(currentField);
+        currentField = keys.next();
+        currentReader = fieldToReader.get(currentField);
       } else {
         currentField = null;
         currentReader = null;
@@ -195,7 +195,7 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  public Bits getDeletedDocs() throws IOException {
+  public Bits getDeletedDocs() {
     return MultiFields.getDeletedDocs(readers.get(0));
   }
 
@@ -318,15 +318,6 @@ public class ParallelReader extends IndexReader {
   public boolean hasDeletions() {
     // Don't call ensureOpen() here (it could affect performance)
     return hasDeletions;
-  }
-
-  // check first reader
-  @Override
-  public boolean isDeleted(int n) {
-    // Don't call ensureOpen() here (it could affect performance)
-    if (readers.size() > 0)
-      return readers.get(0).isDeleted(n);
-    return false;
   }
 
   // delete in all readers
@@ -461,7 +452,7 @@ public class ParallelReader extends IndexReader {
   @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     return reader == null? 0 : reader.docFreq(field, term);
   }
 

@@ -17,11 +17,12 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-public class Test03Distance extends TestCase {
+import org.apache.lucene.util.LuceneTestCase;
+
+public class Test03Distance extends LuceneTestCase {
   public static void main(String args[]) {
     TestRunner.run(new TestSuite(Test03Distance.class));
   }
@@ -57,7 +58,7 @@ public class Test03Distance extends TestCase {
     "a c e a b c"
   };
 
-  SingleFieldTestDb db1 = new SingleFieldTestDb(docs1, fieldName);
+  SingleFieldTestDb db1 = new SingleFieldTestDb(random, docs1, fieldName);
 
   private void distanceTst(String query, int[] expdnrs, SingleFieldTestDb db) throws Exception {
     BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db, fieldName, this,
@@ -178,7 +179,7 @@ public class Test03Distance extends TestCase {
     ""
   };
 
-  SingleFieldTestDb db2 = new SingleFieldTestDb(docs2, fieldName);
+  SingleFieldTestDb db2 = new SingleFieldTestDb(random, docs2, fieldName);
   
   public void distanceTest2(String query, int[] expdnrs) throws Exception {
     distanceTst(query, expdnrs, db2);
@@ -226,7 +227,7 @@ public class Test03Distance extends TestCase {
     ""
   };
 
-  SingleFieldTestDb db3 = new SingleFieldTestDb(docs3, fieldName);
+  SingleFieldTestDb db3 = new SingleFieldTestDb(random, docs3, fieldName);
 
   public void distanceTest3(String query, int[] expdnrs) throws Exception {
     distanceTst(query, expdnrs, db3);

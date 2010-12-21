@@ -27,6 +27,14 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.TermsIndexWriterBase;
+import org.apache.lucene.index.codecs.TermsIndexReaderBase;
+import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
+import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
+import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
+import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
 import org.apache.lucene.store.Directory;
 
 /** Default codec. 
@@ -39,16 +47,16 @@ public class StandardCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    StandardPostingsWriter docs = new StandardPostingsWriterImpl(state);
+    PostingsWriterBase docs = new StandardPostingsWriter(state);
 
     // TODO: should we make the terms index more easily
     // pluggable?  Ie so that this codec would record which
     // index impl was used, and switch on loading?
     // Or... you must make a new Codec for this?
-    StandardTermsIndexWriter indexWriter;
+    TermsIndexWriterBase indexWriter;
     boolean success = false;
     try {
-      indexWriter = new SimpleStandardTermsIndexWriter(state);
+      indexWriter = new FixedGapTermsIndexWriter(state);
       success = true;
     } finally {
       if (!success) {
@@ -58,7 +66,7 @@ public class StandardCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, docs, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, docs, BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
       return ret;
     } finally {
@@ -76,16 +84,17 @@ public class StandardCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    StandardPostingsReader postings = new StandardPostingsReaderImpl(state.dir, state.segmentInfo, state.readBufferSize);
-    StandardTermsIndexReader indexReader;
+    PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
+    TermsIndexReaderBase indexReader;
 
     boolean success = false;
     try {
-      indexReader = new SimpleStandardTermsIndexReader(state.dir,
+      indexReader = new FixedGapTermsIndexReader(state.dir,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator());
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
+                                                       state.codecId);
       success = true;
     } finally {
       if (!success) {
@@ -95,14 +104,15 @@ public class StandardCodec extends Codec {
 
     success = false;
     try {
-      FieldsProducer ret = new StandardTermsDictReader(indexReader,
+      FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
                                                        state.dir,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        postings,
                                                        state.readBufferSize,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       TERMS_CACHE_SIZE);
+                                                       TERMS_CACHE_SIZE,
+                                                       state.codecId);
       success = true;
       return ret;
     } finally {
@@ -122,17 +132,11 @@ public class StandardCodec extends Codec {
   /** Extension of prox postings file */
   static final String PROX_EXTENSION = "prx";
 
-  /** Extension of terms file */
-  static final String TERMS_EXTENSION = "tis";
-
-  /** Extension of terms index file */
-  static final String TERMS_INDEX_EXTENSION = "tii";
-
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-    StandardPostingsReaderImpl.files(dir, segmentInfo, files);
-    StandardTermsDictReader.files(dir, segmentInfo, files);
-    SimpleStandardTermsIndexReader.files(dir, segmentInfo, files);
+  public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException {
+    StandardPostingsReader.files(dir, segmentInfo, id, files);
+    PrefixCodedTermsReader.files(dir, segmentInfo, id, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
   }
 
   @Override
@@ -143,7 +147,7 @@ public class StandardCodec extends Codec {
   public static void getStandardExtensions(Set<String> extensions) {
     extensions.add(FREQ_EXTENSION);
     extensions.add(PROX_EXTENSION);
-    StandardTermsDictReader.getExtensions(extensions);
-    SimpleStandardTermsIndexReader.getIndexExtensions(extensions);
+    PrefixCodedTermsReader.getExtensions(extensions);
+    FixedGapTermsIndexReader.getIndexExtensions(extensions);
   }
 }

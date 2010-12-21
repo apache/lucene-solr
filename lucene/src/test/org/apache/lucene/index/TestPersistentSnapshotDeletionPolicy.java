@@ -26,17 +26,33 @@ import java.util.Map.Entry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPolicy {
-
   // Keep it a class member so that getDeletionPolicy can use it
-  private Directory snapshotDir = new MockRAMDirectory();
+  private Directory snapshotDir;
+  
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    snapshotDir = newDirectory();
+  }
+  
+  @After
+  @Override
+  public void tearDown() throws Exception {
+    snapshotDir.close();
+    super.tearDown();
+  }
   
   @Override
   protected SnapshotDeletionPolicy getDeletionPolicy() throws IOException {
-    IndexWriter.unlock(snapshotDir);
+    snapshotDir.close();
+    snapshotDir = newDirectory();
     return new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.CREATE,
         TEST_VERSION_CURRENT);
@@ -57,9 +73,9 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testExistingSnapshots() throws Exception {
     int numSnapshots = 3;
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random, psdp));
     prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
     writer.close();
     psdp.close();
@@ -68,11 +84,12 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     psdp = new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT);
-    new IndexWriter(dir, getConfig(psdp)).close();
+    new IndexWriter(dir, getConfig(random, psdp)).close();
 
     assertSnapshotExists(dir, psdp, numSnapshots);
     assertEquals(numSnapshots, psdp.getSnapshots().size());
     psdp.close();
+    dir.close();
   }
 
   @Test(expected=IllegalArgumentException.class)
@@ -83,7 +100,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testInvalidSnapshotInfos() throws Exception {
     // Add the correct number of documents (1), but without snapshot information
-    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(null));
+    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(random, null));
     writer.addDocument(new Document());
     writer.close();
     try {
@@ -98,7 +115,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testNoSnapshotInfos() throws Exception {
     // Initialize an empty index in snapshotDir - PSDP should initialize successfully.
-    new IndexWriter(snapshotDir, getConfig(null)).close();
+    new IndexWriter(snapshotDir, getConfig(random, null)).close();
     new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT).close();
@@ -107,7 +124,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test(expected=IllegalStateException.class)
   public void testTooManySnapshotInfos() throws Exception {
     // Write two documents to the snapshots directory - illegal.
-    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(null));
+    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(random, null));
     writer.addDocument(new Document());
     writer.addDocument(new Document());
     writer.close();
@@ -120,9 +137,9 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
 
   @Test
   public void testSnapshotRelease() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random, psdp));
     prepareIndexAndSnapshots(psdp, writer, 1, "snapshot");
     writer.close();
 
@@ -133,6 +150,36 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT);
     assertEquals("Should have no snapshots !", 0, psdp.getSnapshots().size());
+    psdp.close();
+    dir.close();
   }
 
+  @Test
+  public void testStaticRead() throws Exception {
+    // While PSDP is open, it keeps a lock on the snapshots directory and thus
+    // prevents reading the snapshots information. This test checks that the 
+    // static read method works.
+    int numSnapshots = 1;
+    Directory dir = newDirectory();
+    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
+    IndexWriter writer = new IndexWriter(dir, getConfig(random, psdp));
+    prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
+    writer.close();
+    dir.close();
+    
+    try {
+      // This should fail, since the snapshots directory is locked - we didn't close it !
+      new PersistentSnapshotDeletionPolicy(
+          new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
+          TEST_VERSION_CURRENT);
+     fail("should not have reached here - the snapshots directory should be locked!");
+    } catch (LockObtainFailedException e) {
+      // expected
+    }
+    
+    // Reading the snapshots info should succeed though
+    Map<String, String> snapshots = PersistentSnapshotDeletionPolicy.readSnapshotsInfo(snapshotDir);
+    assertEquals("expected " + numSnapshots + " snapshots, got " + snapshots.size(), numSnapshots, snapshots.size());
+  }
+  
 }

@@ -58,7 +58,7 @@ import org.apache.solr.common.SolrException;
  *
  * @see PatternTokenizer
  * @since solr1.2
- * @version $Id:$
+ * @version $Id$
  */
 public class PatternTokenizerFactory extends BaseTokenizerFactory 
 {

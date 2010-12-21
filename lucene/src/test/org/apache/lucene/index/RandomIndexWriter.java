@@ -24,9 +24,8 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
@@ -42,6 +41,7 @@ public class RandomIndexWriter implements Closeable {
   private final Random r;
   int docCount;
   int flushAt;
+  private boolean getReaderCalled;
 
   // Randomly calls Thread.yield so we mixup thread scheduling
   private static final class MockIndexWriter extends IndexWriter {
@@ -50,7 +50,10 @@ public class RandomIndexWriter implements Closeable {
 
     public MockIndexWriter(Random r,Directory dir, IndexWriterConfig conf) throws IOException {
       super(dir, conf);
-      this.r = r;
+      // must make a private random since our methods are
+      // called from different threads; else test failures may
+      // not be reproducible from the original seed
+      this.r = new Random(r.nextInt());
     }
 
     @Override
@@ -63,17 +66,17 @@ public class RandomIndexWriter implements Closeable {
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, new MockAnalyzer()));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer()));
   }
   
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
   public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, a));
   }
   
   /** create a RandomIndexWriter with a random config */
   public RandomIndexWriter(Random r, Directory dir, Version v, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, v, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, v, a));
   }
   
   /** create a RandomIndexWriter with the provided config */
@@ -81,15 +84,18 @@ public class RandomIndexWriter implements Closeable {
     this.r = r;
     w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
-    if (LuceneTestCaseJ4.VERBOSE) {
+    if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW config=" + w.getConfig());
-      System.out.println("codec default=" + CodecProvider.getDefaultCodec());
+      System.out.println("codec default=" + w.getConfig().getCodecProvider().getDefaultFieldCodec());
     }
   } 
 
   public void addDocument(Document doc) throws IOException {
     w.addDocument(doc);
     if (docCount++ == flushAt) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("RIW.addDocument: now doing a commit");
+      }
       w.commit();
       flushAt += _TestUtil.nextInt(r, 10, 1000);
     }
@@ -107,21 +113,32 @@ public class RandomIndexWriter implements Closeable {
     w.commit();
   }
   
+  public int numDocs() throws IOException {
+    return w.numDocs();
+  }
+
   public int maxDoc() {
     return w.maxDoc();
   }
 
+  public void deleteAll() throws IOException {
+    w.deleteAll();
+  }
+
   public IndexReader getReader() throws IOException {
+    getReaderCalled = true;
+    if (r.nextInt(4) == 2)
+      w.optimize();
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
-    if (!w.codecs.getWriter(null).name.equals("PreFlex") && r.nextBoolean()) {
-      if (LuceneTestCaseJ4.VERBOSE) {
+    if (!w.codecs.getDefaultFieldCodec().equals("PreFlex") && r.nextBoolean()) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
       return w.getReader();
     } else {
-      if (LuceneTestCaseJ4.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: open new reader");
       }
       w.commit();
@@ -130,7 +147,9 @@ public class RandomIndexWriter implements Closeable {
   }
 
   public void close() throws IOException {
-    if (r.nextInt(4) == 2) {
+    // if someone isn't using getReader() API, we want to be sure to
+    // maybeOptimize since presumably they might open a reader on the dir.
+    if (getReaderCalled == false && r.nextInt(4) == 2) {
       w.optimize();
     }
     w.close();

@@ -20,29 +20,25 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.sep.SepCodec;
+import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MultiCodecTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 
 // TODO: test multiple codecs here?
@@ -62,10 +58,7 @@ import org.apache.lucene.util.Version;
 //     goes to 1 before next one known to exist
 //   - skipTo(term)
 //   - skipTo(doc)
-
-public class TestCodecs extends MultiCodecTestCase {
-
-  private Random RANDOM;
+public class TestCodecs extends LuceneTestCase {
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 
   private final static int NUM_TEST_ITER = 20 * RANDOM_MULTIPLIER;
@@ -77,11 +70,11 @@ public class TestCodecs extends MultiCodecTestCase {
 
   // start is inclusive and end is exclusive
   public int nextInt(final int start, final int end) {
-    return start + RANDOM.nextInt(end-start);
+    return start + random.nextInt(end-start);
   }
 
   private int nextInt(final int lim) {
-    return RANDOM.nextInt(lim);
+    return random.nextInt(lim);
   }
 
   char[] getRandomText() {
@@ -262,13 +255,10 @@ public class TestCodecs extends MultiCodecTestCase {
   }
 
   public void testFixedPostings() throws Throwable {
-
-    RANDOM = this.newRandom();
-
     final int NUM_TERMS = 100;
     final TermData[] terms = new TermData[NUM_TERMS];
     for(int i=0;i<NUM_TERMS;i++) {
-      final int[] docs = new int[] {1};
+      final int[] docs = new int[] {i};
       final String text = Integer.toString(i, Character.MAX_RADIX);
       terms[i] = new TermData(text, docs, null);
     }
@@ -278,20 +268,31 @@ public class TestCodecs extends MultiCodecTestCase {
     final FieldData field = new FieldData("field", fieldInfos, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
 
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory();
     this.write(fieldInfos, dir, fields);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, CodecProvider.getDefault().getWriter(null));
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
     si.setHasProx(false);
 
-    final FieldsProducer reader = si.getCodec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 64, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
+    final FieldsProducer reader = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 64, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
     final FieldsEnum fieldsEnum = reader.iterator();
     assertNotNull(fieldsEnum.next());
     final TermsEnum termsEnum = fieldsEnum.terms();
+
+    DocsEnum docsEnum = null;
     for(int i=0;i<NUM_TERMS;i++) {
       final BytesRef term = termsEnum.next();
       assertNotNull(term);
       assertEquals(terms[i].text2, term.utf8ToString());
+
+      // do this twice to stress test the codec's reuse, ie,
+      // make sure it properly fully resets (rewinds) its
+      // internal state:
+      for(int iter=0;iter<2;iter++) {
+        docsEnum = termsEnum.docs(null,  docsEnum);
+        assertEquals(terms[i].docs[0], docsEnum.nextDoc());
+        assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
+      }
     }
     assertNull(termsEnum.next());
 
@@ -300,12 +301,11 @@ public class TestCodecs extends MultiCodecTestCase {
     }
 
     assertNull(fieldsEnum.next());
+    reader.close();
+    dir.close();
   }
 
   public void testRandomPostings() throws Throwable {
-
-    RANDOM = this.newRandom();
-
     final FieldInfos fieldInfos = new FieldInfos();
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
@@ -315,12 +315,12 @@ public class TestCodecs extends MultiCodecTestCase {
       fields[i] = new FieldData(fieldNames[i], fieldInfos, this.makeRandomTerms(omitTF, storePayloads), omitTF, storePayloads);
     }
 
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory();
 
     this.write(fieldInfos, dir, fields);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, CodecProvider.getDefault().getWriter(null));
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
 
-    final FieldsProducer terms = si.getCodec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
+    final FieldsProducer terms = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
     final Verify[] threads = new Verify[NUM_TEST_THREADS-1];
     for(int i=0;i<NUM_TEST_THREADS-1;i++) {
@@ -341,10 +341,10 @@ public class TestCodecs extends MultiCodecTestCase {
   }
 
   public void testSepPositionAfterMerge() throws IOException {
-    final Directory dir = new RAMDirectory();
-    final IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_31,
+    final Directory dir = newDirectory();
+    final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
       new MockAnalyzer());
-    config.setCodecProvider(new SepCodecs());
+    config.setCodecProvider(new MockSepCodecs());
     final IndexWriter writer = new IndexWriter(dir, config);
 
     try {
@@ -353,7 +353,7 @@ public class TestCodecs extends MultiCodecTestCase {
       pq.add(new Term("content", "ccc"));
 
       final Document doc = new Document();
-      doc.add(new Field("content", "aaa bbb ccc ddd", Store.NO, Field.Index.ANALYZED_NO_NORMS));
+      doc.add(newField("content", "aaa bbb ccc ddd", Store.NO, Field.Index.ANALYZED_NO_NORMS));
 
       // add document and force commit for creating a first segment
       writer.addDocument(doc);
@@ -397,15 +397,11 @@ public class TestCodecs extends MultiCodecTestCase {
     }
   }
 
-  public static class SepCodecs extends CodecProvider {
+  public static class MockSepCodecs extends CodecProvider {
 
-    protected SepCodecs() {
-      this.register(new SepCodec());
-    }
-
-    @Override
-    public Codec getWriter(final SegmentWriteState state) {
-      return this.lookup("Sep");
+    protected MockSepCodecs() {
+      this.register(new MockSepCodec());
+      this.setDefaultFieldCodec("MockSep");
     }
 
   }
@@ -610,11 +606,10 @@ public class TestCodecs extends MultiCodecTestCase {
   private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields) throws Throwable {
 
     final int termIndexInterval = this.nextInt(13, 27);
+    final SegmentCodecs codecInfo = SegmentCodecs.build(fieldInfos, CodecProvider.getDefault());
+    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo);
 
-    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval,
-                                                    CodecProvider.getDefault());
-
-    final FieldsConsumer consumer = state.codec.fieldsConsumer(state);
+    final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
     Arrays.sort(fields);
     for (final FieldData field : fields) {
       field.write(consumer);

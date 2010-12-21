@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.BooleanClause.Occur;
+
 /**
  * Expert: Common scoring functionality for different types of queries.
  *
@@ -39,12 +41,23 @@ import java.io.IOException;
  */
 public abstract class Scorer extends DocIdSetIterator {
   private final Similarity similarity;
+  protected final Weight weight;
 
   /** Constructs a Scorer.
    * @param similarity The <code>Similarity</code> implementation used by this scorer.
    */
   protected Scorer(Similarity similarity) {
+    this(similarity, null);
+  }
+  
+  /**
+   * Constructs a Scorer
+   * @param similarity The <code>Similarity</code> implementation used by this scorer.
+   * @param weight The scorers <code>Weight</code>
+   */
+  protected Scorer(Similarity similarity, Weight weight) {
     this.similarity = similarity;
+    this.weight = weight;
   }
 
   /** Returns the Similarity implementation used by this scorer. */
@@ -94,4 +107,92 @@ public abstract class Scorer extends DocIdSetIterator {
    */
   public abstract float score() throws IOException;
 
+  /** Returns number of matches for the current document.
+   *  This returns a float (not int) because
+   *  SloppyPhraseScorer discounts its freq according to how
+   *  "sloppy" the match was.
+   *
+   * @lucene.experimental */
+  public float freq() throws IOException {
+    throw new UnsupportedOperationException(this + " does not implement freq()");
+  }
+
+  /**
+   * A callback to gather information from a scorer and its sub-scorers. Each
+   * the top-level scorer as well as each of its sub-scorers are passed to
+   * either one of the visit methods depending on their boolean relationship in
+   * the query.
+   * @lucene.experimental
+   */
+  public static abstract class ScorerVisitor<P extends Query, C extends Query, S extends Scorer> {
+    /**
+     * Invoked for all optional scorer 
+     * 
+     * @param parent the parent query of the child query or <code>null</code> if the child is a top-level query
+     * @param child the query of the currently visited scorer
+     * @param scorer the current scorer
+     */
+    public void visitOptional(P parent, C child, S scorer) {}
+    
+    /**
+     * Invoked for all required scorer 
+     * 
+     * @param parent the parent query of the child query or <code>null</code> if the child is a top-level query
+     * @param child the query of the currently visited scorer
+     * @param scorer the current scorer
+     */
+    public void visitRequired(P parent, C child, S scorer) {}
+    
+    /**
+     * Invoked for all prohibited scorer 
+     * 
+     * @param parent the parent query of the child query or <code>null</code> if the child is a top-level query
+     * @param child the query of the currently visited scorer
+     * @param scorer the current scorer
+     */
+    public void visitProhibited(P parent, C child, S scorer) {}
+  } 
+
+  /**
+   * Expert: call this to gather details for all sub-scorers for this query.
+   * This can be used, in conjunction with a custom {@link Collector} to gather
+   * details about how each sub-query matched the current hit.
+   * 
+   * @param visitor a callback executed for each sub-scorer
+   * @lucene.experimental
+   */
+  public void visitScorers(ScorerVisitor<Query, Query, Scorer> visitor) {
+    visitSubScorers(null, Occur.MUST/*must id default*/, visitor);
+  }
+
+  /**
+   * {@link Scorer} subclasses should implement this method if the subclass
+   * itself contains multiple scorers to support gathering details for
+   * sub-scorers via {@link ScorerVisitor}
+   * <p>
+   * Note: this method will throw {@link UnsupportedOperationException} if no
+   * associated {@link Weight} instance is provided to
+   * {@link #Scorer(Similarity, Weight)}
+   * </p>
+   * 
+   * @lucene.experimental
+   */
+  protected void visitSubScorers(Query parent, Occur relationship,
+      ScorerVisitor<Query, Query, Scorer> visitor) {
+    if (weight == null)
+      throw new UnsupportedOperationException();
+
+    final Query q = weight.getQuery();
+    switch (relationship) {
+    case MUST:
+      visitor.visitRequired(parent, q, this);
+      break;
+    case MUST_NOT:
+      visitor.visitProhibited(parent, q, this);
+      break;
+    case SHOULD:
+      visitor.visitOptional(parent, q, this);
+      break;
+    }
+  }
 }

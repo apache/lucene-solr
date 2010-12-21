@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -34,8 +34,8 @@ public class PrefixTermsEnum extends FilteredTermsEnum {
 
   private final BytesRef prefixRef;
 
-  public PrefixTermsEnum(IndexReader reader, Term prefix) throws IOException {
-    super(reader, prefix.field());
+  public PrefixTermsEnum(TermsEnum tenum, Term prefix) throws IOException {
+    super(tenum);
     setInitialSeekTerm(prefixRef = prefix.bytes());
   }
 

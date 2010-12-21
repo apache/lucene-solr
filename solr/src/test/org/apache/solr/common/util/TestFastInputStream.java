@@ -17,6 +17,8 @@
 package org.apache.solr.common.util;
 
 import static org.junit.Assert.assertEquals;
+
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import java.io.*;
@@ -29,7 +31,7 @@ import java.util.zip.GZIPOutputStream;
  * @version $Id$
  * @see org.apache.solr.common.util.FastInputStream
  */
-public class TestFastInputStream {
+public class TestFastInputStream extends LuceneTestCase {
   @Test
   public void testgzip() throws Exception {
     ByteArrayOutputStream b = new ByteArrayOutputStream();

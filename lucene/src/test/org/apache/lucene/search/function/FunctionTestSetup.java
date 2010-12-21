@@ -22,11 +22,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -35,7 +35,7 @@ import org.junit.Ignore;
  * Setup for function tests
  */
 @Ignore
-public class FunctionTestSetup extends LuceneTestCaseJ4 {
+public class FunctionTestSetup extends LuceneTestCase {
 
   /**
    * Actual score computation order is slightly different than assumptios
@@ -83,19 +83,28 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
+    dir.close();
     dir = null;
     anlzr = null;
+    super.tearDown();
   }
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    if (VERBOSE) {
+      System.out.println("TEST: setUp");
+    }
     // prepare a small index with just a few documents.  
-    dir = new RAMDirectory();
+    dir = newDirectory();
     anlzr = new MockAnalyzer();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, anlzr));
+    IndexWriterConfig iwc = newIndexWriterConfig( TEST_VERSION_CURRENT, anlzr);
+    if (doMultiSegment) {
+      iwc.setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 7));
+    }
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir, iwc);
+    iw.w.setInfoStream(VERBOSE ? System.out : null);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];
@@ -107,32 +116,38 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
       addDoc(iw, i);
       done[i] = true;
       i = (i + 4) % N_DOCS;
-      if (doMultiSegment && remaining % 3 == 0) {
-        iw.commit();
-      }
       remaining --;
     }
+    if (!doMultiSegment) {
+      if (VERBOSE) {
+        System.out.println("TEST: setUp optimize");
+      }
+      iw.optimize();
+    }
     iw.close();
+    if (VERBOSE) {
+      System.out.println("TEST: setUp done close");
+    }
   }
 
-  private void addDoc(IndexWriter iw, int i) throws Exception {
+  private void addDoc(RandomIndexWriter iw, int i) throws Exception {
     Document d = new Document();
     Fieldable f;
     int scoreAndID = i + 1;
 
-    f = new Field(ID_FIELD, id2String(scoreAndID), Field.Store.YES, Field.Index.NOT_ANALYZED); // for debug purposes
+    f = newField(ID_FIELD, id2String(scoreAndID), Field.Store.YES, Field.Index.NOT_ANALYZED); // for debug purposes
     f.setOmitNorms(true);
     d.add(f);
 
-    f = new Field(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), Field.Store.NO, Field.Index.ANALYZED); // for regular search
+    f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), Field.Store.NO, Field.Index.ANALYZED); // for regular search
     f.setOmitNorms(true);
     d.add(f);
 
-    f = new Field(INT_FIELD, "" + scoreAndID, Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
+    f = newField(INT_FIELD, "" + scoreAndID, Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
     f.setOmitNorms(true);
     d.add(f);
 
-    f = new Field(FLOAT_FIELD, scoreAndID + ".000", Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
+    f = newField(FLOAT_FIELD, scoreAndID + ".000", Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
     f.setOmitNorms(true);
     d.add(f);
 

@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -36,19 +36,26 @@ import java.util.*;
 */
 
 public class TestIndexFileDeleter extends LuceneTestCase {
-  
+
   public void testDeleteLeftoverFiles() throws IOException {
+    MockDirectoryWrapper dir = newDirectory();
+    dir.setPreventDoubleWrite(false);
 
-    Directory dir = new RAMDirectory();
+    LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
+    mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMaxBufferedDocs(10));
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            setMaxBufferedDocs(10).
+            setMergePolicy(mergePolicy)
+    );
+
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);
     }
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    mergePolicy.setUseCompoundFile(false);
     for(;i<45;i++) {
       addDoc(writer, i);
     }
@@ -116,7 +123,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     copyFile(dir, "_2_1." + normSuffix, "_1_1.f" + contentFieldIndex);
 
     // Create a bogus separate del file for a
-    // segment that already has a separate del file: 
+    // segment that already has a separate del file:
     copyFile(dir, "_0_1.del", "_0_2.del");
 
     // Create a bogus separate del file for a
@@ -144,7 +151,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     // Open & close a writer: it should delete the above 4
     // files and nothing more:
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
     writer.close();
 
     String[] files2 = dir.listAll();
@@ -152,9 +159,9 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     Arrays.sort(files);
     Arrays.sort(files2);
-    
+
     Set<String> dif = difFiles(files, files2);
-    
+
     if (!Arrays.equals(files, files2)) {
       fail("IndexFileDeleter failed to delete unreferenced extra files: should have deleted " + (filesPre.length-files.length) + " files but only deleted " + (filesPre.length - files2.length) + "; expected files:\n    " + asString(files) + "\n  actual files:\n    " + asString(files2)+"\ndif: "+dif);
     }
@@ -164,7 +171,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Set<String> set1 = new HashSet<String>();
     Set<String> set2 = new HashSet<String>();
     Set<String> extra = new HashSet<String>();
-    
+
     for (int x=0; x < files1.length; x++) {
       set1.add(files1[x]);
     }
@@ -187,7 +194,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     }
     return extra;
   }
-  
+
   private String asString(String[] l) {
     String s = "";
     for(int i=0;i<l.length;i++) {
@@ -217,8 +224,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   private void addDoc(IndexWriter writer, int id) throws IOException
   {
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(new Field("id", Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("id", Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
   }
 }

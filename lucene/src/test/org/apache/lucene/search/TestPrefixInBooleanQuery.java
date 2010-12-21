@@ -23,7 +23,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 /**
  * https://issues.apache.org/jira/browse/LUCENE-1974
@@ -38,38 +38,38 @@ import org.apache.lucene.store.RAMDirectory;
 public class TestPrefixInBooleanQuery extends LuceneTestCase {
 
   private static final String FIELD = "name";
-  private RAMDirectory directory = new RAMDirectory();
+  private Directory directory;
   private IndexReader reader;
   private IndexSearcher searcher;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     for (int i = 0; i < 5137; ++i) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, "meaninglessnames", Field.Store.YES,
+      doc.add(newField(FIELD, "meaninglessnames", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     { 
       Document doc = new Document();
-      doc.add(new Field(FIELD, "tangfulin", Field.Store.YES,
+      doc.add(newField(FIELD, "tangfulin", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
 
     for (int i = 5138; i < 11377; ++i) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, "meaninglessnames", Field.Store.YES,
+      doc.add(newField(FIELD, "meaninglessnames", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(new Field(FIELD, "tangfulin", Field.Store.YES,
+      doc.add(newField(FIELD, "tangfulin", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }

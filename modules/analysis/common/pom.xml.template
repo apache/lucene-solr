@@ -27,7 +27,7 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-analyzers</artifactId>
+  <artifactId>lucene-analyzers-common</artifactId>
   <name>Lucene Analyzers</name>
   <version>@version@</version>
   <description>Additional Analyzers</description>

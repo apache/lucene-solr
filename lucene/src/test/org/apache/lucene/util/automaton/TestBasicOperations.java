@@ -20,8 +20,6 @@ package org.apache.lucene.util.automaton;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 
-import java.util.Random;
-
 public class TestBasicOperations extends LuceneTestCase { 
   /** Test optimization to concatenate() */
   public void testSingletonConcatenate() {
@@ -58,6 +56,13 @@ public class TestBasicOperations extends LuceneTestCase {
     assertTrue(BasicOperations.sameLanguage(other, concat2));
   }
   
+  /** Test concatenation with empty language returns empty */
+  public void testEmptyLanguageConcatenate() {
+    Automaton a = BasicAutomata.makeString("a");
+    Automaton concat = BasicOperations.concatenate(a, BasicAutomata.makeEmpty());
+    assertTrue(BasicOperations.isEmpty(concat));
+  }
+  
   /** Test optimization to concatenate() with empty String to an NFA */
   public void testEmptySingletonNFAConcatenate() {
     Automaton singleton = BasicAutomata.makeString("");
@@ -81,16 +86,15 @@ public class TestBasicOperations extends LuceneTestCase {
     
     singleton = BasicAutomata.makeString("\ud801\udc1c");
     expandedSingleton = singleton.cloneExpanded();
-    //assertEquals(singleton, expandedSingleton);
+    assertTrue(BasicOperations.sameLanguage(singleton, expandedSingleton));
   }
 
   public void testGetRandomAcceptedString() throws Throwable {
-    final Random r = newRandom();
     final int ITER1 = 100 * RANDOM_MULTIPLIER;
     final int ITER2 = 100 * RANDOM_MULTIPLIER;
     for(int i=0;i<ITER1;i++) {
 
-      final RegExp re = AutomatonTestUtil.randomRegexp(r);
+      final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE);
       final Automaton a = re.toAutomaton();
       assertFalse(BasicOperations.isEmpty(a));
 
@@ -98,7 +102,7 @@ public class TestBasicOperations extends LuceneTestCase {
       for(int j=0;j<ITER2;j++) {
         int[] acc = null;
         try {
-          acc = rx.getRandomAcceptedString(r);
+          acc = rx.getRandomAcceptedString(random);
           final String s = UnicodeUtil.newString(acc, 0, acc.length);
           assertTrue(BasicOperations.run(a, s));
         } catch (Throwable t) {

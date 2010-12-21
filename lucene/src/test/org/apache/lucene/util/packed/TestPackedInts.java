@@ -26,9 +26,6 @@ import java.util.Random;
 import java.io.IOException;
 
 public class TestPackedInts extends LuceneTestCase {
-
-  private Random rnd;
-
   public void testBitsRequired() throws Exception {
     assertEquals(61, PackedInts.bitsRequired((long)Math.pow(2, 61)-1));
     assertEquals(61, PackedInts.bitsRequired(0x1FFFFFFFFFFFFFFFL));
@@ -50,13 +47,12 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testPackedInts() throws IOException {
-    rnd = newRandom();
     int num = 5 * RANDOM_MULTIPLIER;
     for (int iter = 0; iter < num; iter++) {
       long ceil = 2;
       for(int nbits=1;nbits<63;nbits++) {
-        final int valueCount = 100+rnd.nextInt(500);
-        final Directory d = new MockRAMDirectory();
+        final int valueCount = 100+random.nextInt(500);
+        final Directory d = newDirectory();
 
         IndexOutput out = d.createOutput("out.bin");
         PackedInts.Writer w = PackedInts.getWriter(
@@ -64,7 +60,7 @@ public class TestPackedInts extends LuceneTestCase {
 
         final long[] values = new long[valueCount];
         for(int i=0;i<valueCount;i++) {
-          long v = rnd.nextLong() % ceil;
+          long v = random.nextLong() % ceil;
           if (v < 0) {
             v = -v;
           }
@@ -74,27 +70,53 @@ public class TestPackedInts extends LuceneTestCase {
         w.finish();
         final long fp = out.getFilePointer();
         out.close();
-
-        IndexInput in = d.openInput("out.bin");
-        PackedInts.Reader r = PackedInts.getReader(in);
-        assertEquals(fp, in.getFilePointer());
-        for(int i=0;i<valueCount;i++) {
-          assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
-                  + valueCount + " nbits=" + nbits + " for "
-                  + r.getClass().getSimpleName(), values[i], r.get(i));
+        {// test reader
+          IndexInput in = d.openInput("out.bin");
+          PackedInts.Reader r = PackedInts.getReader(in);
+          assertEquals(fp, in.getFilePointer());
+          for(int i=0;i<valueCount;i++) {
+            assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
+                    + valueCount + " nbits=" + nbits + " for "
+                    + r.getClass().getSimpleName(), values[i], r.get(i));
+          }
+          in.close();
         }
-        in.close();
-
-        in = d.openInput("out.bin");
-        PackedInts.ReaderIterator r2 = PackedInts.getReaderIterator(in);
-        for(int i=0;i<valueCount;i++) {
-          assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
-                  + valueCount + " nbits=" + nbits + " for "
-                  + r.getClass().getSimpleName(), values[i], r2.next());
+        { // test reader iterator next
+          IndexInput in = d.openInput("out.bin");
+          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in);
+          for(int i=0;i<valueCount;i++) {
+            assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
+                    + valueCount + " nbits=" + nbits + " for "
+                    + r.getClass().getSimpleName(), values[i], r.next());
+          }
+          assertEquals(fp, in.getFilePointer());
+          in.close();
         }
-        assertEquals(fp, in.getFilePointer());
-        in.close();
+        { // test reader iterator next vs. advance
+          IndexInput in = d.openInput("out.bin");
+          PackedInts.ReaderIterator intsEnum = PackedInts.getReaderIterator(in);
+          for (int i = 0; i < valueCount; i += 
+            1 + ((valueCount - i) <= 20 ? random.nextInt(valueCount - i)
+              : random.nextInt(20))) {
+            final String msg = "index=" + i + " ceil=" + ceil + " valueCount="
+                + valueCount + " nbits=" + nbits + " for "
+                + intsEnum.getClass().getSimpleName();
+            if (i - intsEnum.ord() == 1 && random.nextBoolean()) {
+              assertEquals(msg, values[i], intsEnum.next());
+            } else {
+              assertEquals(msg, values[i], intsEnum.advance(i));
+            }
+            assertEquals(msg, i, intsEnum.ord());
+          }
+          if (intsEnum.ord() < valueCount - 1)
+            assertEquals(values[valueCount - 1], intsEnum
+                .advance(valueCount - 1));
+          assertEquals(valueCount - 1, intsEnum.ord());
+          assertEquals(fp, in.getFilePointer());
+          in.close();
+        }
         ceil *= 2;
+        d.close();
       }
     }
   }
@@ -118,13 +140,11 @@ public class TestPackedInts extends LuceneTestCase {
     final int MIN_BITS_PER_VALUE = 1;
     final int MAX_BITS_PER_VALUE = 64;
 
-    rnd = newRandom();
-
     for (int valueCount: VALUE_COUNTS) {
       for (int bitsPerValue = MIN_BITS_PER_VALUE ;
            bitsPerValue <= MAX_BITS_PER_VALUE ;
            bitsPerValue++) {
-        assertRandomEquality(valueCount, bitsPerValue, rnd.nextLong());
+        assertRandomEquality(valueCount, bitsPerValue, random.nextLong());
       }
     }
   }
@@ -208,7 +228,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testSingleValue() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory();
     IndexOutput out = dir.createOutput("out");
     PackedInts.Writer w = PackedInts.getWriter(out, 1, 8);
     w.add(17);
@@ -230,5 +250,27 @@ public class TestPackedInts extends LuceneTestCase {
     assertEquals("The value #24 should be correct", 31, mutable.get(24));
     mutable.set(4, 16);
     assertEquals("The value #24 should remain unchanged", 31, mutable.get(24));
+  }
+
+  /*
+    Check if the structures properly handle the case where
+    index * bitsPerValue > Integer.MAX_VALUE
+    
+    NOTE: this test allocates 256 MB
+   */
+  public void testIntOverflow() {
+    int INDEX = (int)Math.pow(2, 30)+1;
+    int BITS = 2;
+
+    Packed32 p32 = new Packed32(INDEX, BITS);
+    p32.set(INDEX-1, 1);
+    assertEquals("The value at position " + (INDEX-1)
+        + " should be correct for Packed32", 1, p32.get(INDEX-1));
+    p32 = null; // To free the 256MB used
+
+    Packed64 p64 = new Packed64(INDEX, BITS);
+    p64.set(INDEX-1, 1);
+    assertEquals("The value at position " + (INDEX-1)
+        + " should be correct for Packed64", 1, p64.get(INDEX-1));
   }
 }

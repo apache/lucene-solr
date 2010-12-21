@@ -28,7 +28,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -199,14 +201,17 @@ public class FuzzyLikeThisQuery extends Query
                   ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
                   float minScore=0;
                   Term startTerm=internSavingTemplateTerm.createTerm(term);
-                  FuzzyTermsEnum fe = new FuzzyTermsEnum(reader, startTerm, f.minSimilarity, f.prefixLength);
+                  AttributeSource atts = new AttributeSource();
+                  MaxNonCompetitiveBoostAttribute maxBoostAtt =
+                    atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+                  FuzzyTermsEnum fe = new FuzzyTermsEnum(MultiFields.getTerms(reader, startTerm.field()).iterator(), atts, startTerm, f.minSimilarity, f.prefixLength);
                   //store the df so all variants use same idf
                   int df = reader.docFreq(startTerm);
                   int numVariants=0;
                   int totalVariantDocFreqs=0;
                   BytesRef possibleMatch;
-                  MultiTermQuery.BoostAttribute boostAtt =
-                    fe.attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+                  BoostAttribute boostAtt =
+                    fe.attributes().addAttribute(BoostAttribute.class);
                   while ((possibleMatch = fe.next()) != null) {
                       if (possibleMatch!=null) {
                         numVariants++;
@@ -217,6 +222,7 @@ public class FuzzyLikeThisQuery extends Query
                           variantsQ.insertWithOverflow(st);
                           minScore = variantsQ.top().score; // maintain minScore
                         }
+                        maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
                       }
                     }
 

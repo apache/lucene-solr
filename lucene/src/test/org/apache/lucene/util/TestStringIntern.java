@@ -21,12 +21,11 @@ import java.util.Random;
 public class TestStringIntern extends LuceneTestCase {
   String[] testStrings;
   String[] internedStrings;
-  Random r = newRandom();
 
   private String randStr(int len) {
     char[] arr = new char[len];
     for (int i=0; i<len; i++) {
-      arr[i] = (char)('a' + r.nextInt(26));
+      arr[i] = (char)('a' + random.nextInt(26));
     }
     return new String(arr);
   }
@@ -35,7 +34,7 @@ public class TestStringIntern extends LuceneTestCase {
     testStrings = new String[sz];
     internedStrings = new String[sz];
     for (int i=0; i<sz; i++) {
-      testStrings[i] = randStr(r.nextInt(8)+3);
+      testStrings[i] = randStr(random.nextInt(8)+3);
     }
   }
 

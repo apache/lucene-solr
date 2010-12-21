@@ -37,7 +37,7 @@ public class StringDistanceFunction extends ValueSource {
     return new DocValues() {
 
       public float floatVal(int doc) {
-        return (float) dist.getDistance(str1DV.strVal(doc), str2DV.strVal(doc));
+        return dist.getDistance(str1DV.strVal(doc), str2DV.strVal(doc));
       }
 
       public int intVal(int doc) {

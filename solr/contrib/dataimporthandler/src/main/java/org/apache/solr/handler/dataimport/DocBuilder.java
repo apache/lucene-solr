@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.*;
 
 /**
- * <p> DocBuilder is responsible for creating Solr documents out of the given configuration. It also maintains
- * statistics information. It depends on the EntityProcessor implementations to fetch data. </p>
+ * <p> {@link DocBuilder} is responsible for creating Solr documents out of the given configuration. It also maintains
+ * statistics information. It depends on the {@link EntityProcessor} implementations to fetch data. </p>
  * <p/>
  * <b>This API is experimental and subject to change</b>
  *
@@ -205,6 +205,11 @@ public class DocBuilder {
         // Finished operation normally, commit now
         finish(lastIndexTimeProps);
       }
+      
+      if (writer != null) {
+        writer.finish();
+      }
+      
       if (document.onImportEnd != null) {
         invokeEventListener(document.onImportEnd);
       }
@@ -309,9 +314,10 @@ public class DocBuilder {
     Iterator<Map<String, Object>> iter = deletedKeys.iterator();
     while (iter.hasNext()) {
       Map<String, Object> map = iter.next();
-      Object key = map.get(root.getPk());
+      String keyName = root.isDocRoot ? root.getPk() : root.getSchemaPk();
+      Object key = map.get(keyName);
       if(key == null) {
-        LOG.warn("no key was available for deleteted pk query");
+        LOG.warn("no key was available for deleteted pk query. keyName = " + keyName);
         continue;
       }
       writer.deleteDoc(key);
@@ -602,7 +608,8 @@ public class DocBuilder {
           if (entity.entities != null) {
             vr.addNamespace(entity.name, arow);
             for (DataConfig.Entity child : entity.entities) {
-              buildDocument(vr, doc, null, child, false, ctx);
+              buildDocument(vr, doc,
+                  child.isDocRoot ? pk : null, child, false, ctx);
             }
             vr.removeNamespace(entity.name);
           }
@@ -841,7 +848,7 @@ public class DocBuilder {
     }
     // identifying the modified rows for this entity
 
-    Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
+    Map<String, Map<String, Object>> deltaSet = new HashMap<String, Map<String, Object>>();
     LOG.info("Running ModifiedRowKey() for Entity: " + entity.name);
     //get the modified rows in this entity
     while (true) {
@@ -850,7 +857,7 @@ public class DocBuilder {
       if (row == null)
         break;
 
-      deltaSet.add(row);
+      deltaSet.put(row.get(entity.getPk()).toString(), row);
       importStatistics.rowsCount.incrementAndGet();
       // check for abort
       if (stop.get())
@@ -858,33 +865,29 @@ public class DocBuilder {
     }
     //get the deleted rows for this entity
     Set<Map<String, Object>> deletedSet = new HashSet<Map<String, Object>>();
-    Set<Map<String, Object>> deltaRemoveSet = new HashSet<Map<String, Object>>();
     while (true) {
       Map<String, Object> row = entityProcessor.nextDeletedRowKey();
       if (row == null)
         break;
 
-      //Check to see if this delete is in the current delta set
-      for (Map<String, Object> modifiedRow : deltaSet) {
-        if (modifiedRow.get(entity.getPk()).equals(row.get(entity.getPk()))) {
-          deltaRemoveSet.add(modifiedRow);
-        }
+      deletedSet.add(row);
+      
+      // Remove deleted rows from the delta rows
+      String deletedRowPk = row.get(entity.getPk()).toString();
+      if (deltaSet.containsKey(deletedRowPk)) {
+        deltaSet.remove(deletedRowPk);
       }
 
-      deletedSet.add(row);
       importStatistics.rowsCount.incrementAndGet();
       // check for abort
       if (stop.get())
         return new HashSet();
     }
 
-    //asymmetric Set difference
-    deltaSet.removeAll(deltaRemoveSet);
-
     LOG.info("Completed ModifiedRowKey for Entity: " + entity.name + " rows obtained : " + deltaSet.size());
     LOG.info("Completed DeletedRowKey for Entity: " + entity.name + " rows obtained : " + deletedSet.size());
 
-    myModifiedPks.addAll(deltaSet);
+    myModifiedPks.addAll(deltaSet.values());
     Set<Map<String, Object>> parentKeyList = new HashSet<Map<String, Object>>();
     //all that we have captured is useless (in a sub-entity) if no rows in the parent is modified because of these
     //propogate up the changes in the chain
@@ -909,8 +912,9 @@ public class DocBuilder {
     if (entity.isDocRoot)
       deletedRows.addAll(deletedSet);
 
-    return entity.isDocRoot ? myModifiedPks : new HashSet<Map<String, Object>>(
-            parentKeyList);
+    // Do not use entity.isDocRoot here because one of descendant entities may set rootEntity="true"
+    return entity.parentEntity == null ?
+        myModifiedPks : new HashSet<Map<String, Object>>(parentKeyList);
   }
 
   private void getModifiedParentRows(VariableResolverImpl resolver,

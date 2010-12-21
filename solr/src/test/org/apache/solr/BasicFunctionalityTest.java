@@ -31,6 +31,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.AppendedSolrParams;
@@ -121,7 +122,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     SolrIndexWriter writer = new SolrIndexWriter("testWriter",core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(), core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
-    assertEquals("Mergefactor was not picked up", writer.getMergeFactor(), 8);
+    assertEquals("Mergefactor was not picked up", ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
     writer.close();
 
     lrf.args.put("version","2.0");
@@ -237,12 +238,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
       };
     handler.init(new NamedList());
     SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = req();
     h.getCore().execute(handler, 
-                        new LocalSolrQueryRequest(h.getCore(),
-                                                  new NamedList()),
+                        req,
                         rsp);
     assertNotNull("should have found an exception", rsp.getException());
-                        
+    req.close();                    
   }
 
   @Test
@@ -271,7 +272,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ(req("text:hello")
             ,"//*[@numFound='2']"
             );
-    String resp = h.query(lrf.makeRequest("q", "text:hello", "debugQuery", "true"));
+    String resp = h.query(lrf.makeRequest("q", "text:hello", CommonParams.DEBUG_QUERY, "true"));
     //System.out.println(resp);
     // second doc ranked first
     assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
@@ -290,7 +291,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ(req("text:hello"),
             "//*[@numFound='2']"
             );
-    String resp = h.query(lrf.makeRequest("q", "text:hello", "debugQuery", "true"));
+    String resp = h.query(lrf.makeRequest("q", "text:hello", CommonParams.DEBUG_QUERY, "true"));
     //System.out.println(resp);
     // second doc ranked first
     assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
@@ -303,11 +304,13 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     rsp.add("\"quoted\"", "\"value\"");
 
     StringWriter writer = new StringWriter(32000);
-    XMLWriter.writeResponse(writer,req("foo"),rsp);
+    SolrQueryRequest req = req("foo");
+    XMLWriter.writeResponse(writer,req,rsp);
 
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     builder.parse(new ByteArrayInputStream
                   (writer.toString().getBytes("UTF-8")));
+    req.close();
   }
 
   @Test
@@ -327,6 +330,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(2, arrayParams.length);
     assertEquals("array", arrayParams[0]);
     assertEquals("value", arrayParams[1]);
+    req.close();
   }
 
   @Test
@@ -442,7 +446,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals("SSS", p.get("ss"));
     assertEquals("XXX", p.get("xx"));
 
-    
+    req.close();
   }
 
   @Test
@@ -566,6 +570,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // ensure field is not lazy
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
     assertTrue( d.getFieldable("title") instanceof Field );
+    req.close();
   }
 
   @Test
@@ -588,6 +593,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // ensure field is lazy
     assertTrue( !( d.getFieldable("test_hlt") instanceof Field ) );
     assertTrue( d.getFieldable("title") instanceof Field );
+    req.close();
   } 
             
 

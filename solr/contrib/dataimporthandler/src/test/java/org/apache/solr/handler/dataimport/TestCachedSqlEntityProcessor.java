@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -33,25 +31,23 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
+public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void withoutWhereClause() {
     List fields = new ArrayList();
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "id"));
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "desc"));
+    fields.add(createMap("column", "id"));
+    fields.add(createMap("column", "desc"));
     String q = "select * from x where id=${x.id}";
-    Map<String, String> entityAttrs = AbstractDataImportHandlerTestCase.createMap(
-            "query", q);
+    Map<String, String> entityAttrs = createMap("query", q);
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
 
-    vr.addNamespace("x", AbstractDataImportHandlerTestCase.createMap("id", 1));
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
+    vr.addNamespace("x", createMap("id", 1));
+    Context context = getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 1, "desc", "one"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 1, "desc",
-            "another one"));
+    rows.add(createMap("id", 1, "desc", "one"));
+    rows.add(createMap("id", 1, "desc", "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
     EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
     csep.init(context);
@@ -62,7 +58,7 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(2, rows.size());
+    assertEquals(2, rows.size());
     ds.close();
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
@@ -72,28 +68,27 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(2, rows.size());
-    Assert.assertEquals(2, rows.get(0).size());
-    Assert.assertEquals(2, rows.get(1).size());
+    assertEquals(2, rows.size());
+    assertEquals(2, rows.get(0).size());
+    assertEquals(2, rows.get(1).size());
   }
 
   @Test
   public void withoutWhereClauseWithTransformers() {
     List fields = new ArrayList();
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "id"));
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "desc"));
+    fields.add(createMap("column", "id"));
+    fields.add(createMap("column", "desc"));
     String q = "select * from x where id=${x.id}";
-    Map<String, String> entityAttrs = AbstractDataImportHandlerTestCase.createMap(
+    Map<String, String> entityAttrs = createMap(
             "query", q, "transformer", UppercaseTransformer.class.getName());
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
 
-    vr.addNamespace("x", AbstractDataImportHandlerTestCase.createMap("id", 1));
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
+    vr.addNamespace("x", createMap("id", 1));
+    Context context = getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 1, "desc", "one"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 1, "desc",
-            "another one"));
+    rows.add(createMap("id", 1, "desc", "one"));
+    rows.add(createMap("id", 1, "desc", "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
     EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
     csep.init(context);
@@ -104,7 +99,7 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(2, rows.size());
+    assertEquals(2, rows.size());
     ds.close();
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
@@ -113,30 +108,29 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
       if (r == null)
         break;
       rows.add(r);
-      Assert.assertEquals(r.get("desc").toString().toUpperCase(Locale.ENGLISH), r.get("desc"));
+      assertEquals(r.get("desc").toString().toUpperCase(Locale.ENGLISH), r.get("desc"));
     }
-    Assert.assertEquals(2, rows.size());
-    Assert.assertEquals(2, rows.get(0).size());
-    Assert.assertEquals(2, rows.get(1).size());
+    assertEquals(2, rows.size());
+    assertEquals(2, rows.get(0).size());
+    assertEquals(2, rows.get(1).size());
   }
 
   @Test
   public void withoutWhereClauseWithMultiRowTransformer() {
     List fields = new ArrayList();
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "id"));
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "desc"));
+    fields.add(createMap("column", "id"));
+    fields.add(createMap("column", "desc"));
     String q = "select * from x where id=${x.id}";
-    Map<String, String> entityAttrs = AbstractDataImportHandlerTestCase.createMap(
+    Map<String, String> entityAttrs = createMap(
             "query", q, "transformer", DoubleTransformer.class.getName());
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
 
-    vr.addNamespace("x", AbstractDataImportHandlerTestCase.createMap("id", 1));
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
+    vr.addNamespace("x", createMap("id", 1));
+    Context context = getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 1, "desc", "one"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 1, "desc",
-            "another one"));
+    rows.add(createMap("id", 1, "desc", "one"));
+    rows.add(createMap("id", 1, "desc", "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
     EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
     csep.init(context);
@@ -147,7 +141,7 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(4, rows.size());
+    assertEquals(4, rows.size());
     ds.close();
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
@@ -157,9 +151,9 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(4, rows.size());
-    Assert.assertEquals(2, rows.get(0).size());
-    Assert.assertEquals(2, rows.get(1).size());
+    assertEquals(4, rows.size());
+    assertEquals(2, rows.get(0).size());
+    assertEquals(2, rows.get(1).size());
   }
 
   public static class DoubleTransformer extends Transformer {
@@ -190,43 +184,42 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
   @Test
   public void withWhereClause() {
     List fields = new ArrayList();
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "id"));
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "desc"));
+    fields.add(createMap("column", "id"));
+    fields.add(createMap("column", "desc"));
     String q = "select * from x";
-    Map<String, String> entityAttrs = AbstractDataImportHandlerTestCase.createMap(
+    Map<String, String> entityAttrs = createMap(
             "query", q, EntityProcessorBase.CACHE_KEY,"id", EntityProcessorBase.CACHE_LOOKUP ,"x.id");
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
-    Map xNamespace = AbstractDataImportHandlerTestCase.createMap("id", 0);
+    Map xNamespace = createMap("id", 0);
     vr.addNamespace("x", xNamespace);
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
+    Context context = getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     doWhereTest(q, context, ds, xNamespace);
   }
 
   @Test
   public void withKeyAndLookup() {
     List fields = new ArrayList();
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "id"));
-    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "desc"));
+    fields.add(createMap("column", "id"));
+    fields.add(createMap("column", "desc"));
     String q = "select * from x";
-    Map<String, String> entityAttrs = AbstractDataImportHandlerTestCase.createMap("query", q, "where", "id=x.id");
+    Map<String, String> entityAttrs = createMap("query", q, "where", "id=x.id");
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
-    Map xNamespace = AbstractDataImportHandlerTestCase.createMap("id", 0);
+    Map xNamespace = createMap("id", 0);
     vr.addNamespace("x", xNamespace);
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
+    Context context = getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     doWhereTest(q, context, ds, xNamespace);
   }
 
   private void doWhereTest(String q, Context context, MockDataSource ds, Map xNamespace) {
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 1, "desc", "one"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 2, "desc", "two"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 2, "desc",
-            "another two"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 3, "desc", "three"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 3, "desc", "another three"));
-    rows.add(AbstractDataImportHandlerTestCase.createMap("id", 3, "desc", "another another three"));
+    rows.add(createMap("id", 1, "desc", "one"));
+    rows.add(createMap("id", 2, "desc", "two"));
+    rows.add(createMap("id", 2, "desc", "another two"));
+    rows.add(createMap("id", 3, "desc", "three"));
+    rows.add(createMap("id", 3, "desc", "another three"));
+    rows.add(createMap("id", 3, "desc", "another another three"));
     MockDataSource.setIterator(q, rows.iterator());
     EntityProcessor csep = new EntityProcessorWrapper(new CachedSqlEntityProcessor(), null);
     csep.init(context);
@@ -237,7 +230,7 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(0, rows.size());
+    assertEquals(0, rows.size());
     ds.close();
 
     csep.init(context);
@@ -249,7 +242,7 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(2, rows.size());
+    assertEquals(2, rows.size());
 
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
@@ -260,6 +253,6 @@ public class TestCachedSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       rows.add(r);
     }
-    Assert.assertEquals(3, rows.size());
+    assertEquals(3, rows.size());
   }
 }

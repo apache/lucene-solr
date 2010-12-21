@@ -37,7 +37,7 @@ public class InstantiatedTerm
     }
   };
 
-  public static final Comparator termComparator = new Comparator() {
+  public static final Comparator<Object> termComparator = new Comparator<Object>() {
     public int compare(Object o, Object o1) {
       return ((InstantiatedTerm)o).getTerm().compareTo((Term)o1);
     }

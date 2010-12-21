@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -29,12 +30,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -42,10 +42,6 @@ import java.util.Set;
  */
 public class TestMultiSearcher extends LuceneTestCase
 {
-    public TestMultiSearcher(String name)
-    {
-        super(name);
-    }
 
 	/**
 	 * ReturnS a new instance of the concrete MultiSearcher class
@@ -57,33 +53,33 @@ public class TestMultiSearcher extends LuceneTestCase
 
     public void testEmptyIndex() throws Exception {
         // creating two directories for indices
-        Directory indexStoreA = new MockRAMDirectory();
-        Directory indexStoreB = new MockRAMDirectory();
+        Directory indexStoreA = newDirectory();
+        Directory indexStoreB = newDirectory();
 
         // creating a document to store
         Document lDoc = new Document();
-        lDoc.add(new Field("fulltext", "Once upon a time.....", Field.Store.YES, Field.Index.ANALYZED));
-        lDoc.add(new Field("id", "doc1", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        lDoc.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc.add(newField("fulltext", "Once upon a time.....", Field.Store.YES, Field.Index.ANALYZED));
+        lDoc.add(newField("id", "doc1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc.add(newField("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating a document to store
         Document lDoc2 = new Document();
-        lDoc2.add(new Field("fulltext", "in a galaxy far far away.....",
+        lDoc2.add(newField("fulltext", "in a galaxy far far away.....",
             Field.Store.YES, Field.Index.ANALYZED));
-        lDoc2.add(new Field("id", "doc2", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        lDoc2.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc2.add(newField("id", "doc2", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc2.add(newField("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating a document to store
         Document lDoc3 = new Document();
-        lDoc3.add(new Field("fulltext", "a bizarre bug manifested itself....",
+        lDoc3.add(newField("fulltext", "a bizarre bug manifested itself....",
             Field.Store.YES, Field.Index.ANALYZED));
-        lDoc3.add(new Field("id", "doc3", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc3.add(newField("id", "doc3", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc3.add(newField("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating an index writer for the first index
-        IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
         // creating an index writer for the second index, but writing nothing
-        IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
         //--------------------------------------------------------------------
         // scenario 1
@@ -127,7 +123,7 @@ public class TestMultiSearcher extends LuceneTestCase
         //--------------------------------------------------------------------
 
         // adding one document to the empty index
-        writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+        writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
             TEST_VERSION_CURRENT, 
                 new MockAnalyzer())
                 .setOpenMode(OpenMode.APPEND));
@@ -204,23 +200,23 @@ public class TestMultiSearcher extends LuceneTestCase
         indexStoreB.close();
     }
     
-    private static Document createDocument(String contents1, String contents2) {
+    private Document createDocument(String contents1, String contents2) {
         Document document=new Document();
         
-        document.add(new Field("contents", contents1, Field.Store.YES, Field.Index.NOT_ANALYZED));
-      document.add(new Field("other", "other contents", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        document.add(newField("contents", contents1, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      document.add(newField("other", "other contents", Field.Store.YES, Field.Index.NOT_ANALYZED));
         if (contents2!=null) {
-            document.add(new Field("contents", contents2, Field.Store.YES, Field.Index.NOT_ANALYZED));
+            document.add(newField("contents", contents2, Field.Store.YES, Field.Index.NOT_ANALYZED));
         }
         
         return document;
     }
     
-    private static void initIndex(Directory directory, int nDocs, boolean create, String contents2) throws IOException {
+    private void initIndex(Random random, Directory directory, int nDocs, boolean create, String contents2) throws IOException {
         IndexWriter indexWriter=null;
         
         try {
-          indexWriter = new IndexWriter(directory, new IndexWriterConfig(
+          indexWriter = new IndexWriter(directory, LuceneTestCase.newIndexWriterConfig(random,
               TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
                   create ? OpenMode.CREATE : OpenMode.APPEND));
             
@@ -235,16 +231,16 @@ public class TestMultiSearcher extends LuceneTestCase
     }
 
   public void testFieldSelector() throws Exception {
-    RAMDirectory ramDirectory1, ramDirectory2;
+    Directory ramDirectory1, ramDirectory2;
     IndexSearcher indexSearcher1, indexSearcher2;
 
-    ramDirectory1 = new RAMDirectory();
-    ramDirectory2 = new RAMDirectory();
+    ramDirectory1 = newDirectory();
+    ramDirectory2 = newDirectory();
     Query query = new TermQuery(new Term("contents", "doc0"));
 
     // Now put the documents in a different index
-    initIndex(ramDirectory1, 10, true, null); // documents with a single token "doc0", "doc1", etc...
-    initIndex(ramDirectory2, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+    initIndex(random, ramDirectory1, 10, true, null); // documents with a single token "doc0", "doc1", etc...
+    initIndex(random, ramDirectory2, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
 
     indexSearcher1 = new IndexSearcher(ramDirectory1, true);
     indexSearcher2 = new IndexSearcher(ramDirectory2, true);
@@ -277,6 +273,11 @@ public class TestMultiSearcher extends LuceneTestCase
     assertTrue("value is null and it shouldn't be", value != null);    
     value = document.get("other");
     assertTrue("value is not null and it should be", value == null);
+    indexSearcher1.close();
+    indexSearcher2.close();
+    ramDirectory1.close();
+    ramDirectory2.close();
+    searcher.close();
   }
 
   /* uncomment this when the highest score is always normalized to 1.0, even when it was < 1.0
@@ -292,15 +293,15 @@ public class TestMultiSearcher extends LuceneTestCase
     private void testNormalization(int nDocs, String message) throws IOException {
         Query query=new TermQuery(new Term("contents", "doc0"));
         
-        RAMDirectory ramDirectory1;
+        Directory ramDirectory1;
         IndexSearcher indexSearcher1;
         ScoreDoc[] hits;
         
-        ramDirectory1=new MockRAMDirectory();
+        ramDirectory1=newDirectory();
         
         // First put the documents in the same index
-        initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
-        initIndex(ramDirectory1, nDocs, false, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+        initIndex(random, ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
+        initIndex(random, ramDirectory1, nDocs, false, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         
         indexSearcher1=new IndexSearcher(ramDirectory1, true);
         indexSearcher1.setDefaultFieldSortScoring(true, true);
@@ -320,15 +321,15 @@ public class TestMultiSearcher extends LuceneTestCase
         
         
         
-        RAMDirectory ramDirectory2;
+        Directory ramDirectory2;
         IndexSearcher indexSearcher2;
         
-        ramDirectory1=new MockRAMDirectory();
-        ramDirectory2=new MockRAMDirectory();
+        ramDirectory1=newDirectory();
+        ramDirectory2=newDirectory();
         
         // Now put the documents in a different index
-        initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
-        initIndex(ramDirectory2, nDocs, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+        initIndex(random, ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
+        initIndex(random, ramDirectory2, nDocs, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         
         indexSearcher1=new IndexSearcher(ramDirectory1, true);
         indexSearcher1.setDefaultFieldSortScoring(true, true);
@@ -366,8 +367,8 @@ public class TestMultiSearcher extends LuceneTestCase
      * @throws IOException 
      */
     public void testCustomSimilarity () throws IOException {
-        RAMDirectory dir = new RAMDirectory();
-        initIndex(dir, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+        Directory dir = newDirectory();
+        initIndex(random, dir, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         IndexSearcher srchr = new IndexSearcher(dir, true);
         MultiSearcher msrchr = getMultiSearcherInstance(new Searcher[]{srchr});
         
@@ -403,30 +404,38 @@ public class TestMultiSearcher extends LuceneTestCase
         // The scores from the IndexSearcher and Multisearcher should be the same
         // if the same similarity is used.
         assertEquals("MultiSearcher score must be equal to single searcher score!", score1, scoreN, 1e-6);
+        msrchr.close();
+        srchr.close();
+        dir.close();
     }
     
     public void testDocFreq() throws IOException{
-      RAMDirectory dir1 = new RAMDirectory();
-      RAMDirectory dir2 = new RAMDirectory();
+      Directory dir1 = newDirectory();
+      Directory dir2 = newDirectory();
 
-      initIndex(dir1, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
-      initIndex(dir2, 5, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+      initIndex(random, dir1, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+      initIndex(random, dir2, 5, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
       IndexSearcher searcher1 = new IndexSearcher(dir1, true);
       IndexSearcher searcher2 = new IndexSearcher(dir2, true);
       
       MultiSearcher multiSearcher = getMultiSearcherInstance(new Searcher[]{searcher1, searcher2});
       assertEquals(15, multiSearcher.docFreq(new Term("contents","x")));
+      multiSearcher.close();
+      searcher1.close();
+      searcher2.close();
+      dir1.close();
+      dir2.close();
     }
     
     public void testCreateDocFrequencyMap() throws IOException{
-      RAMDirectory dir1 = new RAMDirectory();
-      RAMDirectory dir2 = new RAMDirectory();
+      Directory dir1 = newDirectory();
+      Directory dir2 = newDirectory();
       Term template = new Term("contents") ;
       String[] contents  = {"a", "b", "c"};
       HashSet<Term> termsSet = new HashSet<Term>();
       for (int i = 0; i < contents.length; i++) {
-        initIndex(dir1, i+10, i==0, contents[i]); 
-        initIndex(dir2, i+5, i==0, contents[i]);
+        initIndex(random, dir1, i+10, i==0, contents[i]); 
+        initIndex(random, dir2, i+5, i==0, contents[i]);
         termsSet.add(template.createTerm(contents[i]));
       }
       IndexSearcher searcher1 = new IndexSearcher(dir1, true);
@@ -437,5 +446,10 @@ public class TestMultiSearcher extends LuceneTestCase
       for (int i = 0; i < contents.length; i++) {
         assertEquals(Integer.valueOf((i*2) +15), docFrequencyMap.get(template.createTerm(contents[i])));
       }
+      multiSearcher.close();
+      searcher1.close();
+      searcher2.close();
+      dir1.close();
+      dir2.close();
     }
 }

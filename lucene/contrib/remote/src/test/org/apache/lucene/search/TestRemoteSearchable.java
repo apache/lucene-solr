@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,24 +32,33 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.HashSet;
 
-public class TestRemoteSearchable extends RemoteTestCaseJ4 {
-
+public class TestRemoteSearchable extends RemoteTestCase {
+  private static Directory indexStore;
+  private static Searchable local;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     // construct an index
-    RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+    indexStore = newDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
-    Searchable local = new IndexSearcher(indexStore, true);
+    local = new IndexSearcher(indexStore, true);
     startServer(local);
   }
-
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    local.close();
+    indexStore.close();
+    indexStore = null;
+  }
+  
   private static void search(Query query) throws Exception {
     // try to search the published index
     Searchable[] searchables = { lookupRemote() };
@@ -67,7 +76,7 @@ public class TestRemoteSearchable extends RemoteTestCaseJ4 {
     document = searcher.doc(0, fs);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
-    fs = new MapFieldSelector(new String[]{"other"});
+    fs = new MapFieldSelector("other");
     document = searcher.doc(0, fs);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);

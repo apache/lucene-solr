@@ -38,12 +38,14 @@
   <!-- default classpath refid, can be overridden by contrib's build.xml (use the above base.classpath as basis): -->
   <path id="classpath" refid="base.classpath"/>
   
-  <path id="test.classpath">
+  <path id="test.base.classpath">
     <path refid="classpath"/>
     <pathelement location="${common.dir}/build/classes/test"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
   </path>
+
+  <path id="test.classpath" refid="test.base.classpath"/>
 
   <path id="junit.classpath">
     <path refid="test.classpath"/>
@@ -86,7 +88,7 @@
     </sequential>
   </target>
 
-  <target name="javadocs">
+  <target name="javadocs" depends="compile-core">
    	<sequential>
        <mkdir dir="${javadoc.dir}/contrib-${name}"/>
        <invoke-javadoc
@@ -94,7 +96,7 @@
        	title="${Name} ${version} contrib-${name} API">
          <sources>
            <link href=""/>
-           <packageset dir="src/java"/>
+           <packageset dir="${src.dir}"/>
         </sources>
       </invoke-javadoc>
       <jarify basedir="${javadoc.dir}/contrib-${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>

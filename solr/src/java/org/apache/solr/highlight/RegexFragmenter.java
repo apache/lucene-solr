@@ -32,7 +32,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * Fragmenter that tries to produce snippets that "look" like a regular 
+ * {@link org.apache.lucene.search.highlight.Fragmenter} that tries to produce snippets that "look" like a regular 
  * expression.
  *
  * <code>solrconfig.xml</code> parameters:
@@ -202,8 +202,8 @@ class LuceneRegexFragmenter implements Fragmenter
     currentNumFrags = 1;
     currentOffset = 0;
     addHotSpots(originalText);
-    posIncAtt = (PositionIncrementAttribute) tokenStream.getAttribute(PositionIncrementAttribute.class);
-    offsetAtt = (OffsetAttribute) tokenStream.getAttribute(OffsetAttribute.class);
+    posIncAtt = tokenStream.getAttribute(PositionIncrementAttribute.class);
+    offsetAtt = tokenStream.getAttribute(OffsetAttribute.class);
   }
 
   ////////////////////////////////////

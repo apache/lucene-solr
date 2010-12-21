@@ -18,6 +18,9 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueInt;
+import org.apache.solr.util.NumberUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -74,6 +77,14 @@ public class OrdFieldSource extends ValueSource {
         return (double)termsIndex.getOrd(doc);
       }
 
+      public int ordVal(int doc) {
+        return termsIndex.getOrd(doc);
+      }
+
+      public int numOrd() {
+        return termsIndex.numOrd();
+      }
+
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
         return Integer.toString(termsIndex.getOrd(doc));
@@ -81,6 +92,24 @@ public class OrdFieldSource extends ValueSource {
 
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
+      }
+
+            @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final MutableValueInt mval = new MutableValueInt();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            mval.value = termsIndex.getOrd(doc);
+            mval.exists = mval.value!=0;
+          }
+        };
       }
     };
   }

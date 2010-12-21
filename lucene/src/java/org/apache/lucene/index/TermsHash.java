@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 
 /** This class implements {@link InvertedDocConsumer}, which
@@ -36,7 +37,7 @@ final class TermsHash extends InvertedDocConsumer {
   final TermsHashConsumer consumer;
   final TermsHash nextTermsHash;
   final DocumentsWriterPerThread docWriter;
-  
+
   final IntBlockPool intPool;
   final ByteBlockPool bytePool;
   ByteBlockPool termBytePool;
@@ -48,20 +49,20 @@ final class TermsHash extends InvertedDocConsumer {
   final BytesRef tr1 = new BytesRef();
   final BytesRef tr2 = new BytesRef();
 
-  // Used by perField:
-  final BytesRef utf8 = new BytesRef(10);
-  
+  // Used by perField to obtain terms from the analysis chain
+  final BytesRef termBytesRef = new BytesRef(10);
+
   boolean trackAllocations;
 
-  
+
   public TermsHash(final DocumentsWriterPerThread docWriter, final TermsHashConsumer consumer, final TermsHash nextTermsHash) {
     this.docState = docWriter.docState;
     this.docWriter = docWriter;
     this.consumer = consumer;
-    this.nextTermsHash = nextTermsHash;    
+    this.nextTermsHash = nextTermsHash;
     intPool = new IntBlockPool(docWriter);
-    bytePool = new ByteBlockPool(docWriter.ramAllocator.byteBlockAllocator);
-    
+    bytePool = new ByteBlockPool(docWriter.byteBlockAllocator);
+
     if (nextTermsHash != null) {
       // We are primary
       primary = true;
@@ -70,7 +71,6 @@ final class TermsHash extends InvertedDocConsumer {
     } else {
       primary = false;
     }
-
   }
 
   @Override
@@ -90,7 +90,7 @@ final class TermsHash extends InvertedDocConsumer {
       }
     }
   }
-  
+
   // Clear all state
   void reset() {
     intPool.reset();
@@ -119,14 +119,14 @@ final class TermsHash extends InvertedDocConsumer {
           nextChildFields.put(entry.getKey(), perField.nextPerField);
         }
     }
-    
+
     consumer.flush(childFields, state);
 
     if (nextTermsHash != null) {
       nextTermsHash.flush(nextChildFields, state);
     }
   }
-  
+
   @Override
   InvertedDocConsumerPerField addField(DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
     return new TermsHashPerField(docInverterPerField, this, nextTermsHash, fieldInfo);

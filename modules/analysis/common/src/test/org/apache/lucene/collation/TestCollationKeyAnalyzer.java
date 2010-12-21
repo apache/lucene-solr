@@ -25,7 +25,11 @@ import java.util.Locale;
 
 
 public class TestCollationKeyAnalyzer extends CollationTestBase {
-
+  // the sort order of Ø versus U depends on the version of the rules being used
+  // for the inherited root locale: Ø's order isnt specified in Locale.US since 
+  // its not used in english.
+  private boolean oStrokeFirst = Collator.getInstance(new Locale("")).compare("Ø", "U") < 0;
+  
   // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
   // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
   // characters properly.
@@ -69,9 +73,10 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
     Analyzer denmarkAnalyzer 
       = new CollationKeyAnalyzer(Collator.getInstance(new Locale("da", "dk")));
     
-    // The ICU Collator and java.text.Collator implementations differ in their
+    // The ICU Collator and Sun java.text.Collator implementations differ in their
     // orderings - "BFJDH" is the ordering for java.text.Collator for Locale.US.
     testCollationKeySort
-      (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, "BFJDH");
+    (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
+     oStrokeFirst ? "BFJHD" : "BFJDH", "EACGI", "BJDFH", "BJDHF");
   }
 }

@@ -34,13 +34,9 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
   private StopAnalyzer stop = new StopAnalyzer(TEST_VERSION_CURRENT);
   private Set<Object> inValidTokens = new HashSet<Object>();
-  
-  public TestStopAnalyzer(String s) {
-    super(s);
-  }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     
     Iterator<?> it = StopAnalyzer.ENGLISH_STOP_WORDS_SET.iterator();
@@ -66,17 +62,15 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     stopWordsSet.add("good");
     stopWordsSet.add("test");
     stopWordsSet.add("analyzer");
-    StopAnalyzer newStop = new StopAnalyzer(Version.LUCENE_24, stopWordsSet);
+    StopAnalyzer newStop = new StopAnalyzer(Version.LUCENE_40, stopWordsSet);
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
     TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
     CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
     
     while (stream.incrementToken()) {
       String text = termAtt.toString();
       assertFalse(stopWordsSet.contains(text));
-      assertEquals(1,posIncrAtt.getPositionIncrement()); // in 2.4 stop tokenizer does not apply increments.
     }
   }
 

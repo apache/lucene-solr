@@ -93,8 +93,8 @@ class LuceneGapFragmenter extends SimpleFragmenter {
    * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
    */
   public void start(String originalText, TokenStream tokenStream) {
-    offsetAtt = (OffsetAttribute) tokenStream.getAttribute(OffsetAttribute.class);
-    posIncAtt = (PositionIncrementAttribute) tokenStream.getAttribute(PositionIncrementAttribute.class);
+    offsetAtt = tokenStream.getAttribute(OffsetAttribute.class);
+    posIncAtt = tokenStream.getAttribute(PositionIncrementAttribute.class);
     fragOffset = 0;
   }
 

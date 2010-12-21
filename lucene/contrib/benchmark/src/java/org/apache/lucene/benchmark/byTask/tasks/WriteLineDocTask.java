@@ -142,9 +142,7 @@ public class WriteLineDocTask extends PerfTask {
    */
   @Override
   public void setParams(String params) {
-    if (super.supportsParams()) {
-      super.setParams(params);
-    }
+    super.setParams(params);
     docSize = (int) Float.parseFloat(params); 
   }
 

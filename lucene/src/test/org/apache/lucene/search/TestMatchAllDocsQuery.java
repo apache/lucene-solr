@@ -23,11 +23,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -39,9 +38,8 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   private Analyzer analyzer = new MockAnalyzer();
   
   public void testQuery() throws Exception {
-
-    RAMDirectory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2));
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);
@@ -126,7 +124,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   
   private void addDoc(String text, IndexWriter iw, float boost) throws IOException {
     Document doc = new Document();
-    Field f = new Field("key", text, Field.Store.YES, Field.Index.ANALYZED);
+    Field f = newField("key", text, Field.Store.YES, Field.Index.ANALYZED);
     f.setBoost(boost);
     doc.add(f);
     iw.addDocument(doc);

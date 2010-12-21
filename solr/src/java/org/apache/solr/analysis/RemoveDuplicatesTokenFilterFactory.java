@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 
 /**
- * @version $Id:$
+ * @version $Id$
  */
 public class RemoveDuplicatesTokenFilterFactory extends BaseTokenFilterFactory {
   public RemoveDuplicatesTokenFilter create(TokenStream input) {

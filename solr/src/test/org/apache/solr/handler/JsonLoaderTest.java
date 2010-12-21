@@ -21,9 +21,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
-
 import org.apache.noggit.JSONParser;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.update.AddUpdateCommand;
@@ -32,7 +31,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
-public class JsonLoaderTest extends TestCase {
+public class JsonLoaderTest extends LuceneTestCase {
 
   static String input = ("{\n" +
       "\n" +

@@ -23,17 +23,16 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class TestDistance extends LuceneTestCase {
   
-  private RAMDirectory directory;
+  private Directory directory;
   // reston va
   private double lat = 38.969398; 
   private double lng= -77.386398;
@@ -42,17 +41,18 @@ public class TestDistance extends LuceneTestCase {
   private IndexWriter writer;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
-    writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    directory = newDirectory();
+    writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addData(writer);
     
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     writer.close();
+    directory.close();
     super.tearDown();
   }
   
@@ -60,14 +60,14 @@ public class TestDistance extends LuceneTestCase {
     
     Document doc = new Document();
     
-    doc.add(new Field("name", name,Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("name", name,Field.Store.YES, Field.Index.ANALYZED));
     
     // convert the lat / long to lucene fields
     doc.add(new NumericField(latField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lat));
     doc.add(new NumericField(lngField, Integer.MAX_VALUE,Field.Store.YES, true).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
   }
@@ -96,7 +96,7 @@ public class TestDistance extends LuceneTestCase {
 
   public void testLatLongFilterOnDeletedDocs() throws Exception {
     writer.deleteDocuments(new Term("name", "Potomac"));
-    IndexReader r = writer.getReader();
+    IndexReader r = IndexReader.open(writer);
     LatLongDistanceFilter f = new LatLongDistanceFilter(new QueryWrapperFilter(new MatchAllDocsQuery()),
                                                         lat, lng, 1.0, latField, lngField);
 
@@ -104,6 +104,7 @@ public class TestDistance extends LuceneTestCase {
     for(int i=0;i<readers.length;i++) {
       f.getDocIdSet(readers[i]);
     }
+    r.close();
   }
  
   /* these tests do not test anything, as no assertions:

@@ -20,7 +20,8 @@ package org.apache.solr.spelling;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.lucene.index.IndexReader;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.apache.lucene.analysis.Token;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -70,8 +71,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, spelling.getAbsolutePath());
     spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(FileBasedSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     SolrCore core = h.getCore();
@@ -79,21 +79,22 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 
-    IndexReader reader = core.getSearcher().get().getReader();
+    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     Collection<Token> tokens = queryConverter.convert("fob");
-    SpellingResult result = checker.getSuggestions(tokens, reader);
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getReader());
+    SpellingResult result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     Map<String, Integer> suggestions = result.get(tokens.iterator().next());
     Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
     assertTrue(entry.getKey() + " is not equal to " + "foo", entry.getKey().equals("foo") == true);
     assertTrue(entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
-    tokens = queryConverter.convert("super");
-    result = checker.getSuggestions(tokens, reader);
+    spellOpts.tokens = queryConverter.convert("super");
+    result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(tokens.iterator().next());
     assertTrue("suggestions is not null and it should be", suggestions == null);
-
+    searcher.decref();
 
   }
 
@@ -107,8 +108,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, spelling.getAbsolutePath());
     spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(FileBasedSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(FileBasedSpellChecker.FIELD_TYPE, "teststop");
@@ -118,9 +118,11 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 
-    IndexReader reader = core.getSearcher().get().getReader();
+    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     Collection<Token> tokens = queryConverter.convert("Solar");
-    SpellingResult result = checker.getSuggestions(tokens, reader);
+
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getReader());
+    SpellingResult result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     //should be lowercased, b/c we are using a lowercasing analyzer
     Map<String, Integer> suggestions = result.get(tokens.iterator().next());
@@ -130,11 +132,12 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
     //test something not in the spell checker
-    tokens = queryConverter.convert("super");
-    result = checker.getSuggestions(tokens, reader);
+    spellOpts.tokens = queryConverter.convert("super");
+    result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(tokens.iterator().next());
     assertTrue("suggestions is not null and it should be", suggestions == null);
+    searcher.decref();
   }
 
   /**
@@ -160,9 +163,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 
-    IndexReader reader = core.getSearcher().get().getReader();
+    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     Collection<Token> tokens = queryConverter.convert("solar");
-    SpellingResult result = checker.getSuggestions(tokens, reader);
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getReader());
+    SpellingResult result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     //should be lowercased, b/c we are using a lowercasing analyzer
     Map<String, Integer> suggestions = result.get(tokens.iterator().next());
@@ -172,10 +176,11 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
 
-    tokens = queryConverter.convert("super");
-    result = checker.getSuggestions(tokens, reader);
+    spellOpts.tokens = queryConverter.convert("super");
+    result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
-    suggestions = result.get(tokens.iterator().next());
+    suggestions = result.get(spellOpts.tokens.iterator().next());
     assertTrue("suggestions is not null and it should be", suggestions == null);
+    searcher.decref();
   }
 }

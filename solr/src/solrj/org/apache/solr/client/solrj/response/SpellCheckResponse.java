@@ -31,7 +31,7 @@ import java.util.Map;
  */
 public class SpellCheckResponse {
   private boolean correctlySpelled;
-  private String collation;
+  private List<Collation> collations;
   private List<Suggestion> suggestions = new ArrayList<Suggestion>();
   Map<String, Suggestion> suggestionMap = new LinkedHashMap<String, Suggestion>();
 
@@ -45,8 +45,39 @@ public class SpellCheckResponse {
       String n = sugg.getName(i);
       if ("correctlySpelled".equals(n)) {
         correctlySpelled = (Boolean) sugg.getVal(i);
-      } else if ("collation".equals(n)) {
-        collation = (String) sugg.getVal(i);
+			} else if ("collationInternalRank".equals(n)){
+				//continue;
+			} else if ("collation".equals(n)) {
+				List<Object> collationInfo = sugg.getAll(n);
+				collations = new ArrayList<Collation>(collationInfo.size());
+				for (Object o : collationInfo) {
+					if (o instanceof String) {
+						collations.add(new Collation()
+								.setCollationQueryString((String) sugg.getVal(i)));
+					} else if (o instanceof NamedList) {
+						NamedList expandedCollation = (NamedList) o;
+						String collationQuery = (String) expandedCollation
+								.get("collationQuery");
+						int hits = (Integer) expandedCollation.get("hits");
+						NamedList<String> misspellingsAndCorrections = (NamedList<String>) expandedCollation
+								.get("misspellingsAndCorrections");
+
+						Collation collation = new Collation();
+						collation.setCollationQueryString(collationQuery);
+						collation.setNumberOfHits(hits);
+
+						for (int ii = 0; ii < misspellingsAndCorrections.size(); ii++) {
+							String misspelling = misspellingsAndCorrections.getName(ii);
+							String correction = misspellingsAndCorrections.getVal(ii);
+							collation.addMisspellingsAndCorrection(new Correction(
+									misspelling, correction));
+						}
+						collations.add(collation);
+					} else {
+						throw new AssertionError(
+								"Should get Lists of Strings or List of NamedLists here.");
+					}
+				} 	
       } else {
         Suggestion s = new Suggestion(n, (NamedList<Object>) sugg.getVal(i));
         suggestionMap.put(n, s);
@@ -77,8 +108,25 @@ public class SpellCheckResponse {
     return s.getAlternatives().get(0);
   }
 
+  /**
+   * <p>
+   *  Return the first collated query string.  For convenience and backwards-compatibility.  Use getCollatedResults() for full data.
+   * </p>
+   * @return
+   */
   public String getCollatedResult() {
-    return collation;
+    return collations==null || collations.size()==0 ? null : collations.get(0).collationQueryString;
+  }
+  
+  /**
+   * <p>
+   *  Return all collations.  
+   *  Will include # of hits and misspelling-to-correction details if "spellcheck.collateExtendedResults was true.
+   * </p>
+   * @return
+   */
+  public List<Collation> getCollatedResults() {
+  	return collations;
   }
 
   public static class Suggestion {
@@ -162,4 +210,63 @@ public class SpellCheckResponse {
     }
 
   }
+
+	public class Collation {
+		private String collationQueryString;
+		private List<Correction> misspellingsAndCorrections = new ArrayList<Correction>();
+		private long numberOfHits;
+
+		public long getNumberOfHits() {
+			return numberOfHits;
+		}
+
+		public void setNumberOfHits(long numberOfHits) {
+			this.numberOfHits = numberOfHits;
+		}
+
+		public String getCollationQueryString() {
+			return collationQueryString;
+		}
+
+		public Collation setCollationQueryString(String collationQueryString) {
+			this.collationQueryString = collationQueryString;
+			return this;
+		}
+
+		public List<Correction> getMisspellingsAndCorrections() {
+			return misspellingsAndCorrections;
+		}
+
+		public Collation addMisspellingsAndCorrection(Correction correction) {
+			this.misspellingsAndCorrections.add(correction);
+			return this;
+		}
+
+	}
+
+	public class Correction {
+		private String original;
+		private String correction;
+
+		public Correction(String original, String correction) {
+			this.original = original;
+			this.correction = correction;
+		}
+
+		public String getOriginal() {
+			return original;
+		}
+
+		public void setOriginal(String original) {
+			this.original = original;
+		}
+
+		public String getCorrection() {
+			return correction;
+		}
+
+		public void setCorrection(String correction) {
+			this.correction = correction;
+		}
+	}
 }

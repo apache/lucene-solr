@@ -22,12 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.synonym.SynonymMap;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSynonymMap extends TestCase {
+public class TestSynonymMap extends LuceneTestCase {
 
   public void testInvalidMappingRules() throws Exception {
     SynonymMap synMap = new SynonymMap( true );
@@ -259,7 +258,7 @@ public class TestSynonymMap extends TestCase {
   }
   
   private void assertTokIncludes( SynonymMap map, String src, String exp ) throws Exception {
-    Token[] tokens = ((SynonymMap)map.submap.get( src )).synonyms;
+    Token[] tokens = map.submap.get( src ).synonyms;
     boolean inc = false;
     for( Token token : tokens ){
       if( exp.equals( new String(token.buffer(), 0, token.length()) ) )
@@ -269,6 +268,6 @@ public class TestSynonymMap extends TestCase {
   }
   
   private SynonymMap getSubSynonymMap( SynonymMap map, String src ){
-    return (SynonymMap)map.submap.get( src );
+    return map.submap.get( src );
   }
 }

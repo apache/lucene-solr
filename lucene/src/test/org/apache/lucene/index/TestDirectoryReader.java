@@ -24,10 +24,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class TestDirectoryReader extends LuceneTestCase {
   protected Directory dir;
@@ -35,16 +35,11 @@ public class TestDirectoryReader extends LuceneTestCase {
   private Document doc2;
   protected SegmentReader [] readers = new SegmentReader[2];
   protected SegmentInfos sis;
-  
-  
-  public TestDirectoryReader(String s) {
-    super(s);
-  }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    dir = new RAMDirectory();
+    dir = newDirectory();
     doc1 = new Document();
     doc2 = new Document();
     DocHelper.setupDoc(doc1);
@@ -53,6 +48,14 @@ public class TestDirectoryReader extends LuceneTestCase {
     DocHelper.writeDoc(dir, doc2);
     sis = new SegmentInfos();
     sis.read(dir);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    if (readers[0] != null) readers[0].close();
+    if (readers[1] != null) readers[1].close();
+    dir.close();
+    super.tearDown();
   }
 
   protected IndexReader openReader() throws IOException {
@@ -85,6 +88,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     TermFreqVector vector = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(vector != null);
     TestSegmentReader.checkNorms(reader);
+    reader.close();
   }
 
   public void doTestUndeleteAll() throws IOException {
@@ -121,19 +125,20 @@ public class TestDirectoryReader extends LuceneTestCase {
     sis.read(dir);
     reader = openReader();
     assertEquals( 1, reader.numDocs() );
+    reader.close();
   }
         
   public void testIsCurrent() throws IOException {
-    RAMDirectory ramDir1=new RAMDirectory();
-    addDoc(ramDir1, "test foo", true);
-    RAMDirectory ramDir2=new RAMDirectory();
-    addDoc(ramDir2, "test blah", true);
+    Directory ramDir1=newDirectory();
+    addDoc(random, ramDir1, "test foo", true);
+    Directory ramDir2=newDirectory();
+    addDoc(random, ramDir2, "test blah", true);
     IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false)};
     MultiReader mr = new MultiReader(readers);
     assertTrue(mr.isCurrent());   // just opened, must be current
-    addDoc(ramDir1, "more text", false);
+    addDoc(random, ramDir1, "more text", false);
     assertFalse(mr.isCurrent());   // has been modified, not current anymore
-    addDoc(ramDir2, "even more text", false);
+    addDoc(random, ramDir2, "even more text", false);
     assertFalse(mr.isCurrent());   // has been modified even more, not current anymore
     try {
       mr.getVersion();
@@ -142,15 +147,17 @@ public class TestDirectoryReader extends LuceneTestCase {
       // expected exception
     }
     mr.close();
+    ramDir1.close();
+    ramDir2.close();
   }
 
   public void testMultiTermDocs() throws IOException {
-    RAMDirectory ramDir1=new RAMDirectory();
-    addDoc(ramDir1, "test foo", true);
-    RAMDirectory ramDir2=new RAMDirectory();
-    addDoc(ramDir2, "test blah", true);
-    RAMDirectory ramDir3=new RAMDirectory();
-    addDoc(ramDir3, "test wow", true);
+    Directory ramDir1=newDirectory();
+    addDoc(random, ramDir1, "test foo", true);
+    Directory ramDir2=newDirectory();
+    addDoc(random, ramDir2, "test blah", true);
+    Directory ramDir3=newDirectory();
+    addDoc(random, ramDir3, "test wow", true);
 
     IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir3, false)};
     IndexReader[] readers2 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false), IndexReader.open(ramDir3, false)};
@@ -179,15 +186,23 @@ public class TestDirectoryReader extends LuceneTestCase {
     // really a dummy assert to ensure that we got some docs and to ensure that
     // nothing is optimized out.
     assertTrue(ret > 0);
+    readers1[0].close();
+    readers1[1].close();
+    readers2[0].close();
+    readers2[1].close();
+    readers2[2].close();
+    ramDir1.close();
+    ramDir2.close();
+    ramDir3.close();
   }
 
-  private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
-    IndexWriter iw = new IndexWriter(ramDir1, new IndexWriterConfig(
+  private void addDoc(Random random, Directory ramDir1, String s, boolean create) throws IOException {
+    IndexWriter iw = new IndexWriter(ramDir1, newIndexWriterConfig( 
         TEST_VERSION_CURRENT, 
         new MockAnalyzer()).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));
     Document doc = new Document();
-    doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(doc);
     iw.close();
   }

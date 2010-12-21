@@ -26,6 +26,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: break into separate freq and prox writers as
 // codecs; make separate container (tii/tis/skip/*) that can
@@ -82,8 +83,8 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       if (fields[i].isIndexed())
         return true;
     return false;
-  }     
-  
+  }
+
   @Override
   void start(Fieldable f) {
     if (fieldState.attributeSource.hasAttribute(PayloadAttribute.class)) {
@@ -93,33 +94,33 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     }
   }
 
-  final void writeProx(final int termID, int proxCode) {
+  void writeProx(final int termID, int proxCode) {
     final Payload payload;
     if (payloadAttribute == null) {
       payload = null;
     } else {
       payload = payloadAttribute.getPayload();
     }
-    
+
     if (payload != null && payload.length > 0) {
       termsHashPerField.writeVInt(1, (proxCode<<1)|1);
       termsHashPerField.writeVInt(1, payload.length);
       termsHashPerField.writeBytes(1, payload.data, payload.offset, payload.length);
-      hasPayloads = true;      
+      hasPayloads = true;
     } else
       termsHashPerField.writeVInt(1, proxCode<<1);
-    
+
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     postings.lastPositions[termID] = fieldState.position;
-    
+
   }
 
   @Override
-  final void newTerm(final int termID) {
+  void newTerm(final int termID) {
     // First time we're seeing this term since the last
     // flush
     assert docState.testPoint("FreqProxTermsWriterPerField.newTerm start");
-    
+
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     postings.lastDocIDs[termID] = docState.docID;
     if (omitTermFreqAndPositions) {
@@ -132,12 +133,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   }
 
   @Override
-  final void addTerm(final int termID) {
+  void addTerm(final int termID) {
 
     assert docState.testPoint("FreqProxTermsWriterPerField.addTerm start");
-    
+
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
-    
+
     assert omitTermFreqAndPositions || postings.docFreqs[termID] > 0;
 
     if (omitTermFreqAndPositions) {
@@ -149,7 +150,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       }
     } else {
       if (docState.docID != postings.lastDocIDs[termID]) {
-        assert docState.docID > postings.lastDocIDs[termID];
+        assert docState.docID > postings.lastDocIDs[termID]:"id: "+docState.docID + " postings ID: "+ postings.lastDocIDs[termID] + " termID: "+termID;
         // Term not yet seen in the current doc but previously
         // seen in other doc(s) since the last flush
 
@@ -171,7 +172,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       }
     }
   }
-  
+
   @Override
   ParallelPostingsArray createPostingsArray(int size) {
     return new FreqProxPostingsArray(size);
@@ -210,14 +211,14 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     @Override
     int bytesPerPosting() {
-      return ParallelPostingsArray.BYTES_PER_POSTING + 4 * DocumentsWriterRAMAllocator.INT_NUM_BYTE;
+      return ParallelPostingsArray.BYTES_PER_POSTING + 4 * RamUsageEstimator.NUM_BYTES_INT;
     }
   }
-  
+
   public void abort() {}
-  
+
   BytesRef payload;
-  
+
   /* Walk through all unique text tokens (Posting
    * instances) found in this field and serialize them
    * into a single RAM segment. */
@@ -228,41 +229,41 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final Comparator<BytesRef> termComp = termsConsumer.getComparator();
 
     final boolean currentFieldOmitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
-    
+
     final int[] termIDs = termsHashPerField.sortPostings(termComp);
-    final int numTerms = termsHashPerField.numPostings;
+    final int numTerms = termsHashPerField.bytesHash.size();
     final BytesRef text = new BytesRef();
     final FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     final ByteSliceReader freq = new ByteSliceReader();
     final ByteSliceReader prox = new ByteSliceReader();
 
-    
+
     for (int i = 0; i < numTerms; i++) {
       final int termID = termIDs[i];
       // Get BytesRef
       final int textStart = postings.textStarts[termID];
       termsHashPerField.bytePool.setBytesRef(text, textStart);
-      
+
       termsHashPerField.initReader(freq, termID, 0);
       if (!fieldInfo.omitTermFreqAndPositions) {
         termsHashPerField.initReader(prox, termID, 1);
       }
-  
+
       // TODO: really TermsHashPerField should take over most
       // of this loop, including merge sort of terms from
       // multiple threads and interacting with the
       // TermsConsumer, only calling out to us (passing us the
       // DocsConsumer) to handle delivery of docs/positions
-    
+
       final PostingsConsumer postingsConsumer = termsConsumer.startTerm(text);
-  
+
       // Now termStates has numToMerge FieldMergeStates
       // which all share the same term.  Now we must
       // interleave the docID streams.
       int numDocs = 0;
       int docID = 0;
       int termFreq = 0;
-      
+
       while(true) {
         if (freq.eof()) {
           if (postings.lastDocCodes[termID] != -1) {
@@ -288,58 +289,58 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
               termFreq = freq.readVInt();
             }
           }
-    
+
           assert docID != postings.lastDocIDs[termID];
         }
-        
+
         numDocs++;
         assert docID < state.numDocs: "doc=" + docID + " maxDoc=" + state.numDocs;
         final int termDocFreq = termFreq;
         postingsConsumer.startDoc(docID, termDocFreq);
-    
+
         // Carefully copy over the prox + payload info,
         // changing the format to match Lucene's segment
         // format.
         if (!currentFieldOmitTermFreqAndPositions) {
           // omitTermFreqAndPositions == false so we do write positions &
-          // payload          
+          // payload
           int position = 0;
           for(int j=0;j<termDocFreq;j++) {
             final int code = prox.readVInt();
             position += code >> 1;
-    
+
             final int payloadLength;
             final BytesRef thisPayload;
-    
+
             if ((code & 1) != 0) {
               // This position has a payload
-              payloadLength = prox.readVInt();  
-              
+              payloadLength = prox.readVInt();
+
               if (payload == null) {
                 payload = new BytesRef();
                 payload.bytes = new byte[payloadLength];
               } else if (payload.bytes.length < payloadLength) {
                 payload.grow(payloadLength);
               }
-    
+
               prox.readBytes(payload.bytes, 0, payloadLength);
               payload.length = payloadLength;
               thisPayload = payload;
-    
+
             } else {
               payloadLength = 0;
               thisPayload = null;
             }
-    
+
             postingsConsumer.addPosition(position, thisPayload);
-          } 
-    
+          }
+
           postingsConsumer.finishDoc();
         }
-      } 
+      }
       termsConsumer.finishTerm(text, numDocs);
     }
-  
+
     termsConsumer.finish();
   }
 

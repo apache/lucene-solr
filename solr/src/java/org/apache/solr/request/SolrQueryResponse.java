@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @deprecated use org.apache.solr.response.SolrQueryResponse
  */
+@Deprecated
 public class SolrQueryResponse extends org.apache.solr.response.SolrQueryResponse 
 {
   private static Logger log = LoggerFactory.getLogger(SolrQueryResponse.class.getName());

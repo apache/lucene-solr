@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.beans;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -36,7 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TestDocumentObjectBinder extends TestCase 
+public class TestDocumentObjectBinder extends LuceneTestCase 
 {
   public void testSimple() throws Exception {
     DocumentObjectBinder binder = new DocumentObjectBinder();

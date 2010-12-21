@@ -3,16 +3,13 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.util.Random;
 import java.util.BitSet;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -36,21 +33,21 @@ import org.apache.lucene.document.Field;
  */
 
 public class TestScorerPerf extends LuceneTestCase {
-  Random r;
   boolean validate = true;  // set to false when doing performance testing
 
   BitSet[] sets;
   Term[] terms;
   IndexSearcher s;
+  Directory d;
 
   public void createDummySearcher() throws Exception {
       // Create a dummy index with nothing in it.
     // This could possibly fail if Lucene starts checking for docid ranges...
-    RAMDirectory rd = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d = newDirectory();
+    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     iw.addDocument(new Document());
     iw.close();
-    s = new IndexSearcher(rd, true);
+    s = new IndexSearcher(d, true);
   }
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
@@ -62,12 +59,12 @@ public class TestScorerPerf extends LuceneTestCase {
       terms[i] = new Term("f",Character.toString((char)('A'+i)));
     }
 
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     for (int i=0; i<nDocs; i++) {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
-        if (r.nextInt(freq[j]) == 0) {
-          d.add(new Field("f", terms[j].text(), Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (random.nextInt(freq[j]) == 0) {
+          d.add(newField("f", terms[j].text(), Field.Store.NO, Field.Index.NOT_ANALYZED));
           //System.out.println(d);
         }
       }
@@ -81,7 +78,7 @@ public class TestScorerPerf extends LuceneTestCase {
   public BitSet randBitSet(int sz, int numBitsToSet) {
     BitSet set = new BitSet(sz);
     for (int i=0; i<numBitsToSet; i++) {
-      set.set(r.nextInt(sz));
+      set.set(random.nextInt(sz));
     }
     return set;
   }
@@ -89,7 +86,7 @@ public class TestScorerPerf extends LuceneTestCase {
   public BitSet[] randBitSets(int numSets, int setSize) {
     BitSet[] sets = new BitSet[numSets];
     for (int i=0; i<sets.length; i++) {
-      sets[i] = randBitSet(setSize, r.nextInt(setSize));
+      sets[i] = randBitSet(setSize, random.nextInt(setSize));
     }
     return sets;
   }
@@ -141,7 +138,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
 
   BitSet addClause(BooleanQuery bq, BitSet result) {
-    final BitSet rnd = sets[r.nextInt(sets.length)];
+    final BitSet rnd = sets[random.nextInt(sets.length)];
     Query q = new ConstantScoreQuery(new Filter() {
       @Override
       public DocIdSet getDocIdSet(IndexReader reader) {
@@ -161,7 +158,7 @@ public class TestScorerPerf extends LuceneTestCase {
     int ret=0;
 
     for (int i=0; i<iter; i++) {
-      int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
+      int nClauses = random.nextInt(maxClauses-1)+2; // min 2 clauses
       BooleanQuery bq = new BooleanQuery();
       BitSet result=null;
       for (int j=0; j<nClauses; j++) {
@@ -185,13 +182,13 @@ public class TestScorerPerf extends LuceneTestCase {
     long nMatches=0;
 
     for (int i=0; i<iter; i++) {
-      int oClauses = r.nextInt(maxOuterClauses-1)+2;
+      int oClauses = random.nextInt(maxOuterClauses-1)+2;
       BooleanQuery oq = new BooleanQuery();
       BitSet result=null;
 
       for (int o=0; o<oClauses; o++) {
 
-      int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
+      int nClauses = random.nextInt(maxClauses-1)+2; // min 2 clauses
       BooleanQuery bq = new BooleanQuery();
       for (int j=0; j<nClauses; j++) {
         result = addClause(bq,result);
@@ -222,13 +219,13 @@ public class TestScorerPerf extends LuceneTestCase {
 
     long nMatches=0;
     for (int i=0; i<iter; i++) {
-      int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
+      int nClauses = random.nextInt(maxClauses-1)+2; // min 2 clauses
       BooleanQuery bq = new BooleanQuery();
       BitSet termflag = new BitSet(termsInIndex);
       for (int j=0; j<nClauses; j++) {
         int tnum;
         // don't pick same clause twice
-        tnum = r.nextInt(termsInIndex);
+        tnum = random.nextInt(termsInIndex);
         if (termflag.get(tnum)) tnum=termflag.nextClearBit(tnum);
         if (tnum<0 || tnum>=termsInIndex) tnum=termflag.nextClearBit(0);
         termflag.set(tnum);
@@ -256,17 +253,17 @@ public class TestScorerPerf extends LuceneTestCase {
     int ret=0;
     long nMatches=0;
     for (int i=0; i<iter; i++) {
-      int oClauses = r.nextInt(maxOuterClauses-1)+2;
+      int oClauses = random.nextInt(maxOuterClauses-1)+2;
       BooleanQuery oq = new BooleanQuery();
       for (int o=0; o<oClauses; o++) {
 
-      int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
+      int nClauses = random.nextInt(maxClauses-1)+2; // min 2 clauses
       BooleanQuery bq = new BooleanQuery();
       BitSet termflag = new BitSet(termsInIndex);
       for (int j=0; j<nClauses; j++) {
         int tnum;
         // don't pick same clause twice
-        tnum = r.nextInt(termsInIndex);
+        tnum = random.nextInt(termsInIndex);
         if (termflag.get(tnum)) tnum=termflag.nextClearBit(tnum);
         if (tnum<0 || tnum>=25) tnum=termflag.nextClearBit(0);
         termflag.set(tnum);
@@ -296,10 +293,10 @@ public class TestScorerPerf extends LuceneTestCase {
     int ret=0;
 
     for (int i=0; i<iter; i++) {
-      int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
+      int nClauses = random.nextInt(maxClauses-1)+2; // min 2 clauses
       PhraseQuery q = new PhraseQuery();
       for (int j=0; j<nClauses; j++) {
-        int tnum = r.nextInt(termsInIndex);
+        int tnum = random.nextInt(termsInIndex);
         q.add(new Term("f",Character.toString((char)(tnum+'A'))), j);
       }
       q.setSlop(termsInIndex);  // this could be random too
@@ -315,13 +312,13 @@ public class TestScorerPerf extends LuceneTestCase {
 
   public void testConjunctions() throws Exception {
     // test many small sets... the bugs will be found on boundary conditions
-    r = newRandom();
     createDummySearcher();
     validate=true;
     sets=randBitSets(1000 * RANDOM_MULTIPLIER, 10 * RANDOM_MULTIPLIER);
     doConjunctions(10000 * RANDOM_MULTIPLIER, 5 * RANDOM_MULTIPLIER);
     doNestedConjunctions(10000 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER);
     s.close();
+    d.close();
   }
 
   /***

@@ -165,7 +165,7 @@ public class FieldPhraseListTest extends AbstractTestCase {
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     FieldPhraseList fpl = new FieldPhraseList( stack, fq );
     assertEquals( 1, fpl.phraseList.size() );
-    assertEquals( "d(1.0)((6,7))", fpl.phraseList.get( 0 ).toString() );
+    assertEquals( "d(1.0)((9,10))", fpl.phraseList.get( 0 ).toString() );
   }
   
   public void test1PhraseLongMV() throws Exception {

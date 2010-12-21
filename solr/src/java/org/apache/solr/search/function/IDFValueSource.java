@@ -29,7 +29,7 @@ import org.apache.solr.util.ByteUtils;
 import java.io.IOException;
 import java.util.Map;
 
-/** @internal */
+/** @lucene.internal */
 public class IDFValueSource extends DocFreqValueSource {
   public IDFValueSource(String field, String val, String indexedField, BytesRef indexedBytes) {
     super(field, val, indexedField, indexedBytes);

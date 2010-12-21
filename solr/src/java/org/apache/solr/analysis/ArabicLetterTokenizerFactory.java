@@ -23,7 +23,9 @@ import java.io.Reader;
 
 /**
  * Factory for {@link ArabicLetterTokenizer}
+ * @deprecated (3.1) Use StandardTokenizerFactory instead.
  **/
+@Deprecated
 public class ArabicLetterTokenizerFactory extends BaseTokenizerFactory{
 
   public ArabicLetterTokenizer create(Reader input) {

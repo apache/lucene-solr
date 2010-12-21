@@ -23,7 +23,7 @@
   -->
 
 <config>
-
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <!-- see TestConfig.testLib() -->
   <lib dir="../lib-dirs/a" />
   <lib dir="../lib-dirs/b" regex="b." />
@@ -143,7 +143,7 @@
   </updateHandler>
 
   <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory">
-    <int name="setTermIndexInterval">12</int>
+    <int name="setTermIndexDivisor">12</int>
   </indexReaderFactory >
 
   <query>

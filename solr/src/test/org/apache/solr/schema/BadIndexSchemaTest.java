@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.SolrConfig;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -43,6 +44,8 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
       throw new SolrException
         (ErrorCode.SERVER_ERROR, 
          "Unexpected error, expected error matching: " + errString, e);
+    } finally {
+      SolrConfig.severeErrors.clear();
     }
     fail("Did not encounter any exception from: " + schema);
   }

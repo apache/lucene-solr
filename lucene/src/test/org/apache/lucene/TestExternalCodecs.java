@@ -71,7 +71,10 @@ public class TestExternalCodecs extends LuceneTestCase {
   //   - good improvement would be to write through to disk,
   //     and then load into ram from disk
   public static class RAMOnlyCodec extends Codec {
-
+    
+    public RAMOnlyCodec() {
+      name = "RamOnly";
+    }
     // Postings state:
     static class RAMPostings extends FieldsProducer {
       final Map<String,RAMField> fieldToTerms = new TreeMap<String,RAMField>();
@@ -129,6 +132,8 @@ public class TestExternalCodecs extends LuceneTestCase {
     static class RAMDoc {
       final int docID;
       final int[] positions;
+      byte[][] payloads;
+
       public RAMDoc(int docID, int freq) {
         this.docID = docID;
         positions = new int[freq];
@@ -212,10 +217,15 @@ public class TestExternalCodecs extends LuceneTestCase {
 
       @Override
       public void addPosition(int position, BytesRef payload) {
-        if (payload != null) {
-          throw new UnsupportedOperationException("can't handle payloads");
+        current.positions[posUpto] = position;
+        if (payload != null && payload.length > 0) {
+          if (current.payloads == null) {
+            current.payloads = new byte[current.positions.length][];
+          }
+          byte[] bytes = current.payloads[posUpto] = new byte[payload.length];
+          System.arraycopy(payload.bytes, payload.offset, bytes, 0, payload.length);
         }
-        current.positions[posUpto++] = position;
+        posUpto++;
       }
 
       @Override
@@ -317,6 +327,10 @@ public class TestExternalCodecs extends LuceneTestCase {
       @Override
       public int docFreq() {
         return ramField.termToDocs.get(current).docs.size();
+      }
+
+      @Override
+      public void cacheCurrentTerm() {
       }
 
       @Override
@@ -432,12 +446,12 @@ public class TestExternalCodecs extends LuceneTestCase {
 
       @Override
       public boolean hasPayload() {
-        return false;
+        return current.payloads != null && current.payloads[posUpto-1] != null;
       }
 
       @Override
       public BytesRef getPayload() {
-        return null;
+        return new BytesRef(current.payloads[posUpto-1]);
       }
     }
 
@@ -457,6 +471,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState readState)
       throws IOException {
+    
       return state.get(readState.segmentInfo.name);
     }
 
@@ -465,25 +480,15 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) {
+    public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
     }
   }
 
   public static class MyCodecs extends CodecProvider {
-    PerFieldCodecWrapper perField;
-
     MyCodecs() {
       Codec ram = new RAMOnlyCodec();
-      Codec pulsing = new PulsingReverseTermsCodec();
-      perField = new PerFieldCodecWrapper(ram);
-      perField.add("field2", pulsing);
-      perField.add("id", pulsing);
-      register(perField);
-    }
-    
-    @Override
-    public Codec getWriter(SegmentWriteState state) {
-      return perField;
+      register(ram);
+      setDefaultFieldCodec(ram.name);
     }
   }
 
@@ -497,18 +502,26 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     @Override
     public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      StandardPostingsWriter docsWriter = new StandardPostingsWriterImpl(state);
+      PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
 
       // Terms that have <= freqCutoff number of docs are
       // "pulsed" (inlined):
       final int freqCutoff = 1;
-      StandardPostingsWriter pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
+      PostingsWriterBase pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
 
       // Terms dict index
-      StandardTermsIndexWriter indexWriter;
+      TermsIndexWriterBase indexWriter;
       boolean success = false;
       try {
-        indexWriter = new SimpleStandardTermsIndexWriter(state);
+        indexWriter = new FixedGapTermsIndexWriter(state) {
+            // We sort in reverse unicode order, so, we must
+            // disable the suffix-stripping opto that
+            // FixedGapTermsIndexWriter does by default!
+            @Override
+            protected int indexedTermPrefixLength(BytesRef priorTerm, BytesRef indexedTerm) {
+              return indexedTerm.length;
+            }
+          };
         success = true;
       } finally {
         if (!success) {
@@ -519,7 +532,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict
       success = false;
       try {
-        FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
+        FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
         success = true;
         return ret;
       } finally {
@@ -536,19 +549,20 @@ public class TestExternalCodecs extends LuceneTestCase {
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-      StandardPostingsReader docsReader = new StandardPostingsReaderImpl(state.dir, state.segmentInfo, state.readBufferSize);
-      StandardPostingsReader pulsingReader = new PulsingPostingsReaderImpl(docsReader);
+      PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
+      PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
 
       // Terms dict index reader
-      StandardTermsIndexReader indexReader;
+      TermsIndexReaderBase indexReader;
 
       boolean success = false;
       try {
-        indexReader = new SimpleStandardTermsIndexReader(state.dir,
+        indexReader = new FixedGapTermsIndexReader(state.dir,
                                                          state.fieldInfos,
                                                          state.segmentInfo.name,
                                                          state.termsIndexDivisor,
-                                                         reverseUnicodeComparator);
+                                                         reverseUnicodeComparator,
+                                                         state.codecId);
         success = true;
       } finally {
         if (!success) {
@@ -559,14 +573,15 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict reader
       success = false;
       try {
-        FieldsProducer ret = new StandardTermsDictReader(indexReader,
+        FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
                                                          state.dir,
                                                          state.fieldInfos,
                                                          state.segmentInfo.name,
                                                          pulsingReader,
                                                          state.readBufferSize,
                                                          reverseUnicodeComparator,
-                                                         StandardCodec.TERMS_CACHE_SIZE);
+                                                         StandardCodec.TERMS_CACHE_SIZE,
+                                                         state.codecId);
         success = true;
         return ret;
       } finally {
@@ -581,10 +596,10 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-      StandardPostingsReaderImpl.files(dir, segmentInfo, files);
-      StandardTermsDictReader.files(dir, segmentInfo, files);
-      SimpleStandardTermsIndexReader.files(dir, segmentInfo, files);
+    public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
+      StandardPostingsReader.files(dir, segmentInfo, codecId, files);
+      PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+      FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     }
 
     @Override
@@ -598,21 +613,30 @@ public class TestExternalCodecs extends LuceneTestCase {
   // whose term sort is backwards unicode code point, and
   // storing "field1" as a custom entirely-in-RAM codec
   public void testPerFieldCodec() throws Exception {
+    CodecProvider provider = new MyCodecs();
+    Codec pulsing = new PulsingReverseTermsCodec();
+    provider.register(pulsing);
+    
     
     final int NUM_DOCS = 173;
-
-    Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir,
-                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(new MyCodecs()));
-
-    w.setMergeFactor(3);
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).
+            setCodecProvider(provider).
+            setMergePolicy(newLogMergePolicy(3))
+    );
     Document doc = new Document();
     // uses default codec:
-    doc.add(new Field("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));
     // uses pulsing codec:
-    doc.add(new Field("field2", "this field uses the pulsing codec as the test", Field.Store.NO, Field.Index.ANALYZED));
+    Field field2 = newField("field2", "this field uses the pulsing codec as the test", Field.Store.NO, Field.Index.ANALYZED);
+    provider.setFieldCodec(field2.name(), pulsing.name);
+    doc.add(field2);
     
-    Field idField = new Field("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    provider.setFieldCodec(idField.name(), pulsing.name);
+
     doc.add(idField);
     for(int i=0;i<NUM_DOCS;i++) {
       idField.setValue(""+i);
@@ -623,12 +647,10 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
     w.deleteDocuments(new Term("id", "77"));
 
-    IndexReader r = w.getReader();
+    IndexReader r = IndexReader.open(w);
     IndexReader[] subs = r.getSequentialSubReaders();
-    assertTrue(subs.length > 1);
     // test each segment
     for(int i=0;i<subs.length;i++) {
-      //System.out.println("test i=" + i);
       testTermsOrder(subs[i]);
     }
     // test each multi-reader
@@ -643,7 +665,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     w.deleteDocuments(new Term("id", "44"));
     w.optimize();
-    r = w.getReader();
+    r = IndexReader.open(w);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
     s = new IndexSearcher(r);
@@ -661,6 +683,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     dir.close();
   }
+
   private void testTermsOrder(IndexReader r) throws Exception {
 
     // Verify sort order matches what my comparator said:

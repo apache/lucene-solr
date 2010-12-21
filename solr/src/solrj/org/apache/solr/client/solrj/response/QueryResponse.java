@@ -53,6 +53,7 @@ public class QueryResponse extends SolrResponseBase
   private List<FacetField> _facetFields = null;
   private List<FacetField> _limitingFacets = null;
   private List<FacetField> _facetDates = null;
+  private NamedList<List<PivotField>> _facetPivot = null;
 
   // Highlight Info
   private Map<String,Map<String,List<String>>> _highlighting = null;
@@ -203,7 +204,7 @@ public class QueryResponse extends SolrResponseBase
       _facetFields = new ArrayList<FacetField>( ff.size() );
       _limitingFacets = new ArrayList<FacetField>( ff.size() );
       
-      long minsize = _results.getNumFound();
+      long minsize = _results == null ? Long.MAX_VALUE :_results.getNumFound();
       for( Map.Entry<String,NamedList<Number>> facet : ff ) {
         FacetField f = new FacetField( facet.getKey() );
         for( Map.Entry<String, Number> entry : facet.getValue() ) {
@@ -241,6 +242,29 @@ public class QueryResponse extends SolrResponseBase
         _facetDates.add(f);
       }
     }
+    
+    //Parse pivot facets
+    NamedList pf = (NamedList) info.get("facet_pivot");
+    if (pf != null) {
+      _facetPivot = new NamedList<List<PivotField>>();
+      for( int i=0; i<pf.size(); i++ ) {
+        _facetPivot.add( pf.getName(i), readPivots( (List<NamedList>)pf.getVal(i) ) );
+      }
+    }
+  }
+  
+  protected List<PivotField> readPivots( List<NamedList> list )
+  {
+    ArrayList<PivotField> values = new ArrayList<PivotField>( list.size() );
+    for( NamedList nl : list ) {
+      // NOTE, this is cheating, but we know the order they are written in, so no need to check
+      String f = (String)nl.getVal( 0 );
+      Object v = nl.getVal( 1 );
+      int cnt = ((Integer)nl.getVal( 2 )).intValue();
+      List<PivotField> p = (nl.size()<4)?null:readPivots((List<NamedList>)nl.getVal(3) );
+      values.add( new PivotField( f, v, cnt, p ) );
+    }
+    return values;
   }
 
   //------------------------------------------------------
@@ -301,6 +325,10 @@ public class QueryResponse extends SolrResponseBase
   
   public List<FacetField> getFacetDates()   {
     return _facetDates;
+  }
+
+  public NamedList<List<PivotField>> getFacetPivot()   {
+    return _facetPivot;
   }
   
   /** get 

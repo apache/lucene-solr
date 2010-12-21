@@ -17,7 +17,7 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import java.util.GregorianCalendar;
+import java.util.Random;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -52,7 +52,7 @@ public class TestSearch extends LuceneTestCase {
     public void testSearch() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
-      doTestSearch(pw, false);
+      doTestSearch(random, pw, false);
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -60,7 +60,7 @@ public class TestSearch extends LuceneTestCase {
 
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
-      doTestSearch(pw, true);
+      doTestSearch(random, pw, true);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
@@ -69,11 +69,11 @@ public class TestSearch extends LuceneTestCase {
     }
 
 
-    private void doTestSearch(PrintWriter out, boolean useCompoundFile)
+    private void doTestSearch(Random random, PrintWriter out, boolean useCompoundFile)
     throws Exception {
-      Directory directory = new RAMDirectory();
+      Directory directory = newDirectory();
       Analyzer analyzer = new MockAnalyzer();
-      IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       IndexWriter writer = new IndexWriter(directory, conf);
@@ -89,7 +89,7 @@ public class TestSearch extends LuceneTestCase {
       };
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(new Field("contents", docs[j], Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField("contents", docs[j], Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(d);
       }
       writer.close();
@@ -112,28 +112,15 @@ public class TestSearch extends LuceneTestCase {
         Query query = parser.parse(queries[j]);
         out.println("Query: " + query.toString("contents"));
 
-      //DateFilter filter =
-      //  new DateFilter("modified", Time(1997,0,1), Time(1998,0,1));
-      //DateFilter filter = DateFilter.Before("modified", Time(1997,00,01));
-      //System.out.println(filter);
-
         hits = searcher.search(query, null, 1000).scoreDocs;
 
         out.println(hits.length + " total results");
         for (int i = 0 ; i < hits.length && i < 10; i++) {
           Document d = searcher.doc(hits[i].doc);
-          out.println(i + " " + hits[i].score
-// 			   + " " + DateField.stringToDate(d.get("modified"))
-                             + " " + d.get("contents"));
+          out.println(i + " " + hits[i].score + " " + d.get("contents"));
         }
       }
       searcher.close();
-  }
-
-  static long Time(int year, int month, int day) {
-    GregorianCalendar calendar = new GregorianCalendar();
-    calendar.clear();
-    calendar.set(year, month, day);
-    return calendar.getTime().getTime();
+      directory.close();
   }
 }

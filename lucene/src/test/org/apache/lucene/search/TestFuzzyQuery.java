@@ -25,12 +25,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -40,8 +39,8 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
     addDoc("aaabb", writer);
@@ -193,8 +192,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
 
   public void testFuzzinessLong() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
 
@@ -204,58 +203,58 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     FuzzyQuery query;
     // not similar enough:
-    query = new FuzzyQuery(new Term("field", "xxxxx"), FuzzyQuery.defaultMinSimilarity, 0);   
+    query = new FuzzyQuery(new Term("field", "xxxxx"), 0.5f, 0);   
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     // edit distance to "aaaaaaa" = 3, this matches because the string is longer than
     // in testDefaultFuzziness so a bigger difference is allowed:
-    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 0);   
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
     
     // now with prefix
-    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 1);   
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 1);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
-    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 4);   
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 4);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
-    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 5);   
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 5);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // no match, more than half of the characters is wrong:
-    query = new FuzzyQuery(new Term("field", "aaacccc"), FuzzyQuery.defaultMinSimilarity, 0);   
+    query = new FuzzyQuery(new Term("field", "aaacccc"), 0.5f, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
     // now with prefix
-    query = new FuzzyQuery(new Term("field", "aaacccc"), FuzzyQuery.defaultMinSimilarity, 2);   
+    query = new FuzzyQuery(new Term("field", "aaacccc"), 0.5f, 2);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
     // "student" and "stellent" are indeed similar to "segment" by default:
-    query = new FuzzyQuery(new Term("field", "student"), FuzzyQuery.defaultMinSimilarity, 0);   
+    query = new FuzzyQuery(new Term("field", "student"), 0.5f, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    query = new FuzzyQuery(new Term("field", "stellent"), FuzzyQuery.defaultMinSimilarity, 0);   
+    query = new FuzzyQuery(new Term("field", "stellent"), 0.5f, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
     // now with prefix
-    query = new FuzzyQuery(new Term("field", "student"), FuzzyQuery.defaultMinSimilarity, 1);   
+    query = new FuzzyQuery(new Term("field", "student"), 0.5f, 1);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    query = new FuzzyQuery(new Term("field", "stellent"), FuzzyQuery.defaultMinSimilarity, 1);   
+    query = new FuzzyQuery(new Term("field", "stellent"), 0.5f, 1);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    query = new FuzzyQuery(new Term("field", "student"), FuzzyQuery.defaultMinSimilarity, 2);   
+    query = new FuzzyQuery(new Term("field", "student"), 0.5f, 2);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
-    query = new FuzzyQuery(new Term("field", "stellent"), FuzzyQuery.defaultMinSimilarity, 2);   
+    query = new FuzzyQuery(new Term("field", "stellent"), 0.5f, 2);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
@@ -282,9 +281,51 @@ public class TestFuzzyQuery extends LuceneTestCase {
     directory.close();
   }
   
+  /** 
+   * MultiTermQuery provides (via attribute) information about which values
+   * must be competitive to enter the priority queue. 
+   * 
+   * FuzzyQuery optimizes itself around this information, if the attribute
+   * is not implemented correctly, there will be problems!
+   */
+  public void testTieBreaker() throws Exception {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    addDoc("a123456", writer);
+    addDoc("c123456", writer);
+    addDoc("d123456", writer);
+    addDoc("e123456", writer);
+    
+    Directory directory2 = newDirectory();
+    RandomIndexWriter writer2 = new RandomIndexWriter(random, directory2);
+    addDoc("a123456", writer2);
+    addDoc("b123456", writer2);
+    addDoc("b123456", writer2);
+    addDoc("b123456", writer2);
+    addDoc("c123456", writer2);
+    addDoc("f123456", writer2);
+    
+    IndexReader ir1 = writer.getReader();
+    IndexReader ir2 = writer2.getReader();
+    
+    MultiReader mr = new MultiReader(ir1, ir2);
+    IndexSearcher searcher = new IndexSearcher(mr);
+    FuzzyQuery fq = new FuzzyQuery(new Term("field", "z123456"), 1f, 0, 2);
+    TopDocs docs = searcher.search(fq, 2);
+    assertEquals(5, docs.totalHits); // 5 docs, from the a and b's
+    searcher.close();
+    mr.close();
+    ir1.close();
+    ir2.close();
+    writer.close();
+    writer2.close();
+    directory.close();
+    directory2.close(); 
+  }
+  
   public void testTokenLengthOpt() throws IOException {
-    RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("12345678911", writer);
     addDoc("segment", writer);
 
@@ -320,8 +361,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);
     addDoc("Lucenne", writer);
@@ -330,8 +371,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
     
-    FuzzyQuery query = new FuzzyQuery(new Term("field", "Lucene"));
-    query.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite());
+    FuzzyQuery query = new FuzzyQuery(new Term("field", "lucene"));
+    query.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(50));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
     // normally, 'Lucenne' would be the first result as IDF will skew the score.
@@ -346,9 +387,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
   public void testGiga() throws Exception {
 
     MockAnalyzer analyzer = new MockAnalyzer();
-
-    Directory index = new MockRAMDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(newRandom(), index);
+    Directory index = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, index);
 
     addDoc("Lucene in Action", w);
     addDoc("Lucene for Dummies", w);
@@ -381,10 +421,58 @@ public class TestFuzzyQuery extends LuceneTestCase {
     r.close();
     index.close();
   }
+  
+  public void testDistanceAsEditsParsing() throws Exception {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer());
+    FuzzyQuery q = (FuzzyQuery) qp.parse("foobar~2");
+    assertEquals(2f, q.getMinSimilarity(), 0.0001f);
+  }
+  
+  public void testDistanceAsEditsSearching() throws Exception {
+    Directory index = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, index);
+    addDoc("foobar", w);
+    addDoc("test", w);
+    addDoc("working", w);
+    IndexReader reader = w.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    w.close();
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer());
+    
+    FuzzyQuery q = (FuzzyQuery) qp.parse("fouba~2");
+    ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
+    assertEquals(1, hits.length);
+    assertEquals("foobar", searcher.doc(hits[0].doc).get("field"));
+    
+    q = (FuzzyQuery) qp.parse("foubara~2");
+    hits = searcher.search(q, 10).scoreDocs;
+    assertEquals(1, hits.length);
+    assertEquals("foobar", searcher.doc(hits[0].doc).get("field"));
+    
+    q = (FuzzyQuery) qp.parse("t~3");
+    hits = searcher.search(q, 10).scoreDocs;
+    assertEquals(1, hits.length);
+    assertEquals("test", searcher.doc(hits[0].doc).get("field"));
+    
+    q = new FuzzyQuery(new Term("field", "a"), 4f, 0, 50);
+    hits = searcher.search(q, 10).scoreDocs;
+    assertEquals(1, hits.length);
+    assertEquals("test", searcher.doc(hits[0].doc).get("field"));
+    
+    q = new FuzzyQuery(new Term("field", "a"), 6f, 0, 50);
+    hits = searcher.search(q, 10).scoreDocs;
+    assertEquals(2, hits.length);
+    assertEquals("test", searcher.doc(hits[0].doc).get("field"));
+    assertEquals("foobar", searcher.doc(hits[1].doc).get("field"));
+    
+    searcher.close();
+    reader.close();
+    index.close();
+  }
 
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
 }

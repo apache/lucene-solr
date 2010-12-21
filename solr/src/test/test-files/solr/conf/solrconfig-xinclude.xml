@@ -23,7 +23,7 @@
   -->
 
 <config>
-
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <jmx />
 
   <!-- Used to specify an alternate directory to hold all index data.
@@ -138,7 +138,7 @@
   </updateHandler>
 
   <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory">
-    <int name="setTermIndexInterval">12</int>
+    <int name="setTermIndexDivisor">12</int>
   </indexReaderFactory >
 
   <query>

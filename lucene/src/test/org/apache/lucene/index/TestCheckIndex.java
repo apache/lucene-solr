@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,13 +33,14 @@ import org.apache.lucene.util.Constants;
 public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
-    MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    Directory dir = newDirectory();
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     Document doc = new Document();
-    doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<19;i++) {
       writer.addDocument(doc);
     }
+    writer.optimize();
     writer.close();
     IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocument(5);
@@ -86,14 +87,17 @@ public class TestCheckIndex extends LuceneTestCase {
     onlySegments.add("_0");
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);
+    dir.close();
   }
 
   public void testLuceneConstantVersion() throws IOException {
     // common-build.xml sets lucene.version
     final String version = System.getProperty("lucene.version");
-    assertNotNull(version);
-    assertTrue(version.equals(Constants.LUCENE_MAIN_VERSION+"-dev") ||
+    assertNotNull( "null version", version);
+    assertTrue("Invalid version: "+version,
+               version.equals(Constants.LUCENE_MAIN_VERSION+"-SNAPSHOT") ||
                version.equals(Constants.LUCENE_MAIN_VERSION));
-    assertTrue(Constants.LUCENE_VERSION.startsWith(version));
+    assertTrue(version + " should start with: "+Constants.LUCENE_VERSION,
+               Constants.LUCENE_VERSION.startsWith(version));
   }
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -30,7 +31,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -56,12 +56,8 @@ public class TestNorms extends LuceneTestCase {
   private float lastNorm = 0;
   private float normDelta = (float) 0.001;
 
-  public TestNorms(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
     anlzr = new MockAnalyzer();
@@ -74,13 +70,13 @@ public class TestNorms extends LuceneTestCase {
    * Including optimize. 
    */
   public void testNorms() throws IOException {
-    Directory dir1 = new RAMDirectory();
+    Directory dir1 = newDirectory();
 
     norms = new ArrayList<Float>();
     modifiedNorms = new ArrayList<Float>();
 
-    createIndex(dir1);
-    doTestNorms(dir1);
+    createIndex(random, dir1);
+    doTestNorms(random, dir1);
 
     // test with a single index: index2
     ArrayList<Float> norms1 = norms;
@@ -91,20 +87,23 @@ public class TestNorms extends LuceneTestCase {
     modifiedNorms = new ArrayList<Float>();
     numDocNorms = 0;
     
-    Directory dir2 = new RAMDirectory();
+    Directory dir2 = newDirectory();
 
-    createIndex(dir2);
-    doTestNorms(dir2);
+    createIndex(random, dir2);
+    doTestNorms(random, dir2);
 
     // add index1 and index2 to a third index: index3
-    Directory dir3 = new RAMDirectory();
+    Directory dir3 = newDirectory();
 
-    createIndex(dir3);
-    IndexWriter iw = new IndexWriter(dir3, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
-    iw.addIndexes(new Directory[]{dir1,dir2});
+    createIndex(random, dir3);
+    IndexWriter iw = new IndexWriter(
+        dir3,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
+            setOpenMode(OpenMode.APPEND).
+            setMaxBufferedDocs(5).
+            setMergePolicy(newLogMergePolicy(3))
+    );
+    iw.addIndexes(dir1,dir2);
     iw.optimize();
     iw.close();
     
@@ -116,12 +115,16 @@ public class TestNorms extends LuceneTestCase {
 
     // test with index3
     verifyIndex(dir3);
-    doTestNorms(dir3);
+    doTestNorms(random, dir3);
     
     // now with optimize
-    iw = new IndexWriter(dir3, new IndexWriterConfig(TEST_VERSION_CURRENT,
-        anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
+    iw = new IndexWriter(
+        dir3,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
+            setOpenMode(OpenMode.APPEND).
+            setMaxBufferedDocs(5).
+            setMergePolicy(newLogMergePolicy(3))
+    );
     iw.optimize();
     iw.close();
     verifyIndex(dir3);
@@ -131,21 +134,21 @@ public class TestNorms extends LuceneTestCase {
     dir3.close();
   }
 
-  private void doTestNorms(Directory dir) throws IOException {
+  private void doTestNorms(Random random, Directory dir) throws IOException {
     for (int i=0; i<5; i++) {
-      addDocs(dir,12,true);
+      addDocs(random, dir,12,true);
       verifyIndex(dir);
       modifyNormsForF1(dir);
       verifyIndex(dir);
-      addDocs(dir,12,false);
+      addDocs(random, dir,12,false);
       verifyIndex(dir);
       modifyNormsForF1(dir);
       verifyIndex(dir);
     }
   }
 
-  private void createIndex(Directory dir) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
+  private void createIndex(Random random, Directory dir) throws IOException {
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
         .setMaxBufferedDocs(5).setSimilarity(similarityOne));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
@@ -188,8 +191,8 @@ public class TestNorms extends LuceneTestCase {
     ir.close();
   }
 
-  private void addDocs(Directory dir, int ndocs, boolean compound) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
+  private void addDocs(Random random, Directory dir, int ndocs, boolean compound) throws IOException {
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
         .setMaxBufferedDocs(5).setSimilarity(similarityOne));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
@@ -206,7 +209,7 @@ public class TestNorms extends LuceneTestCase {
     Document d = new Document();
     float boost = nextNorm();
     for (int i = 0; i < 10; i++) {
-      Field f = new Field("f"+i,"v"+i,Store.NO,Index.NOT_ANALYZED);
+      Field f = newField("f"+i,"v"+i,Store.NO,Index.NOT_ANALYZED);
       f.setBoost(boost);
       d.add(f);
     }

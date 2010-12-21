@@ -68,6 +68,48 @@ function timeStamp
     date +'%Y/%m/%d %H:%M:%S'
 }
 
+function curlUrl
+{
+    curl_url=""
+    if [[ -n ${solr_url} ]]
+    then
+      curl_url=${solr_url}
+    else
+      if [[ -z ${solr_port} ]]
+      then
+        echo "Solr port number missing in $confFile or command line."
+        echo "$USAGE"
+        exit 1
+      fi
+
+      # use default hostname if not specified
+      if [[ -z ${solr_hostname} ]]
+      then
+        solr_hostname=localhost
+      fi
+
+      # use default webapp name if not specified
+      if [[ -z ${webapp_name} ]]
+      then
+        webapp_name=solr
+      fi
+      curl_url=http://${solr_hostname}:${solr_port}/${webapp_name}/update
+    fi
+}
+
+function dataDir
+{
+    # use default value for data_dir if not specified
+    # relative path starts at ${solr_root}
+    if [[ -z ${data_dir} ]]
+    then
+        data_dir=${solr_root}/data
+    elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+    then
+        data_dir=${solr_root}/${data_dir}
+    fi
+}
+
 function logMessage
 {
     echo $(timeStamp) $@>>$log

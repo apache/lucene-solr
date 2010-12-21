@@ -116,11 +116,9 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
     
   public void testPosIncrementAnalyzer() throws ParseException {
-    QueryParser qp = new QueryParser(Version.LUCENE_24, "", new PosIncrementAnalyzer());
+    QueryParser qp = new QueryParser(Version.LUCENE_40, "", new PosIncrementAnalyzer());
     assertEquals("quick brown", qp.parse("the quick brown").toString());
-    assertEquals("\"quick brown\"", qp.parse("\"the quick brown\"").toString());
     assertEquals("quick brown fox", qp.parse("the quick brown fox").toString());
-    assertEquals("\"quick brown fox\"", qp.parse("\"the quick brown fox\"").toString());
   }
   
   /**

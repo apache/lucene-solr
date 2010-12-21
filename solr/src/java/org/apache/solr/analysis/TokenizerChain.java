@@ -65,7 +65,7 @@ public final class TokenizerChain extends SolrAnalyzer {
 
   @Override
   public TokenStreamInfo getStream(String fieldName, Reader reader) {
-    Tokenizer tk = (Tokenizer)tokenizer.create(charStream(reader));
+    Tokenizer tk = tokenizer.create(charStream(reader));
     TokenStream ts = tk;
     for (int i=0; i<filters.length; i++) {
       ts = filters[i].create(ts);

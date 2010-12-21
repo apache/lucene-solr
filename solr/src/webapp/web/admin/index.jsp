@@ -50,6 +50,7 @@
     [<a href="stats.jsp">Statistics</a>]
     [<a href="registry.jsp">Info</a>]
     [<a href="distributiondump.jsp">Distribution</a>]
+    [<a href="zookeeper.jsp">ZooKeeper</a>]
     [<a href="ping">Ping</a>]
     [<a href="logging">Logging</a>]
   </td>

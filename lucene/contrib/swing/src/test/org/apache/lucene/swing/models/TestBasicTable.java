@@ -21,16 +21,17 @@ import java.util.List;
 
 import javax.swing.table.TableModel;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 
-public class TestBasicTable extends TestCase {
+public class TestBasicTable extends LuceneTestCase {
     private TableModel baseTableModel;
     private TableSearcher tableSearcher;
     private List<RestaurantInfo> list;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
+        super.setUp();
         list = new ArrayList<RestaurantInfo>();
         list.add(DataStore.canolis);
         list.add(DataStore.chris);

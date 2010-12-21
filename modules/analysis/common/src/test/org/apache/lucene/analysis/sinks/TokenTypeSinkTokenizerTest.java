@@ -28,10 +28,6 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
 
-  public TokenTypeSinkTokenizerTest(String s) {
-    super(s);
-  }
-
   public void test() throws IOException {
     TokenTypeSinkFilter sinkFilter = new TokenTypeSinkFilter("D");
     String test = "The quick red fox jumped over the lazy brown dogs";

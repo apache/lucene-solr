@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -37,21 +35,18 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
-
 public class TestPayloads extends LuceneTestCase {
     
     // Simple tests to test the Payload class
     public void testPayload() throws Exception {
-        rnd = newRandom();
         byte[] testData = "This is a test!".getBytes();
         Payload payload = new Payload(testData);
         assertEquals("Wrong payload length.", testData.length, payload.length());
@@ -100,28 +95,27 @@ public class TestPayloads extends LuceneTestCase {
     // Tests whether the DocumentWriter and SegmentMerger correctly enable the
     // payload bit in the FieldInfo
     public void testPayloadFieldBit() throws Exception {
-        rnd = newRandom();
-        Directory ram = new MockRAMDirectory();
+        Directory ram = newDirectory();
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+        IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
         Document d = new Document();
         // this field won't have any payloads
-        d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
         // this field will have payloads in all docs, however not for all term positions,
         // so this field is used to check if the DocumentWriter correctly enables the payloads bit
         // even if only some term positions have payloads
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
         // this field is used to verify if the SegmentMerger enables payloads for a field if it has payloads 
         // enabled in only some documents
-        d.add(new Field("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
         // only add payload data for field f2
         analyzer.setPayloadData("f2", 1, "somedata".getBytes(), 0, 1);
         writer.addDocument(d);
         // flush
-        writer.close();        
-        
-        SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
+        writer.close();
+
+      SegmentReader reader = getOnlySegmentReader(IndexReader.open(ram, false));
         FieldInfos fi = reader.fieldInfos();
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
@@ -130,13 +124,13 @@ public class TestPayloads extends LuceneTestCase {
         
         // now we add another document which has payloads for field f3 and verify if the SegmentMerger
         // enabled payloads for that field
-        writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT,
+        writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         d = new Document();
-        d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
         // add payload data for field f2 and f3
         analyzer.setPayloadData("f2", "somedata".getBytes(), 0, 1);
         analyzer.setPayloadData("f3", "somedata".getBytes(), 0, 3);
@@ -147,33 +141,27 @@ public class TestPayloads extends LuceneTestCase {
         // flush
         writer.close();
 
-        reader = SegmentReader.getOnlySegmentReader(ram);
+      reader = getOnlySegmentReader(IndexReader.open(ram, false));
         fi = reader.fieldInfos();
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").storePayloads);
         reader.close();
+        ram.close();
     }
 
     // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
     public void testPayloadsEncoding() throws Exception {
-        rnd = newRandom();
-        // first perform the test using a RAMDirectory
-        Directory dir = new MockRAMDirectory();
+        Directory dir = newDirectory();
         performTest(dir);
-        
-        // now use a FSDirectory and repeat same test
-        File dirName = _TestUtil.getTempDir("test_payloads");
-        dir = FSDirectory.open(dirName);
-        performTest(dir);
-       _TestUtil.rmDir(dirName);
+        dir.close();
     }
     
     // builds an index with payloads in the given Directory and performs
     // different tests to verify the payload encoding
     private void performTest(Directory dir) throws Exception {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer)
             .setOpenMode(OpenMode.CREATE));
         
@@ -198,7 +186,7 @@ public class TestPayloads extends LuceneTestCase {
         byte[] payloadData = generateRandomData(payloadDataLength);
         
         Document d = new Document();
-        d.add(new Field(fieldName, content, Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField(fieldName, content, Field.Store.NO, Field.Index.ANALYZED));
         // add the same document multiple times to have the same payload lengths for all
         // occurrences within two consecutive skip intervals
         int offset = 0;
@@ -239,7 +227,7 @@ public class TestPayloads extends LuceneTestCase {
                                                     new BytesRef(terms[i].text()));
         }
         
-        while (tps[0].nextDoc() != DocsEnum.NO_MORE_DOCS) {
+        while (tps[0].nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             for (int i = 1; i < numTerms; i++) {
                 tps[i].nextDoc();
             }
@@ -248,9 +236,11 @@ public class TestPayloads extends LuceneTestCase {
             for (int i = 0; i < freq; i++) {
                 for (int j = 0; j < numTerms; j++) {
                     tps[j].nextPosition();
-                    BytesRef br = tps[j].getPayload();
-                    System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
-                    offset += br.length;
+                    if (tps[j].hasPayload()) {
+                      BytesRef br = tps[j].getPayload();
+                      System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
+                      offset += br.length;
+                    }
                 }
             }
         }
@@ -314,12 +304,12 @@ public class TestPayloads extends LuceneTestCase {
         
         // test long payload
         analyzer = new PayloadAnalyzer();
-        writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         String singleTerm = "lucene";
         
         d = new Document();
-        d.add(new Field(fieldName, singleTerm, Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField(fieldName, singleTerm, Field.Store.NO, Field.Index.ANALYZED));
         // add a payload whose length is greater than the buffer size of BufferedIndexOutput
         payloadData = generateRandomData(2000);
         analyzer.setPayloadData(fieldName, payloadData, 100, 1500);
@@ -348,10 +338,8 @@ public class TestPayloads extends LuceneTestCase {
         
     }
     
-    private Random rnd;
-    
     private void generateRandomData(byte[] data) {
-        rnd.nextBytes(data);
+        random.nextBytes(data);
     }
 
     private byte[] generateRandomData(int n) {
@@ -484,13 +472,12 @@ public class TestPayloads extends LuceneTestCase {
     }
     
     public void testThreadSafety() throws Exception {
-        rnd = newRandom();
         final int numThreads = 5;
         final int numDocs = 50 * RANDOM_MULTIPLIER;
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
-        Directory dir = new MockRAMDirectory();
-        final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        Directory dir = newDirectory();
+        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
             TEST_VERSION_CURRENT, new MockAnalyzer()));
         final String field = "test";
         
@@ -525,7 +512,7 @@ public class TestPayloads extends LuceneTestCase {
         while (terms.next() != null) {
           String termText = terms.term().utf8ToString();
           tp = terms.docsAndPositions(delDocs, tp);
-          while(tp.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+          while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             int freq = tp.freq();
             for (int i = 0; i < freq; i++) {
               tp.nextPosition();
@@ -535,7 +522,7 @@ public class TestPayloads extends LuceneTestCase {
           }
         }
         reader.close();
-        
+        dir.close();
         assertEquals(pool.size(), numThreads);
     }
     
@@ -608,4 +595,27 @@ public class TestPayloads extends LuceneTestCase {
             return pool.size();
         }
     }
+
+  public void testAcrossFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+                                                     new MockAnalyzer(MockTokenizer.WHITESPACE, true, true));
+    Document doc = new Document();
+    doc.add(new Field("haspayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    writer = new RandomIndexWriter(random, dir,
+                                   new MockAnalyzer(MockTokenizer.WHITESPACE, true, false));
+    doc = new Document();
+    doc.add(new Field("nopayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.optimize();
+    writer.close();
+
+    _TestUtil.checkIndex(dir);
+
+    dir.close();
+  }
 }

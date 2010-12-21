@@ -24,9 +24,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 /** Document boost unit test.
  *
@@ -34,16 +33,13 @@ import org.apache.lucene.store.RAMDirectory;
  * @version $Revision$
  */
 public class TestSetNorm extends LuceneTestCase {
-  public TestSetNorm(String name) {
-    super(name);
-  }
 
   public void testSetNorm() throws Exception {
-    RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory store = newDirectory();
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // add the same document four times
-    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Fieldable f1 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
     Document d1 = new Document();
     d1.add(f1);
     writer.addDocument(d1);
@@ -63,7 +59,8 @@ public class TestSetNorm extends LuceneTestCase {
     // check that searches are ordered by this boost
     final float[] scores = new float[4];
 
-    new IndexSearcher(store, true).search
+    IndexSearcher is = new IndexSearcher(store, true);
+    is.search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
          private int base = 0;
@@ -85,12 +82,13 @@ public class TestSetNorm extends LuceneTestCase {
            return true;
          }
        });
-
+    is.close();
     float lastScore = 0.0f;
 
     for (int i = 0; i < 4; i++) {
       assertTrue(scores[i] > lastScore);
       lastScore = scores[i];
     }
+    store.close();
   }
 }

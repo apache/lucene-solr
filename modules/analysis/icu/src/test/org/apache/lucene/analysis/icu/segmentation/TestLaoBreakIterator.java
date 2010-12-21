@@ -33,7 +33,7 @@ public class TestLaoBreakIterator extends LuceneTestCase {
   private BreakIterator wordIterator;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     InputStream is = getClass().getResourceAsStream("Lao.brk");
     wordIterator = new LaoBreakIterator(RuleBasedBreakIterator.getInstanceFromCompiledRules(is));

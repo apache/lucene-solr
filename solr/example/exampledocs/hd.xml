@@ -28,7 +28,8 @@
   <field name="popularity">6</field>
   <field name="inStock">true</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
-  <field name="store">45.17614,-93.87341</field>
+  <!-- Near Oklahoma city -->
+  <field name="store">35.0752,-97.032</field>
 </doc>
 
 <doc>

@@ -27,11 +27,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -48,16 +45,16 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
   public void setUp() throws Exception {
     super.setUp();
-    dataDir = new File(System.getProperty("java.io.tmpdir")
-        + System.getProperty("file.separator")
-        + getClass().getName() + "-" + System.currentTimeMillis() + System.getProperty("file.separator") + "solr"
+
+    dataDir = new File(TEMP_DIR,
+        getClass().getName() + "-" + System.currentTimeMillis() + System.getProperty("file.separator") + "solr"
         + System.getProperty("file.separator") + "data");
     dataDir.mkdirs();
 
-    solrConfig = h.createConfig(getSolrConfigFile());
+    solrConfig = h.createConfig("solrconfig.xml");
     h = new TestHarness( dataDir.getAbsolutePath(),
         solrConfig,
-        getSchemaFile());
+        "schema12.xml");
     lrf = h.getRequestFactory
     ("standard",0,20,"version","2.2");
   }
@@ -69,12 +66,12 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
   @Override
   public String getSchemaFile() {
-    return "schema12.xml";
+    return null;
   }
 
   @Override
   public String getSolrConfigFile() {
-    return "solrconfig.xml";
+    return null;  // prevent superclass from creating it's own TestHarness
   }
 
   @Test
@@ -100,8 +97,12 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     }
 
     //add a doc in the new index dir
-    Directory dir = FSDirectory.open(newDir);
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(Version.LUCENE_24), new MaxFieldLength(1000));
+    Directory dir = newFSDirectory(newDir);
+    IndexWriter iw = new IndexWriter(
+        dir,
+        new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40)).
+            setMaxFieldLength(1000)
+    );
     Document doc = new Document();
     doc.add(new Field("id", "2", Field.Store.YES, Field.Index.ANALYZED));
     doc.add(new Field("name", "name2", Field.Store.YES, Field.Index.ANALYZED));
@@ -116,6 +117,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         req("id:2"),
         "*[count(//doc)=1]"
     );
+    dir.close();
     newDir.delete();
   }
 }

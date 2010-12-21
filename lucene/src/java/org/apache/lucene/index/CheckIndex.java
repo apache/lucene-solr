@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -127,8 +129,8 @@ public class CheckIndex {
       /** Name of the segment. */
       public String name;
 
-      /** Name of codec used to read this segment. */
-      public String codec;
+      /** CodecInfo used to read this segment. */
+      public SegmentCodecs codec;
 
       /** Document count (does not take deletions into account). */
       public int docCount;
@@ -302,7 +304,7 @@ public class CheckIndex {
    *  writer. */
   public Status checkIndex(List<String> onlySegments, CodecProvider codecs) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
-    SegmentInfos sis = new SegmentInfos();
+    SegmentInfos sis = new SegmentInfos(codecs);
     Status result = new Status();
     result.dir = dir;
     try {
@@ -406,7 +408,7 @@ public class CheckIndex {
       SegmentReader reader = null;
 
       try {
-        final String codec = info.getCodec().name;
+        final SegmentCodecs codec = info.getSegmentCodecs();
         msg("    codec=" + codec);
         segInfoStat.codec = codec;
         msg("    compound=" + info.getUseCompoundFile());
@@ -415,8 +417,8 @@ public class CheckIndex {
         segInfoStat.hasProx = info.getHasProx();
         msg("    numFiles=" + info.files().size());
         segInfoStat.numFiles = info.files().size();
-        msg("    size (MB)=" + nf.format(info.sizeInBytes()/(1024.*1024.)));
-        segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
+        segInfoStat.sizeMB = info.sizeInBytes(true)/(1024.*1024.);
+        msg("    size (MB)=" + nf.format(segInfoStat.sizeMB));
         Map<String,String> diagnostics = info.getDiagnostics();
         segInfoStat.diagnostics = diagnostics;
         if (diagnostics.size() > 0) {
@@ -548,8 +550,10 @@ public class CheckIndex {
       }
       final byte[] b = new byte[reader.maxDoc()];
       for (final String fieldName : fieldNames) {
-        reader.norms(fieldName, b, 0);
-        ++status.totFields;
+        if (reader.hasNorms(fieldName)) {
+          reader.norms(fieldName, b, 0);
+          ++status.totFields;
+        }
       }
 
       msg("OK [" + status.totFields + " fields]");
@@ -573,6 +577,8 @@ public class CheckIndex {
     final int maxDoc = reader.maxDoc();
     final Bits delDocs = reader.getDeletedDocs();
 
+    final IndexSearcher is = new IndexSearcher(reader);
+
     try {
 
       if (infoStream != null) {
@@ -584,7 +590,10 @@ public class CheckIndex {
         msg("OK [no fields/terms]");
         return status;
       }
-      
+     
+      DocsEnum docs = null;
+      DocsAndPositionsEnum postings = null;
+
       final FieldsEnum fieldsEnum = fields.iterator();
       while(true) {
         final String field = fieldsEnum.next();
@@ -593,10 +602,7 @@ public class CheckIndex {
         }
         
         final TermsEnum terms = fieldsEnum.terms();
-
-        DocsEnum docs = null;
-        DocsAndPositionsEnum postings = null;
-
+        assert terms != null;
         boolean hasOrd = true;
         final long termCountStart = status.termCount;
 
@@ -706,6 +712,68 @@ public class CheckIndex {
             }
           }
         }
+
+        // Test seek to last term:
+        if (lastTerm != null) {
+          if (terms.seek(lastTerm) != TermsEnum.SeekStatus.FOUND) {
+            throw new RuntimeException("seek to last term " + lastTerm + " failed");
+          }
+
+          is.search(new TermQuery(new Term(field, lastTerm)), 1);
+        }
+
+        // Test seeking by ord
+        if (hasOrd && status.termCount-termCountStart > 0) {
+          long termCount;
+          try {
+            termCount = fields.terms(field).getUniqueTermCount();
+          } catch (UnsupportedOperationException uoe) {
+            termCount = -1;
+          }
+
+          if (termCount != -1 && termCount != status.termCount - termCountStart) {
+            throw new RuntimeException("termCount mismatch " + termCount + " vs " + (status.termCount - termCountStart));
+          }
+
+          int seekCount = (int) Math.min(10000L, termCount);
+          if (seekCount > 0) {
+            BytesRef[] seekTerms = new BytesRef[seekCount];
+            
+            // Seek by ord
+            for(int i=seekCount-1;i>=0;i--) {
+              long ord = i*(termCount/seekCount);
+              terms.seek(ord);
+              seekTerms[i] = new BytesRef(terms.term());
+            }
+
+            // Seek by term
+            long totDocCount = 0;
+            for(int i=seekCount-1;i>=0;i--) {
+              if (terms.seek(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
+                throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
+              }
+              
+              docs = terms.docs(delDocs, docs);
+              if (docs == null) {
+                throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
+              }
+
+              while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                totDocCount++;
+              }
+            }
+
+            // TermQuery
+            long totDocCount2 = 0;
+            for(int i=0;i<seekCount;i++) {
+              totDocCount2 += is.search(new TermQuery(new Term(field, seekTerms[i])), 1).totalHits;
+            }
+
+            if (totDocCount != totDocCount2) {
+              throw new RuntimeException("search to seek terms produced wrong number of hits: " + totDocCount + " vs " + totDocCount2);
+            }
+          }
+        }
       }
 
       msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
@@ -733,8 +801,9 @@ public class CheckIndex {
       }
 
       // Scan stored fields for all documents
+      final Bits delDocs = reader.getDeletedDocs();
       for (int j = 0; j < info.docCount; ++j) {
-        if (!reader.isDeleted(j)) {
+        if (delDocs == null || !delDocs.get(j)) {
           status.docCount++;
           Document doc = reader.document(j);
           status.totFields += doc.getFields().size();
@@ -770,8 +839,9 @@ public class CheckIndex {
         infoStream.print("    test: term vectors........");
       }
 
+      final Bits delDocs = reader.getDeletedDocs();
       for (int j = 0; j < info.docCount; ++j) {
-        if (!reader.isDeleted(j)) {
+        if (delDocs == null || !delDocs.get(j)) {
           status.docCount++;
           TermFreqVector[] tfv = reader.getTermFreqVectors(j);
           if (tfv != null) {
@@ -809,6 +879,7 @@ public class CheckIndex {
   public void fixIndex(Status result) throws IOException {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
+    result.newSegments.changed();
     result.newSegments.commit(result.dir);
   }
 

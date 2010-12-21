@@ -64,7 +64,7 @@ import java.util.LinkedList;
  * example above, the subclass must clone the additional "A" it creates.
  * 
  * @deprecated This class does not support custom attributes. Extend TokenFilter instead,
- * using {@link AttributeSource#captureState()} and {@link AttributeSource#restoreState()}
+ * using {@link AttributeSource#captureState()} and {@link AttributeSource#restoreState(State)}
  * which support all attributes.
  */
 @Deprecated

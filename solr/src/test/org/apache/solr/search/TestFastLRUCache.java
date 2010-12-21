@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ConcurrentLRUCache;
 
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see org.apache.solr.search.FastLRUCache
  * @since solr 1.4
  */
-public class TestFastLRUCache extends TestCase {
+public class TestFastLRUCache extends LuceneTestCase {
   
   public void testPercentageAutowarm() throws IOException {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<Object, Object>();
@@ -243,6 +243,14 @@ public class TestFastLRUCache extends TestCase {
     assertNotNull(m.get(5));
     assertNotNull(m.get(4));
     assertNotNull(m.get(2));
+
+    m = cache.getOldestAccessedItems(0);
+    assertTrue(m.isEmpty());
+
+    //test this too
+    m = cache.getLatestAccessedItems(0);
+    assertTrue(m.isEmpty());
+
     cache.destroy();
   }
 
@@ -252,7 +260,7 @@ public class TestFastLRUCache extends TestCase {
     int lowerWaterMark = cacheSize;
     int upperWaterMark = (int)(lowerWaterMark * 1.1);
 
-    Random r = new Random(0);
+    Random r = random;
     ConcurrentLRUCache cache = new ConcurrentLRUCache(upperWaterMark, lowerWaterMark, (upperWaterMark+lowerWaterMark)/2, upperWaterMark, false, false, null);
     boolean getSize=false;
     int minSize=0,maxSize=0;
@@ -302,9 +310,8 @@ public class TestFastLRUCache extends TestCase {
   }
 
   void fillCache(SolrCache sc, int cacheSize, int maxKey) {
-    Random r = new Random(0);
     for (int i=0; i<cacheSize; i++) {
-      Integer kv = r.nextInt(maxKey);
+      Integer kv = random.nextInt(maxKey);
       sc.put(kv,kv);
     }
   }
@@ -325,7 +332,7 @@ public class TestFastLRUCache extends TestCase {
     Thread[] threads = new Thread[nThreads];
     final AtomicInteger puts = new AtomicInteger(0);
     for (int i=0; i<threads.length; i++) {
-      final int seed=i;
+      final int seed=random.nextInt();
       threads[i] = new Thread() {
           public void run() {
             int ret = useCache(sc, numGets/nThreads, maxKey, seed);

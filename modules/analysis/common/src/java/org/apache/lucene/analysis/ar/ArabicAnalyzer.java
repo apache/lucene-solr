@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
@@ -62,14 +63,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
 
   /**
-   * The comment character in the stopwords file.  All lines prefixed with this will be ignored
-   * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly  
-   */
-  // TODO make this private 
-  @Deprecated
-  public static final String STOPWORDS_COMMENT = "#";
-  
-  /**
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
@@ -86,7 +79,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
 
     static {
       try {
-        DEFAULT_STOP_SET = loadStopwordSet(false, ArabicAnalyzer.class, DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
+        DEFAULT_STOP_SET = loadStopwordSet(false, ArabicAnalyzer.class, DEFAULT_STOPWORD_FILE, "#");
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -135,39 +128,12 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public ArabicAnalyzer( Version matchVersion, String... stopwords ) {
-    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords ));
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
-   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public ArabicAnalyzer( Version matchVersion, Hashtable<?,?> stopwords ) {
-    this(matchVersion, stopwords.keySet());
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
-   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
-   */
-  @Deprecated
-  public ArabicAnalyzer( Version matchVersion, File stopwords ) throws IOException {
-    this(matchVersion, WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT));
-  }
-
-  /**
    * Creates
    * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
-   *         built from an {@link ArabicLetterTokenizer} filtered with
+   *         built from an {@link StandardTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link StopFilter},
    *         {@link ArabicNormalizationFilter}, {@link KeywordMarkerFilter}
    *         if a stem exclusion set is provided and {@link ArabicStemFilter}.
@@ -175,7 +141,8 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new ArabicLetterTokenizer(matchVersion, reader);
+    final Tokenizer source = matchVersion.onOrAfter(Version.LUCENE_31) ? 
+        new StandardTokenizer(matchVersion, reader) : new ArabicLetterTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter( matchVersion, result, stopwords);

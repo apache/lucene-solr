@@ -17,6 +17,8 @@
 
 package org.apache.solr.analysis;
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
 
@@ -24,7 +26,13 @@ import org.apache.lucene.analysis.standard.StandardFilter;
  * @version $Id$
  */
 public class StandardFilterFactory extends BaseTokenFilterFactory {
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
+    assureMatchVersion();
+  }
+  
   public StandardFilter create(TokenStream input) {
-    return new StandardFilter(input);
+    return new StandardFilter(luceneMatchVersion, input);
   }
 }

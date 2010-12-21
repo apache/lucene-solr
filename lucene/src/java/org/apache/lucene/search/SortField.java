@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
 
+import org.apache.lucene.search.cache.*;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -93,7 +94,8 @@ implements Serializable {
   private int type;  // defaults to determining type dynamically
   private Locale locale;    // defaults to "natural order" (no Locale)
   boolean reverse = false;  // defaults to natural order
-  private FieldCache.Parser parser;
+  private CachedArrayCreator<?> creator;
+  public Object missingValue = null; // used for 'sortMissingFirst/Last'
 
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
@@ -129,7 +131,10 @@ implements Serializable {
    *  by testing which numeric parser the parser subclasses.
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
+   *  
+   *  @deprecated (4.0) use EntryCreator version
    */
+  @Deprecated
   public SortField (String field, FieldCache.Parser parser) {
     this(field, parser, false);
   }
@@ -144,20 +149,73 @@ implements Serializable {
    * @param reverse True if natural order should be reversed.
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
+   *  
+   *  @deprecated (4.0) use EntryCreator version
    */
+  @Deprecated
   public SortField (String field, FieldCache.Parser parser, boolean reverse) {
-    if (parser instanceof FieldCache.IntParser) initFieldType(field, INT);
-    else if (parser instanceof FieldCache.FloatParser) initFieldType(field, FLOAT);
-    else if (parser instanceof FieldCache.ShortParser) initFieldType(field, SHORT);
-    else if (parser instanceof FieldCache.ByteParser) initFieldType(field, BYTE);
-    else if (parser instanceof FieldCache.LongParser) initFieldType(field, LONG);
-    else if (parser instanceof FieldCache.DoubleParser) initFieldType(field, DOUBLE);
+    if (field == null) {
+      throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
+    } 
+    this.field = StringHelper.intern(field);
+    this.reverse = reverse;
+    
+    if (parser instanceof FieldCache.IntParser) {
+      this.type = INT;
+      this.creator = new IntValuesCreator( field, (FieldCache.IntParser)parser );
+    }
+    else if (parser instanceof FieldCache.FloatParser) {
+      this.type = FLOAT;
+      this.creator = new FloatValuesCreator( field, (FieldCache.FloatParser)parser );
+    }
+    else if (parser instanceof FieldCache.ShortParser) {
+      this.type = SHORT;
+      this.creator = new ShortValuesCreator( field, (FieldCache.ShortParser)parser );
+    }
+    else if (parser instanceof FieldCache.ByteParser) {
+      this.type = BYTE;
+      this.creator = new ByteValuesCreator( field, (FieldCache.ByteParser)parser );
+    }
+    else if (parser instanceof FieldCache.LongParser) {
+      this.type = LONG;
+      this.creator = new LongValuesCreator( field, (FieldCache.LongParser)parser );
+    }
+    else if (parser instanceof FieldCache.DoubleParser) {
+      this.type = DOUBLE;
+      this.creator = new DoubleValuesCreator( field, (FieldCache.DoubleParser)parser );
+    }
     else
       throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache (got " + parser + ")");
 
-    this.reverse = reverse;
-    this.parser = parser;
   }
+  
+  /**
+   * Sort by a cached entry value
+   * @param creator
+   * @param reverse
+   */
+  public SortField( CachedArrayCreator<?> creator, boolean reverse ) 
+  {
+    this.field = StringHelper.intern(creator.field);
+    this.reverse = reverse;
+    this.creator = creator;
+    this.type = creator.getSortTypeID();
+  }
+  
+  public SortField setMissingValue( Object v )
+  {
+    missingValue = v;
+    if( missingValue != null ) {
+      if( this.creator == null ) {
+        throw new IllegalArgumentException( "Missing value only works for sort fields with a CachedArray" );
+      }
+
+      // Set the flag to get bits 
+      creator.setFlag( CachedArrayCreator.OPTION_CACHE_BITS );
+    }
+    return this;
+  }
+  
 
   /** Creates a sort by terms in the given field sorted
    * according to the given locale.
@@ -210,6 +268,18 @@ implements Serializable {
     } else {
       this.field = StringHelper.intern(field);
     }
+    
+    if( creator != null ) {
+      throw new IllegalStateException( "creator already exists: "+creator );
+    }
+    switch( type ) {
+    case BYTE:   creator = new ByteValuesCreator( field, null ); break;
+    case SHORT:  creator = new ShortValuesCreator( field, null ); break;
+    case INT:    creator = new IntValuesCreator( field, null ); break;
+    case LONG:   creator = new LongValuesCreator( field, null ); break;
+    case FLOAT:  creator = new FloatValuesCreator( field, null ); break;
+    case DOUBLE: creator = new DoubleValuesCreator( field, null ); break;
+    }
   }
 
   /** Returns the name of the field.  Could return <code>null</code>
@@ -238,9 +308,15 @@ implements Serializable {
   /** Returns the instance of a {@link FieldCache} parser that fits to the given sort type.
    * May return <code>null</code> if no parser was specified. Sorting is using the default parser then.
    * @return An instance of a {@link FieldCache} parser, or <code>null</code>.
+   * @deprecated (4.0) use getEntryCreator()
    */
+  @Deprecated
   public FieldCache.Parser getParser() {
-    return parser;
+    return (creator==null) ? null : creator.getParser();
+  }
+
+  public CachedArrayCreator<?> getEntryCreator() {
+    return creator;
   }
 
   /** Returns whether the sort should be reversed.
@@ -311,7 +387,7 @@ implements Serializable {
     }
 
     if (locale != null) buffer.append('(').append(locale).append(')');
-    if (parser != null) buffer.append('(').append(parser).append(')');
+    if (creator != null) buffer.append('(').append(creator).append(')');
     if (reverse) buffer.append('!');
 
     return buffer.toString();
@@ -332,7 +408,7 @@ implements Serializable {
       && other.reverse == this.reverse
       && (other.locale == null ? this.locale == null : other.locale.equals(this.locale))
       && (other.comparatorSource == null ? this.comparatorSource == null : other.comparatorSource.equals(this.comparatorSource))
-      && (other.parser == null ? this.parser == null : other.parser.equals(this.parser))
+      && (other.creator == null ? this.creator == null : other.creator.equals(this.creator))
     );
   }
 
@@ -347,7 +423,7 @@ implements Serializable {
     if (field != null) hash += field.hashCode()^0xff5685dd;
     if (locale != null) hash += locale.hashCode()^0x08150815;
     if (comparatorSource != null) hash += comparatorSource.hashCode();
-    if (parser != null) hash += parser.hashCode()^0x3aaf56ff;
+    if (creator != null) hash += creator.hashCode()^0x3aaf56ff;
     return hash;
   }
 
@@ -387,22 +463,22 @@ implements Serializable {
       return new FieldComparator.DocComparator(numHits);
 
     case SortField.INT:
-      return new FieldComparator.IntComparator(numHits, field, parser);
+      return new FieldComparator.IntComparator(numHits, (IntValuesCreator)creator, (Integer)missingValue );
 
     case SortField.FLOAT:
-      return new FieldComparator.FloatComparator(numHits, field, parser);
+      return new FieldComparator.FloatComparator(numHits, (FloatValuesCreator)creator, (Float)missingValue );
 
     case SortField.LONG:
-      return new FieldComparator.LongComparator(numHits, field, parser);
+      return new FieldComparator.LongComparator(numHits, (LongValuesCreator)creator, (Long)missingValue );
 
     case SortField.DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, field, parser);
+      return new FieldComparator.DoubleComparator(numHits, (DoubleValuesCreator)creator, (Double)missingValue );
 
     case SortField.BYTE:
-      return new FieldComparator.ByteComparator(numHits, field, parser);
+      return new FieldComparator.ByteComparator(numHits, (ByteValuesCreator)creator, (Byte)missingValue );
 
     case SortField.SHORT:
-      return new FieldComparator.ShortComparator(numHits, field, parser);
+      return new FieldComparator.ShortComparator(numHits, (ShortValuesCreator)creator, (Short)missingValue );
 
     case SortField.CUSTOM:
       assert comparatorSource != null;

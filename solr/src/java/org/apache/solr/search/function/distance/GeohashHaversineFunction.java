@@ -72,7 +72,7 @@ public class GeohashHaversineFunction extends ValueSource {
       }
 
       public double doubleVal(int doc) {
-        return (double) distance(doc, gh1DV, gh2DV);
+        return distance(doc, gh1DV, gh2DV);
       }
 
       public String strVal(int doc) {

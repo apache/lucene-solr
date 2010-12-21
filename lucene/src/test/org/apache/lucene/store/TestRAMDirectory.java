@@ -47,18 +47,18 @@ public class TestRAMDirectory extends LuceneTestCase {
   
   // setup the index
   @Override
-  protected void setUp () throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     indexDir = new File(TEMP_DIR, "RAMDirIndex");
     
-    Directory dir = FSDirectory.open(indexDir);
+    Directory dir = newFSDirectory(indexDir);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     // add some documents
     Document doc = null;
     for (int i = 0; i < docsToAdd; i++) {
       doc = new Document();
-      doc.add(new Field("content", English.intToEnglish(i).trim(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", English.intToEnglish(i).trim(), Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     assertEquals(docsToAdd, writer.maxDoc());
@@ -68,8 +68,8 @@ public class TestRAMDirectory extends LuceneTestCase {
   
   public void testRAMDirectory () throws IOException {
     
-    Directory dir = FSDirectory.open(indexDir);
-    MockRAMDirectory ramDir = new MockRAMDirectory(dir);
+    Directory dir = newFSDirectory(indexDir);
+    MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random, new RAMDirectory(dir));
     
     // close the underlaying directory
     dir.close();
@@ -100,8 +100,8 @@ public class TestRAMDirectory extends LuceneTestCase {
   
   public void testRAMDirectorySize() throws IOException, InterruptedException {
       
-    Directory dir = FSDirectory.open(indexDir);
-    final MockRAMDirectory ramDir = new MockRAMDirectory(dir);
+    Directory dir = newFSDirectory(indexDir);
+    final MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random, new RAMDirectory(dir));
     dir.close();
     
     final IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
@@ -118,7 +118,7 @@ public class TestRAMDirectory extends LuceneTestCase {
         public void run() {
           for (int j=1; j<docsPerThread; j++) {
             Document doc = new Document();
-            doc.add(new Field("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+            doc.add(newField("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), Field.Store.YES, Field.Index.NOT_ANALYZED));
             try {
               writer.addDocument(doc);
             } catch (IOException e) {
@@ -152,7 +152,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   } 
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     // cleanup 
     if (indexDir != null && indexDir.exists()) {
       rmDir (indexDir);

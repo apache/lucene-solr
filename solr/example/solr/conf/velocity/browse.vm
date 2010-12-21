@@ -1,31 +1,9 @@
 #set($searcher=$request.searcher)
 #set($params=$request.params)
 #set($clusters = $response.response.clusters)
-
-<div class="query-box">
-  <form id="query-form" action="#{url_for_home}" method="GET">
-  <a href="#url_for_home#if($request.params.get('debugQuery'))?debugQuery=true#end"><img src="#{url_for_solr}/admin/solr_small.png" id="logo"/></a>
-  
-    Find: <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/>
-    #if($request.params.get('debugQuery'))
-      <input type="hidden" name="debugQuery" value="true"/>
-    #end
-    #foreach($fq in $request.params.getParams('fq'))
-      <input type="hidden" name="fq" value="$esc.html($fq)"/>
-    #end
-    <div class="constraints">
-      #foreach($fq in $params.getParams('fq'))
-        #set($previous_fq_count=$velocityCount - 1)
-      &gt; <a style="{text-decoration: line-through;}" href="#url_for_filters($request.params.getParams('fq').subList(0,$previous_fq_count))">$fq</a>
-      #end
-    </div>
-     #if($request.params.get('debugQuery'))
-        <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle parsed query</a>
-        <pre style="display:none">$response.response.debug.parsedquery</pre>
-      #end    
-  </form>
-</div>
-
+#set($mltResults = $response.response.get("moreLikeThis"))
+#set($annotate = $params.get("annotateBrowse"))
+#parse('query.vm')
 #if($response.response.spellcheck.suggestions and $response.response.spellcheck.suggestions.size() > 0)
   Did you mean <a href="#url_for_home?q=$esc.url($response.response.spellcheck.suggestions.collation)#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug">$response.response.spellcheck.suggestions.collation</a>?
 #end
@@ -35,23 +13,33 @@
 </div>
 
 <div class="pagination">
-  <span><span class="results-found">$page.results_found</span> results found in ${response.responseHeader.QTime} ms</span>
+  #if($response.response.get('grouped'))
+    <span><span class="results-found">$response.response.get('grouped').size() group(s)</span> found in ${response.responseHeader.QTime} ms</span>
+  #else<span><span class="results-found">$page.results_found</span> results found in ${response.responseHeader.QTime} ms</span>
   Page <span class="page-num">$page.current_page_number</span> of <span
-        class="page-count">$page.page_count</span>
+        class="page-count">$page.page_count</span>#end
 </div>
 
 <div class="results">
-  #foreach($doc in $response.results)
-    #parse("hit.vm")
+  #if($response.response.get('grouped'))
+    #foreach($grouping in $response.response.get('grouped'))
+      #parse("hitGrouped.vm")
+    #end
+  #else
+    #foreach($doc in $response.results)
+      #parse("hit.vm")
+    #end
   #end
 </div>
 
 <div class="pagination">
+  #if($response.response.get('grouped'))
+  #else
   #link_to_previous_page("previous")
   <span class="results-found">$page.results_found</span> results found.
   Page <span class="page-num">$page.current_page_number</span> of <span
         class="page-count">$page.page_count</span>
   #link_to_next_page("next")
-
+  #end
   <br/>
 </div>

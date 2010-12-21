@@ -18,16 +18,17 @@ package org.apache.lucene.swing.models;
 
 import javax.swing.ListModel;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 
  
-public class TestSearchingList extends TestCase {
+public class TestSearchingList extends LuceneTestCase {
     private ListModel baseListModel;
     private ListSearcher listSearcher;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
+        super.setUp();
         baseListModel = new BaseListModel(DataStore.getRestaurants());
         listSearcher = new ListSearcher(baseListModel);
     }

@@ -18,17 +18,19 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.VectorValueSource;
 
@@ -36,12 +38,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
  * Represents a Latitude/Longitude as a 2 dimensional point.  Latitude is <b>always</b> specified first.
- * Can also, optionally, integrate in Spatial Tile capabilities.  The default is for tile fields from 4 - 15,
- * just as in the SpatialTileField that we are extending.
  */
 public class LatLonType extends AbstractSubTypeFieldType implements SpatialQueryable {
   protected static final int LAT = 0;
@@ -82,166 +83,173 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     return f;
   }
 
+
+  @Override
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+    int dimension = 2;
+
+    String[] p1;
+    String[] p2;
+    try {
+      p1 = DistanceUtils.parsePoint(null, part1, dimension);
+      p2 = DistanceUtils.parsePoint(null, part2, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    BooleanQuery result = new BooleanQuery(true);
+    for (int i = 0; i < dimension; i++) {
+      SchemaField subSF = subField(field, i);
+      // points must currently be ordered... should we support specifying any two opposite corner points?
+      result.add(subSF.getType().getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
+    }
+    return result;
+
+  }
+
+  @Override
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    int dimension = 2;
+    
+    String[] p1 = new String[0];
+    try {
+      p1 = DistanceUtils.parsePoint(null, externalVal, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    BooleanQuery bq = new BooleanQuery(true);
+    for (int i = 0; i < dimension; i++) {
+      SchemaField sf = subField(field, i);
+      Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);
+      bq.add(tq, BooleanClause.Occur.MUST);
+    }
+    return bq;
+  }
+
+
+
   @Override
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
-    BooleanQuery result = new BooleanQuery();
-    double[] point = new double[0];
+    double[] point = null;
     try {
       point = DistanceUtils.parseLatitudeLongitude(options.pointStr);
     } catch (InvalidGeoException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
+    // lat & lon in degrees
+    double latCenter = point[LAT];
+    double lonCenter = point[LONG];
+
+    point[0] = point[0] * DistanceUtils.DEGREES_TO_RADIANS;
+    point[1] = point[1] * DistanceUtils.DEGREES_TO_RADIANS;
     //Get the distance
-    double[] ur;
-    double[] ll;
-    if (options.measStr == null || options.measStr.equals("hsin")) {
-      ur = DistanceUtils.latLonCornerDegs(point[LAT], point[LONG], options.distance, null, true, options.radius);
-      ll = DistanceUtils.latLonCornerDegs(point[LAT], point[LONG], options.distance, null, false, options.radius);
+
+    double[] tmp = new double[2];
+    //these calculations aren't totally accurate, but it should be good enough
+    //TODO: Optimize to do in single calculations.  Would need to deal with poles, prime meridian, etc.
+    double [] north = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, 0, tmp, options.radius);
+    //This returns the point as radians, but we need degrees b/c that is what the field is stored as
+    double ur_lat = north[LAT] * DistanceUtils.RADIANS_TO_DEGREES;//get it now, as we are going to reuse tmp
+    double [] east = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, DistanceUtils.DEG_90_AS_RADS, tmp, options.radius);
+    double ur_lon = east[LONG] * DistanceUtils.RADIANS_TO_DEGREES;
+    double [] south = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, DistanceUtils.DEG_180_AS_RADS, tmp, options.radius);
+    double ll_lat = south[LAT] * DistanceUtils.RADIANS_TO_DEGREES;
+    double [] west = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, DistanceUtils.DEG_270_AS_RADS, tmp, options.radius);
+    double ll_lon = west[LONG] * DistanceUtils.RADIANS_TO_DEGREES;
+    
+
+    //TODO: can we reuse our bearing calculations?
+    double angDist = DistanceUtils.angularDistance(options.distance,
+            options.radius);//in radians
+
+    double latMin = -90.0, latMax = 90.0, lonMin = -180.0, lonMax = 180.0;
+    double lon2Min = -180.0, lon2Max = 180.0;  // optional second longitude restriction
+
+    // for the poles, do something slightly different - a polar "cap".
+    // Also, note point[LAT] is in radians, but ur and ll are in degrees
+    if (point[LAT] + angDist > DistanceUtils.DEG_90_AS_RADS) { // we cross the north pole
+      //we don't need a longitude boundary at all
+      latMin = Math.min(ll_lat, ur_lat);
+    } else if (point[LAT] - angDist < -DistanceUtils.DEG_90_AS_RADS) { // we cross the south pole
+      latMax = Math.max(ll_lat, ur_lat);
     } else {
-      ur = DistanceUtils.vectorBoxCorner(point, null, options.distance, true);
-      ll = DistanceUtils.vectorBoxCorner(point, null, options.distance, false);
+      // set the latitude restriction as normal
+      latMin = ll_lat;
+      latMax = ur_lat;
+
+      if (ll_lon > ur_lon) {
+         // we crossed the +-180 deg longitude... need to make
+        // range queries of (-180 TO ur) OR (ll TO 180)
+        lonMin = -180;
+        lonMax = ur_lon;
+        lon2Min = ll_lon;
+        lon2Max = 180;
+      } else {
+        lonMin = ll_lon;
+        lonMax = ur_lon;
+      }
     }
 
-    SchemaField subSF;
-    Query range;
 
-    double angDistDegs = DistanceUtils.angularDistance(options.distance,
-            DistanceUtils.EARTH_MEAN_RADIUS_MI) * DistanceUtils.RADIANS_TO_DEGREES;
-    //for the poles, do something slightly different
-    if (point[LAT] + angDistDegs > 90.0) { //we cross the north pole
-      //we don't need a longitude boundary at all
+    // Now that we've figured out the ranges, build them!
+    SchemaField latField = subField(options.field, LAT);
+    SchemaField lonField = subField(options.field, LONG);
 
-      double minLat = Math.min(ll[LAT], ur[LAT]);
-      subSF = subField(options.field, LAT);
-      range = subSF.getType().getRangeQuery(parser, subSF,
-              String.valueOf(minLat),
-              "90", true, true);
-      result.add(range, BooleanClause.Occur.MUST);
-    } else if (point[LAT] - angDistDegs < -90.0) {//we cross the south pole
-      subSF = subField(options.field, LAT);
-      double maxLat = Math.max(ll[LAT], ur[LAT]);
-      range = subSF.getType().getRangeQuery(parser, subSF,
-              "-90", String.valueOf(maxLat), true, true);
-      result.add(range, BooleanClause.Occur.MUST);
-    } else{
-        //Latitude
-        //we may need to generate multiple queries depending on the range
-        //Are we crossing the 180 deg. longitude, if so, we need to do some special things
-        if (ll[LONG] > 0.0 && ur[LONG] < 0.0) {
-          //TODO: refactor into common code, etc.
-          //Now check other side of the Equator
-          if (ll[LAT] < 0.0 && ur[LAT] > 0.0) {
-            addEquatorialBoundary(parser, options, result, ur[LAT], ll[LAT]);
-          } //check poles
-          else {
-            subSF = subField(options.field, LAT);
-            //not crossing the equator
-            range = subSF.getType().getRangeQuery(parser, subSF,
-                    String.valueOf(ll[LAT]),
-                    String.valueOf(ur[LAT]), true, true);
-            result.add(range, BooleanClause.Occur.MUST);
-          }
-          //Longitude
-          addMeridianBoundary(parser, options, result, ur[LONG], ll[LONG], "180.0", "-180.0");
+    if (options.bbox) {
+      BooleanQuery result = new BooleanQuery();  // only used if box==true
 
-        } else if (ll[LONG] < 0.0 && ur[LONG] > 0.0) {//prime meridian (0 degrees
-          //Now check other side of the Equator
-          if (ll[LAT] < 0.0 && ur[LAT] > 0.0) {
-            addEquatorialBoundary(parser, options, result, ur[LAT], ll[LAT]);
-          } else {
-            subSF = subField(options.field, LAT);
-            //not crossing the equator
-            range = subSF.getType().getRangeQuery(parser, subSF,
-                    String.valueOf(ll[LAT]),
-                    String.valueOf(ur[LAT]), true, true);
-            result.add(range, BooleanClause.Occur.MUST);
-          }
-          //Longitude
-          addMeridianBoundary(parser, options, result, ur[LONG], ll[LONG], "0.0", ".0");
+      Query latRange = latField.getType().getRangeQuery(parser, latField,
+                String.valueOf(latMin),
+                String.valueOf(latMax),
+                true, true);
+      result.add(latRange, BooleanClause.Occur.MUST);
 
-        } else {// we are all in the Eastern or Western hemi
-          //Now check other side of the Equator
-          if (ll[LAT] < 0.0 && ur[LAT] > 0.0) {
-            addEquatorialBoundary(parser, options, result, ur[LAT], ll[LAT]);
-          } else {//we are all in either the Northern or the Southern Hemi.
-            //TODO: nice to move this up so that it is the first thing and we can avoid the extra checks since
-            //this is actually the most likely case
-            subSF = subField(options.field, LAT);
-            range = subSF.getType().getRangeQuery(parser, subSF,
-                    String.valueOf(ll[LAT]),
-                    String.valueOf(ur[LAT]), true, true);
-            result.add(range, BooleanClause.Occur.MUST);
+      if (lonMin != -180 || lonMax != 180) {
+        Query lonRange = lonField.getType().getRangeQuery(parser, lonField,
+                String.valueOf(lonMin),
+                String.valueOf(lonMax),
+                true, true);
+        if (lon2Min != -180 || lon2Max != 180) {
+          // another valid longitude range
+          BooleanQuery bothLons = new BooleanQuery();
+          bothLons.add(lonRange, BooleanClause.Occur.SHOULD);
 
-          }
-          //Longitude, all in the same hemi
-          subSF = subField(options.field, LONG);
-          range = subSF.getType().getRangeQuery(parser, subSF,
-                  String.valueOf(ll[LONG]),
-                  String.valueOf(ur[LONG]), true, true);
-          result.add(range, BooleanClause.Occur.MUST);
+          lonRange = lonField.getType().getRangeQuery(parser, lonField,
+                String.valueOf(lon2Min),
+                String.valueOf(lon2Max),
+                true, true);
+          bothLons.add(lonRange, BooleanClause.Occur.SHOULD);
+
+          lonRange = bothLons;
         }
+
+        result.add(lonRange, BooleanClause.Occur.MUST);
       }
 
       return result;
     }
 
-    /**
-     * Add a boundary condition around a meridian
-     * @param parser
-     * @param options
-     * @param result
-     * @param upperRightLon
-     * @param lowerLeftLon
-     * @param eastern
-     * @param western
-     */
 
-  private void addMeridianBoundary(QParser parser, SpatialOptions options, BooleanQuery result, double upperRightLon,
-                                    double lowerLeftLon, String eastern, String western) {
-    SchemaField subSF;
-    Query range;
-    BooleanQuery lonQ = new BooleanQuery();
-    subSF = subField(options.field, LONG);
-    //Eastern Hemisphere
-    range = subSF.getType().getRangeQuery(parser, subSF,
-            String.valueOf(lowerLeftLon),
-            eastern, true, true);
-    lonQ.add(range, BooleanClause.Occur.SHOULD);
-    //Western hemi
-    range = subSF.getType().getRangeQuery(parser, subSF,
-            western,
-            String.valueOf(upperRightLon), true, true);
-    lonQ.add(range, BooleanClause.Occur.SHOULD);
-    //One or the other must occur
-    result.add(lonQ, BooleanClause.Occur.MUST);
-  }
+    SpatialDistanceQuery spatial = new SpatialDistanceQuery();
+    spatial.origField = options.field.getName();
+    spatial.latSource = latField.getType().getValueSource(latField, parser);
+    spatial.lonSource = lonField.getType().getValueSource(lonField, parser);
+    spatial.latMin = latMin;
+    spatial.latMax = latMax;
+    spatial.lonMin = lonMin;
+    spatial.lonMax = lonMax;
+    spatial.lon2Min = lon2Min;
+    spatial.lon2Max = lon2Max;
+    spatial.lon2 = lon2Min != -180 || lon2Max != 180;
 
-  /**
-   * Add query conditions for boundaries like the equator, poles and meridians
-   *
-   * @param parser
-   * @param options
-   * @param result
-   * @param upperRight
-   * @param lowerLeft
-   */
-  protected void addEquatorialBoundary(QParser parser, SpatialOptions options, BooleanQuery result, double upperRight, double lowerLeft) {
-    SchemaField subSF;
-    Query range;
-    BooleanQuery tmpQ = new BooleanQuery();
-    subSF = subField(options.field, LAT);
-    //southern hemi.
-    range = subSF.getType().getRangeQuery(parser, subSF,
-            String.valueOf(lowerLeft),
-            "0", true, true);
-    tmpQ.add(range, BooleanClause.Occur.SHOULD);
-    //northern hemi
-    range = subSF.getType().getRangeQuery(parser, subSF,
-            "0", String.valueOf(upperRight), true, true);
-    tmpQ.add(range, BooleanClause.Occur.SHOULD);
-    //One or the other must occur
-    result.add(tmpQ, BooleanClause.Occur.MUST);
+    spatial.latCenter = latCenter;
+    spatial.lonCenter = lonCenter;
+    spatial.dist = options.distance;
+    spatial.planetRadius = options.radius;
+
+    spatial.calcDist = !options.bbox;
+
+    return spatial;
   }
 
   @Override
@@ -271,7 +279,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on SpatialTileField " + field.getName());
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on LatLonType " + field.getName());
   }
 
 
@@ -280,7 +288,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public Field createField(SchemaField field, String externalVal, float boost) {
-    throw new UnsupportedOperationException("SpatialTileField uses multiple fields.  field=" + field.getName());
+    throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 
 }
@@ -303,3 +311,291 @@ class LatLonValueSource extends VectorValueSource {
     return name() + "(" + sf.getName() + ")";
   }
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// TODO: recast as a value source that doesn't have to match all docs
+
+class SpatialDistanceQuery extends Query {
+  String origField;
+  ValueSource latSource;
+  ValueSource lonSource;
+  double lonMin, lonMax, lon2Min, lon2Max, latMin, latMax;
+  boolean lon2;
+
+  boolean calcDist;  // actually calculate the distance with haversine
+
+  double latCenter;
+  double lonCenter;
+  double dist;
+  double planetRadius;
+
+
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    return this;
+  }
+
+  @Override
+  public void extractTerms(Set terms) {}
+
+  protected class SpatialWeight extends Weight {
+    protected Searcher searcher;
+    protected float queryNorm;
+    protected float queryWeight;
+    protected Map latContext;
+    protected Map lonContext;
+
+    public SpatialWeight(Searcher searcher) throws IOException {
+      this.searcher = searcher;
+      this.latContext = latSource.newContext();
+      this.lonContext = lonSource.newContext();
+      latSource.createWeight(latContext, searcher);
+      lonSource.createWeight(lonContext, searcher);
+    }
+
+    @Override
+    public Query getQuery() {
+      return SpatialDistanceQuery.this;
+    }
+
+    @Override
+    public float getValue() {
+      return queryWeight;
+    }
+
+    @Override
+    public float sumOfSquaredWeights() throws IOException {
+      queryWeight = getBoost();
+      return queryWeight * queryWeight;
+    }
+
+    @Override
+    public void normalize(float norm) {
+      this.queryNorm = norm;
+      queryWeight *= this.queryNorm;
+    }
+
+    @Override
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      return new SpatialScorer(getSimilarity(searcher), reader, this);
+    }
+
+    @Override
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
+      SolrIndexReader topReader = (SolrIndexReader)reader;
+      SolrIndexReader[] subReaders = topReader.getLeafReaders();
+      int[] offsets = topReader.getLeafOffsets();
+      int readerPos = SolrIndexReader.readerIndex(doc, offsets);
+      int readerBase = offsets[readerPos];
+      return ((SpatialScorer)scorer(subReaders[readerPos], true, true)).explain(doc-readerBase);
+    }
+  }
+
+  protected class SpatialScorer extends Scorer {
+    final IndexReader reader;
+    final SpatialWeight weight;
+    final int maxDoc;
+    final float qWeight;
+    int doc=-1;
+    final DocValues latVals;
+    final DocValues lonVals;
+    final Bits delDocs;
+
+
+    final double lonMin, lonMax, lon2Min, lon2Max, latMin, latMax;
+    final boolean lon2;
+    final boolean calcDist;
+    
+    final double latCenterRad;
+    final double lonCenterRad;
+    final double latCenterRad_cos;
+    final double dist;
+    final double planetRadius;
+
+    int lastDistDoc;
+    double lastDist;
+
+    public SpatialScorer(Similarity similarity, IndexReader reader, SpatialWeight w) throws IOException {
+      super(similarity);
+      this.weight = w;
+      this.qWeight = w.getValue();
+      this.reader = reader;
+      this.maxDoc = reader.maxDoc();
+      this.delDocs = reader.hasDeletions() ? MultiFields.getDeletedDocs(reader) : null;
+      latVals = latSource.getValues(weight.latContext, reader);
+      lonVals = lonSource.getValues(weight.lonContext, reader);
+
+      this.lonMin = SpatialDistanceQuery.this.lonMin;
+      this.lonMax = SpatialDistanceQuery.this.lonMax;
+      this.lon2Min = SpatialDistanceQuery.this.lon2Min;
+      this.lon2Max = SpatialDistanceQuery.this.lon2Max;
+      this.latMin = SpatialDistanceQuery.this.latMin;
+      this.latMax = SpatialDistanceQuery.this.latMax;
+      this.lon2 = SpatialDistanceQuery.this.lon2;
+      this.calcDist = SpatialDistanceQuery.this.calcDist;
+
+      this.latCenterRad = SpatialDistanceQuery.this.latCenter * DistanceUtils.DEGREES_TO_RADIANS;
+      this.lonCenterRad = SpatialDistanceQuery.this.lonCenter * DistanceUtils.DEGREES_TO_RADIANS;
+      this.latCenterRad_cos = this.calcDist ? Math.cos(latCenterRad) : 0;
+      this.dist = SpatialDistanceQuery.this.dist;
+      this.planetRadius = SpatialDistanceQuery.this.planetRadius;
+
+    }
+
+    boolean match() {
+      // longitude should generally be more restrictive than latitude
+      // (e.g. in the US, it immediately separates the coasts, and in world search separates
+      // US from Europe from Asia, etc.
+      double lon = lonVals.doubleVal(doc);
+      if (! ((lon >= lonMin && lon <=lonMax) || (lon2 && lon >= lon2Min && lon <= lon2Max)) ) {
+        return false;
+      }
+
+      double lat = latVals.doubleVal(doc);
+      if ( !(lat >= latMin && lat <= latMax) ) {
+        return false;
+      }
+
+      if (!calcDist) return true;
+
+      // TODO: test for internal box where we wouldn't need to calculate the distance
+
+      return dist(lat, lon) <= dist;
+    }
+
+    double dist(double lat, double lon) {
+      double latRad = lat * DistanceUtils.DEGREES_TO_RADIANS;
+      double lonRad = lon * DistanceUtils.DEGREES_TO_RADIANS;
+      
+      // haversine, specialized to avoid a cos() call on latCenterRad
+      double diffX = latCenterRad - latRad;
+      double diffY = lonCenterRad - lonRad;
+      double hsinX = Math.sin(diffX * 0.5);
+      double hsinY = Math.sin(diffY * 0.5);
+      double h = hsinX * hsinX +
+              (latCenterRad_cos * Math.cos(latRad) * hsinY * hsinY);
+      double result = (planetRadius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
+
+      // save the results of this calculation
+      lastDistDoc = doc;
+      lastDist = result;
+      
+      return result;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    // instead of matching all docs, we could also embed a query.
+    // the score could either ignore the subscore, or boost it.
+    // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)
+    // Boost:        foo:myTerm^floatline("myFloatField",1.0,0.0f)
+    @Override
+    public int nextDoc() throws IOException {
+      for(;;) {
+        ++doc;
+        if (doc>=maxDoc) {
+          return doc=NO_MORE_DOCS;
+        }
+        if (delDocs != null && delDocs.get(doc)) continue;
+        if (!match()) continue;
+        return doc;
+      }
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      // this will work even if target==NO_MORE_DOCS
+      doc=target-1;
+      return nextDoc();
+    }
+
+    @Override
+    public float score() throws IOException {
+      double dist = (doc == lastDistDoc) ? lastDist : dist(latVals.doubleVal(doc), lonVals.doubleVal(doc));
+      return (float)(dist * qWeight);
+    }
+
+    public Explanation explain(int doc) throws IOException {
+      advance(doc);
+      boolean matched = this.doc == doc;
+      this.doc = doc;
+
+      float sc = matched ? score() : 0;
+      double dist = dist(latVals.doubleVal(doc), lonVals.doubleVal(doc));
+
+      String description = SpatialDistanceQuery.this.toString();
+
+      Explanation result = new ComplexExplanation
+        (this.doc == doc, sc, description +  " product of:");
+      // result.addDetail(new Explanation((float)dist, "hsin("+latVals.explain(doc)+","+lonVals.explain(doc)));
+      result.addDetail(new Explanation((float)dist, "hsin("+latVals.doubleVal(doc)+","+lonVals.doubleVal(doc)));
+      result.addDetail(new Explanation(getBoost(), "boost"));
+      result.addDetail(new Explanation(weight.queryNorm,"queryNorm"));
+      return result;
+    }
+  }
+
+
+  @Override
+  public Weight createWeight(Searcher searcher) throws IOException {
+    return new SpatialWeight(searcher);
+  }
+
+
+  /** Prints a user-readable version of this query. */
+  @Override
+  public String toString(String field)
+  {
+    float boost = getBoost();
+    return (boost!=1.0?"(":"") +
+            "geofilt(latlonSource="+origField +"(" + latSource + "," + lonSource + ")"
+            +",latCenter="+latCenter+",lonCenter="+lonCenter
+            +",dist=" + dist
+            +",latMin=" + latMin + ",latMax="+latMax
+            +",lonMin=" + lonMin + ",lonMax"+lonMax
+            +",lon2Min=" + lon2Min + ",lon2Max" + lon2Max
+            +",calcDist="+calcDist
+            +",planetRadius="+planetRadius
+            +")"
+            + (boost==1.0 ? "" : ")^"+boost);
+  }
+
+
+  /** Returns true if <code>o</code> is equal to this. */
+  @Override
+  public boolean equals(Object o) {
+    if (SpatialDistanceQuery.class != o.getClass()) return false;
+    SpatialDistanceQuery other = (SpatialDistanceQuery)o;
+    return     this.latCenter == other.latCenter
+            && this.lonCenter == other.lonCenter
+            && this.latMin == other.latMin
+            && this.latMax == other.latMax
+            && this.lonMin == other.lonMin
+            && this.lonMax == other.lonMax
+            && this.lon2Min == other.lon2Min
+            && this.lon2Max == other.lon2Max
+            && this.dist == other.dist
+            && this.planetRadius == other.planetRadius
+            && this.calcDist == other.calcDist
+            && this.lonSource.equals(other.lonSource)
+            && this.latSource.equals(other.latSource)
+            && this.getBoost() == other.getBoost()
+        ;
+  }
+
+  /** Returns a hash code value for this object. */
+  @Override
+  public int hashCode() {
+    // don't bother making the hash expensive - the center latitude + min longitude will be very uinque 
+    long hash = Double.doubleToLongBits(latCenter);
+    hash = hash * 31 + Double.doubleToLongBits(lonMin);
+    return (int)(hash >> 32 + hash);
+  }
+
+}
+
+

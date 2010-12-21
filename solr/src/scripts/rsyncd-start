@@ -22,7 +22,7 @@ cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
 
-unset data_dir solr_port rsyncd_port user verbose debug
+unset data_dir solr_port rsyncd_port user rsyncd_bwlimit verbose debug
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -31,16 +31,17 @@ log=${solr_root}/logs/rsyncd.log
 
 # define usage string
 USAGE="\
-usage: $prog [-d dir] [-p portnum] [-u username] [-v]
+usage: $prog [-d dir] [-p portnum] [-u username] [-b kbps] [-v] [-V]
        -d          specify directory holding index data
        -p          specify rsyncd port number
        -u          specify user to sudo to before running script
+       -b          specify a max transfer rate in kilobytes per second (defaults to 0 (no limit))
        -v          increase verbosity
        -V          output debugging info
 "
 
 # parse args
-while getopts d:p:u:vV OPTION
+while getopts d:p:u:b:vV OPTION
 do
     case $OPTION in
     d)
@@ -51,6 +52,9 @@ do
         ;;
     u)
         user="$OPTARG"
+        ;;
+    b)
+        rsyncd_bwlimit="$OPTARG"
         ;;
     v)
         verbose="v"
@@ -82,15 +86,13 @@ then
     fi
 fi
 
-# use default value for data_dir if not specified
-# relative path starts at ${solr_root}
-if [[ -z ${data_dir} ]]
+# Set bwlimit to unlimited by default
+if [[ -z ${rsyncd_bwlimit} ]]
 then
-    data_dir=${solr_root}/data
-elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
-then
-    data_dir=${solr_root}/${data_dir}
+       rsyncd_bwlimit='0'
 fi
+
+dataDir
 
 logMessage started by $oldwhoami
 logMessage command: $0 $@
@@ -127,7 +129,7 @@ log file = ${solr_root}/logs/rsyncd.log
     comment = Solr
 EOF
 
-rsync --daemon --port=${rsyncd_port} --config=${solr_root}/conf/rsyncd.conf
+rsync --daemon --port=${rsyncd_port} --bwlimit=${rsyncd_bwlimit} --config=${solr_root}/conf/rsyncd.conf
 
 # first make sure rsyncd is accepting connections
 i=1

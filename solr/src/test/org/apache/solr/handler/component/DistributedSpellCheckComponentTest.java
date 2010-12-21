@@ -1,8 +1,11 @@
 package org.apache.solr.handler.component;
 
+import java.io.File;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -13,6 +16,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  */
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
+	public DistributedSpellCheckComponentTest()
+	{
+		//fixShardCount=true;
+		//shardCount=2;
+	}
+	
   private String saveProp;
   @Override
   public void setUp() throws Exception {
@@ -49,6 +58,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   
   @Override
   public void doTest() throws Exception {
+  	del("*:*");
     index(id, "1", "lowerfilt", "toyota");
     index(id, "2", "lowerfilt", "chevrolet");
     index(id, "3", "lowerfilt", "suzuki");
@@ -60,6 +70,18 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     index(id, "9", "lowerfilt", "The quick red fox jumped over the lazy brown dogs.");
     index(id, "10", "lowerfilt", "blue");
     index(id, "12", "lowerfilt", "glue");
+    index(id, "13", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "14", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "15", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "16", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "17", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "18", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "19", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "20", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "21", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "22", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "23", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "24", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     commit();
 
     handle.clear();
@@ -74,5 +96,9 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
     query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","bluo", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "4");
     query("q", "The quick reb fox jumped over the lazy brown dogs", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "4", SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+
+    query("q", "lowerfilt:(+quock +reb)", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "10", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true");
+    query("q", "lowerfilt:(+quock +reb)", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "10", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "false");
+    query("q", "lowerfilt:(+quock +reb)", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "10", SpellCheckComponent.SPELLCHECK_COLLATE, "true", SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "0", SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1", SpellCheckComponent.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "false");
   }
 }

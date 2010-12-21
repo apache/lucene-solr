@@ -27,10 +27,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.store.Directory;
 
 public class TestTermScorer extends LuceneTestCase {
-  protected RAMDirectory directory;
+  protected Directory directory;
   private static final String FIELD = "field";
   
   protected String[] values = new String[] {"all", "dogs dogs", "like",
@@ -38,30 +39,26 @@ public class TestTermScorer extends LuceneTestCase {
   protected IndexSearcher indexSearcher;
   protected IndexReader indexReader;
   
-  public TestTermScorer(String s) {
-    super(s);
-  }
-  
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = newDirectory();
     
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
       doc
-          .add(new Field(FIELD, values[i], Field.Store.YES,
+          .add(newField(FIELD, values[i], Field.Store.YES,
               Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    indexReader = writer.getReader();
+    indexReader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
     indexSearcher = new IndexSearcher(indexReader);
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     indexSearcher.close();
     indexReader.close();
     directory.close();
