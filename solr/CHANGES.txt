@@ -703,6 +703,9 @@ Documentation
 * SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
   (hossman)
 
+* SOLR-2232: Improved README info on solr.solr.home in examples
+  (Eric Pugh and hossman)
+
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.
 
