@@ -576,6 +576,8 @@ Bug Fixes
   addresses "commitWithin" option on Update requests.
   (noble, hossman, and Maxim Valyanskiy)
 
+* SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
+  (Erick Erickson via hossman)
 
 Other Changes
 ----------------------

@@ -612,17 +612,17 @@ public class SolrPluginUtils {
    * helper exposed for UnitTests
    * @see #setMinShouldMatch
    */
-  static int calculateMinShouldMatch(int optionalClauseCount, String spec) {
+  static int calculateMinShouldMatch(int optionalClauseCount, String specIn) {
 
     int result = optionalClauseCount;
 
-
+    String spec = specIn.replaceAll("\\s*<\\s*", "<");
     if (-1 < spec.indexOf("<")) {
       /* we have conditional spec(s) */
 
       for (String s : spec.trim().split(" ")) {
         String[] parts = s.split("<");
-        int upperBound = (new Integer(parts[0])).intValue();
+        int upperBound = (new Integer(parts[0].trim())).intValue();
         if (optionalClauseCount <= upperBound) {
           return result;
         } else {
@@ -637,11 +637,11 @@ public class SolrPluginUtils {
 
     if (-1 < spec.indexOf("%")) {
       /* percentage */
-      int percent = new Integer(spec.replace("%","")).intValue();
+      int percent = new Integer(spec.trim().replace("%","")).intValue();
       float calc = (result * percent) / 100f;
       result = calc < 0 ? result + (int)calc : (int)calc;
     } else {
-      int calc = (new Integer(spec)).intValue();
+      int calc = (new Integer(spec.trim())).intValue();
       result = calc < 0 ? result + calc : calc;
     }
 
