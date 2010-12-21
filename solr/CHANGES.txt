@@ -572,6 +572,11 @@ Bug Fixes
 
 * SOLR-2285: duplicate SolrEventListeners no longer created (hossman)
 
+* SOLR-1993: fix String cast assumption in JavaBinCodec - specific
+  addresses "commitWithin" option on Update requests.
+  (noble, hossman, and Maxim Valyanskiy)
+
+
 Other Changes
 ----------------------
 
