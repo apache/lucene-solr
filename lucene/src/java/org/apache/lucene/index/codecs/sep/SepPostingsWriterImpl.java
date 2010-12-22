@@ -179,7 +179,9 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       if (!omitTF) {
         freqIndex.write(docOut, true);
         posIndex.write(docOut, true);
-        docOut.writeVLong(payloadStart);
+        if (fieldInfo.storePayloads) {
+          docOut.writeVLong(payloadStart);
+        }
       }
       // nocommit -- only write if docFreq > skipInterval?
       docOut.writeVLong(skipOut.getFilePointer());

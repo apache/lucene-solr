@@ -287,9 +287,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
         //System.out.println("  freqIndex=" + freqIndex + " posIndex=" + posIndex);
         
         posIndex.read(docReader, true);
-        // nocommit -- only store this if storePayloads is true
-        // skip payload offset
-        IntIndexInput.readVLong(docReader);
+        if (storePayloads) {
+          // skip payload offset
+          IntIndexInput.readVLong(docReader);
+        }
       } else {
         freq = 1;
       }
@@ -521,7 +522,9 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       posSeekPending = true;
       payloadPending = false;
 
-      payloadOffset = IntIndexInput.readVLong(docReader);
+      if (storePayloads) {
+        payloadOffset = IntIndexInput.readVLong(docReader);
+      }
       //System.out.println("  payloadOffset=" + payloadOffset);
       skipOffset = IntIndexInput.readVLong(docReader);
       //System.out.println("  skipOffset=" + skipOffset);
@@ -918,9 +921,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           freqIndex.seek(freqReader);
         }
         posIndex.read(docReader, true);
-        // skip payload offset -- nocommit only store this
-        // if field has payloads
-        IntIndexInput.readVLong(docReader);
+        if (storePayloads) {
+          // skip payload offset
+          IntIndexInput.readVLong(docReader);
+        }
       }
 
       skipOffset = IntIndexInput.readVLong(docReader);
