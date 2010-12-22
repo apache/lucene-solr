@@ -172,7 +172,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   public void startDoc(int docID, int termDocFreq) throws IOException {
 
     if (firstDoc) {
-      // TODO: we are writing absolute file pointers below,
+      // nocommit: we are writing absolute file pointers below,
       // which is wasteful.  It'd be better compression to
       // write the "baseline" into each indexed term, then
       // write only the delta here.
@@ -183,7 +183,8 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
           docOut.writeVLong(payloadStart);
         }
       }
-      // nocommit -- only write if docFreq > skipInterval?
+      // nocommit -- only write if docFreq > skipInterval
+      // nocommit -- use delta not abs
       docOut.writeVLong(skipOut.getFilePointer());
       firstDoc = false;
     }
