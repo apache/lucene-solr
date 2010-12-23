@@ -609,7 +609,7 @@ public class SolrPluginUtils {
   }
 
   // private static Pattern spaceAroundLessThanPattern = Pattern.compile("\\s*<\\s*");
-  private static Pattern spaceAroundLessThanPattern = Pattern.compile("(\\s+<)|(<\\s+)|(\\s+<\\s+)");
+  private static Pattern spaceAroundLessThanPattern = Pattern.compile("(\\s+<\\s*)|(\\s*<\\s+)");
   private static Pattern spacePattern = Pattern.compile(" ");
   private static Pattern lessThanPattern = Pattern.compile("<");
 
@@ -625,9 +625,8 @@ public class SolrPluginUtils {
     if (-1 < spec.indexOf("<")) {
       /* we have conditional spec(s) */
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
-
       for (String s : spacePattern.split(spec)) {
-        String[] parts = lessThanPattern.split(s);
+        String[] parts = lessThanPattern.split(s,0);
         int upperBound = Integer.parseInt(parts[0]);
         if (optionalClauseCount <= upperBound) {
           return result;
