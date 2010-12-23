@@ -71,7 +71,7 @@ public class ExtractWikipedia {
     d.mkdirs();
     File f = new File(d, id + ".txt");
 
-    StringBuffer contents = new StringBuffer();
+    StringBuilder contents = new StringBuilder();
 
     contents.append(time);
     contents.append("\n\n");

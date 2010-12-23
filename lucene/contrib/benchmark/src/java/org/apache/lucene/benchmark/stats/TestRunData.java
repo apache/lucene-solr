@@ -162,7 +162,7 @@ public class TestRunData {
   /** Return a string representation. */
   @Override
   public String toString() {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (final String label : getLabels()) {
         sb.append(id).append("-").append(label).append(" ").append(getTotals(label).toString(false)).append(" ");
         sb.append(getMemUsage(label).toScaledString(1024 * 1024, "MB")).append("\n");

@@ -49,7 +49,7 @@ public class RepSelectByPrefTask extends RepSumByPrefTask {
   protected Report reportSelectByPrefix(List<TaskStats> taskStats) {
     String longestOp = longestOp(taskStats);
     boolean first = true;
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     sb.append(tableTitle(longestOp));
     sb.append(newline);
     int reported = 0;

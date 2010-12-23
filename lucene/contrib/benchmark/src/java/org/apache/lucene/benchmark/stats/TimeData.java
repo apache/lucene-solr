@@ -95,7 +95,7 @@ public class TimeData {
    * @return The String
    */
   public String toString(boolean withMem) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     sb.append(count + "\t" + elapsed + "\t" + getRate());
     if (withMem) sb.append("\t" + freeMem + "\t" + totalMem);
     return sb.toString();
