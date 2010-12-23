@@ -608,21 +608,27 @@ public class SolrPluginUtils {
     }
   }
 
+  // private static Pattern spaceAroundLessThanPattern = Pattern.compile("\\s*<\\s*");
+  private static Pattern spaceAroundLessThanPattern = Pattern.compile("(\\s+<)|(<\\s+)|(\\s+<\\s+)");
+  private static Pattern spacePattern = Pattern.compile(" ");
+  private static Pattern lessThanPattern = Pattern.compile("<");
+
   /**
    * helper exposed for UnitTests
    * @see #setMinShouldMatch
    */
-  static int calculateMinShouldMatch(int optionalClauseCount, String specIn) {
+  static int calculateMinShouldMatch(int optionalClauseCount, String spec) {
 
     int result = optionalClauseCount;
+    spec = spec.trim();
 
-    String spec = specIn.replaceAll("\\s*<\\s*", "<");
     if (-1 < spec.indexOf("<")) {
       /* we have conditional spec(s) */
+      spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
 
-      for (String s : spec.trim().split(" ")) {
-        String[] parts = s.split("<");
-        int upperBound = (new Integer(parts[0].trim())).intValue();
+      for (String s : spacePattern.split(spec)) {
+        String[] parts = lessThanPattern.split(s);
+        int upperBound = Integer.parseInt(parts[0]);
         if (optionalClauseCount <= upperBound) {
           return result;
         } else {
@@ -635,13 +641,14 @@ public class SolrPluginUtils {
 
     /* otherwise, simple expresion */
 
-    if (-1 < spec.indexOf("%")) {
-      /* percentage */
-      int percent = new Integer(spec.trim().replace("%","")).intValue();
-      float calc = (result * percent) / 100f;
+    if (-1 < spec.indexOf('%')) {
+      /* percentage - assume the % was the last char.  If not, let Integer.parseInt fail. */
+      spec = spec.substring(0,spec.length()-1);
+      int percent = Integer.parseInt(spec);
+      float calc = (result * percent) * (1/100f);
       result = calc < 0 ? result + (int)calc : (int)calc;
     } else {
-      int calc = (new Integer(spec.trim())).intValue();
+      int calc = Integer.parseInt(spec);
       result = calc < 0 ? result + calc : calc;
     }
 
