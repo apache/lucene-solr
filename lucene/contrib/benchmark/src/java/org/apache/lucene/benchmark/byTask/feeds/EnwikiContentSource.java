@@ -48,7 +48,7 @@ public class EnwikiContentSource extends ContentSource {
     private boolean threadDone;
     private String[] tuple;
     private NoMoreDataException nmde;
-    private StringBuffer contents = new StringBuffer();
+    private StringBuilder contents = new StringBuilder();
     private String title;
     private String body;
     private String time;
@@ -91,7 +91,7 @@ public class EnwikiContentSource extends ContentSource {
     }
     
     String time(String original) {
-      StringBuffer buffer = new StringBuffer();
+      StringBuilder buffer = new StringBuilder();
 
       buffer.append(original.substring(8, 10));
       buffer.append('-');

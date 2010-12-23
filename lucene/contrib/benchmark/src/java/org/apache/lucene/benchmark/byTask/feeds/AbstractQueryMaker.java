@@ -41,7 +41,7 @@ public abstract class AbstractQueryMaker implements QueryMaker {
 
   public String printQueries() {
     String newline = System.getProperty("line.separator");
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     if (queries != null) {
       for (int i = 0; i < queries.length; i++) {
         sb.append(i+". "+ queries[i].getClass().getSimpleName()+" - "+queries[i].toString());

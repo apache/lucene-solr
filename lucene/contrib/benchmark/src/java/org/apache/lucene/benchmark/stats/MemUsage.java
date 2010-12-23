@@ -31,7 +31,7 @@ public class MemUsage {
 
   /** Scale down the values by divisor, append the unit string. */
   public String toScaledString(int div, String unit) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
       sb.append("free=").append(minFree / div);
       sb.append("/").append(avgFree / div);
       sb.append("/").append(maxFree / div).append(" ").append(unit);

@@ -63,7 +63,7 @@ public class TrecTopicsReader {
    */
   public QualityQuery[] readQueries(BufferedReader reader) throws IOException {
     ArrayList<QualityQuery> res = new ArrayList<QualityQuery>();
-    StringBuffer sb;
+    StringBuilder sb;
     try {
       while (null!=(sb=read(reader,"<top>",null,false,false))) {
         HashMap<String,String> fields = new HashMap<String,String>();
@@ -112,8 +112,8 @@ public class TrecTopicsReader {
   }
 
   // read until finding a line that starts with the specified prefix
-  private StringBuffer read (BufferedReader reader, String prefix, StringBuffer sb, boolean collectMatchLine, boolean collectAll) throws IOException {
-    sb = (sb==null ? new StringBuffer() : sb);
+  private StringBuilder read (BufferedReader reader, String prefix, StringBuilder sb, boolean collectMatchLine, boolean collectAll) throws IOException {
+    sb = (sb==null ? new StringBuilder() : sb);
     String sep = "";
     while (true) {
       String line = reader.readLine();

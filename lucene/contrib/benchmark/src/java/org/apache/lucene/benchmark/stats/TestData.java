@@ -133,7 +133,7 @@ public class TestData
             return "# [NO RUN DATA]";
         }
         HashMap<String,LDCounter> resByTask = new HashMap<String,LDCounter>(); 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         String lineSep = System.getProperty("line.separator");
         sb.append("warm = Warm Index Reader").append(lineSep).append("srch = Search Index").append(lineSep).append("trav = Traverse Hits list, optionally retrieving document").append(lineSep).append(lineSep);
         for (int i = 0; i < COLS.length; i++) {
@@ -446,7 +446,7 @@ public class TestData
     @Override
     public String toString()
     {
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
         res.append("#-- ID: ").append(id).append(", ").append(new Date()).append(", heap=").append(heap).append(" --\n");
         res.append("# source=").append(source).append(", directory=").append(directory).append("\n");
         res.append("# maxBufferedDocs=").append(maxBufferedDocs).append(", mergeFactor=").append(mergeFactor);

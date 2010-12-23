@@ -163,7 +163,7 @@ public abstract class PerfTask implements Cloneable {
     if (params==null) {
       return name;
     } 
-    return new StringBuffer(name).append('(').append(params).append(')').toString();
+    return new StringBuilder(name).append('(').append(params).append(')').toString();
   }
 
   /**
@@ -207,7 +207,7 @@ public abstract class PerfTask implements Cloneable {
   @Override
   public String toString() {
     String padd = getPadding();
-    StringBuffer sb = new StringBuffer(padd);
+    StringBuilder sb = new StringBuilder(padd);
     if (disableCounting) {
       sb.append('-');
     }

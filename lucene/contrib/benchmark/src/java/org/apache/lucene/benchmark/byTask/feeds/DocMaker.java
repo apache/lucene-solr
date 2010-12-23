@@ -400,7 +400,7 @@ public class DocMaker {
   public void printDocStatistics() {
     boolean print = false;
     String col = "                  ";
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     String newline = System.getProperty("line.separator");
     sb.append("------------> ").append(getClass().getSimpleName()).append(" statistics (").append(printNum).append("): ").append(newline);
     int nut = source.getTotalDocsCount();
