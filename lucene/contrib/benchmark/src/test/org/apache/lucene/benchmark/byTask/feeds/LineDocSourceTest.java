@@ -48,7 +48,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     OutputStream out = new FileOutputStream(file);
     out = csFactory.createCompressorOutputStream("bzip2", out);
     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "utf-8"));
-    StringBuffer doc = new StringBuffer();
+    StringBuilder doc = new StringBuilder();
     doc.append("title").append(WriteLineDocTask.SEP).append("date").append(WriteLineDocTask.SEP).append("body");
     writer.write(doc.toString());
     writer.newLine();
@@ -58,7 +58,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
   private void createRegularLineFile(File file) throws Exception {
     OutputStream out = new FileOutputStream(file);
     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "utf-8"));
-    StringBuffer doc = new StringBuffer();
+    StringBuilder doc = new StringBuilder();
     doc.append("title").append(WriteLineDocTask.SEP).append("date").append(WriteLineDocTask.SEP).append("body");
     writer.write(doc.toString());
     writer.newLine();
