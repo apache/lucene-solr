@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -119,7 +117,6 @@ final class DocumentsWriter {
 
   private final DocumentsWriterThreadPool threadPool;
   final IndexWriter indexWriter;
-  private final Lock sequenceIDLock = new ReentrantLock();
 
   private AtomicInteger numDocsInRAM = new AtomicInteger(0);
   private AtomicLong ramUsed = new AtomicLong(0);
@@ -344,15 +341,10 @@ final class DocumentsWriter {
     notifyAll();
   }
 
-  DocumentsWriterPerThread newDocumentsWriterPerThread() {
+  synchronized DocumentsWriterPerThread newDocumentsWriterPerThread() {
     DocumentsWriterPerThread perThread = new DocumentsWriterPerThread(directory, this, chain);
-    sequenceIDLock.lock();
-    try {
-      numDocumentsWriterPerThreads++;
-      return perThread;
-    } finally {
-      sequenceIDLock.unlock();
-    }
+    numDocumentsWriterPerThreads++;
+    return perThread;
   }
 
   boolean updateDocument(final Document doc, final Analyzer analyzer, final Term delTerm)
@@ -365,16 +357,13 @@ final class DocumentsWriter {
             long perThreadRAMUsedBeforeAdd = perThread.bytesUsed();
             perThread.addDocument(doc, analyzer);
 
-            sequenceIDLock.lock();
-            try {
+            synchronized(DocumentsWriter.this) {
               ensureOpen();
               if (delTerm != null) {
                 deleteTerm(delTerm, true);
               }
               perThread.commitDocument();
               numDocsInRAM.incrementAndGet();
-            } finally {
-              sequenceIDLock.unlock();
             }
 
             if (finishAddDocument(perThread, perThreadRAMUsedBeforeAdd)) {

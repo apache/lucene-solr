@@ -296,11 +296,11 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     /* zero is zero is zero */
     assertEquals(0, calcMSM(5, "0"));
     assertEquals(0, calcMSM(5, "0%"));
-    assertEquals(0, calcMSM(5, "-5"));
-    assertEquals(0, calcMSM(5, "-100%"));
+    assertEquals(0, calcMSM(5, " -5 "));
+    assertEquals(0, calcMSM(5, "\n -100% \n"));
 
     /* basic integers */
-    assertEquals(3, calcMSM(5, "3"));
+    assertEquals(3, calcMSM(5, " \n3\n "));
     assertEquals(2, calcMSM(5, "-3"));
     assertEquals(3, calcMSM(3, "3"));
     assertEquals(0, calcMSM(3, "-3"));
@@ -308,13 +308,13 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(0, calcMSM(3, "-5"));
 
     /* positive percentages with rounding */
-    assertEquals(0, calcMSM(3, "25%"));
+    assertEquals(0, calcMSM(3, " \n25% \n"));
     assertEquals(1, calcMSM(4, "25%"));
-    assertEquals(1, calcMSM(5, "25%"));
+    assertEquals(1, calcMSM(5, " 25% "));
     assertEquals(2, calcMSM(10, "25%"));
         
     /* negative percentages with rounding */
-    assertEquals(3, calcMSM(3, "-25%"));
+    assertEquals(3, calcMSM(3, " \n-25%\n "));
     assertEquals(3, calcMSM(4, "-25%"));
     assertEquals(4, calcMSM(5, "-25%"));
     assertEquals(8, calcMSM(10, "-25%"));
@@ -326,22 +326,22 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(0, calcMSM(4, "3<0"));
     assertEquals(0, calcMSM(5, "3<0"));
     assertEquals(1, calcMSM(1, "3<25%"));
-    assertEquals(2, calcMSM(2, "3<25%"));
+    assertEquals(2, calcMSM(2, " 3\n<\n25% "));
     assertEquals(3, calcMSM(3, "3<25%"));
-    assertEquals(1, calcMSM(4, "3<25%"));
+    assertEquals(1, calcMSM(4, "\n 3 < \n25%\n "));
     assertEquals(1, calcMSM(5, "3<25%"));
 
     /* multiple conditionals */
-    assertEquals(1, calcMSM(1, "3<-25% 10<-3"));
-    assertEquals(2, calcMSM(2, "3<-25% 10<-3"));
-    assertEquals(3, calcMSM(3, "3<-25% 10<-3"));
-    assertEquals(3, calcMSM(4, "3<-25% 10<-3"));
-    assertEquals(4, calcMSM(5, "3<-25% 10<-3"));
+    assertEquals(1, calcMSM(1, "\n3 < -25% 10 < -3 \n"));
+    assertEquals(2, calcMSM(2, " 3 < -25% 10 < -3\n"));
+    assertEquals(3, calcMSM(3, " 3 < -25% \n 10 < -3 \n"));
+    assertEquals(3, calcMSM(4, " 3 < -25% 10 < -3 "));
+    assertEquals(4, calcMSM(5, " 3 < -25% 10 < -3"));
     assertEquals(5, calcMSM(6, "3<-25% 10<-3"));
-    assertEquals(6, calcMSM(7, "3<-25% 10<-3"));
-    assertEquals(6, calcMSM(8, "3<-25% 10<-3"));
-    assertEquals(7, calcMSM(9, "3<-25% 10<-3"));
-    assertEquals(8, calcMSM(10, "3<-25% 10<-3"));
+    assertEquals(6, calcMSM(7, " 3 < -25% 10 < -3 "));
+    assertEquals(6, calcMSM(8, " 3 < -25% 10 \n < -3\n"));
+    assertEquals(7, calcMSM(9, " 3 < -25% 10 < -3 \n"));
+    assertEquals(8, calcMSM(10, " 3 < -25% 10 < -3"));
     assertEquals(8, calcMSM(11, "3<-25% 10<-3"));
     assertEquals(9, calcMSM(12, "3<-25% 10<-3"));
     assertEquals(97, calcMSM(100, "3<-25% 10<-3"));

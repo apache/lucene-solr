@@ -120,7 +120,7 @@ public class TaskStats implements Cloneable {
    */
   @Override
   public String toString() {
-    StringBuffer res = new StringBuffer(task.getName());
+    StringBuilder res = new StringBuilder(task.getName());
     res.append(" ");
     res.append(count);
     res.append(" ");

@@ -35,6 +35,7 @@ import org.apache.tools.ant.taskdefs.optional.junit.JUnitTest;
 import org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner;
 import org.apache.tools.ant.util.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
+import org.junit.Ignore;
 
 /**
  * Just like BriefJUnitResultFormatter "brief" bundled with ant,
@@ -150,6 +151,18 @@ public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
       .append("------------- ---------------- ---------------")
       .append(StringUtils.LINE_SEP);
     }
+    
+    // HACK: junit gives us no way to do this in LuceneTestCase
+    try {
+      Class<?> clazz = Class.forName(suite.getName());
+      Ignore ignore = clazz.getAnnotation(Ignore.class);
+      if (ignore != null) {
+        if (systemError == null) systemError = "";
+        systemError += "NOTE: Ignoring test class '" + clazz.getSimpleName() + "': " 
+                    + ignore.value() + StringUtils.LINE_SEP;
+      }
+    } catch (ClassNotFoundException e) { /* no problem */ }
+    // END HACK
     
     if (systemError != null && systemError.length() > 0) {
       append("------------- Standard Error -----------------")

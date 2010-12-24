@@ -26,7 +26,7 @@ Versions of Major Components
 ---------------------
 Apache Lucene trunk
 Apache Tika 0.8-SNAPSHOT
-Carrot2 3.1.0
+Carrot2 3.4.2
 Velocity 1.6.4 and Velocity Tools 2.0
 
 
@@ -572,6 +572,13 @@ Bug Fixes
 
 * SOLR-2285: duplicate SolrEventListeners no longer created (hossman)
 
+* SOLR-1993: fix String cast assumption in JavaBinCodec - specific
+  addresses "commitWithin" option on Update requests.
+  (noble, hossman, and Maxim Valyanskiy)
+
+* SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
+  (Erick Erickson via hossman)
+
 Other Changes
 ----------------------
 
@@ -676,6 +683,8 @@ Other Changes
   
 * SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
 
+* SOLR-2289: Tweak spatial coords for example docs so they are a bit
+  more spread out (Erick Erickson via hossman)
 
 Build
 ----------------------
@@ -697,6 +706,9 @@ Documentation
 
 * SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
   (hossman)
+
+* SOLR-2232: Improved README info on solr.solr.home in examples
+  (Eric Pugh and hossman)
 
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.

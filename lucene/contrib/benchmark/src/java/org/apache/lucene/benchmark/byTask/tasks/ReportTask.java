@@ -82,7 +82,7 @@ public abstract class ReportTask extends PerfTask {
    * @return the table title line.
    */
   protected String tableTitle (String longestOp) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     sb.append(Format.format(OP,longestOp));
     sb.append(ROUND);
     sb.append(getRunData().getConfig().getColsNamesForValsByRound());
@@ -118,7 +118,7 @@ public abstract class ReportTask extends PerfTask {
    */
   protected String taskReportLine(String longestOp, TaskStats stat) {
     PerfTask task = stat.getTask();
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     sb.append(Format.format(task.getName(), longestOp));
     String round = (stat.getRound()>=0 ? ""+stat.getRound() : "-");
     sb.append(Format.formatPaddLeft(round, ROUND));
@@ -136,7 +136,7 @@ public abstract class ReportTask extends PerfTask {
   protected Report genPartialReport(int reported, LinkedHashMap<String,TaskStats> partOfTasks, int totalSize) {
     String longetOp = longestOp(partOfTasks.values());
     boolean first = true;
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     sb.append(tableTitle(longetOp));
     sb.append(newline);
     int lineNum = 0;

@@ -90,8 +90,8 @@ public class ExtractReuters
         {
             BufferedReader reader = new BufferedReader(new FileReader(sgmFile));
 
-            StringBuffer buffer = new StringBuffer(1024);
-            StringBuffer outBuffer = new StringBuffer(1024);
+            StringBuilder buffer = new StringBuilder(1024);
+            StringBuilder outBuffer = new StringBuilder(1024);
 
             String line = null;
             int docNumber = 0;

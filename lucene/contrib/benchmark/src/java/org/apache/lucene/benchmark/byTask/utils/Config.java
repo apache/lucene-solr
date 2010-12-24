@@ -44,6 +44,8 @@ import java.util.StringTokenizer;
  */
 public class Config {
 
+  // For tests, if verbose is not turned on, don't print the props.
+  private static final String DEFAULT_PRINT_PROPS = System.getProperty("tests.verbose", "true");
   private static final String NEW_LINE = System.getProperty("line.separator");
 
   private int roundNumber = 0;
@@ -71,7 +73,7 @@ public class Config {
     }
     r.close();
     // copy props lines to string
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < lastConfigLine; i++) {
       sb.append(lines.get(i));
       sb.append(NEW_LINE);
@@ -85,12 +87,12 @@ public class Config {
       props.setProperty("work.dir", System.getProperty("benchmark.work.dir", "work"));
     }
 
-    if (Boolean.valueOf(props.getProperty("print.props", "true")).booleanValue()) {
+    if (Boolean.valueOf(props.getProperty("print.props", DEFAULT_PRINT_PROPS)).booleanValue()) {
       printProps();
     }
 
     // copy algorithm lines
-    sb = new StringBuffer();
+    sb = new StringBuilder();
     for (int i = lastConfigLine; i < lines.size(); i++) {
       sb.append(lines.get(i));
       sb.append(NEW_LINE);
@@ -104,12 +106,12 @@ public class Config {
    */
   public Config (Properties props) {
     this.props = props;
-    if (Boolean.valueOf(props.getProperty("print.props","true")).booleanValue()) {
+    if (Boolean.valueOf(props.getProperty("print.props",DEFAULT_PRINT_PROPS)).booleanValue()) {
       printProps();
     }
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void printProps() {
     System.out.println("------------> config properties:");
     List<String> propKeys = new ArrayList(props.keySet());
@@ -270,7 +272,7 @@ public class Config {
   public int newRound() {
     roundNumber++;
 
-    StringBuffer sb = new StringBuffer("--> Round ").append(roundNumber - 1).append("-->").append(roundNumber);
+    StringBuilder sb = new StringBuilder("--> Round ").append(roundNumber - 1).append("-->").append(roundNumber);
 
     // log changes in values
     if (valByRound.size() > 0) {
@@ -386,7 +388,7 @@ public class Config {
     if (colForValByRound.size() == 0) {
       return "";
     }
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (final String name : colForValByRound.keySet()) {
       String colName = colForValByRound.get(name);
       sb.append(" ").append(colName);
@@ -401,7 +403,7 @@ public class Config {
     if (colForValByRound.size() == 0) {
       return "";
     }
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (final String name : colForValByRound.keySet()) {
       String colName = colForValByRound.get(name);
       String template = " " + colName;

@@ -82,7 +82,7 @@ public class Algorithm {
             stok.pushBack();
           } else {
             // get params, for tasks that supports them, - anything until next ')'
-            StringBuffer params = new StringBuffer();
+            StringBuilder params = new StringBuilder();
             stok.nextToken();
             while (stok.ttype!=')') { 
               switch (stok.ttype) {
@@ -254,7 +254,7 @@ public class Algorithm {
   @Override
   public String toString() {
     String newline = System.getProperty("line.separator");
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     sb.append(sequence.toString());
     sb.append(newline);
     return sb.toString();
