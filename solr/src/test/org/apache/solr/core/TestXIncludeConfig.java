@@ -42,7 +42,7 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
     // TODO: figure out a better way to handle this.
     if (supports == true){
       SolrCore core = h.getCore();
-      SolrRequestHandler solrRequestHandler = core.getRequestHandler("dismaxOldStyleDefaults");
+      SolrRequestHandler solrRequestHandler = core.getRequestHandler("includedHandler");
       assertNotNull("Solr Req Handler is null", solrRequestHandler);
     } else {
       log.info("Didn't run testXInclude, because this XML DocumentBuilderFactory doesn't support it");
