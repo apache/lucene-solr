@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -71,11 +70,6 @@ public class SortableDoubleField extends FieldType {
   public void indexedToReadable(BytesRef input, CharArr out) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
     out.write( indexedToReadable(ByteUtils.UTF8toUTF16(input)) );
-  }
-
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    String sval = f.stringValue();
-    xmlWriter.writeDouble(name, NumberUtils.SortableStr2double(sval));
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {

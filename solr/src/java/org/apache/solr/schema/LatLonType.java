@@ -26,7 +26,6 @@ import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SpatialOptions;
@@ -265,11 +264,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   @Override
   public boolean isPolyField() {
     return true;
-  }
-
-  @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    xmlWriter.writeStr(name, f.stringValue());
   }
 
   @Override

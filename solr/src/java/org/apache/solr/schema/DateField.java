@@ -28,7 +28,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
 import org.apache.solr.util.ByteUtils;
@@ -218,10 +217,6 @@ public class DateField extends FieldType {
 
   public ValueSource getValueSource(SchemaField field) {
     return new OrdFieldSource(field.name);
-  }
-
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    xmlWriter.writeDate(name, toExternal(f));
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {

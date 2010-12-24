@@ -26,7 +26,6 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 
 /**
  * This FieldType accepts UUID string values, as well as the special value 
@@ -51,12 +50,6 @@ public class UUIDField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     return getStringSort(field, reverse);
-  }
-
-  @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f)
-      throws IOException {
-    xmlWriter.writeStr(name, f.stringValue());
   }
 
   @Override

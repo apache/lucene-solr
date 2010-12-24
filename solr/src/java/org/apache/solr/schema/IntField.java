@@ -24,7 +24,6 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.IntFieldSource;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -42,10 +41,6 @@ public class IntField extends FieldType {
 
   public ValueSource getValueSource(SchemaField field) {
     return new IntFieldSource(new IntValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
-  }
-
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    xmlWriter.writeInt(name, f.stringValue());
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {

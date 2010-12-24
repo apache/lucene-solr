@@ -17,42 +17,34 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.noggit.CharArr;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.OrdFieldSource;
-import org.apache.solr.search.Sorting;
-import org.apache.solr.search.QParser;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.MapSolrParams;
-
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.Sorting;
+import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.util.ByteUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.Reader;
+
 import java.io.IOException;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base class for all field types used by an index schema.
@@ -474,11 +466,6 @@ public abstract class FieldType extends FieldProperties {
     this.queryAnalyzer = analyzer;
     log.trace("FieldType: " + typeName + ".setQueryAnalyzer(" + analyzer.getClass().getName() + ")" );
   }
-
-  /**
-   * Renders the specified field as XML
-   */
-  public abstract void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException;
 
   /**
    * calls back to TextResponseWriter to write the field value

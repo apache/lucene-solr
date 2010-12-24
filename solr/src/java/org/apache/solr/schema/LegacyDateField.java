@@ -17,25 +17,10 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.SortField;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.OrdFieldSource;
-import org.apache.solr.util.DateMathParser;
-  
-import java.util.Map;
-import java.io.IOException;
-import java.util.Date;
-import java.util.TimeZone;
-import java.util.Locale;
-import java.text.SimpleDateFormat;
 import java.text.DateFormat;
-import java.text.NumberFormat;
-import java.text.ParsePosition;
-import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * This class is <b>NOT</b> recommended for new users and should be

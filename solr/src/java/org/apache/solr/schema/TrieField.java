@@ -32,7 +32,6 @@ import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.MutableValueDate;
 import org.apache.solr.search.MutableValueLong;
 import org.apache.solr.search.QParser;
@@ -193,33 +192,6 @@ public class TrieField extends FieldType {
     }
   }
 
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) {
-      xmlWriter.writeStr(name, badFieldString(f));
-      return;
-    }
-
-    switch (type) {
-      case INTEGER:
-        xmlWriter.writeInt(name,toInt(arr));
-        break;
-      case FLOAT:
-        xmlWriter.writeFloat(name,toFloat(arr));
-        break;
-      case LONG:
-        xmlWriter.writeLong(name,toLong(arr));
-        break;
-      case DOUBLE:
-        xmlWriter.writeDouble(name,toDouble(arr));
-        break;
-      case DATE:
-        xmlWriter.writeDate(name,new Date(toLong(arr)));
-        break;
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-    }
-  }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     byte[] arr = f.getBinaryValue();
