@@ -1349,16 +1349,5 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("+id:45 +text:\"cc dd\"")
             ,"//*[@numFound='1']"
             );
-
-
-    // trigger output of custom value test
-
-    args = new HashMap<String,String>();
-    args.put("version","2.0");
-    req = new LocalSolrQueryRequest(h.getCore(), "values",
-                                    "test", 0, 10, args);
-    assertQ(req
-            );
-
   }
 }

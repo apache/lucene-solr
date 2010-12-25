@@ -279,21 +279,9 @@
      </lst>
  </requestHandler>
 
-  <requestHandler name="old" class="solr.tst.OldRequestHandler" >
-    <int name="myparam">1000</int>
-    <float name="ratio">1.4142135</float>
-    <arr name="myarr"><int>1</int><int>2</int></arr>
-    <str>foo</str>
-  </requestHandler>
-  <requestHandler name="oldagain" class="solr.tst.OldRequestHandler" >
-    <lst name="lst1"> <str name="op">sqrt</str> <int name="val">2</int> </lst>
-    <lst name="lst2"> <str name="op">log</str> <float name="val">10</float> </lst>
-  </requestHandler>
   <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-
-  <requestHandler name="test" class="solr.tst.TestRequestHandler" />
 
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
