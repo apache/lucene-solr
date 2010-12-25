@@ -32,7 +32,7 @@ public class TestPropInject extends AbstractSolrTestCase {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
     LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getConfig().getMergePolicy();
-    assertEquals(64.0, mp.getMaxMergeMB());
+    assertEquals(64.0, mp.getMaxMergeMB(), 0);
     uh.close();
   }
   

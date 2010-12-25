@@ -198,18 +198,6 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOldStyleDefaults() throws Exception {
-
-    lrf = h.getRequestFactory
-      ("dismaxOldStyleDefaults", 0, 20,
-       "version","2.0",
-       "facet", "true",
-       "facet.field","t_s"
-       );
-    doTestSomeStuff("dismaxOldStyleDefaults");
-  }
-
-  @Test
   public void testSimplestParams() throws Exception {
 
     assertQ("match w/o only q param",

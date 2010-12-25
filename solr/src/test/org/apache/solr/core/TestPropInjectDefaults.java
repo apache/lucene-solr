@@ -49,7 +49,7 @@ public class TestPropInjectDefaults extends SolrTestCaseJ4 {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
     LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getConfig().getMergePolicy();
-    assertEquals(32.0, mp.getMaxMergeMB());
+    assertEquals(32.0, mp.getMaxMergeMB(), 0);
     uh.close();
   }
   
