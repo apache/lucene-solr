@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,11 +79,11 @@ public class SolrServlet extends HttpServlet {
     SolrServletRequest solrReq = new SolrServletRequest(core, request);;
     SolrQueryResponse solrRsp = new SolrQueryResponse();
     try {
-
-      SolrRequestHandler handler = core.getRequestHandler(solrReq.getQueryType());
+      String qt = solrReq.getParams().get(CommonParams.QT);
+      SolrRequestHandler handler = core.getRequestHandler(solrReq.getParams().get(CommonParams.QT));
       if (handler==null) {
-        log.warn("Unknown Request Handler '" + solrReq.getQueryType() +"' :" + solrReq);
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + solrReq.getQueryType() + "'", true);
+        log.warn("Unknown Request Handler '" + qt +"' :" + solrReq);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + qt + "'", true);
       }
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
       core.execute(handler, solrReq, solrRsp );

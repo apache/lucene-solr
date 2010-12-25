@@ -1375,18 +1375,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   }
 
-  /**
-   * @deprecated Use {@link #execute(SolrRequestHandler, SolrQueryRequest, SolrQueryResponse)} instead. 
-   */
-  @Deprecated
-  public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
-    SolrRequestHandler handler = getRequestHandler(req.getQueryType());
-    if (handler==null) {
-      log.warn(logid+"Unknown Request Handler '" + req.getQueryType() +"' :" + req);
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + req.getQueryType() + "'", true);
-    }
-    execute(handler, req, rsp);
-  }
+
   
   public static void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
