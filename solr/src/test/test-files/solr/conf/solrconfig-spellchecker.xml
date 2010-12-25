@@ -24,74 +24,11 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
-  <indexDefaults>
-    <useCompoundFile>false</useCompoundFile>
-    <mergeFactor>10</mergeFactor>
-    <maxBufferedDocs>1000</maxBufferedDocs>
-    <maxMergeDocs>2147483647</maxMergeDocs>
-    <maxFieldLength>10000</maxFieldLength>
-    <writeLockTimeout>1000</writeLockTimeout>
-    <commitLockTimeout>10000</commitLockTimeout>
-  </indexDefaults>
-
-  <mainIndex>
-    <useCompoundFile>false</useCompoundFile>
-    <mergeFactor>10</mergeFactor>
-    <maxBufferedDocs>1000</maxBufferedDocs>
-    <maxMergeDocs>2147483647</maxMergeDocs>
-    <maxFieldLength>10000</maxFieldLength>
-    <unlockOnStartup>true</unlockOnStartup>
-  </mainIndex>
-
 
   <updateHandler class="solr.DirectUpdateHandler2">
-    <commitIntervalLowerBound>0</commitIntervalLowerBound>
   </updateHandler>
 
-
-  <query>
-    <maxBooleanClauses>1024</maxBooleanClauses>
-    <useFilterForSortedQuery>true</useFilterForSortedQuery>
-    <queryResultWindowSize>10</queryResultWindowSize>
-    <HashDocSet maxSize="3000" loadFactor="0.75"/>
-    <boolTofilterOptimizer enabled="true" cacheSize="32" threshold=".05"/>
-  </query>
-  
-
- 
   <requestHandler name="standard" class="solr.StandardRequestHandler" />
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
-
-
-  <!-- SpellCheckerRequestHandler takes in a word (or several words) as the
-       value of the "q" parameter and returns a list of alternative spelling
-       suggestions.  If invoked with a ...&cmd=rebuild, it will rebuild the
-       spellchecker index.
-  -->
-  <requestHandler name="spellchecker" class="solr.SpellCheckerRequestHandler" startup="lazy">
-    <!-- default values for query parameters -->
-     <lst name="defaults">
-       <int name="sp.query.suggestionCount">20</int>
-       <float name="sp.query.accuracy">0.60</float>
-     </lst>
-     
-     <!-- Main init params for handler -->
-     
-     <!-- The directory where your SpellChecker Index should live.   -->
-     <!-- May be absolute, or relative to the Solr "dataDir" directory. -->
-     <!-- If this option is not specified, a RAM directory will be used -->
-     <str name="sp.dictionary.spellcheckerIndexDir">spell</str>
-     
-     <!-- the field in your schema that you want to be able to build -->
-     <!-- your spell index on. This should be a field that uses a very -->
-     <!-- simple FieldType without a lot of Analysis (ie: string) -->
-     <str name="sp.dictionary.termSourceField">spell</str>
-
-     <!-- threshold for word to make it into the dictionary -->
-     <!-- a word should appear at minimum in the specified precent of documents -->
-     <str name="sp.dictionary.threshold">0.0</str>
-
-   </requestHandler>
 
   <!-- Suggest component -->
   <searchComponent class="solr.SpellCheckComponent" name="suggest">
@@ -104,11 +41,9 @@
 
       <!-- Suggester properties -->
       <float name="threshold">0.0</float>
-<!--
-      <str name="sourceLocation">american-english</str>
--->
     </lst>
   </searchComponent>
+
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest">
     <lst name="defaults">
       <str name="spellcheck">true</str>
@@ -119,19 +54,5 @@
       <str>suggest</str>
     </arr>
   </requestHandler>
-
-  
-
-  <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>
-  <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter"/>
-  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter"/>
-  <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
-
-    
-  <!-- config for the admin interface --> 
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
-  </admin>
 
 </config>
