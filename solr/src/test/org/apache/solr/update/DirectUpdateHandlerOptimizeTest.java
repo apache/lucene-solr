@@ -36,7 +36,8 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
   }
 
   public String getSolrConfigFile() {
-    return "solrconfig-duh-optimize.xml";
+    // return "solrconfig-duh-optimize.xml";
+    return "solrconfig.xml";
   }
 
 
