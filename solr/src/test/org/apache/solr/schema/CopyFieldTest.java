@@ -29,8 +29,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * This is a simple test to make sure the <code>CopyField</code> works.
  * It uses its own special schema file.

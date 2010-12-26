@@ -29,8 +29,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  *
  *

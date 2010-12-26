@@ -50,7 +50,6 @@ import org.apache.tika.mime.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.Locale;
 
 
 /**

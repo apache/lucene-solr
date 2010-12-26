@@ -17,8 +17,6 @@ package org.apache.lucene.wordnet;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Reader;
 

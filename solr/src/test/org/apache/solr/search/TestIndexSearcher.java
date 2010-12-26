@@ -21,8 +21,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.DocValues;
-import org.apache.lucene.search.FieldCache;
-
 import java.util.Map;
 import java.io.IOException;
 

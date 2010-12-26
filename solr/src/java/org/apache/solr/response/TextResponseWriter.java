@@ -18,7 +18,6 @@
 package org.apache.solr.response;
 
 import org.apache.lucene.document.Document;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.SolrDocument;

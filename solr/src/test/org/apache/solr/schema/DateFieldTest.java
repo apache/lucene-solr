@@ -18,15 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.schema.DateField;
-import org.apache.solr.util.DateMathParser;
-import org.apache.lucene.document.Fieldable;
-
 import java.util.Date;
-import java.util.TimeZone;
-import java.util.Locale;
-import java.text.DateFormat;
-
-import junit.framework.TestCase;
 
 public class DateFieldTest extends LegacyDateFieldTest {
   

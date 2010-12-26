@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -25,8 +24,6 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.search.LRUCache;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
-
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;

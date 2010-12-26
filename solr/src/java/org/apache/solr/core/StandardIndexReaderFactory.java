@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.common.util.NamedList;
 
 /**
  * Default IndexReaderFactory implementation. Returns a standard Lucene

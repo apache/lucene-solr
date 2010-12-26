@@ -17,14 +17,10 @@
 
 package org.apache.solr;
 
-import org.apache.noggit.JSONParser;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.util.StrUtils;
 
-import java.io.StringReader;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 public class JSONTestUtil {

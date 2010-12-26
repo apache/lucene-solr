@@ -20,7 +20,6 @@ package org.apache.solr.common.params;
 import org.apache.solr.common.SolrException;
 
 import java.util.EnumSet;
-import java.util.Locale;
 
 /**
  * Facet parameters

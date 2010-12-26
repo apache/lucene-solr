@@ -19,9 +19,6 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
-import org.apache.solr.util.NumberUtils;
-
-import java.io.IOException;
 
 /**
  * Represents field values as different types.

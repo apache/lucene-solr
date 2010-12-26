@@ -30,8 +30,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 
-import junit.framework.TestCase;
-
 public class TestIndexSorter extends LuceneTestCase {
   
   private static final int NUM_DOCS = 4;

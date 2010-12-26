@@ -43,14 +43,11 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.ValueSource;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Collection of static utilities useful for query parsing.

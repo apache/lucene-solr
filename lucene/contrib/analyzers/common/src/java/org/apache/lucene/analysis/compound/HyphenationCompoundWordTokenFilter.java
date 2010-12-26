@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.compound;
  */
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.Reader;
 import java.util.Set;
 

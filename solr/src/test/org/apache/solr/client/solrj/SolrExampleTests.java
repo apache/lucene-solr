@@ -45,8 +45,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.FacetParams;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * This should include tests against the example solr config
  * 

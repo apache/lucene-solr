@@ -21,17 +21,12 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrIndexReader;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexConfig;
-import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import static org.junit.Assert.*;
 
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;

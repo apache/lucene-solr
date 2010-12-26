@@ -26,8 +26,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * @version $Id$
  * @since solr 1.3

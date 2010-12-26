@@ -27,10 +27,6 @@ import org.junit.*;
 
 import java.io.StringWriter;
 
-import static org.junit.Assert.*;
-
-import static org.junit.Assert.assertEquals;
-
 public class TestCSVResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

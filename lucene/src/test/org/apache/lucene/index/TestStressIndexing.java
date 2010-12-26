@@ -23,8 +23,6 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
 
-import java.io.File;
-
 public class TestStressIndexing extends LuceneTestCase {
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;

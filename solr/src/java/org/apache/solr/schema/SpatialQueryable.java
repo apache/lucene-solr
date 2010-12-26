@@ -17,7 +17,6 @@ package org.apache.solr.schema;
  */
 
 
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;

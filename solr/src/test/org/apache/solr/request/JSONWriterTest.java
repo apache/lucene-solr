@@ -18,7 +18,6 @@
 package org.apache.solr.request;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.io.StringWriter;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,8 +30,6 @@ import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /** Test some aspects of JSON/python writer output (very incomplete)
  *

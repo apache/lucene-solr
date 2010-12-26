@@ -42,9 +42,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-
 // TODO
 //   - mix in optimize, addIndexes
 //   - randomoly mix in non-congruent docs

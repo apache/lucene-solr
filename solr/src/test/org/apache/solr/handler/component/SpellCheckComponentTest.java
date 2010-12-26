@@ -29,9 +29,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.junit.BeforeClass;
 import org.junit.Test;
- 
-
-import static org.junit.Assert.*;
 
 /**
  * @since solr 1.3

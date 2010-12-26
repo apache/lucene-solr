@@ -16,12 +16,6 @@ package org.apache.solr.update.processor;
  * limitations under the License.
  */
 
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.solr.common.util.Hash;
 
 public class Lookup3Signature extends Signature {

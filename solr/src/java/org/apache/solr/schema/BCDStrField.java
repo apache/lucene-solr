@@ -17,10 +17,10 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+
 import org.apache.solr.response.XMLWriter;
 import org.apache.lucene.document.Fieldable;
-
-import java.io.IOException;
 /**
  * @version $Id$
  */

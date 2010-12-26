@@ -18,8 +18,6 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.FQ;
-import org.apache.solr.common.params.HighlightParams;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;

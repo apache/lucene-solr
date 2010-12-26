@@ -18,8 +18,6 @@ package org.apache.lucene.store.instantiated;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Random;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;

@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.ShardParams;
@@ -39,7 +37,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.request.UnInvertedField;
-import org.apache.solr.core.SolrCore;
 
 /**
  * Stats component calculates simple statistics on numeric field values

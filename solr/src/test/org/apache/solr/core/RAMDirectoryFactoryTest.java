@@ -18,12 +18,8 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.easymock.EasyMock;
-
 import java.io.IOException;
-import java.io.File;
 
 /**
  * Test-case for RAMDirectoryFactory

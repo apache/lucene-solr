@@ -17,8 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import java.util.Random;
 
 import org.apache.lucene.util.SetOnce.AlreadySetException;

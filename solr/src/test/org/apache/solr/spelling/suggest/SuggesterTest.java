@@ -20,17 +20,12 @@ package org.apache.solr.spelling.suggest;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.Lookup.LookupResult;
 import org.apache.solr.spelling.suggest.jaspell.JaspellLookup;
 import org.apache.solr.spelling.suggest.tst.TSTLookup;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TermFreqIterator;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

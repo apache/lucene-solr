@@ -23,7 +23,6 @@ import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.IdentityHashMap;
 import java.util.Map;
 
 

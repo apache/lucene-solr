@@ -22,7 +22,6 @@ import java.util.PriorityQueue;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 
 /**
  * Base rewrite method for collecting only the top terms

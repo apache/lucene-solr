@@ -21,11 +21,8 @@ import junit.framework.Assert;
 
 import org.apache.solr.client.solrj.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.client.solrj.SolrExampleTestBase;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.junit.BeforeClass;
 import org.junit.Test;

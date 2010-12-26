@@ -17,9 +17,6 @@
 
 package org.apache.solr.highlight;
 
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashMap;
 
 import org.apache.solr.SolrTestCaseJ4;
