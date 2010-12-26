@@ -22,8 +22,6 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.TopScoreDocCollector;
 
-import java.io.IOException;
-
 /**
  * Does search w/ a custom collector
  */

@@ -35,7 +35,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.function.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

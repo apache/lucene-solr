@@ -20,12 +20,8 @@ package org.apache.solr.util;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocSlice;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.*;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
@@ -40,8 +36,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 import java.util.List;
 import java.util.Map;

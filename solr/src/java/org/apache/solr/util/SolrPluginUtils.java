@@ -41,9 +41,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 import org.apache.solr.update.DocumentBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;

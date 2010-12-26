@@ -17,9 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;

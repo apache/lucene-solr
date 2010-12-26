@@ -18,9 +18,6 @@
 package org.apache.solr.handler;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
@@ -30,7 +27,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -27,7 +27,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 

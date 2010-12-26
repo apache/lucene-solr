@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import static org.junit.Assert.assertEquals;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 

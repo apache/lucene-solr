@@ -8,11 +8,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
 
-import java.util.Date;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashSet;
-import java.util.HashMap;
 
 /**
  * A request handler that provides info about all 

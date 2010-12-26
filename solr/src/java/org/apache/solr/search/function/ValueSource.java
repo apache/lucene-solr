@@ -18,7 +18,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Scorer;

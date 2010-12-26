@@ -17,7 +17,6 @@ package org.apache.solr.common.util;
  */
 
 import java.io.IOException;
-import java.io.Writer;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

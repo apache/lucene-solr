@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 
 /** Implementation class for {@link BoostAttribute}.

@@ -19,8 +19,6 @@ package org.apache.solr.handler.clustering;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
-import static org.junit.Assert.*;
-
 
 /**
  *

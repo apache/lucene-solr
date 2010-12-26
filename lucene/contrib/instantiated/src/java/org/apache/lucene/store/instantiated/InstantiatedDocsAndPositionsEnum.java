@@ -19,7 +19,6 @@ package org.apache.lucene.store.instantiated;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import java.util.Arrays;
 
 public class InstantiatedDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private int upto;

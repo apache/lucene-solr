@@ -33,8 +33,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class BaseTestRangeFilter extends LuceneTestCase {
   
   public static final boolean F = false;

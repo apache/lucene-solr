@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.DefaultMethodRetryHandler;
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.solr.client.solrj.*;
@@ -32,7 +31,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.*;
 
 /**

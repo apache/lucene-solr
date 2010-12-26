@@ -20,7 +20,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
@@ -27,7 +25,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.commons.io.FileUtils;
 
 import java.nio.ByteBuffer;

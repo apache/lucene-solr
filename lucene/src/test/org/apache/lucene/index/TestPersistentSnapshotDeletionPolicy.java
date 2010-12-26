@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * the License.
  */
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;

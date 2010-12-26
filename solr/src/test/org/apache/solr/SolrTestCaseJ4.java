@@ -51,9 +51,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
  * Unlike AbstractSolrTestCase, a new core is not created for each test method.

@@ -22,8 +22,6 @@ import org.apache.solr.util.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * This is an example of how to write a JUnit tests for Solr using the
  * SolrTestCaseJ4

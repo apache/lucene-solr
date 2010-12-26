@@ -16,8 +16,6 @@ package org.apache.solr.spelling;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 

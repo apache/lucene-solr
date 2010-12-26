@@ -17,10 +17,8 @@ package org.apache.lucene.analysis.ar;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Hashtable;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -30,7 +28,6 @@ import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.Version;

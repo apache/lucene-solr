@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;

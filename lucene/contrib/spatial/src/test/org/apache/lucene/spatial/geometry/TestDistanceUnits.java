@@ -1,7 +1,5 @@
 package org.apache.lucene.spatial.geometry;
 
-import static junit.framework.Assert.*;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 

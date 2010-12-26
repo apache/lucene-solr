@@ -18,7 +18,6 @@
 package org.apache.solr;
 
 import org.apache.solr.request.*;
-import org.apache.solr.util.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

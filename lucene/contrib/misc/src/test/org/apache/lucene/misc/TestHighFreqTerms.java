@@ -17,8 +17,6 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
-import java.util.Random;
- 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;

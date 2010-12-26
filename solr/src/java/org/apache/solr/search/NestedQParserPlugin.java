@@ -21,9 +21,6 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.function.BoostedQuery;
-import org.apache.solr.search.function.FunctionQuery;
-import org.apache.solr.search.function.QueryValueSource;
 import org.apache.solr.search.function.ValueSource;
 
 /**

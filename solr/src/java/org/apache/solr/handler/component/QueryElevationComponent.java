@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

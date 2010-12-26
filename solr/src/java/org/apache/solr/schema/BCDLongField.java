@@ -18,8 +18,6 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
-
-import java.io.IOException;
 /**
  * @version $Id$
  */
