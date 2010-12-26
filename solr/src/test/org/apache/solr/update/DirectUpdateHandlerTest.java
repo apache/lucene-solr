@@ -354,8 +354,6 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     // Delete the document
     DeleteUpdateCommand cmd = new DeleteUpdateCommand();
     cmd.id = id;
-    cmd.fromCommitted = true;
-    cmd.fromPending = true;
     
     updater.delete(cmd);
   }

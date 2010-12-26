@@ -123,8 +123,6 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
       } else {
         delcmd.query = s;
       }
-      delcmd.fromCommitted = true;
-      delcmd.fromPending = true;
       processor.processDelete(delcmd);
     }
   }

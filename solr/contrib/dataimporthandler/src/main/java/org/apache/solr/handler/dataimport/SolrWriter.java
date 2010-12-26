@@ -86,8 +86,6 @@ public class SolrWriter {
       log.info("Deleting document: " + id);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
       delCmd.id = id.toString();
-      delCmd.fromPending = true;
-      delCmd.fromCommitted = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
       log.error("Exception while deleteing: " + id, e);
@@ -162,8 +160,6 @@ public class SolrWriter {
       log.info("Deleting documents from Solr with query: " + query);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
       delCmd.query = query;
-      delCmd.fromCommitted = true;
-      delCmd.fromPending = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
       log.error("Exception while deleting by query: " + query, e);
@@ -192,8 +188,6 @@ public class SolrWriter {
     try {
       DeleteUpdateCommand deleteCommand = new DeleteUpdateCommand();
       deleteCommand.query = "*:*";
-      deleteCommand.fromCommitted = true;
-      deleteCommand.fromPending = true;
       processor.processDelete(deleteCommand);
     } catch (IOException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,

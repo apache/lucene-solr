@@ -190,15 +190,14 @@ class XMLLoader extends ContentStreamLoader {
   void processDelete(UpdateRequestProcessor processor, XMLStreamReader parser) throws XMLStreamException, IOException {
     // Parse the command
     DeleteUpdateCommand deleteCmd = new DeleteUpdateCommand();
-    deleteCmd.fromPending = true;
-    deleteCmd.fromCommitted = true;
+
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       String attrName = parser.getAttributeLocalName(i);
       String attrVal = parser.getAttributeValue(i);
       if ("fromPending".equals(attrName)) {
-        deleteCmd.fromPending = StrUtils.parseBoolean(attrVal);
+        // deprecated
       } else if ("fromCommitted".equals(attrName)) {
-        deleteCmd.fromCommitted = StrUtils.parseBoolean(attrVal);
+        // deprecated
       } else {
         XmlUpdateRequestHandler.log.warn("unexpected attribute delete/@" + attrName);
       }

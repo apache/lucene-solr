@@ -270,17 +270,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    if (!cmd.fromPending && !cmd.fromCommitted) {
-      numErrors.incrementAndGet();
-      numErrorsCumulative.incrementAndGet();
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
-    }
-    if (!cmd.fromPending || !cmd.fromCommitted) {
-      numErrors.incrementAndGet();
-      numErrorsCumulative.incrementAndGet();
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported" + cmd);
-    }
-
     iwCommit.lock();
     try {
       openWriter();
@@ -299,17 +288,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
    public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
      deleteByQueryCommands.incrementAndGet();
      deleteByQueryCommandsCumulative.incrementAndGet();
-
-     if (!cmd.fromPending && !cmd.fromCommitted) {
-       numErrors.incrementAndGet();
-       numErrorsCumulative.incrementAndGet();
-       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
-     }
-     if (!cmd.fromPending || !cmd.fromCommitted) {
-       numErrors.incrementAndGet();
-       numErrorsCumulative.incrementAndGet();
-       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported" + cmd);
-     }
 
     boolean madeIt=false;
     boolean delAll=false;

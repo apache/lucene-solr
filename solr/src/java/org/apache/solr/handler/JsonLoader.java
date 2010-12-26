@@ -133,7 +133,6 @@ class JsonLoader extends ContentStreamLoader {
     assertNextEvent( js, JSONParser.OBJECT_START );
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand();
-    cmd.fromCommitted = cmd.fromPending = true; // TODO? enable this?
     
     while( true ) {
       int ev = js.nextEvent();
