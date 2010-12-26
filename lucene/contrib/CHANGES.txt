@@ -245,6 +245,8 @@ Build
 
  * LUCENE-2797: Upgrade contrib/icu's ICU jar file to ICU 4.6  
    (Robert Muir)
+
+ * LUCENE-2833: Upgrade contrib/ant's jtidy jar file to r938 (Robert Muir)
    
 Optimizations
 
