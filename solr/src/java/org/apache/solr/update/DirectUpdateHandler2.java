@@ -53,74 +53,7 @@ import org.apache.solr.core.SolrCore;
 /**
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
- * For this reason, not all combinations to/from pending and committed are supported.
- * This version supports efficient removal of duplicates on a commit.  It works by maintaining
- * a related count for every document being added or deleted.  At commit time, for every id with a count,
- * all but the last "count" docs with that id are deleted.
- * <p>
- *
- * Supported add command parameters:
- <TABLE BORDER>
-  <TR>
-    <TH>allowDups</TH>
-    <TH>overwritePending</TH>
-    <TH>overwriteCommitted</TH>
-    <TH>efficiency</TH>
-  </TR>
-  <TR>
-        <TD>false</TD>
-        <TD>false</TD>
-        <TD>true</TD>
-
-        <TD>fast</TD>
-  </TR>
-  <TR>
-        <TD>true or false</TD>
-        <TD>true</TD>
-        <TD>true</TD>
-
-        <TD>fast</TD>
-  </TR>
-  <TR>
-        <TD>true</TD>
-        <TD>false</TD>
-        <TD>false</TD>
-        <TD>fastest</TD>
-  </TR>
-
-</TABLE>
-
- <p>Supported delete commands:
- <TABLE BORDER>
-  <TR>
-    <TH>command</TH>
-    <TH>fromPending</TH>
-    <TH>fromCommitted</TH>
-    <TH>efficiency</TH>
-  </TR>
-  <TR>
-        <TD>delete</TD>
-        <TD>true</TD>
-        <TD>true</TD>
-        <TD>fast</TD>
-  </TR>
-  <TR>
-        <TD>deleteByQuery</TD>
-        <TD>true</TD>
-        <TD>true</TD>
-        <TD>very slow*</TD>
-  </TR>
-</TABLE>
-
-  <p>* deleteByQuery causes a commit to happen (close current index writer, open new index reader)
-  before it can be processed.  If deleteByQuery functionality is needed, it's best if they can
-  be batched and executed together so they may share the same index reader.
-
- *
- * @version $Id$
- * @since solr 0.9
  */
-
 public class DirectUpdateHandler2 extends UpdateHandler {
 
   // stats
@@ -201,11 +134,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
 
-    // if there is no ID field, use allowDups
+    // if there is no ID field, don't overwrite
     if( idField == null ) {
-      cmd.allowDups = true;
-      cmd.overwriteCommitted = false;
-      cmd.overwritePending = false;
+      cmd.overwrite = false;
     }
 
     iwAccess.lock();
@@ -225,7 +156,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       // should account for most of the time
 			Term updateTerm = null;
 
-      if (cmd.overwriteCommitted || cmd.overwritePending) {
+      if (cmd.overwrite) {
         if (cmd.indexedId == null) {
           cmd.indexedId = getIndexedId(cmd.doc);
         }

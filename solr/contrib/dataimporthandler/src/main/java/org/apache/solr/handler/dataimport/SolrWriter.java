@@ -69,9 +69,6 @@ public class SolrWriter {
     try {
       AddUpdateCommand command = new AddUpdateCommand();
       command.solrDoc = d;
-      command.allowDups = false;
-      command.overwritePending = true;
-      command.overwriteCommitted = true;
       processor.processAdd(command);
     } catch (Exception e) {
       log.warn("Error creating document : " + d, e);

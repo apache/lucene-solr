@@ -64,9 +64,6 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     UpdateHandler updater = core.getUpdateHandler();
     
     AddUpdateCommand cmd = new AddUpdateCommand();
-    cmd.overwriteCommitted = true;
-    cmd.overwritePending = true;
-    cmd.allowDups = false;
     
     // Add a valid document
     cmd.doc = new Document();
@@ -336,9 +333,6 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     UpdateHandler updater = core.getUpdateHandler();
     
     AddUpdateCommand cmd = new AddUpdateCommand();
-    cmd.overwriteCommitted = true;
-    cmd.overwritePending = true;
-    cmd.allowDups = false;
     
     // Add a document
     cmd.doc = new Document();

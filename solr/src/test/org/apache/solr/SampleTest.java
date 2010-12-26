@@ -76,10 +76,10 @@ public class SampleTest extends SolrTestCaseJ4 {
     assertU("less common case, a complex addition with options",
             add(doc("id", "4059",
                     "subject", "Who Me?"),
-                "allowDups", "true"));
+                "overwrite", "false"));
 
     assertU("or just make the raw XML yourself",
-            "<add allowDups=\"true\">" +
+            "<add overwrite=\"false\">" +
             doc("id", "4059",
                 "subject", "Who Me Again?") + "</add>");
 

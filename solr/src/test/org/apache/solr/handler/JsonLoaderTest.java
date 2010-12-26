@@ -94,7 +94,7 @@ public class JsonLoaderTest extends LuceneTestCase {
     f = d.getField( "f1" );
     assertEquals(2, f.getValues().size());
     assertEquals(3.45f, d.getDocumentBoost());
-    assertEquals(true, add.allowDups);
+    assertEquals(false, add.overwrite);
     
 
     // parse the commit commands

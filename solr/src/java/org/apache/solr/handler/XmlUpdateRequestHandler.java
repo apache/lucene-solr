@@ -57,24 +57,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
 
   public static final String OVERWRITE = "overwrite";
   public static final String COMMIT_WITHIN = "commitWithin";
-  
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String OVERWRITE_COMMITTED = "overwriteCommitted";
-  
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String OVERWRITE_PENDING = "overwritePending";
 
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String ALLOW_DUPS = "allowDups";
 
   XMLInputFactory inputFactory;
 
