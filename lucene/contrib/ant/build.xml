@@ -25,7 +25,7 @@
 
   <path id="additional.dependencies">
     <!-- TODO: make ${tidy.jar} property -->
-    <pathelement location="lib/Tidy.jar"/>
+    <fileset dir="lib" includes="jtidy-*.jar"/>
   </path>
 
   <pathconvert property="project.classpath"
