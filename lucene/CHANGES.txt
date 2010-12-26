@@ -121,8 +121,8 @@ Changes in backwards compatibility policy
 
 Changes in Runtime Behavior
 
-* LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit
-  Windows systems that support unmapping, FSDirectory.open returns
+* LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit
+  Windows and Solaris systems that support unmapping, FSDirectory.open returns
   MMapDirectory. Additionally the behavior of MMapDirectory has been
   changed to enable unmapping by default if supported by the JRE.
   (Mike McCandless, Uwe Schindler, Robert Muir)
