@@ -42,9 +42,7 @@ import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Set;
 
 /**
  * @version $Id$

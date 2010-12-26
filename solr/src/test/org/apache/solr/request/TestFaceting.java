@@ -23,8 +23,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
 import java.util.Locale;
 import java.util.Random;
 

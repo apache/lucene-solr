@@ -31,7 +31,6 @@ import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.PhoneticFilter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
 
 /**
  * Create tokens based on phonetic encoders

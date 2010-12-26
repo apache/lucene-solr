@@ -3,7 +3,6 @@ package org.apache.solr.handler.clustering.carrot2;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.solr.common.params.HighlightParams;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

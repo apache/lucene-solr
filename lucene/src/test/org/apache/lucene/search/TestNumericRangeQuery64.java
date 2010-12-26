@@ -33,7 +33,6 @@ import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import static org.junit.Assert.*;
 
 public class TestNumericRangeQuery64 extends LuceneTestCase {
   // distance of entries

@@ -51,7 +51,7 @@ public class RepAllTask extends ReportTask {
   protected Report reportAll(List<TaskStats> taskStats) {
     String longestOp = longestOp(taskStats);
     boolean first = true;
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     sb.append(tableTitle(longestOp));
     sb.append(newline);
     int reported = 0;

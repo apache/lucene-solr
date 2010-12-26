@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.*;
-
 /**
  * Tests some basic functionality of the DisMaxRequestHandler
  */
@@ -195,18 +193,6 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(p.matcher(resp).find());
     assertTrue(p_bool.matcher(resp).find());
 
-  }
-
-  @Test
-  public void testOldStyleDefaults() throws Exception {
-
-    lrf = h.getRequestFactory
-      ("dismaxOldStyleDefaults", 0, 20,
-       "version","2.0",
-       "facet", "true",
-       "facet.field","t_s"
-       );
-    doTestSomeStuff("dismaxOldStyleDefaults");
   }
 
   @Test

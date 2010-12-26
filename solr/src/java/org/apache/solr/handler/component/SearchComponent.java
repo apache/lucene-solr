@@ -20,12 +20,9 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**

@@ -21,7 +21,6 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;

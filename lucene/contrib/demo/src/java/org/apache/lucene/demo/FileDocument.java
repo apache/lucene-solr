@@ -19,7 +19,6 @@ package org.apache.lucene.demo;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.InputStreamReader;
 
 import org.apache.lucene.document.DateTools;

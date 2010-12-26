@@ -1,11 +1,8 @@
 package org.apache.solr.handler.component;
 
-import java.io.File;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * Test for SpellCheckComponent's distributed querying

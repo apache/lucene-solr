@@ -33,7 +33,6 @@ import org.apache.zookeeper.KeeperException;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class ZkControllerTest extends SolrTestCaseJ4 {
 

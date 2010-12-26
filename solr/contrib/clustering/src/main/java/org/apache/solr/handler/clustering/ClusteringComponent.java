@@ -16,6 +16,9 @@ package org.apache.solr.handler.clustering;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -23,6 +26,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.clustering.carrot2.CarrotClusteringEngine;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -31,7 +35,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -53,7 +59,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   public static final String COMPONENT_NAME = "clustering";
   private NamedList initParams;
 
-
+  @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
@@ -61,18 +67,21 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
+  @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
     }
-    String name = params.get(ClusteringParams.ENGINE_NAME, ClusteringEngine.DEFAULT_ENGINE_NAME);
+    String name = getClusteringEngineName(rb);
     boolean useResults = params.getBool(ClusteringParams.USE_SEARCH_RESULTS, false);
     if (useResults == true) {
-      SearchClusteringEngine engine = searchClusteringEngines.get(name);
+      SearchClusteringEngine engine = getSearchClusteringEngine(rb);
       if (engine != null) {
         DocListAndSet results = rb.getResults();
-        Object clusters = engine.cluster(rb.getQuery(), results.docList, rb.req);
+        Map<SolrDocument,Integer> docIds = new HashMap<SolrDocument, Integer>(results.docList.size());
+        SolrDocumentList solrDocList = engine.getSolrDocumentList(results.docList, rb.req, docIds);
+        Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
         rb.rsp.add("clusters", clusters);
       } else {
         log.warn("No engine for: " + name);
@@ -94,6 +103,72 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         rb.rsp.add("clusters", nl);
       } else {
         log.warn("No engine for " + name);
+      }
+    }
+  }
+  
+  private SearchClusteringEngine getSearchClusteringEngine(ResponseBuilder rb){
+    return searchClusteringEngines.get(getClusteringEngineName(rb));
+  }
+  
+  private String getClusteringEngineName(ResponseBuilder rb){
+    return rb.req.getParams().get(ClusteringParams.ENGINE_NAME, ClusteringEngine.DEFAULT_ENGINE_NAME);
+  }
+
+  @Override
+  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false) || !params.getBool(ClusteringParams.USE_SEARCH_RESULTS, false)) {
+      return;
+    }
+    sreq.params.remove(COMPONENT_NAME);
+    if( ( sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS ) != 0 ){
+      String fl = sreq.params.get(CommonParams.FL,"*");
+      // if fl=* then we don't need check
+      if( fl.indexOf( '*' ) >= 0 ) return;
+      Set<String> fields = getSearchClusteringEngine(rb).getFieldsToLoad(rb.req);
+      if( fields == null || fields.size() == 0 ) return;
+      StringBuilder sb = new StringBuilder();
+      String[] flparams = fl.split( "[,\\s]+" );
+      Set<String> flParamSet = new HashSet<String>(flparams.length);
+      for( String flparam : flparams ){
+        // no need trim() because of split() by \s+
+        flParamSet.add(flparam);
+      }
+      for( String aFieldToLoad : fields ){
+        if( !flParamSet.contains( aFieldToLoad ) ){
+          sb.append( ',' ).append( aFieldToLoad );
+        }
+      }
+      if( sb.length() > 0 ){
+        sreq.params.set( CommonParams.FL, fl + sb.toString() );
+      }
+    }
+  }
+
+  @Override
+  public void finishStage(ResponseBuilder rb) {
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false) || !params.getBool(ClusteringParams.USE_SEARCH_RESULTS, false)) {
+      return;
+    }
+    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+      SearchClusteringEngine engine = getSearchClusteringEngine(rb);
+      if (engine != null) {
+        SolrDocumentList solrDocList = (SolrDocumentList)rb.rsp.getValues().get("response");
+        // TODO: Currently, docIds is set to null in distributed environment.
+        // This causes CarrotParams.PRODUCE_SUMMARY doesn't work.
+        // To work CarrotParams.PRODUCE_SUMMARY under distributed mode, we can choose either one of:
+        // (a) In each shard, ClusteringComponent produces summary and finishStage()
+        //     merges these summaries.
+        // (b) Adding doHighlighting(SolrDocumentList, ...) method to SolrHighlighter and
+        //     making SolrHighlighter uses "external text" rather than stored values to produce snippets.
+        Map<SolrDocument,Integer> docIds = null;
+        Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
+        rb.rsp.add("clusters", clusters);
+      } else {
+        String name = getClusteringEngineName(rb);
+        log.warn("No engine for: " + name);
       }
     }
   }
@@ -174,17 +249,17 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
   @Override
   public String getVersion() {
-    return "$Revision:$";
+    return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 
 }

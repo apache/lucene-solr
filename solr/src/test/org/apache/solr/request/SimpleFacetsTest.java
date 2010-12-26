@@ -19,7 +19,6 @@ package org.apache.solr.request;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
-import org.junit.After;
 import org.junit.Test;
 
 import java.util.ArrayList;

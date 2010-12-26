@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.RegexFileFilter;
 import org.apache.solr.common.util.NamedList;

@@ -22,10 +22,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrConfig;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import org.junit.Before;
 import org.junit.Test;
 
 public class BadIndexSchemaTest extends SolrTestCaseJ4 {

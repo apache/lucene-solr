@@ -93,25 +93,9 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
 
   private AddUpdateCommand getAddCommand(SolrParams params) {
     AddUpdateCommand addCmd = new AddUpdateCommand();
-    boolean overwrite = true;  // the default
 
-    Boolean overwritePending = null;
-    Boolean overwriteCommitted = null;
-
-
-    overwrite = params.getBool(UpdateParams.OVERWRITE, overwrite);
+    addCmd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
     addCmd.commitWithin = params.getInt(COMMIT_WITHIN, -1);
-    // check if these flags are set
-    if (overwritePending != null && overwriteCommitted != null) {
-      if (overwritePending != overwriteCommitted) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "can't have different values for 'overwritePending' and 'overwriteCommitted'");
-      }
-      overwrite = overwritePending;
-    }
-    addCmd.overwriteCommitted = overwrite;
-    addCmd.overwritePending = overwrite;
-    addCmd.allowDups = !overwrite;
     return addCmd;
   }
 
@@ -123,8 +107,6 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
       } else {
         delcmd.query = s;
       }
-      delcmd.fromCommitted = true;
-      delcmd.fromPending = true;
       processor.processDelete(delcmd);
     }
   }

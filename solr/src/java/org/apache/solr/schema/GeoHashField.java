@@ -25,7 +25,6 @@ import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SpatialOptions;
@@ -66,12 +65,6 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
     //TODO: optimize this
     return new SolrConstantScoreQuery(new ValueSourceRangeFilter(new GeohashHaversineFunction(getValueSource(options.field, parser),
             new LiteralValueSource(geohash), options.radius), "0", String.valueOf(options.distance), true, true));
-  }
-
-  @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f)
-          throws IOException {
-    xmlWriter.writeStr(name, toExternal(f));
   }
 
   @Override

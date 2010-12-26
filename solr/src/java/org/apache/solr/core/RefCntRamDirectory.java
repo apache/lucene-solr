@@ -3,7 +3,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 

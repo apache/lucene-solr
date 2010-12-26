@@ -22,6 +22,8 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -31,13 +33,14 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SolrPluginUtils;
 import org.carrot2.util.attribute.AttributeUtils;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
-
-import static org.junit.Assert.*;
+import java.util.Map;
 
 /**
  *
@@ -133,21 +136,23 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       docList = searcher.getDocList(query, (Query) null, new Sort(), 0,
               numberOfDocs);
       assertEquals("docList size", expectedNumDocs, docList.matches());
+
+      ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      solrParams.add(CarrotParams.PRODUCE_SUMMARY, "true");
+      solrParams.add(clusteringParams);
+
+      // Perform clustering
+      LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
+      Map<SolrDocument,Integer> docIds = new HashMap<SolrDocument, Integer>(docList.size());
+      SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
+      List results = (List)engine.cluster(query, solrDocList, docIds, req);
+      req.close();
+      assertEquals("number of clusters: " + results, expectedNumClusters, results.size());
+      checkClusters(results, false);
+      return results;
     } finally {
       ref.decref();
     }
-
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add(CarrotParams.PRODUCE_SUMMARY, "true");
-    solrParams.add(clusteringParams);
-
-    // Perform clustering
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
-    List results = (List) engine.cluster(query, docList, req);
-    req.close();
-    assertEquals("number of clusters: " + results, expectedNumClusters, results.size());
-    checkClusters(results, false);
-    return results;
   }
 
   private void checkClusters(List results, int expectedDocCount,

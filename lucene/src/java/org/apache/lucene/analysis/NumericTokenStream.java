@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.document.NumericField; // for javadocs

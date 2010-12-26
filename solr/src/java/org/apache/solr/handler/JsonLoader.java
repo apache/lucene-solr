@@ -133,7 +133,6 @@ class JsonLoader extends ContentStreamLoader {
     assertNextEvent( js, JSONParser.OBJECT_START );
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand();
-    cmd.fromCommitted = cmd.fromPending = true; // TODO? enable this?
     
     while( true ) {
       int ev = js.nextEvent();
@@ -216,7 +215,6 @@ class JsonLoader extends ContentStreamLoader {
   {
     assertNextEvent( js, JSONParser.OBJECT_START );
     AddUpdateCommand cmd = new AddUpdateCommand();
-    cmd.allowDups = false;
     float boost = 1.0f;
     
     while( true ) {
@@ -232,7 +230,7 @@ class JsonLoader extends ContentStreamLoader {
             cmd.solrDoc = parseDoc( ev, js );
           }
           else if( XmlUpdateRequestHandler.OVERWRITE.equals( key ) ) {
-            cmd.allowDups = !js.getBoolean(); // reads next boolean
+            cmd.overwrite = js.getBoolean(); // reads next boolean
           }
           else if( XmlUpdateRequestHandler.COMMIT_WITHIN.equals( key ) ) {
             cmd.commitWithin = (int)js.getLong(); 
@@ -255,8 +253,6 @@ class JsonLoader extends ContentStreamLoader {
           throw new IOException("missing solr document. "+js.getPosition() );
         }
         cmd.solrDoc.setDocumentBoost( boost ); 
-        cmd.overwriteCommitted = !cmd.allowDups;
-        cmd.overwritePending = !cmd.allowDups;
         return cmd;
       }
       else {

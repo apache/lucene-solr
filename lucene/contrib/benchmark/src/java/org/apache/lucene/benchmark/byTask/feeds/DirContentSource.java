@@ -202,7 +202,7 @@ public class DirContentSource extends ContentSource {
     reader.readLine();//skip an empty line
     String title = reader.readLine();
     reader.readLine();//skip an empty line
-    StringBuffer bodyBuf = new StringBuffer(1024);
+    StringBuilder bodyBuf = new StringBuilder(1024);
     while ((line = reader.readLine()) != null) {
       bodyBuf.append(line).append(' ');
     }

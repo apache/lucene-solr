@@ -17,14 +17,11 @@ package org.apache.solr.spelling;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
-import java.util.Collection;
 
 
 /**

@@ -20,7 +20,6 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**

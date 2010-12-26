@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.common.util.NamedList;
-
 /**
  * 
  * @version $Id$

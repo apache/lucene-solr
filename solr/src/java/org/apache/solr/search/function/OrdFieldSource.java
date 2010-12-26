@@ -20,7 +20,6 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueInt;
-import org.apache.solr.util.NumberUtils;
 
 import java.io.IOException;
 import java.util.Map;

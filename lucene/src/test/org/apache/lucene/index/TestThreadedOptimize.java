@@ -21,16 +21,13 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.English;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.File;
 import java.util.Random;
 
 public class TestThreadedOptimize extends LuceneTestCase {

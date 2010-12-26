@@ -36,7 +36,8 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
   }
 
   public String getSolrConfigFile() {
-    return "solrconfig-duh-optimize.xml";
+    // return "solrconfig-duh-optimize.xml";
+    return "solrconfig.xml";
   }
 
 
@@ -45,9 +46,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
 
     UpdateHandler updater = core.getUpdateHandler();
     AddUpdateCommand cmd = new AddUpdateCommand();
-    cmd.overwriteCommitted = true;
-    cmd.overwritePending = true;
-    cmd.allowDups = false;
+
     //add just under the merge factor, so no segments are merged
     //the merge factor is 100 and the maxBufferedDocs is 2, so there should be 50 segments
     for (int i = 0; i < 99; i++) {

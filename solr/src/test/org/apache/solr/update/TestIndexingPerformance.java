@@ -88,9 +88,6 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
     long start = System.currentTimeMillis();
 
     AddUpdateCommand add = new AddUpdateCommand();
-    add.allowDups = !overwrite;
-    add.overwriteCommitted = overwrite;
-    add.overwritePending = overwrite;
 
     Field idField=null;
 

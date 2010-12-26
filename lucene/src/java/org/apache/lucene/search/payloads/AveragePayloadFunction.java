@@ -1,6 +1,5 @@
 package org.apache.lucene.search.payloads;
 
-import java.io.IOException;
 import org.apache.lucene.search.Explanation;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

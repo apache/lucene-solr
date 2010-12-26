@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.extraction;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;

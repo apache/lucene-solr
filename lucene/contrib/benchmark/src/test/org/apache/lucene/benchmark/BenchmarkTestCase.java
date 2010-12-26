@@ -80,7 +80,7 @@ public abstract class BenchmarkTestCase extends LuceneTestCase {
   // catenate alg lines to make the alg text
   private String algLinesToText(String[] algLines) {
     String indent = "  ";
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < propLines.length; i++) {
       sb.append(indent).append(propLines[i]).append(NEW_LINE);
     }

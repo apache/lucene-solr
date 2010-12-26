@@ -17,12 +17,8 @@ package org.apache.solr.search.function;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.cache.ByteValuesCreator;
-import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.ByteValues;
-import org.apache.lucene.search.cache.CachedArray.DoubleValues;
-import org.apache.lucene.search.cache.CachedArray.LongValues;
 
 import java.io.IOException;
 import java.util.Map;

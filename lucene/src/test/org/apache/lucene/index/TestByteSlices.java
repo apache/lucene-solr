@@ -14,8 +14,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;

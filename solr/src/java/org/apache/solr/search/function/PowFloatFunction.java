@@ -17,10 +17,6 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-
-import java.io.IOException;
-
 /** Function to raise the base "a" to the power "b"
  */
 public class PowFloatFunction extends DualFloatFunction {

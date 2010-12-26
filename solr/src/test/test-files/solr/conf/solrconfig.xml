@@ -251,30 +251,10 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   	<bool name="httpCaching">true</bool>
   </requestHandler>
-  <requestHandler name="dismaxOldStyleDefaults"
-                  class="solr.DisMaxRequestHandler" >
-     <!-- for historic reasons, DisMaxRequestHandler will use all of
-          it's init params as "defaults" if there is no "defaults" list
-          specified
-     -->
-     <str name="q.alt">*:*</str>
-     <float name="tie">0.01</float>
-     <str name="qf">
-        text^0.5 features_t^1.0 subject^1.4 title_stemmed^2.0
-     </str>
-     <str name="pf">
-        text^0.2 features_t^1.1 subject^1.4 title_stemmed^2.0 title^1.5
-     </str>
-     <str name="bf">
-        ord(weight)^0.5 recip(rord(iind),1,1000,1000)^0.3
-     </str>
-     <str name="mm">
-        3&lt;-1 5&lt;-2 6&lt;90%
-     </str>
-     <int name="ps">100</int>
-  </requestHandler>
-  <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
+
+  <requestHandler name="dismax" class="solr.SearchHandler" >
     <lst name="defaults">
+     <str name="defType">dismax</str>
      <str name="q.alt">*:*</str>
      <float name="tie">0.01</float>
      <str name="qf">
@@ -292,23 +272,16 @@
      <int name="ps">100</int>
     </lst>
   </requestHandler>
-  <requestHandler name="dismaxNoDefaults" class="solr.DisMaxRequestHandler" >
-  </requestHandler>
-  <requestHandler name="old" class="solr.tst.OldRequestHandler" >
-    <int name="myparam">1000</int>
-    <float name="ratio">1.4142135</float>
-    <arr name="myarr"><int>1</int><int>2</int></arr>
-    <str>foo</str>
-  </requestHandler>
-  <requestHandler name="oldagain" class="solr.tst.OldRequestHandler" >
-    <lst name="lst1"> <str name="op">sqrt</str> <int name="val">2</int> </lst>
-    <lst name="lst2"> <str name="op">log</str> <float name="val">10</float> </lst>
-  </requestHandler>
+
+  <requestHandler name="dismaxNoDefaults" class="solr.SearchHandler" >
+     <lst name="defaults">
+       <str name="defType">dismax</str>
+     </lst>
+ </requestHandler>
+
   <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-
-  <requestHandler name="test" class="solr.tst.TestRequestHandler" />
 
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">

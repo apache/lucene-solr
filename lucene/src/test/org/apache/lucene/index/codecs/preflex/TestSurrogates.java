@@ -27,7 +27,6 @@ import org.apache.lucene.util.*;
 import java.util.*;
 import java.io.IOException;
 
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 public class TestSurrogates extends LuceneTestCase {

@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.*;
 
 import java.net.MalformedURLException;

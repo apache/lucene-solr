@@ -26,7 +26,6 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  * Test FieldScoreQuery search.

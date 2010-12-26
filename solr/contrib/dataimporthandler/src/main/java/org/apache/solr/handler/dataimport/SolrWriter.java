@@ -26,8 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.text.ParseException;
-import java.util.Date;
 import java.util.Properties;
 
 /**
@@ -69,9 +67,6 @@ public class SolrWriter {
     try {
       AddUpdateCommand command = new AddUpdateCommand();
       command.solrDoc = d;
-      command.allowDups = false;
-      command.overwritePending = true;
-      command.overwriteCommitted = true;
       processor.processAdd(command);
     } catch (Exception e) {
       log.warn("Error creating document : " + d, e);
@@ -86,8 +81,6 @@ public class SolrWriter {
       log.info("Deleting document: " + id);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
       delCmd.id = id.toString();
-      delCmd.fromPending = true;
-      delCmd.fromCommitted = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
       log.error("Exception while deleteing: " + id, e);
@@ -162,8 +155,6 @@ public class SolrWriter {
       log.info("Deleting documents from Solr with query: " + query);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
       delCmd.query = query;
-      delCmd.fromCommitted = true;
-      delCmd.fromPending = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
       log.error("Exception while deleting by query: " + query, e);
@@ -192,8 +183,6 @@ public class SolrWriter {
     try {
       DeleteUpdateCommand deleteCommand = new DeleteUpdateCommand();
       deleteCommand.query = "*:*";
-      deleteCommand.fromCommitted = true;
-      deleteCommand.fromPending = true;
       processor.processDelete(deleteCommand);
     } catch (IOException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,

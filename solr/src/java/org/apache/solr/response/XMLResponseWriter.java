@@ -32,7 +32,12 @@ public class XMLResponseWriter implements QueryResponseWriter {
   }
 
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    XMLWriter.writeResponse(writer,req,rsp);
+    XMLWriter w = new XMLWriter(writer, req, rsp);
+    try {
+      w.writeResponse();
+    } finally {
+      w.close();
+    }
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {

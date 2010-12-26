@@ -28,7 +28,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.tika.config.TikaConfig;
-import org.apache.tika.exception.TikaException;
 import org.apache.tika.mime.MimeTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -44,6 +44,10 @@
     <pathelement location="${common-solr.dir}/build/tests"/> <!-- include solr test code -->
     <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
     <path refid="common.classpath"/>
+    <!-- DistributedClusteringComponentTest uses Jetty -->
+    <fileset dir="${solr-path}/example/lib">
+      <include name="**/*.jar" />
+    </fileset>
   </path>
 
   <target name="clean">

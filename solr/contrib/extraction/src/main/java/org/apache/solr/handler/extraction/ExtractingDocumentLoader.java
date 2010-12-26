@@ -90,19 +90,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     this.processor = processor;
 
     templateAdd = new AddUpdateCommand();
-    templateAdd.allowDups = false;
-    templateAdd.overwriteCommitted = true;
-    templateAdd.overwritePending = true;
+    templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
 
-    if (params.getBool(UpdateParams.OVERWRITE, true)) {
-      templateAdd.allowDups = false;
-      templateAdd.overwriteCommitted = true;
-      templateAdd.overwritePending = true;
-    } else {
-      templateAdd.allowDups = true;
-      templateAdd.overwriteCommitted = false;
-      templateAdd.overwritePending = false;
-    }
     //this is lightweight
     autoDetectParser = new AutoDetectParser(config);
     this.factory = factory;

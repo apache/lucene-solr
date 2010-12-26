@@ -19,12 +19,10 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.cache.ByteValuesCreator;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
-import org.apache.solr.search.function.IntFieldSource;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.LongFieldSource;
 
@@ -45,13 +43,9 @@ public class LongField extends FieldType {
     return new SortField(field.name,SortField.LONG, reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     return new LongFieldSource( new LongValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
-  }
-
-
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    xmlWriter.writeLong(name, f.stringValue());
   }
 
   @Override

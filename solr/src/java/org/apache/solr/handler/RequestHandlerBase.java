@@ -18,7 +18,6 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -27,7 +26,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.DocSet;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.lucene.queryParser.ParseException;
 

@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.SolrServer;
 import org.junit.BeforeClass;
 
 /**

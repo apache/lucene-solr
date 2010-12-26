@@ -16,12 +16,16 @@ package org.apache.solr.handler.clustering;
  * limitations under the License.
  */
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.DocList;
-import org.apache.solr.request.SolrQueryRequest;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocList;
+import org.apache.solr.util.SolrPluginUtils;
 
 
 /**
@@ -30,8 +34,27 @@ import org.apache.lucene.search.Query;
  **/
 public abstract class SearchClusteringEngine extends ClusteringEngine {
 
-
+  @Deprecated
   public abstract Object cluster(Query query, DocList docList, SolrQueryRequest sreq);
 
+  // TODO: need DocList, too?
+  public abstract Object cluster(Query query, SolrDocumentList solrDocumentList,
+      Map<SolrDocument,Integer> docIds, SolrQueryRequest sreq);
 
+  /**
+   * Returns the set of field names to load.
+   * Concrete classes can override this method if needed.
+   * Default implementation returns null, that is, all stored fields are loaded.
+   * @param sreq
+   * @return set of field names to load
+   */
+  protected Set<String> getFieldsToLoad(SolrQueryRequest sreq){
+    return null;
+  }
+
+  public SolrDocumentList getSolrDocumentList(DocList docList, SolrQueryRequest sreq,
+      Map<SolrDocument, Integer> docIds) throws IOException{
+    return SolrPluginUtils.docListToSolrDocumentList(
+        docList, sreq.getSearcher(), getFieldsToLoad(sreq), docIds);
+  }
 }

@@ -20,8 +20,6 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
-import org.apache.solr.search.SolrIndexReader;
-
 import java.io.IOException;
 import java.util.Map;
 

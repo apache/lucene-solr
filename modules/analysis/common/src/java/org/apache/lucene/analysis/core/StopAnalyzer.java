@@ -26,10 +26,8 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents;
 import org.apache.lucene.util.Version;
 
 /** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.

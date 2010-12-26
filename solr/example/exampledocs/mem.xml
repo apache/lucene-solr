@@ -61,7 +61,7 @@
   <field name="popularity">0</field>
   <field name="inStock">true</field>
   <!-- Buffalo store -->
-  <field name="store">45.17614,-93.87341</field>
+  <field name="store">45.18414,-93.88141</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 
   <field name="payloads">electronics|0.9 memory|0.1</field>

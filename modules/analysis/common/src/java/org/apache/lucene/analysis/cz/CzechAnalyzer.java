@@ -32,8 +32,6 @@ import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
 import java.io.*;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 /**

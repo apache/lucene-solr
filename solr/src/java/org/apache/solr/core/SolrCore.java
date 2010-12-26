@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -31,7 +30,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.*;
-import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.*;
 import org.apache.solr.response.*;
@@ -1375,18 +1373,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   }
 
-  /**
-   * @deprecated Use {@link #execute(SolrRequestHandler, SolrQueryRequest, SolrQueryResponse)} instead. 
-   */
-  @Deprecated
-  public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
-    SolrRequestHandler handler = getRequestHandler(req.getQueryType());
-    if (handler==null) {
-      log.warn(logid+"Unknown Request Handler '" + req.getQueryType() +"' :" + req);
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + req.getQueryType() + "'", true);
-    }
-    execute(handler, req, rsp);
-  }
+
   
   public static void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler

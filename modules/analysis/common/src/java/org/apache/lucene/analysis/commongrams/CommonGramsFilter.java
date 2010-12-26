@@ -10,7 +10,6 @@
 package org.apache.lucene.analysis.commongrams;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;

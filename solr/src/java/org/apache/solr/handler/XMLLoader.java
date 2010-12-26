@@ -99,39 +99,19 @@ class XMLLoader extends ContentStreamLoader {
             XmlUpdateRequestHandler.log.trace("SolrCore.update(add)");
 
             addCmd = new AddUpdateCommand();
-            boolean overwrite = true;  // the default
 
-            Boolean overwritePending = null;
-            Boolean overwriteCommitted = null;
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
               if (XmlUpdateRequestHandler.OVERWRITE.equals(attrName)) {
-                overwrite = StrUtils.parseBoolean(attrVal);
-              } else if (XmlUpdateRequestHandler.ALLOW_DUPS.equals(attrName)) {
-                overwrite = !StrUtils.parseBoolean(attrVal);
+                addCmd.overwrite = StrUtils.parseBoolean(attrVal);
               } else if (XmlUpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
                 addCmd.commitWithin = Integer.parseInt(attrVal);
-              } else if (XmlUpdateRequestHandler.OVERWRITE_PENDING.equals(attrName)) {
-                overwritePending = StrUtils.parseBoolean(attrVal);
-              } else if (XmlUpdateRequestHandler.OVERWRITE_COMMITTED.equals(attrName)) {
-                overwriteCommitted = StrUtils.parseBoolean(attrVal);
               } else {
                 XmlUpdateRequestHandler.log.warn("Unknown attribute id in add:" + attrName);
               }
             }
 
-            // check if these flags are set
-            if (overwritePending != null && overwriteCommitted != null) {
-              if (overwritePending != overwriteCommitted) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                        "can't have different values for 'overwritePending' and 'overwriteCommitted'");
-              }
-              overwrite = overwritePending;
-            }
-            addCmd.overwriteCommitted = overwrite;
-            addCmd.overwritePending = overwrite;
-            addCmd.allowDups = !overwrite;
           } else if ("doc".equals(currTag)) {
             XmlUpdateRequestHandler.log.trace("adding doc...");
             addCmd.clear();
@@ -190,15 +170,14 @@ class XMLLoader extends ContentStreamLoader {
   void processDelete(UpdateRequestProcessor processor, XMLStreamReader parser) throws XMLStreamException, IOException {
     // Parse the command
     DeleteUpdateCommand deleteCmd = new DeleteUpdateCommand();
-    deleteCmd.fromPending = true;
-    deleteCmd.fromCommitted = true;
+
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       String attrName = parser.getAttributeLocalName(i);
       String attrVal = parser.getAttributeValue(i);
       if ("fromPending".equals(attrName)) {
-        deleteCmd.fromPending = StrUtils.parseBoolean(attrVal);
+        // deprecated
       } else if ("fromCommitted".equals(attrName)) {
-        deleteCmd.fromCommitted = StrUtils.parseBoolean(attrVal);
+        // deprecated
       } else {
         XmlUpdateRequestHandler.log.warn("unexpected attribute delete/@" + attrName);
       }

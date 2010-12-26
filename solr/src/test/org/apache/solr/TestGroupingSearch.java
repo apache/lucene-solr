@@ -22,7 +22,6 @@ import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -17,42 +17,34 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.noggit.CharArr;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.OrdFieldSource;
-import org.apache.solr.search.Sorting;
-import org.apache.solr.search.QParser;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.MapSolrParams;
-
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.Sorting;
+import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.util.ByteUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.Reader;
+
 import java.io.IOException;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base class for all field types used by an index schema.
@@ -476,11 +468,6 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * Renders the specified field as XML
-   */
-  public abstract void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException;
-
-  /**
    * calls back to TextResponseWriter to write the field value
    */
   public abstract void write(TextResponseWriter writer, String name, Fieldable f) throws IOException;
@@ -503,18 +490,9 @@ public abstract class FieldType extends FieldProperties {
    *  Lucene FieldCache.)
    */
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return getValueSource(field);
-  }
-
-
-  /**
-   * @deprecated use {@link #getValueSource(SchemaField, QParser)}
-   */
-  @Deprecated
-  public ValueSource getValueSource(SchemaField field) {
-    // return new OrdFieldSource(field.name);
     return new StrFieldSource(field.name);
   }
+
 
   /**
    * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
@@ -553,6 +531,8 @@ public abstract class FieldType extends FieldProperties {
    * 
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    return new TermQuery(new Term(field.getName(), toInternal(externalVal)));
+    BytesRef br = new BytesRef();
+    readableToIndexed(externalVal, br);
+    return new TermQuery(new Term(field.getName(), br));
   }
 }

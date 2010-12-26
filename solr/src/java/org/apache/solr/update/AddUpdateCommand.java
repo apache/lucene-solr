@@ -40,9 +40,7 @@ public class AddUpdateCommand extends UpdateCommand {
    // to index.
    public SolrInputDocument solrDoc;
 
-   public boolean allowDups;
-   public boolean overwritePending;
-   public boolean overwriteCommitted;
+   public boolean overwrite = true;
    
    public Term updateTerm;
    public int commitWithin = -1;
@@ -114,9 +112,7 @@ public class AddUpdateCommand extends UpdateCommand {
      StringBuilder sb = new StringBuilder(commandName);
      sb.append(':');
      if (indexedId !=null) sb.append("id=").append(indexedId);
-     sb.append(",allowDups=").append(allowDups);
-     sb.append(",overwritePending=").append(overwritePending);
-     sb.append(",overwriteCommitted=").append(overwriteCommitted);
+     if (!overwrite) sb.append(",overwrite=").append(overwrite);
      return sb.toString();
    }
  }

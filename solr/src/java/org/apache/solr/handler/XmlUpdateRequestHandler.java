@@ -18,14 +18,11 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -57,24 +54,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
 
   public static final String OVERWRITE = "overwrite";
   public static final String COMMIT_WITHIN = "commitWithin";
-  
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String OVERWRITE_COMMITTED = "overwriteCommitted";
-  
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String OVERWRITE_PENDING = "overwritePending";
 
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String ALLOW_DUPS = "allowDups";
 
   XMLInputFactory inputFactory;
 

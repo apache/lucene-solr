@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.response;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.FileReader;
 
 import junit.framework.Assert;
@@ -27,7 +25,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Simple test for Date facet support in QueryResponse

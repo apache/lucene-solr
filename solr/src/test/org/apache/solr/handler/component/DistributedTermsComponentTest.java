@@ -1,7 +1,6 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.junit.Test;
 
 /**
  * Test for TermsComponent distributed querying

@@ -6,7 +6,7 @@ See http://wiki.apache.org/solr/ClusteringComponent
 
 CHANGES
 
-$Id:$
+$Id$
 
 ================== Release XXXX ==================
 
@@ -16,6 +16,9 @@ $Id:$
 
 * SOLR-1804: Re-enabled clustering on trunk, updated to latest version of Carrot2.  No more LGPL run-time dependencies.
   This release of C2 also does not have a specific Lucene dependency.  (Stanislaw Osinski, gsingers)
+
+* SOLR-2282: Add distributed search support for search result clustering.
+  (Brad Giaccio, koji)
 
 ================== Release 1.4.0 ==================
 

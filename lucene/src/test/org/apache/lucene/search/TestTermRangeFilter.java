@@ -29,8 +29,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * A basic 'positive' Unit test class for the TermRangeFilter class.
  * 
