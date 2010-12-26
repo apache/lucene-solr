@@ -22,6 +22,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.DoubleValuesCreator;
 import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.DoubleFieldSource;
 import org.apache.solr.search.function.ValueSource;
 
@@ -41,7 +42,8 @@ public class DoubleField extends FieldType {
     return new SortField(field.name, SortField.DOUBLE, reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     // fieldCache doesn't support double
     return new DoubleFieldSource( new DoubleValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }

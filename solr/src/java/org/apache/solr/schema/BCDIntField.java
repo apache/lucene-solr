@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.util.BCDUtils;
@@ -36,7 +37,8 @@ public class BCDIntField extends FieldType {
     return getStringSort(field,reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     throw new UnsupportedOperationException("ValueSource not implemented");
   }
 

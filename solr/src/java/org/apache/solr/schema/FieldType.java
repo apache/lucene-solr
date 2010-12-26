@@ -490,18 +490,9 @@ public abstract class FieldType extends FieldProperties {
    *  Lucene FieldCache.)
    */
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return getValueSource(field);
-  }
-
-
-  /**
-   * @deprecated use {@link #getValueSource(SchemaField, QParser)}
-   */
-  @Deprecated
-  public ValueSource getValueSource(SchemaField field) {
-    // return new OrdFieldSource(field.name);
     return new StrFieldSource(field.name);
   }
+
 
   /**
    * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
@@ -540,6 +531,8 @@ public abstract class FieldType extends FieldProperties {
    * 
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    return new TermQuery(new Term(field.getName(), toInternal(externalVal)));
+    BytesRef br = new BytesRef();
+    readableToIndexed(externalVal, br);
+    return new TermQuery(new Term(field.getName(), br));
   }
 }

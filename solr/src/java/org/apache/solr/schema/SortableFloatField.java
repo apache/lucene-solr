@@ -22,6 +22,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
 import org.apache.solr.search.MutableValueFloat;
 import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -45,7 +46,8 @@ public class SortableFloatField extends FieldType {
     return getStringSort(field,reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     return new SortableFloatFieldSource(field.name);
   }
 

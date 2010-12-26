@@ -174,7 +174,8 @@ public class TrieField extends FieldType {
     }
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
     switch (type) {
       case INTEGER:

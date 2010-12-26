@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.FloatValuesCreator;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.lucene.document.Fieldable;
@@ -39,7 +40,8 @@ public class FloatField extends FieldType {
     return new SortField(field.name,SortField.FLOAT, reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     return new FloatFieldSource( new FloatValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }
 
