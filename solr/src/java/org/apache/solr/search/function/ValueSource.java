@@ -41,18 +41,11 @@ import java.util.Collections;
  */
 public abstract class ValueSource implements Serializable {
 
-  @Deprecated
-  public DocValues getValues(IndexReader reader) throws IOException {
-    return getValues(null, reader);
-  }
-
   /**
    * Gets the values for this reader and the context that was previously
    * passed to createWeight()
    */
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return getValues(reader);
-  }
+  public abstract DocValues getValues(Map context, IndexReader reader) throws IOException;
 
   public abstract boolean equals(Object o);
 
