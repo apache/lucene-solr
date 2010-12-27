@@ -53,6 +53,10 @@
     <pathelement location="${junit-location.jar}"/>
   </path>
 
+  <path id="ant-path">
+    <fileset dir="${common.dir}/lib" includes="ant-*.jar"/>
+  </path>
+
   <!-- default arguments to pass to JVM executing tests -->
   <property name="testmethod" value=""/>
   <property name="args" value=""/>
@@ -81,6 +85,9 @@
   <property name="javac.target" value="1.5"/>
   <property name="javac.source.backwards" value="1.5"/>
   <property name="javac.target.backwards" value="1.5"/>
+  <!-- clover wants to run with -lib, otherwise we prefer a repeatable
+       classpath -->
+  <property name="javac.includeAntRuntime" value="${run.clover}"/>
 
   <property name="javadoc.link" value="http://java.sun.com/j2se/1.5/docs/api/"/>
   <property name="javadoc.access" value="protected"/>
@@ -655,6 +662,7 @@
     <sequential>
       <mkdir dir="@{destdir}"/>
       <javac
+        includeAntRuntime="${javac.includeAntRuntime}"
         encoding="${build.encoding}"
         srcdir="@{srcdir}"
         destdir="@{destdir}"
