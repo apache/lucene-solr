@@ -259,6 +259,8 @@ public class SolrResourceLoader implements ResourceLoader
       }
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
       is = classLoader.getResourceAsStream(resource);
+      if (is == null)
+        is = classLoader.getResourceAsStream(getConfigDir() + resource);
     } catch (Exception e) {
       throw new RuntimeException("Error opening " + resource, e);
     }
