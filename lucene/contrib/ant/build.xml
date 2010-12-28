@@ -33,33 +33,16 @@
                refid="additional.dependencies"
   />
 
+  <property name="javac.includeAntRuntime" value="true"/>
+
   <import file="../contrib-build.xml"/>
 	
   <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
       property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
 
-  <path id="common.classpath">
+  <path id="classpath">
 	 <pathelement path="${analyzers-common.jar}"/>
 	 <path refid="base.classpath"/>
-  </path>
-
-  <!-- tricky: we compile against our supported version of ant (ant-path),
-       but because ant's junit task's includeantruntime *does not work at all*,
-       we hack up a custom test classpath that runs against the runtime ant.
-       this is the only way to avoid having two different versions of ant
-       in the classpath -->
-       
-  <path id="classpath">
-     <path refid="common.classpath"/>
-     <path refid="ant-path"/>
-  </path>
-
-  <path id="junit.classpath">
-    <path refid="common.classpath"/>
-    <pathelement location="${common.dir}/build/classes/test"/>
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/java"/>
-    <pathelement location="${build.dir}/classes/test"/>
   </path>
 
   <target name="compile-core" depends="compile-analyzers-common, common.compile-core" />
