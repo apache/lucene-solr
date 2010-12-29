@@ -36,10 +36,10 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   // protected static final CoreContainer cores = new CoreContainer();
   protected static CoreContainer cores;
 
-  @Override public String getSolrHome() { return "../../../example/multicore/"; }
+  @Override public String getSolrHome() { return SolrJettyTestBase.EXAMPLE_MULTICORE_HOME; }
   
-  @Override public String getSchemaFile()     { return getSolrHome()+"core0/conf/schema.xml";     }
-  @Override public String getSolrConfigFile() { return getSolrHome()+"core0/conf/solrconfig.xml"; }
+  @Override public String getSchemaFile()     { return getSolrHome()+"/core0/conf/schema.xml";     }
+  @Override public String getSolrConfigFile() { return getSolrHome()+"/core0/conf/solrconfig.xml"; }
   
   @Override public void setUp() throws Exception {
     super.setUp();

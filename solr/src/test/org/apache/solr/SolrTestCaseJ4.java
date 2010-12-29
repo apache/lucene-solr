@@ -1024,6 +1024,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return out.toString();
   }
 
-
-
+  /** Gets a resource from the context classloader as {@link File}. This method should only be used,
+   * if a real file is needed. To get a stream, code should prefer
+   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   */
+  public static File getFile(String name) throws IOException {
+    try {
+      File file = new File(name);
+      if (!file.exists()) {
+        file = new File(Thread.currentThread().getContextClassLoader().getResource(name).toURI());
+      }
+      return file;
+    } catch (Exception e) {
+      throw new IOException("Cannot find resource: " + name);
+    }
+  }
 }

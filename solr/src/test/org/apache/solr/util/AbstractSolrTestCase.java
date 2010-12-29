@@ -20,6 +20,7 @@ package org.apache.solr.util;
 
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -407,5 +408,10 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
       }
     }
     return f.delete();
+  }
+
+  /** @see SolrTestCaseJ4#getFile */
+  public static File getFile(String name) throws IOException {
+    return SolrTestCaseJ4.getFile(name);
   }
 }

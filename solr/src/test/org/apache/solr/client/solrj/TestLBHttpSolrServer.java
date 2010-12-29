@@ -245,9 +245,9 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
       confDir.mkdirs();
 
       File f = new File(confDir, "solrconfig.xml");
-      FileUtils.copyFile(new File(getSolrConfigFile()), f);
+      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
       f = new File(confDir, "schema.xml");
-      FileUtils.copyFile(new File(getSchemaFile()), f);
+      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSchemaFile()), f);
 
     }
 

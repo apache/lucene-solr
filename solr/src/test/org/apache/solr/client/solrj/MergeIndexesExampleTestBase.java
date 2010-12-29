@@ -37,17 +37,17 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   @Override
   public String getSolrHome() {
-    return "../../../example/multicore/";
+    return SolrJettyTestBase.EXAMPLE_MULTICORE_HOME;
   }
 
   @Override
   public String getSchemaFile() {
-    return getSolrHome() + "core0/conf/schema.xml";
+    return getSolrHome() + "/core0/conf/schema.xml";
   }
 
   @Override
   public String getSolrConfigFile() {
-    return getSolrHome() + "core0/conf/solrconfig.xml";
+    return getSolrHome() + "/core0/conf/solrconfig.xml";
   }
 
   @Override
