@@ -56,12 +56,12 @@ public class TestSolrProperties extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.solr.home", getSolrHome());
+    File home = SolrTestCaseJ4.getFile(getSolrHome());
+    System.setProperty("solr.solr.home", home.getAbsolutePath());
 
     log.info("pwd: " + (new File(".")).getAbsolutePath());
-    File home = new File(getSolrHome());
     File f = new File(home, "solr.xml");
-    cores = new CoreContainer(getSolrHome(), f);
+    cores = new CoreContainer(home.getAbsolutePath(), f);
   }
 
   @After

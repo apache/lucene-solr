@@ -87,8 +87,6 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
     assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath, found " + checked, checked > 10 );
   }
   
-  static final String FOLDER = File.separator + "build" + File.separator + "solr" + File.separator + "org" + File.separator + "apache" + File.separator + "solr" + File.separator;
-
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<File>();
     ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
@@ -96,9 +94,6 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
       final File f = new File(resources.nextElement().toURI());
-      // only iterate classes from the core, not the tests (must be in dir "/build/solr/org"
-      if (!f.toString().contains(FOLDER))
-        continue;
       directories.add(f);
     }
       
@@ -108,7 +103,12 @@ public class SolrInfoMBeanTest extends SolrTestCaseJ4
         String[] files = directory.list();
         for (String file : files) {
           if (file.endsWith(".class")) {
-             classes.add(Class.forName(pckgname + '.' + file.substring(0, file.length() - 6)));
+             String clazzName = file.substring(0, file.length() - 6);
+             // exclude Test classes that happen to be in these packages.
+             // class.ForName'ing some of them can cause trouble.
+             if (!clazzName.endsWith("Test") && !clazzName.startsWith("Test")) {
+               classes.add(Class.forName(pckgname + '.' + clazzName));
+             }
           }
         }
       }
