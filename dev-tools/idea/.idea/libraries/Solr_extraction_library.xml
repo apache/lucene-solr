@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Solr extraction library">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/solr/contrib/extraction/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/solr/contrib/extraction/lib" recursive="false" />
+  </library>
+</component>
