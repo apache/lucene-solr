@@ -16,6 +16,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   // without breaking configs.
 
   private static final String SOURCE_HOME = determineSourceHome();
+  public static String WEBAPP_HOME = new File(SOURCE_HOME, "src/webapp/web").getAbsolutePath();
   public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
   public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
   public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/conf/schema.xml";
