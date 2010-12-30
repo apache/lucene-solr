@@ -109,7 +109,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
       XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
       UpdateRequestProcessor processor = processorFactory.createProcessor(req, rsp);
       XMLLoader loader = (XMLLoader) newLoader(req, processor);
-      loader.processUpdate(processor, parser);
+      loader.processUpdate(req, processor, parser);
       processor.finish();
       output.write("<result status=\"0\"></result>");
     }

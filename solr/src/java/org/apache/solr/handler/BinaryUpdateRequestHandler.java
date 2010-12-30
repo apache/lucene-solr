@@ -62,7 +62,7 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
     };
   }
 
-  private void parseAndLoadDocs(SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream,
+  private void parseAndLoadDocs(final SolrQueryRequest req, SolrQueryResponse rsp, InputStream stream,
                                 final UpdateRequestProcessor processor) throws IOException {
     UpdateRequest update = null;
     update = new JavaBinUpdateRequestCodec().unmarshal(stream,
@@ -71,7 +71,7 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
 
               public void document(SolrInputDocument document, UpdateRequest updateRequest) {
                 if (addCmd == null) {
-                  addCmd = getAddCommand(updateRequest.getParams());
+                  addCmd = getAddCommand(req, updateRequest.getParams());
                 }
                 addCmd.solrDoc = document;
                 try {
@@ -83,25 +83,25 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
               }
             });
     if (update.getDeleteById() != null) {
-      delete(update.getDeleteById(), processor, true);
+      delete(req, update.getDeleteById(), processor, true);
     }
     if (update.getDeleteQuery() != null) {
-      delete(update.getDeleteQuery(), processor, false);
+      delete(req, update.getDeleteQuery(), processor, false);
     }
 
   }
 
-  private AddUpdateCommand getAddCommand(SolrParams params) {
-    AddUpdateCommand addCmd = new AddUpdateCommand();
+  private AddUpdateCommand getAddCommand(SolrQueryRequest req, SolrParams params) {
+    AddUpdateCommand addCmd = new AddUpdateCommand(req);
 
     addCmd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
     addCmd.commitWithin = params.getInt(COMMIT_WITHIN, -1);
     return addCmd;
   }
 
-  private void delete(List<String> l, UpdateRequestProcessor processor, boolean isId) throws IOException {
+  private void delete(SolrQueryRequest req, List<String> l, UpdateRequestProcessor processor, boolean isId) throws IOException {
     for (String s : l) {
-      DeleteUpdateCommand delcmd = new DeleteUpdateCommand();
+      DeleteUpdateCommand delcmd = new DeleteUpdateCommand(req);
       if (isId) {
         delcmd.id = s;
       } else {

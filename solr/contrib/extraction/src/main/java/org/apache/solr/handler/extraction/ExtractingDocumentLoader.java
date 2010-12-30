@@ -89,7 +89,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     this.config = config;
     this.processor = processor;
 
-    templateAdd = new AddUpdateCommand();
+    templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
 
     //this is lightweight

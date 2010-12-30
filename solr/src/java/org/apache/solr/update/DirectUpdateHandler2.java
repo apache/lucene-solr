@@ -43,6 +43,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.io.IOException;
 import java.net.URL;
 
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -502,8 +506,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     /** This is the worker part for the ScheduledFuture **/
     public synchronized void run() {
       long started = System.currentTimeMillis();
+      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
       try {
-        CommitUpdateCommand command = new CommitUpdateCommand( false );
+        CommitUpdateCommand command = new CommitUpdateCommand(req, false );
         command.waitFlush = true;
         command.waitSearcher = true;
         //no need for command.maxOptimizeSegments = 1;  since it is not optimizing
@@ -516,6 +521,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       }
       finally {
         pending = null;
+        req.close();
       }
 
       // check if docs have been submitted since the commit started

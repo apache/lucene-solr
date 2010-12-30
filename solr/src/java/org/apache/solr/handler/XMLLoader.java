@@ -66,7 +66,7 @@ class XMLLoader extends ContentStreamLoader {
       }
 
       XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
-      this.processUpdate(processor, parser);
+      this.processUpdate(req, processor, parser);
     }
     catch (XMLStreamException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
@@ -81,7 +81,7 @@ class XMLLoader extends ContentStreamLoader {
   /**
    * @since solr 1.2
    */
-  void processUpdate(UpdateRequestProcessor processor, XMLStreamReader parser)
+  void processUpdate(SolrQueryRequest req, UpdateRequestProcessor processor, XMLStreamReader parser)
           throws XMLStreamException, IOException, FactoryConfigurationError,
           InstantiationException, IllegalAccessException,
           TransformerConfigurationException {
@@ -98,7 +98,7 @@ class XMLLoader extends ContentStreamLoader {
           if (currTag.equals(XmlUpdateRequestHandler.ADD)) {
             XmlUpdateRequestHandler.log.trace("SolrCore.update(add)");
 
-            addCmd = new AddUpdateCommand();
+            addCmd = new AddUpdateCommand(req);
 
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
@@ -120,7 +120,7 @@ class XMLLoader extends ContentStreamLoader {
           } else if (XmlUpdateRequestHandler.COMMIT.equals(currTag) || XmlUpdateRequestHandler.OPTIMIZE.equals(currTag)) {
             XmlUpdateRequestHandler.log.trace("parsing " + currTag);
 
-            CommitUpdateCommand cmd = new CommitUpdateCommand(XmlUpdateRequestHandler.OPTIMIZE.equals(currTag));
+            CommitUpdateCommand cmd = new CommitUpdateCommand(req, XmlUpdateRequestHandler.OPTIMIZE.equals(currTag));
 
             boolean sawWaitSearcher = false, sawWaitFlush = false;
             for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -151,13 +151,13 @@ class XMLLoader extends ContentStreamLoader {
           else if (XmlUpdateRequestHandler.ROLLBACK.equals(currTag)) {
             XmlUpdateRequestHandler.log.trace("parsing " + currTag);
 
-            RollbackUpdateCommand cmd = new RollbackUpdateCommand();
+            RollbackUpdateCommand cmd = new RollbackUpdateCommand(req);
 
             processor.processRollback(cmd);
           } // end rollback
           else if (XmlUpdateRequestHandler.DELETE.equals(currTag)) {
             XmlUpdateRequestHandler.log.trace("parsing delete");
-            processDelete(processor, parser);
+            processDelete(req, processor, parser);
           } // end delete
           break;
       }
@@ -167,9 +167,9 @@ class XMLLoader extends ContentStreamLoader {
   /**
    * @since solr 1.3
    */
-  void processDelete(UpdateRequestProcessor processor, XMLStreamReader parser) throws XMLStreamException, IOException {
+  void processDelete(SolrQueryRequest req, UpdateRequestProcessor processor, XMLStreamReader parser) throws XMLStreamException, IOException {
     // Parse the command
-    DeleteUpdateCommand deleteCmd = new DeleteUpdateCommand();
+    DeleteUpdateCommand deleteCmd = new DeleteUpdateCommand(req);
 
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       String attrName = parser.getAttributeLocalName(i);
