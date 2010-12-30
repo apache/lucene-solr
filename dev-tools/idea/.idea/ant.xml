@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AntConfiguration">
+    <buildFile url="file://$PROJECT_DIR$/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/common/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/smartcn/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/stempel/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/ant/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/benchmark/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/db/bdb/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/db/bdb-je/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/db/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/highlighter/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/icu/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/instantiated/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/lucli/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/memory/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/misc/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/queries/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/queryparser/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/remote/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/spatial/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/spellchecker/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/swing/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/wordnet/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/xml-query-parser/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/clustering/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/extraction/build.xml" />
+  </component>
+</project>
+
