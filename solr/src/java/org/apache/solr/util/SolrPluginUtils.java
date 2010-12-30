@@ -667,14 +667,6 @@ public class SolrPluginUtils {
       // don't trust that our parent class won't ever change it's default
       setDefaultOperator(QueryParser.Operator.OR);
     }
-    public DisjunctionMaxQueryParser(IndexSchema s, String defaultField) {
-      super(s,defaultField);
-      // don't trust that our parent class won't ever change it's default
-      setDefaultOperator(QueryParser.Operator.OR);
-    }
-    public DisjunctionMaxQueryParser(IndexSchema s) {
-      this(s,null);
-    }
 
     /**
      * Add an alias to this query parser.

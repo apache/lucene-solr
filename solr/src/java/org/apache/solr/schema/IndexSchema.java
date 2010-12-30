@@ -265,24 +265,6 @@ public final class IndexSchema {
    */
   public Analyzer getQueryAnalyzer() { return queryAnalyzer; }
 
-
-
-  /**
-   * A SolrQueryParser linked to this IndexSchema for field datatype
-   * information, and populated with default options from the
-   * &lt;solrQueryParser&gt; configuration for this IndexSchema.
-   *
-   * @param defaultField if non-null overrides the schema default
-   * @deprecated
-   */
-  @Deprecated
-  public SolrQueryParser getSolrQueryParser(String defaultField) {
-    SolrQueryParser qp = new SolrQueryParser(this,defaultField);
-    String operator = getQueryParserDefaultOperator();
-    qp.setDefaultOperator("AND".equals(operator) ?
-                          QueryParser.Operator.AND : QueryParser.Operator.OR);
-    return qp;
-  }
   
   /**
    * Name of the default search field specified in the schema file

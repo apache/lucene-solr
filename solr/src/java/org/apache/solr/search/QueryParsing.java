@@ -83,68 +83,6 @@ public class QueryParsing {
     if (null == val) val = sch.getQueryParserDefaultOperator();
     return "AND".equals(val) ? Operator.AND : Operator.OR;
   }
-   
-
-
-  /**
-   * Helper utility for parsing a query using the Lucene QueryParser syntax.
-   *
-   * @param qs     query expression in standard Lucene syntax
-   * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
-   */
-  public static Query parseQuery(String qs, IndexSchema schema) {
-    return parseQuery(qs, null, schema);
-  }
-
-  /**
-   * Helper utility for parsing a query using the Lucene QueryParser syntax.
-   *
-   * @param qs           query expression in standard Lucene syntax
-   * @param defaultField default field used for unqualified search terms in the query expression
-   * @param schema       used for default operator (overridden by params) and passed to the query parser for field format analysis information
-   */
-  public static Query parseQuery(String qs, String defaultField, IndexSchema schema) {
-    try {
-      Query query = schema.getSolrQueryParser(defaultField).parse(qs);
-
-      if (SolrCore.log.isTraceEnabled()) {
-        SolrCore.log.trace("After QueryParser:" + query);
-      }
-
-      return query;
-
-    } catch (ParseException e) {
-      SolrCore.log(e);
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing Lucene query", e);
-    }
-  }
-
-  /**
-   * Helper utility for parsing a query using the Lucene QueryParser syntax.
-   *
-   * @param qs           query expression in standard Lucene syntax
-   * @param defaultField default field used for unqualified search terms in the query expression
-   * @param params       used to determine the default operator, overriding the schema specified operator
-   * @param schema       used for default operator (overridden by params) and passed to the query parser for field format analysis information
-   */
-  public static Query parseQuery(String qs, String defaultField, SolrParams params, IndexSchema schema) {
-    try {
-      SolrQueryParser parser = schema.getSolrQueryParser(defaultField);
-      parser.setDefaultOperator(getQueryParserDefaultOperator
-                                (schema, params.get(QueryParsing.OP)));
-      Query query = parser.parse(qs);
-
-      if (SolrCore.log.isTraceEnabled()) {
-        SolrCore.log.trace("After QueryParser:" + query);
-      }
-
-      return query;
-
-    } catch (ParseException e) {
-      SolrCore.log(e);
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Query parsing error: " + e.getMessage(), e);
-    }
-  }
 
 
   // note to self: something needs to detect infinite recursion when parsing queries
@@ -905,47 +843,6 @@ public class QueryParsing {
       out.add(QueryParsing.toString(q, schema));
     }
     return out;
-  }
-
-  /**
-   * Parse a function, returning a FunctionQuery
-   * <p/>
-   * <p>
-   * Syntax Examples....
-   * </p>
-   * <p/>
-   * <pre>
-   * // Numeric fields default to correct type
-   * // (ie: IntFieldSource or FloatFieldSource)
-   * // Others use explicit ord(...) to generate numeric field value
-   * myfield
-   * <p/>
-   * // OrdFieldSource
-   * ord(myfield)
-   * <p/>
-   * // ReverseOrdFieldSource
-   * rord(myfield)
-   * <p/>
-   * // LinearFloatFunction on numeric field value
-   * linear(myfield,1,2)
-   * <p/>
-   * // MaxFloatFunction of LinearFloatFunction on numeric field value or constant
-   * max(linear(myfield,1,2),100)
-   * <p/>
-   * // ReciprocalFloatFunction on numeric field value
-   * recip(myfield,1,2,3)
-   * <p/>
-   * // ReciprocalFloatFunction on ReverseOrdFieldSource
-   * recip(rord(myfield),1,2,3)
-   * <p/>
-   * // ReciprocalFloatFunction on LinearFloatFunction on ReverseOrdFieldSource
-   * recip(linear(rord(myfield),1,2),3,4,5)
-   * </pre>
-   */
-  public static FunctionQuery parseFunction(String func, IndexSchema schema) throws ParseException {
-    SolrCore core = SolrCore.getSolrCore();
-    return (FunctionQuery) (QParser.getParser(func, "func", new LocalSolrQueryRequest(core, new HashMap())).parse());
-    // return new FunctionQuery(parseValSource(new StrParser(func), schema));
   }
 
 }

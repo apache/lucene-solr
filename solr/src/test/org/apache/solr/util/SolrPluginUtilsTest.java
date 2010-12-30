@@ -18,6 +18,8 @@
 package org.apache.solr.util;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -156,9 +158,12 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
         
     Query out;
     String t;
-        
+
+    SolrQueryRequest req = req();
+    QParser qparser = QParser.getParser("hi", "dismax", req);
+
     DisjunctionMaxQueryParser qp =
-      new SolrPluginUtils.DisjunctionMaxQueryParser(h.getCore().getSchema());
+      new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getSchema().getDefaultSearchFieldName());
 
     qp.addAlias("hoss", 0.01f, SolrPluginUtils.parseFieldBoosts
                 ("title^2.0 title_stemmed name^1.2 subject^0.5"));

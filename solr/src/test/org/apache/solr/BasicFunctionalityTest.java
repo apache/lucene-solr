@@ -345,16 +345,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
   }
 
-  /** @see org.apache.solr.analysis.TestRemoveDuplicatesTokenFilter */
-  @Test
-  public void testRemoveDuplicatesTokenFilter() {
-    Query q = QueryParsing.parseQuery("TV", "dedup",
-                                      h.getCore().getSchema());
-    assertTrue("not boolean?", q instanceof BooleanQuery);
-    assertEquals("unexpected number of stemmed synonym tokens",
-                 2, ((BooleanQuery) q).clauses().size());
-  }
-
   @Test
   public void testTermVectorFields() {
     
