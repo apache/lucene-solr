@@ -60,10 +60,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertU(adoc("id","1"));
 
     // More than one id should fail
-    assertFailedU(adoc("id","2", "id","3", "text","ignore_exception"));
+    assertFailedU(adoc("id","2", "id","ignore_exception", "text","foo"));
 
     // No id should fail
-    assertFailedU(adoc("text","ignore_exception"));
+    ignoreException("id");
+    assertFailedU(adoc("text","foo"));
+    resetExceptionIgnores();
   }
 
 
