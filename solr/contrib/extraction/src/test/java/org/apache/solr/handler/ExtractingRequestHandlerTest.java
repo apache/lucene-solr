@@ -152,6 +152,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
     try {
       ignoreException("unknown field 'a'");
+      ignoreException("unknown field 'meta'");  // TODO: should this exception be happening?
       loadLocal("simple.html",
       "literal.id","simple2",
       "lowernames", "true",
