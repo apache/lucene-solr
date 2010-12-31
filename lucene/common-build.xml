@@ -74,7 +74,6 @@
   <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
   <property name="tests.iter" value="1" />
   <property name="tests.seed" value="random" />
-  <property name="tests.userdir" value="."/>
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
     
@@ -442,7 +441,7 @@
 	    -->
     	<touch file="@{tempDir}/@{threadNum}/quiet.ant" verbose="false" mkdirs="true"/>
 	    <junit printsummary="off" haltonfailure="no" maxmemory="512M" tempdir="@{tempDir}/@{threadNum}"
-	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir="${tests.userdir}">
+	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir="@{tempDir}/@{threadNum}">
 	      <classpath refid="@{junit.classpath}"/>
 	      <assertions>
 	        <enable package="org.apache.lucene"/>

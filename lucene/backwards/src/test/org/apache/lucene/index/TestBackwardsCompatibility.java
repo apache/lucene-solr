@@ -78,13 +78,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
   /* Unzips dirName + ".zip" --> dirName, removing dirName
      first */
-  public void unzip(String zipName, String destDirName) throws IOException {
+  public void unzip(File zipName, String destDirName) throws IOException {
 
-    Enumeration entries;
-    ZipFile zipFile;
-    zipFile = new ZipFile(zipName + ".zip");
+    ZipFile zipFile = new ZipFile(zipName);
 
-    entries = zipFile.entries();
+    Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
     String dirName = fullDir(destDirName);
 
@@ -94,7 +92,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     fileDir.mkdir();
 
     while (entries.hasMoreElements()) {
-      ZipEntry entry = (ZipEntry) entries.nextElement();
+      ZipEntry entry = entries.nextElement();
 
       InputStream in = zipFile.getInputStream(entry);
       OutputStream out = new BufferedOutputStream(new FileOutputStream(new File(fileDir, entry.getName())));
@@ -209,8 +207,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     int hasTested29 = 0;
     
     for(int i=0;i<oldNames.length;i++) {
-      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
-      unzip(dirName, oldNames[i]);
+      unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       String fullPath = fullDir(oldNames[i]);
       Directory dir = FSDirectory.open(new File(fullPath));
 
@@ -239,8 +236,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
   public void testSearchOldIndex() throws IOException {
     for(int i=0;i<oldNames.length;i++) {
-      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
-      unzip(dirName, oldNames[i]);
+      unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       searchIndex(oldNames[i], oldNames[i]);
       rmDir(oldNames[i]);
     }
@@ -248,8 +244,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
   public void testIndexOldIndexNoAdds() throws IOException {
     for(int i=0;i<oldNames.length;i++) {
-      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
-      unzip(dirName, oldNames[i]);
+      unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       changeIndexNoAdds(oldNames[i]);
       rmDir(oldNames[i]);
     }
@@ -257,8 +252,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
   public void testIndexOldIndex() throws IOException {
     for(int i=0;i<oldNames.length;i++) {
-      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
-      unzip(dirName, oldNames[i]);
+      unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       changeIndexWithAdds(oldNames[i]);
       rmDir(oldNames[i]);
     }

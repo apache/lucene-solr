@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -266,4 +268,17 @@ public abstract class LuceneTestCase extends TestCase {
   
   // static members
   private static final Random seedRnd = new Random();
+  
+  /** Gets a resource from the classpath as {@link File}. This method should only be used,
+   * if a real file is needed. To get a stream, code should prefer
+   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   */
+  
+  protected File getDataFile(String name) throws IOException {
+    try {
+      return new File(this.getClass().getResource(name).toURI());
+    } catch (Exception e) {
+      throw new IOException("Cannot find resource: " + name);
+    }
+  }
 }
