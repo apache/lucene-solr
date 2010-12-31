@@ -330,7 +330,7 @@ New features
 
 * LUCENE-2314: Added AttributeSource.copyTo(AttributeSource) that
   allows to use cloneAttributes() and this method as a replacement
-  for captureState()/restoreState(), if the state itsself
+  for captureState()/restoreState(), if the state itself
   needs to be inspected/modified.  (Uwe Schindler)
 
 * LUCENE-2293: Expose control over max number of threads that
@@ -544,7 +544,7 @@ Test Cases
   temp and data directories inside test cases. It is now centralized in
   LuceneTestCase(J4). Also changed lots of tests to use
   getClass().getResourceAsStream() to retrieve test data. Tests needing
-  access to "real" files from the test folder itsself, can use
+  access to "real" files from the test folder itself, can use
   LuceneTestCase(J4).getDataFile().  (Uwe Schindler)
 
 * LUCENE-2398, LUCENE-2611: Improve tests to work better from IDEs such 
