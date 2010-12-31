@@ -814,7 +814,7 @@ Test Cases
   temp and data directories inside test cases. It is now centralized in
   LuceneTestCase(J4). Also changed lots of tests to use
   getClass().getResourceAsStream() to retrieve test data. Tests needing
-  access to "real" files from the test folder itsself, can use
+  access to "real" files from the test folder itself, can use
   LuceneTestCase(J4).getDataFile().  (Uwe Schindler)
 
 * LUCENE-2398, LUCENE-2611: Improve tests to work better from IDEs such 
