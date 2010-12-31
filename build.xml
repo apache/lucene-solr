@@ -52,6 +52,24 @@
     </sequential>
   </target>
 
+  <target name="eclipse" description="Setup Eclipse configuration">
+    <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
+    <mkdir dir=".settings"/>
+    <copy file="dev-tools/eclipse/resources.prefs" 
+          tofile=".settings/org.eclipse.core.resources.prefs" overwrite="true"/>
+    <echo>Running Lucene contrib db/bdb-je task 'get-je-jar' ...</echo>
+    <subant target="get-je-jar">
+      <fileset dir="lucene/contrib/db/bdb-je" includes="build.xml" />
+    </subant>
+    <echo>Running Lucene contrib db/bdb task 'get-db-jar' ...</echo>
+    <subant target="get-db-jar">
+      <fileset dir="lucene/contrib/db/bdb" includes="build.xml" />
+    </subant>
+    <echo>
+      SUCCESS: You must right-click your project and choose Refresh
+    </echo>
+  </target>
+
   <condition property="isMac"><os family="mac"/></condition>
   <condition property="isUnix"><os family="unix"/></condition>
   <condition property="isWindows"><os family="windows"/></condition>
