@@ -778,6 +778,10 @@ Build
 * LUCENE-2516: Backwards tests are now compiled against released lucene-core.jar
   from tarball of previous version. Backwards tests are now packaged together
   with src distribution.  (Uwe Schindler)
+  
+* LUCENE-2611: Added Ant target to install IntelliJ IDEA configuration:
+  "ant idea".  See http://wiki.apache.org/lucene-java/HowtoConfigureIntelliJ
+  (Steven Rowe)
 
 Test Cases
 
