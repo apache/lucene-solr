@@ -64,54 +64,6 @@ public class DirectSolrConnection
     core = c;
     parser = new SolrRequestParsers( c.getSolrConfig() );
   }
-
-  /**
-   * This constructor is designed to make it easy for JNI embedded applications 
-   * to setup the entire solr environment with a simple interface.  It takes three parameters:
-   * 
-   * <code>instanceDir:</code> The solr instance directory.  If null, it will check the standard 
-   * places first (JNDI,properties,"solr" directory)
-   * 
-   * <code>dataDir:</code> where the index is stored. 
-   * 
-   * <code>loggingPath:</code> Path to a java.util.logging.config.file.  If the path represents
-   * an absolute path or is relative to the CWD, it will use that.  Next it will try a path 
-   * relative to the instanceDir.  If none of these files exist, it will error.
-   */
-  public DirectSolrConnection( String instanceDir, String dataDir, String loggingPath )
-  {
-    // If a loggingPath is specified, try using that (this needs to happen first)
-    if( loggingPath != null ) {
-      File loggingConfig = new File( loggingPath );
-      if( !loggingConfig.exists() && instanceDir != null ) {
-        loggingConfig = new File( new File(instanceDir), loggingPath  );
-      }
-      if( loggingConfig.exists() ) {
-        System.setProperty("java.util.logging.config.file", loggingConfig.getAbsolutePath() ); 
-      }
-      else {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "can not find logging file: "+loggingConfig );
-      }
-    }
-    
-    if( instanceDir == null ) {
-      instanceDir = SolrResourceLoader.locateInstanceDir();
-    }
-    
-    // Initialize 
-    try {
-      CoreContainer cores = new CoreContainer(new SolrResourceLoader(instanceDir));
-      SolrConfig solrConfig = new SolrConfig(instanceDir, SolrConfig.DEFAULT_CONF_FILE, null);
-      CoreDescriptor dcore = new CoreDescriptor(cores, "", solrConfig.getResourceLoader().getInstanceDir());
-      IndexSchema indexSchema = new IndexSchema(solrConfig, instanceDir+"/conf/schema.xml", null);
-      core = new SolrCore( null, dataDir, solrConfig, indexSchema, dcore);
-      cores.register("", core, false);
-      parser = new SolrRequestParsers( solrConfig );
-    } 
-    catch (Exception ee) {
-      throw new RuntimeException(ee);
-    }
-  }
   
 
   /**

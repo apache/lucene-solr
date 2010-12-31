@@ -636,10 +636,7 @@ public class SolrResourceLoader implements ResourceLoader
     }
     return normalizeDir( home );
   }
-  @Deprecated
-  public static String locateInstanceDir() {
-    return locateSolrHome();
-  }
+
 
   public String getInstanceDir() {
     return instanceDir;

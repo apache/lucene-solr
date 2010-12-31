@@ -114,7 +114,7 @@
   }
   
   String cwd=System.getProperty("user.dir");
-  String solrHome= solrConfig.getInstanceDir();
+  String solrHome= solrConfig.getResourceLoader().getInstanceDir();
   
   boolean cachingEnabled = !solrConfig.getHttpCachingConfig().isNever304(); 
 %>
