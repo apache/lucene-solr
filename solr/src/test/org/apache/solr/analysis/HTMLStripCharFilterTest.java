@@ -29,6 +29,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.apache.solr.SolrTestCaseJ4;
+
 public class HTMLStripCharFilterTest extends LuceneTestCase {
 
   @Override
@@ -67,7 +69,7 @@ public class HTMLStripCharFilterTest extends LuceneTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
 
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new FileReader(new File("htmlStripReaderTest.html"))));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new FileReader(SolrTestCaseJ4.getFile("htmlStripReaderTest.html"))));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){

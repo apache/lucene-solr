@@ -52,6 +52,11 @@ import java.util.Map;
 public abstract class AbstractDataImportHandlerTestCase extends
         SolrTestCaseJ4 {
 
+  // note, a little twisted that we shadow this static method
+  public static void initCore(String config, String schema) throws Exception {
+    initCore(config, schema, "solr-dih");
+  }
+  
   @Override
   @Before
   public void setUp() throws Exception {

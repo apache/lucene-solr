@@ -15,35 +15,12 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   // using configs in the test directory allows more flexibility to change "example"
   // without breaking configs.
 
-  private static final String SOURCE_HOME = determineSourceHome();
-  public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
-  public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
-  public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/conf/schema.xml";
-  public static String EXAMPLE_CONFIG=EXAMPLE_HOME+"/conf/solrconfig.xml";
-
   public String getSolrHome() { return EXAMPLE_HOME; }
 
   public static JettySolrRunner jetty;
   public static int port;
   public static SolrServer server;
   public static String context;
-
-  static String determineSourceHome() {
-    // ugly, ugly hack to determine the example home without depending on the CWD
-    try {
-      File file = new File("../../../example/solr");
-      if (file.exists())
-        return new File("../../../").getAbsolutePath();
-      // let the hacks begin
-      File base = getFile("solr/conf/");
-      while (!new File(base, "solr/CHANGES.txt").exists()) {
-        base = base.getParentFile();
-      }
-      return new File(base, "solr/").getAbsolutePath();
-    } catch (IOException e) {
-      throw new RuntimeException("Cannot determine example home!");
-    }
-  }
 
   public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
     // creates the data dir

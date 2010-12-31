@@ -85,6 +85,14 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
   public abstract String getSolrConfigFile();
 
   /**
+   * Subclasses can override this to change a test's solr home
+   * (default is in test-files)
+   */
+  public String getSolrHome() {
+    return SolrTestCaseJ4.TEST_HOME;
+  }
+  
+  /**
    * The directory used to story the index managed by the TestHarness h
    */
   protected File dataDir;
@@ -114,8 +122,8 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     dataDir = new File(TEMP_DIR,
             getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
-
     String configFile = getSolrConfigFile();
+    System.setProperty("solr.solr.home", getSolrHome());
     if (configFile != null) {
 
       solrConfig = h.createConfig(getSolrConfigFile());

@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml");
+    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", "solr-dihextras");
   }
 
   public void testIndexingWithTikaEntityProcessor() throws Exception {
@@ -33,7 +33,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
             "<dataConfig>" +
                     "  <dataSource type=\"BinFileDataSource\"/>" +
                     "  <document>" +
-                    "    <entity processor=\"TikaEntityProcessor\" url=\"../../../../../extraction/src/test/resources/solr-word.pdf\" >" +
+                    "    <entity processor=\"TikaEntityProcessor\" url=\"" + getFile("solr-word.pdf").getAbsolutePath() + "\" >" +
                     "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
                     "      <field column=\"title\" meta=\"true\" name=\"docTitle\"/>" +
                     "      <field column=\"text\"/>" +
