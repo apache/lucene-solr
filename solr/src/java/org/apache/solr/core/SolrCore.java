@@ -105,12 +105,6 @@ public final class SolrCore implements SolrInfoMBean {
 
   public long getStartTime() { return startTime; }
 
-  /**
-   * @deprecated Use {@link CoreContainer#getCore(String)} instead.
-   */
-  @Deprecated
-  private static SolrCore instance;
-
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
   // only change the BooleanQuery maxClauseCount once for ALL cores...
   void booleanQueryMaxClauseCount()  {
@@ -140,15 +134,7 @@ public final class SolrCore implements SolrInfoMBean {
   public String getConfigResource() {
     return solrConfig.getResourceName();
   }
-  
-  /**
-   * Gets the configuration resource name used by this core instance.
-   * @deprecated Use {@link #getConfigResource()} instead.
-   */
-  @Deprecated
-  public String getConfigFile() {
-    return solrConfig.getResourceName();
-  }
+
   /**
    * Gets the configuration object used by this core instance.
    */
@@ -164,15 +150,6 @@ public final class SolrCore implements SolrInfoMBean {
     return schema.getResourceName();
   }
 
-  /**
-   * Gets the schema resource name used by this core instance.
-   * @deprecated Use {@link #getSchemaResource()} instead.
-   */
-  @Deprecated
-  public String getSchemaFile() {
-    return schema.getResourceName();
-  }
-  
   /**
    * Gets the schema object used by this core instance.
    */
@@ -463,30 +440,6 @@ public final class SolrCore implements SolrInfoMBean {
     return createInstance(className, UpdateHandler.class, "Update Handler");
   }
   
-
-  /** 
-   * @return the last core initialized.  If you are using multiple cores, 
-   * this is not a function to use.
-   * 
-   * @deprecated Use {@link CoreContainer#getCore(String)} instead.
-   */
-  @Deprecated
-  public static SolrCore getSolrCore() {
-    synchronized( SolrCore.class ) {
-      if( instance == null ) {
-        try {
-          // sets 'instance' to the latest solr core          
-          CoreContainer.Initializer init = new CoreContainer.Initializer();
-          instance = init.initialize().getCore("");
-        } catch(Exception xany) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-              "error creating core", xany );
-        }
-      }
-    }
-    return instance;
-  }
-  
   /**
    * 
    * @param dataDir
@@ -555,7 +508,7 @@ public final class SolrCore implements SolrInfoMBean {
     initQParsers();
     initValueSourceParsers();
 
-    this.searchComponents = loadSearchComponents();
+    this.searchComponents = Collections.unmodifiableMap(loadSearchComponents());
 
     // Processors initialized before the handlers
     updateProcessorChains = loadUpdateProcessorChains();
@@ -592,7 +545,6 @@ public final class SolrCore implements SolrInfoMBean {
       // Finally tell anyone who wants to know
       resourceLoader.inform( resourceLoader );
       resourceLoader.inform( this );  // last call before the latch is released.
-      instance = this;   // set singleton for backwards compatibility
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e, false);
     } finally {
@@ -768,16 +720,7 @@ public final class SolrCore implements SolrInfoMBean {
      closeHooks.add( hook );
    }
 
-  /**
-   * Returns a Request object based on the admin/pingQuery section
-   * of the Solr config file.
-   * 
-   * @deprecated use {@link org.apache.solr.handler.PingRequestHandler} instead
-   */
-  @Deprecated
-  public SolrQueryRequest getPingQueryRequest() {
-    return solrConfig.getPingQueryRequest(this);
-  }
+
   ////////////////////////////////////////////////////////////////////////////////
   // Request Handler
   ////////////////////////////////////////////////////////////////////////////////
@@ -805,14 +748,6 @@ public final class SolrCore implements SolrInfoMBean {
     return reqHandlers.getRequestHandlers();
   }
 
-  /**
-   * Get the SolrHighlighter
-   */
-  @Deprecated
-  public SolrHighlighter getHighlighter() {
-    HighlightComponent hl = (HighlightComponent) searchComponents.get(HighlightComponent.COMPONENT_NAME);
-    return hl==null? null: hl.getHighlighter();
-  }
 
   /**
    * Registers a handler at the specified location.  If one exists there, it will be replaced.
@@ -892,7 +827,7 @@ public final class SolrCore implements SolrInfoMBean {
    * @return An unmodifiable Map of Search Components
    */
   public Map<String, SearchComponent> getSearchComponents() {
-    return Collections.unmodifiableMap(searchComponents);
+    return searchComponents;
   }
 
   ////////////////////////////////////////////////////////////////////////////////

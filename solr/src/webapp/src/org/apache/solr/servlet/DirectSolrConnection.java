@@ -53,19 +53,8 @@ import org.apache.solr.schema.IndexSchema;
  */
 public class DirectSolrConnection 
 {
-  final SolrCore core;
-  final SolrRequestParsers parser;
-  
-  /**
-   * Initialize using the static singleton SolrCore.getSolrCore().
-   * 
-   * @deprecated use {@link #DirectSolrConnection(SolrCore)}
-   */
-  @Deprecated
-  public DirectSolrConnection()
-  {
-    this( SolrCore.getSolrCore() );
-  }
+  protected final SolrCore core;
+  protected final SolrRequestParsers parser;
 
   /**
    * Initialize using an explicit SolrCore
