@@ -1,5 +1,8 @@
 package org.apache.solr.core;
 
+import java.io.File;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.request.SolrRequestHandler;
 
@@ -24,7 +27,9 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
 
   @Override
   public void setUp() throws Exception {
-
+    File dest = new File("solrconfig-reqHandler.incl");
+    dest.deleteOnExit();
+    FileUtils.copyFile(getFile("solr/conf/solrconfig-reqHandler.incl"), dest);
     supports = true;
     javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     try {

@@ -43,7 +43,7 @@ import java.io.File;
 public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    initCore("solrconfig.xml", "schema.xml", "solr-extraction");
   }
 
   @Before
@@ -367,7 +367,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       // TODO: stop using locally defined streams once stream.file and
       // stream.body work everywhere
       List<ContentStream> cs = new ArrayList<ContentStream>();
-      cs.add(new ContentStreamBase.FileStream(new File(filename)));
+      cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);
       return h.queryAndResponse("/update/extract", req);
     } finally {

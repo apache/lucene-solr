@@ -361,6 +361,10 @@
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
     </solr-javac>
+    <!-- Copy any data files present to the classpath -->
+    <copy todir="${dest}/tests">
+      <fileset dir="${src}/test/test-files" excludes="**/*.java"/>
+    </copy>
   </target>
 
   <!-- Run core unit tests. -->
@@ -421,7 +425,7 @@
            maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
-           dir="src/test/test-files/"
+           dir="@{tempDir}/@{threadNum}"
            tempdir="@{tempDir}/@{threadNum}"
            forkmode="perBatch"
            >

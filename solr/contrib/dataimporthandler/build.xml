@@ -123,6 +123,10 @@
   	                classpathref="test.classpath">
   	  <src path="src/test/java" />
   	</solr-javac>
+    <!-- Copy any data files present to the classpath -->
+    <copy todir="target/test-classes">
+      <fileset dir="src/test/resources" excludes="**/*.java"/>
+    </copy>
   </target>
 
   <target name="compileExtrasTests" depends="compileExtras">
@@ -130,6 +134,10 @@
   	                classpathref="test.classpath">
   	  <src path="src/extras/test/java" />
   	</solr-javac>
+    <!-- Copy any data files present to the classpath -->
+    <copy todir="target/extras/test-classes">
+      <fileset dir="src/extras/test/resources" excludes="**/*.java"/>
+    </copy>
   </target>
 
   <property name="tempDir" value="${junit.output.dir}/temp" />
@@ -156,7 +164,7 @@
            maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
-           dir="src/test/resources/"
+           dir="${tempDir}"
            tempdir="${tempDir}"
            forkmode="perBatch"
            >
@@ -217,7 +225,7 @@
            maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
-           dir="src/extras/test/resources/"
+           dir="${tempDir}"
            tempdir="${tempDir}"
            forkmode="perBatch"
            >
