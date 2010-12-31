@@ -450,7 +450,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (ft.getAnalyzer().getPositionIncrementGap(f.getName()) != 0) {
     	  field.add("positionIncrementGap", ft.getAnalyzer().getPositionIncrementGap(f.getName()));
       }
-      field.add("copyDests", schema.getCopyFields(f.getName()));
+      field.add("copyDests", schema.getCopyFieldsList(f.getName()));
       field.add("copySources", schema.getCopySources(f.getName()));
 
       
