@@ -120,7 +120,7 @@
     </solr-javac>
     <!-- Copy any data files present to the classpath -->
     <copy todir="${dest}/test-classes">
-      <fileset dir="src/test/test-files" excludes="**/*.java"/>
+      <fileset dir="src/test-files" excludes="**/*.java"/>
     </copy>
   </target>
 
