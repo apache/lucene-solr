@@ -58,11 +58,11 @@
 	<classpathentry kind="src" path="solr/src/webapp/src"/>
 	<classpathentry kind="src" path="solr/src/common"/>
 	<classpathentry kind="src" path="solr/src/solrj"/>
-	<classpathentry excluding="test-files/" kind="src" path="solr/src/test"/>
-	<classpathentry kind="src" path="solr/src/test/test-files"/>
+	<classpathentry kind="src" path="solr/src/test"/>
+	<classpathentry kind="src" path="solr/src/test-files"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>
-	<classpathentry excluding="test-files/" kind="src" path="solr/contrib/analysis-extras/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test-files"/>
 	<classpathentry kind="src" path="solr/contrib/clustering/src/main/java"/>
 	<classpathentry kind="src" path="solr/contrib/clustering/src/test/java"/>
 	<classpathentry kind="src" path="solr/contrib/clustering/src/test/resources"/>
