@@ -158,7 +158,7 @@
     <configuration default="false" name="solr" type="JUnit" factoryName="JUnit">
       <module name="solr" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/tests" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/tests/solr" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
