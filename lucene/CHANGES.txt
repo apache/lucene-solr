@@ -678,6 +678,12 @@ New features
   Using this wrapper its easy to add fuzzy/wildcard to e.g. a SpanNearQuery.
   (Robert Muir, Uwe Schindler)
   
+* LUCENE-2838: ConstantScoreQuery now directly supports wrapping a Query
+  instance for stripping off scores. The use of a QueryWrapperFilter
+  is no longer needed and discouraged for that use case. Directly wrapping
+  Query improves performance, as out-of-order collection is now supported.
+  (Uwe Schindler)
+  
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
