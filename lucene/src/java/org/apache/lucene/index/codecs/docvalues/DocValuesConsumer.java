@@ -18,43 +18,89 @@ package org.apache.lucene.index.codecs.docvalues;
  */
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.Writer;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 
 /**
+ * Abstract API that consumes {@link PerDocFieldValues}.
+ * {@link DocValuesConsumer} are always associated with a specific field and
+ * segments. Concrete implementations of this API write the given
+ * {@link PerDocFieldValues} into a implementation specific format depending on
+ * the fields meta-data.
+ * 
  * @lucene.experimental
  */
-// TODO this might need to go in the codec package since is a direct relative to
-// TermsConsumer
 public abstract class DocValuesConsumer {
-  
-  protected AtomicLong bytesUsed = new AtomicLong(0);
-  
+  // TODO this might need to go in the codec package since is a direct relative
+  // to TermsConsumer
+  protected final AtomicLong bytesUsed;
+
+  /**
+   * Creates a new {@link DocValuesConsumer}.
+   * 
+   * @param bytesUsed
+   *          bytes-usage tracking reference used by implementation to track
+   *          internally allocated memory. All tracked bytes must be released
+   *          once {@link #finish(int)} has been called.
+   */
   protected DocValuesConsumer(AtomicLong bytesUsed) {
-    this.bytesUsed = bytesUsed;
+    this.bytesUsed = bytesUsed == null ? new AtomicLong(0) : bytesUsed;
   }
 
-  public final long bytesUsed() {
-    return this.bytesUsed.get();
-  }
+  /**
+   * Adds the given {@link PerDocFieldValues} instance to this
+   * {@link DocValuesConsumer}
+   * 
+   * @param docID
+   *          the document ID to add the value for. The docID must always
+   *          increase or be <tt>0</tt> if it is the first call to this method.
+   * @param docValues
+   *          the values to add
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   */
+  public abstract void add(int docID, PerDocFieldValues docValues)
+      throws IOException;
 
-  public abstract void add(int docID, PerDocFieldValues docValues) throws IOException;
-
+  /**
+   * Called when the consumer of this API is doc with adding
+   * {@link PerDocFieldValues} to this {@link DocValuesConsumer}
+   * 
+   * @param docCount
+   *          the total number of documents in this {@link DocValuesConsumer}.
+   *          Must be greater than or equal the last given docID to
+   *          {@link #add(int, PerDocFieldValues)}.
+   * @throws IOException
+   */
   public abstract void finish(int docCount) throws IOException;
 
+  /**
+   * Gathers files associated with this {@link DocValuesConsumer}
+   * 
+   * @param files
+   *          the of files to add the consumers files to.
+   */
   public abstract void files(Collection<String> files) throws IOException;
 
+  /**
+   * Merges the given {@link org.apache.lucene.index.codecs.MergeState} into
+   * this {@link DocValuesConsumer}.
+   * 
+   * @param mergeState
+   *          the state to merge
+   * @param values
+   *          the docValues to merge in
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   */
   public void merge(org.apache.lucene.index.codecs.MergeState mergeState,
       DocValues values) throws IOException {
+    assert mergeState != null;
     // TODO we need some kind of compatibility notation for values such
     // that two slightly different segments can be merged eg. fixed vs.
     // variable byte len or float32 vs. float64
@@ -74,20 +120,40 @@ public abstract class DocValuesConsumer {
       }
       docBase += reader.numDocs();
     }
-    if (merged)
+    if (merged) {
       finish(mergeState.mergedDocCount);
+    }
   }
 
+  /**
+   * Merges the given {@link MergeState} into this {@link DocValuesConsumer}.
+   * {@link MergeState#docBase} must always be increasing. Merging segments out
+   * of order is not supported.
+   * 
+   * @param mergeState
+   *          the {@link MergeState} to merge
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   */
   protected abstract void merge(MergeState mergeState) throws IOException;
 
-  /*
-   * specialized auxiliary MergeState is necessary since we don't want to
-   * exploit internals up to the codec ones
+  /**
+   * Specialized auxiliary MergeState is necessary since we don't want to
+   * exploit internals up to the codecs consumer. An instance of this class is
+   * created for each merged low level {@link IndexReader} we are merging to
+   * support low level bulk copies.
    */
   public static class MergeState {
+    /**
+     * the source reader for this MergeState - merged values should be read from
+     * this instance
+     */
     public final DocValues reader;
+    /** the absolute docBase for this MergeState within the resulting segment */
     public final int docBase;
+    /** the number of documents in this MergeState */
     public final int docCount;
+    /** the deleted bits for this MergeState */
     public final Bits bits;
 
     public MergeState(DocValues reader, int docBase, int docCount, Bits bits) {
@@ -97,11 +163,5 @@ public abstract class DocValuesConsumer {
       this.docCount = docCount;
       this.bits = bits;
     }
-  }
-
-  public static DocValuesConsumer create(String id,
-      Directory directory, FieldInfo field, Comparator<BytesRef> comp, AtomicLong bytesUsed)
-      throws IOException {
-    return Writer.create(field.getDocValues(), id, directory, comp, bytesUsed);
   }
 }

@@ -104,11 +104,11 @@ public class DocValuesCodec extends Codec {
       if(info == null) {
         info = new DocValuesCodecInfo();
       }
-      final DocValuesConsumer consumer = DocValuesConsumer.create(info.docValuesId(state.segmentName, state.codecId, ""
+      final DocValuesConsumer consumer = Writer.create(field.getDocValues(), info.docValuesId(state.segmentName, state.codecId, ""
           + field.number),
       // TODO can we have a compound file per segment and codec for
           // docvalues?
-          state.directory, field, comparator, state.bytesUsed);
+          state.directory, comparator, state.bytesUsed);
       info.add(field.number);
       return consumer;
     }

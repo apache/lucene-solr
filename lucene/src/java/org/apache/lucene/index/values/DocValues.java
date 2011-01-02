@@ -26,9 +26,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
-
 /**
- * 
+ * TODO
  * @see FieldsEnum#docValues()
  * @see Fields#docValues(String)
  * @lucene.experimental
@@ -157,52 +156,117 @@ public abstract class DocValues implements Closeable {
    * implementations provide random access semantics similar to array lookups
    * and typically are entirely memory resident.
    * <p>
-   * {@link Source} defines 3 {@link Type} //TODO finish this 
+   * {@link Source} defines 3 {@link Type} //TODO finish this
    */
   public static abstract class Source {
     protected final MissingValue missingValue = new MissingValue();
 
+    /**
+     * Returns a <tt>long</tt> for the given document id or throws an
+     * {@link UnsupportedOperationException} if this source doesn't support
+     * <tt>long</tt> values.
+     * 
+     * @throws UnsupportedOperationException
+     *           if this source doesn't support <tt>long</tt> values.
+     * @see MissingValue
+     * @see #getMissing()
+     */
     public long getInt(int docID) {
       throw new UnsupportedOperationException("ints are not supported");
     }
 
+    /**
+     * Returns a <tt>double</tt> for the given document id or throws an
+     * {@link UnsupportedOperationException} if this source doesn't support
+     * <tt>double</tt> values.
+     * 
+     * @throws UnsupportedOperationException
+     *           if this source doesn't support <tt>double</tt> values.
+     * @see MissingValue
+     * @see #getMissing()
+     */
     public double getFloat(int docID) {
       throw new UnsupportedOperationException("floats are not supported");
     }
 
+    /**
+     * Returns a {@link BytesRef} for the given document id or throws an
+     * {@link UnsupportedOperationException} if this source doesn't support
+     * <tt>byte[]</tt> values.
+     * 
+     * @throws UnsupportedOperationException
+     *           if this source doesn't support <tt>byte[]</tt> values.
+     * @see MissingValue
+     * @see #getMissing()
+     */
     public BytesRef getBytes(int docID, BytesRef ref) {
       throw new UnsupportedOperationException("bytes are not supported");
     }
 
     /**
-     * Returns number of unique values. Some impls may throw
+     * Returns number of unique values. Some implementations may throw
      * UnsupportedOperationException.
      */
     public int getValueCount() {
       throw new UnsupportedOperationException();
     }
 
+    /**
+     * Returns a {@link DocValuesEnum} for this source.
+     */
     public DocValuesEnum getEnum() throws IOException {
       return getEnum(null);
     }
 
+    /**
+     * Returns a {@link MissingValue} instance for this {@link Source}.
+     * Depending on the type of this {@link Source} consumers of the API should
+     * check if the value returned from on of the getter methods represents a
+     * value for a missing document or rather a value for a document no value
+     * was specified during indexing.
+     */
     public MissingValue getMissing() {
       return missingValue;
     }
 
+    /**
+     * Returns the {@link Type} of this source.
+     * 
+     * @return the {@link Type} of this source.
+     */
     public abstract Type type();
 
+    /**
+     * Returns a {@link DocValuesEnum} for this source which uses the given
+     * {@link AttributeSource}.
+     */
     public abstract DocValuesEnum getEnum(AttributeSource attrSource)
         throws IOException;
-
   }
 
-  abstract static class SourceEnum extends DocValuesEnum {
+  /**
+   * {@link DocValuesEnum} utility for {@link Source} implemenations.
+   * 
+   */
+  public abstract static class SourceEnum extends DocValuesEnum {
     protected final Source source;
     protected final int numDocs;
     protected int pos = -1;
 
-    SourceEnum(AttributeSource attrs, Type type, Source source, int numDocs) {
+    /**
+     * Creates a new {@link SourceEnum}
+     * 
+     * @param attrs
+     *          the {@link AttributeSource} for this enum
+     * @param type
+     *          the enums {@link Type}
+     * @param source
+     *          the source this enum operates on
+     * @param numDocs
+     *          the number of documents within the source
+     */
+    protected SourceEnum(AttributeSource attrs, Type type, Source source,
+        int numDocs) {
       super(attrs, type);
       this.source = source;
       this.numDocs = numDocs;
@@ -225,6 +289,12 @@ public abstract class DocValues implements Closeable {
     }
   }
 
+  /**
+   * A sorted variant of {@link Source} for <tt>byte[]</tt> values per document.
+   * <p>
+   * Note: {@link DocValuesEnum} obtained from a {@link SortedSource} will
+   * enumerate values in document order and not in sorted order.
+   */
   public static abstract class SortedSource extends Source {
 
     @Override
@@ -243,27 +313,56 @@ public abstract class DocValues implements Closeable {
     public abstract BytesRef getByOrd(int ord, BytesRef bytesRef);
 
     public static class LookupResult {
+      /** <code>true</code> iff the values was found */
       public boolean found;
+      /**
+       * the ordinal of the value if found or the ordinal of the value if it
+       * would be present in the source
+       */
       public int ord;
     }
 
     /**
-     * Finds the largest ord whose value is <= the requested value. If
-     * {@link LookupResult#found} is true, then ord is an exact match. The
-     * returned {@link LookupResult} may be reused across calls.
+     * Finds the largest ord whose value is less or equal to the requested
+     * value. If {@link LookupResult#found} is true, then ord is an exact match.
+     * The returned {@link LookupResult} may be reused across calls.
      */
     public final LookupResult getByValue(BytesRef value) {
       return getByValue(value, new BytesRef());
     }
 
+    /**
+     * Performs a lookup by value.
+     * 
+     * @param value
+     *          the value to look up
+     * @param tmpRef
+     *          a temporary {@link BytesRef} instance used to compare internal
+     *          values to the given value. Must not be <code>null</code>
+     * @return the {@link LookupResult}
+     */
     public abstract LookupResult getByValue(BytesRef value, BytesRef tmpRef);
   }
 
+  /**
+   * {@link MissingValue} is used by {@link Source} implementations to define an
+   * Implementation dependent value for documents that had no value assigned
+   * during indexing. Its purpose is similar to a default value but since the a
+   * missing value across {@link Type} and its implementations can be highly
+   * dynamic the actual values are not constant but defined per {@link Source}
+   * through the {@link MissingValue} struct. The actual value used to indicate
+   * a missing value can even changed within the same field from one segment to
+   * another. Certain {@link Ints} implementations for instance use a value
+   * outside of value set as the missing value.
+   */
   public final static class MissingValue {
     public long longValue;
     public double doubleValue;
     public BytesRef bytesValue;
 
+    /**
+     * Copies the values from the given {@link MissingValue}.
+     */
     public final void copy(MissingValue values) {
       longValue = values.longValue;
       doubleValue = values.doubleValue;

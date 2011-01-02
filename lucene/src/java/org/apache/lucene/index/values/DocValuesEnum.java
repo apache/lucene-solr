@@ -19,7 +19,6 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
@@ -30,7 +29,7 @@ import org.apache.lucene.util.LongsRef;
  */
 public abstract class DocValuesEnum extends DocIdSetIterator {
   private AttributeSource source;
-  private Type enumType;
+  private final Type enumType;
   protected BytesRef bytesRef;
   protected FloatsRef floatsRef;
   protected LongsRef intsRef;
@@ -84,21 +83,10 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
   }
 
   public AttributeSource attributes() {
-    if (source == null)
+    if (source == null) {
       source = new AttributeSource();
+    }
     return source;
-  }
-
-  public <T extends Attribute> T addAttribute(Class<T> attr) {
-    return attributes().addAttribute(attr);
-  }
-
-  public <T extends Attribute> T getAttribute(Class<T> attr) {
-    return attributes().getAttribute(attr);
-  }
-
-  public <T extends Attribute> boolean hasAttribute(Class<T> attr) {
-    return attributes().hasAttribute(attr);
   }
 
   public abstract void close() throws IOException;

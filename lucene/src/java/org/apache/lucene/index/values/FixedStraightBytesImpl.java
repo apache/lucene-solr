@@ -133,7 +133,7 @@ class FixedStraightBytesImpl {
 
     @Override
     public Source load() throws IOException {
-      return new Source(cloneData(), cloneIndex(), size, maxDoc);
+      return new Source(cloneData(), size, maxDoc);
     }
 
     @Override
@@ -145,9 +145,9 @@ class FixedStraightBytesImpl {
       private final int size;
       private final int maxDoc;
 
-      public Source(IndexInput datIn, IndexInput idxIn, int size, int maxDoc)
+      public Source(IndexInput datIn, int size, int maxDoc)
           throws IOException {
-        super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc);
+        super(datIn, null, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc);
         this.size = size;
         this.missingValue.bytesValue = new BytesRef(size);
         this.maxDoc = maxDoc;

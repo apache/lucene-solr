@@ -38,17 +38,19 @@ import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.PagedBytes;
 
 /**
- * Provides concrete Writer/Reader impls for byte[] value per document. There
- * are 6 package-private impls of this, for all combinations of
- * STRAIGHT/DEREF/SORTED X fixed/not fixed.
+ * Provides concrete Writer/Reader implementations for <tt>byte[]</tt> value per
+ * document. There are 6 package-private default implementations of this, for
+ * all combinations of {@link Mode#DEREF}/{@link Mode#STRAIGHT}/
+ * {@link Mode#SORTED} x fixed-length/variable-length.
  * 
  * <p>
- * NOTE: The total amount of byte[] data stored (across a single segment) cannot
- * exceed 2GB.
+ * NOTE: Currently the total amount of byte[] data stored (across a single
+ * segment) cannot exceed 2GB.
  * </p>
  * <p>
  * NOTE: Each byte[] must be <= 32768 bytes in length
  * </p>
+ * 
  * @lucene.experimental
  */
 public final class Bytes {
@@ -56,18 +58,56 @@ public final class Bytes {
   private Bytes() {  /* don't instantiate! */ }
 
   /**
-   *  
-   *
+   * Defines the {@link Writer}s store mode. The writer will either store the
+   * bytes sequentially ({@link #STRAIGHT}, dereferenced ({@link #DEREF}) or
+   * sorted ({@link #SORTED})
+   * 
    */
   public static enum Mode {
-    STRAIGHT, DEREF, SORTED
+    /**
+     * Mode for sequentially stored bytes
+     */
+    STRAIGHT,
+    /**
+     * Mode for dereferenced stored bytes
+     */
+    DEREF,
+    /**
+     * Mode for sorted stored bytes
+     */
+    SORTED
   };
 
-  // TODO -- i shouldn't have to specify fixed? can
-  // track itself & do the write thing at write time?
+  /**
+   * Creates a new <tt>byte[]</tt> {@link Writer} instances for the given
+   * directory.
+   * 
+   * @param dir
+   *          the directory to write the values to
+   * @param id
+   *          the id used to create a unique file name. Usually composed out of
+   *          the segment name and a unique id per segment.
+   * @param mode
+   *          the writers store mode
+   * @param comp
+   *          a {@link BytesRef} comparator - only used with {@link Mode#SORTED}
+   * @param fixedSize
+   *          <code>true</code> if all bytes subsequently passed to the
+   *          {@link Writer} will have the same length
+   * @param bytesUsed
+   *          an {@link AtomicLong} instance to track the used bytes within the
+   *          {@link Writer}. A call to {@link Writer#finish(int)} will release
+   *          all internally used resources and frees the memeory tracking
+   *          reference.
+   * @return a new {@link Writer} instance
+   * @throws IOException
+   *           if the files for the writer can not be created.
+   */
   public static Writer getWriter(Directory dir, String id, Mode mode,
-      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed) throws IOException {
-
+      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed)
+      throws IOException {
+    // TODO -- i shouldn't have to specify fixed? can
+    // track itself & do the write thing at write time?
     if (comp == null) {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     }
@@ -93,22 +133,35 @@ public final class Bytes {
     throw new IllegalArgumentException("");
   }
 
-  // TODO -- I can peek @ header to determing fixed/mode?
+  /**
+   * Creates a new {@link DocValues} instance that provides either memory
+   * resident or iterative access to a per-document stored <tt>byte[]</tt>
+   * value. The returned {@link DocValues} instance will be initialized without
+   * consuming a significant amount of memory.
+   * 
+   * @param dir
+   *          the directory to load the {@link DocValues} from.
+   * @param id
+   *          the file ID in the {@link Directory} to load the values from.
+   * @param mode
+   *          the mode used to store the values
+   * @param fixedSize
+   *          <code>true</code> iff the values are stored with fixed-size,
+   *          otherwise <code>false</code>
+   * @param maxDoc
+   *          the number of document values stored for the given ID
+   * @return an initialized {@link DocValues} instance.
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   */
   public static DocValues getValues(Directory dir, String id, Mode mode,
       boolean fixedSize, int maxDoc) throws IOException {
+    // TODO -- I can peek @ header to determing fixed/mode?
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
-        try {
-          return new FixedStraightBytesImpl.Reader(dir, id, maxDoc);
-        } catch (IOException e) {
-          throw e;
-        }
+        return new FixedStraightBytesImpl.Reader(dir, id, maxDoc);
       } else if (mode == Mode.DEREF) {
-        try {
-          return new FixedDerefBytesImpl.Reader(dir, id, maxDoc);
-        } catch (IOException e) {
-          throw e;
-        }
+        return new FixedDerefBytesImpl.Reader(dir, id, maxDoc);
       } else if (mode == Mode.SORTED) {
         return new FixedSortedBytesImpl.Reader(dir, id, maxDoc);
       }
@@ -122,7 +175,7 @@ public final class Bytes {
       }
     }
 
-    throw new IllegalArgumentException("");
+    throw new IllegalArgumentException("Illegal Mode: " + mode);
   }
 
   static abstract class BytesBaseSource extends Source {
@@ -146,21 +199,23 @@ public final class Bytes {
     }
 
     public void close() throws IOException {
-      data.close();
       try {
-        if (datIn != null)
-          datIn.close();
+        data.close(); // close data
       } finally {
-        if (idxIn != null) // if straight - no index needed
-          idxIn.close();
+        try {
+          if (datIn != null)
+            datIn.close();
+        } finally {
+          if (idxIn != null) // if straight - no index needed
+            idxIn.close();
+        }
       }
     }
-    
-    protected abstract int maxDoc();
 
-    public long ramBytesUsed() {
-      return 0; // TODO
-    }
+    /**
+     * Returns one greater than the largest possible document number.
+     */
+    protected abstract int maxDoc();
 
     @Override
     public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
@@ -214,10 +269,13 @@ public final class Bytes {
     }
 
     public void close() throws IOException {
-      if (datIn != null)
-        datIn.close();
-      if (idxIn != null) // if straight
-        idxIn.close();
+      try {
+        if (datIn != null)
+          datIn.close();
+      } finally {
+        if (idxIn != null) // if straight
+          idxIn.close();
+      }
     }
 
     protected abstract int maxDoc();
@@ -318,19 +376,24 @@ public final class Bytes {
 
     @Override
     public synchronized void finish(int docCount) throws IOException {
-      if (datOut != null)
-        datOut.close();
-      if (idxOut != null)
-        idxOut.close();
-      if (pool != null)
-        pool.reset();
+      try {
+        if (datOut != null)
+          datOut.close();
+      } finally {
+        try {
+          if (idxOut != null)
+            idxOut.close();
+        } finally {
+          if (pool != null)
+            pool.reset();
+        }
+      }
     }
 
     @Override
     protected void add(int docID) throws IOException {
       add(docID, bytesRef);
     }
-
 
     @Override
     public void add(int docID, PerDocFieldValues docValues) throws IOException {
@@ -339,7 +402,7 @@ public final class Bytes {
         add(docID, ref);
       }
     }
-    
+
     @Override
     protected void setNextEnum(DocValuesEnum valuesEnum) {
       bytesRef = valuesEnum.bytes();
@@ -391,19 +454,25 @@ public final class Bytes {
       return (IndexInput) datIn.clone();
     }
 
-    protected final IndexInput cloneIndex() { // TODO assert here for null
-      // rather than return null
-      return idxIn == null ? null : (IndexInput) idxIn.clone();
+    protected final IndexInput cloneIndex() {
+      assert idxIn != null;
+      return (IndexInput) idxIn.clone();
     }
 
     @Override
     public void close() throws IOException {
-      super.close();
-      if (datIn != null) {
-        datIn.close();
-      }
-      if (idxIn != null) {
-        idxIn.close();
+      try {
+        super.close();
+      } finally {
+        try {
+          if (datIn != null) {
+            datIn.close();
+          }
+        } finally {
+          if (idxIn != null) {
+            idxIn.close();
+          }
+        }
       }
     }
   }

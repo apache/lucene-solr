@@ -101,7 +101,6 @@ class VarSortedBytesImpl {
       final int count = hash.size();
       try {
         final int[] sortedEntries = hash.sort(comp);
-
         // first dump bytes data, recording index & offset as
         // we go
         long offset = 0;

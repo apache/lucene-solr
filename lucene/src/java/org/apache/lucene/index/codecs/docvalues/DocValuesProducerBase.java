@@ -1,4 +1,5 @@
 package org.apache.lucene.index.codecs.docvalues;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,18 +33,41 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IntsRef;
 
 /**
+ * Abstract base class for FieldsProducer implementations supporting
+ * {@link DocValues}.
+ * 
  * @lucene.experimental
  */
-public abstract class DocValuesProducerBase extends FieldsProducer{
-  
+public abstract class DocValuesProducerBase extends FieldsProducer {
+
   protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();
   private final DocValuesCodecInfo info = new DocValuesCodecInfo();
 
-  protected DocValuesProducerBase(SegmentInfo si, Directory dir, FieldInfos fieldInfo, String codecId) throws IOException {
+  /**
+   * Creates a new {@link DocValuesProducerBase} instance and loads all
+   * {@link DocValues} instances for this segment and codec.
+   * 
+   * @param si
+   *          the segment info to load the {@link DocValues} for.
+   * @param dir
+   *          the directory to load the {@link DocValues} from.
+   * @param fieldInfo
+   *          the {@link FieldInfos}
+   * @param codecId
+   *          the codec ID
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   */
+  protected DocValuesProducerBase(SegmentInfo si, Directory dir,
+      FieldInfos fieldInfo, String codecId) throws IOException {
     info.read(dir, si, codecId);
     load(fieldInfo, si.name, si.docCount, dir, codecId);
   }
 
+  /**
+   * Returns a {@link DocValues} instance for the given field name or
+   * <code>null</code> if this field has no {@link DocValues}.
+   */
   @Override
   public DocValues docValues(String field) throws IOException {
     return docValues.get(field);
@@ -58,15 +82,35 @@ public abstract class DocValuesProducerBase extends FieldsProducer{
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
       assert fieldInfo.hasDocValues();
       final String field = fieldInfo.name;
-      //TODO can we have a compound file  per segment and codec for docvalues?
-      final String id = info.docValuesId( segment, codecId, fieldNumber+"");
-      docValues.put(field, loadDocValues(docCount, dir, id, fieldInfo.getDocValues()));
+      // TODO can we have a compound file per segment and codec for docvalues?
+      final String id = info.docValuesId(segment, codecId, fieldNumber + "");
+      docValues.put(field, loadDocValues(docCount, dir, id, fieldInfo
+          .getDocValues()));
     }
   }
 
+  /**
+   * Loads a {@link DocValues} instance depending on the given {@link Type}.
+   * Codecs that use different implementations for a certain {@link Type} can
+   * simply override this method and return their custom implementations.
+   * 
+   * @param docCount
+   *          number of documents in the segment
+   * @param dir
+   *          the {@link Directory} to load the {@link DocValues} from
+   * @param id
+   *          the unique file ID within the segment
+   * @param type
+   *          the type to load
+   * @return a {@link DocValues} instance for the given type
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   * @throws IllegalArgumentException
+   *           if the given {@link Type} is not supported
+   */
   protected DocValues loadDocValues(int docCount, Directory dir, String id,
-      Type v) throws IOException {
-    switch (v) {
+      Type type) throws IOException {
+    switch (type) {
     case PACKED_INTS:
       return Ints.getValues(dir, id, false);
     case SIMPLE_FLOAT_4BYTE:
@@ -86,15 +130,23 @@ public abstract class DocValuesProducerBase extends FieldsProducer{
     case BYTES_VAR_SORTED:
       return Bytes.getValues(dir, id, Bytes.Mode.SORTED, false, docCount);
     default:
-      throw new IllegalStateException("unrecognized index values mode " + v);
+      throw new IllegalStateException("unrecognized index values mode " + type);
     }
   }
 
   @Override
   public void close() throws IOException {
     Collection<DocValues> values = docValues.values();
+    IOException ex = null;
     for (DocValues docValues : values) {
-      docValues.close();
+      try {
+        docValues.close();
+      } catch (IOException e) {
+        ex = e;
+      }
+    }
+    if (ex != null) {
+      throw ex;
     }
   }
 }

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -32,13 +33,16 @@ import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.FloatsRef;
 
 /**
- * Exposes writer/reader for floating point values. You can specify 4 (java
- * float) or 8 (java double) byte precision.
+ * Exposes {@link Writer} and reader ({@link Source}) for 32 bit and 64 bit
+ * floating point values.
+ * <p>
+ * Current implementations store either 4 byte or 8 byte floating points with
+ * full precision without any compression.
  * 
  * @lucene.experimental
  */
-// TODO - add bulk copy where possible
 public class Floats {
+  // TODO - add bulk copy where possible
   private static final String CODEC_NAME = "SimpleFloats";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
@@ -47,6 +51,7 @@ public class Floats {
   private static final long LONG_DEFAULT = Double
       .doubleToRawLongBits(Double.NEGATIVE_INFINITY);
 
+  
   public static Writer getWriter(Directory dir, String id, int precisionBytes,
       AtomicLong bytesUsed) throws IOException {
     if (precisionBytes != 4 && precisionBytes != 8) {
