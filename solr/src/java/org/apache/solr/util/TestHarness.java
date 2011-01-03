@@ -17,6 +17,7 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
@@ -25,20 +26,22 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.JsonUpdateRequestHandler;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.servlet.DirectSolrConnection;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -49,10 +52,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -206,20 +206,25 @@ public class TestHarness {
   /**
    * Processes an "update" (add, commit or optimize) and
    * returns the response as a String.
-   * 
-   * @deprecated The better approach is to instantiate an Updatehandler directly
    *
    * @param xml The XML of the update
    * @return The XML response to the update
    */
-  @Deprecated
   public String update(String xml) {
-                
-    StringReader req = new StringReader(xml);
-    StringWriter writer = new StringWriter(32000);
-
-    updater.doLegacyUpdate(req, writer);
-    return writer.toString();
+    DirectSolrConnection connection = new DirectSolrConnection(core);
+    SolrRequestHandler handler = core.getRequestHandler("/update");
+    // prefer the handler mapped to /update, but use our generic backup handler
+    // if that lookup fails
+    if (handler == null) {
+      handler = updater;
+    }
+    try {
+      return connection.request(handler, null, xml);
+    } catch (SolrException e) {
+      throw (SolrException)e;
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
   }
   
         
@@ -244,7 +249,12 @@ public class TestHarness {
    * @return null if successful, otherwise the XML response to the update
    */
   public String validateErrorUpdate(String xml) throws SAXException {
-    return checkUpdateStatus(xml, "1");
+    try {
+      return checkUpdateStatus(xml, "1");
+    } catch (SolrException e) {
+      // return ((SolrException)e).getMessage();
+      return null;  // success
+    }
   }
 
   /**
@@ -258,34 +268,13 @@ public class TestHarness {
   public String checkUpdateStatus(String xml, String code) throws SAXException {
     try {
       String res = update(xml);
-      String valid = validateXPath(res, "//result[@status="+code+"]" );
+      String valid = validateXPath(res, "//int[@name='status']="+code );
       return (null == valid) ? null : res;
     } catch (XPathExpressionException e) {
       throw new RuntimeException
         ("?!? static xpath has bug?", e);
     }
   }
-
-  /**
-   * Validates that an add of a single document results in success.
-   *
-   * @param fieldsAndValues Odds are field names, Evens are values
-   * @return null if successful, otherwise the XML response to the update
-   * @see #appendSimpleDoc
-   */
-  public String validateAddDoc(String... fieldsAndValues)
-    throws XPathExpressionException, SAXException, IOException {
-
-    StringBuilder buf = new StringBuilder();
-    buf.append("<add>");
-    appendSimpleDoc(buf, fieldsAndValues);
-    buf.append("</add>");
-        
-    String res = update(buf.toString());
-    String valid = validateXPath(res, "//result[@status=0]" );
-    return (null == valid) ? null : res;
-  }
-
 
     
   /**
@@ -413,29 +402,6 @@ public class TestHarness {
     }
   }
 
-  /**
-   * A helper that adds an xml &lt;doc&gt; containing all of the
-   * fields and values specified (odds are fields, evens are values)
-   * to a StringBuilder
-   */
-  public void appendSimpleDoc(StringBuilder buf, String... fieldsAndValues)
-    throws IOException {
-
-    buf.append(makeSimpleDoc(fieldsAndValues));
-  }
-
-  /**
-   * A helper that adds an xml &lt;doc&gt; containing all of the
-   * fields and values specified (odds are fields, evens are values)
-   * to a StringBuffer.
-   * @deprecated see {@link #appendSimpleDoc(StringBuilder, String...)}
-   */
-  @Deprecated
-  public void appendSimpleDoc(StringBuffer buf, String... fieldsAndValues)
-    throws IOException {
-
-    buf.append(makeSimpleDoc(fieldsAndValues));
-  }
   /**
    * A helper that creates an xml &lt;doc&gt; containing all of the
    * fields and values specified

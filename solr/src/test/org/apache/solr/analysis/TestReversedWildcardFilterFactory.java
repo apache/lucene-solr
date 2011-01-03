@@ -32,7 +32,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrQueryParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -112,15 +114,6 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   @Test
   public void testQueryParsing() throws Exception {
 
-    SolrQueryParser parserOne = new SolrQueryParser(schema, "one");
-    assertTrue(parserOne.getAllowLeadingWildcard());
-    SolrQueryParser parserTwo = new SolrQueryParser(schema, "two");
-    assertTrue(parserTwo.getAllowLeadingWildcard());
-    SolrQueryParser parserThree = new SolrQueryParser(schema, "three");
-    // XXX note: this should be false, but for now we return true for any field,
-    // XXX if at least one field uses the reversing
-    assertTrue(parserThree.getAllowLeadingWildcard());
-    
     // add some docs
     assertU(adoc("id", "1", "one", "one"));
     assertU(adoc("id", "2", "two", "two"));
@@ -141,7 +134,13 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     assertQ("should have matched",
         req("+id:6 +three:*si\uD834\uDD1Ex"),
         "//result[@numFound=1]");
-    
+
+    SolrQueryRequest req = req();
+    QParser qparser = QParser.getParser("id:1", "lucene", req);
+
+    SolrQueryParser parserTwo = new SolrQueryParser(qparser, "two");
+    assertTrue(parserTwo.getAllowLeadingWildcard());
+
     // test conditional reversal
     assertTrue(wasReversed(parserTwo, "*hree"));
     assertTrue(wasReversed(parserTwo, "t*ree"));
@@ -153,6 +152,8 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     assertFalse(wasReversed(parserTwo, "th?*ee"));
     assertFalse(wasReversed(parserTwo, "short*token"));
     assertTrue(wasReversed(parserTwo, "ver*longtoken"));
+
+    req.close();
   }
   
   /** fragile assert: depends on our implementation, but cleanest way to check for now */ 

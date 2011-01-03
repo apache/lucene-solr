@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.io.StringReader;
 import org.xml.sax.InputSource;
 

@@ -24,7 +24,6 @@ package org.apache.solr.search;
 import org.apache.lucene.search.*;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 

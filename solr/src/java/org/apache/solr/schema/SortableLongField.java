@@ -22,6 +22,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
 import org.apache.solr.search.MutableValueLong;
 import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -31,7 +32,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -46,7 +46,8 @@ public class SortableLongField extends FieldType {
     return getStringSort(field,reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     return new SortableLongFieldSource(field.name);
   }
 
@@ -71,11 +72,6 @@ public class SortableLongField extends FieldType {
   @Override
   public Long toObject(Fieldable f) {
     return NumberUtils.SortableStr2long(f.stringValue(),0,5);
-  }
-  
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    String sval = f.stringValue();
-    xmlWriter.writeLong(name, NumberUtils.SortableStr2long(sval,0,sval.length()));
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {

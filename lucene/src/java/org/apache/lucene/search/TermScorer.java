@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.BooleanClause.Occur;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */

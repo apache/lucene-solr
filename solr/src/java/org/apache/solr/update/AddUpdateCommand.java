@@ -22,6 +22,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
@@ -40,13 +41,14 @@ public class AddUpdateCommand extends UpdateCommand {
    // to index.
    public SolrInputDocument solrDoc;
 
-   public boolean allowDups;
-   public boolean overwritePending;
-   public boolean overwriteCommitted;
+   public boolean overwrite = true;
    
    public Term updateTerm;
    public int commitWithin = -1;
    
+   public AddUpdateCommand(SolrQueryRequest req) {
+     super("add", req);
+   }
 
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {
@@ -105,18 +107,12 @@ public class AddUpdateCommand extends UpdateCommand {
      return "(null)";
    }
 
-   public AddUpdateCommand() {
-     super("add");
-   }
-
    @Override
   public String toString() {
      StringBuilder sb = new StringBuilder(commandName);
      sb.append(':');
      if (indexedId !=null) sb.append("id=").append(indexedId);
-     sb.append(",allowDups=").append(allowDups);
-     sb.append(",overwritePending=").append(overwritePending);
-     sb.append(",overwriteCommitted=").append(overwriteCommitted);
+     if (!overwrite) sb.append(",overwrite=").append(overwrite);
      return sb.toString();
    }
  }

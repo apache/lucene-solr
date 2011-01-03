@@ -17,11 +17,6 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-
-import java.io.IOException;
-import java.util.Map;
-
 /**
  * <code>ConstNumberSource</code> is the base class for all constant numbers
  */

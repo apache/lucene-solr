@@ -23,16 +23,23 @@ import java.util.List;
 
 import org.apache.noggit.JSONParser;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.junit.BeforeClass;
 
-public class JsonLoaderTest extends LuceneTestCase {
-
+public class JsonLoaderTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+  
   static String input = ("{\n" +
       "\n" +
       "'add': {\n" +
@@ -73,12 +80,13 @@ public class JsonLoaderTest extends LuceneTestCase {
 
   public void testParsing() throws Exception
   {
+    SolrQueryRequest req = req();
     Reader reader = new StringReader(input);
     
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader( p );
     
-    loader.processUpdate( p, new JSONParser(reader) );
+    loader.processUpdate(req,  p, new JSONParser(reader) );
     
     assertEquals( 2, p.addCommands.size() );
     
@@ -94,7 +102,7 @@ public class JsonLoaderTest extends LuceneTestCase {
     f = d.getField( "f1" );
     assertEquals(2, f.getValues().size());
     assertEquals(3.45f, d.getDocumentBoost());
-    assertEquals(true, add.allowDups);
+    assertEquals(false, add.overwrite);
     
 
     // parse the commit commands
@@ -122,6 +130,8 @@ public class JsonLoaderTest extends LuceneTestCase {
 
     // ROLLBACK COMMANDS
     assertEquals( 1, p.rollbackCommands.size() );
+
+    req.close();
   }
 }
 

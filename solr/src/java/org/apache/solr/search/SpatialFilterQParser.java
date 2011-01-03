@@ -22,7 +22,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.geometry.DistanceUnits;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpatialParams;
 import org.apache.solr.request.SolrQueryRequest;

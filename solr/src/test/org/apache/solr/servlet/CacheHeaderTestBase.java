@@ -22,15 +22,9 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.solr.client.solrj.SolrExampleTestBase;
 import org.apache.solr.client.solrj.SolrJettyTestBase;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.junit.Test;
-
-import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 

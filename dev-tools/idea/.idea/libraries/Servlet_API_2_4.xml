@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Servlet API 2.4">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lucene/contrib/demo/lib/servlet-api-2.4.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

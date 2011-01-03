@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.store.Directory;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * A merge indexes command encapsulated in an object.
@@ -28,12 +29,12 @@ import org.apache.lucene.store.Directory;
 public class MergeIndexesCommand extends UpdateCommand {
   public Directory[] dirs;
 
-  public MergeIndexesCommand() {
-    this(null);
+  public MergeIndexesCommand(SolrQueryRequest req) {
+    this(null, req);
   }
 
-  public MergeIndexesCommand(Directory[] dirs) {
-    super("mergeIndexes");
+  public MergeIndexesCommand(Directory[] dirs, SolrQueryRequest req) {
+    super("mergeIndexes", req);
     this.dirs = dirs;
   }
 

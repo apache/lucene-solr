@@ -21,11 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.search.MutableValueInt;
 import org.apache.solr.search.MutableValue;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.lucene.search.cache.IntValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.DoubleValues;
-import org.apache.lucene.search.cache.CachedArray.FloatValues;
 import org.apache.lucene.search.cache.CachedArray.IntValues;
 
 import java.io.IOException;

@@ -65,7 +65,7 @@ public class RequestHandlerUtils
     boolean commit   = params.getBool( UpdateParams.COMMIT,   false );
     
     if( optimize || commit || force ) {
-      CommitUpdateCommand cmd = new CommitUpdateCommand( optimize );
+      CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
       cmd.waitFlush    = params.getBool( UpdateParams.WAIT_FLUSH,    cmd.waitFlush    );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
       cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes);
@@ -89,7 +89,7 @@ public class RequestHandlerUtils
    * Check the request parameters and decide if it should commit or optimize.
    * If it does, it will check parameters for "waitFlush" and "waitSearcher"
    */
-  public static boolean handleCommit( UpdateRequestProcessor processor, SolrParams params, boolean force ) throws IOException
+  public static boolean handleCommit(SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force ) throws IOException
   {
     if( params == null ) {
       params = new MapSolrParams( new HashMap<String, String>() ); 
@@ -99,7 +99,7 @@ public class RequestHandlerUtils
     boolean commit   = params.getBool( UpdateParams.COMMIT,   false );
     
     if( optimize || commit || force ) {
-      CommitUpdateCommand cmd = new CommitUpdateCommand( optimize );
+      CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
       cmd.waitFlush    = params.getBool( UpdateParams.WAIT_FLUSH,    cmd.waitFlush    );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
       cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes);      
@@ -113,7 +113,7 @@ public class RequestHandlerUtils
   /**
    * @since Solr 1.4
    */
-  public static boolean handleRollback( UpdateRequestProcessor processor, SolrParams params, boolean force ) throws IOException
+  public static boolean handleRollback(SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force ) throws IOException
   {
     if( params == null ) {
       params = new MapSolrParams( new HashMap<String, String>() ); 
@@ -122,7 +122,7 @@ public class RequestHandlerUtils
     boolean rollback = params.getBool( UpdateParams.ROLLBACK, false );
     
     if( rollback || force ) {
-      RollbackUpdateCommand cmd = new RollbackUpdateCommand();
+      RollbackUpdateCommand cmd = new RollbackUpdateCommand(req);
       processor.processRollback( cmd );
       return true;
     }

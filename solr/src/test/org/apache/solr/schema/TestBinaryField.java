@@ -16,8 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
@@ -27,11 +25,13 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.nio.ByteBuffer;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.List;
 
 public class TestBinaryField extends LuceneTestCase {
@@ -56,12 +56,17 @@ public class TestBinaryField extends LuceneTestCase {
     dataDir.mkdirs();
     confDir.mkdirs();
 
+    SolrResourceLoader loader = new SolrResourceLoader(null, null);
     File f = new File(confDir, "solrconfig.xml");
-    String fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "solrconfig-slave1.xml";
-    FileUtils.copyFile(new File(fname), f);
+    String fname = "solr/conf/solrconfig-slave1.xml";
+    FileOutputStream out = new FileOutputStream(f);
+    IOUtils.copy(loader.openResource(fname), out);
+    out.close();
     f = new File(confDir, "schema.xml");
-    fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "schema-binaryfield.xml";
-    FileUtils.copyFile(new File(fname), f);
+    fname = "solr/conf/schema-binaryfield.xml";
+    out = new FileOutputStream(f);
+    IOUtils.copy(loader.openResource(fname), out);
+    out.close();
     System.setProperty("solr.solr.home", homeDir.getAbsolutePath());
     System.setProperty("solr.data.dir", dataDir.getAbsolutePath());
     System.setProperty("solr.test.sys.prop1", "propone");

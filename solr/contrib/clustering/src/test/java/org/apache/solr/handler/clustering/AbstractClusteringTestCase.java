@@ -19,8 +19,6 @@ package org.apache.solr.handler.clustering;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
-import static org.junit.Assert.*;
-
 
 /**
  *
@@ -30,7 +28,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    initCore("solrconfig.xml", "schema.xml", "solr-clustering");
     numberOfDocs = 0;
     for (String[] doc : DOCUMENTS) {
       assertNull(h.validateUpdate(adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2])));

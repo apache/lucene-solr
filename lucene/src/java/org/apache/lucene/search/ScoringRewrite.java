@@ -18,21 +18,12 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Comparator;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -98,7 +89,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       if (bq.clauses().isEmpty())
         return bq;
       // strip the scores off
-      final Query result = new ConstantScoreQuery(new QueryWrapperFilter(bq));
+      final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());
       return result;
     }

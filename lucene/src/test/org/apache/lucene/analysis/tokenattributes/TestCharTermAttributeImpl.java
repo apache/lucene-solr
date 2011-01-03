@@ -23,7 +23,6 @@ import java.nio.CharBuffer;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import java.util.Random;
 
 public class TestCharTermAttributeImpl extends LuceneTestCase {
 

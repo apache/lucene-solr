@@ -35,7 +35,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.function.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,14 +94,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
 
-  /** Creates a searcher searching the index in the named directory.
-   * 
-   * @deprecated use alternate constructor
-   */
-  @Deprecated
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, String path, boolean enableCache) throws IOException {
-    this(core, schema,name, core.getIndexReaderFactory().newReader(core.getDirectoryFactory().open(path), false), true, enableCache);
-  }
 
   /*
    * Creates a searcher searching the index in the provided directory. Note:

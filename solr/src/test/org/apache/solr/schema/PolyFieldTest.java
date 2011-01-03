@@ -20,20 +20,12 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.tier.CartesianPolyFilterBuilder;
-import org.apache.lucene.spatial.tier.Shape;
-import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
-import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.ValueSource;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
-
-import java.util.List;
 
 
 /**

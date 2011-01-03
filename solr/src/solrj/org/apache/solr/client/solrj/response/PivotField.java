@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.response;
 
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.List;
 

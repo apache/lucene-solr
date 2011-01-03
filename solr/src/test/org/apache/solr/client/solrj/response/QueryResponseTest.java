@@ -17,17 +17,18 @@
 
 package org.apache.solr.client.solrj.response;
 
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.FileReader;
+import java.io.Reader;
 
 import junit.framework.Assert;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Simple test for Date facet support in QueryResponse
@@ -38,8 +39,9 @@ public class QueryResponseTest extends LuceneTestCase {
   @Test
   public void testDateFacets() throws Exception   {
     XMLResponseParser parser = new XMLResponseParser();
-    FileReader in = new FileReader("sampleDateFacetResponse.xml");
-    assertTrue("in is null and it shouldn't be", in != null);
+    InputStream is = new SolrResourceLoader(null, null).openResource("sampleDateFacetResponse.xml");
+    assertNotNull(is);
+    Reader in = new InputStreamReader(is, "UTF-8");
     NamedList<Object> response = parser.processResponse(in);
     in.close();
     

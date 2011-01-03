@@ -20,8 +20,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
 import org.junit.After;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -72,7 +70,7 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
           throw e;
         }
         String url = "service:jmx:rmi:///jndi/rmi://:" + port + "/solrjmx";
-        JmxConfiguration config = new JmxConfiguration(true, null, url);
+        JmxConfiguration config = new JmxConfiguration(true, null, url, null);
         monitoredMap = new JmxMonitoredMap<String, SolrInfoMBean>(null, config);
         JMXServiceURL u = new JMXServiceURL(url);
         connector = JMXConnectorFactory.connect(u);

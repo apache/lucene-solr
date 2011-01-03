@@ -32,13 +32,9 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 
 /**

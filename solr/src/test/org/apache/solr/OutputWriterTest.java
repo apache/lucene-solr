@@ -27,8 +27,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /** Tests the ability to configure multiple query output writers, and select those
  * at query time.
  *

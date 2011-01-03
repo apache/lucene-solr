@@ -19,8 +19,6 @@ package org.apache.lucene.analysis.commongrams;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;

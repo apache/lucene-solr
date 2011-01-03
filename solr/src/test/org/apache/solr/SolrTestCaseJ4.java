@@ -20,10 +20,8 @@ package org.apache.solr;
 
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONUtil;
-import org.apache.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -33,18 +31,13 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.JsonUpdateRequestHandler;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.BinaryQueryResponseWriter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
-import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -55,12 +48,8 @@ import org.xml.sax.SAXException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4.
@@ -95,7 +84,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema) throws Exception {
-    initCore(config, schema, null);
+    initCore(config, schema, TEST_HOME);
   }
 
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
@@ -1035,6 +1024,38 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return out.toString();
   }
 
-
-
+  /** Gets a resource from the context classloader as {@link File}. This method should only be used,
+   * if a real file is needed. To get a stream, code should prefer
+   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   */
+  public static File getFile(String name) {
+    try {
+      File file = new File(name);
+      if (!file.exists()) {
+        file = new File(Thread.currentThread().getContextClassLoader().getResource(name).toURI());
+      }
+      return file;
+    } catch (Exception e) {
+      /* more friendly than NPE */
+      throw new RuntimeException("Cannot find resource: " + name);
+    }
+  }
+  
+  private static final String SOURCE_HOME = determineSourceHome();
+  public static String TEST_HOME = getFile("solr/conf").getParent();
+  public static String WEBAPP_HOME = new File(SOURCE_HOME, "src/webapp/web").getAbsolutePath();
+  public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
+  public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
+  public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/conf/schema.xml";
+  public static String EXAMPLE_CONFIG=EXAMPLE_HOME+"/conf/solrconfig.xml";
+  
+  static String determineSourceHome() {
+    // ugly, ugly hack to determine the example home without depending on the CWD
+    // this is needed for example/multicore tests which reside outside the classpath
+    File base = getFile("solr/conf/");
+    while (!new File(base, "solr/CHANGES.txt").exists()) {
+      base = base.getParentFile();
+    }
+    return new File(base, "solr/").getAbsolutePath();
+  }
 }

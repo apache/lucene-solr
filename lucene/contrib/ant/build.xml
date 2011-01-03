@@ -25,13 +25,15 @@
 
   <path id="additional.dependencies">
     <!-- TODO: make ${tidy.jar} property -->
-    <pathelement location="lib/Tidy.jar"/>
+    <fileset dir="lib" includes="jtidy-*.jar"/>
   </path>
 
   <pathconvert property="project.classpath"
                targetos="unix"
                refid="additional.dependencies"
   />
+
+  <property name="javac.includeAntRuntime" value="true"/>
 
   <import file="../contrib-build.xml"/>
 	

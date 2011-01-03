@@ -361,6 +361,10 @@
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
     </solr-javac>
+    <!-- Copy any data files present to the classpath -->
+    <copy todir="${dest}/tests">
+      <fileset dir="${src}/test-files" excludes="**/*.java"/>
+    </copy>
   </target>
 
   <!-- Run core unit tests. -->
@@ -421,7 +425,7 @@
            maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
-           dir="src/test/test-files/"
+           dir="@{tempDir}/@{threadNum}"
            tempdir="@{tempDir}/@{threadNum}"
            forkmode="perBatch"
            >
@@ -730,7 +734,7 @@
         excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/**" />
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="src/test/test-files/solr/lib/classes/empty-file-main-lib.txt" />
+        includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"

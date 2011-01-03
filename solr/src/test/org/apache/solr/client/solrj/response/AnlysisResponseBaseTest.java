@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.response;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.util.ArrayList;

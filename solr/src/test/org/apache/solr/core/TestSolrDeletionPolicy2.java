@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -24,8 +24,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 /**
  * 
  */

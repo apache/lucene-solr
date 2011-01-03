@@ -33,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -41,9 +42,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 import org.apache.solr.update.DocumentBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -64,17 +62,6 @@ import java.lang.reflect.InvocationTargetException;
  * default parameter settings.
  */
 public class SolrPluginUtils {
-  final static Logger log = LoggerFactory.getLogger( SolrPluginUtils.class );
-
-  /**
-   * Set defaults on a SolrQueryRequest.
-   *
-   * RequestHandlers can use this method to ensure their defaults are
-   * visible to other components such as the response writer
-   */
-  public static void setDefaults(SolrQueryRequest req, SolrParams defaults) {
-    setDefaults(req, defaults, null, null);
-  }
 
   /**
    * Set default-ish params on a SolrQueryRequest.
@@ -104,13 +91,6 @@ public class SolrPluginUtils {
   }
 
 
-  /**
-   * standard param for field list
-   *
-   * @deprecated Use org.apache.solr.common.params.CommonParams.FL.
-   */
-  @Deprecated
-  public static String FL = CommonParams.FL;
 
   /**
    * SolrIndexSearch.numDocs(Query,Query) freaks out if the filtering
@@ -123,59 +103,10 @@ public class SolrPluginUtils {
 
   }
 
-  /**
-   * Returns the param, or the default if it's empty or not specified.
-   * @deprecated use SolrParam.get(String,String)
-   */
-  @Deprecated
-  public static String getParam(SolrQueryRequest req,
-                                String param, String def) {
 
-    String v = req.getParam(param);
-    // Note: parameters passed but given only white-space value are
-    // considered equivalent to passing nothing for that parameter.
-    if (null == v || "".equals(v.trim())) {
-      return def;
-    }
-    return v;
-  }
 
-  /**
-   * Treats the param value as a Number, returns the default if nothing is
-   * there or if it's not a number.
-   * @deprecated use SolrParam.getFloat(String,float)
-   */
-  @Deprecated
-  public static Number getNumberParam(SolrQueryRequest req,
-                                      String param, Number def) {
 
-    Number r = def;
-    String v = req.getParam(param);
-    if (null == v || "".equals(v.trim())) {
-      return r;
-    }
-    try {
-      r = new Float(v);
-    } catch (NumberFormatException e) {
-      /* :NOOP" */
-    }
-    return r;
-  }
 
-  /**
-   * Treats parameter value as a boolean.  The string 'false' is false;
-   * any other non-empty string is true.
-   * @deprecated use SolrParam.getBool(String,boolean)
-   */
-  @Deprecated
-  public static boolean getBooleanParam(SolrQueryRequest req,
-                                       String param, boolean def) {
-    String v = req.getParam(param);
-    if (null == v || "".equals(v.trim())) {
-      return def;
-    }
-    return !"false".equals(v.trim());
-  }
 
   private final static Pattern splitList=Pattern.compile(",| ");
 
@@ -238,7 +169,8 @@ public class SolrPluginUtils {
    *
    * If lazy field loading is disabled, this method does nothing.
    */
-  public static void optimizePreFetchDocs(DocList docs,
+  public static void optimizePreFetchDocs(ResponseBuilder rb,
+                                          DocList docs,
                                           Query query,
                                           SolrQueryRequest req,
                                           SolrQueryResponse res) throws IOException {
@@ -248,28 +180,34 @@ public class SolrPluginUtils {
       return;
     }
 
-    Set<String> fieldFilter = null;
     Set<String> returnFields = res.getReturnFields();
+    Set<String> fieldFilter = returnFields;
+
     if(returnFields != null) {
-      // copy return fields list
-      fieldFilter = new HashSet<String>(returnFields);
-      // add highlight fields
-      SolrHighlighter highligher = req.getCore().getHighlighter();
-      if(highligher.isHighlightingEnabled(req.getParams())) {
-        for(String field: highligher.getHighlightFields(query, req, null))
+
+      if (rb.doHighlights) {
+        // copy return fields list
+        fieldFilter = new HashSet<String>(returnFields);
+        // add highlight fields
+
+        SolrHighlighter highlighter = HighlightComponent.getHighlighter(req.getCore());
+        for (String field: highlighter.getHighlightFields(query, req, null))
           fieldFilter.add(field);
-      }
-      // fetch unique key if one exists.
-      SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
-      if(null != keyField)
+
+        // fetch unique key if one exists.
+        SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
+        if(null != keyField)
           fieldFilter.add(keyField.getName());
+      }
+
+      // get documents
+      DocIterator iter = docs.iterator();
+      for (int i=0; i<docs.size(); i++) {
+        searcher.doc(iter.nextDoc(), fieldFilter);
+      }
+
     }
 
-    // get documents
-    DocIterator iter = docs.iterator();
-    for (int i=0; i<docs.size(); i++) {
-      searcher.doc(iter.nextDoc(), fieldFilter);
-    }
   }
 
 
@@ -451,23 +389,6 @@ public class SolrPluginUtils {
     return out;
   }
 
-  /**
-   * Generates an list of Explanations for each item in a list of docs.
-   *
-   * @param query The Query you want explanations in the context of
-   * @param docs The Documents you want explained relative that query
-   * @deprecated this returns the explanations as Strings, instead it
-   *    is recommeded to use getExplanations and call toString()
-   *    yourself, or use explanationsToNamedLists
-   */
-  @Deprecated
-  public static NamedList getExplainList(Query query, DocList docs,
-                                         SolrIndexSearcher searcher,
-                                         IndexSchema schema)
-    throws IOException {
-
-    return explanationsToStrings(getExplanations(query,docs,searcher,schema));
-  }
 
   /**
    * Executes a basic query
@@ -536,33 +457,6 @@ public class SolrPluginUtils {
     }
     return out;
   }
-  /**
-   * Given a string containing functions with optional boosts, returns
-   * an array of Queries representing those functions with the specified
-   * boosts.
-   * <p>
-   * NOTE: intra-function whitespace is not allowed.
-   * </p>
-   * @see #parseFieldBoosts
-   * @deprecated
-   */
-  @Deprecated
-  public static List<Query> parseFuncs(IndexSchema s, String in)
-    throws ParseException {
-
-    Map<String,Float> ff = parseFieldBoosts(in);
-    List<Query> funcs = new ArrayList<Query>(ff.keySet().size());
-    for (String f : ff.keySet()) {
-      Query fq = QueryParsing.parseFunction(f, s);
-      Float b = ff.get(f);
-      if (null != b) {
-        fq.setBoost(b);
-      }
-      funcs.add(fq);
-    }
-    return funcs;
-  }
-
 
   /**
    * Checks the number of optional clauses in the query, and compares it
@@ -781,14 +675,6 @@ public class SolrPluginUtils {
       // don't trust that our parent class won't ever change it's default
       setDefaultOperator(QueryParser.Operator.OR);
     }
-    public DisjunctionMaxQueryParser(IndexSchema s, String defaultField) {
-      super(s,defaultField);
-      // don't trust that our parent class won't ever change it's default
-      setDefaultOperator(QueryParser.Operator.OR);
-    }
-    public DisjunctionMaxQueryParser(IndexSchema s) {
-      this(s,null);
-    }
 
     /**
      * Add an alias to this query parser.
@@ -885,15 +771,6 @@ public class SolrPluginUtils {
     return ss;
   }
 
-  /**
-   * Builds a list of Query objects that should be used to filter results
-   * @see CommonParams#FQ
-   * @return null if no filter queries
-   */
-  public static List<Query> parseFilterQueries(SolrQueryRequest req) throws ParseException {
-    return parseQueryStrings(req, req.getParams().getParams(CommonParams.FQ));
-  }
-
   /** Turns an array of query strings into a List of Query objects.
    *
    * @return null if no queries are generated
@@ -983,27 +860,6 @@ public class SolrPluginUtils {
     return list;
   }
 
-
-
-  /**
-   * Given a SolrQueryResponse replace the DocList if it is in the result.
-   * Otherwise add it to the response
-   *
-   * @since solr 1.4
-   */
-  public static void addOrReplaceResults(SolrQueryResponse rsp, SolrDocumentList docs)
-  {
-    NamedList vals = rsp.getValues();
-    int idx = vals.indexOf( "response", 0 );
-    if( idx >= 0 ) {
-      log.debug("Replacing DocList with SolrDocumentList " + docs.size());
-      vals.setVal( idx, docs );
-    }
-    else {
-      log.debug("Adding SolrDocumentList response" + docs.size());
-      vals.add( "response", docs );
-    }
-  }
 
   public static void invokeSetters(Object bean, NamedList initArgs) {
     if (initArgs == null) return;

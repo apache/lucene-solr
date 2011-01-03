@@ -127,8 +127,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
           // reset the TokenStream to the first token
           stream.reset();
-
-          final int startLength = fieldState.length;
           
           try {
             boolean hasMoreTokens = stream.incrementToken();

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.net.MalformedURLException;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -59,7 +60,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    
+    System.setProperty("solr.solr.home", SolrTestCaseJ4.TEST_HOME);
   }
   
   @Override

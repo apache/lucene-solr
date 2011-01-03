@@ -26,8 +26,6 @@ import org.apache.solr.schema.FieldType;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * 
  *

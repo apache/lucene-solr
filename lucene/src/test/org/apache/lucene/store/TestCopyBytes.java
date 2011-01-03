@@ -22,7 +22,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class TestCopyBytes extends LuceneTestCase {
 

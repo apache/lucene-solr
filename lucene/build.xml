@@ -31,6 +31,7 @@
   <path id="test.classpath">
   	<path refid="classpath"/>
     <path refid="junit-path"/>
+    <path refid="ant-path"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>
 
@@ -67,6 +68,7 @@
 
   <path id="backwards.test.compile.classpath">
     <path refid="junit-path"/>
+    <path refid="ant-path"/>
     <fileset dir="${backwards.dir}/lib">
       <include name="lucene-core*.jar"/>
     </fileset>

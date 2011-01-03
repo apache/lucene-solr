@@ -93,43 +93,6 @@ public class SolrException extends RuntimeException {
     this.code=code;
   }
   
-  /**
-   * @deprecated Use {@link #SolrException(ErrorCode,String,boolean)}.
-   */
-  @Deprecated
-  public SolrException(int code, String msg, boolean alreadyLogged) {
-    super(msg);
-    this.code=code;
-    this.logged=alreadyLogged;
-  }
-
-  /**
-   * @deprecated Use {@link #SolrException(ErrorCode,String,Throwable,boolean)}.
-   */
-  @Deprecated
-  public SolrException(int code, String msg, Throwable th, boolean alreadyLogged) {
-    super(msg,th);
-    this.code=code;
-    logged=alreadyLogged;
-  }
-
-  /**
-   * @deprecated Use {@link #SolrException(ErrorCode,String,Throwable)}.
-   */
-  @Deprecated
-  public SolrException(int code, String msg, Throwable th) {
-    this(code,msg,th,true);
-  }
-
-  /**
-   * @deprecated Use {@link #SolrException(ErrorCode,Throwable)}.
-   */
-  @Deprecated
-  public SolrException(int code, Throwable th) {
-    super(th);
-    this.code=code;
-    logged=true;
-  }
 
   int code=0;
   public int code() { return code; }

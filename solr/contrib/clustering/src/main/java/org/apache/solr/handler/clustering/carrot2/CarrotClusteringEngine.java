@@ -38,6 +38,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.clustering.SearchClusteringEngine;
+import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -175,7 +176,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     SolrQueryRequest req = null;
     String[] snippetFieldAry = null;
     if (produceSummary == true) {
-      highlighter = core.getHighlighter();
+      highlighter = HighlightComponent.getHighlighter(core);
       if (highlighter != null){
         Map args = new HashMap();
         snippetFieldAry = new String[]{snippetField};

@@ -28,8 +28,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Iterator;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Test for SOLR-1038
  *

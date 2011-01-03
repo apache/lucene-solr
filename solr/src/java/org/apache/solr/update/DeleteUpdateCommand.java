@@ -16,17 +16,18 @@
  */
 
 package org.apache.solr.update;
+
+import org.apache.solr.request.SolrQueryRequest;
+
 /**
  * @version $Id$
  */
 public class DeleteUpdateCommand extends UpdateCommand {
   public String id;    // external (printable) id, for delete-by-id
   public String query; // query string for delete-by-query
-  public boolean fromPending;
-  public boolean fromCommitted;
 
-  public DeleteUpdateCommand() {
-    super("delete");
+  public DeleteUpdateCommand(SolrQueryRequest req) {
+    super("delete", req);
   }
 
   public String toString() {
@@ -34,8 +35,6 @@ public class DeleteUpdateCommand extends UpdateCommand {
     sb.append(':');
     if (id!=null) sb.append("id=").append(id);
     else sb.append("query=`").append(query).append('`');
-    sb.append(",fromPending=").append(fromPending);
-    sb.append(",fromCommitted=").append(fromCommitted);
     return sb.toString();
   }
 }

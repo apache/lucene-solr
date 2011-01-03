@@ -116,10 +116,10 @@ public class TestSolrCoreProperties extends LuceneTestCase {
     confDir.mkdirs();
 
     File f = new File(confDir, "solrconfig.xml");
-    copyFile(new File(getSolrConfigFile()), f);
+    copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
 
     f = new File(confDir, "schema.xml");
-    copyFile(new File(getSchemaFile()), f);
+    copyFile(SolrTestCaseJ4.getFile(getSchemaFile()), f);
     Properties p = new Properties();
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");

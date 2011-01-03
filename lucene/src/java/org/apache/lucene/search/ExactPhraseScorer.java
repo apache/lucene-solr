@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.search.BooleanClause.Occur;
 
 final class ExactPhraseScorer extends Scorer {
   private final byte[] norms;

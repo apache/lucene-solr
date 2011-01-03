@@ -24,7 +24,6 @@ import org.apache.solr.common.params.EventParams;
 import org.apache.lucene.store.Directory;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class TestQuerySenderListener extends SolrTestCaseJ4 {
 

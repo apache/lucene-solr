@@ -87,10 +87,7 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
 
     long start = System.currentTimeMillis();
 
-    AddUpdateCommand add = new AddUpdateCommand();
-    add.allowDups = !overwrite;
-    add.overwriteCommitted = overwrite;
-    add.overwritePending = overwrite;
+    AddUpdateCommand add = new AddUpdateCommand(req);
 
     Field idField=null;
 
@@ -114,7 +111,7 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
     log.info("iter="+iter +" time=" + (end-start) + " throughput=" + ((long)iter*1000)/(end-start));
 
     //discard all the changes
-    updateHandler.rollback(new RollbackUpdateCommand());
+    updateHandler.rollback(new RollbackUpdateCommand(req));
 
     req.close();
   }

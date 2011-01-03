@@ -16,11 +16,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.Directory;
 import org.apache.solr.util.AbstractSolrTestCase;
-
-import java.io.IOException;
 
 public class IndexReaderFactoryTest extends AbstractSolrTestCase {
 

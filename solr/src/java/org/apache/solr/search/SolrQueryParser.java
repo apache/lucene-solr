@@ -39,9 +39,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 
-// TODO: implement the analysis of simple fields with
-// FieldType.toInternal() instead of going through the
-// analyzer.  Should lead to faster query parsing.
 
 /**
  * A variation on the Lucene QueryParser which knows about the field 
@@ -57,8 +54,6 @@ import org.apache.solr.schema.TextField;
  * If the magic field name "<code>_val_</code>" is used in a term or 
  * phrase query, the value is parsed as a function.
  * </p>
- *
- * @see QueryParsing#parseFunction
  */
 public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;
@@ -67,32 +62,12 @@ public class SolrQueryParser extends QueryParser {
   protected final Map<String, ReversedWildcardFilterFactory> leadingWildcards =
     new HashMap<String, ReversedWildcardFilterFactory>();
 
-  /**
-   * Constructs a SolrQueryParser using the schema to understand the
-   * formats and datatypes of each field.  Only the defaultSearchField
-   * will be used from the IndexSchema (unless overridden),
-   * &lt;solrQueryParser&gt; will not be used.
-   * 
-   * @param schema Used for default search field name if defaultField is null and field information is used for analysis
-   * @param defaultField default field used for unspecified search terms.  if null, the schema default field is used
-   * @see IndexSchema#getDefaultSearchFieldName()
-   */
-  public SolrQueryParser(IndexSchema schema, String defaultField) {
-    super(schema.getSolrConfig().getLuceneVersion("luceneMatchVersion", Version.LUCENE_30), defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
-    this.schema = schema;
-    this.parser  = null;
-    this.defaultField = defaultField;
-    setLowercaseExpandedTerms(false);
-    setEnablePositionIncrements(true);
-    checkAllowLeadingWildcards();
-  }
-
   public SolrQueryParser(QParser parser, String defaultField) {
     this(parser, defaultField, parser.getReq().getSchema().getQueryAnalyzer());
   }
 
   public SolrQueryParser(QParser parser, String defaultField, Analyzer analyzer) {
-    super(parser.getReq().getSchema().getSolrConfig().getLuceneVersion("luceneMatchVersion", Version.LUCENE_30), defaultField, analyzer);
+    super(parser.getReq().getCore().getSolrConfig().getLuceneVersion("luceneMatchVersion", Version.LUCENE_30), defaultField, analyzer);
     this.schema = parser.getReq().getSchema();
     this.parser = parser;
     this.defaultField = defaultField;
@@ -138,12 +113,8 @@ public class SolrQueryParser extends QueryParser {
     // own functions.
     if (field.charAt(0) == '_') {
       if ("_val_".equals(field)) {
-        if (parser==null) {
-          return QueryParsing.parseFunction(queryText, schema);
-        } else {
-          QParser nested = parser.subQuery(queryText, "func");
-          return nested.getQuery();
-        }
+        QParser nested = parser.subQuery(queryText, "func");
+        return nested.getQuery();
       } else if ("_query_".equals(field) && parser != null) {
         return parser.subQuery(queryText, null).getQuery();
       }

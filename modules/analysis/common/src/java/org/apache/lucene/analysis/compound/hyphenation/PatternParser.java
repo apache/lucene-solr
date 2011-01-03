@@ -29,7 +29,6 @@ import org.xml.sax.Attributes;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 

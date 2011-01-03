@@ -551,6 +551,13 @@ public abstract class LuceneTestCase extends Assert {
   // jvm-wide list of 'rogue threads' we found, so they only get reported once.
   private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
 
+  static {
+    // just a hack for things like eclipse test-runner threads
+    for (Thread t : Thread.getAllStackTraces().keySet()) {
+      rogueThreads.put(t, true);
+    }
+  }
+  
   /**
    * Looks for leftover running threads, trying to kill them off,
    * so they don't fail future tests.
@@ -574,9 +581,7 @@ public abstract class LuceneTestCase extends Assert {
 
         if (t.isAlive() &&
             !rogueThreads.containsKey(t) &&
-            t != Thread.currentThread() &&
-            // TODO: TimeLimitingCollector starts a thread statically.... WTF?!
-            !t.getName().equals("TimeLimitedCollector timer thread")) {
+            t != Thread.currentThread()) {
           System.err.println("WARNING: " + context  + " left thread running: " + t);
           rogueThreads.put(t, true);
           rogueCount++;

@@ -26,8 +26,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 import java.util.Collections;
 import java.util.Set;
 import java.util.HashSet;
@@ -124,8 +122,7 @@ public class TestRemoteSearchable extends RemoteTestCase {
     Searchable[] searchables = { lookupRemote() };
     Searcher searcher = new MultiSearcher(searchables);
     ScoreDoc[] hits = searcher.search(
-          new ConstantScoreQuery(new QueryWrapperFilter(
-                                   new TermQuery(new Term("test", "test")))), null, 1000).scoreDocs;
+          new ConstantScoreQuery(new TermQuery(new Term("test", "test"))), null, 1000).scoreDocs;
     assertEquals(1, hits.length);
   }
 }

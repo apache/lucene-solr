@@ -197,7 +197,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     Boolean finishCalled = Boolean.FALSE;
 
     public SolrWriterImpl() {
-      super(null, ".");
+      super(null, ".",null);
     }
 
     public boolean upload(SolrInputDocument doc) {

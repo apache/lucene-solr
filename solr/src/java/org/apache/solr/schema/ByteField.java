@@ -22,7 +22,7 @@ import org.apache.lucene.search.cache.ByteValuesCreator;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.ByteFieldSource;
 
@@ -42,13 +42,9 @@ public class ByteField extends FieldType {
     return new SortField(field.name, SortField.BYTE, reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     return new ByteFieldSource( new ByteValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
-  }
-
-
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    xmlWriter.writeByte(name, f.stringValue());
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
@@ -67,7 +63,7 @@ public class ByteField extends FieldType {
 
     try {
       byte val = Byte.parseByte(s);
-      writer.writeByte(name, val);
+      writer.writeInt(name, val);
     } catch (NumberFormatException e){
       // can't parse - write out the contents as a string so nothing is lost and
       // clients don't get a parse error.

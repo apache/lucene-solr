@@ -16,8 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import static org.junit.Assert.assertEquals;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -40,7 +38,7 @@ public class TestFastInputStream extends LuceneTestCase {
     String ss = "Helloooooooooooooooooooo";
     writeChars(gzos, ss, 0, ss.length());
     gzos.close();
-    NamedListCodec.writeVInt(10, fos);
+    JavaBinCodec.writeVInt(10, fos);
     fos.flushBuffer();
     GZIPInputStream gzis = new GZIPInputStream(new ByteArrayInputStream(b.toByteArray(), 0, b.size()));
     char[] cbuf = new char[ss.length()];
