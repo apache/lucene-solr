@@ -89,7 +89,7 @@ public final class SchemaField extends FieldProperties {
   boolean isBinary() { return (properties & BINARY)!=0; }
 
 
-  public Field createField(String val, float boost) {
+  public Fieldable createField(String val, float boost) {
     return type.createField(this,val,boost);
   }
   

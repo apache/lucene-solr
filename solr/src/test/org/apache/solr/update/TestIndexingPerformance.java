@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -99,7 +100,7 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
         for (int j=0; j<fields.length; j+=2) {
           String field = fields[j];
           String val = fields[j+1];
-          Field f = schema.getField(field).createField(val, 1.0f);
+          Fieldable f = schema.getField(field).createField(val, 1.0f);
           add.doc.add(f);
         }
       }

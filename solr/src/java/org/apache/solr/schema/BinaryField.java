@@ -50,7 +50,7 @@ public class BinaryField extends FieldType  {
     return  ByteBuffer.wrap(f.getBinaryValue(), f.getBinaryOffset(), f.getBinaryLength() ) ;
   }
 
-  public Field createField(SchemaField field, Object val, float boost) {
+  public Fieldable createField(SchemaField field, Object val, float boost) {
     if (val == null) return null;
     if (!field.stored()) {
       log.trace("Ignoring unstored binary field: " + field);
