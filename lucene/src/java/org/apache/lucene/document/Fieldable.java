@@ -206,7 +206,7 @@ public interface Fieldable extends Serializable {
   * required in the index, it also means any query
   * requiring positional information, such as {@link
   * PhraseQuery} or {@link SpanQuery} subclasses will
-  * silently fail to find results.
+  * fail with an exception.
   */
   void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
 }
