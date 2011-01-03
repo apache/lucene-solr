@@ -258,7 +258,7 @@ public class DocumentBuilder {
         if (sfield != null && sfield.getType() instanceof BinaryField) {
           isBinaryField = true;
           BinaryField binaryField = (BinaryField) sfield.getType();
-          Field f = binaryField.createField(sfield,v,boost);
+          Fieldable f = binaryField.createField(sfield,v,boost);
           if(f != null){
             out.add(f);
           }
@@ -297,7 +297,7 @@ public class DocumentBuilder {
             if (destinationField.getType() instanceof BinaryField) {
               BinaryField binaryField = (BinaryField) destinationField.getType();
               //TODO: safe to assume that binary fields only create one?
-              fields = new Field[]{binaryField.createField(destinationField, v, boost)};
+              fields = new Fieldable[]{binaryField.createField(destinationField, v, boost)};
             }
           } else {
             fields = destinationField.createFields(cf.getLimitedValue(val), boost);
