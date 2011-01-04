@@ -1333,8 +1333,8 @@ public class TestIndexReader extends LuceneTestCase
       it1 = fields1.iterator();
       while (it1.hasNext()) {
         String curField = it1.next();
-        byte[] norms1 = index1.norms(curField);
-        byte[] norms2 = index2.norms(curField);
+        byte[] norms1 = MultiNorms.norms(index1, curField);
+        byte[] norms2 = MultiNorms.norms(index2, curField);
         if (norms1 != null && norms2 != null)
         {
           assertEquals(norms1.length, norms2.length);

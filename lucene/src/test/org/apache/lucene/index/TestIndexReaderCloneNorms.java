@@ -272,7 +272,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private void verifyIndex(IndexReader ir) throws IOException {
     for (int i = 0; i < NUM_FIELDS; i++) {
       String field = "f" + i;
-      byte b[] = ir.norms(field);
+      byte b[] = MultiNorms.norms(ir, field);
       assertEquals("number of norms mismatches", numDocNorms, b.length);
       ArrayList<Float> storedNorms = (i == 1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {

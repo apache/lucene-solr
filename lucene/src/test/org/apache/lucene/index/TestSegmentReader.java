@@ -181,11 +181,11 @@ public class TestSegmentReader extends LuceneTestCase {
         assertEquals(reader.hasNorms(f.name()), !DocHelper.noNorms.containsKey(f.name()));
         if (!reader.hasNorms(f.name())) {
           // test for fake norms of 1.0 or null depending on the flag
-          byte [] norms = reader.norms(f.name());
+          byte [] norms = MultiNorms.norms(reader, f.name());
           byte norm1 = Similarity.getDefault().encodeNormValue(1.0f);
           assertNull(norms);
           norms = new byte[reader.maxDoc()];
-          reader.norms(f.name(),norms, 0);
+          MultiNorms.norms(reader, f.name(),norms, 0);
           for (int j=0; j<reader.maxDoc(); j++) {
             assertEquals(norms[j], norm1);
           }

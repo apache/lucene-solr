@@ -23,6 +23,7 @@ import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -53,7 +54,8 @@ public class ParallelReader extends IndexReader {
   private SortedMap<String,IndexReader> fieldToReader = new TreeMap<String,IndexReader>();
   private Map<IndexReader,Collection<String>> readerToFields = new HashMap<IndexReader,Collection<String>>();
   private List<IndexReader> storedFieldReaders = new ArrayList<IndexReader>();
-
+  private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
+  
   private int maxDoc;
   private int numDocs;
   private boolean hasDeletions;
@@ -141,6 +143,9 @@ public class ParallelReader extends IndexReader {
       reader.incRef();
     }
     decrefOnClose.add(Boolean.valueOf(incRefReaders));
+    synchronized(normsCache) {
+      normsCache.clear(); // TODO: don't need to clear this for all fields really?
+    }
   }
 
   private class ParallelFieldsEnum extends FieldsEnum {
@@ -278,6 +283,7 @@ public class ParallelReader extends IndexReader {
 
     if (reopened) {
       List<Boolean> newDecrefOnClose = new ArrayList<Boolean>();
+      // TODO: maybe add a special reopen-ctor for norm-copying?
       ParallelReader pr = new ParallelReader();
       for (int i = 0; i < readers.size(); i++) {
         IndexReader oldReader = readers.get(i);
@@ -419,27 +425,51 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  public byte[] norms(String field) throws IOException {
+  public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     IndexReader reader = fieldToReader.get(field);
-    return reader==null ? null : reader.norms(field);
+
+    if (reader==null)
+      return null;
+    
+    byte[] bytes = normsCache.get(field);
+    if (bytes != null)
+      return bytes;
+    if (!hasNorms(field))
+      return null;
+
+    bytes = MultiNorms.norms(reader, field);
+    normsCache.put(field, bytes);
+    return bytes;
   }
 
   @Override
-  public void norms(String field, byte[] result, int offset)
+  public synchronized void norms(String field, byte[] result, int offset)
     throws IOException {
+    // TODO: maybe optimize
     ensureOpen();
     IndexReader reader = fieldToReader.get(field);
-    if (reader!=null)
-      reader.norms(field, result, offset);
+    if (reader==null)
+      return;
+    
+    byte[] norms = norms(field);
+    if (norms == null) {
+      Arrays.fill(result, offset, result.length, Similarity.getDefault().encodeNormValue(1.0f));
+    } else {
+      System.arraycopy(norms, 0, result, offset, maxDoc());
+    }
   }
 
   @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     IndexReader reader = fieldToReader.get(field);
-    if (reader!=null)
+    if (reader!=null) {
+      synchronized(normsCache) {
+        normsCache.remove(field);
+      }
       reader.doSetNorm(n, field, value);
+    }
   }
 
   @Override

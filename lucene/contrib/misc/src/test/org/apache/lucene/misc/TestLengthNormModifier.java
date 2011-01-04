@@ -25,6 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldNormModifier;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -94,7 +95,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
     public void testFieldWithNoNorm() throws Exception {
 
 	IndexReader r = IndexReader.open(store, false);
-	byte[] norms = r.norms("nonorm");
+	byte[] norms = MultiNorms.norms(r, "nonorm");
 
 	// sanity check, norms should all be 1
 	assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
@@ -112,7 +113,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	// nothing should have changed
 	r = IndexReader.open(store, false);
 	
-	norms = r.norms("nonorm");
+	norms = MultiNorms.norms(r, "nonorm");
 	assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
   assertNull(norms);
 

@@ -119,6 +119,10 @@ Changes in backwards compatibility policy
   need to change it (e.g. using "\\" to escape '\' itself).  
   (Sunil Kamath, Terry Yang via Robert Muir)
 
+* LUCENE-2771: IndexReader.norms() now throws UOE on non-atomic IndexReaders. If
+  you really want a top-level norms, use MultiNorms or SlowMultiReaderWrapper.
+  (Uwe Schindler, Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit
