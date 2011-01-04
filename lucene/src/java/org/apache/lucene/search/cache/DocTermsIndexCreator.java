@@ -240,8 +240,28 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 
       @Override
       public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
-        // TODO - we can support with binary search
-        throw new UnsupportedOperationException();
+        int low = 1;
+        int high = numOrd-1;
+        
+        while (low <= high) {
+          int mid = (low + high) >>> 1;
+          seek(mid);
+          int cmp = term.compareTo(text);
+
+          if (cmp < 0)
+            low = mid + 1;
+          else if (cmp > 0)
+            high = mid - 1;
+          else
+            return SeekStatus.FOUND; // key found
+        }
+        
+        if (low == numOrd) {
+          return SeekStatus.END;
+        } else {
+          seek(low);
+          return SeekStatus.NOT_FOUND;
+        }
       }
 
       @Override
@@ -315,7 +335,7 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 
       @Override
       public Comparator<BytesRef> getComparator() throws IOException {
-        throw new UnsupportedOperationException();
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
     }
   }
