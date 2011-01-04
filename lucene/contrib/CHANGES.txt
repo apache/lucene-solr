@@ -7,6 +7,8 @@ Build
  * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
    (Robert Muir)
 
+ * LUCENE-2845: Moved contrib/benchmark to modules.
+
 New Features
 
   * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
