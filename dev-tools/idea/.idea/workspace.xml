@@ -29,10 +29,10 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=bdb-je-temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="false" name="benchmark contrib" type="JUnit" factoryName="JUnit">
+    <configuration default="false" name="benchmark module" type="JUnit" factoryName="JUnit">
       <module name="benchmark" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/benchmark" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/benchmark/build" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -209,7 +209,7 @@
       <item index="1" class="java.lang.String" itemvalue="JUnit.ant contrib" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.bdb contrib" />
       <item index="3" class="java.lang.String" itemvalue="JUnit.bdb-je contrib" />
-      <item index="4" class="java.lang.String" itemvalue="JUnit.benchmark contrib" />
+      <item index="4" class="java.lang.String" itemvalue="JUnit.benchmark module" />
       <item index="5" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
       <item index="6" class="java.lang.String" itemvalue="JUnit.common analysis module" />
       <item index="7" class="java.lang.String" itemvalue="JUnit.dataimporthandler contrib" />
