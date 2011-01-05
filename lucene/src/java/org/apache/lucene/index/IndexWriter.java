@@ -755,8 +755,7 @@ public class IndexWriter implements Closeable {
    *  Otherwise an IllegalArgumentException is thrown.</p>
    *
    *  @see #setUseCompoundFile(boolean)
-   *  @deprecated use {@link LogMergePolicy#getUseCompoundDocStore()} and
-   *  {@link LogMergePolicy#getUseCompoundFile()} directly.
+   *  @deprecated use {@link LogMergePolicy#getUseCompoundFile()}
    */
   @Deprecated
   public boolean getUseCompoundFile() {
@@ -775,10 +774,7 @@ public class IndexWriter implements Closeable {
    * {@link LogMergePolicy}. Otherwise an IllegalArgumentException is thrown.
    * </p>
    * 
-   * @deprecated use {@link LogMergePolicy#setUseCompoundDocStore(boolean)} and
-   *             {@link LogMergePolicy#setUseCompoundFile(boolean)} directly.
-   *             Note that this method set the given value on both, therefore
-   *             you should consider doing the same.
+   * @deprecated use {@link LogMergePolicy#setUseCompoundFile(boolean)}.
    */
   @Deprecated
   public void setUseCompoundFile(boolean value) {
