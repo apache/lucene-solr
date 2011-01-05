@@ -19,8 +19,6 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * DocValues TestCase  

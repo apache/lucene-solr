@@ -36,7 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 
 /** This class is overridden by QueryParser in QueryParser.jj
- * and acts to eparate the majority of the Java code from the .jj grammar file. 
+ * and acts to separate the majority of the Java code from the .jj grammar file. 
  */
 public abstract class QueryParserBase {
 

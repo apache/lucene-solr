@@ -89,10 +89,7 @@ public interface DocSet /* extends Collection<Integer> */ {
    *
    * @return
    * An OpenBitSet with the bit number of every docid set in the set.
-   * 
-   * @deprecated Use {@link #iterator()} to access all docs instead.
    */
-  @Deprecated
   public OpenBitSet getBits();
 
   /**

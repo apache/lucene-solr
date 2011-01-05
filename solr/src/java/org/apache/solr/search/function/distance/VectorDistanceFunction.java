@@ -17,7 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.DocValues;
@@ -130,7 +130,7 @@ public class VectorDistanceFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     source1.createWeight(context, searcher);
     source2.createWeight(context, searcher);
   }

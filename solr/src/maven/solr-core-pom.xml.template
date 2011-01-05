@@ -91,6 +91,13 @@
       <artifactId>lucene-spellchecker</artifactId>
       <version>@version@</version>
     </dependency>
+    
+    <!-- Apache Zookeeper -->
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <version>3.3.1</version>
+    </dependency>
 
     <!-- Apache Commons -->
     <dependency>

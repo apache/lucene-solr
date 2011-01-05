@@ -18,7 +18,7 @@ package org.apache.solr.search.function.distance;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.solr.common.params.SpatialParams;
@@ -234,7 +234,7 @@ public class HaversineConstFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     latSource.createWeight(context, searcher);
     lonSource.createWeight(context, searcher);
   }

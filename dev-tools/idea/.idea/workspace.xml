@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RunManager">
+    <configuration default="false" name="analysis-extras contrib" type="JUnit" factoryName="JUnit">
+      <module name="analysis-extras" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="ant contrib" type="JUnit" factoryName="JUnit">
+      <module name="ant" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/ant" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="bdb contrib" type="JUnit" factoryName="JUnit">
+      <module name="bdb" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/db" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=bdb-temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="bdb-je contrib" type="JUnit" factoryName="JUnit">
+      <module name="bdb-je" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/db" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=bdb-je-temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="benchmark module" type="JUnit" factoryName="JUnit">
+      <module name="benchmark" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/benchmark/build" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="clustering contrib" type="JUnit" factoryName="JUnit">
+      <module name="clustering" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/clustering/build" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="common analysis module" type="JUnit" factoryName="JUnit">
+      <module name="common" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/common" />
+      <option name="VM_PARAMETERS" value="-ea  -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="dataimporthandler contrib" type="JUnit" factoryName="JUnit">
+      <module name="dataimporthandler" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/target" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="extraction contrib" type="JUnit" factoryName="JUnit">
+      <module name="extraction" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/extraction/build" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="extras from dataimporthandler contrib" type="JUnit" factoryName="JUnit">
+      <module name="extras" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/target/extras" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="highlighter contrib" type="JUnit" factoryName="JUnit">
+      <module name="highlighter" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/highlighter" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="icu analysis module" type="JUnit" factoryName="JUnit">
+      <module name="icu" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/icu" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="instantiated contrib" type="JUnit" factoryName="JUnit">
+      <module name="instantiated" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/instantiated" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="lucene" type="JUnit" factoryName="JUnit">
+      <module name="lucene" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build" />
+      <option name="VM_PARAMETERS" value="-ea -Dlucene.version=4.0-SNAPSHOT -DtempDir=temp -Dtests.linedocsfile=europarl.lines.txt.gz" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="lucli contrib" type="JUnit" factoryName="JUnit">
+      <module name="lucli" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/lucli" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="memory contrib" type="JUnit" factoryName="JUnit">
+      <module name="memory" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/memory" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="misc contrib" type="JUnit" factoryName="JUnit">
+      <module name="misc" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/misc" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="phonetic analysis module" type="JUnit" factoryName="JUnit">
+      <module name="phonetic" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/phonetic" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="queries contrib" type="JUnit" factoryName="JUnit">
+      <module name="queries" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/queries" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="queryparser contrib" type="JUnit" factoryName="JUnit">
+      <module name="queryparser" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/queryparser" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="smartcn analysis module" type="JUnit" factoryName="JUnit">
+      <module name="smartcn" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/smartcn" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="solr" type="JUnit" factoryName="JUnit">
+      <module name="solr" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/tests/solr" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="spatial contrib" type="JUnit" factoryName="JUnit">
+      <module name="spatial" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/spatial" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="spellchecker contrib" type="JUnit" factoryName="JUnit">
+      <module name="spellchecker" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/spellchecker" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="stempel analysis module" type="JUnit" factoryName="JUnit">
+      <module name="stempel" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/stempel" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="swing contrib" type="JUnit" factoryName="JUnit">
+      <module name="swing" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/swing" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="wordnet contrib" type="JUnit" factoryName="JUnit">
+      <module name="wordnet" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/wordnet" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="xml-query-parser contrib" type="JUnit" factoryName="JUnit">
+      <module name="xml-query-parser" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/xml-query-parser" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <list size="29">
+      <item index="0" class="java.lang.String" itemvalue="JUnit.analysis-extras contrib" />
+      <item index="1" class="java.lang.String" itemvalue="JUnit.ant contrib" />
+      <item index="2" class="java.lang.String" itemvalue="JUnit.bdb contrib" />
+      <item index="3" class="java.lang.String" itemvalue="JUnit.bdb-je contrib" />
+      <item index="4" class="java.lang.String" itemvalue="JUnit.benchmark module" />
+      <item index="5" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
+      <item index="6" class="java.lang.String" itemvalue="JUnit.common analysis module" />
+      <item index="7" class="java.lang.String" itemvalue="JUnit.dataimporthandler contrib" />
+      <item index="8" class="java.lang.String" itemvalue="JUnit.extraction contrib" />
+      <item index="9" class="java.lang.String" itemvalue="JUnit.extras from dataimporthandler contrib" />
+      <item index="10" class="java.lang.String" itemvalue="JUnit.highlighter contrib" />
+      <item index="11" class="java.lang.String" itemvalue="JUnit.icu analysis module" />
+      <item index="12" class="java.lang.String" itemvalue="JUnit.instantiated contrib" />
+      <item index="13" class="java.lang.String" itemvalue="JUnit.lucene" />
+      <item index="14" class="java.lang.String" itemvalue="JUnit.lucli contrib" />
+      <item index="15" class="java.lang.String" itemvalue="JUnit.memory contrib" />
+      <item index="16" class="java.lang.String" itemvalue="JUnit.misc contrib" />
+      <item index="17" class="java.lang.String" itemvalue="JUnit.phonetic analysis module" />
+      <item index="18" class="java.lang.String" itemvalue="JUnit.queries contrib" />
+      <item index="19" class="java.lang.String" itemvalue="JUnit.queryparser contrib" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
+      <item index="21" class="java.lang.String" itemvalue="JUnit.solr" />
+      <item index="22" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
+      <item index="23" class="java.lang.String" itemvalue="JUnit.spellchecker contrib" />
+      <item index="24" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
+      <item index="25" class="java.lang.String" itemvalue="JUnit.swing contrib" />
+      <item index="26" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
+      <item index="27" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
+    </list>
+  </component>
+</project>

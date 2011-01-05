@@ -16,6 +16,7 @@
  */
 package org.apache.solr.highlight;
 
+import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 
@@ -42,7 +43,7 @@ public class HighlighterConfigTest extends AbstractSolrTestCase {
 	  
 	  public void testConfig()
 	  {
-	    SolrHighlighter highlighter = h.getCore().getHighlighter();
+            SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
 	    log.info( "highlighter" );
 
 	    assertTrue( highlighter instanceof DummyHighlighter );

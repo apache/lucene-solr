@@ -19,11 +19,10 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.search.MutableValueInt;
 import org.apache.solr.search.MutableValue;
-import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -241,15 +240,13 @@ public class DocFreqValueSource extends ValueSource {
 
   @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    Searcher searcher = (Searcher)context.get("searcher");
-    // todo: we need docFreq that takes a BytesRef
-    String strVal = ByteUtils.UTF8toUTF16(indexedBytes);
-    int docfreq = searcher.docFreq(new Term(indexedField, strVal));
+    IndexSearcher searcher = (IndexSearcher)context.get("searcher");
+    int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes));
     return new ConstIntDocValues(docfreq, this);
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     context.put("searcher",searcher);
   }
 

@@ -278,6 +278,8 @@ public class SolrResourceLoader implements ResourceLoader
       }
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
       is = classLoader.getResourceAsStream(resource);
+      if (is == null)
+        is = classLoader.getResourceAsStream(getConfigDir() + resource);
     } catch (Exception e) {
       throw new RuntimeException("Error opening " + resource, e);
     }
@@ -634,10 +636,7 @@ public class SolrResourceLoader implements ResourceLoader
     }
     return normalizeDir( home );
   }
-  @Deprecated
-  public static String locateInstanceDir() {
-    return locateSolrHome();
-  }
+
 
   public String getInstanceDir() {
     return instanceDir;

@@ -17,24 +17,31 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.util.DateMathParser;
-import org.apache.lucene.document.Fieldable;
-
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.Locale;
-import java.text.DateFormat;
 
-import junit.framework.TestCase;
+public class DateFieldTest extends LuceneTestCase {
+  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
+  protected DateField f = null;
+  protected DateMathParser p = new DateMathParser(UTC, Locale.US);
 
-public class DateFieldTest extends LegacyDateFieldTest {
-  
   public void setUp()  throws Exception {
     super.setUp();
     f = new DateField();
   }
+
+  public void assertToI(String expected, String input) {
+    assertEquals("Input: " + input, expected, f.toInternal(input));
+  }
   
+  public void assertToI(String expected, long input) {
+    assertEquals("Input: " + input, expected, f.toInternal(new Date(input)));
+  }
+
   public void testToInternal() throws Exception {
     assertToI("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999666Z");
     assertToI("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999Z");

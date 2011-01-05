@@ -26,7 +26,6 @@ import org.apache.solr.analysis.TrieTokenizerFactory;
 import org.apache.solr.search.function.*;
 import org.apache.solr.search.QParser;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.SortField;
@@ -90,17 +89,6 @@ public class TrieDateField extends DateField {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return new TrieDateFieldSource( new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ));
-  }
-
-  @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) {
-      xmlWriter.writeStr(name, TrieField.badFieldString(f));
-      return;
-    }
-
-    xmlWriter.writeDate(name,new Date(TrieField.toLong(arr)));
   }
 
   @Override
@@ -172,7 +160,7 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public Field createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
 

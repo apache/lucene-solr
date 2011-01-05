@@ -89,7 +89,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
     Sort custSort = new Sort(
         new SortField("publicationDate_", SortField.STRING),
         SortField.FIELD_SCORE);
-    Searcher searcher = new CustomSearcher(reader, 2);
+    IndexSearcher searcher = new CustomSearcher(reader, 2);
     // search and check hits
     matchHits(searcher, custSort);
   }
@@ -103,28 +103,13 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
     Sort custSort = new Sort(
         new SortField("publicationDate_", SortField.STRING),
         SortField.FIELD_SCORE);
-    Searcher searcher = new MultiSearcher(new Searcher[] {new CustomSearcher(
-        reader, 2)});
-    // search and check hits
-    matchHits(searcher, custSort);
-  }
-  
-  /**
-   * Run the test using two CustomSearcher instances.
-   */
-  public void testFieldSortMultiCustomSearcher() throws Exception {
-    // log("Run testFieldSortMultiCustomSearcher");
-    // define the sort criteria
-    Sort custSort = new Sort(
-        new SortField("publicationDate_", SortField.STRING),
-        SortField.FIELD_SCORE);
-    Searcher searcher = new MultiSearcher(new CustomSearcher(reader, 0), new CustomSearcher(reader, 2));
+    IndexSearcher searcher = new CustomSearcher(reader, 2);
     // search and check hits
     matchHits(searcher, custSort);
   }
   
   // make sure the documents returned by the search match the expected list
-  private void matchHits(Searcher searcher, Sort sort) throws IOException {
+  private void matchHits(IndexSearcher searcher, Sort sort) throws IOException {
     // make a query without sorting first
     ScoreDoc[] hitsByRank = searcher.search(query, null, Integer.MAX_VALUE).scoreDocs;
     checkHits(hitsByRank, "Sort by rank: "); // check for duplicates

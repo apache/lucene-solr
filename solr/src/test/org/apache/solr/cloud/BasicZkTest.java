@@ -72,7 +72,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertU(commit());
     assertQ(req("id:42"), "//*[@numFound='0']");
 
-    // test allowDups default of false
+    // test overwrite default of true
 
     assertU(adoc("id", "42", "val_s", "AAA"));
     assertU(adoc("id", "42", "val_s", "BBB"));
@@ -84,12 +84,12 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertQ(req("id:42"), "//*[@numFound='1']", "//str[.='DDD']");
 
     // test deletes
-    String[] adds = new String[] { add(doc("id", "101"), "allowDups", "false"),
-        add(doc("id", "101"), "allowDups", "false"),
-        add(doc("id", "105"), "allowDups", "true"),
-        add(doc("id", "102"), "allowDups", "false"),
-        add(doc("id", "103"), "allowDups", "true"),
-        add(doc("id", "101"), "allowDups", "false"), };
+    String[] adds = new String[] { add(doc("id", "101"), "overwrite", "true"),
+        add(doc("id", "101"), "overwrite", "true"),
+        add(doc("id", "105"), "overwrite", "false"),
+        add(doc("id", "102"), "overwrite", "true"),
+        add(doc("id", "103"), "overwrite", "false"),
+        add(doc("id", "101"), "overwrite", "true"), };
     for (String a : adds) {
       assertU(a, a);
     }

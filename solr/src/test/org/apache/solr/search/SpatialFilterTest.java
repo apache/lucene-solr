@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.assertTrue;
 
 
 /**

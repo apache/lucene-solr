@@ -18,8 +18,10 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -30,6 +32,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -38,7 +42,10 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.VirtualMethod;
 
 /**
  * <p>
@@ -492,35 +499,64 @@ public class SpellChecker implements java.io.Closeable {
    * @param dict Dictionary to index
    * @param mergeFactor mergeFactor to use when indexing
    * @param ramMB the max amount or memory in MB to use
+   * @param optimize whether or not the spellcheck index should be optimized
    * @throws AlreadyClosedException if the Spellchecker is already closed
    * @throws IOException
    */
-  public void indexDictionary(Dictionary dict, int mergeFactor, int ramMB) throws IOException {
+  public final void indexDictionary(Dictionary dict, int mergeFactor, int ramMB, boolean optimize) throws IOException {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
       final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).setRAMBufferSizeMB(ramMB));
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(mergeFactor);
+      IndexSearcher indexSearcher = obtainSearcher();
+      final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
+
+      if (searcher.maxDoc() > 0) {
+        new ReaderUtil.Gather(searcher.getIndexReader()) {
+          @Override
+          protected void add(int base, IndexReader r) throws IOException {
+            Terms terms = r.terms(F_WORD);
+            if (terms != null)
+              termsEnums.add(terms.iterator());
+          }
+        }.run();
+      }
+      
+      boolean isEmpty = termsEnums.isEmpty();
+
+      try { 
+        Iterator<String> iter = dict.getWordsIterator();
+        BytesRef currentTerm = new BytesRef();
+        
+        terms: while (iter.hasNext()) {
+          String word = iter.next();
   
-      Iterator<String> iter = dict.getWordsIterator();
-      while (iter.hasNext()) {
-        String word = iter.next();
+          int len = word.length();
+          if (len < 3) {
+            continue; // too short we bail but "too long" is fine...
+          }
   
-        int len = word.length();
-        if (len < 3) {
-          continue; // too short we bail but "too long" is fine...
+          if (!isEmpty) {
+            // we have a non-empty index, check if the term exists
+            currentTerm.copy(word);
+            for (TermsEnum te : termsEnums) {
+              if (te.seek(currentTerm, false) == TermsEnum.SeekStatus.FOUND) {
+                continue terms;
+              }
+            }
+          }
+  
+          // ok index the word
+          Document doc = createDocument(word, getMin(len), getMax(len));
+          writer.addDocument(doc);
         }
-  
-        if (this.exist(word)) { // if the word already exist in the gramindex
-          continue;
-        }
-  
-        // ok index the word
-        Document doc = createDocument(word, getMin(len), getMax(len));
-        writer.addDocument(doc);
+      } finally {
+        releaseSearcher(indexSearcher);
       }
       // close writer
-      writer.optimize();
+      if (optimize)
+        writer.optimize();
       writer.close();
       // also re-open the spell index to see our own changes when the next suggestion
       // is fetched:
@@ -531,10 +567,21 @@ public class SpellChecker implements java.io.Closeable {
   /**
    * Indexes the data from the given {@link Dictionary}.
    * @param dict the dictionary to index
+   * @param mergeFactor mergeFactor to use when indexing
+   * @param ramMB the max amount or memory in MB to use
    * @throws IOException
    */
-  public void indexDictionary(Dictionary dict) throws IOException {
-    indexDictionary(dict, 300, 10);
+  public final void indexDictionary(Dictionary dict, int mergeFactor, int ramMB) throws IOException {
+    indexDictionary(dict, mergeFactor, ramMB, true);
+  }
+  
+  /**
+   * Indexes the data from the given {@link Dictionary}.
+   * @param dict the dictionary to index
+   * @throws IOException
+   */
+  public final void indexDictionary(Dictionary dict) throws IOException {
+    indexDictionary(dict, 300, (int)IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
   }
 
   private static int getMin(int l) {
@@ -559,7 +606,12 @@ public class SpellChecker implements java.io.Closeable {
 
   private static Document createDocument(String text, int ng1, int ng2) {
     Document doc = new Document();
-    doc.add(new Field(F_WORD, text, Field.Store.YES, Field.Index.NOT_ANALYZED)); // orig term
+    // the word field is never queried on... its indexed so it can be quickly
+    // checked for rebuild (and stored for retrieval). Doesn't need norms or TF/pos
+    Field f = new Field(F_WORD, text, Field.Store.YES, Field.Index.NOT_ANALYZED);
+    f.setOmitTermFreqAndPositions(true);
+    f.setOmitNorms(true);
+    doc.add(f); // orig term
     addGram(text, doc, ng1, ng2);
     return doc;
   }
@@ -573,12 +625,20 @@ public class SpellChecker implements java.io.Closeable {
         String gram = text.substring(i, i + ng);
         doc.add(new Field(key, gram, Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (i == 0) {
-          doc.add(new Field("start" + ng, gram, Field.Store.NO, Field.Index.NOT_ANALYZED));
+          // only one term possible in the startXXField, TF/pos and norms aren't needed.
+          Field startField = new Field("start" + ng, gram, Field.Store.NO, Field.Index.NOT_ANALYZED);
+          startField.setOmitTermFreqAndPositions(true);
+          startField.setOmitNorms(true);
+          doc.add(startField);
         }
         end = gram;
       }
       if (end != null) { // may not be present if len==ng1
-        doc.add(new Field("end" + ng, end, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        // only one term possible in the endXXField, TF/pos and norms aren't needed.
+        Field endField = new Field("end" + ng, end, Field.Store.NO, Field.Index.NOT_ANALYZED);
+        endField.setOmitTermFreqAndPositions(true);
+        endField.setOmitNorms(true);
+        doc.add(endField);
       }
     }
   }

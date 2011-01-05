@@ -25,7 +25,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.concurrent.*;

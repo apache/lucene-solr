@@ -18,10 +18,7 @@ package org.apache.solr.handler.clustering;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSet;
-import org.apache.lucene.search.Query;
 
 
 /**

@@ -17,7 +17,6 @@
 
 package org.apache.solr.util;
 
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 
 import java.util.Date;

@@ -17,9 +17,6 @@
 
 package org.apache.solr;
 
-import junit.framework.TestCase;
-
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.params.CommonParams;
 
 /**

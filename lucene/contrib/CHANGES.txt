@@ -7,6 +7,8 @@ Build
  * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
    (Robert Muir)
 
+ * LUCENE-2845: Moved contrib/benchmark to modules.
+
 New Features
 
   * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
@@ -36,6 +38,9 @@ New Features
     that doesn't synchronize on the file handle. This can be useful to 
     avoid the performance problems of SimpleFSDirectory and NIOFSDirectory.
     (Robert Muir, Simon Willnauer, Uwe Schindler, Michael McCandless)
+
+  * LUCENE-2836: Add FieldCacheRewriteMethod, which rewrites MultiTermQueries
+    using the FieldCache's TermsEnum.  (Robert Muir)
   
 API Changes
 
@@ -73,6 +78,14 @@ Changes in backwards compatibility policy
 
  * LUCENE-2581: Added new methods to FragmentsBuilder interface. These methods
    are used to set pre/post tags and Encoder. (Koji Sekiguchi)
+
+ * LUCENE-2391: Improved spellchecker (re)build time/ram usage by omitting 
+   frequencies/positions/norms for single-valued fields, modifying the default
+   ramBufferMBSize to match IndexWriterConfig (16MB), making index optimization
+   an optional boolean parameter, and modifying the incremental update logic
+   to work well with unoptimized spellcheck indexes. The indexDictionary() methods 
+   were made final to ensure a hard backwards break in case you were subclassing 
+   Spellchecker. In general, subclassing Spellchecker is not recommended.  (Robert Muir)
     
 Changes in runtime behavior
 
@@ -174,6 +187,9 @@ API Changes
  * LUCENE-2747: Deprecated ArabicLetterTokenizer. StandardTokenizer now tokenizes
    most languages correctly including Arabic.  (Steven Rowe, Robert Muir)
 
+ * LUCENE-2830: Use StringBuilder instead of StringBuffer across Benchmark, and
+   remove the StringBuffer HtmlParser.parse() variant. (Shai Erera)
+   
 New features
 
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
@@ -284,6 +300,8 @@ Build
 
  * LUCENE-2797: Upgrade contrib/icu's ICU jar file to ICU 4.6  
    (Robert Muir)
+
+ * LUCENE-2833: Upgrade contrib/ant's jtidy jar file to r938 (Robert Muir)
    
 Optimizations
 

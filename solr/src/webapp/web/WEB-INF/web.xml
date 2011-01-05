@@ -83,62 +83,16 @@
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 
-  <!-- Otherwise it will continue to the old servlets -->
-  
-  <servlet>
-    <servlet-name>SolrServer</servlet-name>
-    <display-name>Solr</display-name>
-    <description>Solr Server</description>
-    <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
-
-  <servlet>
-    <servlet-name>SolrUpdate</servlet-name>
-    <display-name>SolrUpdate</display-name>
-    <description>Solr Update Handler</description>
-    <servlet-class>org.apache.solr.servlet.SolrUpdateServlet</servlet-class>
-    <load-on-startup>2</load-on-startup>
-  </servlet>
-
   <servlet>
     <servlet-name>Logging</servlet-name>
     <servlet-class>org.apache.solr.servlet.LogLevelSelection</servlet-class>
   </servlet>
-
-  <!-- @Deprecated -->
-  <servlet>
-    <servlet-name>ping</servlet-name>
-    <jsp-file>/admin/ping.jsp</jsp-file>
-  </servlet>
-
-  <servlet-mapping>
-    <servlet-name>SolrServer</servlet-name>
-    <url-pattern>/select/*</url-pattern>
-  </servlet-mapping>
-
-  <servlet-mapping>
-    <servlet-name>SolrUpdate</servlet-name>
-    <url-pattern>/update/*</url-pattern>
-  </servlet-mapping>
 
   <servlet-mapping>
     <servlet-name>Logging</servlet-name>
     <url-pattern>/admin/logging</url-pattern>
   </servlet-mapping>
 
-  <!-- @Deprecated -->
-  <servlet-mapping>
-    <servlet-name>ping</servlet-name>
-    <url-pattern>/admin/ping</url-pattern>
-  </servlet-mapping>
-
-  <!-- @Deprecated -->
-  <servlet-mapping>
-    <servlet-name>Logging</servlet-name>
-    <url-pattern>/admin/logging.jsp</url-pattern>
-  </servlet-mapping>
-  
   <mime-mapping>
     <extension>.xsl</extension>
     <!-- per http://www.w3.org/TR/2006/PR-xslt20-20061121/ -->

@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.ByteUtils;
 
@@ -65,10 +64,6 @@ public class TextField extends FieldType {
 
   public SortField getSortField(SchemaField field, boolean reverse) {
     return getStringSort(field, reverse);
-  }
-
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    xmlWriter.writeStr(name, f.stringValue());
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {

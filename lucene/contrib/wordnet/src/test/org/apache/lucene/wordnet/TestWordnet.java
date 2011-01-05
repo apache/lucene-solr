@@ -26,13 +26,12 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestWordnet extends LuceneTestCase {
-  private Searcher searcher;
+  private IndexSearcher searcher;
   private Directory dir;
   
   String storePathName = new File(TEMP_DIR,"testLuceneWordnet").getAbsolutePath();

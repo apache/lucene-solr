@@ -20,7 +20,6 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 /**

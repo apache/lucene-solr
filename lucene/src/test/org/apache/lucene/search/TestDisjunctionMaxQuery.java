@@ -473,7 +473,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     return q;
   }
   
-  protected void printHits(String test, ScoreDoc[] h, Searcher searcher)
+  protected void printHits(String test, ScoreDoc[] h, IndexSearcher searcher)
       throws Exception {
     
     System.err.println("------- " + test + " -------");

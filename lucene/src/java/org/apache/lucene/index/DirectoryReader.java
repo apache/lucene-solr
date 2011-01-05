@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +30,6 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -64,7 +62,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private SegmentReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private final Map<SegmentReader,ReaderUtil.Slice> subReaderToSlice = new HashMap<SegmentReader,ReaderUtil.Slice>();
-  private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
@@ -186,7 +183,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   /** This constructor is only used for {@link #reopen()} */
   DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,
-                  Map<String,byte[]> oldNormsCache, boolean readOnly, boolean doClone, int termInfosIndexDivisor, CodecProvider codecs) throws IOException {
+                  boolean readOnly, boolean doClone, int termInfosIndexDivisor, CodecProvider codecs) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
     this.segmentInfos = infos;
@@ -274,38 +271,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     
     // initialize the readers to calculate maxDoc before we try to reuse the old normsCache
     initialize(newReaders);
-    
-    // try to copy unchanged norms from the old normsCache to the new one
-    if (oldNormsCache != null) {
-      for (Map.Entry<String,byte[]> entry: oldNormsCache.entrySet()) {
-        String field = entry.getKey();
-        if (!hasNorms(field)) {
-          continue;
-        }
-
-        byte[] oldBytes = entry.getValue();
-
-        byte[] bytes = new byte[maxDoc()];
-
-        for (int i = 0; i < subReaders.length; i++) {
-          Integer oldReaderIndex = segmentReaders.get(subReaders[i].getSegmentName());
-
-          // this SegmentReader was not re-opened, we can copy all of its norms 
-          if (oldReaderIndex != null &&
-               (oldReaders[oldReaderIndex.intValue()] == subReaders[i] 
-                 || oldReaders[oldReaderIndex.intValue()].norms.get(field) == subReaders[i].norms.get(field))) {
-            // we don't have to synchronize here: either this constructor is called from a SegmentReader,
-            // in which case no old norms cache is present, or it is called from MultiReader.reopen(),
-            // which is synchronized
-            System.arraycopy(oldBytes, oldStarts[oldReaderIndex.intValue()], bytes, starts[i], starts[i+1] - starts[i]);
-          } else {
-            subReaders[i].norms(field, bytes, starts[i]);
-          }
-        }
-
-        normsCache.put(field, bytes);      // update cache
-      }
-    }
   }
 
   /** {@inheritDoc} */
@@ -497,7 +462,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   private synchronized DirectoryReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryReader reader;
-    reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, openReadOnly, doClone, termInfosIndexDivisor, codecs);
+    reader = new DirectoryReader(directory, infos, subReaders, starts, openReadOnly, doClone, termInfosIndexDivisor, codecs);
     return reader;
   }
 
@@ -637,41 +602,18 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
-    byte[] bytes = normsCache.get(field);
-    if (bytes != null)
-      return bytes;          // cache hit
-    if (!hasNorms(field))
-      return null;
-
-    bytes = new byte[maxDoc()];
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].norms(field, bytes, starts[i]);
-    normsCache.put(field, bytes);      // update cache
-    return bytes;
+    throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
   }
 
   @Override
   public synchronized void norms(String field, byte[] result, int offset)
     throws IOException {
-    ensureOpen();
-    byte[] bytes = normsCache.get(field);
-    if (bytes==null && !hasNorms(field)) {
-      Arrays.fill(result, offset, result.length, Similarity.getDefault().encodeNormValue(1.0f));
-    } else if (bytes != null) {                           // cache hit
-      System.arraycopy(bytes, 0, result, offset, maxDoc());
-    } else {
-      for (int i = 0; i < subReaders.length; i++) {      // read from segments
-        subReaders[i].norms(field, result, offset + starts[i]);
-      }
-    }
+    throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
   }
 
   @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
-    synchronized (normsCache) {
-      normsCache.remove(field);                         // clear cache      
-    }
     int i = readerIndex(n);                           // find segment num
     subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }
@@ -864,7 +806,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
-    normsCache = null;
     for (int i = 0; i < subReaders.length; i++) {
       // try to close each reader, even if an exception is thrown
       try {

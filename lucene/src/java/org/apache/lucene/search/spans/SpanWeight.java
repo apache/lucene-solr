@@ -40,7 +40,7 @@ public class SpanWeight extends Weight {
   protected SpanQuery query;
   private IDFExplanation idfExp;
 
-  public SpanWeight(SpanQuery query, Searcher searcher)
+  public SpanWeight(SpanQuery query, IndexSearcher searcher)
     throws IOException {
     this.similarity = query.getSimilarity(searcher);
     this.query = query;

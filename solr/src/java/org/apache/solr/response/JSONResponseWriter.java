@@ -63,10 +63,6 @@ public class JSONResponseWriter implements QueryResponseWriter {
 
 
 class JSONWriter extends TextResponseWriter {
-
-  // cache the calendar instance in case we are writing many dates...
-  private Calendar cal;
-
   private String namedListStyle;
   private String wrapperFunction;
 
@@ -682,10 +678,6 @@ class JSONWriter extends TextResponseWriter {
     }
   }
 
-  public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val).iterator());
-  }
-
   public void writeArray(String name, Iterator val) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
     incLevel();
@@ -727,73 +719,6 @@ class JSONWriter extends TextResponseWriter {
 
   public void writeDouble(String name, String val) throws IOException {
     writer.write(val);
-  }
-
-   @Override
-  public void writeShort(String name, String val) throws IOException {
-    writer.write(val);
-  }
-
-  public void writeByte(String name, String val) throws IOException {
-    writer.write(val);
-
-  }
-
-  // TODO: refactor this out to a DateUtils class or something...
-  public void writeDate(String name, Date val) throws IOException {
-    // using a stringBuilder for numbers can be nice since
-    // a temporary string isn't used (it's added directly to the
-    // builder's buffer.
-
-    StringBuilder sb = new StringBuilder();
-    if (cal==null) cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.US);
-    cal.setTime(val);
-
-    int i = cal.get(Calendar.YEAR);
-    sb.append(i);
-    sb.append('-');
-    i = cal.get(Calendar.MONTH) + 1;  // 0 based, so add 1
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append('-');
-    i=cal.get(Calendar.DAY_OF_MONTH);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append('T');
-    i=cal.get(Calendar.HOUR_OF_DAY); // 24 hour time format
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append(':');
-    i=cal.get(Calendar.MINUTE);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append(':');
-    i=cal.get(Calendar.SECOND);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    i=cal.get(Calendar.MILLISECOND);
-    if (i != 0) {
-      sb.append('.');
-      if (i<100) sb.append('0');
-      if (i<10) sb.append('0');
-      sb.append(i);
-
-      // handle canonical format specifying fractional
-      // seconds shall not end in '0'.  Given the slowness of
-      // integer div/mod, simply checking the last character
-      // is probably the fastest way to check.
-      int lastIdx = sb.length()-1;
-      if (sb.charAt(lastIdx)=='0') {
-        lastIdx--;
-        if (sb.charAt(lastIdx)=='0') {
-          lastIdx--;
-        }
-        sb.setLength(lastIdx+1);
-      }
-
-    }
-    sb.append('Z');
-    writeDate(name, sb.toString());
   }
 
   public void writeDate(String name, String val) throws IOException {

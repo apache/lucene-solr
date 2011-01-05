@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.Bits;
 
@@ -105,7 +104,7 @@ public class CachingWrapperFilter extends Filter {
           // deletions
           value = cache.get(coreKey);
           if (value != null) {
-            final Bits delDocs = MultiFields.getDeletedDocs(reader);
+            final Bits delDocs = reader.getDeletedDocs();
             if (delDocs != null) {
               value = mergeDeletes(delDocs, value);
             }
@@ -195,7 +194,7 @@ public class CachingWrapperFilter extends Filter {
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
 
     final Object coreKey = reader.getCoreCacheKey();
-    final Object delCoreKey = reader.hasDeletions() ? MultiFields.getDeletedDocs(reader) : coreKey;
+    final Object delCoreKey = reader.hasDeletions() ? reader.getDeletedDocs() : coreKey;
 
     DocIdSet docIdSet = cache.get(reader, coreKey, delCoreKey);
     if (docIdSet != null) {

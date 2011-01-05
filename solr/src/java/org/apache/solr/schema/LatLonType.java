@@ -26,7 +26,6 @@ import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SpatialOptions;
@@ -268,11 +267,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    xmlWriter.writeStr(name, f.stringValue());
-  }
-
-  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeStr(name, f.stringValue(), false);
   }
@@ -287,7 +281,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public Field createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 
@@ -340,13 +334,13 @@ class SpatialDistanceQuery extends Query {
   public void extractTerms(Set terms) {}
 
   protected class SpatialWeight extends Weight {
-    protected Searcher searcher;
+    protected IndexSearcher searcher;
     protected float queryNorm;
     protected float queryWeight;
     protected Map latContext;
     protected Map lonContext;
 
-    public SpatialWeight(Searcher searcher) throws IOException {
+    public SpatialWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.latContext = latSource.newContext();
       this.lonContext = lonSource.newContext();
@@ -541,7 +535,7 @@ class SpatialDistanceQuery extends Query {
 
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new SpatialWeight(searcher);
   }
 

@@ -475,10 +475,6 @@ class CSVWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
-  }
-
-  @Override
   public void writeArray(String name, Iterator val) throws IOException {
   }
 
@@ -521,16 +517,6 @@ class CSVWriter extends TextResponseWriter {
 
   @Override
   public void writeDate(String name, String val) throws IOException {
-    printer.print(val, false);
-  }
-
-  @Override
-  public void writeShort(String name, String val) throws IOException {
-    printer.print(val, false);
-  }
-
-  @Override
-  public void writeByte(String name, String val) throws IOException {
     printer.print(val, false);
   }
 }

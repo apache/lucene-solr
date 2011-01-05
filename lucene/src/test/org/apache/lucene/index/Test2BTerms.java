@@ -143,6 +143,12 @@ public class Test2BTerms extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(false, 10))
     );
 
+    MergePolicy mp = w.getConfig().getMergePolicy();
+    if (mp instanceof LogByteSizeMergePolicy) {
+      // 1 petabyte:
+      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
+    }
+
     Document doc = new Document();
     Field field = new Field("field", new MyTokenStream(TERMS_PER_DOC));
     field.setOmitTermFreqAndPositions(true);

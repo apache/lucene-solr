@@ -20,7 +20,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevensteinDistance;
@@ -614,7 +614,7 @@ class DateValueSourceParser extends ValueSourceParser {
   public ValueSource getValueSource(FunctionQParser fp, String arg) {
     if (arg == null) return null;
     SchemaField f = fp.req.getSchema().getField(arg);
-    if (f.getType().getClass() == DateField.class || f.getType().getClass() == LegacyDateField.class) {
+    if (f.getType().getClass() == DateField.class) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't use ms() function on non-numeric legacy date field " + arg);
     }
     return f.getType().getValueSource(f, fp);
@@ -889,7 +889,7 @@ abstract class Double2Parser extends NamedParser {
     }
 
     @Override
-    public void createWeight(Map context, Searcher searcher) throws IOException {
+    public void createWeight(Map context, IndexSearcher searcher) throws IOException {
       a.createWeight(context,searcher);
       b.createWeight(context,searcher);
     }

@@ -27,7 +27,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 
@@ -37,34 +36,54 @@ import java.util.*;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Document;
-/**
- * @version $Id$
- */
-final public class XMLWriter {
+
+
+public final class XMLWriter extends TextResponseWriter {
 
   public static float CURRENT_VERSION=2.2f;
 
-  //
-  // static thread safe part
-  //
   private static final char[] XML_START1="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".toCharArray();
 
   private static final char[] XML_STYLESHEET="<?xml-stylesheet type=\"text/xsl\" href=\"/admin/".toCharArray();
   private static final char[] XML_STYLESHEET_END=".xsl\"?>\n".toCharArray();
 
+  /***
   private static final char[] XML_START2_SCHEMA=(
   "<response xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
   +" xsi:noNamespaceSchemaLocation=\"http://pi.cnet.com/cnet-search/response.xsd\">\n"
           ).toCharArray();
-  private static final char[] XML_START2_NOSCHEMA=(
-  "<response>\n"
-          ).toCharArray();
+  ***/
+  
+  private static final char[] XML_START2_NOSCHEMA=("<response>\n").toCharArray();
 
+  private boolean defaultIndent=false;
+  final int version;
+
+  // temporary working objects...
+  // be careful not to use these recursively...
+  private final ArrayList tlst = new ArrayList();
 
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    XMLWriter xmlWriter = null;
+    try {
+      xmlWriter = new XMLWriter(writer, req, rsp);
+      xmlWriter.writeResponse();
+    } finally {
+      xmlWriter.close();
+    }
+  }
 
-    String ver = req.getParams().get(CommonParams.VERSION);
+  public XMLWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    super(writer, req, rsp);
 
+    String version = req.getParams().get("version");
+    float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);
+    this.version = (int)(ver*1000);
+  }
+
+
+
+  public void writeResponse() throws IOException {
     writer.write(XML_START1);
 
     String stylesheet = req.getParams().get("stylesheet");
@@ -74,29 +93,15 @@ final public class XMLWriter {
       writer.write(XML_STYLESHEET_END);
     }
 
+    /***
     String noSchema = req.getParams().get("noSchema");
     // todo - change when schema becomes available?
     if (false && noSchema == null)
       writer.write(XML_START2_SCHEMA);
     else
       writer.write(XML_START2_NOSCHEMA);
-
-    // create an instance for each request to handle
-    // non-thread safe stuff (indentation levels, etc)
-    // and to encapsulate writer, schema, and searcher so
-    // they don't have to be passed around in every function.
-    //
-    XMLWriter xw = new XMLWriter(writer, req.getSchema(), req, ver);
-    xw.defaultFieldList = rsp.getReturnFields();
-
-    String indent = req.getParams().get("indent");
-    if (indent != null) {
-      if ("".equals(indent) || "off".equals(indent)) {
-        xw.setIndent(false);
-      } else {
-        xw.setIndent(true);
-      }
-    }
+     ***/
+    writer.write(XML_START2_NOSCHEMA);
 
     // dump response values
     NamedList lst = rsp.getValues();
@@ -105,90 +110,41 @@ final public class XMLWriter {
     int sz = lst.size();
     int start=0;
 
-    // special case the response header if the version is 2.1 or less    
-    if (xw.version<=2100 && sz>0) {
+    // special case the response header if the version is 2.1 or less
+    if (version<=2100 && sz>0) {
       Object header = lst.getVal(0);
       if (header instanceof NamedList && "responseHeader".equals(lst.getName(0))) {
         writer.write("<responseHeader>");
-        xw.incLevel();
+        incLevel();
         NamedList nl = (NamedList)header;
         for (int i=0; i<nl.size(); i++) {
           String name = nl.getName(i);
           Object val = nl.getVal(i);
           if ("status".equals(name) || "QTime".equals(name)) {
-            xw.writePrim(name,null,val.toString(),false);
+            writePrim(name,null,val.toString(),false);
           } else {
-            xw.writeVal(name,val);
+            writeVal(name,val);
           }
         }
-        xw.decLevel();
+        decLevel();
         writer.write("</responseHeader>");
         start=1;
       }
     }
 
     for (int i=start; i<sz; i++) {
-      xw.writeVal(lst.getName(i),lst.getVal(i));
+      writeVal(lst.getName(i),lst.getVal(i));
     }
 
     writer.write("\n</response>\n");
   }
 
 
-  ////////////////////////////////////////////////////////////
-  // request instance specific (non-static, not shared between threads)
-  ////////////////////////////////////////////////////////////
-
-  private final Writer writer;
-  private final IndexSchema schema; // needed to write fields of docs
-  private final SolrQueryRequest request; // the request
-
-  private int level;
-  private boolean defaultIndent=false;
-  private boolean doIndent=false;
-
-  // fieldList... the set of fields to return for each document
-  private Set<String> defaultFieldList;
 
 
-  // if a list smaller than this threshold is encountered, elements
-  // will be written on the same line.
-  // maybe constructed types should always indent first?
-  private final int indentThreshold=0;
-
-  final int version;
-
-
-  // temporary working objects...
-  // be careful not to use these recursively...
-  private final ArrayList tlst = new ArrayList();
-  private final Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.US);
-  private final StringBuilder sb = new StringBuilder();
-
-  public XMLWriter(Writer writer, IndexSchema schema, SolrQueryRequest req, String version) {
-    this.writer = writer;
-    this.schema = schema;
-    this.request = req;
-    
-    float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);
-    this.version = (int)(ver*1000);
-  }
-
-  //
-  // Functions to manipulate the current logical nesting level.
-  // Any indentation will be partially based on level.
-  //
-  public void setLevel(int level) { this.level = level; }
-  public int level() { return level; }
-  public int incLevel() { return ++level; }
-  public int decLevel() { return --level; }
-  public void setIndent(boolean doIndent) {
-    this.doIndent = doIndent;
-    defaultIndent = doIndent;
-  }
 
   /** Writes the XML attribute name/val. A null val means that the attribute is missing. */
-  public void writeAttr(String name, String val) throws IOException {
+  private void writeAttr(String name, String val) throws IOException {
     writeAttr(name, val, true);
   }
 
@@ -206,63 +162,7 @@ final public class XMLWriter {
     }
   }
 
-  /**Writes a tag with attributes
-   *
-   * @param tag
-   * @param attributes
-   * @param closeTag
-   * @param escape
-   * @throws IOException
-   */
-  public void startTag(String tag, Map<String,String> attributes, boolean closeTag, boolean escape) throws IOException {
-    if (doIndent) indent();
-    writer.write('<');
-    writer.write(tag);
-    if(!attributes.isEmpty()) {
-      for (Map.Entry<String, String> entry : attributes.entrySet()) {
-        writeAttr(entry.getKey(), entry.getValue(), escape);
-      }
-    }
-    if (closeTag) {
-      writer.write("/>");
-    } else {
-      writer.write('>');
-    }
-  }
-
-  /**Write a complete tag w/ attributes and cdata (the cdata is not enclosed in $lt;!CDATA[]!&gt;
-   * @param tag
-   * @param attributes
-   * @param cdata
-   * @param escapeCdata
-   * @param escapeAttr
-   * @throws IOException
-   */
-  public void writeCdataTag(String tag, Map<String,String> attributes, String cdata, boolean escapeCdata, boolean escapeAttr) throws IOException {
-    if (doIndent) indent();
-    writer.write('<');
-    writer.write(tag);
-    if (!attributes.isEmpty()) {
-      for (Map.Entry<String, String> entry : attributes.entrySet()) {
-        writeAttr(entry.getKey(), entry.getValue(), escapeAttr);
-      }
-    }
-    writer.write('>');
-    if (cdata != null && cdata.length() > 0) {
-      if (escapeCdata) {
-        XML.escapeCharData(cdata, writer);
-      } else {
-        writer.write(cdata, 0, cdata.length());
-      }
-    }
-    writer.write("</");
-    writer.write(tag);
-    writer.write('>');
-  }
-
-
-
-  public void startTag(String tag, String name, boolean closeTag) throws IOException {
+  void startTag(String tag, String name, boolean closeTag) throws IOException {
     if (doIndent) indent();
 
     writer.write('<');
@@ -283,22 +183,6 @@ final public class XMLWriter {
     }
   }
 
-
-  // indent up to 40 spaces
-  static final char[] indentChars = new char[81];
-  static {
-    Arrays.fill(indentChars,' ');
-    indentChars[0] = '\n';  // start with a newline
-  }
-
-  public void indent() throws IOException {
-     indent(level);
-  }
-
-  public void indent(int lev) throws IOException {
-    writer.write(indentChars, 0, Math.min((lev<<1)+1, indentChars.length));
-  }
-
   private static final Comparator fieldnameComparator = new Comparator() {
     public int compare(Object o, Object o1) {
       Fieldable f1 = (Fieldable)o; Fieldable f2 = (Fieldable)o1;
@@ -309,6 +193,7 @@ final public class XMLWriter {
     }
   };
 
+  @Override
   public final void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException {
     startTag("doc", name, false);
     incLevel();
@@ -400,16 +285,10 @@ final public class XMLWriter {
     writer.write("</doc>");
   }
 
-  /**
-   * @since solr 1.3
-   */
-  final void writeDoc(String name, SolrDocument doc, Set<String> returnFields, boolean includeScore) throws IOException {
+  @Override
+  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
     startTag("doc", name, false);
     incLevel();
-
-    if (includeScore && returnFields != null ) {
-      returnFields.add( "score" );
-    }
 
     for (String fname : doc.getFieldNames()) {
       if (returnFields!=null && !returnFields.contains(fname)) {
@@ -427,10 +306,16 @@ final public class XMLWriter {
           doIndent=false;
           writeVal(fname, val);
           writer.write("</arr>");
-          doIndent=defaultIndent;          
+          doIndent=defaultIndent;
         } else {
-          writeVal(fname, val);          
+          writeVal(fname, val);
         }
+      }
+    }
+
+    if (pseudoFields != null) {
+      for (Object fname : pseudoFields.keySet()) {
+        writeVal(fname.toString(), pseudoFields.get(fname));
       }
     }
 
@@ -449,9 +334,9 @@ final public class XMLWriter {
   }
 
   private final void writeDocuments(
-      String name, 
-      DocumentListInfo docs, 
-      Set<String> fields) throws IOException 
+      String name,
+      DocumentListInfo docs,
+      Set<String> fields) throws IOException
   {
     boolean includeScore=false;
     if (fields!=null) {
@@ -460,14 +345,14 @@ final public class XMLWriter {
         fields=null;  // null means return all stored fields
       }
     }
-    
+
     int sz=docs.getCount();
     if (doIndent) indent();
-    
+
     writer.write("<result");
     writeAttr("name",name);
-    writeAttr("numFound",Long.toString(docs.getNumFound()));  // TODO: change to long
-    writeAttr("start",Long.toString(docs.getStart()));        // TODO: change to long
+    writeAttr("numFound",Long.toString(docs.getNumFound()));
+    writeAttr("start",Long.toString(docs.getStart()));
     if (includeScore && docs.getMaxScore()!=null) {
       writeAttr("maxScore",Float.toString(docs.getMaxScore()));
     }
@@ -485,15 +370,16 @@ final public class XMLWriter {
     if (doIndent) indent();
     writer.write("</result>");
   }
-  
-  public final void writeSolrDocumentList(String name, final SolrDocumentList docs, Set<String> fields) throws IOException 
+
+  @Override
+  public final void writeSolrDocumentList(String name, final SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException
   {
-    this.writeDocuments( name, new DocumentListInfo() 
-    {  
+    this.writeDocuments( name, new DocumentListInfo()
+    {
       public int getCount() {
         return docs.size();
       }
-      
+
       public Float getMaxScore() {
         return docs.getMaxScore();
       }
@@ -508,20 +394,21 @@ final public class XMLWriter {
 
       public void writeDocs(boolean includeScore, Set<String> fields) throws IOException {
         for( SolrDocument doc : docs ) {
-          writeDoc(null, doc, fields, includeScore);
+          writeSolrDocument(null, doc, fields, null);
         }
       }
     }, fields );
   }
 
-  public final void writeDocList(String name, final DocList ids, Set<String> fields) throws IOException 
+  @Override
+  public void writeDocList(String name, final DocList ids, Set<String> fields, Map otherFields) throws IOException
   {
-    this.writeDocuments( name, new DocumentListInfo() 
-    {  
+    this.writeDocuments( name, new DocumentListInfo()
+    {
       public int getCount() {
         return ids.size();
       }
-      
+
       public Float getMaxScore() {
         return ids.maxScore();
       }
@@ -535,7 +422,7 @@ final public class XMLWriter {
       }
 
       public void writeDocs(boolean includeScore, Set<String> fields) throws IOException {
-        SolrIndexSearcher searcher = request.getSearcher();
+        SolrIndexSearcher searcher = req.getSearcher();
         DocIterator iterator = ids.iterator();
         int sz = ids.size();
         includeScore = includeScore && ids.hasScores();
@@ -558,7 +445,7 @@ final public class XMLWriter {
     if (val==null) {
       writeNull(name);
     } else if (val instanceof String) {
-      writeStr(name, (String)val);
+      writeStr(name, (String)val, true);
     } else if (val instanceof Integer) {
       // it would be slower to pass the int ((Integer)val).intValue()
       writeInt(name, val.toString());
@@ -576,19 +463,19 @@ final public class XMLWriter {
     } else if (val instanceof Double) {
       writeDouble(name, ((Double)val).doubleValue());
     } else if (val instanceof Document) {
-      writeDoc(name, (Document)val, defaultFieldList, 0.0f, false);
+      writeDoc(name, (Document)val, returnFields, 0.0f, false);
     } else if (val instanceof DocList) {
       // requires access to IndexReader
-      writeDocList(name, (DocList)val, defaultFieldList);
+      writeDocList(name, (DocList)val, returnFields, null);
     }else if (val instanceof SolrDocumentList) {
         // requires access to IndexReader
-      writeSolrDocumentList(name, (SolrDocumentList)val, defaultFieldList);  
+      writeSolrDocumentList(name, (SolrDocumentList)val, returnFields, null);
     }else if (val instanceof DocSet) {
       // how do we know what fields to read?
       // todo: have a DocList/DocSet wrapper that
       // restricts the fields to write...?
     } else if (val instanceof Map) {
-      writeMap(name, (Map)val);
+      writeMap(name, (Map)val, false, true);
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
     } else if (val instanceof Iterable) {
@@ -599,7 +486,7 @@ final public class XMLWriter {
       writeArray(name,(Iterator)val);
     } else {
       // default...
-      writeStr(name, val.getClass().getName() + ':' + val.toString());
+      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
     }
   }
 
@@ -610,10 +497,6 @@ final public class XMLWriter {
   public void writeNamedList(String name, NamedList val) throws IOException {
     int sz = val.size();
     startTag("lst", name, sz<=0);
-
-    if (sz<indentThreshold) {
-      doIndent=false;
-    }
 
     incLevel();
     for (int i=0; i<sz; i++) {
@@ -627,37 +510,37 @@ final public class XMLWriter {
     }
   }
 
-  
-  /**
-   * writes a Map in the same format as a NamedList, using the
-   * stringification of the key Object when it's non-null.
-   *
-   * @param name
-   * @param map
-   * @throws IOException
-   * @see SolrQueryResponse Note on Returnable Data
-   */
-  public void writeMap(String name, Map<Object,Object> map) throws IOException {
+  @Override
+  public void writeMap(String name, Map map, boolean excludeOuter, boolean isFirstVal) throws IOException {
     int sz = map.size();
-    startTag("lst", name, sz<=0);
-    incLevel();
-    for (Map.Entry<Object,Object> entry : map.entrySet()) {
+
+    if (!excludeOuter) {
+      startTag("lst", name, sz<=0);
+      incLevel();
+    }
+
+    for (Map.Entry entry : (Set<Map.Entry>)map.entrySet()) {
       Object k = entry.getKey();
       Object v = entry.getValue();
       // if (sz<indentThreshold) indent();
       writeVal( null == k ? null : k.toString(), v);
     }
-    decLevel();
-    if (sz > 0) {
-      if (doIndent) indent();
-      writer.write("</lst>");
+
+    if (!excludeOuter) {
+      decLevel();
+      if (sz > 0) {
+        if (doIndent) indent();
+        writer.write("</lst>");
+      }
     }
   }
 
+  @Override
   public void writeArray(String name, Object[] val) throws IOException {
     writeArray(name, Arrays.asList(val).iterator());
   }
 
+  @Override
   public void writeArray(String name, Iterator iter) throws IOException {
     if( iter.hasNext() ) {
       startTag("arr", name, false );
@@ -678,127 +561,53 @@ final public class XMLWriter {
   // Primitive types
   //
 
+  @Override
   public void writeNull(String name) throws IOException {
     writePrim("null",name,"",false);
   }
 
-  public void writeStr(String name, String val) throws IOException {
-    writePrim("str",name,val,true);
+  @Override
+  public void writeStr(String name, String val, boolean escape) throws IOException {
+    writePrim("str",name,val,escape);
   }
 
+  @Override
   public void writeInt(String name, String val) throws IOException {
     writePrim("int",name,val,false);
   }
 
-  public void writeInt(String name, int val) throws IOException {
-    writeInt(name,Integer.toString(val));
-  }
-
+  @Override
   public void writeLong(String name, String val) throws IOException {
     writePrim("long",name,val,false);
   }
 
-  public void writeLong(String name, long val) throws IOException {
-    writeLong(name,Long.toString(val));
-  }
-
+  @Override
   public void writeBool(String name, String val) throws IOException {
     writePrim("bool",name,val,false);
   }
 
-  public void writeBool(String name, boolean val) throws IOException {
-    writeBool(name,Boolean.toString(val));
-  }
-
-  public void writeShort(String name, String val) throws IOException {
-    writePrim("short",name,val,false);
-  }
-
-  public void writeShort(String name, short val) throws IOException {
-    writeInt(name,Short.toString(val));
-  }
-
-
-  public void writeByte(String name, String val) throws IOException {
-    writePrim("byte",name,val,false);
-  }
-
-  public void writeByte(String name, byte val) throws IOException {
-    writeInt(name,Byte.toString(val));
-  }
-
-
+  @Override
   public void writeFloat(String name, String val) throws IOException {
     writePrim("float",name,val,false);
   }
 
+  @Override
   public void writeFloat(String name, float val) throws IOException {
     writeFloat(name,Float.toString(val));
   }
 
+  @Override
   public void writeDouble(String name, String val) throws IOException {
     writePrim("double",name,val,false);
   }
 
+  @Override
   public void writeDouble(String name, double val) throws IOException {
     writeDouble(name,Double.toString(val));
   }
 
-  public void writeDate(String name, Date val) throws IOException {
-    // using a stringBuilder for numbers can be nice since
-    // a temporary string isn't used (it's added directly to the
-    // builder's buffer.
 
-    cal.setTime(val);
-
-    sb.setLength(0);
-    int i = cal.get(Calendar.YEAR);
-    sb.append(i);
-    sb.append('-');
-    i = cal.get(Calendar.MONTH) + 1;  // 0 based, so add 1
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append('-');
-    i=cal.get(Calendar.DAY_OF_MONTH);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append('T');
-    i=cal.get(Calendar.HOUR_OF_DAY); // 24 hour time format
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append(':');
-    i=cal.get(Calendar.MINUTE);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    sb.append(':');
-    i=cal.get(Calendar.SECOND);
-    if (i<10) sb.append('0');
-    sb.append(i);
-    i=cal.get(Calendar.MILLISECOND);
-    if (i != 0) {
-      sb.append('.');
-      if (i<100) sb.append('0');
-      if (i<10) sb.append('0');
-      sb.append(i);
-
-      // handle canonical format specifying fractional
-      // seconds shall not end in '0'.  Given the slowness of
-      // integer div/mod, simply checking the last character
-      // is probably the fastest way to check.
-      int lastIdx = sb.length()-1;
-      if (sb.charAt(lastIdx)=='0') {
-        lastIdx--;
-        if (sb.charAt(lastIdx)=='0') {
-          lastIdx--;
-        }
-        sb.setLength(lastIdx+1);
-      }
-
-    }
-    sb.append('Z');
-    writeDate(name, sb.toString());
-  }
-
+  @Override
   public void writeDate(String name, String val) throws IOException {
     writePrim("date",name,val,false);
   }
@@ -808,24 +617,8 @@ final public class XMLWriter {
   // OPT - specific writeInt, writeFloat, methods might be faster since
   // there would be less write calls (write("<int name=\"" + name + ... + </int>)
   //
-  public void writePrim(String tag, String name, String val, boolean escape) throws IOException {
-    // OPT - we could use a temp char[] (or a StringBuilder) and if the
-    // size was small enough to fit (if escape==false we can calc exact size)
-    // then we could put things directly in the temp buf.
-    // need to see what percent of CPU this takes up first though...
-    // Could test a reusable StringBuilder...
-
-    // is this needed here???
-    // Only if a fieldtype calls writeStr or something
-    // with a null val instead of calling writeNull
-    /***
-    if (val==null) {
-      if (name==null) writer.write("<null/>");
-      else writer.write("<null name=\"" + name + "/>");
-    }
-    ***/
-
-    int contentLen=val.length();
+  private void writePrim(String tag, String name, String val, boolean escape) throws IOException {
+    int contentLen = val==null ? 0 : val.length();
 
     startTag(tag, name, contentLen==0);
     if (contentLen==0) return;
@@ -836,10 +629,10 @@ final public class XMLWriter {
       writer.write(val,0,contentLen);
     }
 
-    writer.write("</");
+    writer.write('<');
+    writer.write('/');
     writer.write(tag);
     writer.write('>');
   }
-
 
 }

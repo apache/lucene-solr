@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.File;
@@ -36,7 +37,8 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
   }
 
   public String getSolrConfigFile() {
-    return "solrconfig-duh-optimize.xml";
+    // return "solrconfig-duh-optimize.xml";
+    return "solrconfig.xml";
   }
 
 
@@ -44,10 +46,9 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
 
     UpdateHandler updater = core.getUpdateHandler();
-    AddUpdateCommand cmd = new AddUpdateCommand();
-    cmd.overwriteCommitted = true;
-    cmd.overwritePending = true;
-    cmd.allowDups = false;
+    SolrQueryRequest req = req();
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
+
     //add just under the merge factor, so no segments are merged
     //the merge factor is 100 and the maxBufferedDocs is 2, so there should be 50 segments
     for (int i = 0; i < 99; i++) {
@@ -58,7 +59,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
       updater.addDoc(cmd);
     }
 
-    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, false);
     updater.commit(cmtCmd);
     updater.commit(cmtCmd);  // commit twice to give systems such as windows a chance to delete the old files
 
@@ -66,7 +67,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     assertNumSegments(indexDir, 50);
 
     //now do an optimize
-    cmtCmd = new CommitUpdateCommand(true);
+    cmtCmd = new CommitUpdateCommand(req, true);
     cmtCmd.maxOptimizeSegments = 25;
     updater.commit(cmtCmd);
     updater.commit(cmtCmd);
@@ -82,6 +83,8 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     updater.commit(cmtCmd);
     updater.commit(cmtCmd);
     assertNumSegments(indexDir, 1);
+
+    req.close();
   }
 
   private void assertNumSegments(String indexDir, int numSegs) {

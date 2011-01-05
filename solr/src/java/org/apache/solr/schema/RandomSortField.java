@@ -24,7 +24,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.SolrIndexReader;
@@ -96,12 +96,9 @@ public class RandomSortField extends FieldType {
   }
 
   @Override
-  public ValueSource getValueSource(SchemaField field) {
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     return new RandomValueSource(field.getName());
   }
-
-  @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException { }
 
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException { }

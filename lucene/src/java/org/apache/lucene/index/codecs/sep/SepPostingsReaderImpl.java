@@ -594,6 +594,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
 
       final int code = posReader.next();
+      assert code >= 0;
       if (storePayloads) {
         if ((code & 1) != 0) {
           // Payload length has changed

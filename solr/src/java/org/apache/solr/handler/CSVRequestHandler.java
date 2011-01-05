@@ -185,20 +185,8 @@ abstract class CSVLoader extends ContentStreamLoader {
     this.params = req.getParams();
     schema = req.getSchema();
 
-    templateAdd = new AddUpdateCommand();
-    templateAdd.allowDups=false;
-    templateAdd.overwriteCommitted=true;
-    templateAdd.overwritePending=true;
-
-    if (params.getBool(OVERWRITE,true)) {
-      templateAdd.allowDups=false;
-      templateAdd.overwriteCommitted=true;
-      templateAdd.overwritePending=true;
-    } else {
-      templateAdd.allowDups=true;
-      templateAdd.overwriteCommitted=false;
-      templateAdd.overwritePending=false;
-    }
+    templateAdd = new AddUpdateCommand(req);
+    templateAdd.overwrite=params.getBool(OVERWRITE,true);
 
     strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true);
     String sep = params.get(SEPARATOR);

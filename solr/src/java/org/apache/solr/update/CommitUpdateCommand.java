@@ -16,6 +16,9 @@
  */
 
 package org.apache.solr.update;
+
+import org.apache.solr.request.SolrQueryRequest;
+
 /**
  * @version $Id$
  */
@@ -32,8 +35,8 @@ public class CommitUpdateCommand extends UpdateCommand {
    */
   public int maxOptimizeSegments = 1;
 
-  public CommitUpdateCommand(boolean optimize) {
-    super("commit");
+  public CommitUpdateCommand(SolrQueryRequest req, boolean optimize) {
+    super("commit", req);
     this.optimize=optimize;
   }
   public String toString() {

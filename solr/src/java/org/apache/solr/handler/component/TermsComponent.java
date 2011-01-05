@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;

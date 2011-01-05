@@ -16,17 +16,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Statistics Component Test

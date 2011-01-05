@@ -32,7 +32,7 @@ public abstract class TermsIndexWriterBase {
     public abstract void finish() throws IOException;
   }
 
-  public abstract FieldWriter addField(FieldInfo fieldInfo);
+  public abstract FieldWriter addField(FieldInfo fieldInfo) throws IOException;
 
   public abstract void close() throws IOException;
 }

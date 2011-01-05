@@ -44,7 +44,7 @@ public class TestSimilarity extends LuceneTestCase {
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
     @Override public float coord(int overlap, int maxOverlap) { return 1.0f; }
-    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
       return new IDFExplanation() {
         @Override
         public float getIdf() {
@@ -75,7 +75,7 @@ public class TestSimilarity extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setSimilarity(new SimpleSimilarity());
 
     Term a = new Term("field", "a");

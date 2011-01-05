@@ -29,8 +29,6 @@ import org.apache.commons.httpclient.util.DateUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static junit.framework.Assert.*;
-
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */

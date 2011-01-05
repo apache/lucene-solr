@@ -24,7 +24,6 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Bits;
 
@@ -106,7 +105,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    */
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    final Fields fields = MultiFields.getFields(reader);
+    final Fields fields = reader.fields();
     if (fields == null) {
       // reader has no fields
       return DocIdSet.EMPTY_DOCIDSET;
@@ -124,7 +123,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       // fill into a OpenBitSet
       final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
       int termCount = 0;
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      final Bits delDocs = reader.getDeletedDocs();
       DocsEnum docsEnum = null;
       do {
         termCount++;

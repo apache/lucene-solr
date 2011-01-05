@@ -201,7 +201,7 @@ public abstract class MultiTermQuery extends Query {
     
     @Override
     protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost) {
-      final Query q = new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(term, docFreq)));
+      final Query q = new ConstantScoreQuery(new TermQuery(term, docFreq));
       q.setBoost(boost);
       topLevel.add(q, BooleanClause.Occur.SHOULD);
     }

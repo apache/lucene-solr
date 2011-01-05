@@ -81,6 +81,10 @@
   <!-- Java Version we are compatible with -->
   <property name="java.compat.version" value="1.6" />
 
+  <!-- clover wants to run with -lib, otherwise we prefer a repeatable
+       classpath -->
+  <property name="javac.includeAntRuntime" value="${run.clover}"/>
+
   <!-- Solr Implementation Version -->
   <!--
        This can be any string value that does not include spaces
@@ -263,10 +267,10 @@
              source="${java.compat.version}"
              debug="on"
              encoding="utf8"
+             includeAntRuntime="${javac.includeAntRuntime}"
              sourcepath=""
              classpathref="@{classpathref}">
          <nested />
-      	<compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
       </javac>
     </sequential>
   </macrodef>

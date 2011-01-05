@@ -228,8 +228,11 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   }
 
   @Override
-  public void finishDoc() {
+  public void finishDoc() throws IOException {
     assert omitTF || currentDoc.numPositions == currentDoc.termDocFreq;
+    if (pulsed) {
+      wrappedPostingsWriter.finishDoc();
+    }
   }
 
   boolean pendingIsIndexTerm;

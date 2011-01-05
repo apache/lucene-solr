@@ -21,6 +21,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.io.Closeable;
 import java.util.Collection;
 
 
@@ -38,39 +39,37 @@ import java.util.Collection;
  * text. 
  * @lucene.experimental */
 
-public abstract class TermsIndexReaderBase {
+public abstract class TermsIndexReaderBase implements Closeable {
 
-  static class TermsIndexResult {
-    long position;
-    final BytesRef term = new BytesRef();
-    long offset;
-  };
-
-  public abstract class FieldReader {
-    /** Returns position of "largest" index term that's <=
-     *  text.  Returned TermsIndexResult may be reused
-     *  across calls.  This resets internal state, and
-     *  expects that you'll then scan the file and
-     *  sequentially call isIndexTerm for each term
-     *  encountered. */
-    public abstract void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException;
-
-    public abstract void getIndexOffset(long ord, TermsIndexResult result) throws IOException;
-
-    /** Call this sequentially for each term encoutered,
-     *  after calling {@link #getIndexOffset}. */
-    public abstract boolean isIndexTerm(long ord, int docFreq, boolean onlyLoaded) throws IOException;
-
-    /** Finds the next index term, after the specified
-     *  ord.  Returns true if one exists.  */
-    public abstract boolean nextIndexTerm(long ord, TermsIndexResult result) throws IOException;
-  }
-
-  public abstract FieldReader getField(FieldInfo fieldInfo);
+  public abstract FieldIndexEnum getFieldEnum(FieldInfo fieldInfo);
 
   public abstract void loadTermsIndex(int indexDivisor) throws IOException;
 
   public abstract void close() throws IOException;
 
   public abstract void getExtensions(Collection<String> extensions);
+
+  public abstract boolean supportsOrd();
+
+  public abstract int getDivisor();
+
+  // Similar to TermsEnum, except, the only "metadata" it
+  // reports for a given indexed term is the long fileOffset
+  // into the main terms dict (_X.tis) file:
+  public static abstract class FieldIndexEnum {
+
+    /** Seeks to "largest" indexed term that's <=
+     *  term; retruns file pointer index (into the main
+     *  terms index file) for that term */
+    public abstract long seek(BytesRef term) throws IOException;
+
+    /** Returns -1 at end */
+    public abstract long next() throws IOException;
+
+    public abstract BytesRef term();
+
+    // Only impl'd if supportsOrd() returns true!
+    public abstract long seek(long ord) throws IOException;
+    public abstract long ord();
+  }
 }

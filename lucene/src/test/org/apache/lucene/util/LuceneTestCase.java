@@ -42,6 +42,7 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.mockrandom.MockRandomCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
@@ -199,7 +200,7 @@ public abstract class LuceneTestCase extends Assert {
   
   private static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
   
-  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock"};
+  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "MockRandom"};
 
   private static void swapCodec(Codec c, CodecProvider cp) {
     Codec prior = null;
@@ -252,6 +253,7 @@ public abstract class LuceneTestCase extends Assert {
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
+    swapCodec(new MockRandomCodec(random), cp);
 
     return cp.lookup(codec);
   }
@@ -268,9 +270,9 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockSep"));
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
+    cp.unregister(cp.lookup("MockRandom"));
     swapCodec(new PulsingCodec(1), cp);
     cp.setDefaultFieldCodec(savedDefaultCodec);
-
   }
 
   // randomly picks from core and test codecs
@@ -522,6 +524,13 @@ public abstract class LuceneTestCase extends Assert {
   // jvm-wide list of 'rogue threads' we found, so they only get reported once.
   private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
   
+  static {
+    // just a hack for things like eclipse test-runner threads
+    for (Thread t : Thread.getAllStackTraces().keySet()) {
+      rogueThreads.put(t, true);
+    }
+  }
+  
   /**
    * Looks for leftover running threads, trying to kill them off,
    * so they don't fail future tests.
@@ -545,9 +554,7 @@ public abstract class LuceneTestCase extends Assert {
           
         if (t.isAlive() && 
             !rogueThreads.containsKey(t) && 
-            t != Thread.currentThread() &&
-            // TODO: TimeLimitingCollector starts a thread statically.... WTF?!
-            !t.getName().equals("TimeLimitedCollector timer thread")) {
+            t != Thread.currentThread()) {
           System.err.println("WARNING: " + context  + " left thread running: " + t);
           rogueThreads.put(t, true);
           rogueCount++;

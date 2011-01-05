@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -127,40 +125,11 @@ final class SegmentMerger {
     return mergedDocs;
   }
 
-  final Collection<String> getMergedFiles(final SegmentInfo info) throws IOException {
-    Set<String> fileSet = new HashSet<String>();
-
-    // Basic files
-    for (String ext : IndexFileNames.COMPOUND_EXTENSIONS_NOT_CODEC) {
-      fileSet.add(IndexFileNames.segmentFileName(segment, "", ext));
-    }
-    segmentWriteState.segmentCodecs.files(directory, info, fileSet);
-    
-    // Fieldable norm files
-    final int numFIs = fieldInfos.size();
-    for (int i = 0; i < numFIs; i++) {
-      final FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed && !fi.omitNorms) {
-        fileSet.add(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
-        break;
-      }
-    }
-
-    // Vector files
-    if (fieldInfos.hasVectors()) {
-      for (String ext : IndexFileNames.VECTOR_EXTENSIONS) {
-        fileSet.add(IndexFileNames.segmentFileName(segment, "", ext));
-      }
-    }
-
-    return fileSet;
-  }
-
   final Collection<String> createCompoundFile(String fileName, final SegmentInfo info)
           throws IOException {
 
     // Now merge all added files
-    Collection<String> files = getMergedFiles(info);
+    Collection<String> files = info.files();
     CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
     for (String file : files) {
       cfsWriter.addFile(file);

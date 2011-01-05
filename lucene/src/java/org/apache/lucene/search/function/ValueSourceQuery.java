@@ -20,7 +20,6 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
 
@@ -68,7 +67,7 @@ public class ValueSourceQuery extends Query {
     float queryNorm;
     float queryWeight;
 
-    public ValueSourceWeight(Searcher searcher) {
+    public ValueSourceWeight(IndexSearcher searcher) {
       this.similarity = getSimilarity(searcher);
     }
 
@@ -138,7 +137,7 @@ public class ValueSourceQuery extends Query {
       qWeight = w.getValue();
       // this is when/where the values are first created.
       vals = valSrc.getValues(reader);
-      delDocs = MultiFields.getDeletedDocs(reader);
+      delDocs = reader.getDeletedDocs();
       maxDoc = reader.maxDoc();
     }
 
@@ -173,7 +172,7 @@ public class ValueSourceQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) {
+  public Weight createWeight(IndexSearcher searcher) {
     return new ValueSourceQuery.ValueSourceWeight(searcher);
   }
 

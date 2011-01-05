@@ -17,15 +17,11 @@
 
 package org.apache.solr.client.solrj;
 
-import java.net.UnknownHostException;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrException;
 
 /**
  * 

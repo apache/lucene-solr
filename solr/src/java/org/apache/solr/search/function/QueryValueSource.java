@@ -59,7 +59,7 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     Weight w = q.weight(searcher);
     context.put(this, w);
   }

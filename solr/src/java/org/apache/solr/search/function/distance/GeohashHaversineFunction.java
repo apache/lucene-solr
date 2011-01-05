@@ -21,7 +21,7 @@ import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
 
 import java.util.Map;
@@ -108,7 +108,7 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     geoHash1.createWeight(context, searcher);
     geoHash2.createWeight(context, searcher);
   }

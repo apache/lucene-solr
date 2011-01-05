@@ -256,7 +256,7 @@ public class Builder<T> {
   }
 
   public void add(IntsRef input, T output) throws IOException {
-    //System.out.println("\nADD: " + input.utf8ToString());
+    //System.out.println("\nFST ADD: input=" + input + " output=" + fst.outputs.outputToString(output));
     assert lastInput.length == 0 || input.compareTo(lastInput) > 0: "inputs are added out of order lastInput=" + lastInput + " vs input=" + input;
     assert validOutput(output);
 
@@ -361,7 +361,7 @@ public class Builder<T> {
     compilePrevTail(1);
     //System.out.println("finish: inputCount=" + frontier[0].inputCount);
     if (frontier[0].inputCount < minSuffixCount1 || frontier[0].inputCount < minSuffixCount2 || frontier[0].numArcs == 0) {
-      if (fst.getEmptyOutput() == null) {
+      if (fst.emptyOutput == null) {
         return null;
       } else if (minSuffixCount1 > 0 || minSuffixCount2 > 0) {
         // empty string got pruned

@@ -722,7 +722,7 @@ public abstract class Similarity implements Serializable {
              and an explanation for the term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(final Term term, final Searcher searcher, int docFreq) throws IOException {
+  public IDFExplanation idfExplain(final Term term, final IndexSearcher searcher, int docFreq) throws IOException {
     final int df = docFreq;
     final int max = searcher.maxDoc();
     final float idf = idf(df, max);
@@ -743,7 +743,7 @@ public abstract class Similarity implements Serializable {
    * #idfExplain(Term,Searcher,int)} by passing
    * <code>searcher.docFreq(term)</code> as the docFreq.
    */
-  public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {
+  public IDFExplanation idfExplain(final Term term, final IndexSearcher searcher) throws IOException {
     return idfExplain(term, searcher, searcher.docFreq(term));
    }
 
@@ -761,7 +761,7 @@ public abstract class Similarity implements Serializable {
    *         for each term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+  public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
     final int max = searcher.maxDoc();
     float idf = 0.0f;
     final StringBuilder exp = new StringBuilder();

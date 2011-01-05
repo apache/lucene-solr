@@ -50,6 +50,10 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   private PluginInfo info = PluginInfo.EMPTY_INFO;
   private SolrHighlighter highlighter;
 
+  public static SolrHighlighter getHighlighter(SolrCore core) {
+    HighlightComponent hl = (HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+    return hl==null ? null: hl.getHighlighter();    
+  }
 
   public void init(PluginInfo info) {
     this.info = info;

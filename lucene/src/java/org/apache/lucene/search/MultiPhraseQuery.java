@@ -134,7 +134,7 @@ public class MultiPhraseQuery extends Query {
     private float queryNorm;
     private float queryWeight;
 
-    public MultiPhraseWeight(Searcher searcher)
+    public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
 
@@ -324,7 +324,7 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new MultiPhraseWeight(searcher);
   }
 

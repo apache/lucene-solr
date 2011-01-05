@@ -101,7 +101,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     protected ArrayList<Weight> weights = new ArrayList<Weight>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
 
     /* Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
-    public DisjunctionMaxWeight(Searcher searcher) throws IOException {
+    public DisjunctionMaxWeight(IndexSearcher searcher) throws IOException {
       this.similarity = searcher.getSimilarity();
       for (Query disjunctQuery : disjuncts) {
         weights.add(disjunctQuery.createWeight(searcher));
@@ -180,7 +180,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /* Create the Weight used to score us */
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new DisjunctionMaxWeight(searcher);
   }
 

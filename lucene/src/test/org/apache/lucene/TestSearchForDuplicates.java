@@ -102,7 +102,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       writer.close();
 
       // try a search without OR
-      Searcher searcher = new IndexSearcher(directory, true);
+      IndexSearcher searcher = new IndexSearcher(directory, true);
 
       QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, PRIORITY_FIELD, analyzer);
 
@@ -133,7 +133,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   }
 
 
-  private void printHits(PrintWriter out, ScoreDoc[] hits, Searcher searcher ) throws IOException {
+  private void printHits(PrintWriter out, ScoreDoc[] hits, IndexSearcher searcher) throws IOException {
     out.println(hits.length + " total results\n");
     for (int i = 0 ; i < hits.length; i++) {
       if ( i < 10 || (i > 94 && i < 105) ) {
@@ -143,11 +143,11 @@ public class TestSearchForDuplicates extends LuceneTestCase {
     }
   }
 
-  private void checkHits(ScoreDoc[] hits, int expectedCount, Searcher searcher) throws IOException {
+  private void checkHits(ScoreDoc[] hits, int expectedCount, IndexSearcher searcher) throws IOException {
     assertEquals("total results", expectedCount, hits.length);
     for (int i = 0 ; i < hits.length; i++) {
       if ( i < 10 || (i > 94 && i < 105) ) {
-      Document d = searcher.doc(hits[i].doc);
+        Document d = searcher.doc(hits[i].doc);
         assertEquals("check " + i, String.valueOf(i), d.get(ID_FIELD));
       }
     }

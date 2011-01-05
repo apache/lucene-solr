@@ -17,10 +17,6 @@
 
 package org.apache.solr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -31,9 +27,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -51,7 +46,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.QueryParsing;
 import org.apache.solr.update.SolrIndexWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -162,7 +156,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             ,"//*[@numFound='0']"
             );
 
-    // test allowDups default of false
+    // test overwrite default of true
 
     assertU(adoc("id", "42", "val_s", "AAA"));
     assertU(adoc("id", "42", "val_s", "BBB"));
@@ -181,12 +175,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     // test deletes
     String [] adds = new String[] {
-      add( doc("id","101"), "allowDups", "false" ),
-      add( doc("id","101"), "allowDups", "false" ),
-      add( doc("id","105"), "allowDups", "true"  ),
-      add( doc("id","102"), "allowDups", "false" ),
-      add( doc("id","103"), "allowDups", "true"  ),
-      add( doc("id","101"), "allowDups", "false" ),
+      add( doc("id","101"), "overwrite", "true" ),
+      add( doc("id","101"), "overwrite", "true" ),
+      add( doc("id","105"), "overwrite", "false"  ),
+      add( doc("id","102"), "overwrite", "true" ),
+      add( doc("id","103"), "overwrite", "false"  ),
+      add( doc("id","101"), "overwrite", "true" ),
     };
     for (String a : adds) {
       assertU(a, a);
@@ -251,7 +245,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     clearIndex();
     // big freaking kludge since the response is currently not well formed.
     String res = h.update("<add><doc><field name=\"id\">1</field></doc><doc><field name=\"id\">2</field></doc></add>");
-    assertEquals("<result status=\"0\"></result>", res);
+    // assertEquals("<result status=\"0\"></result>", res);
     assertU("<commit/>");
     assertQ(req("id:[0 TO 99]")
             ,"//*[@numFound='2']"
@@ -267,7 +261,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                                           "<field name=\"text\">hello</field></doc>" + 
                           "</add>");
 
-    assertEquals("<result status=\"0\"></result>", res);
+    // assertEquals("<result status=\"0\"></result>", res);
     assertU("<commit/>");
     assertQ(req("text:hello")
             ,"//*[@numFound='2']"
@@ -286,7 +280,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                                       "<field boost=\"2.0\" name=\"text\">hello</field></doc>" + 
                           "</add>");
 
-    assertEquals("<result status=\"0\"></result>", res);
+    // assertEquals("<result status=\"0\"></result>", res);
     assertU("<commit/>");
     assertQ(req("text:hello"),
             "//*[@numFound='2']"
@@ -349,22 +343,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
   }
 
-  /** @see org.apache.solr.analysis.TestRemoveDuplicatesTokenFilter */
-  @Test
-  public void testRemoveDuplicatesTokenFilter() {
-    Query q = QueryParsing.parseQuery("TV", "dedup",
-                                      h.getCore().getSchema());
-    assertTrue("not boolean?", q instanceof BooleanQuery);
-    assertEquals("unexpected number of stemmed synonym tokens",
-                 2, ((BooleanQuery) q).clauses().size());
-  }
-
   @Test
   public void testTermVectorFields() {
     
     IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
     SchemaField f; // Solr field type
-    Field luf; // Lucene field
+    Fieldable luf; // Lucene field
 
     f = ischema.getField("test_basictv");
     luf = f.createField("test", 0f);

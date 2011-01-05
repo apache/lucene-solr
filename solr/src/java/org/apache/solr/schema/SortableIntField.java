@@ -22,6 +22,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
 import org.apache.solr.search.MutableValueInt;
 import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -31,7 +32,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -46,7 +46,8 @@ public class SortableIntField extends FieldType {
     return getStringSort(field,reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     return new SortableIntFieldSource(field.name);
   }
 
@@ -74,13 +75,6 @@ public class SortableIntField extends FieldType {
   @Override
   public Integer toObject(Fieldable f) {
     return NumberUtils.SortableStr2int(f.stringValue(), 0, 3);    
-  }
-  
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    String sval = f.stringValue();
-    // since writeInt an int instead of a String since that may be more efficient
-    // in the future (saves the construction of one String)
-    xmlWriter.writeInt(name, NumberUtils.SortableStr2int(sval,0,sval.length()));
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {

@@ -20,8 +20,6 @@ package org.apache.solr.handler;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 
-import static org.junit.Assert.*;
-
 /**
  * A base class for all analysis request handler tests.
  *

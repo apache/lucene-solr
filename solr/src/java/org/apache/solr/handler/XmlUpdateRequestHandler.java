@@ -18,14 +18,11 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -57,24 +54,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
 
   public static final String OVERWRITE = "overwrite";
   public static final String COMMIT_WITHIN = "commitWithin";
-  
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String OVERWRITE_COMMITTED = "overwriteCommitted";
-  
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String OVERWRITE_PENDING = "overwritePending";
 
-  /**
-   * @deprecated use {@link #OVERWRITE}
-   */
-  @Deprecated
-  public static final String ALLOW_DUPS = "allowDups";
 
   XMLInputFactory inputFactory;
 
@@ -104,47 +84,6 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
     return new XMLLoader(processor, inputFactory);
   }
 
-
-  /**
-   * A Convenience method for getting back a simple XML string indicating
-   * success or failure from an XML formated Update (from the Reader)
-   *
-   * @since solr 1.2
-   * @deprecated Direct updates fro ma Reader, as well as the response 
-   *             format produced by this method, have been deprecated 
-   *             and will be removed in future versions.  Any code using
-   *             this method should be changed to use {@link #handleRequest} 
-   *             method with a ContentStream. 
-   */
-  @Deprecated
-  public void doLegacyUpdate(Reader input, Writer output) {
-    SolrCore core = SolrCore.getSolrCore();
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new HashMap<String,String[]>());
-
-    try {
-      // Old style requests do not choose a custom handler
-      UpdateRequestProcessorChain processorFactory = core.getUpdateProcessingChain(null);
-
-      SolrQueryResponse rsp = new SolrQueryResponse(); // ignored
-      XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
-      UpdateRequestProcessor processor = processorFactory.createProcessor(req, rsp);
-      XMLLoader loader = (XMLLoader) newLoader(req, processor);
-      loader.processUpdate(processor, parser);
-      processor.finish();
-      output.write("<result status=\"0\"></result>");
-    }
-    catch (Exception ex) {
-      try {
-        SolrException.logOnce(log, "Error processing \"legacy\" update command", ex);
-        XML.writeXML(output, "result", SolrException.toStr(ex), "status", "1");
-      } catch (Exception ee) {
-        log.error("Error writing to output stream: " + ee);
-      }
-    }
-    finally {
-      req.close();
-    }
-  }
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override

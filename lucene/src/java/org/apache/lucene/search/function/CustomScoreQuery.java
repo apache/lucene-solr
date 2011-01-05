@@ -28,7 +28,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -187,7 +187,7 @@ public class CustomScoreQuery extends Query {
     Weight[] valSrcWeights;
     boolean qStrict;
 
-    public CustomWeight(Searcher searcher) throws IOException {
+    public CustomWeight(IndexSearcher searcher) throws IOException {
       this.similarity = getSimilarity(searcher);
       this.subQueryWeight = subQuery.weight(searcher);
       this.valSrcWeights = new Weight[valSrcQueries.length];
@@ -350,7 +350,7 @@ public class CustomScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new CustomWeight(searcher);
   }
 

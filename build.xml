@@ -52,6 +52,101 @@
     </sequential>
   </target>
 
+  <target name="eclipse" description="Setup Eclipse configuration">
+    <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
+    <mkdir dir=".settings"/>
+    <copy file="dev-tools/eclipse/resources.prefs" 
+          tofile=".settings/org.eclipse.core.resources.prefs" overwrite="true"/>
+    <echo>Running Lucene contrib db/bdb-je task 'get-je-jar' ...</echo>
+    <subant target="get-je-jar">
+      <fileset dir="lucene/contrib/db/bdb-je" includes="build.xml" />
+    </subant>
+    <echo>Running Lucene contrib db/bdb task 'get-db-jar' ...</echo>
+    <subant target="get-db-jar">
+      <fileset dir="lucene/contrib/db/bdb" includes="build.xml" />
+    </subant>
+    <echo>
+      SUCCESS: You must right-click your project and choose Refresh
+      Please note, your project must use a Java 6 JRE
+    </echo>
+  </target>
+
+  <condition property="isMac"><os family="mac"/></condition>
+  <condition property="isUnix"><os family="unix"/></condition>
+  <condition property="isWindows"><os family="windows"/></condition>
+  <property environment="env"/>
+  <target name="idea" depends="copy-idea-files,finish-idea-setup-windows,
+                               finish-idea-setup-mac,
+                               finish-idea-setup-unix"
+          description="Setup IntelliJ IDEA configuration files"/>
+  <target name="copy-idea-files"> 
+    <copy todir=".">
+      <fileset dir="dev-tools/idea">
+        <exclude name="Intellij-Lucene-Codestyle.xml"/>
+      </fileset>
+    </copy>
+    <echo>Running Lucene contrib db/bdb-je task 'get-je-jar' ...</echo>
+    <subant target="get-je-jar">
+      <fileset dir="lucene/contrib/db/bdb-je" includes="build.xml" />
+    </subant>
+    <echo>Running Lucene contrib db/bdb task 'get-db-jar' ...</echo>
+    <subant target="get-db-jar">
+      <fileset dir="lucene/contrib/db/bdb" includes="build.xml" />
+    </subant>
+  </target>
+  <target name="finish-idea-setup-windows" if="isWindows">
+    <echo>
+      To install the Lucene/Solr codestyle file, copy
+      dev-tools\idea\Intellij-Lucene-Codestyle.xml to
+      ${env.HOMEDRIVE}${env.HOMEPATH}\.IntelliJIdeaXX\config\codestyles\
+      where "XX" is "90" for IntelliJ 9.0.X, "10" for 10.0.X, etc.
+      After restarting IntelliJ, select "Lucene"
+      from the dropdown list at:
+      Settings | Code Style | Use global settings | Scheme name
+
+      To complete IntelliJ IDEA setup, you must manually configure
+      Project Structure | Project | Project SDK.
+    </echo>
+  </target>
+  <target name="finish-idea-setup-mac" if="isMac">
+    <echo>
+      To install the Lucene/Solr codestyle file, copy
+      dev-tools/idea/Intellij-Lucene-Codestyle.xml to
+      ~/Library/Preferences/IntelliJXX/codestyles/
+      where "XX" is "90" for IntelliJ 9.0.X, "10" for 10.0.X, etc.
+      After restarting IntelliJ, select "Lucene"
+      from the dropdown list at:
+      Settings | Code Style | Use global settings | Scheme name
+
+      To complete IntelliJ IDEA setup, you must manually configure
+      Project Structure | Project | Project SDK.
+    </echo>
+  </target>
+  <target name="finish-idea-setup-unix" if="isUnix">
+    <echo>
+      To install the Lucene/Solr codestyle file, copy
+      dev-tools/idea/Intellij-Lucene-Codestyle.xml to
+      ~/.IntelliJIdeaXX/config/codestyles/
+      where "XX" is "90" for IntelliJ 9.0.X, "10" for 10.0.X, etc.
+      After restarting IntelliJ, select "Lucene"
+      from the dropdown list at:
+      Settings | Code Style | Use global settings | Scheme name
+
+      To complete IntelliJ IDEA setup, you must manually configure
+      Project Structure | Project | Project SDK.
+    </echo>
+  </target> 
+  <target name="clean-idea" 
+          description="Removes all IntelliJ IDEA configuration files">
+    <delete dir=".idea" failonerror="true"/>
+    <delete failonerror="true">
+      <fileset dir="." includes="*.iml,*.ipr,*.iws"/>
+      <fileset dir="solr" includes="**/*.iml"/>
+      <fileset dir="lucene" includes="**/*.iml"/>
+      <fileset dir="modules" includes="**/*.iml"/>
+    </delete>
+  </target>
+
   <target name="clean" description="Clean Lucene and Solr">
     <delete dir="dist" />
     <sequential>

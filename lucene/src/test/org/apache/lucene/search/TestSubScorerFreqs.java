@@ -31,8 +31,6 @@ import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import static org.junit.Assert.*;
-
 public class TestSubScorerFreqs extends LuceneTestCase {
 
   private static Directory dir;

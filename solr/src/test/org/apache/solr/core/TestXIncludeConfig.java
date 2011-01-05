@@ -1,5 +1,8 @@
 package org.apache.solr.core;
 
+import java.io.File;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.request.SolrRequestHandler;
 
@@ -24,7 +27,9 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
 
   @Override
   public void setUp() throws Exception {
-
+    File dest = new File("solrconfig-reqHandler.incl");
+    dest.deleteOnExit();
+    FileUtils.copyFile(getFile("solr/conf/solrconfig-reqHandler.incl"), dest);
     supports = true;
     javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     try {
@@ -42,7 +47,7 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
     // TODO: figure out a better way to handle this.
     if (supports == true){
       SolrCore core = h.getCore();
-      SolrRequestHandler solrRequestHandler = core.getRequestHandler("dismaxOldStyleDefaults");
+      SolrRequestHandler solrRequestHandler = core.getRequestHandler("includedHandler");
       assertNotNull("Solr Req Handler is null", solrRequestHandler);
     } else {
       log.info("Didn't run testXInclude, because this XML DocumentBuilderFactory doesn't support it");

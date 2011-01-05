@@ -41,7 +41,7 @@ public class TermQuery extends Query {
     private float queryWeight;
     private IDFExplanation idfExp;
 
-    public TermWeight(Searcher searcher)
+    public TermWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
       if (docFreq != -1) {
@@ -180,7 +180,7 @@ public class TermQuery extends Query {
   public Term getTerm() { return term; }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new TermWeight(searcher);
   }
 

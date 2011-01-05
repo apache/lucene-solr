@@ -143,7 +143,7 @@ public class PhraseQuery extends Query {
     private float queryWeight;
     private IDFExplanation idfExp;
 
-    public PhraseWeight(Searcher searcher)
+    public PhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
 
@@ -311,7 +311,7 @@ public class PhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     if (terms.size() == 1) {			  // optimize one-term case
       Term term = terms.get(0);
       Query termQuery = new TermQuery(term);

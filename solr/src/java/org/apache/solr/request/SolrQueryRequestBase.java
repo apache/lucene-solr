@@ -20,8 +20,6 @@ package org.apache.solr.request;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
@@ -43,32 +41,6 @@ import java.util.HashMap;
  * @version $Id$
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {
-  /**
-   * @deprecated Use org.apache.solr.common.params.CommonParams
-   */
-  @Deprecated
-  public static final String QUERY_NAME="q";
-  /**
-   * @deprecated Use org.apache.solr.common.params.CommonParams
-   */
-  @Deprecated
-  public static final String START_NAME="start";
-  /**
-   * @deprecated Use org.apache.solr.common.params.CommonParams
-   */
-  @Deprecated
-  public static final String ROWS_NAME="rows";
-  /**
-   * @deprecated Use org.apache.solr.common.params.CommonParams
-   */
-  @Deprecated
-  public static final String XSL_NAME="xsl";
-  /**
-   * @deprecated Use org.apache.solr.common.params.CommonParams
-   */
-  @Deprecated
-  public static final String QUERYTYPE_NAME="qt";
-
   protected final SolrCore core;
   protected final SolrParams origParams;
   protected SolrParams params;
@@ -97,99 +69,6 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   public void setParams(SolrParams params) {
     this.params = params;
   }
-
-  /**
-   * @deprecated Use {@link #getParams()} instead.
-   */
-  @Deprecated
-  public String getParam(String name) {
-    return params.get(name);
-  }
-
-  /**
-   * @deprecated Use {@link #getParams()} instead.
-   */
-  @Deprecated
-  public String[] getParams(String name) {
-    return params.getParams(name);
-  }
-
-  /**
-   * @deprecated use getParams().required().getInt( name ) instead
-   */
-  @Deprecated
-  public int getIntParam(String name) {
-    String s = getParam(name);
-    if (s==null) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Missing required parameter '"+name+"' from " + this);
-    }
-    return Integer.parseInt(s);
-  }
-
-  /**
-   * @deprecated use getParams().required().getInt( name ) instead
-   */
-  @Deprecated
-  public int getIntParam(String name, int defval) {
-    String s = getParam(name);
-    return s==null ? defval : Integer.parseInt(s);
-  }
-
-  /**
-   * @deprecated use getParams().required().getParam( name ) instead
-   */
-  @Deprecated
-  public String getStrParam(String name) {
-    String s = getParam(name);
-    if (s==null) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Missing required parameter '"+name+"' from " + this);
-    }
-    return s;
-  }
-
-  /**
-   * @deprecated use getParams().required().getParam( name ) instead
-   */
-  @Deprecated
-  public String getStrParam(String name, String defval) {
-    String s = getParam(name);
-    return s==null ? defval : s;
-  }
-
-  /**
-   * @deprecated Use {@link #getParams()} and {@link CommonParams#Q} instead.
-   */
-  @Deprecated
-  public String getQueryString() {
-    return params.get(CommonParams.Q);
-  }
-
-  /**
-   * @deprecated Use {@link #getParams()} and {@link CommonParams#QT} instead.
-   */
-  @Deprecated
-  public String getQueryType() {
-    return params.get(CommonParams.QT);
-  }
-
-  /**
-   * starting position in matches to return to client
-   * @deprecated Use {@link #getParams()} and {@link CommonParams#START} instead.
-   */
-  @Deprecated
-  public int getStart() {
-    return params.getInt(CommonParams.START, 0);
-  }
-
-  /**
-   * number of matching documents to return
-   * @deprecated Use {@link #getParams()} and {@link CommonParams#ROWS} instead.
-   */
-  @Deprecated
-  public int getLimit() {
-    return params.getInt(CommonParams.ROWS, 10);
-  }
-
 
   protected final long startTime=System.currentTimeMillis();
   // Get the start time of this request in milliseconds

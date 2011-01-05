@@ -184,7 +184,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
   
   protected long sizeBytes(SegmentInfo info) throws IOException {
-    long byteSize = info.sizeInBytes();
+    long byteSize = info.sizeInBytes(true);
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
       double delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
@@ -241,6 +241,9 @@ public abstract class LogMergePolicy extends MergePolicy {
     while (start >= 0) {
       SegmentInfo info = infos.info(start);
       if (size(info) > maxMergeSize || sizeDocs(info) > maxMergeDocs) {
+        if (verbose()) {
+          message("optimize: skip segment=" + info + ": size is > maxMergeSize (" + maxMergeSize + ") or sizeDocs is > maxMergeDocs (" + maxMergeDocs + ")");
+        }
         // need to skip that segment + add a merge for the 'right' segments,
         // unless there is only 1 which is optimized.
         if (last - start - 1 > 1 || (start != last - 1 && !isOptimized(infos.info(start + 1)))) {
@@ -335,10 +338,18 @@ public abstract class LogMergePolicy extends MergePolicy {
       int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
 
     assert maxNumSegments > 0;
+    if (verbose()) {
+      message("findMergesForOptimize: maxNumSegs=" + maxNumSegments + " segsToOptimize= "+ segmentsToOptimize);
+    }
 
     // If the segments are already optimized (e.g. there's only 1 segment), or
     // there are <maxNumSegements, all optimized, nothing to do.
-    if (isOptimized(infos, maxNumSegments, segmentsToOptimize)) return null;
+    if (isOptimized(infos, maxNumSegments, segmentsToOptimize)) {
+      if (verbose()) {
+        message("already optimized; skip");
+      }
+      return null;
+    }
     
     // Find the newest (rightmost) segment that needs to
     // be optimized (other segments may have been flushed
@@ -352,10 +363,20 @@ public abstract class LogMergePolicy extends MergePolicy {
       }
     }
 
-    if (last == 0) return null;
+    if (last == 0) {
+      if (verbose()) {
+        message("last == 0; skip");
+      }
+      return null;
+    }
     
     // There is only one segment already, and it is optimized
-    if (maxNumSegments == 1 && last == 1 && isOptimized(infos.info(0))) return null;
+    if (maxNumSegments == 1 && last == 1 && isOptimized(infos.info(0))) {
+      if (verbose()) {
+        message("already 1 seg; skip");
+      }
+      return null;
+    }
 
     // Check if there are any segments above the threshold
     boolean anyTooLarge = false;

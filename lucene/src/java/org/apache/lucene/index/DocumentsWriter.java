@@ -590,14 +590,14 @@ final class DocumentsWriter {
         threads.add(threadState.consumer);
       }
 
-      long startNumBytesUsed = bytesUsed();
+      double startMBUsed = bytesUsed()/1024./1024.;
 
       consumer.flush(threads, flushState);
       newSegment.setHasVectors(flushState.hasVectors);
 
       if (infoStream != null) {
         message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
-        message("flushedFiles=" + flushState.flushedFiles);
+        message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());
       }
 
@@ -609,22 +609,23 @@ final class DocumentsWriter {
         }
 
         CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, cfsFileName);
-        for(String fileName : flushState.flushedFiles) {
+        for(String fileName : newSegment.files()) {
           cfsWriter.addFile(fileName);
         }
         cfsWriter.close();
-        deleter.deleteNewFiles(flushState.flushedFiles);
-
+        deleter.deleteNewFiles(newSegment.files());
         newSegment.setUseCompoundFile(true);
       }
 
       if (infoStream != null) {
         message("flush: segment=" + newSegment);
-        final long newSegmentSize = newSegment.sizeInBytes();
-        message("  ramUsed=" + nf.format(startNumBytesUsed / 1024. / 1024.) + " MB" +
-            " newFlushedSize=" + nf.format(newSegmentSize / 1024 / 1024) + " MB" +
-            " docs/MB=" + nf.format(numDocs / (newSegmentSize / 1024. / 1024.)) +
-            " new/old=" + nf.format(100.0 * newSegmentSize / startNumBytesUsed) + "%");
+        final double newSegmentSizeNoStore = newSegment.sizeInBytes(false)/1024./1024.;
+        final double newSegmentSize = newSegment.sizeInBytes(true)/1024./1024.;
+        message("  ramUsed=" + nf.format(startMBUsed) + " MB" +
+                " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
+                " (" + nf.format(newSegmentSizeNoStore) + " MB w/o doc stores)" +
+                " docs/MB=" + nf.format(numDocs / newSegmentSize) +
+                " new/old=" + nf.format(100.0 * newSegmentSizeNoStore / startMBUsed) + "%");
       }
 
       success = true;
@@ -908,7 +909,8 @@ final class DocumentsWriter {
   final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
   /* if you increase this, you must fix field cache impl for
-   * getTerms/getTermsIndex requires <= 32768 */
+   * getTerms/getTermsIndex requires <= 32768.  Also fix
+   * DeltaBytesWriter's TERM_EOF if necessary. */
   final static int MAX_TERM_LENGTH_UTF8 = BYTE_BLOCK_SIZE-2;
 
   /* Initial chunks size of the shared int[] blocks used to

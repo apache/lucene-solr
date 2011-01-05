@@ -18,6 +18,13 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil; // javadoc
 
@@ -48,6 +55,8 @@ import org.apache.lucene.index.MultiReader; // javadoc
 
 public final class SlowMultiReaderWrapper extends FilterIndexReader {
 
+  private final Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
+  
   public SlowMultiReaderWrapper(IndexReader other) {
     super(other);
   }
@@ -62,9 +71,44 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     return MultiFields.getDeletedDocs(in);
   }
 
+  
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return null;
   }
+
+  @Override
+  public synchronized byte[] norms(String field) throws IOException {
+    ensureOpen();
+    byte[] bytes = normsCache.get(field);
+    if (bytes != null)
+      return bytes;
+    if (!hasNorms(field))
+      return null;
+
+    bytes = MultiNorms.norms(in, field);
+    normsCache.put(field, bytes);
+    return bytes;
+  }
+
+  @Override
+  public synchronized void norms(String field, byte[] bytes, int offset) throws IOException {
+    // TODO: maybe optimize
+    ensureOpen();
+    byte[] norms = norms(field);
+    if (norms == null) {
+      Arrays.fill(bytes, offset, bytes.length, Similarity.getDefault().encodeNormValue(1.0f));
+    } else {
+      System.arraycopy(norms, 0, bytes, offset, maxDoc());
+    }
+  }
   
+  @Override
+  protected void doSetNorm(int n, String field, byte value)
+      throws CorruptIndexException, IOException {
+    synchronized(normsCache) {
+      normsCache.remove(field);
+    }
+    in.doSetNorm(n, field, value);
+  }
 }

@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
 
@@ -55,7 +54,7 @@ public class MatchAllDocsQuery extends Query {
     MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
         byte[] norms) throws IOException {
       super(similarity,w);
-      delDocs = MultiFields.getDeletedDocs(reader);
+      delDocs = reader.getDeletedDocs();
       score = w.getValue();
       maxDoc = reader.maxDoc();
       this.norms = norms;
@@ -95,7 +94,7 @@ public class MatchAllDocsQuery extends Query {
     private float queryWeight;
     private float queryNorm;
 
-    public MatchAllDocsWeight(Searcher searcher) {
+    public MatchAllDocsWeight(IndexSearcher searcher) {
       this.similarity = searcher.getSimilarity();
     }
 
@@ -147,7 +146,7 @@ public class MatchAllDocsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) {
+  public Weight createWeight(IndexSearcher searcher) {
     return new MatchAllDocsWeight(searcher);
   }
 

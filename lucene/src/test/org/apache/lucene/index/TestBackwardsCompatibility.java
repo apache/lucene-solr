@@ -360,7 +360,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     // First document should be #21 since it's norm was
     // increased:
-    Document d = searcher.doc(hits[0].doc);
+    Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("didn't get the right document first", "21", d.get("id"));
 
     doTestHits(hits, 34, searcher.getIndexReader());
@@ -408,7 +408,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir, true);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    Document d = searcher.doc(hits[0].doc);
+    Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
     doTestHits(hits, 44, searcher.getIndexReader());
     searcher.close();

@@ -41,7 +41,7 @@ public class TestOmitTf extends LuceneTestCase {
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
     @Override public float coord(int overlap, int maxOverlap) { return 1.0f; }
-    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
       return new IDFExplanation() {
         @Override
         public float getIdf() {
@@ -279,7 +279,7 @@ public class TestOmitTf extends LuceneTestCase {
     /*
      * Verify the index
      */         
-    Searcher searcher = new IndexSearcher(dir, true);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     searcher.setSimilarity(new SimpleSimilarity());
         
     Term a = new Term("noTf", term);

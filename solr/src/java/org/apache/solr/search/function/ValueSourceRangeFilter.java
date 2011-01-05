@@ -17,10 +17,9 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.search.SolrFilter;
 
@@ -59,7 +58,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     valueSource.createWeight(context, searcher);
   }
 

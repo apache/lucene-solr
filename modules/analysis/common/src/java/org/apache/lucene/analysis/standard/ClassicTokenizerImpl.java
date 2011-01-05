@@ -26,7 +26,6 @@ WARNING: if you change ClassicTokenizerImpl.jflex and need to regenerate
 
 */
 
-import java.io.Reader;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 
