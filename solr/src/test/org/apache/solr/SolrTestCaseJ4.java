@@ -1052,7 +1052,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   static String determineSourceHome() {
     // ugly, ugly hack to determine the example home without depending on the CWD
     // this is needed for example/multicore tests which reside outside the classpath
-    File base = getFile("solr/conf/");
+    File base = getFile("solr/conf/").getAbsoluteFile();
     while (!new File(base, "solr/CHANGES.txt").exists()) {
       base = base.getParentFile();
     }
