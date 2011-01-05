@@ -27,14 +27,14 @@ import org.apache.lucene.index.IndexReader;
  * <p>
  * The purpose of {@link Weight} is to ensure searching does not
  * modify a {@link Query}, so that a {@link Query} instance can be reused. <br>
- * {@link Searcher} dependent state of the query should reside in the
+ * {@link IndexSearcher} dependent state of the query should reside in the
  * {@link Weight}. <br>
  * {@link IndexReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * A <code>Weight</code> is used in the following way:
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query, given a
- * <code>Searcher</code> ({@link Query#createWeight(Searcher)}).
+ * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher)}).
  * <li>The {@link #sumOfSquaredWeights()} method is called on the
  * <code>Weight</code> to compute the query normalization factor
  * {@link Similarity#queryNorm(float)} of the query clauses contained in the

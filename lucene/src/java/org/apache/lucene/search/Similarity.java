@@ -521,8 +521,8 @@ import org.apache.lucene.util.SmallFloat;
  * </ol>
  *
  * @see #setDefault(Similarity)
- * @see org.apache.lucene.index.IndexWriter#setSimilarity(Similarity)
- * @see Searcher#setSimilarity(Similarity)
+ * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
+ * @see IndexSearcher#setSimilarity(Similarity)
  */
 public abstract class Similarity implements Serializable {
   
@@ -535,8 +535,8 @@ public abstract class Similarity implements Serializable {
   /** Set the default Similarity implementation used by indexing and search
    * code.
    *
-   * @see Searcher#setSimilarity(Similarity)
-   * @see org.apache.lucene.index.IndexWriter#setSimilarity(Similarity)
+   * @see IndexSearcher#setSimilarity(Similarity)
+   * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
    */
   public static void setDefault(Similarity similarity) {
     Similarity.defaultImpl = similarity;
@@ -547,8 +547,8 @@ public abstract class Similarity implements Serializable {
    *
    * <p>This is initially an instance of {@link DefaultSimilarity}.
    *
-   * @see Searcher#setSimilarity(Similarity)
-   * @see org.apache.lucene.index.IndexWriter#setSimilarity(Similarity)
+   * @see IndexSearcher#setSimilarity(Similarity)
+   * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
    */
   public static Similarity getDefault() {
     return Similarity.defaultImpl;
@@ -709,11 +709,11 @@ public abstract class Similarity implements Serializable {
    * idf(docFreq, searcher.maxDoc());
    * </pre>
    * 
-   * Note that {@link Searcher#maxDoc()} is used instead of
+   * Note that {@link IndexSearcher#maxDoc()} is used instead of
    * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
-   * {@link Searcher#docFreq(Term)} is used, and when the latter 
-   * is inaccurate, so is {@link Searcher#maxDoc()}, and in the same direction.
-   * In addition, {@link Searcher#maxDoc()} is more efficient to compute
+   * {@link IndexSearcher#docFreq(Term)} is used, and when the latter 
+   * is inaccurate, so is {@link IndexSearcher#maxDoc()}, and in the same direction.
+   * In addition, {@link IndexSearcher#maxDoc()} is more efficient to compute
    *   
    * @param term the term in question
    * @param searcher the document collection being searched
@@ -740,7 +740,7 @@ public abstract class Similarity implements Serializable {
 
   /**
    * This method forwards to {@link
-   * #idfExplain(Term,Searcher,int)} by passing
+   * #idfExplain(Term,IndexSearcher,int)} by passing
    * <code>searcher.docFreq(term)</code> as the docFreq.
    */
   public IDFExplanation idfExplain(final Term term, final IndexSearcher searcher) throws IOException {

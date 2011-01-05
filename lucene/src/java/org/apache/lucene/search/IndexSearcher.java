@@ -37,6 +37,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -284,7 +285,7 @@ public class IndexSearcher {
    *
    * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query, Filter, int)}) is usually more efficient, as it skips
+   * IndexSearcher#search(Query, Filter, int)}) is usually more efficient, as it skips
    * non-high-scoring hits.
    *
    * @param query to match documents
@@ -303,7 +304,7 @@ public class IndexSearcher {
   *
   * <p>Applications should only use this if they need <i>all</i> of the
   * matching documents.  The high-level search API ({@link
-  * Searcher#search(Query, int)}) is usually more efficient, as it skips
+  * IndexSearcher#search(Query, int)}) is usually more efficient, as it skips
   * non-high-scoring hits.
   * <p>Note: The <code>score</code> passed to this method is a raw score.
   * In other words, the score will not necessarily be a float whose value is
@@ -347,8 +348,8 @@ public class IndexSearcher {
   /** Expert: Low-level search implementation.  Finds the top <code>n</code>
    * hits for <code>query</code>, applying <code>filter</code> if non-null.
    *
-   * <p>Applications should usually call {@link Searcher#search(Query,int)} or
-   * {@link Searcher#search(Query,Filter,int)} instead.
+   * <p>Applications should usually call {@link IndexSearcher#search(Query,int)} or
+   * {@link IndexSearcher#search(Query,Filter,int)} instead.
    * @throws BooleanQuery.TooManyClauses
    */
   protected TopDocs search(Weight weight, Filter filter, int nDocs) throws IOException {
@@ -394,7 +395,7 @@ public class IndexSearcher {
    * <code>sort</code>.
    *
    * <p>Applications should usually call {@link
-   * Searcher#search(Query,Filter,int,Sort)} instead.
+   * IndexSearcher#search(Query,Filter,int,Sort)} instead.
    * 
    * @throws BooleanQuery.TooManyClauses
    */
@@ -464,7 +465,7 @@ public class IndexSearcher {
    * 
    * <p>
    * Applications should only use this if they need <i>all</i> of the matching
-   * documents. The high-level search API ({@link Searcher#search(Query,int)}) is
+   * documents. The high-level search API ({@link IndexSearcher#search(Query,int)}) is
    * usually more efficient, as it skips non-high-scoring hits.
    * 
    * @param weight
@@ -576,7 +577,7 @@ public class IndexSearcher {
    * and, for good performance, should not be displayed with every hit.
    * Computing an explanation is as expensive as executing the query over the
    * entire index.
-   * <p>Applications should call {@link Searcher#explain(Query, int)}.
+   * <p>Applications should call {@link IndexSearcher#explain(Query, int)}.
    * @throws BooleanQuery.TooManyClauses
    */
   protected Explanation explain(Weight weight, int doc) throws IOException {

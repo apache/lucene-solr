@@ -28,7 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
  * 
  * @lucene.experimental
  * @since 2.9
- * @see Searcher#search(Query,Filter,int,Sort)
+ * @see IndexSearcher#search(Query,Filter,int,Sort)
  * @see FieldCache
  */
 public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueue.Entry> {

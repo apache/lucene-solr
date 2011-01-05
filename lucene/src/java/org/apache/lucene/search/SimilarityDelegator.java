@@ -20,7 +20,7 @@ import org.apache.lucene.index.FieldInvertState;
  */
 
 /** Expert: Delegating scoring implementation.  Useful in {@link
- * Query#getSimilarity(Searcher)} implementations, to override only certain
+ * Query#getSimilarity(IndexSearcher)} implementations, to override only certain
  * methods of a Searcher's Similarity implementation.. */
 public class SimilarityDelegator extends Similarity {
 

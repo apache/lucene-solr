@@ -301,7 +301,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
@@ -351,7 +351,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
@@ -380,7 +380,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
@@ -413,7 +413,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
@@ -542,7 +542,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * file descriptors, CPU time) will be consumed.</p>
    *
    * <p>For lower latency on reopening a reader, you should
-   * call {@link #setMergedSegmentWarmer} to
+   * call {@link IndexWriterConfig#setMergedSegmentWarmer} to
    * pre-warm a newly merged segment before it's committed
    * to the index.  This is important for minimizing
    * index-to-search delay after a large merge.  </p>

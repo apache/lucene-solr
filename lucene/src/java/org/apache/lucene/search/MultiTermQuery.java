@@ -33,7 +33,7 @@ import org.apache.lucene.util.AttributeSource;
  * FilteredTermsEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getTermsEnum(IndexReader,AttributeSource)} to provide a {@link
+ * it and define {@link #getTermsEnum(Terms,AttributeSource)} to provide a {@link
  * FilteredTermsEnum} that iterates through the terms to be
  * matched.
  *
