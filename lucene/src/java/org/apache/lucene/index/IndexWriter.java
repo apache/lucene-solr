@@ -2961,10 +2961,6 @@ public class IndexWriter implements Closeable {
    * or {@link #optimize} afterwards.
    * 
    * <p>
-   * <b>NOTE:</b> if you add indexes that used different codecs that are used
-   * by this IndexWriter, make sure you update this IndexWriter to recognize
-   * them.
-   * 
    * <p>This requires this index not be among those to be added.
    *
    * <p>
@@ -3871,6 +3867,7 @@ public class IndexWriter implements Closeable {
       message("merging " + merge.segString(directory) + " mergeVectors=" + merge.info.getHasVectors());
     }
 
+    merge.info.setHasVectors(merger.fieldInfos().hasVectors());
     merge.readers = new SegmentReader[numSegments];
     merge.readersClone = new SegmentReader[numSegments];
 
@@ -3909,8 +3906,12 @@ public class IndexWriter implements Closeable {
 
       assert mergedDocCount == totDocCount;
 
+      if (infoStream != null) {
+        message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + numSegments);
+      }
+
       // Very important to do this before opening the reader
-      // because codec must know if prox was written for
+      // because SegmentReader must know if prox was written for
       // this segment:
       merge.info.setHasProx(merger.fieldInfos().hasProx());
 
