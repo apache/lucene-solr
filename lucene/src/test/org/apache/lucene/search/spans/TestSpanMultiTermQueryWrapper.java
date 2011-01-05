@@ -24,7 +24,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -35,7 +34,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   private Directory directory;
   private IndexReader reader;
-  private Searcher searcher;
+  private IndexSearcher searcher;
   
   @Override
   public void setUp() throws Exception {

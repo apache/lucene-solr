@@ -100,7 +100,7 @@ public class ConstantScoreQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     
-    public ConstantWeight(Searcher searcher) throws IOException {
+    public ConstantWeight(IndexSearcher searcher) throws IOException {
       this.similarity = getSimilarity(searcher);
       this.innerWeight = (query == null) ? null : query.createWeight(searcher);
     }
@@ -256,7 +256,7 @@ public class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new ConstantScoreQuery.ConstantWeight(searcher);
   }
 

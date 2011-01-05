@@ -334,13 +334,13 @@ class SpatialDistanceQuery extends Query {
   public void extractTerms(Set terms) {}
 
   protected class SpatialWeight extends Weight {
-    protected Searcher searcher;
+    protected IndexSearcher searcher;
     protected float queryNorm;
     protected float queryWeight;
     protected Map latContext;
     protected Map lonContext;
 
-    public SpatialWeight(Searcher searcher) throws IOException {
+    public SpatialWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.latContext = latSource.newContext();
       this.lonContext = lonSource.newContext();
@@ -535,7 +535,7 @@ class SpatialDistanceQuery extends Query {
 
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new SpatialWeight(searcher);
   }
 

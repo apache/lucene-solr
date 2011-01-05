@@ -352,7 +352,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = new IndexSearcher(reader);
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "firstname"));
     query.add(new Term("field", "lastname"));

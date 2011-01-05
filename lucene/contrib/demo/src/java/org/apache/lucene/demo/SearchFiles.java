@@ -34,7 +34,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -92,7 +91,7 @@ public class SearchFiles {
     
     IndexReader reader = IndexReader.open(FSDirectory.open(new File(index)), true); // only searching, so read-only=true
 
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = new IndexSearcher(reader);
     Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
     BufferedReader in = null;
@@ -144,7 +143,7 @@ public class SearchFiles {
    *  This simulates the streaming search use case, where all hits are supposed to
    *  be processed, regardless of their relevance.
    */
-  public static void doStreamingSearch(final Searcher searcher, Query query) throws IOException {
+  public static void doStreamingSearch(final IndexSearcher searcher, Query query) throws IOException {
     Collector streamingHitCollector = new Collector() {
       private Scorer scorer;
       private int docBase;
@@ -186,7 +185,7 @@ public class SearchFiles {
    * is executed another time and all hits are collected.
    * 
    */
-  public static void doPagingSearch(BufferedReader in, Searcher searcher, Query query, 
+  public static void doPagingSearch(BufferedReader in, IndexSearcher searcher, Query query, 
                                      int hitsPerPage, boolean raw, boolean interactive) throws IOException {
  
     // Collect enough docs to show 5 pages

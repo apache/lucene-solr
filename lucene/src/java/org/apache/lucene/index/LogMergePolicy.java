@@ -338,10 +338,18 @@ public abstract class LogMergePolicy extends MergePolicy {
       int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
 
     assert maxNumSegments > 0;
+    if (verbose()) {
+      message("findMergesForOptimize: maxNumSegs=" + maxNumSegments + " segsToOptimize= "+ segmentsToOptimize);
+    }
 
     // If the segments are already optimized (e.g. there's only 1 segment), or
     // there are <maxNumSegements, all optimized, nothing to do.
-    if (isOptimized(infos, maxNumSegments, segmentsToOptimize)) return null;
+    if (isOptimized(infos, maxNumSegments, segmentsToOptimize)) {
+      if (verbose()) {
+        message("already optimized; skip");
+      }
+      return null;
+    }
     
     // Find the newest (rightmost) segment that needs to
     // be optimized (other segments may have been flushed
@@ -355,10 +363,20 @@ public abstract class LogMergePolicy extends MergePolicy {
       }
     }
 
-    if (last == 0) return null;
+    if (last == 0) {
+      if (verbose()) {
+        message("last == 0; skip");
+      }
+      return null;
+    }
     
     // There is only one segment already, and it is optimized
-    if (maxNumSegments == 1 && last == 1 && isOptimized(infos.info(0))) return null;
+    if (maxNumSegments == 1 && last == 1 && isOptimized(infos.info(0))) {
+      if (verbose()) {
+        message("already 1 seg; skip");
+      }
+      return null;
+    }
 
     // Check if there are any segments above the threshold
     boolean anyTooLarge = false;

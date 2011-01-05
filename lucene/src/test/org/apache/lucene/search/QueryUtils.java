@@ -85,7 +85,7 @@ public class QueryUtils {
   }
   
   /** deep check that explanations of a query 'score' correctly */
-  public static void checkExplanations (final Query q, final Searcher s) throws IOException {
+  public static void checkExplanations (final Query q, final IndexSearcher s) throws IOException {
     CheckHits.checkExplanations(q, null, s, true);
   }
   
@@ -100,27 +100,19 @@ public class QueryUtils {
    * @see #checkSerialization
    * @see #checkEqual
    */
-  public static void check(Random random, Query q1, Searcher s) {
+  public static void check(Random random, Query q1, IndexSearcher s) {
     check(random, q1, s, true);
   }
-  private static void check(Random random, Query q1, Searcher s, boolean wrap) {
+  private static void check(Random random, Query q1, IndexSearcher s, boolean wrap) {
     try {
       check(q1);
       if (s!=null) {
-        if (s instanceof IndexSearcher) {
-          IndexSearcher is = (IndexSearcher)s;
-          checkFirstSkipTo(q1,is);
-          checkSkipTo(q1,is);
-          if (wrap) {
-            check(random, q1, wrapUnderlyingReader(random, is, -1), false);
-            check(random, q1, wrapUnderlyingReader(random, is,  0), false);
-            check(random, q1, wrapUnderlyingReader(random, is, +1), false);
-          }
-        }
+        checkFirstSkipTo(q1,s);
+        checkSkipTo(q1,s);
         if (wrap) {
-          check(random,q1, wrapSearcher(random, s, -1), false);
-          check(random,q1, wrapSearcher(random, s,  0), false);
-          check(random,q1, wrapSearcher(random, s, +1), false);
+          check(random, q1, wrapUnderlyingReader(random, s, -1), false);
+          check(random, q1, wrapUnderlyingReader(random, s,  0), false);
+          check(random, q1, wrapUnderlyingReader(random, s, +1), false);
         }
         checkExplanations(q1,s);
         checkSerialization(q1,s);
@@ -166,39 +158,6 @@ public class QueryUtils {
     out.setSimilarity(s.getSimilarity());
     return out;
   }
-  /**
-   * Given a Searcher, returns a new MultiSearcher wrapping the  
-   * the original Searcher, 
-   * as well as several "empty" IndexSearchers -- some of which will have
-   * deleted documents in them.  This new MultiSearcher 
-   * should behave exactly the same as the original Searcher.
-   * @param s the Searcher to wrap
-   * @param edge if negative, s will be the first sub; if 0, s will be in hte middle, if positive s will be the last sub
-   */
-  public static MultiSearcher wrapSearcher(Random random, final Searcher s, final int edge) 
-    throws IOException {
-
-    // we can't put deleted docs before the nested reader, because
-    // it will through off the docIds
-    Searcher[] searchers = new Searcher[] {
-      edge < 0 ? s : new IndexSearcher(makeEmptyIndex(random, 0), true),
-      new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(random, edge < 0 ? 65 : 0), true),
-        new IndexSearcher(makeEmptyIndex(random, 0), true),
-        0 == edge ? s : new IndexSearcher(makeEmptyIndex(random, 0), true)
-      }),
-      new IndexSearcher(makeEmptyIndex(random, 0 < edge ? 0 : 3), true),
-      new IndexSearcher(makeEmptyIndex(random, 0), true),
-      new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(random, 0 < edge ? 0 : 5), true),
-        new IndexSearcher(makeEmptyIndex(random, 0), true),
-        0 < edge ? s : new IndexSearcher(makeEmptyIndex(random, 0), true)
-      })
-    };
-    MultiSearcher out = new MultiSearcher(searchers);
-    out.setSimilarity(s.getSimilarity());
-    return out;
-  }
 
   private static Directory makeEmptyIndex(Random random, final int numDeletedDocs) 
     throws IOException {
@@ -231,7 +190,7 @@ public class QueryUtils {
   /** check that the query weight is serializable. 
    * @throws IOException if serialization check fail. 
    */
-  private static void checkSerialization(Query q, Searcher s) throws IOException {
+  private static void checkSerialization(Query q, IndexSearcher s) throws IOException {
     Weight w = q.weight(s);
     try {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();

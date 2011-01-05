@@ -18,14 +18,13 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
@@ -416,7 +415,7 @@ public class TestSpans extends LuceneTestCase {
                               slop,
                               ordered) {
       @Override
-      public Similarity getSimilarity(Searcher s) {
+      public Similarity getSimilarity(IndexSearcher s) {
         return sim;
       }
     };
@@ -439,7 +438,7 @@ public class TestSpans extends LuceneTestCase {
   }
 
   // LUCENE-1404
-  private int hitCount(Searcher searcher, String word) throws Throwable {
+  private int hitCount(IndexSearcher searcher, String word) throws Throwable {
     return searcher.search(new TermQuery(new Term("text", word)), 10).totalHits;
   }
 

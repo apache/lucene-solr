@@ -134,7 +134,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
    * 
    * @throws IOException
    */
-  protected static void assertHits(Searcher s, Query query,
+  protected static void assertHits(IndexSearcher s, Query query,
       final String description, final String[] expectedIds,
       final float[] expectedScores) throws IOException {
     QueryUtils.check(random, query, s);

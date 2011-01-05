@@ -23,7 +23,7 @@ import org.apache.lucene.benchmark.quality.utils.DocNameExtractor;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
 /**
@@ -47,7 +47,7 @@ public class QualityBenchmark {
   protected QualityQueryParser qqParser;
   
   /** Index to be searched. */
-  protected Searcher searcher;
+  protected IndexSearcher searcher;
 
   /** index field to extract doc name for each search result; used for judging the results. */  
   protected String docNameField;
@@ -68,7 +68,7 @@ public class QualityBenchmark {
    *        and is important for judging the results.  
    */
   public QualityBenchmark(QualityQuery qqs[], QualityQueryParser qqParser, 
-      Searcher searcher, String docNameField) {
+      IndexSearcher searcher, String docNameField) {
     this.qualityQueries = qqs;
     this.qqParser = qqParser;
     this.searcher = searcher;

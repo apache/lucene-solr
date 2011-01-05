@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -38,6 +41,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
@@ -191,6 +195,8 @@ public class TestNRTThreads extends LuceneTestCase {
     // silly starting guess:
     final AtomicInteger totTermCount = new AtomicInteger(100);
 
+    final ExecutorService es = Executors.newCachedThreadPool(new NamedThreadFactory("NRT search threads"));
+
     while(System.currentTimeMillis() < stopTime && !failed.get()) {
       if (random.nextBoolean()) {
         if (VERBOSE) {
@@ -228,7 +234,7 @@ public class TestNRTThreads extends LuceneTestCase {
 
       if (r.numDocs() > 0) {
 
-        final IndexSearcher s = new IndexSearcher(r);
+        final IndexSearcher s = new IndexSearcher(r, es);
 
         // run search threads
         final long searchStopTime = System.currentTimeMillis() + 500;
@@ -301,6 +307,9 @@ public class TestNRTThreads extends LuceneTestCase {
         Thread.sleep(100);
       }
     }
+
+    es.shutdown();
+    es.awaitTermination(1, TimeUnit.SECONDS);
 
     if (VERBOSE) {
       System.out.println("TEST: all searching done [" + (System.currentTimeMillis()-t0) + " ms]");

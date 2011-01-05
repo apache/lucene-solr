@@ -20,7 +20,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevensteinDistance;
@@ -889,7 +889,7 @@ abstract class Double2Parser extends NamedParser {
     }
 
     @Override
-    public void createWeight(Map context, Searcher searcher) throws IOException {
+    public void createWeight(Map context, IndexSearcher searcher) throws IOException {
       a.createWeight(context,searcher);
       b.createWeight(context,searcher);
     }

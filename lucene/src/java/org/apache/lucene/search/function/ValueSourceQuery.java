@@ -68,7 +68,7 @@ public class ValueSourceQuery extends Query {
     float queryNorm;
     float queryWeight;
 
-    public ValueSourceWeight(Searcher searcher) {
+    public ValueSourceWeight(IndexSearcher searcher) {
       this.similarity = getSimilarity(searcher);
     }
 
@@ -173,7 +173,7 @@ public class ValueSourceQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) {
+  public Weight createWeight(IndexSearcher searcher) {
     return new ValueSourceQuery.ValueSourceWeight(searcher);
   }
 

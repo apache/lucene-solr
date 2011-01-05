@@ -39,7 +39,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 
@@ -114,7 +113,7 @@ public class SynLookup {
 	 * @param boost
 	 */ 
 	public static Query expand( String query,
-								Searcher syns,
+								IndexSearcher syns,
 								Analyzer a,
 								final String field,
 								final float boost)

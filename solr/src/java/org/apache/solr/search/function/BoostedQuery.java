@@ -53,16 +53,16 @@ public class BoostedQuery extends Query {
     q.extractTerms(terms);
   }
 
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new BoostedQuery.BoostedWeight(searcher);
   }
 
   private class BoostedWeight extends Weight {
-    Searcher searcher;
+    IndexSearcher searcher;
     Weight qWeight;
     Map context;
 
-    public BoostedWeight(Searcher searcher) throws IOException {
+    public BoostedWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.qWeight = q.weight(searcher);
       this.context = boostVal.newContext();
@@ -129,9 +129,9 @@ public class BoostedQuery extends Query {
     private final Scorer scorer;
     private final DocValues vals;
     private final IndexReader reader;
-    private final Searcher searcher;
+    private final IndexSearcher searcher;
 
-    private CustomScorer(Similarity similarity, Searcher searcher, IndexReader reader, BoostedQuery.BoostedWeight w,
+    private CustomScorer(Similarity similarity, IndexSearcher searcher, IndexReader reader, BoostedQuery.BoostedWeight w,
         Scorer scorer, ValueSource vs) throws IOException {
       super(similarity);
       this.weight = w;

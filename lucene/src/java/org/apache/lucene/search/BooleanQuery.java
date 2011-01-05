@@ -89,7 +89,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   // Implement coord disabling.
   // Inherit javadoc.
   @Override
-  public Similarity getSimilarity(Searcher searcher) {
+  public Similarity getSimilarity(IndexSearcher searcher) {
     Similarity result = super.getSimilarity(searcher);
     if (disableCoord) {                           // disable coord as requested
       result = new SimilarityDelegator(result) {
@@ -179,7 +179,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     protected ArrayList<Weight> weights;
     protected int maxCoord;  // num optional + num required
 
-    public BooleanWeight(Searcher searcher)
+    public BooleanWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
       weights = new ArrayList<Weight>(clauses.size());
@@ -362,7 +362,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new BooleanWeight(searcher);
   }
 

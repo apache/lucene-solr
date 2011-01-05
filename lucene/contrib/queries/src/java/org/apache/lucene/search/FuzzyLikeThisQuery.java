@@ -360,7 +360,7 @@ public class FuzzyLikeThisQuery extends Query
         	  this.ignoreTF=ignoreTF;
           }
           @Override
-          public Similarity getSimilarity(Searcher searcher)
+          public Similarity getSimilarity(IndexSearcher searcher)
           {            
               Similarity result = super.getSimilarity(searcher);
               result = new SimilarityDelegator(result) {

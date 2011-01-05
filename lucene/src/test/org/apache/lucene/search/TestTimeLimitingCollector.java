@@ -50,7 +50,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   private static final int N_DOCS = 3000;
   private static final int N_THREADS = 50;
 
-  private Searcher searcher;
+  private IndexSearcher searcher;
   private Directory directory;
   private IndexReader reader;
 

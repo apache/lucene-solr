@@ -36,7 +36,6 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -114,12 +113,16 @@ public abstract class ReadTask extends PerfTask {
       if (numHits > 0) {
         if (withCollector() == false) {
           if (sort != null) {
-            Weight w = q.weight(searcher);
+            // TODO: instead of always passing false we
+            // should detect based on the query; if we make
+            // the IndexSearcher search methods that take
+            // Weight public again, we can go back to
+            // pulling the Weight ourselves:
             TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
                                                                    true, withScore(),
                                                                    withMaxScore(),
-                                                                   !w.scoresDocsOutOfOrder());
-            searcher.search(w, null, collector);
+                                                                   false);
+            searcher.search(q, null, collector);
             hits = collector.topDocs();
           } else {
             hits = searcher.search(q, numHits);

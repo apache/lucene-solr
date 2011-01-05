@@ -32,10 +32,9 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -325,7 +324,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       return 1.0f;
     }
     // idf used for phrase queries
-    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
       return new IDFExplanation() {
         @Override
         public float getIdf() {

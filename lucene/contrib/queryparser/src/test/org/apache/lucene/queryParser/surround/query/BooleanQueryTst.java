@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Query;
@@ -122,7 +121,7 @@ public class BooleanQueryTst {
     /* if (verbose) System.out.println("Lucene: " + query.toString()); */
 
     TestCollector tc = new TestCollector();
-    Searcher searcher = new IndexSearcher(dBase.getDb(), true);
+    IndexSearcher searcher = new IndexSearcher(dBase.getDb(), true);
     try {
       searcher.search(query, tc);
     } finally {

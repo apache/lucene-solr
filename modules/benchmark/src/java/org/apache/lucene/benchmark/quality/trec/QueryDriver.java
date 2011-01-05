@@ -17,13 +17,10 @@ package org.apache.lucene.benchmark.quality.trec;
  * limitations under the License.
  */
 
-import org.apache.lucene.benchmark.quality.trec.TrecJudge;
-import org.apache.lucene.benchmark.quality.trec.TrecTopicsReader;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.benchmark.quality.*;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.FSDirectory;
 
 import java.io.BufferedReader;
@@ -56,7 +53,7 @@ public class QueryDriver {
     SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2]), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
-    Searcher searcher = new IndexSearcher(dir, true);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
 
     int maxResults = 1000;
     String docNameField = "docname";

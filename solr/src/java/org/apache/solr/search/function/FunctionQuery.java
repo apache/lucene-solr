@@ -60,12 +60,12 @@ public class FunctionQuery extends Query {
   public void extractTerms(Set terms) {}
 
   protected class FunctionWeight extends Weight {
-    protected Searcher searcher;
+    protected IndexSearcher searcher;
     protected float queryNorm;
     protected float queryWeight;
     protected Map context;
 
-    public FunctionWeight(Searcher searcher) throws IOException {
+    public FunctionWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.context = func.newContext();
       func.createWeight(context, searcher);
@@ -184,7 +184,7 @@ public class FunctionQuery extends Query {
 
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 

@@ -22,7 +22,7 @@ import java.text.NumberFormat;
 
 import org.apache.lucene.benchmark.quality.QualityQuery;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
 /**
@@ -58,7 +58,7 @@ public class SubmissionReport {
    * @param searcher index access for fetching doc name.
    * @throws IOException in case of a problem.
    */
-  public void report(QualityQuery qq, TopDocs td, String docNameField, Searcher searcher) throws IOException {
+  public void report(QualityQuery qq, TopDocs td, String docNameField, IndexSearcher searcher) throws IOException {
     if (logger==null) {
       return;
     }

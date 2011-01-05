@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 
 import java.util.*;             // for javadoc
 import org.apache.lucene.search.ScoreDoc; // for javadoc
-import org.apache.lucene.search.Searcher;  // for javadoc
 import org.apache.lucene.index.IndexReader;  // for javadoc
 
 /** Documents are the unit of indexing and search.
@@ -32,8 +31,7 @@ import org.apache.lucene.index.IndexReader;  // for javadoc
  *
  * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
  * <i>not</i> available in documents retrieved from the index, e.g. with {@link
- * ScoreDoc#doc}, {@link Searcher#doc(int)} or {@link
- * IndexReader#document(int)}.
+ * ScoreDoc#doc} or {@link IndexReader#document(int)}.
  */
 
 public final class Document implements java.io.Serializable {

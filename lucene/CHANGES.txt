@@ -123,6 +123,11 @@ Changes in backwards compatibility policy
   you really want a top-level norms, use MultiNorms or SlowMultiReaderWrapper.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-2837: Collapsed Searcher, Searchable into IndexSearcher;
+  removed contrib/remote and MultiSearcher (Mike McCandless); absorbed
+  ParallelMultiSearcher into IndexSearcher as an optional
+  ExecutorServiced passed to its ctor.  (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit

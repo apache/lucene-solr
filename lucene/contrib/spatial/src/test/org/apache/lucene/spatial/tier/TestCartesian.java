@@ -252,7 +252,7 @@ public class TestCartesian extends LuceneTestCase {
 
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    TopDocs hits = searcher.search(customScore.createWeight(searcher),null, 1000, sort);
+    TopDocs hits = searcher.search(customScore,null, 1000, sort);
     int results = hits.totalHits;
     ScoreDoc[] scoreDocs = hits.scoreDocs; 
     
@@ -348,7 +348,7 @@ public class TestCartesian extends LuceneTestCase {
 
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    TopDocs hits = searcher.search(customScore.createWeight(searcher),null, 1000, sort);
+    TopDocs hits = searcher.search(customScore,null, 1000, sort);
     int results = hits.totalHits;
     ScoreDoc[] scoreDocs = hits.scoreDocs; 
 
@@ -444,7 +444,7 @@ public class TestCartesian extends LuceneTestCase {
     
       // Perform the search, using the term query, the serial chain filter, and the
       // distance sort
-      TopDocs hits = searcher.search(customScore.createWeight(searcher),null, 1000, sort);
+      TopDocs hits = searcher.search(customScore,null, 1000, sort);
       int results = hits.totalHits;
       ScoreDoc[] scoreDocs = hits.scoreDocs; 
     
@@ -539,7 +539,7 @@ public class TestCartesian extends LuceneTestCase {
 	    
       // Perform the search, using the term query, the serial chain filter, and the
       // distance sort
-      TopDocs hits = searcher.search(customScore.createWeight(searcher),dq.getFilter(), 1000); //,sort);
+      TopDocs hits = searcher.search(customScore,dq.getFilter(), 1000); //,sort);
       int results = hits.totalHits;
       ScoreDoc[] scoreDocs = hits.scoreDocs; 
 	    

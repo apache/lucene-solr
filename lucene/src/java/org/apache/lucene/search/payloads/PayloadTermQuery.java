@@ -20,7 +20,7 @@ package org.apache.lucene.search.payloads;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Similarity;
@@ -62,13 +62,13 @@ public class PayloadTermQuery extends SpanTermQuery {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new PayloadTermWeight(this, searcher);
   }
 
   protected class PayloadTermWeight extends SpanWeight {
 
-    public PayloadTermWeight(PayloadTermQuery query, Searcher searcher)
+    public PayloadTermWeight(PayloadTermQuery query, IndexSearcher searcher)
         throws IOException {
       super(query, searcher);
     }
