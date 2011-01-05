@@ -53,9 +53,6 @@ final class FormatPostingsFieldsWriter extends FormatPostingsFieldsConsumer {
                                                null,
                                                null);
 
-    state.flushedFiles.add(IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.TERMS_EXTENSION));
-    state.flushedFiles.add(IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.TERMS_INDEX_EXTENSION));
-
     termsWriter = new FormatPostingsTermsWriter(state, this);
   }
 

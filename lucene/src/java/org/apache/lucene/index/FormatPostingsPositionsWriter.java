@@ -37,9 +37,7 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
     if (parent.parent.parent.fieldInfos.hasProx()) {
       // At least one field does not omit TF, so create the
       // prox file
-      final String fileName = IndexFileNames.segmentFileName(parent.parent.parent.segment, IndexFileNames.PROX_EXTENSION);
-      state.flushedFiles.add(fileName);
-      out = parent.parent.parent.dir.createOutput(fileName);
+      out = parent.parent.parent.dir.createOutput(IndexFileNames.segmentFileName(parent.parent.parent.segment, IndexFileNames.PROX_EXTENSION));
       parent.skipListWriter.setProxOutput(out);
     } else
       // Every field omits TF so we will write no prox file

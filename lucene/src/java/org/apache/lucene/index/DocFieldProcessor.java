@@ -64,7 +64,6 @@ final class DocFieldProcessor extends DocConsumer {
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.FIELD_INFOS_EXTENSION);
     fieldInfos.write(state.directory, fileName);
-    state.flushedFiles.add(fileName);
   }
 
   @Override

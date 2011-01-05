@@ -42,9 +42,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
   FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter parent) throws IOException {
     super();
     this.parent = parent;
-    final String fileName = IndexFileNames.segmentFileName(parent.parent.segment, IndexFileNames.FREQ_EXTENSION);
-    state.flushedFiles.add(fileName);
-    out = parent.parent.dir.createOutput(fileName);
+    out = parent.parent.dir.createOutput(IndexFileNames.segmentFileName(parent.parent.segment, IndexFileNames.FREQ_EXTENSION));
     totalNumDocs = parent.parent.totalNumDocs;
 
     // TODO: abstraction violation

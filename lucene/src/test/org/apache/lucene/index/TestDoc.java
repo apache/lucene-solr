@@ -192,11 +192,13 @@ public class TestDoc extends LuceneTestCase {
       r2.close();
       
       final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
-                                               useCompoundFile, true, merger.fieldInfos().hasProx(),
+                                               false, true,
+                                               merger.fieldInfos().hasProx(),
                                                merger.fieldInfos().hasVectors());
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs");
+        Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info);
+        info.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) 
           si1.dir.deleteFile(fileToDelete);
       }

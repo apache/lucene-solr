@@ -2908,12 +2908,12 @@ public class IndexWriter implements Closeable {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        merger.createCompoundFile(mergedName + ".cfs");
-        info.setUseCompoundFile(true);
+        merger.createCompoundFile(mergedName + ".cfs", info);
 
         // delete new non cfs files directly: they were never
         // registered with IFD
-        deleter.deleteNewFiles(merger.getMergedFiles());
+        deleter.deleteNewFiles(info.files());
+        info.setUseCompoundFile(true);
       }
 
       // Register the new segment
@@ -3932,7 +3932,7 @@ public class IndexWriter implements Closeable {
           if (infoStream != null) {
             message("create compound file " + compoundFileName);
           }
-          merger.createCompoundFile(compoundFileName);
+          merger.createCompoundFile(compoundFileName, merge.info);
           success = true;
         } catch (IOException ioe) {
           synchronized(this) {
@@ -3954,7 +3954,7 @@ public class IndexWriter implements Closeable {
 
             synchronized(this) {
               deleter.deleteFile(compoundFileName);
-              deleter.deleteNewFiles(merger.getMergedFiles());
+              deleter.deleteNewFiles(merge.info.files());
             }
           }
         }
@@ -3965,7 +3965,7 @@ public class IndexWriter implements Closeable {
 
           // delete new non cfs files directly: they were never
           // registered with IFD
-          deleter.deleteNewFiles(merger.getMergedFiles());
+          deleter.deleteNewFiles(merge.info.files());
 
           if (merge.isAborted()) {
             if (infoStream != null) {

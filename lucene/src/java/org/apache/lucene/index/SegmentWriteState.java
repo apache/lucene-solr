@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.HashSet;
-import java.util.Collection;
 import java.io.PrintStream;
 
 import org.apache.lucene.store.Directory;
@@ -33,7 +31,6 @@ public class SegmentWriteState {
   public final FieldInfos fieldInfos;
   public final int numDocs;
   public boolean hasVectors;
-  public final Collection<String> flushedFiles;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
    * in RAM.  Smaller values use more memory, but make searching slightly
@@ -62,6 +59,5 @@ public class SegmentWriteState {
     this.fieldInfos = fieldInfos;
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
-    flushedFiles = new HashSet<String>();
   }
 }
