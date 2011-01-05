@@ -18,20 +18,13 @@ package org.apache.lucene.util.automaton.fst;
  */
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.IntsRef;
 
 /** Represents an FST using a compact byte[] format.
  *  <p> The format is similar to what's used by Morfologik
@@ -40,7 +33,7 @@ import org.apache.lucene.util.IntsRef;
  */
 public class FST<T> {
   public static enum INPUT_TYPE {BYTE1, BYTE2, BYTE4};
-  private final INPUT_TYPE inputType;
+  public final INPUT_TYPE inputType;
 
   private final static int BIT_FINAL_ARC = 1 << 0;
   private final static int BIT_LAST_ARC = 1 << 1;
@@ -76,7 +69,7 @@ public class FST<T> {
 
   // if non-null, this FST accepts the empty string and
   // produces this output
-  private T emptyOutput;
+  T emptyOutput;
   private byte[] emptyOutputBytes;
 
   private byte[] bytes;
@@ -94,11 +87,16 @@ public class FST<T> {
   public int arcCount;
   public int arcWithOutputCount;
 
+  // If arc has this label then that arc is final/accepted
+  public static int END_LABEL = -1;
+
   public final static class Arc<T> {
-    int label;  // really a "unsigned" byte
+    public int label;
+    public T output;
+
     int target;
+
     byte flags;
-    T output;
     T nextFinalOutput;
     int nextArc;
 
@@ -108,13 +106,26 @@ public class FST<T> {
     int arcIdx;
     int numArcs;
 
-    // Must call this before re-using an Arc instance on a
-    // new node
-    public void reset() {
-      bytesPerArc = 0;
+    /** Returns this */
+    public Arc<T> copyFrom(Arc<T> other) {
+      label = other.label;
+      target = other.target;
+      flags = other.flags;
+      output = other.output;
+      nextFinalOutput = other.nextFinalOutput;
+      nextArc = other.nextArc;
+      if (other.bytesPerArc != 0) {
+        bytesPerArc = other.bytesPerArc;
+        posArcsStart = other.posArcsStart;
+        arcIdx = other.arcIdx;
+        numArcs = other.numArcs;
+      } else {
+        bytesPerArc = 0;
+      }
+      return this;
     }
 
-    public boolean flag(int flag) {
+    boolean flag(int flag) {
       return FST.flag(flags, flag);
     }
 
@@ -122,7 +133,7 @@ public class FST<T> {
       return flag(BIT_LAST_ARC);
     }
 
-    public boolean isFinal() {
+    boolean isFinal() {
       return flag(BIT_FINAL_ARC);
     }
   };
@@ -156,7 +167,7 @@ public class FST<T> {
       // messy
       bytes = new byte[numBytes];
       in.readBytes(bytes, 0, numBytes);
-      emptyOutput = outputs.read(new BytesReader(numBytes-1));
+      emptyOutput = outputs.read(getBytesReader(numBytes-1));
     } else {
       emptyOutput = null;
     }
@@ -203,9 +214,9 @@ public class FST<T> {
     this.startNode = startNode;
   }
 
-  public void setEmptyOutput(T v) throws IOException {
-    if (emptyOutput != null) {
-      throw new IllegalStateException("empty output is already set");
+  void setEmptyOutput(T v) throws IOException {
+    if (emptyOutput != null && !emptyOutput.equals(v)) {
+      throw new IllegalStateException("empty output is already set: " + outputs.outputToString(emptyOutput) + " vs " + outputs.outputToString(v));
     }
     emptyOutput = v;
 
@@ -271,7 +282,7 @@ public class FST<T> {
     }
   }
 
-  private int readLabel(DataInput in) throws IOException {
+  int readLabel(DataInput in) throws IOException {
     final int v;
     if (inputType == INPUT_TYPE.BYTE1) {
       v = in.readByte()&0xFF;
@@ -285,21 +296,8 @@ public class FST<T> {
 
   // returns true if the node at this address has any
   // outgoing arcs
-  public boolean hasArcs(int address) {
-    return address != FINAL_END_NODE && address != NON_FINAL_END_NODE;
-  }
-
-  public int getStartNode() {
-    if (startNode == -1) {
-      throw new IllegalStateException("call finish first");
-    }
-    return startNode;
-  }
-
-  // returns null if this FST does not accept the empty
-  // string, else, the output for the empty string
-  public T getEmptyOutput() {
-    return emptyOutput;
+  public boolean targetHasArcs(Arc<T> arc) {
+    return arc.target > 0;
   }
 
   // serializes new node by appending its bytes to the end
@@ -364,7 +362,7 @@ public class FST<T> {
         assert arc.nextFinalOutput == NO_OUTPUT;
       }
 
-      boolean targetHasArcs = hasArcs(target.address);
+      boolean targetHasArcs = target.address > 0;
 
       if (!targetHasArcs) {
         flags += BIT_STOP_NODE;
@@ -453,10 +451,49 @@ public class FST<T> {
     return endAddress-1;
   }
 
-  public Arc<T> readFirstArc(int address, Arc<T> arc) throws IOException {
-    //System.out.println("readFirstArc addr=" + address);
+  /** Fills virtual 'start' arc, ie, an empty incoming arc to
+   *  the FST's start node */
+  public Arc<T> getFirstArc(Arc<T> arc) {
+    if (emptyOutput != null) {
+      arc.flags = BIT_FINAL_ARC | BIT_LAST_ARC;
+      arc.nextFinalOutput = emptyOutput;
+    } else {
+      arc.flags = BIT_LAST_ARC;
+    }
+
+    // If there are no nodes, ie, the FST only accepts the
+    // empty string, then startNode is 0, and then readFirstTargetArc
+    arc.target = startNode;
+    return arc;
+  }
+
+  /** Follow the follow arc and read the first arc of its
+   *  target; this changes the provide arc (2nd arg) in-place
+   *  and returns it. */
+  public Arc<T> readFirstTargetArc(Arc<T> follow, Arc<T> arc) throws IOException {
     //int pos = address;
-    final BytesReader in = new BytesReader(address);
+    //System.out.println("    readFirstTarget follow.target=" + follow.target + " isFinal=" + follow.isFinal());
+    if (follow.isFinal()) {
+      // Insert "fake" final first arc:
+      arc.label = -1;
+      arc.output = follow.nextFinalOutput;
+      if (follow.target <= 0) {
+        arc.flags = BIT_LAST_ARC;
+      } else {
+        arc.flags = 0;
+        arc.nextArc = follow.target;
+      }
+      //System.out.println("    insert isFinal; nextArc=" + follow.target + " isLast=" + arc.isLast() + " output=" + outputs.outputToString(arc.output));
+      return arc;
+    } else {
+      return readFirstRealArc(follow.target, arc);
+    }
+  }
+
+  // Not private beacaus NodeHash needs access:
+  Arc<T> readFirstRealArc(int address, Arc<T> arc) throws IOException {
+
+    final BytesReader in = getBytesReader(address);
 
     arc.flags = in.readByte();
 
@@ -473,19 +510,66 @@ public class FST<T> {
       arc.bytesPerArc = 0;
     }
     arc.nextArc = in.pos;
+    arc.label = 0;
     return readNextArc(arc);
   }
 
+  /** In-place read; returns the arc. */
   public Arc<T> readNextArc(Arc<T> arc) throws IOException {
+    if (arc.label == -1) {
+      // This was a fake inserted "final" arc
+      if (arc.nextArc <= 0) {
+        // This arc went to virtual final node, ie has no outgoing arcs
+        return null;
+      }
+      return readFirstRealArc(arc.nextArc, arc);
+    } else {
+      return readNextRealArc(arc);
+    }
+  }
+
+  /** Peeks at next arc's label; does not alter arc.  Do
+   *  not call this if arc.isLast()! */
+  public int readNextArcLabel(Arc<T> arc) throws IOException {
+    assert !arc.isLast();
+
+    final BytesReader in;
+    if (arc.label == END_LABEL) {
+      //System.out.println("    nextArc fake " + arc.nextArc);
+      in = getBytesReader(arc.nextArc);
+      byte flags = bytes[in.pos];
+      if (flag(flags, BIT_ARCS_AS_FIXED_ARRAY)) {
+        //System.out.println("    nextArc fake array");
+        in.pos--;
+        in.readVInt();
+        in.readByte();
+      }
+    } else {
+      if (arc.bytesPerArc != 0) {
+        //System.out.println("    nextArc real array");
+        // arcs are at fixed entries
+        in = getBytesReader(arc.posArcsStart - (1+arc.arcIdx)*arc.bytesPerArc);
+      } else {
+        // arcs are packed
+        //System.out.println("    nextArc real packed");
+        in = getBytesReader(arc.nextArc);
+      }
+    }
+    // skip flags
+    in.readByte();
+    return readLabel(in);
+  }
+
+  Arc<T> readNextRealArc(Arc<T> arc) throws IOException {
     // this is a continuing arc in a fixed array
     final BytesReader in;
     if (arc.bytesPerArc != 0) {
       // arcs are at fixed entries
       arc.arcIdx++;
-      in = new BytesReader(arc.posArcsStart - arc.arcIdx*arc.bytesPerArc);
+      in = getBytesReader(arc.posArcsStart - arc.arcIdx*arc.bytesPerArc);
     } else {
       // arcs are packed
-      in = new BytesReader(arc.nextArc);
+      in = getBytesReader(arc.nextArc);
     }
     arc.flags = in.readByte();
     arc.label = readLabel(in);
@@ -504,6 +588,7 @@ public class FST<T> {
 
     if (arc.flag(BIT_STOP_NODE)) {
       arc.target = FINAL_END_NODE;
+      arc.flags |= BIT_FINAL_ARC;
       arc.nextArc = in.pos;
     } else if (arc.flag(BIT_TARGET_NEXT)) {
       arc.nextArc = in.pos;
@@ -524,14 +609,30 @@ public class FST<T> {
     return arc;
   }
 
-  public Arc<T> findArc(int address, int labelToMatch, Arc<T> arc) throws IOException {
+  /** Finds an arc leaving the incoming arc, replacing the arc in place.
+   *  This returns null if the arc was not found, else the incoming arc. */
+  public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc) throws IOException {
+
+    if (labelToMatch == END_LABEL) {
+      if (follow.isFinal()) {
+        arc.output = follow.nextFinalOutput;
+        arc.label = END_LABEL;
+        return arc;
+      } else {
+        return null;
+      }
+    }
+
+    if (!targetHasArcs(follow)) {
+      return null;
+    }
+
     // TODO: maybe make an explicit thread state that holds
     // reusable stuff eg BytesReader:
-    final BytesReader in = new BytesReader(address);
+    final BytesReader in = getBytesReader(follow.target);
 
     if ((in.readByte() & BIT_ARCS_AS_FIXED_ARRAY) != 0) {
       // Arcs are full array; do binary search:
-      //System.out.println("findArc: array label=" + labelToMatch);
       arc.numArcs = in.readVInt();
       arc.bytesPerArc = in.readByte() & 0xFF;
       arc.posArcsStart = in.pos;
@@ -548,210 +649,26 @@ public class FST<T> {
           high = mid - 1;
         else {
           arc.arcIdx = mid-1;
-          return readNextArc(arc);
+          return readNextRealArc(arc);
         }
       }
 
       return null;
     }
-    //System.out.println("findArc: scan");
 
-    readFirstArc(address, arc);
-
+    // Linear scan
+    readFirstTargetArc(follow, arc);
     while(true) {
       if (arc.label == labelToMatch) {
         return arc;
+      } else if (arc.label > labelToMatch) {
+        return null;
       } else if (arc.isLast()) {
         return null;
       } else {
         readNextArc(arc);
       }
     }
-  }
-
-  /** Looks up the output for this input, or null if the
-   *  input is not accepted. FST must be
-   *  INPUT_TYPE.BYTE4. */
-  public T get(IntsRef input) throws IOException {
-    assert inputType == INPUT_TYPE.BYTE4;
-
-    if (input.length == 0) {
-      return getEmptyOutput();
-    }
-
-    // TODO: would be nice not to alloc this on every lookup
-    final FST.Arc<T> arc = new FST.Arc<T>();
-    int node = getStartNode();
-    T output = NO_OUTPUT;
-    for(int i=0;i<input.length;i++) {
-      if (!hasArcs(node)) {
-        // hit end of FST before input end
-        return null;
-      }
-
-      if (findArc(node, input.ints[input.offset + i], arc) != null) {
-        node = arc.target;
-        if (arc.output != NO_OUTPUT) {
-          output = outputs.add(output, arc.output);
-        }
-      } else {
-        return null;
-      }
-    }
-
-    if (!arc.isFinal()) {
-      // hit input's end before end node
-      return null;
-    }
-
-    if (arc.nextFinalOutput != NO_OUTPUT) {
-      output = outputs.add(output, arc.nextFinalOutput);
-    }
-
-    return output;
-  }
-
-  /** Logically casts input to UTF32 ints then looks up the output
-   *  or null if the input is not accepted.  FST must be
-   *  INPUT_TYPE.BYTE4.  */
-  public T get(char[] input, int offset, int length) throws IOException {
-    assert inputType == INPUT_TYPE.BYTE4;
-
-    if (length == 0) {
-      return getEmptyOutput();
-    }
-
-    // TODO: would be nice not to alloc this on every lookup
-    final FST.Arc<T> arc = new FST.Arc<T>();
-    int node = getStartNode();
-    int charIdx = offset;
-    final int charLimit = offset + length;
-    T output = NO_OUTPUT;
-    while(charIdx < charLimit) {
-      if (!hasArcs(node)) {
-        // hit end of FST before input end
-        return null;
-      }
-
-      final int utf32 = Character.codePointAt(input, charIdx);
-      charIdx += Character.charCount(utf32);
-
-      if (findArc(node, utf32, arc) != null) {
-        node = arc.target;
-        if (arc.output != NO_OUTPUT) {
-          output = outputs.add(output, arc.output);
-        }
-      } else {
-        return null;
-      }
-    }
-
-    if (!arc.isFinal()) {
-      // hit input's end before end node
-      return null;
-    }
-
-    if (arc.nextFinalOutput != NO_OUTPUT) {
-      output = outputs.add(output, arc.nextFinalOutput);
-    }
-
-    return output;
-  }
-
-
-  /** Logically casts input to UTF32 ints then looks up the output
-   *  or null if the input is not accepted.  FST must be
-   *  INPUT_TYPE.BYTE4.  */
-  public T get(CharSequence input) throws IOException {
-    assert inputType == INPUT_TYPE.BYTE4;
-
-    final int len = input.length();
-    if (len == 0) {
-      return getEmptyOutput();
-    }
-
-    // TODO: would be nice not to alloc this on every lookup
-    final FST.Arc<T> arc = new FST.Arc<T>();
-    int node = getStartNode();
-    int charIdx = 0;
-    final int charLimit = input.length();
-    T output = NO_OUTPUT;
-    while(charIdx < charLimit) {
-      if (!hasArcs(node)) {
-        // hit end of FST before input end
-        return null;
-      }
-
-      final int utf32 = Character.codePointAt(input, charIdx);
-      charIdx += Character.charCount(utf32);
-
-      if (findArc(node, utf32, arc) != null) {
-        node = arc.target;
-        if (arc.output != NO_OUTPUT) {
-          output = outputs.add(output, arc.output);
-        }
-      } else {
-        return null;
-      }
-    }
-
-    if (!arc.isFinal()) {
-      // hit input's end before end node
-      return null;
-    }
-
-    if (arc.nextFinalOutput != NO_OUTPUT) {
-      output = outputs.add(output, arc.nextFinalOutput);
-    }
-
-    return output;
-  }
-
-  /** Looks up the output for this input, or null if the
-   *  input is not accepted */
-  public T get(BytesRef input) throws IOException {
-    assert inputType == INPUT_TYPE.BYTE1;
-
-    if (input.length == 0) {
-      return getEmptyOutput();
-    }
-
-    // TODO: would be nice not to alloc this on every lookup
-    final FST.Arc<T> arc = new FST.Arc<T>();
-    int node = getStartNode();
-    T output = NO_OUTPUT;
-    for(int i=0;i<input.length;i++) {
-      if (!hasArcs(node)) {
-        // hit end of FST before input end
-        return null;
-      }
-
-      if (findArc(node, input.bytes[i+input.offset], arc) != null) {
-        node = arc.target;
-        if (arc.output != NO_OUTPUT) {
-          output = outputs.add(output, arc.output);
-        }
-      } else {
-        return null;
-      }
-    }
-
-    if (!arc.isFinal()) {
-      // hit input's end before end node
-      return null;
-    }
-
-    if (arc.nextFinalOutput != NO_OUTPUT) {
-      output = outputs.add(output, arc.nextFinalOutput);
-    }
-
-    return output;
-  }
-
-  /** Returns true if this FST has no nodes */
-  public boolean noNodes() {
-    //System.out.println("isempty startNode=" + startNode);
-    return startNode == 0;
   }
 
   private void seekToNextNode(BytesReader in) throws IOException {
@@ -779,85 +696,6 @@ public class FST<T> {
     }
   }
 
-  // NOTE: this consumes alot of RAM!
-  // final arcs have a flat end (not arrow)
-  // arcs w/ NEXT opto are in blue
-  /*
-    eg:
-      PrintStream ps = new PrintStream("out.dot");
-      fst.toDot(ps);
-      ps.close();
-      System.out.println("SAVED out.dot");
-      
-    then dot -Tpng out.dot > /x/tmp/out.png
-  */
-  public void toDot(PrintStream out) throws IOException {
-
-    final List<Integer> queue = new ArrayList<Integer>();
-    queue.add(startNode);
-
-    final Set<Integer> seen = new HashSet<Integer>();
-    seen.add(startNode);
-    
-    out.println("digraph FST {");
-    out.println("  rankdir = LR;");
-    //out.println("  " + startNode + " [shape=circle label=" + startNode + "];");
-    out.println("  " + startNode + " [label=\"\" shape=circle];");
-    out.println("  initial [shape=point color=white label=\"\"];");
-    if (emptyOutput != null) {
-      out.println("  initial -> " + startNode + " [arrowhead=tee label=\"(" + outputs.outputToString(emptyOutput) + ")\"];");
-    } else {
-      out.println("  initial -> " + startNode);
-    }
-
-    final Arc<T> arc = new Arc<T>();
-
-    while(queue.size() != 0) {
-      Integer node = queue.get(queue.size()-1);
-      queue.remove(queue.size()-1);
-
-      if (node == FINAL_END_NODE || node == NON_FINAL_END_NODE) {
-        continue;
-      }
-
-      // scan all arcs
-      readFirstArc(node, arc);
-      while(true) {
-
-        if (!seen.contains(arc.target)) {
-          //out.println("  " + arc.target + " [label=" + arc.target + "];");
-          out.println("  " + arc.target + " [label=\"\" shape=circle];");
-          seen.add(arc.target);
-          queue.add(arc.target);
-        }
-        String outs;
-        if (arc.output != NO_OUTPUT) {
-          outs = "/" + outputs.outputToString(arc.output);
-        } else {
-          outs = "";
-        }
-        if (arc.isFinal() && arc.nextFinalOutput != NO_OUTPUT) {
-          outs += " (" + outputs.outputToString(arc.nextFinalOutput) + ")";
-        }
-        out.print("  " + node + " -> " + arc.target + " [label=\"" + arc.label + outs + "\"");
-        if (arc.isFinal()) {
-          out.print(" arrowhead=tee");
-        }
-        if (arc.flag(BIT_TARGET_NEXT)) {
-          out.print(" color=blue");
-        }
-        out.println("];");
-        
-        if (arc.isLast()) {
-          break;
-        } else {
-          readNextArc(arc);
-        }
-      }
-    }
-    out.println("}");
-  }
-  
   public int getNodeCount() {
     // 1+ in order to count the -1 implicit final node
     return 1+nodeCount;
@@ -872,7 +710,7 @@ public class FST<T> {
   }
 
   // Non-static: writes to FST's byte[]
-  private class BytesWriter extends DataOutput {
+  class BytesWriter extends DataOutput {
     int posWrite;
 
     public BytesWriter() {
@@ -899,8 +737,13 @@ public class FST<T> {
     }
   }
 
+  final BytesReader getBytesReader(int pos) {
+    // TODO: maybe re-use via ThreadLocal?
+    return new BytesReader(pos);
+  }
+
   // Non-static: reads byte[] from FST
-  private class BytesReader extends DataInput {
+  class BytesReader extends DataInput {
     int pos;
 
     public BytesReader(int pos) {

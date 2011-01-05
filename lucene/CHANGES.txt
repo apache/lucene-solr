@@ -315,6 +315,12 @@ New features
   extensions within the same segment. Codecs now use their per-segment codec
   ID in the file names. (Simon Willnauer)
 
+* LUCENE-2843: Added a new terms index impl,
+  VariableGapTermsIndexWriter/Reader, that accepts a pluggable
+  IndexTermSelector for picking which terms should be indexed in the
+  terms dict.  This impl stores the indexed terms in an FST, which is
+  much more RAM efficient than FixedGapTermsIndex.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

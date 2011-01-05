@@ -43,7 +43,7 @@ public class SegmentWriteState {
    * faster, while larger values use less memory and make searching slightly
    * slower.  Searching is typically not dominated by dictionary lookup, so
    * tweaking this is rarely useful.*/
-  public final int termIndexInterval;
+  public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
 
   /** Expert: The fraction of TermDocs entries stored in skip tables,
    * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in

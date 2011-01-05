@@ -157,7 +157,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
     final int delta = position - lastPosition;
     
-    assert delta > 0 || position == 0 || position == -1: "position=" + position + " lastPosition=" + lastPosition;            // not quite right (if pos=0 is repeated twice we don't catch it)
+    assert delta > 0 || position == 0: "position=" + position + " lastPosition=" + lastPosition;            // not quite right (if pos=0 is repeated twice we don't catch it)
 
     lastPosition = position;
 

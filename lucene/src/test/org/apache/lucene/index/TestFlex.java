@@ -71,7 +71,11 @@ public class TestFlex extends LuceneTestCase {
     IndexReader r = w.getReader();
     TermsEnum terms = r.getSequentialSubReaders()[0].fields().terms("f").iterator();
     assertTrue(terms.next() != null);
-    assertEquals(0, terms.ord());
+    try {
+      assertEquals(0, terms.ord());
+    } catch (UnsupportedOperationException uoe) {
+      // ok -- codec is not required to support this op
+    }
     r.close();
     w.close();
     d.close();

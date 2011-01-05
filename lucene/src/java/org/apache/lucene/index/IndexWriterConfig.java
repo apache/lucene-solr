@@ -55,7 +55,7 @@ public final class IndexWriterConfig implements Cloneable {
   public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
   
   /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;                   // TODO: this should be private to the codec, not settable here
 
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;
@@ -115,7 +115,7 @@ public final class IndexWriterConfig implements Cloneable {
   private OpenMode openMode;
   private int maxFieldLength;
   private Similarity similarity;
-  private int termIndexInterval;
+  private int termIndexInterval; // TODO: this should be private to the codec, not settable here
   private MergeScheduler mergeScheduler;
   private long writeLockTimeout;
   private int maxBufferedDeleteTerms;
@@ -147,7 +147,7 @@ public final class IndexWriterConfig implements Cloneable {
     openMode = OpenMode.CREATE_OR_APPEND;
     maxFieldLength = UNLIMITED_FIELD_LENGTH;
     similarity = Similarity.getDefault();
-    termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
+    termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL; // TODO: this should be private to the codec, not settable here
     mergeScheduler = new ConcurrentMergeScheduler();
     writeLockTimeout = WRITE_LOCK_TIMEOUT;
     maxBufferedDeleteTerms = DEFAULT_MAX_BUFFERED_DELETE_TERMS;
@@ -312,7 +312,7 @@ public final class IndexWriterConfig implements Cloneable {
    * 
    * @see #DEFAULT_TERM_INDEX_INTERVAL
    */
-  public IndexWriterConfig setTermIndexInterval(int interval) {
+  public IndexWriterConfig setTermIndexInterval(int interval) { // TODO: this should be private to the codec, not settable here
     this.termIndexInterval = interval;
     return this;
   }
@@ -322,7 +322,7 @@ public final class IndexWriterConfig implements Cloneable {
    * 
    * @see #setTermIndexInterval(int)
    */
-  public int getTermIndexInterval() {
+  public int getTermIndexInterval() { // TODO: this should be private to the codec, not settable here
     return termIndexInterval;
   }
 
@@ -613,7 +613,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("openMode=").append(openMode).append("\n");
     sb.append("maxFieldLength=").append(maxFieldLength).append("\n");
     sb.append("similarity=").append(similarity.getClass().getName()).append("\n");
-    sb.append("termIndexInterval=").append(termIndexInterval).append("\n");
+    sb.append("termIndexInterval=").append(termIndexInterval).append("\n"); // TODO: this should be private to the codec, not settable here
     sb.append("mergeScheduler=").append(mergeScheduler.getClass().getName()).append("\n");
     sb.append("default WRITE_LOCK_TIMEOUT=").append(WRITE_LOCK_TIMEOUT).append("\n");
     sb.append("writeLockTimeout=").append(writeLockTimeout).append("\n");

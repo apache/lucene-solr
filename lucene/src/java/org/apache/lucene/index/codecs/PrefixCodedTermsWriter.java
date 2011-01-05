@@ -93,7 +93,7 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
   }
 
   @Override
-  public TermsConsumer addField(FieldInfo field) {
+  public TermsConsumer addField(FieldInfo field) throws IOException {
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
     TermsIndexWriterBase.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
@@ -173,12 +173,25 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     public void finishTerm(BytesRef text, int numDocs) throws IOException {
 
       assert numDocs > 0;
+      //System.out.println("finishTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " fp="  + out.getFilePointer());
 
       final boolean isIndexTerm = fieldIndexWriter.checkIndexTerm(text, numDocs);
 
       termWriter.write(text);
-      out.writeVInt(numDocs);
+      final int highBit = isIndexTerm ? 0x80 : 0;
+      //System.out.println("  isIndex=" + isIndexTerm);
 
+      // This is a vInt, except, we steal top bit to record
+      // whether this was an indexed term:
+      if ((numDocs & ~0x3F) == 0) {
+        // Fast case -- docFreq fits in 6 bits
+        out.writeByte((byte) (highBit | numDocs));
+      } else {
+        // Write bottom 6 bits of docFreq, then write the
+        // remainder as vInt:
+        out.writeByte((byte) (highBit | 0x40 | (numDocs & 0x3F)));
+        out.writeVInt(numDocs >>> 6);
+      }
       postingsWriter.finishTerm(numDocs, isIndexTerm);
       numTerms++;
     }
@@ -186,6 +199,8 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     // Finishes all terms in this field
     @Override
     public void finish() throws IOException {
+      // EOF marker:
+      out.writeVInt(DeltaBytesWriter.TERM_EOF);
       fieldIndexWriter.finish();
     }
   }
