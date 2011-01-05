@@ -74,7 +74,7 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
   }
 
   @Override
-  public ByteValues validate(ByteValues entry, IndexReader reader) throws IOException {
+  public synchronized ByteValues validate(ByteValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
     
     if( hasOption(OPTION_CACHE_VALUES) ) {
