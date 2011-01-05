@@ -263,6 +263,9 @@ public abstract class LogMergePolicy extends MergePolicy {
     while (start >= 0) {
       SegmentInfo info = infos.info(start);
       if (size(info) > maxMergeSize || sizeDocs(info) > maxMergeDocs) {
+        if (verbose()) {
+          message("optimize: skip segment=" + info + ": size is > maxMergeSize (" + maxMergeSize + ") or sizeDocs is > maxMergeDocs (" + maxMergeDocs + ")");
+        }
         // need to skip that segment + add a merge for the 'right' segments,
         // unless there is only 1 which is optimized.
         if (last - start - 1 > 1 || (start != last - 1 && !isOptimized(infos.info(start + 1)))) {
