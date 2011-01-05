@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
@@ -197,19 +196,19 @@ public final class ReaderUtil {
     }
     
     private int numLeaves(IndexReader reader) {
-      final AtomicInteger numLeaves = new AtomicInteger();
+      final int[] numLeaves = new int[1];
       try {
         new Gather(reader) {
           @Override
           protected void add(int base, IndexReader r) {
-            numLeaves.incrementAndGet();
+            numLeaves[0]++;
           }
         }.run();
       } catch (IOException ioe) {
         // won't happen
         throw new RuntimeException(ioe);
       }
-      return numLeaves.get();
+      return numLeaves[0];
     }
     
   }
