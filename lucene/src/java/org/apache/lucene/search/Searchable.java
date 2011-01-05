@@ -41,7 +41,11 @@ import org.apache.lucene.index.Term;
  * <b>NOTE:</b> this interface is kept public for convenience. Since it is not
  * expected to be implemented directly, it may be changed unexpectedly between
  * releases.
+ *
+ * @deprecated In 4.0 this interface is removed/absorbed
+ * into IndexSearcher
  */
+@Deprecated
 public interface Searchable extends Closeable {
   
   /**

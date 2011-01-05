@@ -37,7 +37,13 @@ import java.util.concurrent.locks.Lock;
  *
  * <p>Applications usually need only call the inherited {@link #search(Query,int)}
  * or {@link #search(Query,Filter,int)} methods.
+ *
+ * @deprecated If you are using MultiSearcher over
+ * IndexSearchers, please use MultiReader instead; this class
+ * does not properly handle certain kinds of queries (see <a
+ * href="https://issues.apache.org/jira/browse/LUCENE-2756">LUCENE-2756</a>).
  */
+@Deprecated
 public class MultiSearcher extends Searcher {
   
   /**

@@ -38,7 +38,11 @@ import java.rmi.Remote;
  * 
  * </p>
  * </p>
+ *
+ * @deprecated This package (all of contrib/remote) will be
+ * removed in 4.0.
  */
+@Deprecated
 public interface RMIRemoteSearchable extends Searchable, Remote {
 
 }

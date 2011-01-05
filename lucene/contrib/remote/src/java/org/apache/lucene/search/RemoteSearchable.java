@@ -32,7 +32,11 @@ import java.rmi.server.UnicastRemoteObject;
 
 /**
  * A remote searchable implementation.
+ *
+ * @deprecated This package (all of contrib/remote) will be
+ * removed in 4.0.
  */
+@Deprecated
 public class RemoteSearchable
   extends UnicastRemoteObject
   implements RMIRemoteSearchable {
