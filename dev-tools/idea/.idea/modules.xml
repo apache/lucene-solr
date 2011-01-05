@@ -15,7 +15,6 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queryparser/queryparser.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/remote/remote.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spellchecker/spellchecker.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/swing/swing.iml" />
