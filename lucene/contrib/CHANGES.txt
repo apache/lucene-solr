@@ -78,6 +78,14 @@ Changes in backwards compatibility policy
 
  * LUCENE-2581: Added new methods to FragmentsBuilder interface. These methods
    are used to set pre/post tags and Encoder. (Koji Sekiguchi)
+
+ * LUCENE-2391: Improved spellchecker (re)build time/ram usage by omitting 
+   frequencies/positions/norms for single-valued fields, modifying the default
+   ramBufferMBSize to match IndexWriterConfig (16MB), making index optimization
+   an optional boolean parameter, and modifying the incremental update logic
+   to work well with unoptimized spellcheck indexes. The indexDictionary() methods 
+   were made final to ensure a hard backwards break in case you were subclassing 
+   Spellchecker. In general, subclassing Spellchecker is not recommended.  (Robert Muir)
     
 Changes in runtime behavior
 
