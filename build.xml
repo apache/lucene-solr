@@ -67,6 +67,7 @@
     </subant>
     <echo>
       SUCCESS: You must right-click your project and choose Refresh
+      Please note, your project must use a Java 6 JRE
     </echo>
   </target>
 
