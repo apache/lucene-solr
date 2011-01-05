@@ -74,7 +74,6 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);
     termsIndexWriter.setTermsOutput(out);
-    state.flushedFiles.add(termsFileName);
 
     fieldInfos = state.fieldInfos;
     writeHeader(out);

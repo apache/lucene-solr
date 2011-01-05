@@ -89,7 +89,6 @@ final class NormsWriter extends InvertedDocEndConsumer {
     }
 
     final String normsFileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.NORMS_EXTENSION);
-    state.flushedFiles.add(normsFileName);
     IndexOutput normsOut = state.directory.createOutput(normsFileName);
 
     try {

@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.PrintStream;
-import java.util.Collection;
-import java.util.HashSet;
 
 import org.apache.lucene.store.Directory;
 
@@ -33,7 +31,6 @@ public class SegmentWriteState {
   public final FieldInfos fieldInfos;
   public final int numDocs;
   public boolean hasVectors;
-  public final Collection<String> flushedFiles;
 
   final SegmentCodecs segmentCodecs;
   public final String codecId;
@@ -68,7 +65,6 @@ public class SegmentWriteState {
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
     this.segmentCodecs = segmentCodecs;
-    flushedFiles = new HashSet<String>();
     codecId = "";
   }
   
@@ -83,7 +79,6 @@ public class SegmentWriteState {
     numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
     segmentCodecs = state.segmentCodecs;
-    flushedFiles = state.flushedFiles;
     this.codecId = codecId;
   }
 }

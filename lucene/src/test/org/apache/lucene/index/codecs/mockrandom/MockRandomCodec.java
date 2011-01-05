@@ -78,7 +78,6 @@ public class MockRandomCodec extends Codec {
     final IndexOutput out = state.directory.createOutput(seedFileName);
     out.writeLong(seed);
     out.close();
-    state.flushedFiles.add(seedFileName);
 
     final Random random = new Random(seed);
     PostingsWriterBase postingsWriter;

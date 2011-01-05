@@ -599,7 +599,7 @@ final class DocumentsWriter {
 
       if (infoStream != null) {
         message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
-        message("flushedFiles=" + flushState.flushedFiles);
+        message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());
       }
 
@@ -611,12 +611,11 @@ final class DocumentsWriter {
         }
 
         CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, cfsFileName);
-        for(String fileName : flushState.flushedFiles) {
+        for(String fileName : newSegment.files()) {
           cfsWriter.addFile(fileName);
         }
         cfsWriter.close();
-        deleter.deleteNewFiles(flushState.flushedFiles);
-
+        deleter.deleteNewFiles(newSegment.files());
         newSegment.setUseCompoundFile(true);
       }
 

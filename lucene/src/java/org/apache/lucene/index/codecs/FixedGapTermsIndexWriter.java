@@ -57,7 +57,6 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_INDEX_EXTENSION);
-    state.flushedFiles.add(indexFileName);
     termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName);
     fieldInfos = state.fieldInfos;

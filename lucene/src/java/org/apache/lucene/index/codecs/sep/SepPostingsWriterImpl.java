@@ -85,24 +85,20 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     super();
 
     final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, DOC_EXTENSION);
-    state.flushedFiles.add(docFileName);
     docOut = factory.createOutput(state.directory, docFileName);
     docIndex = docOut.index();
 
     if (state.fieldInfos.hasProx()) {
       final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, FREQ_EXTENSION);
-      state.flushedFiles.add(frqFileName);
       freqOut = factory.createOutput(state.directory, frqFileName);
       freqIndex = freqOut.index();
 
       final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, POS_EXTENSION);
       posOut = factory.createOutput(state.directory, posFileName);
-      state.flushedFiles.add(posFileName);
       posIndex = posOut.index();
 
       // TODO: -- only if at least one field stores payloads?
       final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, PAYLOAD_EXTENSION);
-      state.flushedFiles.add(payloadFileName);
       payloadOut = state.directory.createOutput(payloadFileName);
 
     } else {
@@ -114,7 +110,6 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     }
 
     final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SKIP_EXTENSION);
-    state.flushedFiles.add(skipFileName);
     skipOut = state.directory.createOutput(skipFileName);
 
     totalNumDocs = state.numDocs;
