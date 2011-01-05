@@ -30,6 +30,7 @@ import org.apache.lucene.util.ReaderUtil; // javadoc
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
 import org.apache.lucene.index.MultiReader; // javadoc
+import org.apache.lucene.index.IndexReader.ReaderContext;
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -55,10 +56,12 @@ import org.apache.lucene.index.MultiReader; // javadoc
 
 public final class SlowMultiReaderWrapper extends FilterIndexReader {
 
+  private final ReaderContext readerContext;
   private final Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
   
   public SlowMultiReaderWrapper(IndexReader other) {
     super(other);
+    readerContext = new AtomicReaderContext(this); // emulate atomic reader!
   }
 
   @Override
@@ -101,6 +104,11 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     } else {
       System.arraycopy(norms, 0, bytes, offset, maxDoc());
     }
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return readerContext;
   }
   
   @Override

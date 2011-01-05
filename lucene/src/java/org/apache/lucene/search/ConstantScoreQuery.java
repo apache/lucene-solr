@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -132,18 +133,18 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(ReaderContext context,  boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
-        final DocIdSet dis = filter.getDocIdSet(reader);
+        final DocIdSet dis = filter.getDocIdSet(context);
         if (dis == null)
           return null;
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
         disi =
-          innerWeight.scorer(reader, scoreDocsInOrder, topScorer);
+          innerWeight.scorer(context, scoreDocsInOrder, topScorer);
       }
       if (disi == null)
         return null;
@@ -156,8 +157,8 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      final Scorer cs = scorer(reader, true, false);
+    public Explanation explain(ReaderContext context, int doc) throws IOException {
+      final Scorer cs = scorer(context, true, false);
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();

@@ -19,6 +19,7 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
@@ -98,14 +99,14 @@ public class ValueSourceQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new ValueSourceScorer(similarity, reader, this);
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      return new ValueSourceScorer(similarity, context.reader, this);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      DocValues vals = valSrc.getValues(reader);
+    public Explanation explain(ReaderContext context, int doc) throws IOException {
+      DocValues vals = valSrc.getValues(context.reader);
       float sc = queryWeight * vals.floatVal(doc);
 
       Explanation result = new ComplexExplanation(

@@ -904,7 +904,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   * This method is not cache-aware and no caches are checked.
   */
   public DocSet convertFilter(Filter lfilter) throws IOException {
-    DocIdSet docSet = lfilter.getDocIdSet(this.reader);
+    DocIdSet docSet = lfilter.getDocIdSet(this.reader.getTopReaderContext());
     OpenBitSet obs = new OpenBitSet();
     DocIdSetIterator it = docSet.iterator();
     int doc;

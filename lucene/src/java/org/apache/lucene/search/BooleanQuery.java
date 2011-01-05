@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -223,7 +224,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(ReaderContext context, int doc)
       throws IOException {
       final int minShouldMatch =
         BooleanQuery.this.getMinimumNumberShouldMatch();
@@ -237,7 +238,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(reader, true, true) == null) {
+        if (w.scorer(context, true, true) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -245,7 +246,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           }
           continue;
         }
-        Explanation e = w.explain(reader, doc);
+        Explanation e = w.explain(context, doc);
         if (e.isMatch()) {
           if (!c.isProhibited()) {
             sumExpl.addDetail(e);
@@ -299,7 +300,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer)
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
         throws IOException {
       List<Scorer> required = new ArrayList<Scorer>();
       List<Scorer> prohibited = new ArrayList<Scorer>();
@@ -307,7 +308,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(reader, true, false);
+        Scorer subScorer = w.scorer(context, true, false);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;

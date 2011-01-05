@@ -21,7 +21,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;
@@ -55,7 +57,7 @@ public class ParallelReader extends IndexReader {
   private Map<IndexReader,Collection<String>> readerToFields = new HashMap<IndexReader,Collection<String>>();
   private List<IndexReader> storedFieldReaders = new ArrayList<IndexReader>();
   private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
-  
+  private final ReaderContext topLevelReaderContext = new AtomicReaderContext(this);
   private int maxDoc;
   private int numDocs;
   private boolean hasDeletions;
@@ -90,7 +92,7 @@ public class ParallelReader extends IndexReader {
     buffer.append(')');
     return buffer.toString();
   }
-
+  
  /** Add an IndexReader.
   * @throws IOException if there is a low-level IO error
   */
@@ -559,6 +561,11 @@ public class ParallelReader extends IndexReader {
     }
     return fieldSet;
   }
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return topLevelReaderContext;
+  }
+
 }
 
 

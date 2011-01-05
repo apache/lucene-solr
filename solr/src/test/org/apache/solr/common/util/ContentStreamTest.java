@@ -25,6 +25,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.net.ConnectException;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
@@ -65,12 +66,16 @@ public class ContentStreamTest extends LuceneTestCase
   {
     String content = null;
     URL url = new URL( "http://svn.apache.org/repos/asf/lucene/dev/trunk/" );
-    InputStream in = url.openStream();
+    InputStream in = null;
     try {
+      in = url.openStream();
       content = IOUtils.toString( in );
-    } 
-    finally {
-      IOUtils.closeQuietly(in);
+    } catch (ConnectException ex) {
+      assumeNoException("Unable to connect to " + url + " to run the test.", ex);
+    }finally {
+      if (in != null) {
+        IOUtils.closeQuietly(in);
+      }
     }
     
     assertTrue( content.length() > 10 ); // found something...

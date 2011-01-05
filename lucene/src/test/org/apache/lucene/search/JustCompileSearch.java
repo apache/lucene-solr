@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -152,7 +153,7 @@ final class JustCompileSearch {
     // still added here in case someone will add abstract methods in the future.
     
     @Override
-    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
       return null;
     }
   }
@@ -281,7 +282,7 @@ final class JustCompileSearch {
     }
     
     @Override
-    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
       return null;
     }    
   }
@@ -333,7 +334,7 @@ final class JustCompileSearch {
   static final class JustCompileWeight extends Weight {
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
+    public Explanation explain(ReaderContext context, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -358,7 +359,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer)
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

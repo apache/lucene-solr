@@ -17,7 +17,7 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
@@ -143,10 +143,10 @@ public class PayloadNearQuery extends SpanNearQuery {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer) throws IOException {
-      return new PayloadNearSpanScorer(query.getSpans(reader), this,
-          similarity, reader.norms(query.getField()));
+      return new PayloadNearSpanScorer(query.getSpans(context.reader), this,
+          similarity, context.reader.norms(query.getField()));
     }
   }
 

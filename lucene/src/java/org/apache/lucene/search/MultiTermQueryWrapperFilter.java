@@ -19,8 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -104,7 +105,8 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    * results.
    */
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+    final IndexReader reader = context.reader;
     final Fields fields = reader.fields();
     if (fields == null) {
       // reader has no fields
@@ -121,7 +123,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     assert termsEnum != null;
     if (termsEnum.next() != null) {
       // fill into a OpenBitSet
-      final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
+      final OpenBitSet bitSet = new OpenBitSet(context.reader.maxDoc());
       int termCount = 0;
       final Bits delDocs = reader.getDeletedDocs();
       DocsEnum docsEnum = null;

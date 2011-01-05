@@ -34,6 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -687,9 +688,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
     // a filter that only allows through the first hit
     Filter filt = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-        BitSet bs = new BitSet(reader.maxDoc());
-        bs.set(0, reader.maxDoc());
+      public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+        BitSet bs = new BitSet(context.reader.maxDoc());
+        bs.set(0, context.reader.maxDoc());
         bs.set(docs1.scoreDocs[0].doc);
         return new DocIdBitSet(bs);
       }

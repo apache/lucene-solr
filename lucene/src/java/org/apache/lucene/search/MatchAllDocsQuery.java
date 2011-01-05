@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
@@ -126,13 +127,13 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new MatchAllScorer(reader, similarity, this,
-          normsField != null ? reader.norms(normsField) : null);
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      return new MatchAllScorer(context.reader, similarity, this,
+          normsField != null ? context.reader.norms(normsField) : null);
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) {
+    public Explanation explain(ReaderContext context, int doc) {
       // explain query weight
       Explanation queryExpl = new ComplexExplanation
         (true, getValue(), "MatchAllDocsQuery, product of:");

@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -420,7 +421,7 @@ public class TestSpans extends LuceneTestCase {
       }
     };
 
-    Scorer spanScorer = snq.weight(searcher).scorer(new SlowMultiReaderWrapper(searcher.getIndexReader()), true, false);
+    Scorer spanScorer = snq.weight(searcher).scorer(new AtomicReaderContext(new SlowMultiReaderWrapper(searcher.getIndexReader())), true, false);
 
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);

@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.solr.search.SolrIndexReader;
 
@@ -91,33 +92,26 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(reader, true, false);
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      Scorer subQueryScorer = qWeight.scorer(context, true, false);
       if(subQueryScorer == null) {
         return null;
       }
-      return new BoostedQuery.CustomScorer(getSimilarity(searcher), searcher, reader, this, subQueryScorer, boostVal);
+      return new BoostedQuery.CustomScorer(getSimilarity(searcher), searcher, context.reader, this, subQueryScorer, boostVal);
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      SolrIndexReader topReader = (SolrIndexReader)reader;
-      SolrIndexReader[] subReaders = topReader.getLeafReaders();
-      int[] offsets = topReader.getLeafOffsets();
-      int readerPos = SolrIndexReader.readerIndex(doc, offsets);
-      int readerBase = offsets[readerPos];
-
-      Explanation subQueryExpl = qWeight.explain(reader,doc);
+    public Explanation explain(ReaderContext readerContext, int doc) throws IOException {
+      Explanation subQueryExpl = qWeight.explain(readerContext,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
-
-      DocValues vals = boostVal.getValues(context, subReaders[readerPos]);
-      float sc = subQueryExpl.getValue() * vals.floatVal(doc-readerBase);
+      DocValues vals = boostVal.getValues(context, readerContext.reader);
+      float sc = subQueryExpl.getValue() * vals.floatVal(doc);
       Explanation res = new ComplexExplanation(
         true, sc, BoostedQuery.this.toString() + ", product of:");
       res.addDetail(subQueryExpl);
-      res.addDetail(vals.explain(doc-readerBase));
+      res.addDetail(vals.explain(doc));
       return res;
     }
   }
@@ -168,7 +162,7 @@ public class BoostedQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(reader,doc);
+      Explanation subQueryExpl = weight.qWeight.explain(reader.getTopReaderContext() ,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }

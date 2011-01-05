@@ -12,6 +12,8 @@ import junit.framework.Assert;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -210,14 +212,22 @@ public class QueryUtils {
       throw e2;
     }
   }
-
+  
+  private static AtomicReaderContext[] getLeaves(IndexSearcher searcher) {
+    ReaderContext topLevelReaderContext = searcher.getTopReaderContext();
+    if (topLevelReaderContext.isAtomic) {
+      return new AtomicReaderContext[] {(AtomicReaderContext) topLevelReaderContext};
+    } else {
+      return topLevelReaderContext.leaves();
+    }
+  }
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc
    * and ensure a hitcollector receives same docs and scores
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
-    
+    final AtomicReaderContext[] context = getLeaves(s);
     if (q.weight(s).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
@@ -247,8 +257,8 @@ public class QueryUtils {
 
         s.search(q, new Collector() {
           private Scorer sc;
-          private IndexReader reader;
           private Scorer scorer;
+          private int leafPtr;
 
           @Override
           public void setScorer(Scorer scorer) throws IOException {
@@ -262,7 +272,7 @@ public class QueryUtils {
             try {
               if (scorer == null) {
                 Weight w = q.weight(s);
-                scorer = w.scorer(reader, true, false);
+                scorer = w.scorer(context[leafPtr], true, false);
               }
               
               int op = order[(opidx[0]++) % order.length];
@@ -305,14 +315,17 @@ public class QueryUtils {
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
               final IndexReader previousReader = lastReader[0];
-              Weight w = q.weight(new IndexSearcher(previousReader));
-              Scorer scorer = w.scorer(previousReader, true, false);
+              IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+              Weight w = q.weight(indexSearcher);
+              Scorer scorer = w.scorer(indexSearcher.getTopReaderContext(), true, false);
               if (scorer != null) {
                 boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
                 Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
               }
+              leafPtr++;
             }
-            this.reader = lastReader[0] = reader;
+            lastReader[0] = reader;
+            assert context[leafPtr].reader == reader;
             this.scorer = null;
             lastDoc[0] = -1;
           }
@@ -327,8 +340,9 @@ public class QueryUtils {
           // confirm that skipping beyond the last doc, on the
           // previous reader, hits NO_MORE_DOCS
           final IndexReader previousReader = lastReader[0];
-          Weight w = q.weight(new IndexSearcher(previousReader));
-          Scorer scorer = w.scorer(previousReader, true, false);
+          IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+          Weight w = q.weight(indexSearcher);
+          Scorer scorer = w.scorer(previousReader.getTopReaderContext() , true, false);
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -343,10 +357,10 @@ public class QueryUtils {
     final float maxDiff = 1e-3f;
     final int lastDoc[] = {-1};
     final IndexReader lastReader[] = {null};
-
+    final ReaderContext[] context = getLeaves(s);
     s.search(q,new Collector() {
       private Scorer scorer;
-      private IndexReader reader;
+      private int leafPtr;
       @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
@@ -358,7 +372,7 @@ public class QueryUtils {
           long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = q.weight(s);
-            Scorer scorer = w.scorer(reader, true, false);
+            Scorer scorer = w.scorer(context[leafPtr], true, false);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();
@@ -383,15 +397,17 @@ public class QueryUtils {
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {
           final IndexReader previousReader = lastReader[0];
-          Weight w = q.weight(new IndexSearcher(previousReader));
-          Scorer scorer = w.scorer(previousReader, true, false);
+          IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+          Weight w = q.weight(indexSearcher);
+          Scorer scorer = w.scorer(indexSearcher.getTopReaderContext(), true, false);
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
           }
+          leafPtr++;
         }
 
-        this.reader = lastReader[0] = reader;
+        lastReader[0] = reader;
         lastDoc[0] = -1;
       }
       @Override
@@ -404,8 +420,9 @@ public class QueryUtils {
       // confirm that skipping beyond the last doc, on the
       // previous reader, hits NO_MORE_DOCS
       final IndexReader previousReader = lastReader[0];
-      Weight w = q.weight(new IndexSearcher(previousReader));
-      Scorer scorer = w.scorer(previousReader, true, false);
+      IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+      Weight w = q.weight(indexSearcher);
+      Scorer scorer = w.scorer(indexSearcher.getTopReaderContext(), true, false);
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
         Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);

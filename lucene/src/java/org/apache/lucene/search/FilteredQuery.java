@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -81,7 +82,7 @@ extends Query {
       }
 
       @Override
-      public Explanation explain (IndexReader ir, int i) throws IOException {
+      public Explanation explain (ReaderContext ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         if (getBoost()!=1) {
           Explanation preBoost = inner;
@@ -111,7 +112,7 @@ extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
+      public Scorer scorer(ReaderContext indexReader, boolean scoreDocsInOrder, boolean topScorer)
           throws IOException {
         final Scorer scorer = weight.scorer(indexReader, true, false);
         if (scorer == null) {

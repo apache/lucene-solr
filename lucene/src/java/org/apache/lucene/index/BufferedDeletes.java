@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -364,12 +365,16 @@ class BufferedDeletes {
     // Delete by query
     if (deletes.queries.size() > 0) {
       IndexSearcher searcher = new IndexSearcher(reader);
+      
+      final ReaderContext readerContext = searcher.getTopReaderContext();
+      assert readerContext.isAtomic;
       try {
         for (Entry<Query, Integer> entry : deletes.queries.entrySet()) {
           Query query = entry.getKey();
           int limit = entry.getValue().intValue();
           Weight weight = query.weight(searcher);
-          Scorer scorer = weight.scorer(reader, true, false);
+          
+          Scorer scorer = weight.scorer(readerContext, true, false);
           if (scorer != null) {
             while(true)  {
               int doc = scorer.nextDoc();

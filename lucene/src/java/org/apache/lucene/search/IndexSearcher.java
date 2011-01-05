@@ -18,9 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -35,6 +33,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
@@ -57,14 +57,15 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * use your own (non-Lucene) objects instead.</p>
  */
 public class IndexSearcher {
-  IndexReader reader;
+  final IndexReader reader; // package private for testing!
   private boolean closeReader;
   
   // NOTE: these members might change in incompatible ways
   // in the next release
-  protected final IndexReader[] subReaders;
+  protected final ReaderContext readerContext;
+  protected final AtomicReaderContext[] leafContexts;
   protected final IndexSearcher[] subSearchers;
-  protected final int[] docStarts;
+//  protected final int[] docStarts;
   private final ExecutorService executor;
 
   /** The Similarity implementation used by this searcher. */
@@ -115,81 +116,71 @@ public class IndexSearcher {
     this(r, false, executor);
   }
 
-  /** Expert: directly specify the reader, subReaders and
-   *  their docID starts.
+  /**
+   * Creates a searcher searching the provided top-level {@link ReaderContext}.
+   * <p>
+   * Given a non-<code>null</code> {@link ExecutorService} this method runs
+   * searches for each segment separately, using the provided ExecutorService.
+   * IndexSearcher will not shutdown/awaitTermination this ExecutorService on
+   * close; you must do so, eventually, on your own. NOTE: if you are using
+   * {@link NIOFSDirectory}, do not use the shutdownNow method of
+   * ExecutorService as this uses Thread.interrupt under-the-hood which can
+   * silently close file descriptors (see <a
+   * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
    * 
-   * @lucene.experimental */
-  public IndexSearcher(IndexReader reader, IndexReader[] subReaders, int[] docStarts) {
-    this.reader = reader;
-    this.subReaders = subReaders;
-    this.docStarts = docStarts;
-    subSearchers = new IndexSearcher[subReaders.length];
-    for(int i=0;i<subReaders.length;i++) {
-      subSearchers[i] = new IndexSearcher(subReaders[i]);
-    }
-    closeReader = false;
-    executor = null;
+   * @see ReaderContext
+   * @see IndexReader#getTopReaderContext()
+   * @lucene.experimental
+   */
+  public IndexSearcher(ReaderContext context, ExecutorService executor) {
+    this(context, false, executor);
+  }
+
+  /**
+   * Creates a searcher searching the provided top-level {@link ReaderContext}.
+   *
+   * @see ReaderContext
+   * @see IndexReader#getTopReaderContext()
+   * @lucene.experimental
+   */
+  public IndexSearcher(ReaderContext context) {
+    this(context, null);
   }
   
-  /** Expert: directly specify the reader, subReaders and
-   *  their docID starts, and an ExecutorService.  In this
-   *  case, each segment will be separately searched using the
-   *  ExecutorService.  IndexSearcher will not
-   *  shutdown/awaitTermination this ExecutorService on
-   *  close; you must do so, eventually, on your own.  NOTE:
-   *  if you are using {@link NIOFSDirectory}, do not use
-   *  the shutdownNow method of ExecutorService as this uses
-   *  Thread.interrupt under-the-hood which can silently
-   *  close file descriptors (see <a
-   *  href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
-   * 
-   * @lucene.experimental */
-  public IndexSearcher(IndexReader reader, IndexReader[] subReaders, int[] docStarts, ExecutorService executor) {
-    this.reader = reader;
-    this.subReaders = subReaders;
-    this.docStarts = docStarts;
-    subSearchers = new IndexSearcher[subReaders.length];
-    for(int i=0;i<subReaders.length;i++) {
-      subSearchers[i] = new IndexSearcher(subReaders[i]);
-    }
-    closeReader = false;
-    this.executor = executor;
+  // convinience ctor for other IR based ctors
+  private IndexSearcher(IndexReader reader, boolean closeReader, ExecutorService executor) {
+    this(reader.getTopReaderContext(), closeReader, executor);
   }
 
-  private IndexSearcher(IndexReader r, boolean closeReader, ExecutorService executor) {
-    reader = r;
+  private IndexSearcher(ReaderContext context, boolean closeReader, ExecutorService executor) {
+    // TODO: eable this assert once SolrIndexReader and friends are refactored to use ReaderContext
+    // We can't assert this here since SolrIndexReader will fail in some contexts - once solr is consistent we should be fine here
+    // Lucene instead passes all tests even with this assert!
+    // assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader;
+    reader = context.reader;
     this.executor = executor;
     this.closeReader = closeReader;
-
-    List<IndexReader> subReadersList = new ArrayList<IndexReader>();
-    gatherSubReaders(subReadersList, reader);
-    subReaders = subReadersList.toArray(new IndexReader[subReadersList.size()]);
-    docStarts = new int[subReaders.length];
-    subSearchers = new IndexSearcher[subReaders.length];
-    int maxDoc = 0;
-    for (int i = 0; i < subReaders.length; i++) {
-      docStarts[i] = maxDoc;
-      maxDoc += subReaders[i].maxDoc();
-      if (subReaders[i] == r) {
+    this.readerContext = context;
+    if (context.isAtomic) {
+      assert context.leaves() == null : "AtomicReaderContext must not have any leaves";
+      this.leafContexts = new AtomicReaderContext[] { (AtomicReaderContext) context };
+    } else {
+      assert context.leaves() != null : "non-atomic top-level context must have leaves";
+      this.leafContexts = context.leaves();
+    }
+    subSearchers = new IndexSearcher[this.leafContexts.length];
+    for (int i = 0; i < subSearchers.length; i++) { // TODO do we need those IS if executor is null?
+      if (leafContexts[i].reader == context.reader) {
         subSearchers[i] = this;
       } else {
-        subSearchers[i] = new IndexSearcher(subReaders[i]);
+        subSearchers[i] = new IndexSearcher(leafContexts[i].reader.getTopReaderContext()); // we need to get a TL context for sub searchers!
       }
     }
-  }
-
-  protected void gatherSubReaders(List<IndexReader> allSubReaders, IndexReader r) {
-    ReaderUtil.gatherSubReaders(allSubReaders, r);
   }
 
   /** Return the {@link IndexReader} this searches. */
   public IndexReader getIndexReader() {
     return reader;
-  }
-
-  /** Returns the atomic subReaders used by this searcher. */
-  public IndexReader[] getSubReaders() {
-    return subReaders;
   }
 
   /** Expert: Returns one greater than the largest possible document number.
@@ -206,7 +197,7 @@ public class IndexSearcher {
       return reader.docFreq(term);
     } else {
       final ExecutionHelper<Integer> runner = new ExecutionHelper<Integer>(executor);
-      for(int i = 0; i < subReaders.length; i++) {
+      for(int i = 0; i < subSearchers.length; i++) {
         final IndexSearcher searchable = subSearchers[i];
         runner.submit(new Callable<Integer>() {
             public Integer call() throws IOException {
@@ -369,9 +360,9 @@ public class IndexSearcher {
       final Lock lock = new ReentrantLock();
       final ExecutionHelper<TopDocs> runner = new ExecutionHelper<TopDocs>(executor);
     
-      for (int i = 0; i < subReaders.length; i++) { // search each sub
+      for (int i = 0; i < subSearchers.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, nDocs, hq, docStarts[i]));
+                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, nDocs, hq, leafContexts[i].docBase));
       }
 
       int totalHits = 0;
@@ -438,9 +429,9 @@ public class IndexSearcher {
       final FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue(nDocs);
       final Lock lock = new ReentrantLock();
       final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<TopFieldDocs>(executor);
-      for (int i = 0; i < subReaders.length; i++) { // search each sub
+      for (int i = 0; i < subSearchers.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, hq, sort, docStarts[i]));
+                      new MultiSearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, hq, sort, leafContexts[i].docBase));
       }
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -484,27 +475,27 @@ public class IndexSearcher {
 
     // always use single thread:
     if (filter == null) {
-      for (int i = 0; i < subReaders.length; i++) { // search each subreader
-        collector.setNextReader(subReaders[i], docStarts[i]);
-        Scorer scorer = weight.scorer(subReaders[i], !collector.acceptsDocsOutOfOrder(), true);
+      for (int i = 0; i < leafContexts.length; i++) { // search each subreader
+        collector.setNextReader(leafContexts[i].reader, leafContexts[i].docBase);
+        Scorer scorer = weight.scorer(leafContexts[i], !collector.acceptsDocsOutOfOrder(), true);
         if (scorer != null) {
           scorer.score(collector);
         }
       }
     } else {
-      for (int i = 0; i < subReaders.length; i++) { // search each subreader
-        collector.setNextReader(subReaders[i], docStarts[i]);
-        searchWithFilter(subReaders[i], weight, filter, collector);
+      for (int i = 0; i < leafContexts.length; i++) { // search each subreader
+        collector.setNextReader(leafContexts[i].reader, leafContexts[i].docBase);
+        searchWithFilter(leafContexts[i], weight, filter, collector);
       }
     }
   }
 
-  private void searchWithFilter(IndexReader reader, Weight weight,
+  private void searchWithFilter(ReaderContext context, Weight weight,
       final Filter filter, final Collector collector) throws IOException {
 
     assert filter != null;
     
-    Scorer scorer = weight.scorer(reader, true, false);
+    Scorer scorer = weight.scorer(context, true, false);
     if (scorer == null) {
       return;
     }
@@ -513,7 +504,7 @@ public class IndexSearcher {
     assert docID == -1 || docID == DocIdSetIterator.NO_MORE_DOCS;
 
     // CHECKME: use ConjunctionScorer here?
-    DocIdSet filterDocIdSet = filter.getDocIdSet(reader);
+    DocIdSet filterDocIdSet = filter.getDocIdSet(context);
     if (filterDocIdSet == null) {
       // this means the filter does not accept any documents.
       return;
@@ -581,10 +572,10 @@ public class IndexSearcher {
    * @throws BooleanQuery.TooManyClauses
    */
   protected Explanation explain(Weight weight, int doc) throws IOException {
-    int n = ReaderUtil.subIndex(doc, docStarts);
-    int deBasedDoc = doc - docStarts[n];
+    int n = ReaderUtil.subIndex(doc, leafContexts);
+    int deBasedDoc = doc - leafContexts[n].docBase;
     
-    return weight.explain(subReaders[n], deBasedDoc);
+    return weight.explain(leafContexts[n], deBasedDoc);
   }
 
   private boolean fieldSortDoTrackScores;
@@ -615,6 +606,14 @@ public class IndexSearcher {
     return query.weight(this);
   }
 
+  /**
+   * Returns this searchers the top-level {@link ReaderContext}.
+   * @see IndexReader#getTopReaderContext()
+   */
+  /* Sugar for .getIndexReader().getTopReaderContext() */
+  public ReaderContext getTopReaderContext() {
+    return readerContext;
+  }
 
   /**
    * A thread subclass for searching a single searchable 

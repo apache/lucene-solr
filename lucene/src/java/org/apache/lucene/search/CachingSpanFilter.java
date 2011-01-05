@@ -17,6 +17,7 @@ package org.apache.lucene.search;
 
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -60,8 +61,8 @@ public class CachingSpanFilter extends SpanFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    SpanFilterResult result = getCachedResult(reader);
+  public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+    SpanFilterResult result = getCachedResult(context.reader);
     return result != null ? result.getDocIdSet() : null;
   }
   

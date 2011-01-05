@@ -22,6 +22,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 
 import java.io.IOException;
 
@@ -551,8 +552,9 @@ public class SortedIntDocSet extends DocSetBase {
       int lastEndIdx = 0;
 
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+      public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
         int offset = 0;
+        IndexReader reader = context.reader;
         SolrIndexReader r = (SolrIndexReader)reader;
         while (r.getParent() != null) {
           offset += r.getBase();

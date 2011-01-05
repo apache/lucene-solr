@@ -33,8 +33,8 @@ import org.apache.lucene.util.ReaderUtil;
  *  their content. */
 public class MultiReader extends IndexReader implements Cloneable {
   protected IndexReader[] subReaders;
+  private final ReaderContext topLevelContext;
   private int[] starts;                           // 1st docno for each segment
-  private final Map<IndexReader,ReaderUtil.Slice> subReaderToSlice = new HashMap<IndexReader,ReaderUtil.Slice>();
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
   private int maxDoc = 0;
   private int numDocs = -1;
@@ -48,7 +48,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   * @param subReaders set of (sub)readers
   */
   public MultiReader(IndexReader... subReaders) throws IOException {
-    initialize(subReaders, true);
+    topLevelContext = initialize(subReaders, true);
   }
 
   /**
@@ -60,14 +60,13 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @param subReaders set of (sub)readers
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
-    initialize(subReaders, closeSubReaders);
+    topLevelContext = initialize(subReaders, closeSubReaders);
   }
   
-  private void initialize(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
+  private ReaderContext initialize(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     this.subReaders =  subReaders.clone();
     starts = new int[subReaders.length + 1];    // build starts array
     decrefOnClose = new boolean[subReaders.length];
-
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
@@ -82,24 +81,14 @@ public class MultiReader extends IndexReader implements Cloneable {
       if (subReaders[i].hasDeletions()) {
         hasDeletions = true;
       }
-
-      final ReaderUtil.Slice slice = new ReaderUtil.Slice(starts[i],
-                                                          subReaders[i].maxDoc(),
-                                                          i);
-      subReaderToSlice.put(subReaders[i], slice);
     }
-
     starts[subReaders.length] = maxDoc;
+    return ReaderUtil.buildReaderContext(this);
   }
 
   @Override
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("");
-  }
-
-  @Override
-  public int getSubReaderDocBase(IndexReader subReader) {
-    return subReaderToSlice.get(subReader).start;
   }
 
   @Override
@@ -402,5 +391,9 @@ public class MultiReader extends IndexReader implements Cloneable {
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
+  }
+  
+  public ReaderContext getTopReaderContext() {
+    return topLevelContext;
   }
 }

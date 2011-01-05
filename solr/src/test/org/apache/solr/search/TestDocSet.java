@@ -26,6 +26,7 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.FilterIndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
@@ -404,6 +405,7 @@ public class TestDocSet extends LuceneTestCase {
   }
 
   public void doFilterTest(SolrIndexReader reader) throws IOException {
+    ReaderContext topLevelContext = reader.getTopReaderContext();
     OpenBitSet bs = getRandomSet(reader.maxDoc(), rand.nextInt(reader.maxDoc()+1));
     DocSet a = new BitDocSet(bs);
     DocSet b = getIntDocSet(bs);
@@ -412,23 +414,23 @@ public class TestDocSet extends LuceneTestCase {
     Filter fb = b.getTopFilter();
 
     // test top-level
-    DocIdSet da = fa.getDocIdSet(reader);
-    DocIdSet db = fb.getDocIdSet(reader);
+    DocIdSet da = fa.getDocIdSet(topLevelContext);
+    DocIdSet db = fb.getDocIdSet(topLevelContext);
     doTestIteratorEqual(da, db);
 
     // first test in-sequence sub readers
-    for (SolrIndexReader sir : reader.getLeafReaders()) {
-      da = fa.getDocIdSet(sir);
-      db = fb.getDocIdSet(sir);
+    for (ReaderContext readerInfo : topLevelContext.leaves()) {
+      da = fa.getDocIdSet(readerInfo);
+      db = fb.getDocIdSet(readerInfo);
       doTestIteratorEqual(da, db);
     }  
 
-    int nReaders = reader.getLeafReaders().length;
+    int nReaders = topLevelContext.leaves().length;
     // now test out-of-sequence sub readers
     for (int i=0; i<nReaders; i++) {
-      SolrIndexReader sir = reader.getLeafReaders()[rand.nextInt(nReaders)];
-      da = fa.getDocIdSet(sir);
-      db = fb.getDocIdSet(sir);
+      ReaderContext readerInfo = topLevelContext.leaves()[rand.nextInt(nReaders)];
+      da = fa.getDocIdSet(readerInfo);
+      db = fb.getDocIdSet(readerInfo);
       doTestIteratorEqual(da, db);
     }
   }

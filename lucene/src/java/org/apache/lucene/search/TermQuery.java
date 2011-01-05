@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -75,7 +77,8 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      final IndexReader reader = context.reader;
       DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(),
                                           term.field(),
                                           term.bytes());
@@ -88,8 +91,9 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(ReaderContext context, int doc)
       throws IOException {
+      final IndexReader reader = context.reader;
 
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");

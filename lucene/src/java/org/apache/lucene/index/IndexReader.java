@@ -1126,7 +1126,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     if (docs == null) return 0;
     int n = 0;
     int doc;
-    while ((doc = docs.nextDoc()) != docs.NO_MORE_DOCS) {
+    while ((doc = docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
       deleteDocument(doc);
       n++;
     }
@@ -1356,9 +1356,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Expert: returns the sequential sub readers that this
-   *  reader is logically composed of.  For example,
-   *  IndexSearcher uses this API to drive searching by one
-   *  sub reader at a time.  If this reader is not composed
+   *  reader is logically composed of. If this reader is not composed
    *  of sequential child readers, it should return null.
    *  If this method returns an empty array, that means this
    *  reader is a null reader (for example a MultiReader
@@ -1373,12 +1371,33 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public IndexReader[] getSequentialSubReaders() {
     return null;
   }
-
-
-  /** Expert: returns the docID base for this subReader. */
-  public int getSubReaderDocBase(IndexReader subReader) {
-    throw new UnsupportedOperationException();
-  }
+  
+  /**
+   * Expert: Returns a the root {@link ReaderContext} for this
+   * {@link IndexReader}'s sub-reader tree. Iff this reader is composed of sub
+   * readers ,ie. this reader being a composite reader, this method returns a
+   * {@link CompositeReaderContext} holding the reader's direct children as well as a
+   * view of the reader tree's atomic leaf contexts. All sub-
+   * {@link ReaderContext} instances referenced from this readers top-level
+   * context are private to this reader and are not shared with another context
+   * tree. For example, IndexSearcher uses this API to drive searching by one
+   * atomic leaf reader at a time. If this reader is not composed of child
+   * readers, this method returns an {@link AtomicReaderContext}.
+   * <p>
+   * Note: Any of the sub-{@link CompositeReaderContext} instances reference from this
+   * top-level context holds a <code>null</code> {@link CompositeReaderContext#leaves}
+   * reference. Only the top-level context maintains the convenience leaf-view
+   * for performance reasons.
+   * <p>
+   * NOTE: You should not try using sub-readers returned by this method to make
+   * any changes (setNorm, deleteDocument, etc.). While this might succeed for
+   * one composite reader (like MultiReader), it will most likely lead to index
+   * corruption for other readers (like DirectoryReader obtained through
+   * {@link #open}. Use the top-level context's reader directly.
+   * 
+   * @lucene.experimental
+   */
+  public abstract ReaderContext getTopReaderContext();
 
   /** Expert */
   public Object getCoreCacheKey() {
@@ -1430,5 +1449,138 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** @lucene.internal */
   Fields retrieveFields() {
     return fields;
+  }
+
+  /**
+   * A struct like class that represents a hierarchical relationship between
+   * {@link IndexReader} instances. 
+   * @lucene.experimental
+   */
+  public static abstract class ReaderContext {
+    /** The reader context for this reader's immediate parent, or null if none */
+    public final ReaderContext parent;
+    /** The actual reader */
+    public final IndexReader reader;
+    /** <code>true</code> iff the reader is an atomic reader */
+    public final boolean isAtomic;
+    /** <code>true</code> if this context struct represents the top level reader within the hierarchical context */
+    public final boolean isTopLevel;
+    /** the doc base for this reader in the parent, <tt>0</tt> if parent is null */
+    public final int docBaseInParent;
+    /** the ord for this reader in the parent, <tt>0</tt> if parent is null */
+    public final int ordInParent;
+    
+    ReaderContext(ReaderContext parent, IndexReader reader,
+        boolean isAtomic, boolean isTopLevel, int ordInParent, int docBaseInParent) {
+      this.parent = parent;
+      this.reader = reader;
+      this.isAtomic = isAtomic;
+      this.docBaseInParent = docBaseInParent;
+      this.ordInParent = ordInParent;
+      this.isTopLevel = isTopLevel;
+    }
+    
+    /**
+     * Returns the context's leaves if this context is a top-level context
+     * otherwise <code>null</code>.
+     * <p>
+     * Note: this is convenience method since leaves can always be obtained by
+     * walking the context tree.
+     */
+    public AtomicReaderContext[] leaves() {
+      return null;
+    }
+    
+    /**
+     * Returns the context's children iff this context is a composite context
+     * otherwise <code>null</code>.
+     * <p>
+     * Note: this method is a convenience method to prevent
+     * <code>instanceof</code> checks and type-casts to
+     * {@link CompositeReaderContext}.
+     */
+    public ReaderContext[] children() {
+      return null;
+    }
+  }
+  
+  /**
+   * {@link ReaderContext} for composite {@link IndexReader} instance.
+   * @lucene.experimental
+   */
+  public static final class CompositeReaderContext extends ReaderContext {
+    /** the composite readers immediate children */
+    public final ReaderContext[] children;
+    /** the composite readers leaf reader contexts if this is the top level reader in this context */
+    public final AtomicReaderContext[] leaves;
+
+    /**
+     * Creates a {@link CompositeReaderContext} for intermediate readers that aren't
+     * not top-level readers in the current context
+     */
+    public CompositeReaderContext(ReaderContext parent, IndexReader reader,
+        int ordInParent, int docbaseInParent, ReaderContext[] children) {
+      this(parent, reader, ordInParent, docbaseInParent, children, null);
+    }
+    
+    /**
+     * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
+     */
+    public CompositeReaderContext(IndexReader reader, ReaderContext[] children, AtomicReaderContext[] leaves) {
+      this(null, reader, 0, 0, children, leaves);
+    }
+    
+    private CompositeReaderContext(ReaderContext parent, IndexReader reader,
+        int ordInParent, int docbaseInParent, ReaderContext[] children,
+        AtomicReaderContext[] leaves) {
+      super(parent, reader, false, leaves != null, ordInParent, docbaseInParent);
+      this.children = children;
+      this.leaves = leaves;
+    }
+
+    @Override
+    public AtomicReaderContext[] leaves() {
+      return leaves;
+    }
+    
+    
+    @Override
+    public ReaderContext[] children() {
+      return children;
+    }
+  }
+  
+  /**
+   * {@link ReaderContext} for atomic {@link IndexReader} instances
+   * @lucene.experimental
+   */
+  public static final class AtomicReaderContext extends ReaderContext {
+    /** The readers ord in the top-level's leaves array */
+    public final int ord;
+    /** The readers absolute doc base */
+    public final int docBase;
+    /**
+     * Creates a new {@link AtomicReaderContext} 
+     */
+    public AtomicReaderContext(ReaderContext parent, IndexReader reader,
+        int ord, int docBase, int leafOrd, int leafDocBase) {
+     this(parent, reader, ord, docBase, leafOrd, leafDocBase, false);
+    }
+    
+    private AtomicReaderContext(ReaderContext parent, IndexReader reader,
+        int ord, int docBase, int leafOrd, int leafDocBase, boolean topLevel) {
+      super(parent, reader, true, topLevel,  ord, docBase);
+      assert reader.getSequentialSubReaders() == null : "Atomic readers must not have subreaders";
+      this.ord = leafOrd;
+      this.docBase = leafDocBase;
+    }
+    
+    /**
+     * Creates a new {@link AtomicReaderContext} for a atomic reader without an immediate
+     * parent.
+     */
+    public AtomicReaderContext(IndexReader atomicReader) {
+      this(null, atomicReader, 0, 0, 0, 0, true); // toplevel!!
+    }
   }
 }

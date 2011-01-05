@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
 
 import java.text.DecimalFormat;
@@ -163,9 +164,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     
     QueryUtils.check(random, dq, s);
-    
+    assertTrue(s.getTopReaderContext().isAtomic);
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
+    final Scorer ds = dw.scorer(s.getTopReaderContext(), true, false);
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
@@ -177,11 +178,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     final DisjunctionMaxQuery dq = new DisjunctionMaxQuery(0.0f);
     dq.add(tq("dek", "albino"));
     dq.add(tq("dek", "DOES_NOT_EXIST"));
-    
+    assertTrue(s.getTopReaderContext().isAtomic);
     QueryUtils.check(random, dq, s);
-    
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
+    final Scorer ds = dw.scorer(s.getTopReaderContext(), true, false);
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));

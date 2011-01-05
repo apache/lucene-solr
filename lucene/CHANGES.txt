@@ -128,6 +128,10 @@ Changes in backwards compatibility policy
   ParallelMultiSearcher into IndexSearcher as an optional
   ExecutorServiced passed to its ctor.  (Mike McCandless)
 
+* LUCENE-2837: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
+  operate on a ReaderContext instead of directly on IndexReader to enable
+  searches to be aware of IndexSearcher's context. (Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit

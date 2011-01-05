@@ -245,7 +245,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest sr = req("q","foo");
     SolrIndexReader r = sr.getSearcher().getReader();
     assertTrue(r.maxDoc() > r.numDocs());   // should have deletions
-    assertTrue(r.getLeafReaders().length > 1);  // more than 1 segment
+    assertFalse(r.getTopReaderContext().isAtomic);  // more than 1 segment
     sr.close();
 
     assertU(commit("expungeDeletes","true"));
@@ -254,7 +254,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     r = sr.getSearcher().getReader();
     assertEquals(r.maxDoc(), r.numDocs());  // no deletions
     assertEquals(4,r.maxDoc());             // no dups
-    assertTrue(r.getLeafReaders().length > 1);  // still more than 1 segment
+    assertFalse(r.getTopReaderContext().isAtomic);  //still more than 1 segment
     sr.close();
   }
   

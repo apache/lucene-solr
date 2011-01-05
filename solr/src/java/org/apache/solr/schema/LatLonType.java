@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.DistanceUtils;
@@ -27,7 +28,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
@@ -371,18 +371,13 @@ class SpatialDistanceQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new SpatialScorer(getSimilarity(searcher), reader, this);
+    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      return new SpatialScorer(getSimilarity(searcher), context.reader, this);
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      SolrIndexReader topReader = (SolrIndexReader)reader;
-      SolrIndexReader[] subReaders = topReader.getLeafReaders();
-      int[] offsets = topReader.getLeafOffsets();
-      int readerPos = SolrIndexReader.readerIndex(doc, offsets);
-      int readerBase = offsets[readerPos];
-      return ((SpatialScorer)scorer(subReaders[readerPos], true, true)).explain(doc-readerBase);
+    public Explanation explain(ReaderContext context, int doc) throws IOException {
+      return ((SpatialScorer)scorer(context, true, true)).explain(doc);
     }
   }
 

@@ -90,7 +90,7 @@ class QueryDocValues extends DocValues {
     try {
       if (doc < lastDocRequested) {
         // out-of-order access.... reset scorer.
-        scorer = weight.scorer(reader, true, false);
+        scorer = weight.scorer(reader.getTopReaderContext(), true, false);
         if (scorer==null) return defVal;
         scorerDoc = -1;
       }

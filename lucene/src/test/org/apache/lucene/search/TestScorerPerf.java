@@ -7,6 +7,7 @@ import java.util.BitSet;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -141,7 +142,7 @@ public class TestScorerPerf extends LuceneTestCase {
     final BitSet rnd = sets[random.nextInt(sets.length)];
     Query q = new ConstantScoreQuery(new Filter() {
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) {
+      public DocIdSet getDocIdSet(ReaderContext context) {
         return new DocIdBitSet(rnd);
       }
     });

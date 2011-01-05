@@ -1,5 +1,8 @@
 package org.apache.solr.request;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -67,10 +70,7 @@ class PerSegmentSingleValuedFaceting {
     // reuse the translation logic to go from top level set to per-segment set
     baseSet = docs.getTopFilter();
 
-    SolrIndexReader topReader = searcher.getReader();
-    final SolrIndexReader[] leafReaders = topReader.getLeafReaders();
-    int[] offsets = topReader.getLeafOffsets();
-
+    final AtomicReaderContext[] leaves = searcher.getTopReaderContext().leaves();
     // The list of pending tasks that aren't immediately submitted
     // TODO: Is there a completion service, or a delegating executor that can
     // limit the number of concurrent tasks submitted to a bigger executor?
@@ -78,8 +78,8 @@ class PerSegmentSingleValuedFaceting {
 
     int threads = nThreads <= 0 ? Integer.MAX_VALUE : nThreads;
 
-    for (int i=0; i<leafReaders.length; i++) {
-      final SegFacet segFacet = new SegFacet(leafReaders[i], offsets[i]);
+    for (int i=0; i<leaves.length; i++) {
+      final SegFacet segFacet = new SegFacet(leaves[i]);
 
       Callable<SegFacet> task = new Callable<SegFacet>() {
         public SegFacet call() throws Exception {
@@ -101,7 +101,7 @@ class PerSegmentSingleValuedFaceting {
     // now merge the per-segment results
     PriorityQueue<SegFacet> queue = new PriorityQueue<SegFacet>() {
       {
-        initialize(leafReaders.length);
+        initialize(leaves.length);
       }
       @Override
       protected boolean lessThan(SegFacet a, SegFacet b) {
@@ -112,7 +112,7 @@ class PerSegmentSingleValuedFaceting {
 
     boolean hasMissingCount=false;
     int missingCount=0;
-    for (int i=0; i<leafReaders.length; i++) {
+    for (int i=0; i<leaves.length; i++) {
       SegFacet seg = null;
 
       try {
@@ -209,12 +209,9 @@ class PerSegmentSingleValuedFaceting {
   }
 
   class SegFacet {
-    SolrIndexReader reader;
-    int readerOffset;
-
-    SegFacet(SolrIndexReader reader, int readerOffset) {
-      this.reader = reader;
-      this.readerOffset = readerOffset;
+    ReaderContext info;
+    SegFacet(ReaderContext info) {
+      this.info = info;
     }
     
     FieldCache.DocTermsIndex si;
@@ -228,7 +225,7 @@ class PerSegmentSingleValuedFaceting {
     BytesRef tempBR = new BytesRef();
 
     void countTerms() throws IOException {
-      si = FieldCache.DEFAULT.getTermsIndex(reader, fieldName);
+      si = FieldCache.DEFAULT.getTermsIndex(info.reader, fieldName);
       // SolrCore.log.info("reader= " + reader + "  FC=" + System.identityHashCode(si));
 
       if (prefix!=null) {
@@ -250,7 +247,7 @@ class PerSegmentSingleValuedFaceting {
         // count collection array only needs to be as big as the number of terms we are
         // going to collect counts for.
         final int[] counts = this.counts = new int[nTerms];
-        DocIdSet idSet = baseSet.getDocIdSet(reader);
+        DocIdSet idSet = baseSet.getDocIdSet(info);
         DocIdSetIterator iter = idSet.iterator();
 
 

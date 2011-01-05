@@ -35,7 +35,6 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
@@ -60,8 +59,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private boolean rollbackHasChanges;
 
   private SegmentReader[] subReaders;
+  private ReaderContext topLevelReaderContext;
   private int[] starts;                           // 1st docno for each segment
-  private final Map<SegmentReader,ReaderUtil.Slice> subReaderToSlice = new HashMap<SegmentReader,ReaderUtil.Slice>();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
@@ -300,25 +299,22 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private void initialize(SegmentReader[] subReaders) throws IOException {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array
-
+    final AtomicReaderContext[] subReaderCtx = new AtomicReaderContext[subReaders.length];
+    topLevelReaderContext = new CompositeReaderContext(this, subReaderCtx, subReaderCtx);
     final List<Fields> subFields = new ArrayList<Fields>();
-    final List<ReaderUtil.Slice> fieldSlices = new ArrayList<ReaderUtil.Slice>();
-
+    
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
+      subReaderCtx[i] = new AtomicReaderContext(topLevelReaderContext, subReaders[i], i, maxDoc, i, maxDoc);
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
 
       if (subReaders[i].hasDeletions()) {
         hasDeletions = true;
       }
-
-      final ReaderUtil.Slice slice = new ReaderUtil.Slice(starts[i], subReaders[i].maxDoc(), i);
-      subReaderToSlice.put(subReaders[i], slice);
-
+      
       final Fields f = subReaders[i].fields();
       if (f != null) {
         subFields.add(f);
-        fieldSlices.add(slice);
       }
     }
     starts[subReaders.length] = maxDoc;
@@ -844,16 +840,16 @@ class DirectoryReader extends IndexReader implements Cloneable {
       fieldSet.addAll(names);
     }
     return fieldSet;
-  } 
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return topLevelReaderContext;
+  }
   
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
-  }
-
-  @Override
-  public int getSubReaderDocBase(IndexReader subReader) {
-    return subReaderToSlice.get(subReader).start;
   }
 
   /** Returns the directory this index resides in. */
