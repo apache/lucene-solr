@@ -39,9 +39,9 @@ public abstract class Filter implements java.io.Serializable {
    * the top-level reader.
    * 
    * @param reader a {@link IndexReader} instance opened on the index currently
-   *         searched on. Note, it is likely that the provided reader does not
-   *         represent the whole underlying index i.e. if the index has more than
-   *         one segment the given reader only represents a single segment.
+   *         searched on. The provided reader is always an
+   *         atomic reader, so you can call reader.fields()
+   *         or reader.getDeletedDocs(), for example.
    *          
    * @return a DocIdSet that provides the documents which should be permitted or
    *         prohibited in search results. <b>NOTE:</b> null can be returned if

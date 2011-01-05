@@ -532,7 +532,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
     @Override
     public DocIdSetIterator iterator() throws IOException {
 
-      final Bits skipDocs = canIgnoreDeletedDocs ? null : MultiFields.getDeletedDocs(reader);
+      final Bits skipDocs = canIgnoreDeletedDocs ? null : reader.getDeletedDocs();
 
       if (skipDocs == null) {
         // Specialization optimization disregard deletions
