@@ -46,7 +46,6 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
     IndexWriter writer = new IndexWriter(fsd, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
     IndexReader reader = writer.getReader();
     assertEquals(100, reader.maxDoc());

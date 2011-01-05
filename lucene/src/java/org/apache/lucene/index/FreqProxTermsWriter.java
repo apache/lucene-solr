@@ -50,10 +50,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   }
 
   @Override
-  void closeDocStore(SegmentWriteState state) {}
-  @Override
   void abort() {}
-
 
   // TODO: would be nice to factor out more of this, eg the
   // FreqProxFieldMergeState, and code to visit all Fields

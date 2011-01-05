@@ -21,7 +21,6 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -567,7 +566,6 @@ public class TestIndexReader extends LuceneTestCase {
         //  add 1 documents with term : aaa
         writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
         addDoc(writer, searchTerm.text());
         writer.close();
 
@@ -965,35 +963,8 @@ public class TestIndexReader extends LuceneTestCase {
             }
           }
 
-          // Whether we succeeded or failed, check that all
-          // un-referenced files were in fact deleted (ie,
-          // we did not create garbage).  Just create a
-          // new IndexFileDeleter, have it delete
-          // unreferenced files, then verify that in fact
-          // no files were deleted:
-          String[] startFiles = dir.listAll();
-          SegmentInfos infos = new SegmentInfos();
-          infos.read(dir);
-          new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-          String[] endFiles = dir.listAll();
-
-          Arrays.sort(startFiles);
-          Arrays.sort(endFiles);
-
-          //for(int i=0;i<startFiles.length;i++) {
-          //  System.out.println("  startFiles: " + i + ": " + startFiles[i]);
-          //}
-
-          if (!Arrays.equals(startFiles, endFiles)) {
-            String successStr;
-            if (success) {
-              successStr = "success";
-            } else {
-              successStr = "IOException";
-              err.printStackTrace();
-            }
-            fail("reader.close() failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes): before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
-          }
+          IndexWriter.unlock(dir);
+          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
 
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if

@@ -17,42 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.CacheEntry;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
-import org.junit.Assume;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatchman;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runner.manipulation.Filter;
-import org.junit.runner.manipulation.NoTestsRemainException;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.InitializationError;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -73,6 +37,43 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatchman;
+import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runner.manipulation.Filter;
+import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -614,7 +615,6 @@ public abstract class LuceneTestCase extends Assert {
     
     if (c.getMergePolicy() instanceof LogMergePolicy) {
       LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
-      logmp.setUseCompoundDocStore(r.nextBoolean());
       logmp.setUseCompoundFile(r.nextBoolean());
       logmp.setCalibrateSizeByDeletes(r.nextBoolean());
       if (r.nextInt(3) == 2) {
@@ -627,6 +627,41 @@ public abstract class LuceneTestCase extends Assert {
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
+  }
+
+  public static LogMergePolicy newLogMergePolicy() {
+    return newLogMergePolicy(random);
+  }
+
+  public static LogMergePolicy newLogMergePolicy(Random r) {
+    LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
+    logmp.setUseCompoundFile(r.nextBoolean());
+    logmp.setCalibrateSizeByDeletes(r.nextBoolean());
+    if (r.nextInt(3) == 2) {
+      logmp.setMergeFactor(2);
+    } else {
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
+    }
+    return logmp;
+  }
+
+  public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setUseCompoundFile(useCFS);
+    return logmp;
+  }
+
+  public static LogMergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setUseCompoundFile(useCFS);
+    logmp.setMergeFactor(mergeFactor);
+    return logmp;
+  }
+
+  public static LogMergePolicy newLogMergePolicy(int mergeFactor) {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setMergeFactor(mergeFactor);
+    return logmp;
   }
 
   /**

@@ -147,7 +147,6 @@ public class TestNorms extends LuceneTestCase {
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
-    lmp.setUseCompoundDocStore(true);
     iw.close();
   }
 
@@ -192,7 +191,6 @@ public class TestNorms extends LuceneTestCase {
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
-    lmp.setUseCompoundDocStore(compound);
     for (int i = 0; i < ndocs; i++) {
       iw.addDocument(newDoc());
     }

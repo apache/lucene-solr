@@ -21,7 +21,6 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,7 +38,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.SetBasedFieldSelector;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -988,29 +986,8 @@ public class TestIndexReader extends LuceneTestCase
           // new IndexFileDeleter, have it delete
           // unreferenced files, then verify that in fact
           // no files were deleted:
-          String[] startFiles = dir.listAll();
-          SegmentInfos infos = new SegmentInfos();
-          infos.read(dir);
-          new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-          String[] endFiles = dir.listAll();
-
-          Arrays.sort(startFiles);
-          Arrays.sort(endFiles);
-
-          //for(int i=0;i<startFiles.length;i++) {
-          //  System.out.println("  startFiles: " + i + ": " + startFiles[i]);
-          //}
-
-          if (!Arrays.equals(startFiles, endFiles)) {
-            String successStr;
-            if (success) {
-              successStr = "success";
-            } else {
-              successStr = "IOException";
-              err.printStackTrace();
-            }
-            fail("reader.close() failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes): before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
-          }
+          IndexWriter.unlock(dir);
+          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files after");
 
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if

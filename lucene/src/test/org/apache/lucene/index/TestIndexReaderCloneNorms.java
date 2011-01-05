@@ -233,7 +233,6 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
-    lmp.setUseCompoundDocStore(true);
     iw.close();
   }
 
@@ -286,7 +285,6 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
-    lmp.setUseCompoundDocStore(compound);
     IndexWriter iw = new IndexWriter(dir, conf);
     for (int i = 0; i < ndocs; i++) {
       iw.addDocument(newDoc());

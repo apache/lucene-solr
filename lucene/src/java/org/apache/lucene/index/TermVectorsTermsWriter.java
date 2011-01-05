@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
@@ -30,7 +31,6 @@ import java.util.Map;
 final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   final DocumentsWriter docWriter;
-  TermVectorsWriter termVectorsWriter;
   PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
   IndexOutput tvx;
@@ -50,26 +50,29 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   @Override
   synchronized void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
-
-    // NOTE: it's possible that all documents seen in this segment
-    // hit non-aborting exceptions, in which case we will
-    // not have yet init'd the TermVectorsWriter.  This is
-    // actually OK (unlike in the stored fields case)
-    // because, although FieldInfos.hasVectors() will return
-    // true, the TermVectorsReader gracefully handles
-    // non-existence of the term vectors files.
-    state.hasVectors = hasVectors;
-
     if (tvx != null) {
+      // At least one doc in this run had term vectors enabled
+      fill(state.numDocs);
+      tvx.close();
+      tvf.close();
+      tvd.close();
+      tvx = tvd = tvf = null;
+      assert state.segmentName != null;
+      String idxName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.VECTORS_INDEX_EXTENSION);
+      String fldName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      String docName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
 
-      if (state.numDocsInStore > 0)
-        // In case there are some final documents that we
-        // didn't see (because they hit a non-aborting exception):
-        fill(state.numDocsInStore - docWriter.getDocStoreOffset());
+      if (4 + ((long) state.numDocs) * 16 != state.directory.fileLength(idxName)) {
+        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
+      }
 
-      tvx.flush();
-      tvd.flush();
-      tvf.flush();
+      state.flushedFiles.add(idxName);
+      state.flushedFiles.add(fldName);
+      state.flushedFiles.add(docName);
+
+      lastDocID = 0;
+      state.hasVectors = hasVectors;
+      hasVectors = false;
     }
 
     for (Map.Entry<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> entry : threadsAndFields.entrySet()) {
@@ -82,37 +85,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       TermVectorsTermsWriterPerThread perThread = (TermVectorsTermsWriterPerThread) entry.getKey();
       perThread.termsHashPerThread.reset(true);
     }
-  }
-
-  @Override
-  synchronized void closeDocStore(final SegmentWriteState state) throws IOException {
-    if (tvx != null) {
-      // At least one doc in this run had term vectors
-      // enabled
-      fill(state.numDocsInStore - docWriter.getDocStoreOffset());
-      tvx.close();
-      tvf.close();
-      tvd.close();
-      tvx = null;
-      assert state.docStoreSegmentName != null;
-      String idxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.VECTORS_INDEX_EXTENSION);
-      if (4+((long) state.numDocsInStore)*16 != state.directory.fileLength(idxName))
-        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
-
-      String fldName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.VECTORS_FIELDS_EXTENSION);
-      String docName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-      state.flushedFiles.add(idxName);
-      state.flushedFiles.add(fldName);
-      state.flushedFiles.add(docName);
-
-      docWriter.removeOpenFile(idxName);
-      docWriter.removeOpenFile(fldName);
-      docWriter.removeOpenFile(docName);
-
-      lastDocID = 0;
-      state.hasVectors = hasVectors;
-      hasVectors = false;
-    }    
   }
 
   int allocCount;
@@ -128,18 +100,17 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       }
       return new PerDoc();
-    } else
+    } else {
       return docFreeList[--freeCount];
+    }
   }
 
   /** Fills in no-term-vectors for all docs we haven't seen
    *  since the last doc that had term vectors. */
   void fill(int docID) throws IOException {
-    final int docStoreOffset = docWriter.getDocStoreOffset();
-    final int end = docID+docStoreOffset;
-    if (lastDocID < end) {
+    if (lastDocID < docID) {
       final long tvfPosition = tvf.getFilePointer();
-      while(lastDocID < end) {
+      while(lastDocID < docID) {
         tvx.writeLong(tvd.getFilePointer());
         tvd.writeVInt(0);
         tvx.writeLong(tvfPosition);
@@ -151,30 +122,18 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   synchronized void initTermVectorsWriter() throws IOException {        
     if (tvx == null) {
 
-      final String docStoreSegment = docWriter.getDocStoreSegment();
-
-      if (docStoreSegment == null)
-        return;
-
       // If we hit an exception while init'ing the term
       // vector output files, we must abort this segment
       // because those files will be in an unknown
       // state:
-      String idxName = IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_INDEX_EXTENSION);
-      String docName = IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-      String fldName = IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_FIELDS_EXTENSION);
       hasVectors = true;
-      tvx = docWriter.directory.createOutput(idxName);
-      tvd = docWriter.directory.createOutput(docName);
-      tvf = docWriter.directory.createOutput(fldName);
+      tvx = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), IndexFileNames.VECTORS_INDEX_EXTENSION));
+      tvd = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+      tvf = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), IndexFileNames.VECTORS_FIELDS_EXTENSION));
       
       tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
       tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
       tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
-
-      docWriter.addOpenFile(idxName);
-      docWriter.addOpenFile(fldName);
-      docWriter.addOpenFile(docName);
 
       lastDocID = 0;
     }
@@ -193,8 +152,9 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     tvx.writeLong(tvf.getFilePointer());
     tvd.writeVInt(perDoc.numVectorFields);
     if (perDoc.numVectorFields > 0) {
-      for(int i=0;i<perDoc.numVectorFields;i++)
+      for(int i=0;i<perDoc.numVectorFields;i++) {
         tvd.writeVInt(perDoc.fieldNumbers[i]);
+      }
       assert 0 == perDoc.fieldPointers[0];
       long lastPos = perDoc.fieldPointers[0];
       for(int i=1;i<perDoc.numVectorFields;i++) {
@@ -206,7 +166,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       perDoc.numVectorFields = 0;
     }
 
-    assert lastDocID == perDoc.docID + docWriter.getDocStoreOffset();
+    assert lastDocID == perDoc.docID;
 
     lastDocID++;
 
@@ -215,36 +175,26 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument end");
   }
 
-  public boolean freeRAM() {
-    // We don't hold any state beyond one doc, so we don't
-    // free persistent RAM here
-    return false;
-  }
-
   @Override
   public void abort() {
     hasVectors = false;
-    if (tvx != null) {
-      try {
-        tvx.close();
-      } catch (Throwable t) {
-      }
-      tvx = null;
+    try {
+      IOUtils.closeSafely(tvx, tvd, tvf);
+    } catch (IOException ignored) {
     }
-    if (tvd != null) {
-      try {
-        tvd.close();
-      } catch (Throwable t) {
-      }
-      tvd = null;
+    try {
+      docWriter.directory.deleteFile(IndexFileNames.segmentFileName(docWriter.getSegment(), IndexFileNames.VECTORS_INDEX_EXTENSION));
+    } catch (IOException ignored) {
     }
-    if (tvf != null) {
-      try {
-        tvf.close();
-      } catch (Throwable t) {
-      }
-      tvf = null;
+    try {
+      docWriter.directory.deleteFile(IndexFileNames.segmentFileName(docWriter.getSegment(), IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+    } catch (IOException ignored) {
     }
+    try {
+      docWriter.directory.deleteFile(IndexFileNames.segmentFileName(docWriter.getSegment(), IndexFileNames.VECTORS_FIELDS_EXTENSION));
+    } catch (IOException ignored) {
+    }
+    tvx = tvd = tvf = null;
     lastDocID = 0;
   }
 

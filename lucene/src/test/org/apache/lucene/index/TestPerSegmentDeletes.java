@@ -69,7 +69,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     // flushing without applying deletes means 
     // there will still be deletes in the segment infos
-    writer.flush(false, false, false);
+    writer.flush(false, false);
     assertTrue(writer.bufferedDeletes.any());
     
     // get reader flushes pending deletes
@@ -82,7 +82,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // merge segments 0 and 1
     // which should apply the delete id:2
     writer.deleteDocuments(new Term("id", "2"));
-    writer.flush(false, false, false);
+    writer.flush(false, false);
     fsmp.doMerge = true;
     fsmp.start = 0;
     fsmp.length = 2;
@@ -175,12 +175,12 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
       writer.addDocument(TestIndexWriterReader.createDocument(x, "5", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
-    writer.flush(false, true, false);
+    writer.flush(false, false);
     for (int x = 25; x < 30; x++) {
       writer.addDocument(TestIndexWriterReader.createDocument(x, "5", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
-    writer.flush(false, true, false);
+    writer.flush(false, false);
     
     //System.out.println("infos3:"+writer.segmentInfos);
     
@@ -270,11 +270,6 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     public MergeSpecification findMergesToExpungeDeletes(
         SegmentInfos segmentInfos) throws CorruptIndexException, IOException {
       return null;
-    }
-    
-    @Override
-    public boolean useCompoundDocStore(SegmentInfos segments) {
-      return useCompoundFile;
     }
     
     @Override

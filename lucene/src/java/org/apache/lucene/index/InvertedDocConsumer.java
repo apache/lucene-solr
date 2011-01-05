@@ -32,9 +32,6 @@ abstract class InvertedDocConsumer {
   /** Flush a new segment */
   abstract void flush(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException;
 
-  /** Close doc stores */
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
-
   /** Attempt to free RAM, returning true if any RAM was
    *  freed */
   abstract boolean freeRAM();

@@ -218,7 +218,6 @@ public class TestOmitTf extends LuceneTestCase {
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     Document d = new Document();
         
     Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);

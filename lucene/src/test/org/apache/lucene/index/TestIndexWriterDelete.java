@@ -685,7 +685,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(true);
-    lmp.setUseCompoundDocStore(true);
 
     dir.failOn(failure.reset());
 
@@ -832,7 +831,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     String[] startFiles = dir.listAll();
     SegmentInfos infos = new SegmentInfos();
     infos.read(dir);
-    new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+    new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null);
     String[] endFiles = dir.listAll();
     modifier.close();
     dir.close();

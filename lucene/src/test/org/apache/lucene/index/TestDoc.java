@@ -192,7 +192,7 @@ public class TestDoc extends LuceneTestCase {
       r2.close();
       
       final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
-                                               useCompoundFile, true, -1, null, false, merger.fieldInfos().hasProx(),
+                                               useCompoundFile, true, merger.fieldInfos().hasProx(),
                                                merger.fieldInfos().hasVectors());
       
       if (useCompoundFile) {

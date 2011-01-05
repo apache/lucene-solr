@@ -93,8 +93,7 @@ public final class SegmentInfo {
   private Map<String,String> diagnostics;
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile,
-                     int docStoreOffset, String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx,
-                     boolean hasVectors) { 
+                     boolean hasProx, boolean hasVectors) { 
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -102,13 +101,10 @@ public final class SegmentInfo {
     this.isCompoundFile = (byte) (isCompoundFile ? YES : NO);
     preLockless = false;
     this.hasSingleNormFile = hasSingleNormFile;
-    this.docStoreOffset = docStoreOffset;
-    this.docStoreSegment = docStoreSegment;
-    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    this.docStoreOffset = -1;
     delCount = 0;
     this.hasProx = hasProx;
     this.hasVectors = hasVectors;
-    assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
   }
 
   /**
@@ -342,8 +338,10 @@ public final class SegmentInfo {
   @Override
   public Object clone() {
     SegmentInfo si = new SegmentInfo(name, docCount, dir, false, hasSingleNormFile,
-                                     docStoreOffset, docStoreSegment, docStoreIsCompoundFile,
                                      hasProx, hasVectors);
+    si.docStoreOffset = docStoreOffset;
+    si.docStoreSegment = docStoreSegment;
+    si.docStoreIsCompoundFile = docStoreIsCompoundFile;
     si.delGen = delGen;
     si.delCount = delCount;
     si.preLockless = preLockless;

@@ -43,16 +43,16 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
         .setMaxBufferedDocs(10);
-    ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(10);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(true);
-    ((LogMergePolicy) conf.getMergePolicy()).setNoCFSRatio(1.0);
+    LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
+    mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
+    conf.setMergePolicy(mergePolicy);
+
     IndexWriter writer = new IndexWriter(dir, conf);
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);
     }
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
+    mergePolicy.setUseCompoundFile(false);
     for(;i<45;i++) {
       addDoc(writer, i);
     }

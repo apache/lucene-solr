@@ -59,7 +59,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer = newWriter(aux, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false); // use one without a compound file
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false); // use one without a compound file
     // add 40 documents in separate files
     addDocs(writer, 40);
     assertEquals(40, writer.maxDoc());
@@ -271,13 +270,11 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer = newWriter(aux, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(1000));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false); // use one without a compound file
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false); // use one without a compound file
     // add 140 documents in separate files
     addDocs(writer, 40);
     writer.close();
     writer = newWriter(aux, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(1000));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false); // use one without a compound file
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false); // use one without a compound file
     addDocs(writer, 100);
     writer.close();
 
@@ -504,7 +501,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
     writer = newWriter(aux, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(100));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false); // use one without a compound file
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false); // use one without a compound file
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     // add 30 documents in 3 segments
     for (int i = 0; i < 3; i++) {
@@ -512,7 +508,6 @@ public class TestAddIndexes extends LuceneTestCase {
       writer.close();
       writer = newWriter(aux, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(100));
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false); // use one without a compound file
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false); // use one without a compound file
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     }
     assertEquals(30, writer.maxDoc());
@@ -526,7 +521,6 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory dir = newDirectory();
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     lmp.setMergeFactor(100);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
@@ -555,7 +549,6 @@ public class TestAddIndexes extends LuceneTestCase {
     lmp = new LogByteSizeMergePolicy();
     lmp.setMinMergeMB(0.0001);
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     lmp.setMergeFactor(4);
     writer = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new WhitespaceAnalyzer(TEST_VERSION_CURRENT))

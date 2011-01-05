@@ -18,12 +18,10 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -785,20 +783,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
     }
 
-    String[] startFiles = dir.listAll();
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
-    new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-    String[] endFiles = dir.listAll();
-
-    if (!Arrays.equals(startFiles, endFiles)) {
-      fail("docswriter abort() failed to delete unreferenced files:\n  before delete:\n    "
-           + arrayToString(startFiles) + "\n  after delete:\n    "
-           + arrayToString(endFiles));
-    }
-
     modifier.close();
 
+    TestIndexWriter.assertNoUnreferencedFiles(dir, "unreferenced files");
   }
 
   private String arrayToString(String[] l) {

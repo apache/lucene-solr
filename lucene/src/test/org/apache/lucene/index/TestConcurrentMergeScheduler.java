@@ -96,7 +96,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         writer.addDocument(doc);
         failure.setDoFail();
         try {
-          writer.flush(true, false, true);
+          writer.flush(true, true);
           if (failure.hitExc) {
             fail("failed to hit IOException");
           }
