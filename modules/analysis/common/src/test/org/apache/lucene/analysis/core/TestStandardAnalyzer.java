@@ -201,4 +201,10 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     WordBreakTestUnicode_6_0_0 wordBreakTest = new WordBreakTestUnicode_6_0_0();
     wordBreakTest.test(a);
   }
+  
+  public void testSupplementary() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "𩬅艱鍟䇹愯瀛", 
+        new String[] {"𩬅", "艱", "鍟", "䇹", "愯", "瀛"},
+        new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>" });
+  }
 }

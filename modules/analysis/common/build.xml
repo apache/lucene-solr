@@ -38,8 +38,15 @@
 
   <target name="compile-core" depends="jflex-notice, common.compile-core"/>
 
-  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-UAX29URLEmailTokenizer,jflex-wiki-tokenizer"/>
+  <target name="jflex" depends="jflex-check,clean-jflex,gen-uax29-supp-macros,
+                                jflex-StandardAnalyzer,jflex-UAX29URLEmailTokenizer,jflex-wiki-tokenizer"/>
 
+  <target name="gen-uax29-supp-macros">
+    <subant target="gen-uax29-supp-macros">
+       <fileset dir="../icu" includes="build.xml"/>
+    </subant>
+  </target>
+  
   <target name="jflex-wiki-tokenizer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
       <classpath refid="jflex.classpath"/>
