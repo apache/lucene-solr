@@ -17,16 +17,46 @@ package org.apache.lucene.analysis.icu;
  * limitations under the License.
  */
 
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.text.UnicodeSetIterator;
+import com.ibm.icu.util.VersionInfo;
 
 /** creates a macro to augment jflex's unicode wordbreak support for > BMP */
 public class GenerateJFlexSupplementaryMacros {
   private static final UnicodeSet BMP = new UnicodeSet("[\u0000-\uFFFF]");
+  private static final String NL = System.getProperty("line.separator");
+  private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance
+    (DateFormat.FULL, DateFormat.FULL, Locale.US);
+  static {
+    DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+  }
+  
+  private static final String APACHE_LICENSE 
+    = "/*" + NL
+      + " * Copyright 2010 The Apache Software Foundation." + NL
+      + " *" + NL
+      + " * Licensed under the Apache License, Version 2.0 (the \"License\");" + NL
+      + " * you may not use this file except in compliance with the License." + NL
+      + " * You may obtain a copy of the License at" + NL
+      + " *" + NL
+      + " *      http://www.apache.org/licenses/LICENSE-2.0" + NL
+      + " *" + NL
+      + " * Unless required by applicable law or agreed to in writing, software" + NL
+      + " * distributed under the License is distributed on an \"AS IS\" BASIS," + NL
+      + " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." + NL
+      + " * See the License for the specific language governing permissions and" + NL
+      + " * limitations under the License." + NL
+      + " */" + NL + NL;
+    
   
   public static void main(String args[]) throws Exception {
+    outputHeader();
     outputMacro("ALetterSupp",         "[:WordBreak=ALetter:]");
     outputMacro("FormatSupp",          "[:WordBreak=Format:]");
     outputMacro("ExtendSupp",          "[:WordBreak=Extend:]");
@@ -40,6 +70,14 @@ public class GenerateJFlexSupplementaryMacros {
     outputMacro("ComplexContextSupp",  "[:LineBreak=Complex_Context:]");
     outputMacro("HanSupp",             "[:Script=Han:]");
     outputMacro("HiraganaSupp",        "[:Script=Hiragana:]");
+  }
+  
+  static void outputHeader() {
+    System.out.print(APACHE_LICENSE);
+    System.out.print("// Generated using ICU4J " + VersionInfo.ICU_VERSION.toString() + " on ");
+    System.out.println(DATE_FORMAT.format(new Date()));
+    System.out.println("// by " + GenerateJFlexSupplementaryMacros.class.getName());
+    System.out.print(NL + NL);
   }
   
   // we have to carefully output the possibilities as compact utf-16
