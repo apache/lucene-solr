@@ -519,7 +519,14 @@
   <!-- Build the JFlex files into the source tree                         -->
   <!-- ================================================================== -->
 
-  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-UAX29URLEmailTokenizer" />
+  <target name="jflex" depends="jflex-check,clean-jflex,gen-uax29-supp-macros,
+                                jflex-StandardAnalyzer,jflex-UAX29URLEmailTokenizer"/>
+
+  <target name="gen-uax29-supp-macros">
+    <subant target="gen-uax29-supp-macros">
+       <fileset dir="contrib/icu" includes="build.xml"/>
+    </subant>
+  </target>
 
   <target name="jflex-StandardAnalyzer" depends="init,jflex-check,gen-tlds" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">

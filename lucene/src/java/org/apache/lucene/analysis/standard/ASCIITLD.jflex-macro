@@ -15,8 +15,8 @@
  */
 
 // Generated from IANA Root Zone Database <http://www.internic.net/zones/root.zone>
-// file version from Tuesday, December 7, 2010 12:34:02 PM UTC
-// generated on Tuesday, December 7, 2010 4:53:37 PM UTC
+// file version from Thursday, January 6, 2011 12:34:09 PM UTC
+// generated on Thursday, January 6, 2011 2:34:39 PM UTC
 // by org.apache.lucene.analysis.standard.GenerateJflexTLDMacros
 
 ASCIITLD = "." (
@@ -306,6 +306,7 @@ ASCIITLD = "." (
 	| [xX][nN]--[pP]1[aA][iI]
 	| [xX][nN]--[pP][gG][bB][sS]0[dD][hH]
 	| [xX][nN]--[wW][gG][bB][hH]1[cC]
+	| [xX][nN]--[wW][gG][bB][lL]6[aA]
 	| [xX][nN]--[xX][kK][cC]2[aA][lL]3[hH][yY][eE]2[aA]
 	| [xX][nN]--[yY][gG][bB][iI]2[aA][mM][mM][xX]
 	| [xX][nN]--[zZ][cC][kK][zZ][aA][hH]
