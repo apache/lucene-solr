@@ -64,9 +64,10 @@ public class IndexSearcher {
   // in the next release
   protected final ReaderContext readerContext;
   protected final AtomicReaderContext[] leafContexts;
-  protected final IndexSearcher[] subSearchers;
-//  protected final int[] docStarts;
+
+  // These are only used for multi-threaded search
   private final ExecutorService executor;
+  protected final IndexSearcher[] subSearchers;
 
   /** The Similarity implementation used by this searcher. */
   private Similarity similarity = Similarity.getDefault();
@@ -165,12 +166,17 @@ public class IndexSearcher {
       assert context.leaves() != null : "non-atomic top-level context must have leaves";
       this.leafContexts = context.leaves();
     }
-    subSearchers = new IndexSearcher[this.leafContexts.length];
-    for (int i = 0; i < subSearchers.length; i++) { // TODO do we need those IS if executor is null?
-      if (leafContexts[i].reader == context.reader) {
-        subSearchers[i] = this;
-      } else {
-        subSearchers[i] = new IndexSearcher(leafContexts[i].reader.getTopReaderContext()); // we need to get a TL context for sub searchers!
+
+    if (executor == null) {
+      subSearchers = null;
+    } else {
+      subSearchers = new IndexSearcher[this.leafContexts.length];
+      for (int i = 0; i < subSearchers.length; i++) {
+        if (leafContexts[i].reader == context.reader) {
+          subSearchers[i] = this;
+        } else {
+          subSearchers[i] = new IndexSearcher(leafContexts[i].reader.getTopReaderContext()); // we need to get a TL context for sub searchers!
+        }
       }
     }
   }
