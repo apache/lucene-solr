@@ -147,7 +147,7 @@ public class IndexSearcher {
     this(context, null);
   }
   
-  // convinience ctor for other IR based ctors
+  // convenience ctor for other IR based ctors
   private IndexSearcher(IndexReader reader, boolean closeReader, ExecutorService executor) {
     this(reader.getTopReaderContext(), closeReader, executor);
   }
