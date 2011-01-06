@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.pt;
+package org.apache.solr.analysis;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,23 +17,12 @@ package org.apache.lucene.analysis.pt;
  * limitations under the License.
  */
 
-/**
- * Minimal Stemmer for Portuguese
- * <p>
- * This follows the "RSLP-S" algorithm presented in:
- * <i>A study on the Use of Stemming for Monolingual Ad-Hoc Portuguese
- * Information Retrieval</i> (Orengo, et al)
- * which is just the plural reduction step of the RSLP
- * algorithm from <i>A Stemming Algorithmm for the Portuguese Language</i>,
- * Orengo et al.
- * @see RSLPStemmerBase
- */
-public class PortugueseMinimalStemmer extends RSLPStemmerBase {
-  
-  private static final Step pluralStep = 
-    parse(PortugueseMinimalStemmer.class, "portuguese.rslp").get("Plural");
-  
-  public int stem(char s[], int len) {
-    return pluralStep.apply(s, len);
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.gl.GalicianStemFilter;
+
+/** Factory for {@link GalicianStemFilter} */
+public class GalicianStemFilterFactory extends BaseTokenFilterFactory {
+  public TokenStream create(TokenStream input) {
+    return new GalicianStemFilter(input);
   }
 }

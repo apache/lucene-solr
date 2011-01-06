@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.pt;
+package org.apache.solr.analysis;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,23 +17,20 @@ package org.apache.lucene.analysis.pt;
  * limitations under the License.
  */
 
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+
 /**
- * Minimal Stemmer for Portuguese
- * <p>
- * This follows the "RSLP-S" algorithm presented in:
- * <i>A study on the Use of Stemming for Monolingual Ad-Hoc Portuguese
- * Information Retrieval</i> (Orengo, et al)
- * which is just the plural reduction step of the RSLP
- * algorithm from <i>A Stemming Algorithmm for the Portuguese Language</i>,
- * Orengo et al.
- * @see RSLPStemmerBase
+ * Simple tests to ensure the Portuguese stem factory is working.
  */
-public class PortugueseMinimalStemmer extends RSLPStemmerBase {
-  
-  private static final Step pluralStep = 
-    parse(PortugueseMinimalStemmer.class, "portuguese.rslp").get("Plural");
-  
-  public int stem(char s[], int len) {
-    return pluralStep.apply(s, len);
+public class TestPortugueseStemFilterFactory extends BaseTokenTestCase {
+  public void testStemming() throws Exception {
+    Reader reader = new StringReader("maluquice");
+    PortugueseStemFilterFactory factory = new PortugueseStemFilterFactory();
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, new String[] { "maluc" });
   }
 }

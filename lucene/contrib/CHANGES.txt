@@ -281,6 +281,9 @@ New features
    BooleanModifiersQueryNodeProcessor, for example instead of GroupQueryNodeProcessor.
    (Adriano Crestani via Robert Muir)
 
+ * LUCENE-2842: Add analyzer for Galician. Also adds the RSLP (Orengo) stemmer
+   for Portuguese.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
