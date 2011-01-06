@@ -217,7 +217,6 @@
           <packageset dir="contrib/memory/src/java"/>
           <packageset dir="contrib/misc/src/java"/>
           <packageset dir="contrib/queries/src/java"/>
-          <packageset dir="contrib/remote/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
           <packageset dir="contrib/spellchecker/src/java"/>
           <packageset dir="contrib/swing/src/java"/>
