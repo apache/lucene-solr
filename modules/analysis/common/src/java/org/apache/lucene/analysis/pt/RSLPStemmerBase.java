@@ -321,7 +321,7 @@ public abstract class RSLPStemmerBase {
   }
   
   private static String[] parseList(String s) {
-    if (s.isEmpty())
+    if (s.length() == 0)
       return null;
     String list[] = s.split(",");
     for (int i = 0; i < list.length; i++)
@@ -337,7 +337,7 @@ public abstract class RSLPStemmerBase {
     String line = null;
     while ((line = r.readLine()) != null) {
       line = line.trim();
-      if (!line.isEmpty() && line.charAt(0) != '#')
+      if (line.length() > 0 && line.charAt(0) != '#')
         return line;
     }
     return line;
