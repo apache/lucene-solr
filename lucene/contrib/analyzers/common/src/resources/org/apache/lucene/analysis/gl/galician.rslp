@@ -1,0 +1,647 @@
+#	Steps file for the RSLP stemmer.
+
+# Step 1: Plural Reduction
+{  "Plural", 3, 1, {"s"}, 
+  # bons -> bon
+  {"ns",1,"n",{"luns","furatapóns","furatapons"}},
+  # xamós -> xamón
+  {"ós",3,"ón"},
+  # balões -> balón
+  {"ões",3,"ón"},
+  # capitães -> capitão
+  {"ães",1,"ão",{"mães","magalhães"}},
+  # normais -> normal
+  {"ais",2,"al",{"cais","tais","mais","pais","ademais"}},
+  {"áis",2,"al",{"cáis","táis", "máis", "páis", "ademáis"}},
+  # papéis -> papel
+  {"éis",2,"el"},
+  # posíbeis -> posíbel
+  {"eis",2,"el"},
+  # espanhóis -> espanhol
+  {"óis",2,"ol",{"escornabóis"}},
+  # caracois -> caracol
+  {"ois",2,"ol",{"escornabois"}},
+  # cadrís -> cadril
+  {"ís",2,"il",{"país"}},
+  # cadris -> cadril
+  {"is",2,"il",{"menfis","pais","kinguis"}},
+  # males -> mal
+  {"les",2,"l",{"ingles","marselles","montreales","senegales","manizales","móstoles","nápoles"}},
+  # mares -> mar
+  {"res",3,"r",{"petres","henares","cáceres","baleares","linares","londres","mieres","miraflores","mércores","venres", "pires"}},
+  # luces -> luz
+  {"ces",2,"z"},
+  # luzes -> luz
+  {"zes",2,"z"},
+  # leises -> lei
+  {"ises",3,"z"},
+  # animás -> animal
+  {"ás",1,"al",{"más"}},
+  # gases -> gas
+  {"ses",2,"s"},
+  # casas -> casa
+  {"s",2,"",{"barbadés","barcelonés","cantonés","gabonés","llanés","medinés","escocés","escocês","francês","barcelonês","cantonês","macramés","reves","barcelones","cantones","gabones","llanes","magallanes","medines","escoces","frances","xoves","martes","aliás","pires","lápis","cais","mais","mas","menos","férias","pêsames","crúcis","país","cangas","atenas","asturias","canarias","filipinas","honduras","molucas","caldas","mascareñas","micenas","covarrubias","psoas","óculos","nupcias","xoves","martes","llanes"}}};
+
+{  "Unification", 0, 0, {},
+  # cansadísimo -> cansadísimo
+  {"íssimo",5,"ísimo"},
+  # cansadísima -> cansadísima
+  {"íssima",5,"ísima"},
+  # homaço -> homazo
+  {"aço",4,"azo"},
+  # mulheraça -> mulheraza
+  {"aça",4,"aza"},
+  # xentuça -> xentuza
+  {"uça",4,"uza"},
+  # manilhar -> manillar
+  {"lhar",2,"llar"},
+  # colher -> coller
+  {"lher",2,"ller"},
+  # melhor -> mellor
+  {"lhor",2,"llor"},
+  # alho -> allo
+  {"lho",1,"llo"},
+  # linhar -> liñar
+  {"nhar",2,"ñar"},
+  # penhor -> peñor
+  {"nhor",2,"ñor"},
+  # anho -> año
+  {"nho",1,"ño"},
+  # cunha -> cuña
+  {"nha",1,"ña"},
+  # hospitalário -> hospitalario
+  {"ário",3,"ario"},
+  # bibliotecária -> bibliotecaria
+  {"ária",3,"aria"},
+  # agradable -> agradábel
+  {"able",2,"ábel"},
+  # agradávele -> agradábel
+  {"ável",2,"ábel"},
+  # imposible -> imposíbel
+  {"ible",2,"íbel"},
+  # imposível -> imposíbel
+  {"ível",2,"íbel"},
+  # imposiçom -> imposición
+  {"çom",2,"ción"},
+  # garagem -> garaxe
+  {"agem",2,"axe"},
+  # garage -> garaxe
+  {"age",2,"axe"},
+  # impressão -> impressón
+  {"ão",3,"ón"},
+  # irmao -> irmán
+  {"ao",1,"án"},
+  # irmau -> irmán
+  {"au",1,"án"},
+  # garrafom -> garrafón
+  {"om",3,"ón"},
+  # cantem -> canten
+  {"m",2,"n"}};
+
+{  "Adverb", 0, 0, {},
+  # felizmente -> feliz
+  {"mente",4,"",{"experimente","vehemente","sedimente"}}};
+
+{  "Augmentative", 0, 1, {},
+  # cansadísimo -> cansad
+  {"dísimo",5},
+  # cansadísima -> cansad
+  {"dísima",5},
+  # amabilísimo -> ama
+  {"bilísimo",3},
+  # amabilísima -> ama
+  {"bilísima",3},
+  # fortísimo -> fort
+  {"ísimo",3},
+  # fortísima -> fort
+  {"ísima",3},
+  # centésimo -> cent
+  {"ésimo",3},
+  # centésima -> cent
+  {"ésima",3},
+  # paupérrimo -> paup
+  {"érrimo",4},
+  # paupérrima -> paup
+  {"érrima",4},
+  # charlatana -> charlat
+  {"ana",2,"",{"argana","banana","choupana","espadana","faciana","iguana","lantana","macana","membrana","mesana","nirvana","obsidiana","palangana","pavana","persiana","pestana","porcelana","pseudomembrana","roldana","sábana","salangana","saragana","ventana"}},
+  # charlatán -> charlat
+  {"án",3,"",{"ademán","bardán","barregán","corricán","curricán","faisán","furacán","fustán","gabán","gabián","galán","gañán","lavacán","mazán","mourán","rabadán","serán","serrán","tabán","titán","tobogán","verán","volcán","volován"}},
+  # homazo -> hom
+  {"azo",4,"",{"abrazo","espazo","andazo","bagazo","balazo","bandazo","cachazo","carazo","denazo","engazo","famazo","lampreazo","pantocazo","pedazo","preñazo","regazo","ribazo","sobrazo","terrazo","trompazo"}},
+  # mulleraza -> muller
+  {"aza",3,"",{"alcarraza","ameaza","baraza","broucaza","burgaza","cabaza","cachaza","calaza","carpaza","carraza","coiraza","colmaza","fogaza","famaza","labaza","liñaza","melaza","mordaza","paraza","pinaza","rabaza","rapaza","trancaza"}},
+  # cascallo -> casc
+  {"allo",4,"",{"traballo"}},
+  # xentalla -> xent
+  {"alla",4},
+  # bocarra -> boc
+  {"arra",3,"",{"cigarra","cinzarra"}},
+  # medicastro -> medic
+  {"astro",3,"",{"balastro","bimbastro","canastro","retropilastro"}},
+  # poetastra -> poet
+  {"astra",3,"",{"banastra","canastra","contrapilastra","piastra","pilastra"}},
+  # corpázio -> corp
+  {"ázio",3,"",{"topázio"}},
+  # soutelo -> sout
+  {"elo",4,"",{"bacelo","barrelo","bicarelo","biquelo","boquelo","botelo","bouquelo","cacarelo","cachelo","cadrelo","campelo","candelo","cantelo","carabelo","carambelo","caramelo","cercelo","cerebelo","chocarelo","coitelo","conchelo","corbelo","cotobelo","couselo","destelo","desvelo","esfácelo","fandelo","fardelo","farelo","farnelo","flabelo","ganchelo","garfelo","involucelo","mantelo","montelo","outerelo","padicelo","pesadelo","pinguelo","piquelo","rampelo","rastrelo","restelo","tornecelo","trabelo","restrelo","portelo","ourelo","zarapelo"}},
+  # avioneta -> avion
+  {"eta",3,"",{"arqueta","atleta","avoceta","baioneta","baldeta","banqueta","barraganeta","barreta","borleta","buceta","caceta","calceta","caldeta","cambeta","canaleta","caneta","carreta","cerceta","chaparreta","chapeta","chareta","chincheta","colcheta","cometa","corbeta","corveta","cuneta","desteta","espeta","espoleta","estafeta","esteta","faceta","falanxeta","frasqueta","gaceta","gabeta","galleta","garabeta","gaveta","glorieta","lagareta","lambeta","lanceta","libreta","maceta","macheta","maleta","malleta","mareta","marreta","meseta","mofeta","muleta","peseta","planeta","raqueta","regreta","saqueta","veleta","vendeta","viñeta"}},
+  # guapete -> guap
+  {"ete",3,"",{"alfinete","ariete","bacinete","banquete","barallete","barrete","billete","binguelete","birrete","bonete","bosquete","bufete","burlete","cabalete","cacahuete","cavinete","capacete","carrete","casarete","casete","chupete","clarinete","colchete","colete","capete","curupete","disquete","estilete","falsete","ferrete","filete","gallardete","gobelete","inglete","machete","miquelete","molete","mosquete","piquete","ribete","rodete","rolete","roquete","sorvete","vedete","vendete"}},
+  # práctica -> práct
+  {"ica",3,"",{"andarica","botánica","botica","dialéctica","dinámica","física","formica","gráfica","marica","túnica"}},
+  # práctico -> práct
+  {"ico",3,"",{"conico","acetifico","acidifico"}},
+  # trapexo -> trap
+  {"exo",3,"",{"arpexo","arquexo","asexo","axexo","azulexo","badexo","bafexo","bocexo","bosquexo","boubexo","cacarexo","carrexo","cascarexo","castrexo","convexo","cotexo","desexo","despexo","forcexo","gabexo","gargarexo","gorgolexo","inconexo","manexo","merexo","narnexo","padexo","patexo","sopexo","varexo"}},
+  {"exa",3,"",{"airexa","bandexa","carrexa","envexa","igrexa","larexa","patexa","presexa","sobexa"}},
+  # multidão -> mult
+  {"idão",3},
+  # pequeniño -> pequeno
+  {"iño",3,"o",{"camiño","cariño","comiño","golfiño","padriño","sobriño","viciño","veciño"}},
+  # pequeniña -> pequena
+  {"iña",3,"a",{"camariña","campiña","entreliña","espiña","fariña","moriña","valiña"}},
+  # grandito -> grand
+  {"ito",3,""},
+  # grandita -> grand
+  {"ita",3,""},
+  # anomaloide -> animal
+  {"oide",3,"",{"anaroide","aneroide","asteroide","axoide","cardioide","celuloide","coronoide","discoide","espermatozoide","espiroide","esquizoide","esteroide","glenoide","linfoide","hemorroide","melaloide","sacaroide","tetraploide","varioloide"}},
+  # cazola -> caz
+  {"ola",3,"",{"aixola","ampola","argola","arola","arteríola","bandola","bítola","bractéola","cachola","carambola","carapola","carola","carrandiola","catrapola","cebola","centola","champola","chatola","cirola","cítola","consola","corola","empola","escarola","esmola","estola","fitola","florícola","garañola","gárgola","garxola","glicocola","góndola","mariola","marola","michola","pirola","rebola","rupícola","saxícola","sémola","tachola","tómbola"}},
+  # pedrolo -> pedr
+  {"olo",3,"",{"arrolo","babiolo","cacharolo","caixarolo","carolo","carramolo","cascarolo","cirolo","codrolo","correolo","cotrolo","desconsolo","rebolo","repolo","subsolo","tixolo","tómbolo","torolo","trémolo","vacúolo","xermolo","zócolo"}},
+  # vellote -> vell
+  {"ote",3,"",{"aigote","alcaiote","barbarote","balote","billote","cachote","camarote","capote","cebote","chichote","citote","cocorote","escote","gañote","garrote","gavote","lamote","lapote","larapote","lingote","lítote","magote","marrote","matalote","pandote","paparote","rebote","tagarote","zarrote"}},
+  # mozota -> moz
+  {"ota",3,"",{"asíntota","caiota","cambota","chacota","compota","creosota","curota","derrota","díspota","gamota","maniota","pelota","picota","pillota","pixota","queirota","remota"}},
+  # gordocho -> gord
+  {"cho",3,"",{"abrocho","arrocho","carocho","falucho","bombacho","borracho","mostacho"}},
+  # gordecha -> gord
+  {"cha",3,"",{"borracha","carracha","estacha","garnacha","limacha","remolacha","abrocha"}},
+  # baratuco -> barat
+  {"uco",4,"",{"caduco","estuco","fachuco","malluco","saluco","trabuco"}},
+  # borrachuzo -> borrach
+  {"uzo",3,"",{"carriñouzo","fachuzo","mañuzo","mestruzo","tapuzo"}},
+  # xentuza -> xent
+  {"uza",3,"",{"barruza","chamuza","chapuza","charamuza","conduza","deduza","desluza","entreluza","induza","reluza","seduza","traduza","trasluza"}},
+  # babuxa -> bab
+  {"uxa",3,"",{"caramuxa","carrabouxa","cartuxa","coruxa","curuxa","gaturuxa","maruxa","meruxa","miruxa","moruxa","muruxa","papuxa","rabuxa","trouxa"}},
+  {"uxo",3,"",{"caramuxo","carouxo","carrabouxo","curuxo","debuxo","ganduxo","influxo","negouxo","pertuxo","refluxo"}},
+  # grupello -> grup
+  {"ello",3,"",{"alborello","artello","botello","cachafello","calello","casarello","cazabello","cercello","cocerello","concello","consello","desparello","escaravello","espello","fedello","fervello","gagafello","gorrobello","nortello","pendello","troupello","trebello"}},
+  # pontella -> pont
+  {"ella",3,"",{"alborella","bertorella","bocatella","botella","calella","cercella","gadella","grosella","lentella","movella","nocella","noitevella","parella","pelella","percebella","segorella","sabella"}}};
+
+{  "Noun", 0, 0, {},
+  # lealdade -> leal 
+  {"dade",3,"",{"acridade","calidade"}},
+  # clarificar -> clar
+  {"ificar",2},
+  # brasileiro->brasil
+  {"eiro",3,"",{"agoireiro","bardalleiro","braseiro","barreiro","canteiro","capoeiro","carneiro","carteiro","cinceiro","faroleiro","mareiro","preguiceiro","quinteiro","raposeiro","retranqueiro","regueiro","sineiro","troleiro","ventureiro"}},
+  # marisqueira -> marisqu
+  {"eira",3,"",{"cabeleira","canteira","cocheira","folleira","milleira"}},
+  # hospitalario -> hospital
+  {"ario",3,"",{"armario","calcario","lionario","salario"}},
+  # bibliotecaria -> bibliotec
+  {"aria",3,"",{"cetaria","coronaria","fumaria","linaria","lunaria","parietaria","saponaria","serpentaria"}},
+  # humorístico -> humor
+  {"ístico",3,"",{"balístico", "ensaístico"}},
+  # castrista -> castr
+  {"ista",3,"",{"batista","ciclista","fadista","operista","tenista","verista"}},
+  # lavado -> lav
+  {"ado",2,"",{"grado","agrado"}},
+  # decanato -> decan
+  {"ato",2,"",{"agnato"}},
+  # xemido -> xem
+  {"ido",3,"",{"cándido","cândido","consolido","decidido","duvido","marido","rápido"}},
+  # mantida -> mant
+  {"ida",3,"",{"bastida","dúbida","dubida","duvida","ermida","éxida","guarida","lapicida","medida","morida"}},
+  {"ída",3},
+  # mantído -> mant
+  {"ido",3},
+  # orelludo -> orell
+  {"udo",3,"",{"estudo","escudo"}},
+  # orelluda -> orell
+  {"uda",3},
+  {"ada",3,"",{"abada","alhada","allada","pitada"}},
+  # comedela -> come
+  {"dela",3,"",{"cambadela","cavadela","forcadela","erisipidela","mortadela","espadela","fondedela","picadela","arandela","candela","cordela","escudela","pardela"}},
+  # fontela -> font
+  {"ela",3,"",{"canela","capela","cotela","cubela","curupela","escarapela","esparrela","estela","fardela","flanela","fornela","franela","gabela","gamela","gavela","glumela","granicela","lamela","lapela","malvela","manela","manganela","mexarela","micela","mistela","novela","ourela","panela","parcela","pasarela","patamela","patela","paxarela","pipela","pitela","postela","pubela","restela","sabela","salmonela","secuela","sentinela","soldanela","subela","temoncela","tesela","tixela","tramela","trapela","varela","vitela","xanela","xestela"}},
+  # agradábel -> agrad
+  {"ábel",2,"",{"afábel","fiábel"}},
+  # combustíbel -> combust
+  {"íbel",2,"",{"críbel","imposíbel","posíbel","fisíbel","falíbel"}},
+  # fabricante -> frabrica
+  {"nte",3,"",{"alimente","adiante","acrescente","elefante","frequente","freqüente","gigante","instante","oriente","permanente","posante","possante","restaurante"}},
+  # ignorancia -> ignora
+  {"ncia",3},
+  # temperanza -> tempera
+  {"nza",3},
+  {"acia",3,"",{"acracia","audacia","falacia","farmacia"}},
+  # inmundicia -> inmund
+  {"icia",3,"",{"caricia","delicia","ledicia","malicia","milicia","noticia","pericia","presbicia","primicia","regalicia","sevicia","tiricia"}},
+  # xustiza -> xust
+  {"iza",3,"",{"alvariza","baliza","cachiza","caniza","cañiza","carbaliza","carriza","chamariza","chapiza","fraguiza","latiza","longaniza","mañiza","nabiza","peliza","preguiza","rabiza"}},
+  # clarexar -> clar
+  {"exar",3,"",{"palmexar"}},
+  # administración -> administr
+  {"ación",2,"",{"aeración"}},
+  # expedición -> exped
+  {"ición",3,"",{"condición","gornición","monición","nutrición","petición","posición","sedición","volición"}},
+  # excepción -> except
+  {"ción",3,"t"},
+  # comprensión -> comprens
+  {"sión",3,"s",{"abrasión", "alusión"}},
+  # doazón -> do
+  {"azón",2,"",{"armazón"}},
+  # garrafón -> garraf
+  {"ón",3,"",{"abalón","acordeón","alción","aldrabón","alerón","aliñón","ambón","bombón","calzón","campón","canalón","cantón","capitón","cañón","centón","ciclón","collón","colofón","copón","cotón","cupón","petón","tirón","tourón","turón","unción","versión","zubón","zurrón"}},
+  # lambona -> lamb
+  {"ona",3,"",{"abandona","acetona","aleurona","amazona","anémona","bombona","cambona","carona","chacona","charamona","cincona","condona","cortisona","cretona","cretona","detona","estona","fitohormona","fregona","gerona","hidroquinona","hormona","lesiona","madona","maratona","matrona","metadona","monótona","neurona","pamplona","peptona","poltrona","proxesterona","quinona","quinona","silicona","sulfona"}},
+  # bretoa -> bretón
+  {"oa",3,"",{"abandoa","madroa","barbacoa","estoa","airoa","eiroa","amalloa","ámboa","améndoa","anchoa","antinéboa","avéntoa","avoa","bágoa","balboa","bisavoa","boroa","canoa","caroa","comadroa","coroa","éngoa","espácoa","filloa","fírgoa","grañoa","lagoa","lanzoa","magoa","mámoa","morzoa","noiteboa","noraboa","parañoa","persoa","queiroa","rañoa","táboa","tataravoa","teiroa"}},
+  # demoníaco -> demoní
+  {"aco",3},
+  # demoníaca -> demoní
+  {"aca",3,"",{"alpaca","barraca","bullaca","buraca","carraca","casaca","cavaca","cloaca","entresaca","ervellaca","espinaca","estaca","farraca","millaca","pastinaca","pataca","resaca","urraca","purraca"}},
+  # carballal -> carball
+  {"al",4,"",{"afinal","animal","estatal","bisexual","bissexual","desleal","fiscal","formal","pessoal","persoal","liberal","postal","virtual","visual","pontual","puntual","homosexual","heterosexual"}},
+  # nadador -> nada
+  {"dor",2,"",{"abaixador"}},
+  # benfeitor -> benfei
+  {"tor",3,"",{"autor","motor","pastor","pintor"}},
+  # produtor -> produt
+  {"or",2,"",{"asesor","assessor","favor","mellor","melhor","redor","rigor","sensor","tambor","tumor"}},
+  # profesora -> profes
+  {"ora",3,"",{"albacora","anáfora","áncora","apisoadora","ardora","ascospora","aurora","avéspora","bitácora","canéfora","cantimplora","catáfora","cepilladora","demora","descalcificadora","diáspora","empacadora","epífora","ecavadora","escora","eslora","espora","fotocompoñedora","fotocopiadora","grampadora","isícora","lavadora","lixadora","macrospora","madrépora","madrágora","masora","mellora","metáfora","microspora","milépora","milpéndora","nécora","oospora","padeadora","pasiflora","pécora","píldora","pólvora","ratinadora","rémora","retroescavadora","sófora","torradora","trémbora","uredospora","víbora","víncora","zoospora"}},
+  # zapataría -> zapat
+  {"aría",3,"",{"libraría"}},
+  # etiquetaxe -> etiquet
+  {"axe",3,"",{"aluaxe","amaraxe","amperaxe","bagaxe","balaxe","barcaxe","borraxe","bescaxe","cabotaxe","carraxe","cartilaxe","chantaxe","colaxe","coraxe","carruaxe","dragaxe","embalaxe","ensilaxe","epistaxe","fagundaxe","fichaxe","fogaxe","forraxe","fretaxe","friaxe","garaxe","homenaxe","leitaxe","liñaxe","listaxe","maraxe","marcaxe","maridaxe","masaxe","miraxe","montaxe","pasaxe","peaxe","portaxe","ramaxe","rebelaxe","rodaxe","romaxe","sintaxe","sondaxe","tiraxe","vantaxe","vendaxe","viraxe"}},
+  # movedizo -> move
+  {"dizo",3},
+  # limpeza -> limp
+  {"eza",3,"",{"alteza","beleza","fereza","fineza","vasteza","vileza"}},
+  # rixidez -> rixid
+  {"ez",3,"",{"acidez","adultez","adustez","avidez","candidez","mudez","nenez","nudez","pomez"}},
+  # mullerengo -> muller
+  {"engo",3},
+  # chairego -> chair
+  {"ego",3,"",{"corego","derrego","entrego","lamego","sarego","sartego"}},
+  # cariñoso -> cariñ
+  {"oso",3,"",{"afanoso","algoso","caldoso","caloso","cocoso","ditoso","favoso","fogoso","lamoso","mecoso","mocoso","precioso","rixoso","venoso","viroso","xesoso"}},
+  # cariñosa -> cariñ
+  {"osa",3,"",{"mucosa","glicosa","baldosa","celulosa","isoglosa","nitrocelulosa","levulosa","ortosa","pectosa","preciosa","sacarosa","serosa","ventosa"}},
+  # negrume -> negr
+  {"ume",3,"",{"agrume","albume","alcume","batume","cacume","cerrume","chorume","churume","costume","curtume","estrume","gafume","legume","perfume","queixume","zarrume"}},
+  # altura -> alt
+  {"ura",3,"",{"albura","armadura","imatura","costura"}},
+  # cuspiñar -> cusp
+  {"iñar",3},
+  # febril -> febr
+  {"il",3,"",{"abril","alfil","anil","atril","badil","baril","barril","brasil","cadril","candil","cantil","carril","chamil","chancil","civil","cubil","dátil","difícil","dócil","edil","estéril","fácil","fráxil","funil","fusil","grácil","gradil","hábil","hostil","marfil"}},
+  # principesco -> princip
+  {"esco",4},
+  # mourisco -> mour
+  {"isco",4},
+  # esportivo -> esport
+  {"ivo",3,"",{"pasivo","positivo","passivo","possessivo","posesivo","pexotarivo","relativo"}}};
+
+{  "Verb", 0, 0, {},
+  # amaba -> am
+  {"aba",2},
+  # andabade -> and
+  {"abade",2},
+  # andábade -> and
+  {"ábade",2},
+  # chorabamo -> chor
+  {"abamo",2},
+  # chorábamo -> chor
+  {"ábamo",2}, 
+  # moraban -> morab
+  {"aban",2},
+  # andache -> and
+  {"ache",2},
+  # andade -> and
+  {"ade",2},
+  {"an",2}, 
+  # cantando -> cant
+  {"ando",2},
+  # cantar -> cant
+  {"ar",2,"",{"azar","bazar","patamar"}}, 
+  # lembrarade -> lembra
+  {"arade",2},
+  {"aramo",2}, 
+  {"arán",2},
+  # cantaran -> cant
+  {"aran",2},
+  # convidárade -> convid
+  {"árade",2},
+  # convidaría -> convid
+  {"aría",2},
+  # cantariade -> cant
+  {"ariade",2},
+  # cantaríade -> cant
+  {"aríade",2},
+  # cantarian -> cant 
+  {"arian",2},
+  # cantariamo -> cant
+  {"ariamo",2},
+  # pescaron -> pesc
+  {"aron",2},
+  # cantase -> cant
+  {"ase",2},
+  # cantasede -> cant
+  {"asede",2},
+  # cantásede -> cant
+  {"ásede",2},
+  # cantasemo -> cant
+  {"asemo",2},
+  # cantásemo -> cant
+  {"ásemo",2},
+  # cantasen -> cant
+  {"asen",2},
+  # loitavan -> loitav
+  {"avan",2},
+  # cantaríamo -> cant
+  {"aríamo",2},
+  # cantassen -> cant
+  {"assen",2},
+  # cantássemo -> cant
+  {"ássemo",2},
+  # beberíamo -> beb
+  {"eríamo",2},
+  # bebêssemo -> beb
+  {"êssemo",2},
+  # partiríamo -> part
+  {"iríamo",3},
+  # partíssemo -> part
+  {"íssemo",3},
+  # cantáramo -> cant
+  {"áramo",2},
+  # cantárei -> cant
+  {"árei",2},
+  # cantaren -> cant
+  {"aren",2},
+  # cantaremo -> cant
+  {"aremo",2},
+  # cantaríei -> cant
+  {"aríei",2},
+  {"ássei",2},
+  # cantávamo-> cant
+  {"ávamo",2},
+  # bebêramo -> beb
+  {"êramo",1},
+  # beberemo -> beb
+  {"eremo",1},
+  # beberíei -> beb
+  {"eríei",1},
+  # bebêssei -> beb
+  {"êssei",1},
+  # partiríamo -> part
+  {"íramo",3},
+  # partiremo -> part
+  {"iremo",3},
+  # partiríei -> part
+  {"iríei",3},
+  # partíssei -> part
+  {"íssei",3},
+  # partissen -> part
+  {"issen",3},
+  # bebendo -> beb
+  {"endo",1},
+  # partindo -> part
+  {"indo",3},
+  # propondo -> prop
+  {"ondo",3},
+  # cantarde -> cant
+  {"arde",2},
+  # cantarei -> cant
+  {"arei",2},
+  # cantaria -> cant
+  {"aria",2},
+  # cantarmo -> cant
+  {"armo",2},
+  # cantasse -> cant
+  {"asse",2},
+  {"aste",2},
+  # cantávei -> cant
+  {"ávei",2},
+  # perderão -> perd
+  {"erão",1},
+  # beberde -> beb
+  {"erde",1},
+  # beberei -> beb
+  {"erei",1},
+  # bebêrei -> beb
+  {"êrei",1},
+  # beberen -> beb
+  {"eren",2},
+  # beberia -> beb
+  {"eria",1},
+  # bebermo -> beb
+  {"ermo",1},
+  # bebeste -> beb
+  {"este",1,"",{"faroeste","agreste"}},
+  # bebíamo -> beb
+  {"íamo",1},
+  # fuxian -> fux
+  {"ian",2,"",{"enfian","eloxian","ensaian"}},
+  # partirde -> part
+  {"irde",2},
+  # partírei -> part
+  {"irei",3,"",{"admirei"}},
+  # partiren -> part
+  {"iren",3},
+  # partiria -> part
+  {"iria",3},
+  # partirmo -> part
+  {"irmo",3},
+  # partisse -> part
+  {"isse",3},
+  # partiste -> part
+  {"iste",4},
+  {"iava",1,"",{"ampliava"}},
+  # cantamo -> cant
+  {"amo",2},
+  # funciona -> func
+  {"iona",3},
+  # cantara -> cant
+  {"ara",2,"",{"arara","prepara"}},
+  # enviará -> envi
+  {"ará",2,"",{"alvará","bacará"}},
+  # cantare -> cant
+  {"are",2,"",{"prepare"}},
+  # cantava -> cant
+  {"ava",2,"",{"agrava"}},
+  # cantemo -> cant
+  {"emo",2},
+  # bebera -> beb
+  {"era",1,"",{"acelera","espera"}},
+  # beberá -> beb
+  {"erá",1},
+  # bebere -> beb
+  {"ere",1,"",{"espere"}},
+  # bebíei -> beb
+  {"íei",1},
+  # metin -> met
+  {"in",3},
+  # partimo -> part
+  {"imo",3,"",{"reprimo","intimo","íntimo","nimo","queimo","ximo"}},
+  # partira -> part
+  {"ira",3,"",{"fronteira","sátira"}},
+  {"ído",3},
+  # partirá -> part
+  {"irá",3},
+  # concretizar -> concret
+  {"tizar",4,"",{"alfabetizar"}},
+  {"izar",3,"",{"organizar"}},
+  # saltitar -> salt
+  {"itar",5,"",{"acreditar","explicitar","estreitar"}},
+  # partire -> part
+  {"ire",3,"",{"adquire"}},
+  # compomo -> comp
+  {"omo",3},
+  {"ai",2},
+  # barbear -> barb
+  {"ear",4,"",{"alardear","nuclear"}},
+  # cheguei -> cheg
+  {"uei",3},
+  {"uía",5,"u"},
+  # cantei -> cant
+  {"ei",3},
+  # beber -> beb
+  {"er",1,"",{"éter","pier"}},
+  # bebeu -> beb
+  {"eu",1,"",{"chapeu"}},
+  # bebia -> beb
+  {"ia",1,"",{"estória","fatia","acia","praia","elogia","mania","lábia","aprecia","polícia","arredia","cheia","ásia"}},
+  # partir -> part
+  {"ir",3},
+  # partiu -> part
+  {"iu",3},
+  # fraqueou -> fraqu
+  {"eou",5},
+  # chegou -> cheg
+  {"ou",3},
+  # bebi -> beb
+  {"i",1},
+  # varrede -> varr
+  {"ede",1,"",{"rede","bípede","céspede","parede","palmípede","vostede","hóspede","adrede"}},
+  # cantei -> cant
+  {"ei",3},
+  # anden -> and
+  {"en",2},
+  # descerade -> desc
+  {"erade",1},
+  # vivérade -> viv
+  {"érade",1},
+  # beberan -> beb
+  {"eran",2},
+  # colleramo -> coller
+  {"eramo",1},
+  # bebéramo -> beb
+  {"éramo",1},
+  # perderán -> perd
+  {"erán",1},
+  # varrería -> varr
+  {"ería",1},
+  # beberiade -> beb
+  {"eriade",1},
+  # beberíade -> beb
+  {"eríade",1},
+  # beberiamo -> beb
+  {"eriamo",1},
+  # beberian -> beb
+  {"erian",1},
+  # beberían -> beb
+  {"erían",1},
+  # perderon -> perd
+  {"eron",1},
+  # bebese -> beb
+  {"ese",1},
+  # bebesedes -> beb
+  {"esedes",1},
+  # bebésedes -> beb
+  {"ésedes",1}, 
+  # bebesemo -> beb
+  {"esemo",1},
+  # bebésemo -> beb
+  {"ésemo",1},
+  # bebesen -> beb
+  {"esen",1},
+  # bebêssede -> beb 
+  {"êssede",1},
+  # chovía -> chov
+  {"ía",1},
+  # faciade -> fac
+  {"iade",1},
+  # facíade -> fac
+  {"íade",1},
+  # perdiamo -> perd
+  {"iamo",1},
+  # fuxían -> fux 
+  {"ían",1},
+  # corriche -> corr
+  {"iche",1},
+  # partide -> part
+  {"ide",1},
+  # escribirade -> escrib
+  {"irade",3},
+  # parírade -> par
+  {"írade",3},
+  # partiramo -> part
+  {"iramo",3}, 
+  # fugirán -> fug
+  {"irán",3},
+  # viviría -> viv
+  {"iría",3},
+  # partiriade -> part
+  {"iriade",3},
+  # partiríade -> part
+  {"iríade",3},
+  # partiriamo -> part
+  {"iriamo",3}, 
+  # partirian -> part
+  {"irian",3},
+  # partirían -> part
+  {"irían",3},
+  # reflectiron -> reflect
+  {"iron",3},
+  # partise -> part
+  {"ise",3},
+  # partisede -> part
+  {"isede",3},
+  # partísede -> part
+  {"ísede",3},
+  # partisemo -> part
+  {"isemo",3},
+  # partísemo -> part
+  {"ísemo",3},
+  # partisen -> part
+  {"isen",3},
+  # partíssede -> part
+  {"íssede",3}, 
+  {"tizar",3,"",{"alfabetizar"}},
+  {"ondo",3}};
+
+{  "Vowel", 0, 0, {},
+  # segue -> seg
+  {"gue",2,"g",{"azougue","dengue","merengue","nurague","merengue","rengue"}},
+  {"que",2,"c",{"alambique","albaricoque","abaroque","alcrique","almadraque","almanaque","arenque","arinque","baduloque","ballestrinque","betoque","bivaque","bloque","bodaque","bosque","breque","buque","cacique","cheque","claque","contradique","coque","croque","dique","duque","enroque","espeque","estoque","estoraque","estraloque","estrinque","milicroque","monicreque","orinque","arinque","palenque","parque","penique","picabeque","pique","psique","raque","remolque","xeque","repenique","roque","sotobosque","tabique","tanque","toque","traque","truque","vivaque","xaque"}},
+  {"a",3,"",{"amasadela","cerva"}},
+  {"e",3,"",{"marte"}},
+  {"o",3,"",{"barro","fado","cabo","libro","cervo"}},
+  {"â",3},
+  {"ã",3,"",{"amanhã","arapuã","fã","divã","manhã"}},
+  {"ê",3},
+  {"ô",3},
+  {"á",3},
+  {"é",3},
+  {"ó",3},
+  # munxi -> munx
+  {"i",3}};

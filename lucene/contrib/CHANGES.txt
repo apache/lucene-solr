@@ -234,6 +234,9 @@ New features
    avoid the performance problems of SimpleFSDirectory and NIOFSDirectory.
    (Robert Muir, Simon Willnauer, Uwe Schindler, Michael McCandless)
 
+ * LUCENE-2842: Add analyzer for Galician. Also adds the RSLP (Orengo) stemmer
+   for Portuguese.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
