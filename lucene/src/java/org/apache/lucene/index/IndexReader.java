@@ -1471,13 +1471,13 @@ public abstract class IndexReader implements Cloneable,Closeable {
     public final int ordInParent;
     
     ReaderContext(ReaderContext parent, IndexReader reader,
-        boolean isAtomic, boolean isTopLevel, int ordInParent, int docBaseInParent) {
+        boolean isAtomic, int ordInParent, int docBaseInParent) {
       this.parent = parent;
       this.reader = reader;
       this.isAtomic = isAtomic;
       this.docBaseInParent = docBaseInParent;
       this.ordInParent = ordInParent;
-      this.isTopLevel = isTopLevel;
+      this.isTopLevel = parent==null;
     }
     
     /**
@@ -1533,7 +1533,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     private CompositeReaderContext(ReaderContext parent, IndexReader reader,
         int ordInParent, int docbaseInParent, ReaderContext[] children,
         AtomicReaderContext[] leaves) {
-      super(parent, reader, false, leaves != null, ordInParent, docbaseInParent);
+      super(parent, reader, false, ordInParent, docbaseInParent);
       this.children = children;
       this.leaves = leaves;
     }
@@ -1561,15 +1561,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
     public final int docBase;
     /**
      * Creates a new {@link AtomicReaderContext} 
-     */
+     */    
     public AtomicReaderContext(ReaderContext parent, IndexReader reader,
         int ord, int docBase, int leafOrd, int leafDocBase) {
-     this(parent, reader, ord, docBase, leafOrd, leafDocBase, false);
-    }
-    
-    private AtomicReaderContext(ReaderContext parent, IndexReader reader,
-        int ord, int docBase, int leafOrd, int leafDocBase, boolean topLevel) {
-      super(parent, reader, true, topLevel,  ord, docBase);
+      super(parent, reader, true, ord, docBase);
       assert reader.getSequentialSubReaders() == null : "Atomic readers must not have subreaders";
       this.ord = leafOrd;
       this.docBase = leafDocBase;
@@ -1580,7 +1575,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
      * parent.
      */
     public AtomicReaderContext(IndexReader atomicReader) {
-      this(null, atomicReader, 0, 0, 0, 0, true); // toplevel!!
+      this(null, atomicReader, 0, 0, 0, 0);
     }
   }
 }

@@ -153,10 +153,7 @@ public class IndexSearcher {
   }
 
   private IndexSearcher(ReaderContext context, boolean closeReader, ExecutorService executor) {
-    // TODO: eable this assert once SolrIndexReader and friends are refactored to use ReaderContext
-    // We can't assert this here since SolrIndexReader will fail in some contexts - once solr is consistent we should be fine here
-    // Lucene instead passes all tests even with this assert!
-    // assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader;
+    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader;
     reader = context.reader;
     this.executor = executor;
     this.closeReader = closeReader;
