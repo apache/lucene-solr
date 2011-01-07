@@ -981,6 +981,7 @@ public class TestIndexReader extends LuceneTestCase
           // new IndexFileDeleter, have it delete
           // unreferenced files, then verify that in fact
           // no files were deleted:
+          IndexWriter.unlock(dir);
           TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
 
           // Finally, verify index is not corrupt, and, if
