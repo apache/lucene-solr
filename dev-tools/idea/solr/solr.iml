@@ -10,7 +10,6 @@
       <sourceFolder url="file://$MODULE_DIR$/src/webapp/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/webapp/web" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/scripts" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/test-files" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
