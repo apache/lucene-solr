@@ -413,10 +413,15 @@ public class TestDocSet extends LuceneTestCase {
     Filter fa = a.getTopFilter();
     Filter fb = b.getTopFilter();
 
+    /*** top level filters are no longer supported
     // test top-level
     DocIdSet da = fa.getDocIdSet(topLevelContext);
     DocIdSet db = fb.getDocIdSet(topLevelContext);
     doTestIteratorEqual(da, db);
+    ***/
+
+    DocIdSet da;
+    DocIdSet db;
 
     // first test in-sequence sub readers
     for (ReaderContext readerInfo : topLevelContext.leaves()) {

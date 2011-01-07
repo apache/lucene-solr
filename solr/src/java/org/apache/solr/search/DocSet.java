@@ -248,17 +248,14 @@ abstract class DocSetBase implements DocSet {
     return new Filter() {
       @Override
       public DocIdSet getDocIdSet(ReaderContext ctx) throws IOException {
-        int offset = 0;
+        IndexReader.AtomicReaderContext context = (IndexReader.AtomicReaderContext)ctx;  // TODO: remove after lucene migration
         IndexReader reader = ctx.reader;
-        SolrIndexReader r = (SolrIndexReader)reader;
-        while (r.getParent() != null) {
-          offset += r.getBase();
-          r = r.getParent();
+
+        if (context.isTopLevel) {
+          return bs;
         }
 
-        if (r==reader) return bs;
-
-        final int base = offset;
+        final int base = context.docBase;
         final int maxDoc = reader.maxDoc();
         final int max = base + maxDoc;   // one past the max doc in this segment.
 

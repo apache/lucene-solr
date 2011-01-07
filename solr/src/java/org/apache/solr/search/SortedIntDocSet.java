@@ -23,6 +23,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
 
@@ -552,15 +553,11 @@ public class SortedIntDocSet extends DocSetBase {
       int lastEndIdx = 0;
 
       @Override
-      public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
-        int offset = 0;
+      public DocIdSet getDocIdSet(ReaderContext contextX) throws IOException {
+        AtomicReaderContext context = (AtomicReaderContext)contextX;  // TODO: remove after lucene migration
         IndexReader reader = context.reader;
-        SolrIndexReader r = (SolrIndexReader)reader;
-        while (r.getParent() != null) {
-          offset += r.getBase();
-          r = r.getParent();
-        }
-        final int base = offset;
+
+        final int base = context.docBase;
         final int maxDoc = reader.maxDoc();
         final int max = base + maxDoc;   // one past the max doc in this segment.
         int sidx = Math.max(0,lastEndIdx);
