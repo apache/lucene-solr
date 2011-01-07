@@ -1767,8 +1767,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return null;
   }
 
-  public NamedList getStatistics() {
-    NamedList lst = new SimpleOrderedMap();
+  public NamedList<Object> getStatistics() {
+    NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("searcherName", name);
     lst.add("caching", cachingEnabled);
     lst.add("numDocs", reader.numDocs());

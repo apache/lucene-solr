@@ -457,12 +457,12 @@ public class UnInvertedField {
 
 
 
-  public NamedList getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
+  public NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
     use.incrementAndGet();
 
     FieldType ft = searcher.getSchema().getFieldType(field);
 
-    NamedList res = new NamedList();  // order is important
+    NamedList<Integer> res = new NamedList<Integer>();  // order is important
 
     DocSet docs = baseDocs;
     int baseSize = docs.size();

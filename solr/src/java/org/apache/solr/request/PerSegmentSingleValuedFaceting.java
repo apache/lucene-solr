@@ -63,7 +63,7 @@ class PerSegmentSingleValuedFaceting {
   }
 
 
-  NamedList getFacetCounts(Executor executor) throws IOException {
+  NamedList<Integer> getFacetCounts(Executor executor) throws IOException {
 
     CompletionService<SegFacet> completionService = new ExecutorCompletionService<SegFacet>(executor);
 
@@ -189,7 +189,7 @@ class PerSegmentSingleValuedFaceting {
       if (stop) break;
     }
 
-    NamedList res = collector.getFacetCounts();
+    NamedList<Integer> res = collector.getFacetCounts();
 
     // convert labels to readable form    
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
@@ -321,7 +321,7 @@ class PerSegmentSingleValuedFaceting {
 abstract class FacetCollector {
   /*** return true to stop collection */
   public abstract boolean collect(BytesRef term, int count);
-  public abstract NamedList getFacetCounts();
+  public abstract NamedList<Integer> getFacetCounts();
 }
 
 
@@ -355,8 +355,8 @@ class CountSortedFacetCollector extends FacetCollector {
   }
 
   @Override
-  public NamedList getFacetCounts() {
-    NamedList res = new NamedList();
+  public NamedList<Integer> getFacetCounts() {
+    NamedList<Integer> res = new NamedList<Integer>();
     int off=offset;
     int lim=limit>=0 ? limit : Integer.MAX_VALUE;
      // now select the right page from the results
@@ -374,7 +374,7 @@ class IndexSortedFacetCollector extends FacetCollector {
   int offset;
   int limit;
   final int mincount;
-  final NamedList res = new NamedList();
+  final NamedList<Integer> res = new NamedList<Integer>();
 
 
   public IndexSortedFacetCollector(int offset, int limit, int mincount) {
@@ -403,7 +403,7 @@ class IndexSortedFacetCollector extends FacetCollector {
   }
 
   @Override
-  public NamedList getFacetCounts() {
+  public NamedList<Integer> getFacetCounts() {
     return res;
   }
 }

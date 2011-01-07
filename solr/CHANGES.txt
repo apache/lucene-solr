@@ -686,6 +686,10 @@ Other Changes
 * SOLR-2289: Tweak spatial coords for example docs so they are a bit
   more spread out (Erick Erickson via hossman)
 
+* SOLR-2288: Small tweaks to eliminate compiler warnings.  primarily
+  using Generics where applicable in method/object declatations, and
+  adding @SuppressWarnings("unchecked") when appropriate (hossman)
+
 Build
 ----------------------
 
