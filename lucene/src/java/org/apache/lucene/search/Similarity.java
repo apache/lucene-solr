@@ -565,6 +565,11 @@ public abstract class Similarity implements Serializable {
   }
 
   /** Decodes a normalization factor stored in an index.
+   * <p>
+   * <b>WARNING: If you override this method, you should change the default
+   *    Similarity to your implementation with {@link Similarity#setDefault(Similarity)}. 
+   *    Otherwise, your method may not always be called, especially if you omit norms 
+   *    for some fields.</b>
    * @see #encodeNormValue(float)
    */
   public float decodeNormValue(byte b) {
@@ -657,7 +662,11 @@ public abstract class Similarity implements Serializable {
    * are rounded down to the largest representable value.  Positive values too
    * small to represent are rounded up to the smallest positive representable
    * value.
-   *
+   * <p>
+   * <b>WARNING: If you override this method, you should change the default
+   * Similarity to your implementation with {@link Similarity#setDefault(Similarity)}. 
+   * Otherwise, your method may not always be called, especially if you omit norms 
+   * for some fields.</b>
    * @see org.apache.lucene.document.Field#setBoost(float)
    * @see org.apache.lucene.util.SmallFloat
    */
