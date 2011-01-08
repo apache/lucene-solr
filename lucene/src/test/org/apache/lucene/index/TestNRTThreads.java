@@ -53,7 +53,7 @@ public class TestNRTThreads extends LuceneTestCase {
 
     final long t0 = System.currentTimeMillis();
 
-    final LineFileDocs docs = new LineFileDocs(true);
+    final LineFileDocs docs = new LineFileDocs(random);
     final File tempDir = _TestUtil.getTempDir("nrtopenfiles");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
