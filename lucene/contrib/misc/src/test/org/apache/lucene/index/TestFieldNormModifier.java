@@ -43,8 +43,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
   /** inverts the normal notion of lengthNorm */
   public static Similarity s = new DefaultSimilarity() {
     @Override
-    public float lengthNorm(String fieldName, int numTokens) {
-      return numTokens;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
     }
   };
   

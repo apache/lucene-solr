@@ -21,6 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -38,7 +39,7 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 public class TestSimilarity extends LuceneTestCase {
   
   public static class SimpleSimilarity extends Similarity {
-    @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
+    @Override public float computeNorm(String field, FieldInvertState state) { return state.getBoost(); }
     @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -253,7 +254,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float lengthNorm(String fieldName, int numTokens) {
+    public float computeNorm(String fieldName, FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

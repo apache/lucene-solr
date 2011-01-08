@@ -419,7 +419,7 @@ public class TestSpans extends LuceneTestCase {
       public Similarity getSimilarity(IndexSearcher s) {
         return sim;
       }
-    };
+      };
 
     Scorer spanScorer = snq.weight(searcher).scorer(new AtomicReaderContext(new SlowMultiReaderWrapper(searcher.getIndexReader())), true, false);
 

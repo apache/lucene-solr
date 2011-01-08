@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader.ReaderContext;
@@ -60,8 +61,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1.0f;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      // Disable length norm
+      return state.getBoost();
     }
     
     @Override

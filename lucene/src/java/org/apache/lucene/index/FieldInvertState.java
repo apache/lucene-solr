@@ -73,6 +73,10 @@ public final class FieldInvertState {
     return length;
   }
 
+  public void setLength(int length) {
+    this.length = length;
+  }
+  
   /**
    * Get the number of terms with <code>positionIncrement == 0</code>.
    * @return the numOverlap
@@ -81,6 +85,10 @@ public final class FieldInvertState {
     return numOverlap;
   }
 
+  public void setNumOverlap(int numOverlap) {
+    this.numOverlap = numOverlap;
+  }
+  
   /**
    * Get end offset of the last processed term.
    * @return the offset
@@ -97,6 +105,10 @@ public final class FieldInvertState {
    */
   public float getBoost() {
     return boost;
+  }
+  
+  public void setBoost(float boost) {
+    this.boost = boost;
   }
   
   public AttributeSource getAttributeSource() {

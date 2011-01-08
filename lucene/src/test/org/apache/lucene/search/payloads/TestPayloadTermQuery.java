@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -299,8 +300,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      return state.getBoost();
     }
 
     @Override

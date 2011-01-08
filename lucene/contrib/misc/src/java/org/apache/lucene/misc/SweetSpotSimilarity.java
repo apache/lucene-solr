@@ -146,7 +146,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
     else
       numTokens = state.getLength();
 
-    return state.getBoost() * lengthNorm(fieldName, numTokens);
+    return state.getBoost() * computeLengthNorm(fieldName, numTokens);
   }
 
   /**
@@ -167,8 +167,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    *
    * @see #setLengthNormFactors
    */
-  @Override
-  public float lengthNorm(String fieldName, int numTerms) {
+  public float computeLengthNorm(String fieldName, int numTerms) {
     int l = ln_min;
     int h = ln_max;
     float s = ln_steep;
