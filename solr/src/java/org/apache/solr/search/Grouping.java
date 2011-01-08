@@ -151,7 +151,7 @@ public class Grouping {
     
     @Override
     void prepare() throws IOException {
-        Map context = ValueSource.newContext();
+        Map context = ValueSource.newContext(searcher);
         groupBy.createWeight(context, searcher);
     }
 

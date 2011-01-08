@@ -890,8 +890,6 @@ abstract class Double2Parser extends NamedParser {
 
     @Override
     public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-      a.createWeight(context,searcher);
-      b.createWeight(context,searcher);
     }
 
     public int hashCode() {

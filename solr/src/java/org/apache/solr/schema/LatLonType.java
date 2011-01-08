@@ -342,8 +342,8 @@ class SpatialDistanceQuery extends Query {
 
     public SpatialWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
-      this.latContext = latSource.newContext();
-      this.lonContext = lonSource.newContext();
+      this.latContext = latSource.newContext(searcher);
+      this.lonContext = lonSource.newContext(searcher);
       latSource.createWeight(latContext, searcher);
       lonSource.createWeight(lonContext, searcher);
     }
