@@ -230,9 +230,8 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
         if (request.getQuery() != null) {
           try {
-            AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), Collections.EMPTY_SET);
-            NamedList<List<NamedList>> tokens = analyzeValue(request.getQuery(), analysisContext);
-            fieldTokens.add("query", tokens);
+            AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), EMPTY_STRING_SET);
+            fieldTokens.add("query", analyzeValue(request.getQuery(), analysisContext));
           } catch (Exception e) {
             // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
@@ -241,10 +240,11 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
         Analyzer analyzer = fieldType.getAnalyzer();
         AnalysisContext analysisContext = new AnalysisContext(fieldType, analyzer, termsToMatch);
         Collection<Object> fieldValues = document.getFieldValues(name);
-        NamedList<NamedList<List<NamedList>>> indexTokens = new SimpleOrderedMap<NamedList<List<NamedList>>>();
+        NamedList<NamedList<? extends Object>> indexTokens 
+          = new SimpleOrderedMap<NamedList<? extends Object>>();
         for (Object fieldValue : fieldValues) {
-          NamedList<List<NamedList>> tokens = analyzeValue(fieldValue.toString(), analysisContext);
-          indexTokens.add(String.valueOf(fieldValue), tokens);
+          indexTokens.add(String.valueOf(fieldValue), 
+                          analyzeValue(fieldValue.toString(), analysisContext));
         }
         fieldTokens.add("index", indexTokens);
       }

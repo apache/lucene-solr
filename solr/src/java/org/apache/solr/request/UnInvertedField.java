@@ -900,15 +900,15 @@ public class UnInvertedField {
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache cache = searcher.getFieldValueCache();
+    SolrCache<String,UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {
       return new UnInvertedField(field, searcher);
     }
 
-    UnInvertedField uif = (UnInvertedField)cache.get(field);
+    UnInvertedField uif = cache.get(field);
     if (uif == null) {
       synchronized (cache) {
-        uif = (UnInvertedField)cache.get(field);
+        uif = cache.get(field);
         if (uif == null) {
           uif = new UnInvertedField(field, searcher);
           cache.put(field, uif);
@@ -918,7 +918,6 @@ public class UnInvertedField {
 
     return uif;
   }
-
 }
 
 

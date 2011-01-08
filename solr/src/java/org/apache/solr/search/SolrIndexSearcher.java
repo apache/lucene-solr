@@ -79,7 +79,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<Integer,Document> documentCache;
-  private final SolrCache<String,Object> fieldValueCache;
+  private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   private final LuceneQueryOptimizer optimizer;
   
@@ -470,7 +470,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   ////////////////////////////////////////////////////////////////////////////////
 
   /** expert: internal API, subject to change */
-  public SolrCache getFieldValueCache() {
+  public SolrCache<String,UnInvertedField> getFieldValueCache() {
     return fieldValueCache;
   }
 

@@ -47,6 +47,8 @@ import java.util.*;
  */
 public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
+  public static final Set<String> EMPTY_STRING_SET = Collections.emptySet();
+
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.add("analysis", doAnalysis(req));
   }
@@ -70,7 +72,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return NamedList containing the tokens produced by analyzing the given value
    */
-  protected NamedList<List<NamedList>> analyzeValue(String value, AnalysisContext context) {
+  protected NamedList<? extends Object> analyzeValue(String value, AnalysisContext context) {
 
     Analyzer analyzer = context.getAnalyzer();
 
@@ -93,7 +95,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     TokenizerFactory tfac = tokenizerChain.getTokenizerFactory();
     TokenFilterFactory[] filtfacs = tokenizerChain.getTokenFilterFactories();
 
-    NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
+    NamedList<Object> namedList = new NamedList<Object>();
 
     if( cfiltfacs != null ){
       String source = value;
@@ -234,7 +236,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     return tokensNamedLists;
   }
   
-  private String writeCharStream(NamedList out, CharStream input ){
+  private String writeCharStream(NamedList<Object> out, CharStream input ){
     final int BUFFER_SIZE = 1024;
     char[] buf = new char[BUFFER_SIZE];
     int len = 0;
@@ -251,7 +253,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     out.add( input.getClass().getName(), sb.toString());
     return sb.toString();
   }
-
 
   // ================================================= Inner classes =================================================
 
@@ -342,7 +343,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
      *
      */
     public AnalysisContext(String fieldName, FieldType fieldType, Analyzer analyzer) {
-      this(fieldName, fieldType, analyzer, Collections.EMPTY_SET);
+      this(fieldName, fieldType, analyzer, EMPTY_STRING_SET);
     }
 
     /**

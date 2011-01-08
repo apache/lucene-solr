@@ -94,7 +94,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile IndexCommit indexCommitPoint;
 
-  volatile NamedList snapShootDetails;
+  volatile NamedList<Object> snapShootDetails;
 
   private AtomicBoolean replicationEnabled = new AtomicBoolean(true);
 
@@ -189,13 +189,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    }
   }
 
-  private List<NamedList> getCommits() {
+  private List<NamedList<Object>> getCommits() {
     Map<Long, IndexCommit> commits = core.getDeletionPolicy().getCommits();
-    List<NamedList> l = new ArrayList<NamedList>();
+    List<NamedList<Object>> l = new ArrayList<NamedList<Object>>();
 
     for (IndexCommit c : commits.values()) {
       try {
-        NamedList nl = new NamedList();
+        NamedList<Object> nl = new NamedList<Object>();
         nl.add("indexVersion", c.getVersion());
         nl.add(GENERATION, c.getGeneration());
         nl.add(CMD_GET_FILE_LIST, c.getFileNames());
@@ -701,7 +701,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return details;
   }
 
-  private void addVal(NamedList nl, String key, Properties props, Class clzz) {
+  private void addVal(NamedList<Object> nl, String key, Properties props, Class clzz) {
     String s = props.getProperty(key);
     if (s == null || s.trim().length() == 0) return;
     if (clzz == Date.class) {
