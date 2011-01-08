@@ -61,13 +61,13 @@ public class BoostedQuery extends Query {
   private class BoostedWeight extends Weight {
     IndexSearcher searcher;
     Weight qWeight;
-    Map context;
+    Map fcontext;
 
     public BoostedWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.qWeight = q.weight(searcher);
-      this.context = boostVal.newContext(searcher);
-      boostVal.createWeight(context,searcher);
+      this.fcontext = boostVal.newContext(searcher);
+      boostVal.createWeight(fcontext,searcher);
     }
 
     public Query getQuery() {
@@ -106,7 +106,7 @@ public class BoostedQuery extends Query {
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
-      DocValues vals = boostVal.getValues(context, readerContext.reader);
+      DocValues vals = boostVal.getValues(fcontext, readerContext.reader);
       float sc = subQueryExpl.getValue() * vals.floatVal(doc);
       Explanation res = new ComplexExplanation(
         true, sc, BoostedQuery.this.toString() + ", product of:");
@@ -133,7 +133,7 @@ public class BoostedQuery extends Query {
       this.scorer = scorer;
       this.reader = reader;
       this.searcher = searcher; // for explain
-      this.vals = vs.getValues(weight.context, reader);
+      this.vals = vs.getValues(weight.fcontext, reader);
     }
 
     @Override
@@ -162,7 +162,7 @@ public class BoostedQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(reader.getTopReaderContext() ,doc);
+      Explanation subQueryExpl = weight.qWeight.explain(ValueSource.readerToContext(weight.fcontext,reader) ,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
