@@ -898,22 +898,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return positive ? getDocSetNC(absQ,filter) : filter.andNot(getPositiveDocSet(absQ));
   }
 
-
-  /**
-  * Converts a filter into a DocSet.
-  * This method is not cache-aware and no caches are checked.
-  */
-  public DocSet convertFilter(Filter lfilter) throws IOException {
-    DocIdSet docSet = lfilter.getDocIdSet(this.reader.getTopReaderContext());
-    OpenBitSet obs = new OpenBitSet();
-    DocIdSetIterator it = docSet.iterator();
-    int doc;
-    while((doc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      obs.fastSet(doc);
-    }
-    return new BitDocSet(obs);
-  }
-
   /**
    * Returns documents matching both <code>query</code> and <code>filter</code>
    * and sorted by <code>sort</code>.
