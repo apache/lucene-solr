@@ -49,7 +49,7 @@ public class FieldAnalysisResponseTest extends LuceneTestCase {
     NamedList responseNL = buildResponse();
     FieldAnalysisResponse response = new FieldAnalysisResponse() {
       @Override
-      protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
+      protected List<AnalysisPhase> buildPhases(NamedList<List<NamedList<Object>>> phaseNL) {
         return phases;
       }
     };
