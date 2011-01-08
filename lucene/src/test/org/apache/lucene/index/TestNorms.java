@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -230,4 +231,52 @@ public class TestNorms extends LuceneTestCase {
     return norm;
   }
   
+  class CustomNormEncodingSimilarity extends DefaultSimilarity {
+    @Override
+    public byte encodeNormValue(float f) {
+      return (byte) f;
+    }
+    
+    @Override
+    public float decodeNormValue(byte b) {
+      return (float) b;
+    }
+
+    @Override
+    public float computeNorm(String field, FieldInvertState state) {
+      return (float) state.getLength();
+    }
+  }
+  
+  // LUCENE-1260
+  public void testCustomEncoder() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    config.setSimilarity(new CustomNormEncodingSimilarity());
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
+    Document doc = new Document();
+    Field foo = newField("foo", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field bar = newField("bar", "", Field.Store.NO, Field.Index.ANALYZED);
+    doc.add(foo);
+    doc.add(bar);
+    
+    for (int i = 0; i < 100; i++) {
+      bar.setValue("singleton");
+      writer.addDocument(doc);
+    }
+    
+    IndexReader reader = writer.getReader();
+    writer.close();
+    
+    byte fooNorms[] = reader.norms("foo");
+    for (int i = 0; i < reader.maxDoc(); i++)
+      assertEquals(0, fooNorms[i]);
+    
+    byte barNorms[] = reader.norms("bar");
+    for (int i = 0; i < reader.maxDoc(); i++)
+      assertEquals(1, barNorms[i]);
+    
+    reader.close();
+    dir.close();
+  }
 }
