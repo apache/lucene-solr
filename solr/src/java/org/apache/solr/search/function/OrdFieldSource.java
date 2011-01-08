@@ -18,8 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.FieldCache;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueInt;
+import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Map;
@@ -55,38 +57,52 @@ public class OrdFieldSource extends ValueSource {
 
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new StringIndexDocValues(this, reader, field) {
+    int offset = 0;
+    IndexReader topReader = reader;
+    if (topReader instanceof SolrIndexReader) {
+      SolrIndexReader r = (SolrIndexReader)topReader;
+      while (r.getParent() != null) {
+        offset += r.getBase();
+        r = r.getParent();
+      }
+      topReader = r;
+    }
+    final int off = offset;
+
+    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(topReader, field);
+
+    return new DocValues() {
       protected String toTerm(String readableValue) {
         return readableValue;
       }
       
       public float floatVal(int doc) {
-        return (float)termsIndex.getOrd(doc);
+        return (float)sindex.getOrd(doc+off);
       }
 
       public int intVal(int doc) {
-        return termsIndex.getOrd(doc);
+        return sindex.getOrd(doc+off);
       }
 
       public long longVal(int doc) {
-        return (long)termsIndex.getOrd(doc);
+        return (long)sindex.getOrd(doc+off);
       }
 
       public double doubleVal(int doc) {
-        return (double)termsIndex.getOrd(doc);
+        return (double)sindex.getOrd(doc+off);
       }
 
       public int ordVal(int doc) {
-        return termsIndex.getOrd(doc);
+        return sindex.getOrd(doc+off);
       }
 
       public int numOrd() {
-        return termsIndex.numOrd();
+        return sindex.numOrd();
       }
 
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
-        return Integer.toString(termsIndex.getOrd(doc));
+        return Integer.toString(sindex.getOrd(doc+off));
       }
 
       public String toString(int doc) {
@@ -105,7 +121,7 @@ public class OrdFieldSource extends ValueSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = termsIndex.getOrd(doc);
+            mval.value = sindex.getOrd(doc);
             mval.exists = mval.value!=0;
           }
         };

@@ -83,7 +83,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("ord", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
-        return new TopValueSource(new OrdFieldSource(field));
+        return new OrdFieldSource(field);
       }
     });
     addParser("literal", new ValueSourceParser() {
@@ -94,15 +94,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("rord", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
-        return new TopValueSource(new ReverseOrdFieldSource(field));
+        return new ReverseOrdFieldSource(field);
       }
     });
     addParser("top", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
+        // top(vs) is now a no-op
         ValueSource source = fp.parseValueSource();
-        // nested top is redundant, and ord and rord get automatically wrapped
-        if (source instanceof TopValueSource) return source;
-        return new TopValueSource(source);
+        return source;
       }
     });
     addParser("linear", new ValueSourceParser() {
@@ -134,7 +133,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
         float max = fp.parseFloat();
-        return new TopValueSource(new ScaleFloatFunction(source, min, max));
+        return new ScaleFloatFunction(source, min, max);
       }
     });
     addParser("div", new ValueSourceParser() {
