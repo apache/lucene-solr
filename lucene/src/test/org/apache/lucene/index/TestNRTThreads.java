@@ -65,7 +65,7 @@ public class TestNRTThreads extends LuceneTestCase {
       CodecProvider.getDefault().setDefaultFieldCodec("Standard");
     }
 
-    final LineFileDocs docs = new LineFileDocs(true);
+    final LineFileDocs docs = new LineFileDocs(random);
     final File tempDir = _TestUtil.getTempDir("nrtopenfiles");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
