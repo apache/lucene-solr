@@ -35,8 +35,8 @@ public class SpellCheckResponse {
   private List<Suggestion> suggestions = new ArrayList<Suggestion>();
   Map<String, Suggestion> suggestionMap = new LinkedHashMap<String, Suggestion>();
 
-  public SpellCheckResponse(NamedList<Object> spellInfo) {
-    NamedList<Object> sugg = (NamedList<Object>) spellInfo.get("suggestions");
+  public SpellCheckResponse(NamedList<NamedList<Object>> spellInfo) {
+    NamedList<Object> sugg = spellInfo.get("suggestions");
     if (sugg == null) {
       correctlySpelled = true;
       return;
@@ -55,12 +55,14 @@ public class SpellCheckResponse {
 						collations.add(new Collation()
 								.setCollationQueryString((String) sugg.getVal(i)));
 					} else if (o instanceof NamedList) {
-						NamedList expandedCollation = (NamedList) o;
-						String collationQuery = (String) expandedCollation
-								.get("collationQuery");
+            @SuppressWarnings("unchecked")
+						NamedList<Object> expandedCollation = (NamedList<Object>) o;
+						String collationQuery 
+              = (String) expandedCollation.get("collationQuery");
 						int hits = (Integer) expandedCollation.get("hits");
-						NamedList<String> misspellingsAndCorrections = (NamedList<String>) expandedCollation
-								.get("misspellingsAndCorrections");
+            @SuppressWarnings("unchecked")
+						NamedList<String> misspellingsAndCorrections 
+              = (NamedList<String>) expandedCollation.get("misspellingsAndCorrections");
 
 						Collation collation = new Collation();
 						collation.setCollationQueryString(collationQuery);
@@ -79,6 +81,7 @@ public class SpellCheckResponse {
 					}
 				} 	
       } else {
+        @SuppressWarnings("unchecked")
         Suggestion s = new Suggestion(n, (NamedList<Object>) sugg.getVal(i));
         suggestionMap.put(n, s);
         suggestions.add(s);
@@ -152,16 +155,21 @@ public class SpellCheckResponse {
         } else if ("origFreq".equals(n)) {
           originalFrequency = (Integer) suggestion.getVal(i);
         } else if ("suggestion".equals(n)) {
+          @SuppressWarnings("unchecked")
           List list = (List)suggestion.getVal(i);
           if (list.size() > 0 && list.get(0) instanceof NamedList) {
             // extended results detected
+            @SuppressWarnings("unchecked")
+            List<NamedList> extended = (List<NamedList>)list;
             alternativeFrequencies = new ArrayList<Integer>();
-            for (NamedList nl : (List<NamedList>)list) {
+            for (NamedList nl : extended) {
               alternatives.add((String)nl.get("word"));
               alternativeFrequencies.add((Integer)nl.get("freq"));
             }
           } else {
-            alternatives.addAll(list);
+            @SuppressWarnings("unchecked")
+            List<String> alts = (List<String>) list;
+            alternatives.addAll(alts);
           }
         }
       }

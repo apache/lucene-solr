@@ -274,7 +274,7 @@ public class TermsComponent extends SearchComponent {
     if (th != null) {
       for (ShardResponse srsp : sreq.responses) {
         @SuppressWarnings("unchecked")
-        NamedList<Object> terms = (NamedList<Object>) srsp.getSolrResponse().getResponse().get("terms");
+        NamedList<NamedList<Number>> terms = (NamedList<NamedList<Number>>) srsp.getSolrResponse().getResponse().get("terms");
         th.parse(terms);
       }
     }
@@ -333,7 +333,7 @@ public class TermsComponent extends SearchComponent {
       }
     }
 
-    public void parse(NamedList<Object> terms) {
+    public void parse(NamedList<NamedList<Number>> terms) {
       // exit if there is no terms
       if (terms == null) {
         return;
