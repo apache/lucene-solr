@@ -23,6 +23,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SetBasedFieldSelector;
+
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -379,7 +381,7 @@ public class TestMultiSearcher extends LuceneTestCase
             @Override
             public float coord(int overlap, int maxOverlap) { return 1.0f; }
             @Override
-            public float lengthNorm(String fieldName, int numTokens) { return 1.0f; }
+            public float computeNorm(String fieldName, FieldInvertState state) { return state.getBoost(); }
             @Override
             public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
             @Override

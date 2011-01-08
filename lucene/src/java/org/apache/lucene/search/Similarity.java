@@ -462,12 +462,14 @@ import java.util.Collection;
  *        {@link org.apache.lucene.document.Fieldable#setBoost(float) field.setBoost()}
  *        before adding the field to a document.
  *        </li>
- *        <li>{@link #lengthNorm(String, int) <b>lengthNorm</b>(field)} - computed
+ *        <li><b>lengthNorm</b> - computed
  *        when the document is added to the index in accordance with the number of tokens
  *        of this field in the document, so that shorter fields contribute more to the score.
  *        LengthNorm is computed by the Similarity class in effect at indexing.
  *        </li>
  *      </ul>
+ *      The {@link #computeNorm} method is responsible for
+ *      combining all of these factors into a single float.
  *
  *      <p>
  *      When a document is added to the index, all the above factors are multiplied.
@@ -480,7 +482,7 @@ import java.util.Collection;
  *            norm(t,d) &nbsp; = &nbsp;
  *            {@link org.apache.lucene.document.Document#getBoost() doc.getBoost()}
  *            &nbsp;&middot;&nbsp;
- *            {@link #lengthNorm(String, int) lengthNorm(field)}
+ *            lengthNorm
  *            &nbsp;&middot;&nbsp;
  *          </td>
  *          <td valign="bottom" align="center" rowspan="1">
@@ -591,11 +593,22 @@ public abstract class Similarity implements Serializable {
   }
 
   /**
-   * Compute the normalization value for a field, given the accumulated
+   * Computes the normalization value for a field, given the accumulated
    * state of term processing for this field (see {@link FieldInvertState}).
    * 
    * <p>Implementations should calculate a float value based on the field
    * state and then return that value.
+   *
+   * <p>Matches in longer fields are less precise, so implementations of this
+   * method usually return smaller values when <code>state.getLength()</code> is large,
+   * and larger values when <code>state.getLength()</code> is small.
+   * 
+   * <p>Note that the return values are computed under 
+   * {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document)} 
+   * and then stored using
+   * {@link #encodeNormValue(float)}.  
+   * Thus they have limited precision, and documents
+   * must be re-indexed if this method is altered.
    *
    * <p>For backward compatibility this method by default calls
    * {@link #lengthNorm(String, int)} passing
@@ -608,9 +621,7 @@ public abstract class Similarity implements Serializable {
    * @param state current processing state for this field
    * @return the calculated float norm
    */
-  public float computeNorm(String field, FieldInvertState state) {
-    return (state.getBoost() * lengthNorm(field, state.getLength()));
-  }
+  public abstract float computeNorm(String field, FieldInvertState state);
   
   /** Computes the normalization value for a field given the total number of
    * terms contained in a field.  These values, together with field boosts, are
@@ -634,8 +645,13 @@ public abstract class Similarity implements Serializable {
    * @return a normalization factor for hits on this field of this document
    *
    * @see org.apache.lucene.document.Field#setBoost(float)
+   *
+   * @deprecated Please override computeNorm instead
    */
-  public abstract float lengthNorm(String fieldName, int numTokens);
+  @Deprecated
+  public final float lengthNorm(String fieldName, int numTokens) {
+    throw new UnsupportedOperationException("please use computeNorm instead");
+  }
 
   /** Computes the normalization value for a query given the sum of the squared
    * weights of each of the query terms.  This value is multiplied into the

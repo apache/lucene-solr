@@ -21,7 +21,10 @@ import org.apache.lucene.index.FieldInvertState;
 
 /** Expert: Delegating scoring implementation.  Useful in {@link
  * Query#getSimilarity(Searcher)} implementations, to override only certain
- * methods of a Searcher's Similarity implementation.. */
+ * methods of a Searcher's Similarity implementation..
+ * @deprecated this class will be removed in 4.0.  Please
+ * subclass {@link Similarity} or {@link DefaultSimilarity} instead. */
+@Deprecated
 public class SimilarityDelegator extends Similarity {
 
   private Similarity delegee;
@@ -38,12 +41,7 @@ public class SimilarityDelegator extends Similarity {
   public float computeNorm(String fieldName, FieldInvertState state) {
     return delegee.computeNorm(fieldName, state);
   }
-  
-  @Override
-  public float lengthNorm(String fieldName, int numTerms) {
-    return delegee.lengthNorm(fieldName, numTerms);
-  }
-  
+
   @Override
   public float queryNorm(float sumOfSquaredWeights) {
     return delegee.queryNorm(sumOfSquaredWeights);

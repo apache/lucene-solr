@@ -42,8 +42,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      return state.getBoost();
     }
   }
 

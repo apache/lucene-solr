@@ -262,7 +262,7 @@ public class TestTermVectors extends LuceneTestCase {
           float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
           //float qNorm = sim.queryNorm()
           //This is fine since we don't have stop words
-          float lNorm = sim.lengthNorm("field", vector.getTerms().length);
+          //float lNorm = sim.lengthNorm("field", vector.getTerms().length);
           //float coord = sim.coord()
           //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
           assertTrue(vector != null);

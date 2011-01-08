@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -59,8 +60,8 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
             else return 0.0f;
         }
         @Override
-        public float lengthNorm(String fieldName, int numTerms) {
-            return 1.0f;
+        public float computeNorm(String fieldName, FieldInvertState state) {
+          return state.getBoost();
         }
         @Override
         public float idf(int docFreq, int numDocs) {

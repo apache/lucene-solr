@@ -81,6 +81,11 @@ Changes in backwards compatibility policy
   Searchable are collapsed into IndexSearcher; contrib/remote and
   MultiSearcher have been removed.  (Mike McCandless)
 
+* LUCENE-2854: Deprecated SimilarityDelegator and
+  Similarity.lengthNorm; the latter is now final, forcing any custom
+  Similarity impls to cutover to the more general computeNorm (Robert
+  Muir, Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something

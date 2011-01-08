@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
@@ -235,8 +236,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    @Override public float lengthNorm(String fieldName, int numTerms) {
-      return 1.0f;
+    @Override public float computeNorm(String fieldName, FieldInvertState state) {
+      return state.getBoost();
     }
 
     @Override public float queryNorm(float sumOfSquaredWeights) {

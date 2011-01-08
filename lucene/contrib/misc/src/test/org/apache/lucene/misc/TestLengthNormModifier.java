@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.FieldNormModifier;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -45,11 +46,11 @@ public class TestLengthNormModifier extends LuceneTestCase {
 
     /** inverts the normal notion of lengthNorm */
     public static Similarity s = new DefaultSimilarity() {
-	    @Override
-	    public float lengthNorm(String fieldName, int numTokens) {
-		return numTokens;
-	    }
-	};
+        @Override
+        public float computeNorm(String fieldName, FieldInvertState state) {
+          return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
+        }
+      };
     
     @Override
     public void setUp() throws Exception {
@@ -161,11 +162,11 @@ public class TestLengthNormModifier extends LuceneTestCase {
 
 	// override the norms to be inverted
 	Similarity s = new DefaultSimilarity() {
-		@Override
-		public float lengthNorm(String fieldName, int numTokens) {
-		    return numTokens;
-		}
-	    };
+            @Override
+            public float computeNorm(String fieldName, FieldInvertState state) {
+              return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
+            }
+          };
 	FieldNormModifier fnm = new FieldNormModifier(store, s);
 	fnm.reSetNorms("field");
 

@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -384,7 +385,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float lengthNorm(String fieldName, int numTokens) {
+    public float computeNorm(String fieldName, FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

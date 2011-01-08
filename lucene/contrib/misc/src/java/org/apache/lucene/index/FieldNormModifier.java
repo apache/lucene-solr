@@ -28,7 +28,7 @@ import org.apache.lucene.util.StringHelper;
 /**
  * Given a directory and a list of fields, updates the fieldNorms in place for every document.
  * 
- * If Similarity class is specified, uses its lengthNorm method to set norms.
+ * If Similarity class is specified, uses its computeNorm method to set norms.
  * If -n command line argument is used, removed field norms, as if 
  * {@link org.apache.lucene.document.Field.Index}.NO_NORMS was used.
  *
@@ -138,12 +138,16 @@ public class FieldNormModifier {
     
     try {
       reader = IndexReader.open(dir, false); 
+      final FieldInvertState invertState = new FieldInvertState();
+      invertState.setBoost(1.0f);
       for (int d = 0; d < termCounts.length; d++) {
         if (! reader.isDeleted(d)) {
           if (sim == null)
             reader.setNorm(d, fieldName, Similarity.encodeNorm(1.0f));
-          else
-            reader.setNorm(d, fieldName, sim.encodeNormValue(sim.lengthNorm(fieldName, termCounts[d])));
+          else {
+            invertState.setLength(termCounts[d]);
+            reader.setNorm(d, fieldName, sim.encodeNormValue(sim.computeNorm(fieldName, invertState)));
+          }
         }
       }
       
