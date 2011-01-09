@@ -761,7 +761,7 @@ public abstract class Similarity implements Serializable {
         public float getIdf() {
           return idf;
         }};
-   }
+  }
 
   /**
    * This method forwards to {@link
@@ -770,7 +770,7 @@ public abstract class Similarity implements Serializable {
    */
   public IDFExplanation idfExplain(final Term term, final IndexSearcher searcher) throws IOException {
     return idfExplain(term, searcher, searcher.docFreq(term));
-   }
+  }
 
   /**
    * Computes a score factor for a phrase.
