@@ -795,7 +795,7 @@ public abstract class Similarity implements Serializable {
         public float getIdf() {
           return idf;
         }};
-   }
+  }
 
   /**
    * Computes a score factor for a phrase.
