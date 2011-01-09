@@ -244,10 +244,8 @@ public class ConstantScoreQuery extends Query {
     }
 
     // this optimization allows out of order scoring as top scorer,
-    // TODO: theoretically this method should not be called because its protected and
-    // this class does not use it, it should be public in Scorer!
     @Override
-    protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+    public boolean score(Collector collector, int max, int firstDocID) throws IOException {
       if (docIdSetIterator instanceof Scorer) {
         return ((Scorer) docIdSetIterator).score(wrapCollector(collector), max, firstDocID);
       } else {

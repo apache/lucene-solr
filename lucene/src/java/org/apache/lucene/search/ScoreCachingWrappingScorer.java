@@ -43,7 +43,7 @@ public class ScoreCachingWrappingScorer extends Scorer {
   }
 
   @Override
-  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     return scorer.score(collector, max, firstDocID);
   }
 

@@ -229,7 +229,7 @@ final class BooleanScorer extends Scorer {
 
   // firstDocID is ignored since nextDoc() initializes 'current'
   @Override
-  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     boolean more;
     Bucket tmp;
     BucketScorer bs = new BucketScorer();

@@ -131,6 +131,9 @@ Changes in backwards compatibility policy
 * LUCENE-2837: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
   operate on a ReaderContext instead of directly on IndexReader to enable
   searches to be aware of IndexSearcher's context. (Simon Willnauer)
+  
+* LUCENE-2839: Scorer#score(Collector,int,int) is now public because it is
+  called from other classes and part of public API. (Uwe Schindler)
 
 Changes in Runtime Behavior
 

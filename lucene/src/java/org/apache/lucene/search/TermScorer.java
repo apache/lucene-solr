@@ -77,7 +77,7 @@ final class TermScorer extends Scorer {
 
   // firstDocID is ignored since nextDoc() sets 'doc'
   @Override
-  protected boolean score(Collector c, int end, int firstDocID) throws IOException {
+  public boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
     while (doc < end) {                           // for docs in window
       c.collect(doc);                      // collect score

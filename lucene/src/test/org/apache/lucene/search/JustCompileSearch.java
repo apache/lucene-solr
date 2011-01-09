@@ -215,7 +215,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    protected boolean score(Collector collector, int max, int firstDocID)
+    public boolean score(Collector collector, int max, int firstDocID)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

@@ -280,7 +280,7 @@ class BooleanScorer2 extends Scorer {
   }
   
   @Override
-  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     doc = firstDocID;
     collector.setScorer(this);
     while (doc < max) {
