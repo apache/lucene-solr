@@ -80,6 +80,12 @@ public abstract class Scorer extends DocIdSetIterator {
    * Expert: Collects matching documents in a range. Hook for optimization.
    * Note, <code>firstDocID</code> is added to ensure that {@link #nextDoc()}
    * was called before this method.
+   *
+   * <p><b>NOTE:</b> Because of backwards compatibility, this method is still
+   * declared as <b>protected</b>, but it is intended to be <b>public</b>,
+   * because it's called from other classes (like {@link BooleanScorer}).
+   * If you subclass {@code Scorer}, you should declare the overridden method
+   * as public to ease transition to Lucene 4.0, where it will be public.</p>
    * 
    * @param collector
    *          The collector to which all matching documents are passed.
