@@ -41,7 +41,11 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *
  * <p>Applications usually need only call the inherited {@link #search(Query,int)}
  * or {@link #search(Query,Filter,int)} methods.
+ * 
+ * @deprecated Please pass an ExecutorService to {@link
+ * IndexSearcher}, instead.
  */
+@Deprecated
 public class ParallelMultiSearcher extends MultiSearcher {
   private final ExecutorService executor;
   private final Searchable[] searchables;

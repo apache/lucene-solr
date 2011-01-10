@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -182,6 +185,8 @@ public class TestNRTThreads extends LuceneTestCase {
     // silly starting guess:
     final AtomicInteger totTermCount = new AtomicInteger(100);
 
+    final ExecutorService es = Executors.newCachedThreadPool();
+
     while(System.currentTimeMillis() < stopTime && !failed.get()) {
       if (random.nextBoolean()) {
         if (VERBOSE) {
@@ -219,7 +224,7 @@ public class TestNRTThreads extends LuceneTestCase {
 
       if (r.numDocs() > 0) {
 
-        final IndexSearcher s = new IndexSearcher(r);
+        final IndexSearcher s = new IndexSearcher(r, es);
 
         // run search threads
         final long searchStopTime = System.currentTimeMillis() + 500;
@@ -293,6 +298,9 @@ public class TestNRTThreads extends LuceneTestCase {
       }
     }
 
+    es.shutdown();
+    es.awaitTermination(1, TimeUnit.SECONDS);
+
     if (VERBOSE) {
       System.out.println("TEST: all searching done [" + (System.currentTimeMillis()-t0) + " ms]");
     }
@@ -331,6 +339,7 @@ public class TestNRTThreads extends LuceneTestCase {
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
       
     writer.close(false);
+    _TestUtil.checkIndex(dir);
     dir.close();
     _TestUtil.rmDir(tempDir);
     docs.close();
