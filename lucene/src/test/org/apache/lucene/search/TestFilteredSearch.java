@@ -18,6 +18,8 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -59,7 +61,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     directory.close();
   }
 
-  public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean optimize) {
+  public void searchFiltered(IndexWriter writer, Directory directory, SimpleDocIdSetFilter filter, boolean optimize) {
     try {
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
@@ -75,6 +77,7 @@ public class TestFilteredSearch extends LuceneTestCase {
      
      
       IndexSearcher indexSearcher = new IndexSearcher(directory, true);
+      filter.setDocBases(indexSearcher.getIndexReader());
       ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
       assertEquals("Number of matched documents", 1, hits.length);
       indexSearcher.close();
@@ -86,29 +89,41 @@ public class TestFilteredSearch extends LuceneTestCase {
   }
  
   public static final class SimpleDocIdSetFilter extends Filter {
-    private int docBase;
     private final int[] docs;
     private int index;
+    private Map<IndexReader,Integer> docBasePerSub;
+
     public SimpleDocIdSetFilter(int[] docs) {
       this.docs = docs;
     }
+
+    public void setDocBases(IndexReader r) {
+      int maxDoc = 0;
+      docBasePerSub = new HashMap<IndexReader,Integer>();
+      for(IndexReader sub : r.getSequentialSubReaders()) {
+        docBasePerSub.put(sub, maxDoc);
+        maxDoc += sub.maxDoc();
+      }
+    }
+
     @Override
     public DocIdSet getDocIdSet(IndexReader reader) {
-      final OpenBitSet set = new OpenBitSet();
+      final OpenBitSet set = new OpenBitSet(reader.maxDoc());
+      final int docBase = docBasePerSub.get(reader);
       final int limit = docBase+reader.maxDoc();
       for (;index < docs.length; index++) {
         final int docId = docs[index];
-        if(docId > limit)
+        if (docId > limit)
           break;
-        set.set(docId-docBase);
+        if (docId >= docBase) {
+          set.set(docId-docBase);
+        }
       }
-      docBase = limit;
       return set.isEmpty()?null:set;
     }
     
     public void reset(){
       index = 0;
-      docBase = 0;
     }
   }
 

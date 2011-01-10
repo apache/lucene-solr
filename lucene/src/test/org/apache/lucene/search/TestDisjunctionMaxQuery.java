@@ -143,7 +143,8 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
                                                                                 // "albino"));
       writer.addDocument(d4);
     }
-    
+
+    writer.optimize();
     r = writer.getReader();
     writer.close();
     s = new IndexSearcher(r);
@@ -166,7 +167,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     QueryUtils.check(random, dq, s);
     
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(r, true, false);
+    final Scorer ds = dw.scorer(r.getSequentialSubReaders()[0], true, false);
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
@@ -182,7 +183,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     QueryUtils.check(random, dq, s);
     
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(r, true, false);
+    final Scorer ds = dw.scorer(r.getSequentialSubReaders()[0], true, false);
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));

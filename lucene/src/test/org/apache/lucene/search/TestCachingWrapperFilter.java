@@ -111,15 +111,15 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
     final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
-    final DocIdSet originalSet = filter.getDocIdSet(reader);
-    final DocIdSet cachedSet = cacher.getDocIdSet(reader);
+    final DocIdSet originalSet = filter.getDocIdSet(reader.getSequentialSubReaders()[0]);
+    final DocIdSet cachedSet = cacher.getDocIdSet(reader.getSequentialSubReaders()[0]);
     assertTrue(cachedSet.isCacheable());
     assertEquals(shouldCacheable, originalSet.isCacheable());
     //System.out.println("Original: "+originalSet.getClass().getName()+" -- cached: "+cachedSet.getClass().getName());
     if (originalSet.isCacheable()) {
       assertEquals("Cached DocIdSet must be of same class like uncached, if cacheable", originalSet.getClass(), cachedSet.getClass());
     } else {
-      assertTrue("Cached DocIdSet must be an OpenBitSet if the original one was not cacheable", cachedSet instanceof OpenBitSetDISI);
+      assertTrue("Cached DocIdSet must be an OpenBitSet if the original one was not cacheable (got " + cachedSet + ")", cachedSet instanceof OpenBitSetDISI || cachedSet == DocIdSet.EMPTY_DOCIDSET);
     }
   }
   

@@ -18,12 +18,14 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a term.
@@ -39,11 +41,32 @@ public class TermQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     private IDFExplanation idfExp;
+    private final Set<Integer> hash;
 
     public TermWeight(Searcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
-      idfExp = similarity.idfExplain(term, searcher);
+      if (searcher instanceof IndexSearcher) {
+        hash = new HashSet<Integer>();
+        IndexReader ir = ((IndexSearcher)searcher).getIndexReader();
+        final int dfSum[] = new int[1];
+        new ReaderUtil.Gather(ir) {
+          @Override
+          protected void add(int base, IndexReader r) throws IOException {
+            int df = r.docFreq(term);
+            dfSum[0] += df;
+            if (df > 0) {
+              hash.add(r.hashCode());
+            }
+          }
+        }.run();
+
+        idfExp = similarity.idfExplain(term, searcher, dfSum[0]);
+      } else {
+        idfExp = similarity.idfExplain(term, searcher);
+        hash = null;
+      }
+
       idf = idfExp.getIdf();
     }
 
@@ -71,6 +94,10 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      if (hash != null && !hash.contains(reader.hashCode())) {
+        return null;
+      }
+      
       TermDocs termDocs = reader.termDocs(term);
 
       if (termDocs == null)

@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +48,45 @@ public final class ReaderUtil {
         gatherSubReaders(allSubReaders, subReaders[i]);
       }
     }
+  }
+
+  /** Recursively visits all sub-readers of a reader.  You
+   *  should subclass this and override the add method to
+   *  gather what you need.
+   *
+   * @lucene.experimental */
+  public static abstract class Gather {
+    private final IndexReader topReader;
+
+    public Gather(IndexReader r) {
+      topReader = r;
+    }
+
+    public int run() throws IOException {
+      return run(0, topReader);
+    }
+
+    public int run(int docBase) throws IOException {
+      return run(docBase, topReader);
+    }
+
+    private int run(int base, IndexReader reader) throws IOException {
+      IndexReader[] subReaders = reader.getSequentialSubReaders();
+      if (subReaders == null) {
+        // atomic reader
+        add(base, reader);
+        base += reader.maxDoc();
+      } else {
+        // composite reader
+        for (int i = 0; i < subReaders.length; i++) {
+          base = run(base, subReaders[i]);
+        }
+      }
+
+      return base;
+    }
+
+    protected abstract void add(int base, IndexReader r) throws IOException;
   }
 
   /**

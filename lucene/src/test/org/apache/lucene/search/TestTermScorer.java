@@ -51,6 +51,7 @@ public class TestTermScorer extends LuceneTestCase {
               Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
+    writer.optimize();
     indexReader = writer.getReader();
     writer.close();
     indexSearcher = new IndexSearcher(indexReader);
@@ -70,7 +71,7 @@ public class TestTermScorer extends LuceneTestCase {
     
     Weight weight = termQuery.weight(indexSearcher);
     
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader(), true, true);
+    Scorer ts = weight.scorer(indexSearcher.getIndexReader().getSequentialSubReaders()[0], true, true);
     // we have 2 documents with the term all in them, one document for all the
     // other values
     final List<TestHit> docs = new ArrayList<TestHit>();
@@ -131,7 +132,7 @@ public class TestTermScorer extends LuceneTestCase {
     
     Weight weight = termQuery.weight(indexSearcher);
     
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader(), true, true);
+    Scorer ts = weight.scorer(indexSearcher.getIndexReader().getSequentialSubReaders()[0], true, true);
     assertTrue("next did not return a doc",
         ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertTrue("score is not correct", ts.score() == 1.6931472f);
@@ -149,7 +150,7 @@ public class TestTermScorer extends LuceneTestCase {
     
     Weight weight = termQuery.weight(indexSearcher);
     
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader(), true, true);
+    Scorer ts = weight.scorer(indexSearcher.getIndexReader().getSequentialSubReaders()[0], true, true);
     assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     // The next doc should be doc 5
     assertTrue("doc should be number 5", ts.docID() == 5);

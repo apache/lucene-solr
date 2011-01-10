@@ -22,6 +22,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.SmallFloat;
+import org.apache.lucene.util.VirtualMethod;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -527,11 +528,21 @@ import java.util.Collection;
  * @see Searcher#setSimilarity(Similarity)
  */
 public abstract class Similarity implements Serializable {
-  
+
+  // NOTE: this static code must precede setting the static defaultImpl:
+  private static final VirtualMethod<Similarity> withoutDocFreqMethod =
+    new VirtualMethod<Similarity>(Similarity.class, "idfExplain", Term.class, Searcher.class);
+  private static final VirtualMethod<Similarity> withDocFreqMethod =
+    new VirtualMethod<Similarity>(Similarity.class, "idfExplain", Term.class, Searcher.class, int.class);
+
+  private final boolean hasIDFExplainWithDocFreqAPI =
+    VirtualMethod.compareImplementationDistance(getClass(),
+        withDocFreqMethod, withoutDocFreqMethod) >= 0; // its ok for both to be overridden
   /**
    * The Similarity implementation used by default.
    **/
   private static Similarity defaultImpl = new DefaultSimilarity();
+
   public static final int NO_DOC_ID_PROVIDED = -1;
 
   /** Set the default Similarity implementation used by indexing and search
@@ -758,6 +769,7 @@ public abstract class Similarity implements Serializable {
    */
   public abstract float tf(float freq);
 
+
   /**
    * Computes a score factor for a simple term and returns an explanation
    * for that score factor.
@@ -781,8 +793,13 @@ public abstract class Similarity implements Serializable {
              and an explanation for the term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {
-    final int df = searcher.docFreq(term);
+  public IDFExplanation idfExplain(final Term term, final Searcher searcher, int docFreq) throws IOException {
+
+    if (!hasIDFExplainWithDocFreqAPI) {
+      // Fallback to slow impl
+      return idfExplain(term, searcher);
+    }
+    final int df = docFreq;
     final int max = searcher.maxDoc();
     final float idf = idf(df, max);
     return new IDFExplanation() {
@@ -795,6 +812,20 @@ public abstract class Similarity implements Serializable {
         public float getIdf() {
           return idf;
         }};
+  }
+
+  /**
+   * This method forwards to {@link
+   * #idfExplain(Term,IndexSearcher,int)} by passing
+   * <code>searcher.docFreq(term)</code> as the docFreq.
+   *
+   * WARNING: if you subclass Similariary and override this
+   * method then you may hit a peformance hit for certain
+   * queries.  Better to override {@link
+   * #idfExplain(Term,Searcher,int)} instead.
+   */
+  public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {
+    return idfExplain(term, searcher, searcher.docFreq(term));
   }
 
   /**

@@ -65,7 +65,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     if (originalSet.isCacheable()) {
       assertEquals("Cached DocIdSet must be of same class like uncached, if cacheable", originalSet.getClass(), cachedSet.getClass());
     } else {
-      assertTrue("Cached DocIdSet must be an OpenBitSet if the original one was not cacheable", cachedSet instanceof OpenBitSetDISI);
+      assertTrue("Cached DocIdSet must be an OpenBitSet if the original one was not cacheable", cachedSet instanceof OpenBitSetDISI || cachedSet == DocIdSet.EMPTY_DOCIDSET);
     }
   }
   
