@@ -949,7 +949,7 @@ public class DocBuilder {
 
   static String getTimeElapsedSince(long l) {
     l = System.currentTimeMillis() - l;
-    return (l / (60000 * 60)) % 60 + ":" + (l / 60000) % 60 + ":" + (l / 1000)
+    return (l / (60000 * 60)) + ":" + (l / 60000) % 60 + ":" + (l / 1000)
             % 60 + "." + l % 1000;
   }
 
