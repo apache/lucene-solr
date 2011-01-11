@@ -99,7 +99,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     public DocIdSet getDocIdSet(AtomicReaderContext context) {
       assert context.isAtomic;
       final OpenBitSet set = new OpenBitSet();
-      int docBase = ((AtomicReaderContext)context).docBase;
+      int docBase = context.docBase;
       final int limit = docBase+context.reader.maxDoc();
       for (;index < docs.length; index++) {
         final int docId = docs[index];
