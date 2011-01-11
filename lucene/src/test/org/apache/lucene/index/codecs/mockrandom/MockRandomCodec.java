@@ -108,11 +108,11 @@ public class MockRandomCodec extends Codec {
     }
 
     if (random.nextBoolean()) {
-      final int freqCutoff = _TestUtil.nextInt(random, 1, 20);
+      final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: pulsing postings with freqCutoff=" + freqCutoff);
+        System.out.println("MockRandomCodec: pulsing postings with totTFCutoff=" + totTFCutoff);
       }
-      postingsWriter = new PulsingPostingsWriterImpl(freqCutoff, postingsWriter);
+      postingsWriter = new PulsingPostingsWriterImpl(totTFCutoff, postingsWriter);
     }
 
     final TermsIndexWriterBase indexWriter;
@@ -218,9 +218,9 @@ public class MockRandomCodec extends Codec {
     }
 
     if (random.nextBoolean()) {
-      final int freqCutoff = _TestUtil.nextInt(random, 1, 20);
+      final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading pulsing postings with freqCutoff=" + freqCutoff);
+        System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
       }
       postingsReader = new PulsingPostingsReaderImpl(postingsReader);
     }

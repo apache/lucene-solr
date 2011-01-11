@@ -33,7 +33,7 @@ public class TermState implements Cloneable {
   public long filePointer;                             // fp into the terms dict primary file (_X.tis)
   public int docFreq;                                  // how many docs have this term
 
-  public void copy(TermState other) {
+  public void copyFrom(TermState other) {
     ord = other.ord;
     filePointer = other.filePointer;
     docFreq = other.docFreq;

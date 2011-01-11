@@ -30,9 +30,9 @@ import org.apache.lucene.util.BytesRef;
 
 public abstract class PostingsConsumer {
 
-  /** Adds a new doc in this term.  Return null if this
-   *  consumer doesn't need to see the positions for this
-   *  doc. */
+  /** Adds a new doc in this term.  If this field omits term
+   *  freqs & positions then termDocFreq should be ignored,
+   *  and, finishDoc will not be called. */
   public abstract void startDoc(int docID, int termDocFreq) throws IOException;
 
   public static class PostingsMergeState {
@@ -49,7 +49,8 @@ public abstract class PostingsConsumer {
   public abstract void addPosition(int position, BytesRef payload) throws IOException;
 
   /** Called when we are done adding positions & payloads
-   * for each doc */
+   *  for each doc.  Not called  when the field omits term
+   *  freq and positions. */
   public abstract void finishDoc() throws IOException;
 
   /** Default merge impl: append documents, mapping around

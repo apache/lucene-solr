@@ -329,6 +329,7 @@ public class TestIndexReader extends LuceneTestCase
 
         //  add 100 documents with term : aaa
         writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        writer.setInfoStream(VERBOSE ? System.out : null);
         for (int i = 0; i < 100; i++) {
             addDoc(writer, searchTerm.text());
         }
