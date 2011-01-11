@@ -17,13 +17,20 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.index.Term;
 
 public class TestBooleanQuery extends LuceneTestCase {
   
@@ -107,4 +114,42 @@ public class TestBooleanQuery extends LuceneTestCase {
     dir.close();
   }
   
+  public void testDeMorgan() throws Exception {
+    Directory dir1 = newDirectory();
+    RandomIndexWriter iw1 = new RandomIndexWriter(random, dir1);
+    Document doc1 = new Document();
+    doc1.add(newField("field", "foo bar", Field.Index.ANALYZED));
+    iw1.addDocument(doc1);
+    IndexReader reader1 = iw1.getReader();
+    iw1.close();
+    
+    Directory dir2 = newDirectory();
+    RandomIndexWriter iw2 = new RandomIndexWriter(random, dir2);
+    Document doc2 = new Document();
+    doc2.add(newField("field", "foo baz", Field.Index.ANALYZED));
+    iw2.addDocument(doc2);
+    IndexReader reader2 = iw2.getReader();
+    iw2.close();
+    
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new WhitespaceAnalyzer());
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    
+    MultiReader multireader = new MultiReader(reader1, reader2);
+    IndexSearcher searcher = new IndexSearcher(multireader);
+    assertEquals(0, searcher.search(qp.parse("+foo -ba*"), 10).totalHits);
+    
+    final ExecutorService es = Executors.newCachedThreadPool();
+    searcher = new IndexSearcher(multireader, es);
+    if (VERBOSE)
+      System.out.println("rewritten form: " + searcher.rewrite(qp.parse("+foo -ba*")));
+    assertEquals(0, searcher.search(qp.parse("+foo -ba*"), 10).totalHits);
+    es.shutdown();
+    es.awaitTermination(1, TimeUnit.SECONDS);
+
+    multireader.close();
+    reader1.close();
+    reader2.close();
+    dir1.close();
+    dir2.close();
+  }
 }
