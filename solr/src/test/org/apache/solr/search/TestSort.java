@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.*;
@@ -107,7 +107,7 @@ public class TestSort extends AbstractSolrTestCase {
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {
           @Override
-          public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+          public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
             return randSet(context.reader.maxDoc());
           }
         };

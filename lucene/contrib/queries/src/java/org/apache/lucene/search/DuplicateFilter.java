@@ -19,7 +19,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.TermsEnum;
@@ -72,7 +72,7 @@ public class DuplicateFilter extends Filter
 	}
 
   @Override
-  public DocIdSet getDocIdSet(ReaderContext context) throws IOException
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException
 	{
 		if(processingMode==PM_FAST_INVALIDATION)
 		{

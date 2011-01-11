@@ -24,7 +24,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
@@ -41,8 +40,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
-    ReaderContext context = reader.getTopReaderContext();
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     MockFilter filter = new MockFilter();
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
@@ -67,12 +66,12 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
-    ReaderContext context = reader.getTopReaderContext();
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(ReaderContext context) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context) {
         return null;
       }
     };
@@ -90,12 +89,12 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
-    ReaderContext context = reader.getTopReaderContext();
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(ReaderContext context) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context) {
         return new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() {
@@ -114,7 +113,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
-    ReaderContext context = reader.getTopReaderContext();
+    assertTrue(reader.getTopReaderContext().isAtomic);
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
     final DocIdSet originalSet = filter.getDocIdSet(context);
     final DocIdSet cachedSet = cacher.getDocIdSet(context);
@@ -145,7 +145,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // a openbitset filter is always cacheable
     assertDocIdSetCacheable(reader, new Filter() {
       @Override
-      public DocIdSet getDocIdSet(ReaderContext context) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context) {
         return new OpenBitSet();
       }
     }, true);

@@ -42,9 +42,11 @@ public class TermQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     private IDFExplanation idfExp;
+    private transient ReaderContext weightContext; // only set if -ea for assert in scorer()
 
     public TermWeight(IndexSearcher searcher)
       throws IOException {
+      assert setWeightContext(searcher);
       this.similarity = getSimilarity(searcher);
       if (docFreq != -1) {
         idfExp = similarity.idfExplain(term, searcher, docFreq);
@@ -77,7 +79,8 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      assert assertTopReaderContext(context);
       final IndexReader reader = context.reader;
       DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(),
                                           term.field(),
@@ -89,9 +92,21 @@ public class TermQuery extends Query {
 
       return new TermScorer(this, docs, similarity, reader.norms(term.field()));
     }
+    
+    private boolean assertTopReaderContext(ReaderContext context) {
+      while (context.parent != null) {
+        context = context.parent;
+      }
+      return weightContext == context;
+    }
+    
+    private boolean setWeightContext(IndexSearcher searcher) {
+      weightContext = searcher.getTopReaderContext();
+      return true;
+    }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
       final IndexReader reader = context.reader;
 

@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.geohash;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.Filter;
@@ -62,7 +62,7 @@ public class GeoHashDistanceFilter extends DistanceFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
 
     final DocTerms geoHashValues = FieldCache.DEFAULT.getTerms(context.reader, geoHashField);
     final BytesRef br = new BytesRef();

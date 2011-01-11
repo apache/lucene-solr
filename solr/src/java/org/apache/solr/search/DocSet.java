@@ -23,7 +23,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
 
@@ -247,7 +247,7 @@ abstract class DocSetBase implements DocSet {
 
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(ReaderContext ctx) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext ctx) throws IOException {
         IndexReader.AtomicReaderContext context = (IndexReader.AtomicReaderContext)ctx;  // TODO: remove after lucene migration
         IndexReader reader = ctx.reader;
 

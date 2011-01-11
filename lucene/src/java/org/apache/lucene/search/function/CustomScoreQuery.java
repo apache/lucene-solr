@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
@@ -240,7 +240,7 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       // Pass true for "scoresDocsInOrder", because we
       // require in-order scoring, even if caller does not,
       // since we call advance on the valSrcScorers.  Pass
@@ -258,12 +258,12 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       Explanation explain = doExplain(context, doc);
       return explain == null ? new Explanation(0.0f, "no matching docs") : explain;
     }
     
-    private Explanation doExplain(ReaderContext info, int doc) throws IOException {
+    private Explanation doExplain(AtomicReaderContext info, int doc) throws IOException {
       Explanation subQueryExpl = subQueryWeight.explain(info, doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;

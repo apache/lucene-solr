@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.DocIdBitSet;
 
 /** 
@@ -38,7 +38,7 @@ public abstract class Filter implements java.io.Serializable {
    * must refer to document IDs for that segment, not for
    * the top-level reader.
    * 
-   * @param context a {@link ReaderContext} instance opened on the index currently
+   * @param context a {@link AtomicReaderContext} instance opened on the index currently
    *         searched on. Note, it is likely that the provided reader info does not
    *         represent the whole underlying index i.e. if the index has more than
    *         one segment the given reader only represents a single segment.
@@ -52,6 +52,5 @@ public abstract class Filter implements java.io.Serializable {
    * 
    * @see DocIdBitSet
    */
-  // TODO make this context an AtomicContext
-  public abstract DocIdSet getDocIdSet(ReaderContext context) throws IOException;
+  public abstract DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException;
 }

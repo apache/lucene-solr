@@ -34,12 +34,9 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
  * {@link IndexReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link ReaderContext} ({@link #scorer(ReaderContext, boolean, boolean)})
+ * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, boolean, boolean)})
  * callers must maintain the relationship between the searcher's top-level
- * {@link ReaderContext} and the context used to create a {@link Scorer}. A
- * {@link ReaderContext} used to create a {@link Scorer} should be a leaf
- * context ({@link AtomicReaderContext}) of the searcher's top-level context,
- * otherwise the scorer's state will be undefined. 
+ * {@link ReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
  * A <code>Weight</code> is used in the following way:
  * <ol>
@@ -52,9 +49,8 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
  * <li>The query normalization factor is passed to {@link #normalize(float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(ReaderContext,boolean,boolean)}.
+ * {@link #scorer(AtomicReaderContext,boolean,boolean)}.
  * </ol>
- * 
  * 
  * @since 2.9
  */
@@ -68,7 +64,7 @@ public abstract class Weight implements Serializable {
    * @return an Explanation for the score
    * @throws IOException if an {@link IOException} occurs
    */
-  public abstract Explanation explain(ReaderContext context, int doc) throws IOException;
+  public abstract Explanation explain(AtomicReaderContext context, int doc) throws IOException;
 
   /** The query that this concerns. */
   public abstract Query getQuery();
@@ -90,12 +86,9 @@ public abstract class Weight implements Serializable {
    * in-order.<br>
    * <b>NOTE:</b> null can be returned if no documents will be scored by this
    * query.
-   * <b>NOTE: Calling this method with a {@link ReaderContext} that is not a
-   * leaf context ({@link AtomicReaderContext}) of the searcher's top-level context 
-   * used to create this {@link Weight} instance can cause undefined behavior.
    * 
    * @param context
-   *          the {@link ReaderContext} for which to return the {@link Scorer}.
+   *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
    * @param scoreDocsInOrder
    *          specifies whether in-order scoring of documents is required. Note
    *          that if set to false (i.e., out-of-order scoring is required),
@@ -111,8 +104,7 @@ public abstract class Weight implements Serializable {
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException
    */
-  // TODO make this context an AtomicContext if possible
-  public abstract Scorer scorer(ReaderContext context, boolean scoreDocsInOrder,
+  public abstract Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
       boolean topScorer) throws IOException;
   
   /** The sum of squared weights of contained query clauses. */
@@ -122,7 +114,7 @@ public abstract class Weight implements Serializable {
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #scorer(ReaderContext, boolean, boolean)} to
+   * {@link #scorer(AtomicReaderContext, boolean, boolean)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>

@@ -19,9 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
@@ -92,7 +91,7 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       Scorer subQueryScorer = qWeight.scorer(context, true, false);
       if(subQueryScorer == null) {
         return null;
@@ -101,7 +100,7 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Explanation explain(ReaderContext readerContext, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext readerContext, int doc) throws IOException {
       Explanation subQueryExpl = qWeight.explain(readerContext,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;

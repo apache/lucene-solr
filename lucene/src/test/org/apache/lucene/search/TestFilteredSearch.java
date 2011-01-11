@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -97,7 +96,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     }
 
     @Override
-    public DocIdSet getDocIdSet(ReaderContext context) {
+    public DocIdSet getDocIdSet(AtomicReaderContext context) {
       assert context.isAtomic;
       final OpenBitSet set = new OpenBitSet();
       int docBase = ((AtomicReaderContext)context).docBase;

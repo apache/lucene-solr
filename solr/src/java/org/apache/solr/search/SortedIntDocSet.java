@@ -22,7 +22,6 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
@@ -553,7 +552,7 @@ public class SortedIntDocSet extends DocSetBase {
       int lastEndIdx = 0;
 
       @Override
-      public DocIdSet getDocIdSet(ReaderContext contextX) throws IOException {
+      public DocIdSet getDocIdSet(AtomicReaderContext contextX) throws IOException {
         AtomicReaderContext context = (AtomicReaderContext)contextX;  // TODO: remove after lucene migration
         IndexReader reader = context.reader;
 

@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 
 /**
@@ -142,7 +142,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /* Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder,
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer) throws IOException {
       Scorer[] scorers = new Scorer[weights.size()];
       int idx = 0;
@@ -159,7 +159,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /* Explain the score we computed for doc */
     @Override
-    public Explanation explain(ReaderContext context, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       if (disjuncts.size() == 1) return weights.get(0).explain(context,doc);
       ComplexExplanation result = new ComplexExplanation();
       float max = 0.0f, sum = 0.0f;

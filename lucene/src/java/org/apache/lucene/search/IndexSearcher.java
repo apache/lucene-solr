@@ -145,7 +145,7 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public IndexSearcher(ReaderContext context) {
-    this(context, null);
+    this(context, (ExecutorService) null);
   }
   
   // convenience ctor for other IR based ctors
@@ -159,14 +159,8 @@ public class IndexSearcher {
     this.executor = executor;
     this.closeReader = closeReader;
     this.readerContext = context;
-    if (context.isAtomic) {
-      assert context.leaves() == null : "AtomicReaderContext must not have any leaves";
-      this.leafContexts = new AtomicReaderContext[] { (AtomicReaderContext) context };
-    } else {
-      assert context.leaves() != null : "non-atomic top-level context must have leaves";
-      this.leafContexts = context.leaves();
-    }
-
+    leafContexts = ReaderUtil.leaves(context);
+    
     if (executor == null) {
       subSearchers = null;
     } else {
@@ -175,12 +169,25 @@ public class IndexSearcher {
         if (leafContexts[i].reader == context.reader) {
           subSearchers[i] = this;
         } else {
-          subSearchers[i] = new IndexSearcher(leafContexts[i].reader.getTopReaderContext()); // we need to get a TL context for sub searchers!
+          subSearchers[i] = new IndexSearcher(context, leafContexts[i]);
         }
       }
     }
   }
-
+  
+  /* Ctor for concurrent sub-searchers searching only on a specific leaf of the given top-reader context
+   * - instead of searching over all leaves this searcher only searches a single leaf searcher slice. Hence, 
+   * for scorer and filter this looks like an ordinary search in the hierarchy such that there is no difference
+   * between single and multi-threaded */
+  private IndexSearcher(ReaderContext topLevel, AtomicReaderContext leaf) {
+    readerContext = topLevel;
+    reader = topLevel.reader;
+    leafContexts = new AtomicReaderContext[] {leaf};
+    executor = null;
+    subSearchers = null;
+    closeReader = false;
+  }
+  
   /** Return the {@link IndexReader} this searches. */
   public IndexReader getIndexReader() {
     return reader;
@@ -365,7 +372,7 @@ public class IndexSearcher {
     
       for (int i = 0; i < subSearchers.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, nDocs, hq, leafContexts[i].docBase));
+                      new SearcherCallableNoSort(lock, subSearchers[i], weight, filter, nDocs, hq));
       }
 
       int totalHits = 0;
@@ -434,7 +441,7 @@ public class IndexSearcher {
       final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<TopFieldDocs>(executor);
       for (int i = 0; i < subSearchers.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, hq, sort, leafContexts[i].docBase));
+                      new SearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, hq, sort));
       }
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -493,7 +500,7 @@ public class IndexSearcher {
     }
   }
 
-  private void searchWithFilter(ReaderContext context, Weight weight,
+  private void searchWithFilter(AtomicReaderContext context, Weight weight,
       final Filter filter, final Collector collector) throws IOException {
 
     assert filter != null;
@@ -621,7 +628,7 @@ public class IndexSearcher {
   /**
    * A thread subclass for searching a single searchable 
    */
-  private static final class MultiSearcherCallableNoSort implements Callable<TopDocs> {
+  private static final class SearcherCallableNoSort implements Callable<TopDocs> {
 
     private final Lock lock;
     private final IndexSearcher searchable;
@@ -629,17 +636,15 @@ public class IndexSearcher {
     private final Filter filter;
     private final int nDocs;
     private final HitQueue hq;
-    private final int docBase;
 
-    public MultiSearcherCallableNoSort(Lock lock, IndexSearcher searchable, Weight weight,
-        Filter filter, int nDocs, HitQueue hq, int docBase) {
+    public SearcherCallableNoSort(Lock lock, IndexSearcher searchable, Weight weight,
+        Filter filter, int nDocs, HitQueue hq) {
       this.lock = lock;
       this.searchable = searchable;
       this.weight = weight;
       this.filter = filter;
       this.nDocs = nDocs;
       this.hq = hq;
-      this.docBase = docBase;
     }
 
     public TopDocs call() throws IOException {
@@ -647,7 +652,6 @@ public class IndexSearcher {
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
         final ScoreDoc scoreDoc = scoreDocs[j];
-        scoreDoc.doc += docBase; // convert doc 
         //it would be so nice if we had a thread-safe insert 
         lock.lock();
         try {
@@ -665,7 +669,7 @@ public class IndexSearcher {
   /**
    * A thread subclass for searching a single searchable 
    */
-  private static final class MultiSearcherCallableWithSort implements Callable<TopFieldDocs> {
+  private static final class SearcherCallableWithSort implements Callable<TopFieldDocs> {
 
     private final Lock lock;
     private final IndexSearcher searchable;
@@ -673,37 +677,21 @@ public class IndexSearcher {
     private final Filter filter;
     private final int nDocs;
     private final FieldDocSortedHitQueue hq;
-    private final int docBase;
     private final Sort sort;
 
-    public MultiSearcherCallableWithSort(Lock lock, IndexSearcher searchable, Weight weight,
-        Filter filter, int nDocs, FieldDocSortedHitQueue hq, Sort sort, int docBase) {
+    public SearcherCallableWithSort(Lock lock, IndexSearcher searchable, Weight weight,
+        Filter filter, int nDocs, FieldDocSortedHitQueue hq, Sort sort) {
       this.lock = lock;
       this.searchable = searchable;
       this.weight = weight;
       this.filter = filter;
       this.nDocs = nDocs;
       this.hq = hq;
-      this.docBase = docBase;
       this.sort = sort;
     }
 
     public TopFieldDocs call() throws IOException {
       final TopFieldDocs docs = searchable.search (weight, filter, nDocs, sort);
-      // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
-      // it will break ties by doc Id properly. Otherwise, it will compare to
-      // 'relative' doc Ids, that belong to two different searchables.
-      for (int j = 0; j < docs.fields.length; j++) {
-        if (docs.fields[j].getType() == SortField.DOC) {
-          // iterate over the score docs and change their fields value
-          for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
-            FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
-            fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + docBase);
-          }
-          break;
-        }
-      }
-
       lock.lock();
       try {
         hq.setFields(docs.fields);
@@ -714,7 +702,6 @@ public class IndexSearcher {
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
         final FieldDoc fieldDoc = (FieldDoc) scoreDocs[j];
-        fieldDoc.doc += docBase; // convert doc 
         //it would be so nice if we had a thread-safe insert 
         lock.lock();
         try {

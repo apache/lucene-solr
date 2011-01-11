@@ -21,7 +21,7 @@ import java.util.HashSet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -60,7 +60,8 @@ public class TermsFilterTest extends LuceneTestCase {
 			w.addDocument(doc);			
 		}
 		IndexReader reader = new SlowMultiReaderWrapper(w.getReader());
-		ReaderContext context = reader.getTopReaderContext();
+		assertTrue(reader.getTopReaderContext().isAtomic);
+		AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 		assertTrue(context.isAtomic);
 		w.close();
 		

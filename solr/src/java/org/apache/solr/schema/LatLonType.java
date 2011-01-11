@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.DistanceUtils;
@@ -371,12 +371,12 @@ class SpatialDistanceQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new SpatialScorer(getSimilarity(searcher), context.reader, this);
     }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       return ((SpatialScorer)scorer(context, true, true)).explain(doc);
     }
   }

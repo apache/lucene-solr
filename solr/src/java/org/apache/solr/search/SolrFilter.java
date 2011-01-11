@@ -21,6 +21,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 
 import java.util.Map;
@@ -41,7 +42,7 @@ public abstract class SolrFilter extends Filter {
   public abstract DocIdSet getDocIdSet(Map context, ReaderContext readerContext) throws IOException;
 
   @Override
-  public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
     return getDocIdSet(null, context);
   }
 }

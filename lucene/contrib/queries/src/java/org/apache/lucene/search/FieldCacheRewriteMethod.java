@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -109,7 +109,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
      * results.
      */
     @Override
-    public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
       final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader, query.field);
       final OpenBitSet termSet = new OpenBitSet(fcsi.numOrd());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {

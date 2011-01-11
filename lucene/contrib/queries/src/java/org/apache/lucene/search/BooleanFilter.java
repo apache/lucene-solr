@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
@@ -42,10 +42,10 @@ public class BooleanFilter extends Filter
   ArrayList<Filter> notFilters = null;
   ArrayList<Filter> mustFilters = null;
   
-  private DocIdSetIterator getDISI(ArrayList<Filter> filters, int index, ReaderContext info)
+  private DocIdSetIterator getDISI(ArrayList<Filter> filters, int index, AtomicReaderContext context)
   throws IOException
   {
-    return filters.get(index).getDocIdSet(info).iterator();
+    return filters.get(index).getDocIdSet(context).iterator();
   }
 
   /**
@@ -53,7 +53,7 @@ public class BooleanFilter extends Filter
    * of the filters that have been added.
    */
   @Override
-  public DocIdSet getDocIdSet(ReaderContext context) throws IOException
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException
   {
     OpenBitSetDISI res = null;
     final IndexReader reader = context.reader;

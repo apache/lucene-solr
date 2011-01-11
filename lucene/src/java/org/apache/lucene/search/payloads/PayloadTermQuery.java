@@ -17,7 +17,7 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.IndexSearcher;
@@ -74,7 +74,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder,
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer) throws IOException {
       return new PayloadTermSpanScorer((TermSpans) query.getSpans(context.reader),
           this, similarity, context.reader.norms(query.getField()));

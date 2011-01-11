@@ -24,8 +24,10 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.FilterIndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.search.Filter;
@@ -424,18 +426,19 @@ public class TestDocSet extends LuceneTestCase {
     DocIdSet db;
 
     // first test in-sequence sub readers
-    for (ReaderContext readerInfo : topLevelContext.leaves()) {
-      da = fa.getDocIdSet(readerInfo);
-      db = fb.getDocIdSet(readerInfo);
+    for (AtomicReaderContext readerContext : ReaderUtil.leaves(topLevelContext)) {
+      da = fa.getDocIdSet(readerContext);
+      db = fb.getDocIdSet(readerContext);
       doTestIteratorEqual(da, db);
     }  
 
-    int nReaders = topLevelContext.leaves().length;
+    AtomicReaderContext[] leaves = ReaderUtil.leaves(topLevelContext);
+    int nReaders = leaves.length;
     // now test out-of-sequence sub readers
     for (int i=0; i<nReaders; i++) {
-      ReaderContext readerInfo = topLevelContext.leaves()[rand.nextInt(nReaders)];
-      da = fa.getDocIdSet(readerInfo);
-      db = fb.getDocIdSet(readerInfo);
+      AtomicReaderContext readerContext = leaves[rand.nextInt(nReaders)];
+      da = fa.getDocIdSet(readerContext);
+      db = fb.getDocIdSet(readerContext);
       doTestIteratorEqual(da, db);
     }
   }

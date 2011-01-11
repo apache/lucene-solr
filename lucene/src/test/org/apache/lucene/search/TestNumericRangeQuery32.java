@@ -22,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -176,14 +177,15 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   
   @Test
   public void testInverseRange() throws Exception {
+    AtomicReaderContext context = (AtomicReaderContext) new SlowMultiReaderWrapper(searcher.getIndexReader()).getTopReaderContext();
     NumericRangeFilter<Integer> f = NumericRangeFilter.newIntRange("field8", 8, 1000, -1000, true, true);
-    assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(new SlowMultiReaderWrapper(searcher.getIndexReader()).getTopReaderContext()));
+    assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context));
     f = NumericRangeFilter.newIntRange("field8", 8, Integer.MAX_VALUE, null, false, false);
     assertSame("A exclusive range starting with Integer.MAX_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(new SlowMultiReaderWrapper(searcher.getIndexReader()).getTopReaderContext()));
+               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context));
     f = NumericRangeFilter.newIntRange("field8", 8, null, Integer.MIN_VALUE, false, false);
     assertSame("A exclusive range ending with Integer.MIN_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(new SlowMultiReaderWrapper(searcher.getIndexReader()).getTopReaderContext()));
+               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context));
   }
   
   @Test

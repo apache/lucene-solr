@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -88,7 +88,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterB() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (ReaderContext context) {
+      public DocIdSet getDocIdSet (AtomicReaderContext context) {
         BitSet bitset = new BitSet(5);
         bitset.set (1);
         bitset.set (3);
@@ -159,7 +159,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterA() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (ReaderContext context) {
+      public DocIdSet getDocIdSet (AtomicReaderContext context) {
         BitSet bitset = new BitSet(5);
         bitset.set(0, 5);
         return new DocIdBitSet(bitset);

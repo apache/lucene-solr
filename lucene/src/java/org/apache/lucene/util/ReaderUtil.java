@@ -213,6 +213,21 @@ public final class ReaderUtil {
     
   }
 
+  /**
+   * Returns the context's leaves or the context itself as the only element of
+   * the returned array. If the context's #leaves() method returns
+   * <code>null</code> the given context must be an instance of
+   * {@link AtomicReaderContext}
+   */
+  public static AtomicReaderContext[] leaves(ReaderContext context) {
+    assert context != null && context.isTopLevel : "context must be non-null & top-level";
+    final AtomicReaderContext[] leaves = context.leaves();
+    if (leaves == null) {
+      assert context.isAtomic : "top-level context without leaves must be atomic";
+      return new AtomicReaderContext[] { (AtomicReaderContext) context };
+    }
+    return leaves;
+  }
 
   /**
    * Returns index of the searcher/reader for document <code>n</code> in the

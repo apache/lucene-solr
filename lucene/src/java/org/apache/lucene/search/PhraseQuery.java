@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -175,7 +175,7 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
       final IndexReader reader = context.reader;
@@ -221,7 +221,7 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
 
       Explanation result = new Explanation();

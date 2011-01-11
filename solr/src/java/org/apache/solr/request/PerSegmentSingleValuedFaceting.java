@@ -1,8 +1,6 @@
 package org.apache.solr.request;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -10,6 +8,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
@@ -19,7 +18,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.ByteUtils;
@@ -70,7 +68,7 @@ class PerSegmentSingleValuedFaceting {
     // reuse the translation logic to go from top level set to per-segment set
     baseSet = docs.getTopFilter();
 
-    final AtomicReaderContext[] leaves = searcher.getTopReaderContext().leaves();
+    final AtomicReaderContext[] leaves = ReaderUtil.leaves(searcher.getTopReaderContext());
     // The list of pending tasks that aren't immediately submitted
     // TODO: Is there a completion service, or a delegating executor that can
     // limit the number of concurrent tasks submitted to a bigger executor?
@@ -209,9 +207,9 @@ class PerSegmentSingleValuedFaceting {
   }
 
   class SegFacet {
-    ReaderContext info;
-    SegFacet(ReaderContext info) {
-      this.info = info;
+    AtomicReaderContext context;
+    SegFacet(AtomicReaderContext context) {
+      this.context = context;
     }
     
     FieldCache.DocTermsIndex si;
@@ -225,7 +223,7 @@ class PerSegmentSingleValuedFaceting {
     BytesRef tempBR = new BytesRef();
 
     void countTerms() throws IOException {
-      si = FieldCache.DEFAULT.getTermsIndex(info.reader, fieldName);
+      si = FieldCache.DEFAULT.getTermsIndex(context.reader, fieldName);
       // SolrCore.log.info("reader= " + reader + "  FC=" + System.identityHashCode(si));
 
       if (prefix!=null) {
@@ -247,7 +245,7 @@ class PerSegmentSingleValuedFaceting {
         // count collection array only needs to be as big as the number of terms we are
         // going to collect counts for.
         final int[] counts = this.counts = new int[nTerms];
-        DocIdSet idSet = baseSet.getDocIdSet(info);
+        DocIdSet idSet = baseSet.getDocIdSet(context);
         DocIdSetIterator iter = idSet.iterator();
 
 

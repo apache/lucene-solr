@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -168,7 +168,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
       final IndexReader reader = context.reader;
@@ -233,7 +233,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");

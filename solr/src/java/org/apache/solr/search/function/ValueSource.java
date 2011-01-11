@@ -27,7 +27,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.MultiFields;
-import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
 import java.io.Serializable;

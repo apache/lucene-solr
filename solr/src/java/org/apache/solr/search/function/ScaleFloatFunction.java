@@ -20,7 +20,7 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.search.SolrIndexReader;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -59,8 +59,7 @@ public class ScaleFloatFunction extends ValueSource {
   private ScaleInfo createScaleInfo(Map context, IndexReader reader) throws IOException {
     IndexReader.ReaderContext ctx = ValueSource.readerToContext(context, reader);
     while (ctx.parent != null) ctx = ctx.parent;
-    AtomicReaderContext[] leaves = ctx.leaves();
-    if (ctx == null) leaves = new AtomicReaderContext[] {(AtomicReaderContext)ctx};
+    final AtomicReaderContext[] leaves = ReaderUtil.leaves(ctx);
 
     float minVal = Float.POSITIVE_INFINITY;
     float maxVal = Float.NEGATIVE_INFINITY;

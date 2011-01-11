@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -212,7 +212,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
       final int minShouldMatch =
         BooleanQuery.this.getMinimumNumberShouldMatch();
@@ -288,7 +288,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
         throws IOException {
       List<Scorer> required = new ArrayList<Scorer>();
       List<Scorer> prohibited = new ArrayList<Scorer>();

@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FilteredDocIdSet;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
@@ -65,7 +65,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
   }
   
   @Override
-  public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
 
     final double[] latIndex = FieldCache.DEFAULT.getDoubles(context.reader, latField);
     final double[] lngIndex = FieldCache.DEFAULT.getDoubles(context.reader, lngField);

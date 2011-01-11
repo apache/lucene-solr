@@ -2,7 +2,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.common.SolrException;
 
@@ -90,12 +90,12 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new ConstantScorer(similarity, context, this);
     }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
 
       ConstantScorer cs = new ConstantScorer(similarity, context, this);
       boolean exists = cs.docIdSetIterator.advance(doc) == doc;
@@ -124,10 +124,10 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     final float theScore;
     int doc = -1;
 
-    public ConstantScorer(Similarity similarity, ReaderContext info, ConstantWeight w) throws IOException {
+    public ConstantScorer(Similarity similarity, AtomicReaderContext context, ConstantWeight w) throws IOException {
       super(similarity);
       theScore = w.getValue();
-      DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(w.context, info) : filter.getDocIdSet(info);
+      DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(w.context, context) : filter.getDocIdSet(context);
       if (docIdSet == null) {
         docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
       } else {

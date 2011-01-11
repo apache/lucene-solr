@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.Bits;
 
@@ -195,7 +195,7 @@ public class CachingWrapperFilter extends Filter {
   int hitCount, missCount;
 
   @Override
-  public DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
     final IndexReader reader = context.reader;
     final Object coreKey = reader.getCoreCacheKey();
     final Object delCoreKey = reader.hasDeletions() ? reader.getDeletedDocs() : coreKey;

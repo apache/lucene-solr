@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -45,7 +45,7 @@ public class CartesianShapeFilter extends Filter {
   }
   
   @Override
-  public DocIdSet getDocIdSet(final ReaderContext context) throws IOException {
+  public DocIdSet getDocIdSet(final AtomicReaderContext context) throws IOException {
     final Bits delDocs = context.reader.getDeletedDocs();
     final List<Double> area = shape.getArea();
     final int sz = area.size();

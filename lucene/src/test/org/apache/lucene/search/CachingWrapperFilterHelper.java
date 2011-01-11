@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 /**
  * A unit test helper class to test when the filter is getting cached and when it is not.
@@ -42,7 +42,7 @@ public class CachingWrapperFilterHelper extends CachingWrapperFilter {
   }
   
   @Override
-  public synchronized DocIdSet getDocIdSet(ReaderContext context) throws IOException {
+  public synchronized DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
 
     final int saveMissCount = missCount;
     DocIdSet docIdSet = super.getDocIdSet(context);

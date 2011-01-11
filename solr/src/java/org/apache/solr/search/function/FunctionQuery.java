@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.MultiFields;
@@ -94,12 +95,12 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new AllScorer(getSimilarity(searcher), context, this);
     }
 
     @Override
-    public Explanation explain(ReaderContext context, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       return ((AllScorer)scorer(context, true, true)).explain(doc);
     }
   }

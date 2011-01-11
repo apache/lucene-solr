@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -72,13 +72,13 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(ReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+  public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
     return new SpanScorer(query.getSpans(context.reader), this, similarity, context.reader
         .norms(query.getField()));
   }
 
   @Override
-  public Explanation explain(ReaderContext context, int doc)
+  public Explanation explain(AtomicReaderContext context, int doc)
     throws IOException {
 
     ComplexExplanation result = new ComplexExplanation();

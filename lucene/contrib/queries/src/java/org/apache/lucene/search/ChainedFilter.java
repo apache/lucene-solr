@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -97,7 +97,7 @@ public class ChainedFilter extends Filter
      * {@link Filter#getDocIdSet}.
      */
     @Override
-    public DocIdSet getDocIdSet(ReaderContext context) throws IOException
+    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException
     {
         int[] index = new int[1]; // use array as reference to modifiable int; 
         index[0] = 0;             // an object attribute would not be thread safe.
@@ -109,9 +109,9 @@ public class ChainedFilter extends Filter
             return getDocIdSet(context, DEFAULT, index);
     }
 
-    private DocIdSetIterator getDISI(Filter filter, ReaderContext info)
+    private DocIdSetIterator getDISI(Filter filter, AtomicReaderContext context)
     throws IOException {
-        DocIdSet docIdSet = filter.getDocIdSet(info);
+        DocIdSet docIdSet = filter.getDocIdSet(context);
         if (docIdSet == null) {
           return DocIdSet.EMPTY_DOCIDSET.iterator();
         } else {
@@ -124,10 +124,10 @@ public class ChainedFilter extends Filter
         }
     }
 
-    private OpenBitSetDISI initialResult(ReaderContext info, int logic, int[] index)
+    private OpenBitSetDISI initialResult(AtomicReaderContext context, int logic, int[] index)
     throws IOException
     {
-        IndexReader reader = info.reader;
+        IndexReader reader = context.reader;
         OpenBitSetDISI result;
         /**
          * First AND operation takes place against a completely false
@@ -135,12 +135,12 @@ public class ChainedFilter extends Filter
          */
         if (logic == AND)
         {
-            result = new OpenBitSetDISI(getDISI(chain[index[0]], info), reader.maxDoc());
+            result = new OpenBitSetDISI(getDISI(chain[index[0]], context), reader.maxDoc());
             ++index[0];
         }
         else if (logic == ANDNOT)
         {
-            result = new OpenBitSetDISI(getDISI(chain[index[0]], info), reader.maxDoc());
+            result = new OpenBitSetDISI(getDISI(chain[index[0]], context), reader.maxDoc());
             result.flip(0,reader.maxDoc()); // NOTE: may set bits for deleted docs.
             ++index[0];
         }
@@ -157,13 +157,13 @@ public class ChainedFilter extends Filter
      * @param logic Logical operation
      * @return DocIdSet
      */
-    private DocIdSet getDocIdSet(ReaderContext info, int logic, int[] index)
+    private DocIdSet getDocIdSet(AtomicReaderContext context, int logic, int[] index)
     throws IOException
     {
-        OpenBitSetDISI result = initialResult(info, logic, index);
+        OpenBitSetDISI result = initialResult(context, logic, index);
         for (; index[0] < chain.length; index[0]++)
         {
-            doChain(result, logic, chain[index[0]].getDocIdSet(info));
+            doChain(result, logic, chain[index[0]].getDocIdSet(context));
         }
         return result;
     }
@@ -174,7 +174,7 @@ public class ChainedFilter extends Filter
      * @param logic Logical operation
      * @return DocIdSet
      */
-    private DocIdSet getDocIdSet(ReaderContext info, int[] logic, int[] index)
+    private DocIdSet getDocIdSet(AtomicReaderContext info, int[] logic, int[] index)
     throws IOException
     {
         if (logic.length != chain.length)
