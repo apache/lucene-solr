@@ -48,6 +48,11 @@ Changes in runtime behavior
 
 Bug fixes
 
+ * LUCENE-2855: contrib queryparser was using CharSequence as key in some internal 
+   Map instances, which was leading to incorrect behaviour, since some CharSequence
+   implementors do not override hashcode and equals methods. Now the internal Maps 
+   are using String instead. (Adriano Crestani)
+
  * LUCENE-2068: Fixed ReverseStringFilter which was not aware of supplementary
    characters. During reverse the filter created unpaired surrogates, which
    will be replaced by U+FFFD by the indexer, but not at query time. The filter
