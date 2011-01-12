@@ -260,6 +260,16 @@ public abstract class LuceneTestCase extends Assert {
     if (testsFailed) {
       System.err.println("NOTE: all tests run in this JVM:");
       System.err.println(Arrays.toString(testClassesRun.toArray()));
+      System.err.println("NOTE: " + System.getProperty("os.name") + " " 
+          + System.getProperty("os.version") + " " 
+          + System.getProperty("os.arch") + "/"
+          + System.getProperty("java.vendor") + " "
+          + System.getProperty("java.version") + " "
+          + (Constants.JRE_IS_64BIT ? "(64-bit)" : "(32-bit)") + "/"
+          + "cpus=" + Runtime.getRuntime().availableProcessors() + ","
+          + "threads=" + Thread.activeCount() + ","
+          + "free=" + Runtime.getRuntime().freeMemory() + ","
+          + "total=" + Runtime.getRuntime().totalMemory());
     }
   }
 
