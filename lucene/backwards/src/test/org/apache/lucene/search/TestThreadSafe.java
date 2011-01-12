@@ -147,10 +147,12 @@ public class TestThreadSafe extends LuceneTestCase {
     buildDir(dir1, 15, 5, 2000);
 
     // do many small tests so the thread locals go away inbetween
-    for (int i=0; i<100; i++) {
+    for (int i=0; i<10; i++) {
       ir1 = IndexReader.open(dir1, false);
-      doTest(10,100);
+      doTest(10,10);
+      ir1.close();
     }
+    dir1.close();
   }
 
 }
