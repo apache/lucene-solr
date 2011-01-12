@@ -997,8 +997,15 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-      for (int i = 0; i < TEST_ITER; i++)
+      if (VERBOSE) {
+        System.out.println("\nNOTE: running test " + arg0.getName());
+      }
+      for (int i = 0; i < TEST_ITER; i++) {
+        if (VERBOSE && TEST_ITER > 1) {
+          System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
+        }
         super.runChild(arg0, arg1);
+      }
     }
 
     public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
