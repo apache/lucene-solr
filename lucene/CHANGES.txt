@@ -379,7 +379,8 @@ Bug fixes
   to a mutable reference to the IndexWriters SegmentInfos. 
   (Simon Willnauer, Earwin Burrfoot)
 
-
+* LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
+  decides whether to return the cached computed size or not. (Shai Erera)
 
 ======================= Lucene 3.x (not yet released) =======================
 
