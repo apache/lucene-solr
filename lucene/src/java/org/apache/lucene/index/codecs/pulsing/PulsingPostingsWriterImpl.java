@@ -101,8 +101,8 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public void setField(FieldInfo fieldInfo) {
-    //System.out.println("PW field=" + fieldInfo.name);
     omitTF = fieldInfo.omitTermFreqAndPositions;
+    //System.out.println("PW field=" + fieldInfo.name + " omitTF=" + omitTF);
     storePayloads = fieldInfo.storePayloads;
     wrappedPostingsWriter.setField(fieldInfo);
   }
@@ -114,6 +114,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
     if (pendingCount == pending.length) {
       push();
+      //System.out.println("PW: wrapped.finishDoc");
       wrappedPostingsWriter.finishDoc();
     }
 
@@ -269,7 +270,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   // Pushes pending positions to the wrapped codec
   private void push() throws IOException {
-    //System.out.println("PW now push @ " + pendingCount);
+    //System.out.println("PW now push @ " + pendingCount + " wrapped=" + wrappedPostingsWriter);
     assert pendingCount == pending.length;
       
     wrappedPostingsWriter.startTerm();
@@ -280,13 +281,17 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       for(Position pos : pending) {
         if (doc == null) {
           doc = pos;
+          //System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
           wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
         } else if (doc.docID != pos.docID) {
           assert pos.docID > doc.docID;
+          //System.out.println("PW: wrapped.finishDoc");
           wrappedPostingsWriter.finishDoc();
           doc = pos;
+          //System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
           wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
         }
+        //System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
         wrappedPostingsWriter.addPosition(pos.pos, pos.payload);
       }
       //wrappedPostingsWriter.finishDoc();
