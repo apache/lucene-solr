@@ -520,7 +520,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   
   @Test
   public void testBackup() throws Exception {
-
     masterJetty.stop();
     copyFile(getFile(CONF_DIR + "solrconfig-master1.xml"), new File(master.getConfDir(), "solrconfig.xml"));
 
@@ -620,6 +619,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, hits.totalHits);
     searcher.close();
     dir.close();
+    AbstractSolrTestCase.recurseDelete(snapDir); // clean up the snap dir
   }
 
   /* character copy of file using UTF-8 */
