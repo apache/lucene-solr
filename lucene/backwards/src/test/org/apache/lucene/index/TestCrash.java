@@ -56,6 +56,7 @@ public class TestCrash extends LuceneTestCase {
   private void crash(final IndexWriter writer) throws IOException {
     final MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getMergeScheduler();
+    cms.sync();
     dir.crash();
     cms.sync();
     dir.clearCrash();
