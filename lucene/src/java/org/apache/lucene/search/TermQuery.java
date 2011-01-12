@@ -22,10 +22,14 @@ import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PerReaderTermState;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a term.
@@ -33,20 +37,22 @@ import org.apache.lucene.util.ToStringUtils;
   */
 public class TermQuery extends Query {
   private final Term term;
-  private final int docFreq;
+  private int docFreq;
+  private transient PerReaderTermState perReaderTermState;
 
   private class TermWeight extends Weight {
     private final Similarity similarity;
     private float value;
-    private float idf;
+    private final float idf;
     private float queryNorm;
     private float queryWeight;
-    private IDFExplanation idfExp;
-    private transient ReaderContext weightContext; // only set if -ea for assert in scorer()
+    private final IDFExplanation idfExp;
+    private transient PerReaderTermState termStates;
 
-    public TermWeight(IndexSearcher searcher)
+    public TermWeight(IndexSearcher searcher, PerReaderTermState termStates, int docFreq)
       throws IOException {
-      assert setWeightContext(searcher);
+      assert termStates != null : "PerReaderTermState must not be null";
+      this.termStates = termStates;
       this.similarity = getSimilarity(searcher);
       if (docFreq != -1) {
         idfExp = similarity.idfExplain(term, searcher, docFreq);
@@ -80,31 +86,34 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      assert assertTopReaderContext(context);
+      final String field = term.field();
       final IndexReader reader = context.reader;
-      DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(),
-                                          term.field(),
-                                          term.bytes());
-
-      if (docs == null) {
+      assert assertTopReaderContext(termStates, context) : "The top-reader used to create Weight is not the same as the current reader's top-reader";
+      final TermState state = termStates
+          .get(context.ord);
+      if (state == null) { // term is not present in that reader
+        assert termNotInReader(reader, field, term.bytes()) : "no termstate found but term exists in reader";
         return null;
       }
-
-      return new TermScorer(this, docs, similarity, reader.norms(term.field()));
+      final DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), field, term.bytes(), state);
+      assert docs != null;
+      return new TermScorer(this, docs, similarity, context.reader.norms(field));
     }
     
-    private boolean assertTopReaderContext(ReaderContext context) {
-      while (context.parent != null) {
+    private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
+      // only called from assert
+      final Terms terms = reader.terms(field);
+      return terms == null || terms.docFreq(bytes) == 0;
+    }
+    
+    private boolean assertTopReaderContext(PerReaderTermState state, ReaderContext context) {
+      while(context.parent != null) {
         context = context.parent;
       }
-      return weightContext == context;
+      return state.topReaderContext == context;
     }
     
-    private boolean setWeightContext(IndexSearcher searcher) {
-      weightContext = searcher.getTopReaderContext();
-      return true;
-    }
-
+   
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
@@ -157,7 +166,7 @@ public class TermQuery extends Query {
       fieldExpl.addDetail(expl);
 
       Explanation fieldNormExpl = new Explanation();
-      byte[] fieldNorms = reader.norms(field);
+      final byte[] fieldNorms = reader.norms(field);
       float fieldNorm =
         fieldNorms!=null ? similarity.decodeNormValue(fieldNorms[doc]) : 1.0f;
       fieldNormExpl.setValue(fieldNorm);
@@ -193,6 +202,17 @@ public class TermQuery extends Query {
   public TermQuery(Term t, int docFreq) {
     term = t;
     this.docFreq = docFreq;
+    perReaderTermState = null;
+  }
+  
+  /** Expert: constructs a TermQuery that will use the
+   *  provided docFreq instead of looking up the docFreq
+   *  against the searcher. */
+  public TermQuery(Term t, PerReaderTermState states) {
+    assert states != null;
+    term = t;
+    docFreq = states.docFreq();
+    perReaderTermState = states;
   }
 
   /** Returns the term of this query. */
@@ -200,7 +220,21 @@ public class TermQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new TermWeight(searcher);
+    final ReaderContext context = searcher.getTopReaderContext();
+    final int weightDocFreq;
+    final PerReaderTermState termState;
+    if (perReaderTermState == null || perReaderTermState.topReaderContext != context) {
+      // make TermQuery single-pass if we don't have a PRTS or if the context differs!
+      termState = PerReaderTermState.build(context, term, true); // cache term lookups!
+      // we must not ignore the given docFreq - if set use the given value
+      weightDocFreq = docFreq == -1 ? termState.docFreq() : docFreq;
+    } else {
+     // PRTS was pre-build for this IS
+     termState = this.perReaderTermState;
+     weightDocFreq = docFreq;
+    }
+    
+    return new TermWeight(searcher, termState, weightDocFreq);
   }
 
   @Override

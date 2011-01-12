@@ -91,13 +91,6 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public void cacheCurrentTerm() throws IOException {
-    for(int i=0;i<numTop;i++) {
-      top[i].terms.cacheCurrentTerm();
-    }
-  }
-
-  @Override
   public Comparator<BytesRef> getComparator() {
     return termComp;
   }

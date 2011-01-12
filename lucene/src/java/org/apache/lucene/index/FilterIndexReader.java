@@ -131,11 +131,6 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public void cacheCurrentTerm() throws IOException {
-      in.cacheCurrentTerm();
-    }
-
-    @Override
     public SeekStatus seek(long ord) throws IOException {
       return in.seek(ord);
     }
@@ -173,6 +168,16 @@ public class FilterIndexReader extends IndexReader {
     @Override
     public Comparator<BytesRef> getComparator() throws IOException {
       return in.getComparator();
+    }
+
+    @Override
+    public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+      return in.seek(term, state);
+    }
+
+    @Override
+    public TermState termState() throws IOException {
+      return in.termState();
     }
   }
 

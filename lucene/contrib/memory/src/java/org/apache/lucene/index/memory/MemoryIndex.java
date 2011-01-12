@@ -39,6 +39,8 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
@@ -884,10 +886,6 @@ public class MemoryIndex implements Serializable {
       }
 
       @Override
-      public void cacheCurrentTerm() {
-      }
-
-      @Override
       public long ord() {
         return termUpto;
       }
@@ -917,8 +915,21 @@ public class MemoryIndex implements Serializable {
       public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
-    }
 
+      @Override
+      public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+        assert state != null;
+        return this.seek(((OrdTermState)state).ord);
+      }
+
+      @Override
+      public TermState termState() throws IOException {
+        OrdTermState ts = new OrdTermState();
+        ts.ord = termUpto;
+        return ts;
+      }
+    }
+    
     private class MemoryDocsEnum extends DocsEnum {
       private ArrayIntList positions;
       private boolean hasNext;

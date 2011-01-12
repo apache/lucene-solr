@@ -1000,10 +1000,6 @@ class NumberedTermsEnum extends TermsEnum {
     return tenum.docFreq();
   }
 
-  @Override
-  public void cacheCurrentTerm() {
-    throw new UnsupportedOperationException();
-  }
 
   public BytesRef skipTo(BytesRef target) throws IOException {
 

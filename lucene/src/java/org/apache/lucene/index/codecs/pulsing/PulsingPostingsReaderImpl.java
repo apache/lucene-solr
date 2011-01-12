@@ -22,8 +22,9 @@ import java.io.IOException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.TermState;
+import org.apache.lucene.index.codecs.PrefixCodedTermState;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -56,10 +57,10 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     wrappedPostingsReader.init(termsIn);
   }
 
-  private static class PulsingTermState extends TermState {
+  private static class PulsingTermState extends PrefixCodedTermState {
     private byte[] postings;
     private int postingsSize;                     // -1 if this term was not inlined
-    private TermState wrappedTermState;
+    private PrefixCodedTermState wrappedTermState;
     private boolean pendingIndexTerm;
 
     @Override
@@ -71,7 +72,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         System.arraycopy(postings, 0, clone.postings, 0, postingsSize);
       } else {
         assert wrappedTermState != null;
-        clone.wrappedTermState = (TermState) wrappedTermState.clone();
+        clone.wrappedTermState = (PrefixCodedTermState) wrappedTermState.clone();
       }
       return clone;
     }
@@ -102,15 +103,14 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public TermState newTermState() throws IOException {
+  public PrefixCodedTermState newTermState() throws IOException {
     PulsingTermState state = new PulsingTermState();
     state.wrappedTermState = wrappedPostingsReader.newTermState();
     return state;
   }
 
   @Override
-  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState _termState, boolean isIndexTerm) throws IOException {
-
+  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, PrefixCodedTermState _termState, boolean isIndexTerm) throws IOException {
     PulsingTermState termState = (PulsingTermState) _termState;
 
     termState.pendingIndexTerm |= isIndexTerm;
@@ -137,7 +137,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   // TODO: we could actually reuse, by having TL that
   // holds the last wrapped reuse, and vice-versa
   @Override
-  public DocsEnum docs(FieldInfo field, TermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo field, PrefixCodedTermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
     PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.postingsSize != -1) {
       PulsingDocsEnum postings;
@@ -162,7 +162,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
   // TODO: -- not great that we can't always reuse
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, TermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, PrefixCodedTermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (field.omitTermFreqAndPositions) {
       return null;
     }

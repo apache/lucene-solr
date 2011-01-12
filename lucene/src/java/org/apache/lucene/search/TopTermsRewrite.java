@@ -25,9 +25,11 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PerReaderTermState;
 
 /**
  * Base rewrite method for collecting only the top terms
@@ -78,12 +80,12 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
         this.termComp = termsEnum.getComparator();
         // lazy init the initial ScoreTerm because comparator is not known on ctor:
         if (st == null)
-          st = new ScoreTerm(this.termComp);
+          st = new ScoreTerm(this.termComp, new PerReaderTermState(topReaderContext));
         boostAtt = termsEnum.attributes().addAttribute(BoostAttribute.class);
       }
     
       @Override
-      public boolean collect(BytesRef bytes) {
+      public boolean collect(BytesRef bytes) throws IOException {
         final float boost = boostAtt.getBoost();
         // ignore uncompetetive hits
         if (stQueue.size() == maxSize) {
@@ -94,23 +96,27 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
             return true;
         }
         ScoreTerm t = visitedTerms.get(bytes);
+        final TermState state = termsEnum.termState();
+        assert state != null;
         if (t != null) {
           // if the term is already in the PQ, only update docFreq of term in PQ
-          t.docFreq += termsEnum.docFreq();
           assert t.boost == boost : "boost should be equal in all segment TermsEnums";
+          t.termState.register(state, readerContext.ord, termsEnum.docFreq());
         } else {
           // add new entry in PQ, we must clone the term, else it may get overwritten!
           st.bytes.copy(bytes);
           st.boost = boost;
-          st.docFreq = termsEnum.docFreq();
           visitedTerms.put(st.bytes, st);
+          assert st.termState.docFreq() == 0;
+          st.termState.register(state, readerContext.ord, termsEnum.docFreq());
           stQueue.offer(st);
           // possibly drop entries from queue
           if (stQueue.size() > maxSize) {
             st = stQueue.poll();
             visitedTerms.remove(st.bytes);
+            st.termState.clear(); // reset the termstate! 
           } else {
-            st = new ScoreTerm(termComp);
+            st = new ScoreTerm(termComp, new PerReaderTermState(topReaderContext));
           }
           assert stQueue.size() <= maxSize : "the PQ size must be limited to maxSize";
           // set maxBoostAtt with values to help FuzzyTermsEnum to optimize
@@ -120,6 +126,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
             maxBoostAtt.setCompetitiveTerm(t.bytes);
           }
         }
+       
         return true;
       }
     });
@@ -130,8 +137,8 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     ArrayUtil.quickSort(scoreTerms, scoreTermSortByTermComp);
     for (final ScoreTerm st : scoreTerms) {
       final Term term = placeholderTerm.createTerm(st.bytes);
-      assert reader.docFreq(term) == st.docFreq;
-      addClause(q, term, st.docFreq, query.getBoost() * st.boost); // add to query
+      assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq();
+      addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
     query.incTotalNumberOfTerms(scoreTerms.length);
     return q;
@@ -147,7 +154,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     if (this == obj) return true;
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
-    final TopTermsRewrite other = (TopTermsRewrite) obj;
+    final TopTermsRewrite<?> other = (TopTermsRewrite<?>) obj;
     if (size != other.size) return false;
     return true;
   }
@@ -163,13 +170,12 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
 
   static final class ScoreTerm implements Comparable<ScoreTerm> {
     public final Comparator<BytesRef> termComp;
-
     public final BytesRef bytes = new BytesRef();
     public float boost;
-    public int docFreq;
-    
-    public ScoreTerm(Comparator<BytesRef> termComp) {
+    public final PerReaderTermState termState;
+    public ScoreTerm(Comparator<BytesRef> termComp, PerReaderTermState termState) {
       this.termComp = termComp;
+      this.termState = termState;
     }
     
     public int compareTo(ScoreTerm other) {

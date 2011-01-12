@@ -18,6 +18,7 @@ package org.apache.lucene;
  */
 
 import org.apache.lucene.util.*;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.search.*;
@@ -327,10 +328,6 @@ public class TestExternalCodecs extends LuceneTestCase {
       @Override
       public int docFreq() {
         return ramField.termToDocs.get(current).docs.size();
-      }
-
-      @Override
-      public void cacheCurrentTerm() {
       }
 
       @Override

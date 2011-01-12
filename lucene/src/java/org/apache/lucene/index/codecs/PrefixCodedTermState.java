@@ -1,5 +1,4 @@
 package org.apache.lucene.index.codecs;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,40 +16,30 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum;          // for javadocs
-
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader; // javadocs
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.TermState;
 
 /**
- * Holds all state required for {@link StandardPostingsReader}
+ * Holds all state required for {@link PostingsReaderBase}
  * to produce a {@link DocsEnum} without re-seeking the
  * terms dict.
- * @lucene.experimental
  */
+public class PrefixCodedTermState extends OrdTermState {
+  public int docFreq; // how many docs have this term
+  public long filePointer; // fp into the terms dict primary file (_X.tis)
 
-public class TermState implements Cloneable {
-  public long ord;                                     // ord for this term
-  public long filePointer;                             // fp into the terms dict primary file (_X.tis)
-  public int docFreq;                                  // how many docs have this term
-
-  public void copyFrom(TermState other) {
-    ord = other.ord;
+  @Override
+  public void copyFrom(TermState _other) {
+    assert _other instanceof PrefixCodedTermState : "can not copy from " + _other.getClass().getName();
+    PrefixCodedTermState other = (PrefixCodedTermState) _other;
+    super.copyFrom(_other);
     filePointer = other.filePointer;
     docFreq = other.docFreq;
   }
 
   @Override
-  public Object clone() {
-    try {
-      return super.clone();
-    } catch (CloneNotSupportedException cnse) {
-      // should not happen
-      throw new RuntimeException(cnse);
-    }
-  }
-
-  @Override
   public String toString() {
-    return "tis.fp=" + filePointer + " docFreq=" + docFreq + " ord=" + ord;
+    return super.toString() + "[ord=" + ord + ", tis.filePointer=" + filePointer + "]";
   }
+  
 }

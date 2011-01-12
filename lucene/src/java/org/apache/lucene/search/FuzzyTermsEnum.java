@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -245,11 +246,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public void cacheCurrentTerm() throws IOException {
-    actualEnum.cacheCurrentTerm();
-  }
-
-  @Override
   public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
     return actualEnum.docs(skipDocs, reuse);
   }
@@ -258,6 +254,15 @@ public final class FuzzyTermsEnum extends TermsEnum {
   public DocsAndPositionsEnum docsAndPositions(Bits skipDocs,
       DocsAndPositionsEnum reuse) throws IOException {
     return actualEnum.docsAndPositions(skipDocs, reuse);
+  }
+  
+  public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+    return actualEnum.seek(term, state);
+  }
+  
+  @Override
+  public TermState termState() throws IOException {
+    return actualEnum.termState();
   }
   
   @Override
