@@ -308,6 +308,9 @@ Bug fixes
   false EOF after seeking to EOF then seeking back to same block you
   were just in and then calling readBytes (Robert Muir, Mike McCandless)
 
+* LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
+  decides whether to return the cached computed size or not. (Shai Erera)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

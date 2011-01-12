@@ -72,10 +72,11 @@ public final class SegmentInfo {
                                                   // and true for newly created merged segments (both
                                                   // compound and non compound).
   
-  private List<String> files;                             // cached list of files that this segment uses
+  private List<String> files;                     // cached list of files that this segment uses
                                                   // in the Directory
 
-  long sizeInBytes = -1;                          // total byte size of all of our files (computed on demand)
+  private long sizeInBytesNoStore = -1;           // total byte size of all but the store files (computed on demand)
+  private long sizeInBytesWithStore = -1;         // total byte size of all of our files (computed on demand)
 
   private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
@@ -265,25 +266,33 @@ public final class SegmentInfo {
     }
   }
 
-  /** Returns total size in bytes of all of files used by
-   *  this segment. */
+  /**
+   * Returns total size in bytes of all of files used by this segment (if
+   * {@code includeDocStores} is true), or the size of all files except the store
+   * files otherwise.
+   */
   public long sizeInBytes(boolean includeDocStores) throws IOException {
-    if (sizeInBytes == -1) {
-      List<String> files = files();
-      final int size = files.size();
-      sizeInBytes = 0;
-      for(int i=0;i<size;i++) {
-        final String fileName = files.get(i);
-        if (!includeDocStores && IndexFileNames.isDocStoreFile(fileName)) {
+    if (includeDocStores) {
+      if (sizeInBytesWithStore != -1) return sizeInBytesWithStore;
+      sizeInBytesWithStore = 0;
+      for (final String fileName : files()) {
+        // We don't count bytes used by a shared doc store against this segment
+        if (docStoreOffset == -1 || !IndexFileNames.isDocStoreFile(fileName)) {
+          sizeInBytesWithStore += dir.fileLength(fileName);
+        }
+      }
+      return sizeInBytesWithStore;
+    } else {
+      if (sizeInBytesNoStore != -1) return sizeInBytesNoStore;
+      sizeInBytesNoStore = 0;
+      for (final String fileName : files()) {
+        if (IndexFileNames.isDocStoreFile(fileName)) {
           continue;
         }
-        // We don't count bytes used by a shared doc store
-        // against this segment:
-        if (docStoreOffset == -1 || !IndexFileNames.isDocStoreFile(fileName))
-          sizeInBytes += dir.fileLength(fileName);
+        sizeInBytesNoStore += dir.fileLength(fileName);
       }
+      return sizeInBytesNoStore;
     }
-    return sizeInBytes;
   }
 
   public boolean getHasVectors() throws IOException {
@@ -708,7 +717,8 @@ public final class SegmentInfo {
    * files this segment has. */
   private void clearFiles() {
     files = null;
-    sizeInBytes = -1;
+    sizeInBytesNoStore = -1;
+    sizeInBytesWithStore = -1;
   }
 
   /** {@inheritDoc} */
