@@ -124,7 +124,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
       }
       @Override
       public void setNextReader(AtomicReaderContext context) {
-        this.docBase = docBase;
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {
@@ -159,7 +159,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
       }
       @Override
       public void setNextReader(AtomicReaderContext context) {
-        this.docBase = docBase;
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {
@@ -211,7 +211,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
       }
       @Override
       public void setNextReader(AtomicReaderContext context) {
-        this.docBase = docBase;
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {

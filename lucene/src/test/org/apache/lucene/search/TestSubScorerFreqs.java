@@ -129,7 +129,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     @Override
     public void setNextReader(AtomicReaderContext context)
         throws IOException {
-      this.docBase = docBase;
+      docBase = context.docBase;
       other.setNextReader(context);
     }
 

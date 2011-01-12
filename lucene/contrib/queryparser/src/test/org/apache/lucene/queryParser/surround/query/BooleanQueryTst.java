@@ -78,7 +78,7 @@ public class BooleanQueryTst {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.docBase = docBase;
+      docBase = context.docBase;
     }
     
     @Override

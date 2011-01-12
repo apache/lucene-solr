@@ -167,8 +167,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext arg0) throws IOException {
-      this.docBase = docBase;
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+      docBase = context.docBase;
     }
 
     @Override

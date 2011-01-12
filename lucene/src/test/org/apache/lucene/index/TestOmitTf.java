@@ -416,7 +416,7 @@ public class TestOmitTf extends LuceneTestCase {
     
     @Override
     public void setNextReader(AtomicReaderContext context) {
-      this.docBase = docBase;
+      docBase = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {
