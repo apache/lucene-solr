@@ -25,6 +25,7 @@ import java.util.Random;
 import junit.framework.Assert;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.store.Directory;
 
 public class CheckHits {
@@ -120,8 +121,8 @@ public class CheckHits {
       bag.add(Integer.valueOf(doc + base));
     }
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
-      base = docBase;
+    public void setNextReader(AtomicReaderContext context) {
+      base = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {
@@ -483,8 +484,8 @@ public class CheckHits {
       verifyExplanation(d,doc,scorer.score(),deep,exp);
     }
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
-      base = docBase;
+    public void setNextReader(AtomicReaderContext context) {
+      base = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {

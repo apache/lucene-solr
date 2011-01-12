@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -826,19 +827,17 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     if (filter==null) {
       if (query instanceof TermQuery) {
         Term t = ((TermQuery)query).getTerm();
-        SolrIndexReader[] readers = reader.getLeafReaders();
-        int[] offsets = reader.getLeafOffsets();
+        final AtomicReaderContext[] leaves = leafContexts;
 
-        for (int i=0; i<readers.length; i++) {
-          SolrIndexReader sir = readers[i];
-          int offset = offsets[i];
-          collector.setNextReader(sir, offset);
-          
-          Fields fields = sir.fields();
+        for (int i=0; i<leaves.length; i++) {
+          final AtomicReaderContext leaf = leaves[i];
+          final IndexReader reader = leaf.reader;
+          collector.setNextReader(leaf);
+          Fields fields = reader.fields();
           Terms terms = fields.terms(t.field());
           BytesRef termBytes = t.bytes();
           
-          Bits skipDocs = sir.getDeletedDocs();
+          Bits skipDocs = reader.getDeletedDocs();
           DocsEnum docsEnum = terms==null ? null : terms.docs(skipDocs, termBytes, null);
 
           if (docsEnum != null) {
@@ -1126,7 +1125,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           public void collect(int doc) throws IOException {
             numHits[0]++;
           }
-          public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          public void setNextReader(AtomicReaderContext context) throws IOException {
           }
           public boolean acceptsDocsOutOfOrder() {
             return true;
@@ -1143,7 +1142,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
             float score = scorer.score();
             if (score > topscore[0]) topscore[0]=score;            
           }
-          public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          public void setNextReader(AtomicReaderContext context) throws IOException {
           }
           public boolean acceptsDocsOutOfOrder() {
             return true;
@@ -1249,7 +1248,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
              float score = scorer.score();
              if (score > topscore[0]) topscore[0]=score;
            }
-           public void setNextReader(IndexReader reader, int docBase) throws IOException {
+           public void setNextReader(AtomicReaderContext context) throws IOException {
            }
            public boolean acceptsDocsOutOfOrder() {
              return false;
@@ -1570,21 +1569,21 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     int base=0;
     int end=0;
     int readerIndex = -1;
-    SolrIndexReader r=null;
+    
+    AtomicReaderContext leaf = null;
 
-
-    while(iter.hasNext()) {
+    for (int i = 0; i < leafContexts.length; i++) {
       int doc = iter.nextDoc();
       while (doc>=end) {
-        r = reader.getLeafReaders()[++readerIndex];
-        base = reader.getLeafOffsets()[readerIndex];
-        end = base + r.maxDoc();
-        topCollector.setNextReader(r, base);
+        leaf = leafContexts[i++];
+        base = leaf.docBase;
+        end = base + leaf.reader.maxDoc();
+        topCollector.setNextReader(leaf);
         // we should never need to set the scorer given the settings for the collector
       }
       topCollector.collect(doc-base);
     }
-
+    
     TopDocs topDocs = topCollector.topDocs(0, nDocs);
 
     int nDocsReturned = topDocs.scoreDocs.length;

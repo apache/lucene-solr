@@ -98,8 +98,8 @@ public class TestTermScorer extends LuceneTestCase {
       }
       
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        base = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        base = context.docBase;
       }
       
       @Override

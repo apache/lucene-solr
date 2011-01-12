@@ -20,7 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
 
@@ -80,8 +80,8 @@ class DocSetCollector extends Collector {
   public void setScorer(Scorer scorer) throws IOException {
   }
 
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.base = docBase;
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    this.base = context.docBase;
   }
 
   public boolean acceptsDocsOutOfOrder() {
@@ -135,8 +135,8 @@ class DocSetDelegateCollector extends DocSetCollector {
     collector.setScorer(scorer);
   }
 
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    collector.setNextReader(reader, docBase);
-    this.base = docBase;
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    collector.setNextReader(context);
+    this.base = context.docBase;
   }
 }

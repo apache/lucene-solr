@@ -19,7 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 
 /**
  * <p>Expert: Collectors are primarily meant to be used to
@@ -98,8 +99,8 @@ import org.apache.lucene.index.IndexReader;
  *     bits.set(doc + docBase);
  *   }
  * 
- *   public void setNextReader(IndexReader reader, int docBase) {
- *     this.docBase = docBase;
+ *   public void setNextReader(AtomicReaderContext context) {
+ *     this.docBase = context.docBase;
  *   }
  * });
  * </pre>
@@ -143,17 +144,16 @@ public abstract class Collector {
   public abstract void collect(int doc) throws IOException;
 
   /**
-   * Called before collecting from each IndexReader. All doc ids in
-   * {@link #collect(int)} will correspond to reader.
+   * Called before collecting from each {@link AtomicReaderContext}. All doc ids in
+   * {@link #collect(int)} will correspond to {@link ReaderContext#reader}.
    * 
-   * Add docBase to the current IndexReaders internal document id to re-base ids
-   * in {@link #collect(int)}.
+   * Add {@link AtomicReaderContext#docBase} to the current  {@link ReaderContext#reader}'s
+   * internal document id to re-base ids in {@link #collect(int)}.
    * 
-   * @param reader
-   *          next IndexReader
-   * @param docBase
+   * @param context
+   *          next atomic reader context
    */
-  public abstract void setNextReader(IndexReader reader, int docBase) throws IOException;
+  public abstract void setNextReader(AtomicReaderContext context) throws IOException;
 
   /**
    * Return <code>true</code> if this collector does not

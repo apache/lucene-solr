@@ -25,6 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.FieldNormModifier;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.Term;
@@ -139,7 +140,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
       scores[doc + docBase] = scorer.score();
     }
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
+    public void setNextReader(AtomicReaderContext context) {
       this.docBase = docBase;
     }
     @Override
@@ -181,7 +182,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
         scores[doc + docBase] = scorer.score();
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
+      public void setNextReader(AtomicReaderContext context) {
         this.docBase = docBase;
       }
       @Override

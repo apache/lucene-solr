@@ -6,7 +6,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.util.BitSet;
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -110,8 +109,8 @@ public class TestScorerPerf extends LuceneTestCase {
     public int getSum() { return sum; }
 
     @Override
-    public void setNextReader(IndexReader reader, int base) {
-      docBase = base;
+    public void setNextReader(AtomicReaderContext context) {
+      docBase = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {

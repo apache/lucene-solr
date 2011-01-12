@@ -128,8 +128,8 @@ Changes in backwards compatibility policy
   ParallelMultiSearcher into IndexSearcher as an optional
   ExecutorServiced passed to its ctor.  (Mike McCandless)
 
-* LUCENE-2837: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
-  operate on a ReaderContext instead of directly on IndexReader to enable
+* LUCENE-2831: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
+  operate on a AtomicReaderContext instead of directly on IndexReader to enable
   searches to be aware of IndexSearcher's context. (Simon Willnauer)
   
 * LUCENE-2839: Scorer#score(Collector,int,int) is now public because it is
@@ -188,6 +188,10 @@ API Changes
 
 * LUCENE-2778: RAMDirectory now exposes newRAMFile() which allows to override
   and return a different RAMFile implementation. (Shai Erera)
+  
+* LUCENE-2831: Weight#scorer, Weight#explain, Filter#getDocIdSet,
+  Collector#setNextReader & FieldComparator#setNextReader now expect an
+  AtomicReaderContext instead of an IndexReader. (Simon Willnauer)
 
 New features
 

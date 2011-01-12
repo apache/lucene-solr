@@ -20,8 +20,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -67,7 +67,7 @@ public class TestRealTime extends LuceneTestCase {
     @Override
     public void setScorer(Scorer scorer) {}
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {}
+    public void setNextReader(AtomicReaderContext context) {}
     @Override
     public boolean acceptsDocsOutOfOrder() { return true; }
     @Override

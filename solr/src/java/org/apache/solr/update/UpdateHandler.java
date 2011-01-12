@@ -18,7 +18,7 @@
 package org.apache.solr.update;
 
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -167,7 +167,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
 
     @Override
-    public void setNextReader(IndexReader arg0, int docBase) throws IOException {
+    public void setNextReader(AtomicReaderContext arg0) throws IOException {
       this.docBase = docBase;
     }
 

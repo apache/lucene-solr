@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ScorerVisitor;
@@ -126,10 +127,10 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase)
+    public void setNextReader(AtomicReaderContext context)
         throws IOException {
       this.docBase = docBase;
-      other.setNextReader(reader, docBase);
+      other.setNextReader(context);
     }
 
     @Override

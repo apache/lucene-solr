@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 
 /* Description from Doug Cutting (excerpted from
@@ -92,7 +92,7 @@ final class BooleanScorer extends Scorer {
     }
     
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
+    public void setNextReader(AtomicReaderContext context) {
       // not needed by this implementation
     }
     

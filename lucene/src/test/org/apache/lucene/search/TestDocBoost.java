@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -77,8 +78,8 @@ public class TestDocBoost extends LuceneTestCase {
            scores[doc + base] = scorer.score();
          }
          @Override
-         public void setNextReader(IndexReader reader, int docBase) {
-           base = docBase;
+         public void setNextReader(AtomicReaderContext context) {
+           base = context.docBase;
          }
          @Override
          public boolean acceptsDocsOutOfOrder() {

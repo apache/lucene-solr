@@ -18,10 +18,13 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
@@ -444,23 +447,21 @@ public class QueryComponent extends SearchComponent
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList sortVals = new NamedList(); // order is important for the sort fields
       Field field = new Field("dummy", "", Field.Store.YES, Field.Index.NO); // a dummy Field
-
-      SolrIndexReader reader = searcher.getReader();
-      SolrIndexReader[] readers = reader.getLeafReaders();
-      SolrIndexReader subReader = reader;
-      if (readers.length==1) {
+      ReaderContext topReaderContext = searcher.getTopReaderContext();
+      AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
+      AtomicReaderContext currentLeaf = null;
+      if (leaves.length==1) {
         // if there is a single segment, use that subReader and avoid looking up each time
-        subReader = readers[0];
-        readers=null;
+        currentLeaf = leaves[0];
+        leaves=null;
       }
-      int[] offsets = reader.getLeafOffsets();
 
       for (SortField sortField: sortFields) {
         int type = sortField.getType();
         if (type==SortField.SCORE || type==SortField.DOC) continue;
 
         FieldComparator comparator = null;
-        FieldComparator comparators[] = (readers==null) ? null : new FieldComparator[readers.length];
+        FieldComparator comparators[] = (leaves==null) ? null : new FieldComparator[leaves.length];
 
         String fieldname = sortField.getField();
         FieldType ft = fieldname==null ? null : req.getSchema().getFieldTypeNoEx(fieldname);
@@ -469,26 +470,24 @@ public class QueryComponent extends SearchComponent
         ArrayList<Object> vals = new ArrayList<Object>(docList.size());
         DocIterator it = rb.getResults().docList.iterator();
 
-        int offset = 0;
         int idx = 0;
 
         while(it.hasNext()) {
           int doc = it.nextDoc();
-          if (readers != null) {
-            idx = SolrIndexReader.readerIndex(doc, offsets);
-            subReader = readers[idx];
-            offset = offsets[idx];
+          if (leaves != null) {
+            idx = ReaderUtil.subIndex(doc, leaves);
+            currentLeaf = leaves[idx];
             comparator = comparators[idx];
           }
 
           if (comparator == null) {
             comparator = sortField.getComparator(1,0);
-            comparator = comparator.setNextReader(subReader, offset);
+            comparator = comparator.setNextReader(currentLeaf);
             if (comparators != null)
               comparators[idx] = comparator;
           }
 
-          doc -= offset;  // adjust for what segment this is in
+          doc -= currentLeaf.docBase;  // adjust for what segment this is in
           comparator.copy(0, doc);
           Object val = comparator.value(0);
 

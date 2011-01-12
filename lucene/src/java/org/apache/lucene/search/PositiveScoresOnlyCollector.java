@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 /**
  * A {@link Collector} implementation which wraps another
@@ -43,8 +43,8 @@ public class PositiveScoresOnlyCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    c.setNextReader(reader, docBase);
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    c.setNextReader(context);
   }
 
   @Override
