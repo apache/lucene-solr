@@ -1014,6 +1014,16 @@ public abstract class LuceneTestCase extends Assert {
     System.err.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
         + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed)
         + reproduceWithExtraParams());
+    System.err.println("NOTE: " + System.getProperty("os.name") + " " 
+        + System.getProperty("os.version") + " " 
+        + System.getProperty("os.arch") + "/"
+        + System.getProperty("java.vendor") + " "
+        + System.getProperty("java.version") + " "
+        + (Constants.JRE_IS_64BIT ? "(64-bit)" : "(32-bit)") + "/"
+        + "cpus=" + Runtime.getRuntime().availableProcessors() + ","
+        + "threads=" + Thread.activeCount() + ","
+        + "free=" + Runtime.getRuntime().freeMemory() + ","
+        + "total=" + Runtime.getRuntime().totalMemory());
   }
   
   // extra params that were overridden needed to reproduce the command
