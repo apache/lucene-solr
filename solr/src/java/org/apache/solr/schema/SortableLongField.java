@@ -28,7 +28,7 @@ import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
@@ -100,10 +100,10 @@ class SortableLongFieldSource extends FieldCacheSource {
     return "slong(" + field + ')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final long def = defVal;
 
-    return new StringIndexDocValues(this, reader, field) {
+    return new StringIndexDocValues(this, readerContext, field) {
       private final BytesRef spare = new BytesRef();
 
       protected String toTerm(String readableValue) {

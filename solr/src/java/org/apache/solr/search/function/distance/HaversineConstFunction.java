@@ -16,7 +16,7 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.DistanceUtils;
@@ -190,9 +190,9 @@ public class HaversineConstFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final DocValues latVals = latSource.getValues(context, reader);
-    final DocValues lonVals = lonSource.getValues(context, reader);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final DocValues latVals = latSource.getValues(context, readerContext);
+    final DocValues lonVals = lonSource.getValues(context, readerContext);
     final double latCenterRad = this.latCenter * DistanceUtils.DEGREES_TO_RADIANS;
     final double lonCenterRad = this.lonCenter * DistanceUtils.DEGREES_TO_RADIANS;
     final double latCenterRad_cos = this.latCenterRad_cos;

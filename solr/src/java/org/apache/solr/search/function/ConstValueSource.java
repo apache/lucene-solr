@@ -17,7 +17,7 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
 import java.util.Map;
@@ -38,7 +38,7 @@ public class ConstValueSource extends ConstNumberSource {
     return "const(" + constant + ")";
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new DocValues() {
       public float floatVal(int doc) {
         return constant;

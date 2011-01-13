@@ -688,7 +688,7 @@ class TopGroupCollector extends GroupCollector {
   @Override
   public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     this.docBase = readerContext.docBase;
-    docValues = vs.getValues(context, readerContext.reader);
+    docValues = vs.getValues(context, readerContext);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
     for (int i=0; i<comparators.length; i++)
@@ -762,7 +762,7 @@ class Phase2GroupCollector extends Collector {
   @Override
   public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     this.docBase = readerContext.docBase;
-    docValues = vs.getValues(context, readerContext.reader);
+    docValues = vs.getValues(context, readerContext);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
     for (SearchGroupDocs group : groupMap.values())

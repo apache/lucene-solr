@@ -121,7 +121,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     try {
     checker.build(core, searcher);
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     Collection<Token> tokens = queryConverter.convert("documemt");
     SpellingOptions spellOpts = new SpellingOptions(tokens, reader);
     SpellingResult result = checker.getSuggestions(spellOpts);
@@ -196,7 +196,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     try {
     checker.build(core, searcher);
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     Collection<Token> tokens = queryConverter.convert("documemt");
     SpellingOptions spellOpts = new SpellingOptions(tokens, reader, 1, false, true, 0.5f, null);
     SpellingResult result = checker.getSuggestions(spellOpts);
@@ -309,7 +309,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     try {
     checker.build(core, searcher);
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     Collection<Token> tokens = queryConverter.convert("flesh");
     SpellingOptions spellOpts = new SpellingOptions(tokens, reader, 1, false, true, 0.5f, null);
     SpellingResult result = checker.getSuggestions(spellOpts);

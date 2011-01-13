@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.SolrIndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,11 +33,9 @@ public class NumDocsValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     // Searcher has no numdocs so we must use the reader instead
-    SolrIndexReader topReader = (SolrIndexReader)reader;
-    while (topReader.getParent() != null) topReader = topReader.getParent();
-    return new ConstIntDocValues(topReader.numDocs(), this);
+    return new ConstIntDocValues(ReaderUtil.getTopLevelContext(readerContext).reader.numDocs(), this);
   }
 
   @Override

@@ -174,18 +174,32 @@ public class IndexSearcher {
       }
     }
   }
-  
-  /* Ctor for concurrent sub-searchers searching only on a specific leaf of the given top-reader context
-   * - instead of searching over all leaves this searcher only searches a single leaf searcher slice. Hence, 
-   * for scorer and filter this looks like an ordinary search in the hierarchy such that there is no difference
-   * between single and multi-threaded */
-  private IndexSearcher(ReaderContext topLevel, AtomicReaderContext leaf) {
+
+  /**
+   * Expert: Creates a searcher from a top-level {@link ReaderContext} with and
+   * executes searches on the given leave slice exclusively instead of searching
+   * over all leaves. This constructor should be used to run one or more leaves
+   * within a single thread. Hence, for scorer and filter this looks like an
+   * ordinary search in the hierarchy such that there is no difference between
+   * single and multi-threaded.
+   * 
+   * @lucene.experimental
+   * */
+  public IndexSearcher(ReaderContext topLevel, AtomicReaderContext... leaves) {
+    assert assertLeaves(topLevel, leaves);
     readerContext = topLevel;
     reader = topLevel.reader;
-    leafContexts = new AtomicReaderContext[] {leaf};
+    leafContexts = leaves;
     executor = null;
     subSearchers = null;
     closeReader = false;
+  }
+  
+  private boolean assertLeaves(ReaderContext topLevel, AtomicReaderContext... leaves) {
+    for (AtomicReaderContext leaf : leaves) {
+      assert ReaderUtil.getTopLevelContext(leaf) == topLevel : "leaf context is not a leaf of the given top-level context";
+    }
+    return true;
   }
   
   /** Return the {@link IndexReader} this searches. */

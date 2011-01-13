@@ -17,7 +17,6 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.ReaderUtil;
@@ -56,17 +55,15 @@ public class ScaleFloatFunction extends ValueSource {
     float maxVal;
   }
 
-  private ScaleInfo createScaleInfo(Map context, IndexReader reader) throws IOException {
-    IndexReader.ReaderContext ctx = ValueSource.readerToContext(context, reader);
-    while (ctx.parent != null) ctx = ctx.parent;
-    final AtomicReaderContext[] leaves = ReaderUtil.leaves(ctx);
+  private ScaleInfo createScaleInfo(Map context, AtomicReaderContext readerContext) throws IOException {
+    final AtomicReaderContext[] leaves = ReaderUtil.leaves(ReaderUtil.getTopLevelContext(readerContext));
 
     float minVal = Float.POSITIVE_INFINITY;
     float maxVal = Float.NEGATIVE_INFINITY;
 
     for (AtomicReaderContext leaf : leaves) {
       int maxDoc = leaf.reader.maxDoc();
-      DocValues vals =  source.getValues(context, leaf.reader);
+      DocValues vals =  source.getValues(context, leaf);
       for (int i=0; i<maxDoc; i++) {
 
       float val = vals.floatVal(i);
@@ -96,18 +93,18 @@ public class ScaleFloatFunction extends ValueSource {
     return scaleInfo;
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
     ScaleInfo scaleInfo = (ScaleInfo)context.get(source);
     if (scaleInfo == null) {
-      scaleInfo = createScaleInfo(context, reader);
+      scaleInfo = createScaleInfo(context, readerContext);
     }
 
     final float scale = (scaleInfo.maxVal-scaleInfo.minVal==0) ? 0 : (max-min)/(scaleInfo.maxVal-scaleInfo.minVal);
     final float minSource = scaleInfo.minVal;
     final float maxSource = scaleInfo.maxVal;
 
-    final DocValues vals =  source.getValues(context, reader);
+    final DocValues vals =  source.getValues(context, readerContext);
 
     return new DocValues() {
       public float floatVal(int doc) {

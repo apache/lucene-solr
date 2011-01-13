@@ -62,7 +62,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   void checkNumDocs(int n) {
     SolrQueryRequest req = req();
     try {
-      assertEquals(n, req.getSearcher().getReader().numDocs());
+      assertEquals(n, req.getSearcher().getIndexReader().numDocs());
     } finally {
       req.close();
     }

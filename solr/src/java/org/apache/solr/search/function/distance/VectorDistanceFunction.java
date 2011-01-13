@@ -16,7 +16,7 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.solr.common.SolrException;
@@ -78,11 +78,11 @@ public class VectorDistanceFunction extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
-    final DocValues vals1 = source1.getValues(context, reader);
+    final DocValues vals1 = source1.getValues(context, readerContext);
 
-    final DocValues vals2 = source2.getValues(context, reader);
+    final DocValues vals2 = source2.getValues(context, readerContext);
 
 
     return new DocValues() {

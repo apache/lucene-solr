@@ -20,7 +20,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
@@ -372,7 +371,7 @@ class SpatialDistanceQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new SpatialScorer(getSimilarity(searcher), context.reader, this);
+      return new SpatialScorer(getSimilarity(searcher), context, this);
     }
 
     @Override
@@ -405,15 +404,15 @@ class SpatialDistanceQuery extends Query {
     int lastDistDoc;
     double lastDist;
 
-    public SpatialScorer(Similarity similarity, IndexReader reader, SpatialWeight w) throws IOException {
+    public SpatialScorer(Similarity similarity, AtomicReaderContext readerContext, SpatialWeight w) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
-      this.reader = reader;
+      this.reader = readerContext.reader;
       this.maxDoc = reader.maxDoc();
-      this.delDocs = reader.hasDeletions() ? MultiFields.getDeletedDocs(reader) : null;
-      latVals = latSource.getValues(weight.latContext, reader);
-      lonVals = lonSource.getValues(weight.lonContext, reader);
+      this.delDocs = reader.getDeletedDocs();
+      latVals = latSource.getValues(weight.latContext, readerContext);
+      lonVals = lonSource.getValues(weight.lonContext, readerContext);
 
       this.lonMin = SpatialDistanceQuery.this.lonMin;
       this.lonMax = SpatialDistanceQuery.this.lonMax;

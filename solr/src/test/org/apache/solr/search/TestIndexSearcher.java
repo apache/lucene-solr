@@ -45,7 +45,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
     int idx = ReaderUtil.subIndex(doc, leaves);
     AtomicReaderContext leaf = leaves[idx];
-    DocValues vals = vs.getValues(context, leaf.reader);
+    DocValues vals = vs.getValues(context, leaf);
     return vals.strVal(doc-leaf.docBase);
   }
 

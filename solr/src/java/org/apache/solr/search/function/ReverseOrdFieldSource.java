@@ -18,8 +18,9 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
-import org.apache.solr.search.SolrIndexReader;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -56,18 +57,9 @@ public class ReverseOrdFieldSource extends ValueSource {
     return "rord("+field+')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    int offset = 0;
-    IndexReader topReader = reader;
-    if (topReader instanceof SolrIndexReader) {
-      SolrIndexReader r = (SolrIndexReader)topReader;
-      while (r.getParent() != null) {
-        offset += r.getBase();
-        r = r.getParent();
-      }
-      topReader = r;
-    }
-    final int off = offset;
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader;
+    final int off = readerContext.docBase;
 
     final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(topReader, field);
     final int end = sindex.numOrd();

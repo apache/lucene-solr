@@ -284,7 +284,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     public MoreLikeThisHelper( SolrParams params, SolrIndexSearcher searcher )
     {
       this.searcher = searcher;
-      this.reader = searcher.getReader();
+      this.reader = searcher.getIndexReader();
       this.uniqueKeyField = searcher.getSchema().getUniqueKeyField();
       this.needDocSet = params.getBool(FacetParams.FACET,false);
       

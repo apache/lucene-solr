@@ -17,7 +17,7 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
@@ -45,8 +45,8 @@ public class MaxFloatFunction extends ValueSource {
     return "max(" + source.description() + "," + fval + ")";
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final DocValues vals =  source.getValues(context, reader);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final DocValues vals =  source.getValues(context, readerContext);
     return new DocValues() {
       public float floatVal(int doc) {
 	float v = vals.floatVal(doc);

@@ -139,7 +139,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     StandardIndexReaderFactory sirf = (StandardIndexReaderFactory) irf;
     assertEquals(12, sirf.termInfosIndexDivisor);
     SolrQueryRequest req = req();
-    assertEquals(12, req.getSearcher().getReader().getTermInfosIndexDivisor());
+    assertEquals(12, req.getSearcher().getIndexReader().getTermInfosIndexDivisor());
     req.close();
   }
 

@@ -71,7 +71,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     comp.inform( core );
 
     SolrQueryRequest req = req();
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     Map<String, ElevationObj> map = comp.getElevationMap( reader, core );
     req.close();
 
@@ -130,7 +130,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     args.put( "indent", "true" );
     //args.put( CommonParams.FL, "id,title,score" );
     SolrQueryRequest req = new LocalSolrQueryRequest( h.getCore(), new MapSolrParams( args) );
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     QueryElevationComponent booster = (QueryElevationComponent)req.getCore().getSearchComponent( "elevate" );
 
     assertQ("Make sure standard sort works as expected", req
@@ -255,7 +255,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     comp.inform( h.getCore() );
 
     SolrQueryRequest req = req();
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     Map<String, ElevationObj> map = comp.getElevationMap(reader, h.getCore());
     assertTrue( map.get( "aaa" ).priority.containsKey( new BytesRef("A") ) );
     assertNull( map.get( "bbb" ) );
@@ -267,7 +267,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     req = req();
-    reader = req.getSearcher().getReader();
+    reader = req.getSearcher().getIndexReader();
     map = comp.getElevationMap(reader, h.getCore());
     assertNull( map.get( "aaa" ) );
     assertTrue( map.get( "bbb" ).priority.containsKey( new BytesRef("B") ) );

@@ -200,7 +200,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           RefCounted<SolrIndexSearcher> searchHolder = null;
           try {
             searchHolder = core.getNewestSearcher(false);
-            IndexReader reader = searchHolder.get().getReader();
+            IndexReader reader = searchHolder.get().getIndexReader();
             getElevationMap( reader, core );
           } finally {
             if (searchHolder != null) searchHolder.decref();
@@ -344,7 +344,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     qstr = getAnalyzedQuery(qstr);
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     ElevationObj booster = null;
     try {
       booster = getElevationMap( reader, req.getCore() ).get( qstr );

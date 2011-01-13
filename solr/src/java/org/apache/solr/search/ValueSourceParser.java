@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
@@ -710,7 +710,7 @@ class LongConstValueSource extends ConstNumberSource {
     return "const(" + constant + ")";
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new DocValues() {
       public float floatVal(int doc) {
         return fv;
@@ -807,8 +807,8 @@ abstract class DoubleParser extends NamedParser {
     }
 
     @Override
-    public DocValues getValues(Map context, IndexReader reader) throws IOException {
-      final DocValues vals =  source.getValues(context, reader);
+    public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+      final DocValues vals =  source.getValues(context, readerContext);
       return new DocValues() {
         public float floatVal(int doc) {
           return (float)doubleVal(doc);
@@ -862,9 +862,9 @@ abstract class Double2Parser extends NamedParser {
       return name() + "(" + a.description() + "," + b.description() + ")";
     }
 
-    public DocValues getValues(Map context, IndexReader reader) throws IOException {
-      final DocValues aVals =  a.getValues(context, reader);
-      final DocValues bVals =  b.getValues(context, reader);
+    public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+      final DocValues aVals =  a.getValues(context, readerContext);
+      final DocValues bVals =  b.getValues(context, readerContext);
       return new DocValues() {
         public float floatVal(int doc) {
           return (float)doubleVal(doc);

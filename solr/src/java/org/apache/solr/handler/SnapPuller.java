@@ -269,7 +269,7 @@ public class SnapPuller {
       RefCounted<SolrIndexSearcher> searcherRefCounted = null;
       try {
         searcherRefCounted = core.getNewestSearcher(false);
-        commit = searcherRefCounted.get().getReader().getIndexCommit();
+        commit = searcherRefCounted.get().getIndexReader().getIndexCommit();
       } finally {
         if (searcherRefCounted != null)
           searcherRefCounted.decref();

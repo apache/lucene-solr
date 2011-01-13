@@ -19,7 +19,6 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Scorer;
@@ -47,7 +46,7 @@ public abstract class ValueSource implements Serializable {
    * Gets the values for this reader and the context that was previously
    * passed to createWeight()
    */
-  public abstract DocValues getValues(Map context, IndexReader reader) throws IOException;
+  public abstract DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException;
 
   public abstract boolean equals(Object o);
 
@@ -66,7 +65,7 @@ public abstract class ValueSource implements Serializable {
    * EXPERIMENTAL: This method is subject to change.
    * <br>WARNING: Sorted function queries are not currently weighted.
    * <p>
-   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, org.apache.lucene.index.IndexReader)}
+   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, AtomicReaderContext)}
    * to populate the SortField.
    * 
    * @param reverse true if this is a reverse sort.
@@ -97,40 +96,6 @@ public abstract class ValueSource implements Serializable {
     context.put("searcher", searcher);
     return context;
   }
-
-  /* @lucene.internal
-   * This will most likely go away in the future.
-   */
-  public static AtomicReaderContext readerToContext(Map fcontext, IndexReader reader) {
-    Object v = fcontext.get(reader);
-    if (v == null) {
-      IndexSearcher searcher = (IndexSearcher)fcontext.get("searcher");
-      if (searcher == null) {
-        return null;
-        // TODO
-        // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no searcher found in function context");
-      }
-      ReaderContext rcontext = searcher.getIndexReader().getTopReaderContext();
-      if (rcontext.isAtomic) {
-        assert rcontext.reader == reader;
-        fcontext.put(rcontext.reader, (AtomicReaderContext)rcontext);
-      } else {
-        for (AtomicReaderContext subCtx : rcontext.leaves()) {
-          fcontext.put(subCtx.reader, subCtx);
-        }
-      }
-
-      v = fcontext.get(reader);
-      if (v == null) {
-        return null;
-        // TODO
-        // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "reader " + reader + " is not from the top reader " + searcher.getIndexReader());
-      }
-    }
-
-    return (AtomicReaderContext)v;
-  }
-
 
   class ValueSourceComparatorSource extends FieldComparatorSource {
 
@@ -188,7 +153,7 @@ public abstract class ValueSource implements Serializable {
     }
 
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      docVals = getValues(Collections.emptyMap(), context.reader);
+      docVals = getValues(Collections.emptyMap(), context);
       return this;
     }
 

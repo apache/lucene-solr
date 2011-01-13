@@ -19,7 +19,6 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.Bits;
@@ -115,7 +114,7 @@ public class FunctionQuery extends Query {
     final boolean hasDeletions;
     final Bits delDocs;
 
-    public AllScorer(Similarity similarity, ReaderContext context, FunctionWeight w) throws IOException {
+    public AllScorer(Similarity similarity, AtomicReaderContext context, FunctionWeight w) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
@@ -124,9 +123,7 @@ public class FunctionQuery extends Query {
       this.hasDeletions = reader.hasDeletions();
       this.delDocs = MultiFields.getDeletedDocs(reader);
       assert !hasDeletions || delDocs != null;
-      Map funcContext = weight.context;
-      funcContext.put(reader, context);
-      vals = func.getValues(funcContext, reader);
+      vals = func.getValues(weight.context, context);
     }
 
     @Override

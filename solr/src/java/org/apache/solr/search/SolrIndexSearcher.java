@@ -68,7 +68,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private long openTime = System.currentTimeMillis();
   private long registerTime = 0;
   private long warmupTime = 0;
-  private final SolrIndexReader reader;
+  private final IndexReader reader;
   private final boolean closeReader;
 
   private final int queryResultWindowSize;
@@ -117,27 +117,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     this(core, schema,name,r, false, enableCache);
   }
 
-  private static SolrIndexReader wrap(IndexReader r) {
-    SolrIndexReader sir;
-    // wrap the reader
-    if (!(r instanceof SolrIndexReader)) {
-      sir = new SolrIndexReader(r, null, 0);
-      sir.associateInfo(null);
-    } else {
-      sir = (SolrIndexReader)r;
-    }
-    return sir;
-  }
 
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
-    super(wrap(r));
-    this.reader = (SolrIndexReader)super.getIndexReader();
+    super(r);
+    this.reader = getIndexReader();
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
-
-    SolrIndexReader.setSearcher(reader, this);
 
     if (r.directory() instanceof FSDirectory) {
       FSDirectory fsDirectory = (FSDirectory) r.directory();
@@ -247,8 +234,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     numCloses.incrementAndGet();
   }
 
-  /** Direct access to the IndexReader used by this searcher */
-  public SolrIndexReader getReader() { return reader; }
   /** Direct access to the IndexSchema for use with this searcher */
   public IndexSchema getSchema() { return schema; }
   

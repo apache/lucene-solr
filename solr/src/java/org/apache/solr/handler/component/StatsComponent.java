@@ -248,7 +248,7 @@ class SimpleStats {
 
     FieldCache.DocTermsIndex si = null;
     try {
-      si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), fieldName);
+      si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), fieldName);
     } 
     catch (IOException e) {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
@@ -263,7 +263,7 @@ class SimpleStats {
     for( String f : facet ) {
       ft = searcher.getSchema().getFieldType(f);
       try {
-        si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), f);
+        si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), f);
       } 
       catch (IOException e) {
         throw new RuntimeException( "failed to open field cache for: "+f, e );
