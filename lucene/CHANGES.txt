@@ -256,6 +256,12 @@ API Changes
 * LUCENE-2785: Added TotalHitCountCollector whose sole purpose is to
   count the number of hits matching the query.  (Mike McCandless)
 
+* LUCENE-2846: Deprecated IndexReader.setNorm(int, String, float). This method 
+  is only syntactic sugar for setNorm(int, String, byte), but  using the global 
+  Similarity.getDefault().encodeNormValue().  Use the byte-based method instead 
+  to ensure that the norm is encoded with your Similarity.
+  (Robert Muir, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on

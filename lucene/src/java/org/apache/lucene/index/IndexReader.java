@@ -794,7 +794,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #setNorm(int, String, byte)} instead, encoding the
+   * float to byte with your Similarity's {@link Similarity#encodeNormValue(float)}.
+   * This method will be removed in Lucene 4.0
    */
+  @Deprecated
   public void setNorm(int doc, String field, float value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
