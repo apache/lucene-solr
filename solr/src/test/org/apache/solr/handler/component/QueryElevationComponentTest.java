@@ -55,6 +55,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
     assertU(optimize());
+    // make sure this component is initialized correctly for each test
+    QueryElevationComponent comp = (QueryElevationComponent)h.getCore().getSearchComponent("elevate");
+    NamedList<String> args = new NamedList<String>();
+    args.add( QueryElevationComponent.CONFIG_FILE, "elevate.xml" );
+    args.add( QueryElevationComponent.FIELD_TYPE, "string" );
+    comp.init( args );
+    comp.inform( h.getCore() );
+    comp.forceElevation = false; 
   }
   
   @Test
