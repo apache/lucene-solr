@@ -34,7 +34,7 @@ public abstract class DocumentsWriterPerThreadPool {
     return perThreads.length;
   }
 
-  public ThreadState newThreadState() {
+  public synchronized ThreadState newThreadState() {
     if (numThreadStatesActive < perThreads.length) {
       ThreadState state = perThreads[numThreadStatesActive];
       numThreadStatesActive++;
