@@ -602,12 +602,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public synchronized void norms(String field, byte[] result, int offset)
-    throws IOException {
-    throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
-  }
-
-  @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     int i = readerIndex(n);                           // find segment num

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.ReaderUtil;
 
 /**
@@ -61,26 +60,24 @@ public class MultiNorms {
       ReaderUtil.gatherSubReaders(leaves, r);
       int end = 0;
       for (IndexReader leaf : leaves) {
+        Fields fields = leaf.fields();
+        boolean hasField = (fields != null && fields.terms(field) != null);
+        
         int start = end;
-        leaf.norms(field, norms, start);
+        byte leafNorms[] = leaf.norms(field);
+        if (leafNorms == null) {
+          if (hasField) { // omitted norms
+            return null;
+          }
+          // doesn't have field, fill bytes
+          leafNorms = new byte[leaf.maxDoc()];
+          Arrays.fill(leafNorms, (byte) 0);
+        }
+        
+        System.arraycopy(leafNorms, 0, norms, start, leafNorms.length);
         end += leaf.maxDoc();
       }
       return norms;
-    }
-  }
-  
-  /**
-   * Warning: this is heavy! Do not use in a loop, or implement norms()
-   * in your own reader with this (you should likely cache the result).
-   */
-  public static void norms(IndexReader r, String field, byte[] bytes, int offset)
-      throws IOException {
-    // TODO: optimize more maybe
-    byte[] norms = norms(r, field);
-    if (norms == null) {
-      Arrays.fill(bytes, offset, bytes.length, Similarity.getDefault().encodeNormValue(1.0f));
-    } else {
-      System.arraycopy(norms, 0, bytes, offset, r.maxDoc());
     }
   }
 }

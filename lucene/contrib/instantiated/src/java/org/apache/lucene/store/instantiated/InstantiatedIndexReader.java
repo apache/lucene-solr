@@ -334,15 +334,6 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  public void norms(String field, byte[] bytes, int offset) throws IOException {
-    byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
-    if (norms == null) {
-      return;
-    }
-    System.arraycopy(norms, 0, bytes, offset, norms.length);
-  }
-
-  @Override
   protected void doSetNorm(int doc, String field, byte value) throws IOException {
     if (uncommittedNormsByFieldNameAndDocumentNumber == null) {
       uncommittedNormsByFieldNameAndDocumentNumber = new HashMap<String,List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());

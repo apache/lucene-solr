@@ -51,10 +51,10 @@ public class TestSetNorm extends LuceneTestCase {
 
     // reset the boost of each instance of this document
     IndexReader reader = IndexReader.open(store, false);
-    reader.setNorm(0, "field", 1.0f);
-    reader.setNorm(1, "field", 2.0f);
-    reader.setNorm(2, "field", 4.0f);
-    reader.setNorm(3, "field", 16.0f);
+    reader.setNorm(0, "field", Similarity.getDefault().encodeNormValue(1.0f));
+    reader.setNorm(1, "field", Similarity.getDefault().encodeNormValue(2.0f));
+    reader.setNorm(2, "field", Similarity.getDefault().encodeNormValue(4.0f));
+    reader.setNorm(3, "field", Similarity.getDefault().encodeNormValue(16.0f));
     reader.close();
 
     // check that searches are ordered by this boost

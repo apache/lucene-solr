@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -570,13 +571,6 @@ final class SegmentMerger {
   }
   
   private void mergeNorms() throws IOException {
-    // get needed buffer size by finding the largest segment
-    int bufferSize = 0;
-    for (IndexReader reader : readers) {
-      bufferSize = Math.max(bufferSize, reader.maxDoc());
-    }
-    
-    byte[] normBuffer = null;
     IndexOutput output = null;
     try {
       for (int i = 0, numFieldInfos = fieldInfos.size(); i < numFieldInfos; i++) {
@@ -586,12 +580,15 @@ final class SegmentMerger {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
             output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
           }
-          if (normBuffer == null) {
-            normBuffer = new byte[bufferSize];
-          }
           for (IndexReader reader : readers) {
             final int maxDoc = reader.maxDoc();
-            reader.norms(fi.name, normBuffer, 0);
+            byte normBuffer[] = reader.norms(fi.name);
+            if (normBuffer == null) {
+              // Can be null if this segment doesn't have
+              // any docs with this field
+              normBuffer = new byte[maxDoc];
+              Arrays.fill(normBuffer, (byte)0);
+            }
             if (!reader.hasDeletions()) {
               //optimized case for segments without deleted docs
               output.writeBytes(normBuffer, maxDoc);

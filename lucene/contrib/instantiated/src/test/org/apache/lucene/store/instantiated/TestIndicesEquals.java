@@ -358,35 +358,6 @@ public class TestIndicesEquals extends LuceneTestCase {
         for (int i = 0; i < aprioriNorms.length; i++) {
           assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
         }
-
-        // test norms as used by multireader
-
-        aprioriNorms = new byte[aprioriReader.maxDoc()];
-        MultiNorms.norms(aprioriReader, (String) field, aprioriNorms, 0);
-
-        testNorms = new byte[testReader.maxDoc()];
-        MultiNorms.norms(testReader, (String) field, testNorms, 0);
-
-        assertEquals(aprioriNorms.length, testNorms.length);
-
-        for (int i = 0; i < aprioriNorms.length; i++) {
-          assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
-        }
-
-
-        // test norms as used by multireader
-
-        aprioriNorms = new byte[aprioriReader.maxDoc() + 10];
-        MultiNorms.norms(aprioriReader, (String) field, aprioriNorms, 10);
-
-        testNorms = new byte[testReader.maxDoc() + 10];
-        MultiNorms.norms(testReader, (String) field, testNorms, 10);
-
-        assertEquals(aprioriNorms.length, testNorms.length);
-        
-        for (int i = 0; i < aprioriNorms.length; i++) {
-          assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
-        }
       }
     }
 

@@ -356,12 +356,6 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
-  public void norms(String f, byte[] bytes, int offset) throws IOException {
-    ensureOpen();
-    in.norms(f, bytes, offset);
-  }
-
-  @Override
   protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
     in.setNorm(d, f, b);
   }

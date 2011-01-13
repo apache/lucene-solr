@@ -69,7 +69,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals("one", ir.document(hits[2].doc).get("key"));
 
     // change norm & retest
-    ir.setNorm(0, "key", 400f);
+    ir.setNorm(0, "key", Similarity.getDefault().encodeNormValue(400f));
     normsQuery = new MatchAllDocsQuery("key");
     hits = is.search(normsQuery, null, 1000).scoreDocs;
     assertEquals(3, hits.length);

@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.search.Similarity;
 
 /** Taps into DocInverter, as an InvertedDocEndConsumer,
  *  which is called at the end of inverting each field.  We
