@@ -31,7 +31,14 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
 
-/** @lucene.experimental */
+/**
+ * Selects every Nth term as and index term, and hold term
+ * bytes fully expanded in memory.  This terms index
+ * supports seeking by ord.  See {@link
+ * VariableGapTermsIndexWriter} for a more memory efficient
+ * terms index that does not support seeking by ord.
+ *
+ * @lucene.experimental */
 public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   protected final IndexOutput out;
 
@@ -50,7 +57,6 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_INDEX_EXTENSION);
-    state.flushedFiles.add(indexFileName);
     termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName);
     fieldInfos = state.fieldInfos;
@@ -203,15 +209,25 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     final long dirStart = out.getFilePointer();
     final int fieldCount = fields.size();
 
-    out.writeInt(fieldCount);
+    int nonNullFieldCount = 0;
     for(int i=0;i<fieldCount;i++) {
       SimpleFieldWriter field = fields.get(i);
-      out.writeInt(field.fieldInfo.number);
-      out.writeInt(field.numIndexTerms);
-      out.writeLong(field.termsStart);
-      out.writeLong(field.indexStart);
-      out.writeLong(field.packedIndexStart);
-      out.writeLong(field.packedOffsetsStart);
+      if (field.numIndexTerms > 0) {
+        nonNullFieldCount++;
+      }
+    }
+
+    out.writeVInt(nonNullFieldCount);
+    for(int i=0;i<fieldCount;i++) {
+      SimpleFieldWriter field = fields.get(i);
+      if (field.numIndexTerms > 0) {
+        out.writeVInt(field.fieldInfo.number);
+        out.writeVInt(field.numIndexTerms);
+        out.writeVLong(field.termsStart);
+        out.writeVLong(field.indexStart);
+        out.writeVLong(field.packedIndexStart);
+        out.writeVLong(field.packedOffsetsStart);
+      }
     }
     writeTrailer(dirStart);
     out.close();

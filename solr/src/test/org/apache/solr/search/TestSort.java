@@ -20,7 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.*;
@@ -106,8 +106,8 @@ public class TestSort extends AbstractSolrTestCase {
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {
           @Override
-          public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-            return randSet(reader.maxDoc());
+          public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+            return randSet(context.reader.maxDoc());
           }
         };
 
@@ -159,9 +159,9 @@ public class TestSort extends AbstractSolrTestCase {
           }
 
           @Override
-          public void setNextReader(IndexReader reader, int docBase) throws IOException {
-            topCollector.setNextReader(reader,docBase);
-            this.docBase = docBase;
+          public void setNextReader(AtomicReaderContext context) throws IOException {
+            topCollector.setNextReader(context);
+            docBase = context.docBase;
           }
 
           @Override

@@ -18,7 +18,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.cache.ShortValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.ShortValues;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
 import java.util.Map;
@@ -39,8 +39,8 @@ public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
     return "short(" + field + ')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final ShortValues vals = cache.getShorts(reader, field, creator);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final ShortValues vals = cache.getShorts(readerContext.reader, field, creator);
     final short[] arr = vals.values;
     
     return new DocValues() {

@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -67,16 +68,9 @@ public class TestEmptyIndex extends LuceneTestCase {
   }
 
   private void testNorms(IndexReader r) throws IOException {
-    byte[] norms;
-    norms = r.norms("foo");
+    byte[] norms = MultiNorms.norms(r, "foo");
     if (norms != null) {
       assertEquals(0, norms.length);
-      norms = new byte[10];
-      Arrays.fill(norms, (byte)10);
-      r.norms("foo", norms, 10);
-      for (byte b : norms) {
-        assertEquals((byte)10, b);
-      }
     }
   }
 

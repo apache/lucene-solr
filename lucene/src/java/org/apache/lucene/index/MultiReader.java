@@ -18,14 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -35,10 +32,9 @@ import org.apache.lucene.util.ReaderUtil;
  *  their content. */
 public class MultiReader extends IndexReader implements Cloneable {
   protected IndexReader[] subReaders;
+  private final ReaderContext topLevelContext;
   private int[] starts;                           // 1st docno for each segment
-  private final Map<IndexReader,ReaderUtil.Slice> subReaderToSlice = new HashMap<IndexReader,ReaderUtil.Slice>();
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
-  private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
@@ -51,7 +47,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   * @param subReaders set of (sub)readers
   */
   public MultiReader(IndexReader... subReaders) throws IOException {
-    initialize(subReaders, true);
+    topLevelContext = initialize(subReaders, true);
   }
 
   /**
@@ -63,14 +59,13 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @param subReaders set of (sub)readers
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
-    initialize(subReaders, closeSubReaders);
+    topLevelContext = initialize(subReaders, closeSubReaders);
   }
   
-  private void initialize(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
+  private ReaderContext initialize(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     this.subReaders =  subReaders.clone();
     starts = new int[subReaders.length + 1];    // build starts array
     decrefOnClose = new boolean[subReaders.length];
-
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
@@ -85,24 +80,14 @@ public class MultiReader extends IndexReader implements Cloneable {
       if (subReaders[i].hasDeletions()) {
         hasDeletions = true;
       }
-
-      final ReaderUtil.Slice slice = new ReaderUtil.Slice(starts[i],
-                                                          subReaders[i].maxDoc(),
-                                                          i);
-      subReaderToSlice.put(subReaders[i], slice);
     }
-
     starts[subReaders.length] = maxDoc;
+    return ReaderUtil.buildReaderContext(this);
   }
 
   @Override
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("");
-  }
-
-  @Override
-  public int getSubReaderDocBase(IndexReader subReader) {
-    return subReaderToSlice.get(subReader).start;
   }
 
   @Override
@@ -316,45 +301,12 @@ public class MultiReader extends IndexReader implements Cloneable {
   
   @Override
   public synchronized byte[] norms(String field) throws IOException {
-    ensureOpen();
-    byte[] bytes = normsCache.get(field);
-    if (bytes != null)
-      return bytes;          // cache hit
-    if (!hasNorms(field))
-      return null;
-
-    bytes = new byte[maxDoc()];
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].norms(field, bytes, starts[i]);
-    normsCache.put(field, bytes);      // update cache
-    return bytes;
-  }
-
-  @Override
-  public synchronized void norms(String field, byte[] result, int offset)
-    throws IOException {
-    ensureOpen();
-    byte[] bytes = normsCache.get(field);
-    for (int i = 0; i < subReaders.length; i++)      // read from segments
-      subReaders[i].norms(field, result, offset + starts[i]);
-
-    if (bytes==null && !hasNorms(field)) {
-      Arrays.fill(result, offset, result.length, Similarity.getDefault().encodeNormValue(1.0f));
-    } else if (bytes != null) {                         // cache hit
-      System.arraycopy(bytes, 0, result, offset, maxDoc());
-    } else {
-      for (int i = 0; i < subReaders.length; i++) {     // read from segments
-        subReaders[i].norms(field, result, offset + starts[i]);
-      }
-    }
+    throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
   }
 
   @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
-    synchronized (normsCache) {
-      normsCache.remove(field);                         // clear cache
-    }
     int i = readerIndex(n);                           // find segment num
     subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }
@@ -432,5 +384,9 @@ public class MultiReader extends IndexReader implements Cloneable {
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
+  }
+  
+  public ReaderContext getTopReaderContext() {
+    return topLevelContext;
   }
 }

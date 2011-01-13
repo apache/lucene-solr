@@ -69,6 +69,7 @@ class JsonLoader extends ContentStreamLoader {
     }
   }
 
+  @SuppressWarnings("fallthrough")
   void processUpdate(SolrQueryRequest req, UpdateRequestProcessor processor, JSONParser parser) throws IOException 
   {
     int ev = parser.nextEvent();

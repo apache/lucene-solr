@@ -20,7 +20,7 @@ package org.apache.solr.search.function;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.FloatValues;
@@ -45,8 +45,8 @@ public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {
     return "float(" + field + ')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final FloatValues vals = cache.getFloats(reader, field, creator);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final FloatValues vals = cache.getFloats(readerContext.reader, field, creator);
     final float[] arr = vals.values;
 	final Bits valid = vals.valid;
     

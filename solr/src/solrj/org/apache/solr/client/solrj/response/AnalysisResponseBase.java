@@ -62,12 +62,12 @@ public class AnalysisResponseBase extends SolrResponseBase {
    *
    * @return The built analysis phases list.
    */
-  protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
+  protected List<AnalysisPhase> buildPhases(NamedList<List<NamedList<Object>>> phaseNL) {
     List<AnalysisPhase> phases = new ArrayList<AnalysisPhase>(phaseNL.size());
-    for (Map.Entry<String, Object> phaseEntry : phaseNL) {
+    for (Map.Entry<String, List<NamedList<Object>>> phaseEntry : phaseNL) {
       AnalysisPhase phase = new AnalysisPhase(phaseEntry.getKey());
-      List<NamedList> tokens = (List<NamedList>) phaseEntry.getValue();
-      for (NamedList token : tokens) {
+      List<NamedList<Object>> tokens = phaseEntry.getValue();
+      for (NamedList<Object> token : tokens) {
         TokenInfo tokenInfo = buildTokenInfo(token);
         phase.addTokenInfo(tokenInfo);
       }
@@ -95,7 +95,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
    *
    * @return The built token info.
    */
-  protected TokenInfo buildTokenInfo(NamedList tokenNL) {
+  protected TokenInfo buildTokenInfo(NamedList<Object> tokenNL) {
     String text = (String) tokenNL.get("text");
     String rawText = (String) tokenNL.get("rawText");
     String type = (String) tokenNL.get("type");

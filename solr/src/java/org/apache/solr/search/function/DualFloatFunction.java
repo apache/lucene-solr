@@ -17,8 +17,8 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
 import java.util.Map;
@@ -43,9 +43,9 @@ public abstract class DualFloatFunction extends ValueSource {
     return name() + "(" + a.description() + "," + b.description() + ")";
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final DocValues aVals =  a.getValues(context, reader);
-    final DocValues bVals =  b.getValues(context, reader);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final DocValues aVals =  a.getValues(context, readerContext);
+    final DocValues bVals =  b.getValues(context, readerContext);
     return new DocValues() {
       public float floatVal(int doc) {
 	return func(doc, aVals, bVals);
@@ -69,7 +69,7 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     a.createWeight(context,searcher);
     b.createWeight(context,searcher);
   }

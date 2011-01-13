@@ -20,12 +20,11 @@ package org.apache.lucene.index.codecs.pulsing;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.CodecUtil;
 
 // TODO: we now pulse entirely according to docFreq of the
 // term; it might be better to eg pulse by "net bytes used"
@@ -44,67 +43,21 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   final static int VERSION_CURRENT = VERSION_START;
 
-  IndexOutput termsOut;
+  private IndexOutput termsOut;
 
-  boolean omitTF;
-  boolean storePayloads;
+  private boolean omitTF;
+  private boolean storePayloads;
 
-  // Starts a new term
-  FieldInfo fieldInfo;
+  // one entry per position
+  private final Position[] pending;
+  private int pendingCount = 0;                           // -1 once we've hit too many positions
+  private Position currentDoc;                    // first Position entry of current doc
 
-  /** @lucene.experimental */
-  public static class Document {
-    int docID;
-    int termDocFreq;
-    int numPositions;
-    Position[] positions;
-    Document() {
-      positions = new Position[1];
-      positions[0] = new Position();
-    }
-    
-    @Override
-    public Object clone() {
-      Document doc = new Document();
-      doc.docID = docID;
-      doc.termDocFreq = termDocFreq;
-      doc.numPositions = numPositions;
-      doc.positions = new Position[positions.length];
-      for(int i = 0; i < positions.length; i++) {
-        doc.positions[i] = (Position) positions[i].clone();
-      }
-
-      return doc;
-    }
-
-    void reallocPositions(int minSize) {
-      final Position[] newArray = new Position[ArrayUtil.oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      System.arraycopy(positions, 0, newArray, 0, positions.length);
-      for(int i=positions.length;i<newArray.length;i++) {
-        newArray[i] = new Position();
-      }
-      positions = newArray;
-    }
-  }
-
-  final Document[] pendingDocs;
-  int pendingDocCount = 0;
-  Document currentDoc;
-  boolean pulsed;                                 // false if we've seen > maxPulsingDocFreq docs
-
-  static class Position {
+  private static final class Position {
     BytesRef payload;
+    int termFreq;                                 // only incremented on first position for a given doc
     int pos;
-    
-    @Override
-    public Object clone() {
-      Position position = new Position();
-      position.pos = pos;
-      if (payload != null) {
-        position.payload = new BytesRef(payload);
-      }
-      return position;
-    }
+    int docID;
   }
 
   // TODO: -- lazy init this?  ie, if every single term
@@ -112,18 +65,19 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   // Fallback writer for non-pulsed terms:
   final PostingsWriterBase wrappedPostingsWriter;
 
-  /** If docFreq <= maxPulsingDocFreq, its postings are
+  /** If the total number of positions (summed across all docs
+   *  for this term) is <= maxPositions, then the postings are
    *  inlined into terms dict */
-  public PulsingPostingsWriterImpl(int maxPulsingDocFreq, PostingsWriterBase wrappedPostingsWriter) throws IOException {
+  public PulsingPostingsWriterImpl(int maxPositions, PostingsWriterBase wrappedPostingsWriter) throws IOException {
     super();
 
-    pendingDocs = new Document[maxPulsingDocFreq];
-    for(int i=0;i<maxPulsingDocFreq;i++) {
-      pendingDocs[i] = new Document();
+    pending = new Position[maxPositions];
+    for(int i=0;i<maxPositions;i++) {
+      pending[i] = new Position();
     }
 
     // We simply wrap another postings writer, but only call
-    // on it when doc freq is higher than our cutoff
+    // on it when tot positions is >= the cutoff:
     this.wrappedPostingsWriter = wrappedPostingsWriter;
   }
 
@@ -131,14 +85,13 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   public void start(IndexOutput termsOut) throws IOException {
     this.termsOut = termsOut;
     CodecUtil.writeHeader(termsOut, CODEC, VERSION_CURRENT);
-    termsOut.writeVInt(pendingDocs.length);
     wrappedPostingsWriter.start(termsOut);
   }
 
   @Override
   public void startTerm() {
-    assert pendingDocCount == 0;
-    pulsed = false;
+    //System.out.println("PW   startTerm");
+    assert pendingCount == 0;
   }
 
   // TODO: -- should we NOT reuse across fields?  would
@@ -148,73 +101,56 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public void setField(FieldInfo fieldInfo) {
-    this.fieldInfo = fieldInfo;
     omitTF = fieldInfo.omitTermFreqAndPositions;
+    //System.out.println("PW field=" + fieldInfo.name + " omitTF=" + omitTF);
     storePayloads = fieldInfo.storePayloads;
     wrappedPostingsWriter.setField(fieldInfo);
   }
 
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-
     assert docID >= 0: "got docID=" + docID;
-        
-    if (!pulsed && pendingDocCount == pendingDocs.length) {
-      
-      // OK we just crossed the threshold, this term should
-      // now be written with our wrapped codec:
-      wrappedPostingsWriter.startTerm();
-      
-      // Flush all buffered docs
-      for(int i=0;i<pendingDocCount;i++) {
-        final Document doc = pendingDocs[i];
+    //System.out.println("PW     doc=" + docID);
 
-        wrappedPostingsWriter.startDoc(doc.docID, doc.termDocFreq);
-
-        if (!omitTF) {
-          assert doc.termDocFreq == doc.numPositions;
-          for(int j=0;j<doc.termDocFreq;j++) {
-            final Position pos = doc.positions[j];
-            if (pos.payload != null && pos.payload.length > 0) {
-              assert storePayloads;
-              wrappedPostingsWriter.addPosition(pos.pos, pos.payload);
-            } else {
-              wrappedPostingsWriter.addPosition(pos.pos, null);
-            }
-          }
-          wrappedPostingsWriter.finishDoc();
-        }
-      }
-
-      pendingDocCount = 0;
-
-      pulsed = true;
+    if (pendingCount == pending.length) {
+      push();
+      //System.out.println("PW: wrapped.finishDoc");
+      wrappedPostingsWriter.finishDoc();
     }
 
-    if (pulsed) {
+    if (pendingCount != -1) {
+      assert pendingCount < pending.length;
+      currentDoc = pending[pendingCount];
+      currentDoc.docID = docID;
+      if (omitTF) {
+        pendingCount++;
+      } else {
+        currentDoc.termFreq = termDocFreq;
+      }
+    } else {
       // We've already seen too many docs for this term --
       // just forward to our fallback writer
       wrappedPostingsWriter.startDoc(docID, termDocFreq);
-    } else {
-      currentDoc = pendingDocs[pendingDocCount++];
-      currentDoc.docID = docID;
-      // TODO: -- need not store in doc?  only used for alloc & assert
-      currentDoc.termDocFreq = termDocFreq;
-      if (termDocFreq > currentDoc.positions.length) {
-        currentDoc.reallocPositions(termDocFreq);
-      }
-      currentDoc.numPositions = 0;
     }
   }
 
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
-    if (pulsed) {
+
+    //System.out.println("PW       pos=" + position + " payload=" + (payload == null ? "null" : payload.length + " bytes"));
+    if (pendingCount == pending.length) {
+      push();
+    }
+
+    if (pendingCount == -1) {
+      // We've already seen too many docs for this term --
+      // just forward to our fallback writer
       wrappedPostingsWriter.addPosition(position, payload);
     } else {
-      // just buffer up
-      Position pos = currentDoc.positions[currentDoc.numPositions++];
+      // buffer up
+      final Position pos = pending[pendingCount++];
       pos.pos = position;
+      pos.docID = currentDoc.docID;
       if (payload != null && payload.length > 0) {
         if (pos.payload == null) {
           pos.payload = new BytesRef(payload);
@@ -229,86 +165,141 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   @Override
   public void finishDoc() throws IOException {
-    assert omitTF || currentDoc.numPositions == currentDoc.termDocFreq;
-    if (pulsed) {
+    //System.out.println("PW     finishDoc");
+    if (pendingCount == -1) {
       wrappedPostingsWriter.finishDoc();
     }
   }
 
-  boolean pendingIsIndexTerm;
+  private boolean pendingIsIndexTerm;
 
-  int pulsedCount;
-  int nonPulsedCount;
+  private final RAMOutputStream buffer = new RAMOutputStream();
 
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(int docCount, boolean isIndexTerm) throws IOException {
+    //System.out.println("PW   finishTerm docCount=" + docCount);
 
-    assert docCount > 0;
+    assert pendingCount > 0 || pendingCount == -1;
 
     pendingIsIndexTerm |= isIndexTerm;
 
-    if (pulsed) {
+    if (pendingCount == -1) {
+      termsOut.writeByte((byte) 0);
       wrappedPostingsWriter.finishTerm(docCount, pendingIsIndexTerm);
       pendingIsIndexTerm = false;
-      pulsedCount++;
     } else {
-      nonPulsedCount++;
-      // OK, there were few enough occurrences for this
+
+      // There were few enough total occurrences for this
       // term, so we fully inline our postings data into
       // terms dict, now:
-      int lastDocID = 0;
-      for(int i=0;i<pendingDocCount;i++) {
-        final Document doc = pendingDocs[i];
-        final int delta = doc.docID - lastDocID;
-        lastDocID = doc.docID;
-        if (omitTF) {
-          termsOut.writeVInt(delta);
-        } else {
-          assert doc.numPositions == doc.termDocFreq;
-          if (doc.numPositions == 1)
-            termsOut.writeVInt((delta<<1)|1);
-          else {
-            termsOut.writeVInt(delta<<1);
-            termsOut.writeVInt(doc.numPositions);
+
+      termsOut.writeByte((byte) 1);
+
+      // TODO: it'd be better to share this encoding logic
+      // in some inner codec that knows how to write a
+      // single doc / single position, etc.  This way if a
+      // given codec wants to store other interesting
+      // stuff, it could use this pulsing codec to do so
+
+      if (!omitTF) {
+        int lastDocID = 0;
+        int pendingIDX = 0;
+        while(pendingIDX < pendingCount) {
+          final Position doc = pending[pendingIDX];
+
+          final int delta = doc.docID - lastDocID;
+          lastDocID = doc.docID;
+
+          //System.out.println("  write doc=" + doc.docID + " freq=" + doc.termFreq);
+
+          if (doc.termFreq == 1) {
+            buffer.writeVInt((delta<<1)|1);
+          } else {
+            buffer.writeVInt(delta<<1);
+            buffer.writeVInt(doc.termFreq);
           }
 
-          // TODO: we could do better in encoding
-          // payloadLength, eg, if it's always the same
-          // across all terms
-          int lastPosition = 0;
+          int lastPos = 0;
           int lastPayloadLength = -1;
-
-          for(int j=0;j<doc.numPositions;j++) {
-            final Position pos = doc.positions[j];
-            final int delta2 = pos.pos - lastPosition;
-            lastPosition = pos.pos;
+          for(int posIDX=0;posIDX<doc.termFreq;posIDX++) {
+            final Position pos = pending[pendingIDX++];
+            assert pos.docID == doc.docID;
+            final int posDelta = pos.pos - lastPos;
+            lastPos = pos.pos;
+            //System.out.println("    write pos=" + pos.pos);
             if (storePayloads) {
               final int payloadLength = pos.payload == null ? 0 : pos.payload.length;
               if (payloadLength != lastPayloadLength) {
-                termsOut.writeVInt((delta2 << 1)|1);
-                termsOut.writeVInt(payloadLength);
+                buffer.writeVInt((posDelta << 1)|1);
+                buffer.writeVInt(payloadLength);
                 lastPayloadLength = payloadLength;
               } else {
-                termsOut.writeVInt(delta2 << 1);
+                buffer.writeVInt(posDelta << 1);
               }
-
               if (payloadLength > 0) {
-                termsOut.writeBytes(pos.payload.bytes, 0, pos.payload.length);
+                buffer.writeBytes(pos.payload.bytes, 0, pos.payload.length);
               }
             } else {
-              termsOut.writeVInt(delta2);
+              buffer.writeVInt(posDelta);
             }
           }
         }
+      } else {
+        int lastDocID = 0;
+        for(int posIDX=0;posIDX<pendingCount;posIDX++) {
+          final Position doc = pending[posIDX];
+          buffer.writeVInt(doc.docID - lastDocID);
+          lastDocID = doc.docID;
+        }
       }
+      
+      //System.out.println("  bytes=" + buffer.getFilePointer());
+      termsOut.writeVInt((int) buffer.getFilePointer());
+      buffer.writeTo(termsOut);
+      buffer.reset();
     }
 
-    pendingDocCount = 0;
+    pendingCount = 0;
   }
 
   @Override
   public void close() throws IOException {
     wrappedPostingsWriter.close();
+  }
+
+  // Pushes pending positions to the wrapped codec
+  private void push() throws IOException {
+    //System.out.println("PW now push @ " + pendingCount + " wrapped=" + wrappedPostingsWriter);
+    assert pendingCount == pending.length;
+      
+    wrappedPostingsWriter.startTerm();
+      
+    // Flush all buffered docs
+    if (!omitTF) {
+      Position doc = null;
+      for(Position pos : pending) {
+        if (doc == null) {
+          doc = pos;
+          //System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
+          wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
+        } else if (doc.docID != pos.docID) {
+          assert pos.docID > doc.docID;
+          //System.out.println("PW: wrapped.finishDoc");
+          wrappedPostingsWriter.finishDoc();
+          doc = pos;
+          //System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
+          wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
+        }
+        //System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
+        wrappedPostingsWriter.addPosition(pos.pos, pos.payload);
+      }
+      //wrappedPostingsWriter.finishDoc();
+    } else {
+      for(Position doc : pending) {
+        wrappedPostingsWriter.startDoc(doc.docID, 0);
+      }
+    }
+    pendingCount = -1;
   }
 }

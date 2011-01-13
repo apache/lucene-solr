@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -87,7 +88,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterB() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (IndexReader reader) {
+      public DocIdSet getDocIdSet (AtomicReaderContext context) {
         BitSet bitset = new BitSet(5);
         bitset.set (1);
         bitset.set (3);
@@ -158,7 +159,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private static Filter newStaticFilterA() {
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet (IndexReader reader) {
+      public DocIdSet getDocIdSet (AtomicReaderContext context) {
         BitSet bitset = new BitSet(5);
         bitset.set(0, 5);
         return new DocIdBitSet(bitset);
@@ -216,7 +217,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     bq.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(random, query,searcher);    
+    QueryUtils.check(random, query, searcher);    
   }
 }
 

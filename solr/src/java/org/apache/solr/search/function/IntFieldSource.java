@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.search.MutableValueInt;
 import org.apache.solr.search.MutableValue;
@@ -45,8 +46,8 @@ public class IntFieldSource extends NumericFieldCacheSource<IntValues> {
   }
 
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final IntValues vals = cache.getInts(reader, field, creator);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final IntValues vals = cache.getInts(readerContext.reader, field, creator);
     final int[] arr = vals.values;
 	final Bits valid = vals.valid;
     

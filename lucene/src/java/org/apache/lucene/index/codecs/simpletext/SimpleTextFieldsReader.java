@@ -21,6 +21,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -130,9 +131,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
 
-      fstEnum.reset();
       //System.out.println("seek to text=" + text.utf8ToString());
-      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,Long>> result = fstEnum.advance(text);
+      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,Long>> result = fstEnum.seekCeil(text);
       if (result == null) {
         //System.out.println("  end");
         return SeekStatus.END;
@@ -150,10 +150,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
           return SeekStatus.NOT_FOUND;
         }
       }
-    }
-
-    @Override
-    public void cacheCurrentTerm() {
     }
 
     @Override
@@ -215,7 +211,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } 
       return docsAndPositionsEnum.reset(docsStart, skipDocs);
     }
-
+    
     @Override
     public Comparator<BytesRef> getComparator() {
       return BytesRef.getUTF8SortedAsUnicodeComparator();
@@ -440,7 +436,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   private class SimpleTextTerms extends Terms {
-    private final String field;
     private final long termsStart;
     private final boolean omitTF;
     private FST<PairOutputs.Pair<Long,Long>> fst;
@@ -448,7 +443,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final BytesRef scratch = new BytesRef(10);
 
     public SimpleTextTerms(String field, long termsStart) throws IOException {
-      this.field = StringHelper.intern(field);
       this.termsStart = termsStart;
       omitTF = fieldInfos.fieldInfo(field).omitTermFreqAndPositions;
       loadTerms();

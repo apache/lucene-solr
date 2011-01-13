@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
@@ -50,7 +51,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   private static final int N_DOCS = 3000;
   private static final int N_THREADS = 50;
 
-  private Searcher searcher;
+  private IndexSearcher searcher;
   private Directory directory;
   private IndexReader reader;
 
@@ -339,8 +340,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     }
     
     @Override
-    public void setNextReader(IndexReader reader, int base) {
-      docBase = base;
+    public void setNextReader(AtomicReaderContext context) {
+      docBase = context.docBase;
     }
     
     @Override

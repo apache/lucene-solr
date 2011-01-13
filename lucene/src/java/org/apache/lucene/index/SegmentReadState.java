@@ -33,7 +33,7 @@ public class SegmentReadState {
   // terms index on init (preflex is the only once currently
   // that must do so), then it should negate this value to
   // get the app's terms divisor:
-  public final int termsIndexDivisor;
+  public int termsIndexDivisor;
   public final String codecId;
 
   public SegmentReadState(Directory dir, SegmentInfo info,

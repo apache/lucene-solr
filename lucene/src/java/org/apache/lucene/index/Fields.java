@@ -28,7 +28,7 @@ public abstract class Fields {
    *  names.  This will not return null.  */
   public abstract FieldsEnum iterator() throws IOException;
 
-  /** Get the {@link Terms} for this field.  This may return
+  /** Get the {@link Terms} for this field.  This will return
    *  null if the field does not exist. */
   public abstract Terms terms(String field) throws IOException;
 

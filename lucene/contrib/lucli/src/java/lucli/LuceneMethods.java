@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Fields;
@@ -53,11 +54,10 @@ import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.BytesRef;
@@ -73,7 +73,7 @@ class LuceneMethods {
   private List<String> fields; //Fields as a vector
   private List<String> indexedFields; //Fields as a vector
   private String fieldsArray[]; //Fields as an array
-  private Searcher searcher;
+  private IndexSearcher searcher;
   private Query query; //current query string
   private String analyzerClassFQN = null; // Analyzer class, if NULL, use default Analyzer
 
@@ -233,7 +233,7 @@ class LuceneMethods {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {}
+    public void setNextReader(AtomicReaderContext context) {}
     @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;

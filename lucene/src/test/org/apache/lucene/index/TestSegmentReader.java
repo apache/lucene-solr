@@ -27,7 +27,6 @@ import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
 public class TestSegmentReader extends LuceneTestCase {
@@ -180,15 +179,9 @@ public class TestSegmentReader extends LuceneTestCase {
         assertEquals(reader.hasNorms(f.name()), !f.getOmitNorms());
         assertEquals(reader.hasNorms(f.name()), !DocHelper.noNorms.containsKey(f.name()));
         if (!reader.hasNorms(f.name())) {
-          // test for fake norms of 1.0 or null depending on the flag
-          byte [] norms = reader.norms(f.name());
-          byte norm1 = Similarity.getDefault().encodeNormValue(1.0f);
+          // test for norms of null
+          byte [] norms = MultiNorms.norms(reader, f.name());
           assertNull(norms);
-          norms = new byte[reader.maxDoc()];
-          reader.norms(f.name(),norms, 0);
-          for (int j=0; j<reader.maxDoc(); j++) {
-            assertEquals(norms[j], norm1);
-          }
         }
       }
     }

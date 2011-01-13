@@ -42,8 +42,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      // diable length norm
+      return state.getBoost();
     }
   }
 
@@ -202,11 +203,11 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader4C = (IndexReader) reader3C.clone();
     SegmentReader segmentReader4C = getOnlySegmentReader(reader4C);
     assertEquals(4, reader3CCNorm.bytesRef().get());
-    reader4C.setNorm(5, "field1", 0.33f);
+    reader4C.setNorm(5, "field1", Similarity.getDefault().encodeNormValue(0.33f));
     
     // generate a cannot update exception in reader1
     try {
-      reader3C.setNorm(1, "field1", 0.99f);
+      reader3C.setNorm(1, "field1", Similarity.getDefault().encodeNormValue(0.99f));
       fail("did not hit expected exception");
     } catch (Exception ex) {
       // expected
@@ -222,7 +223,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader5C = (IndexReader) reader4C.clone();
     SegmentReader segmentReader5C = getOnlySegmentReader(reader5C);
     Norm reader5CCNorm = segmentReader5C.norms.get("field1");
-    reader5C.setNorm(5, "field1", 0.7f);
+    reader5C.setNorm(5, "field1", Similarity.getDefault().encodeNormValue(0.7f));
     assertEquals(1, reader5CCNorm.bytesRef().get());
 
     reader5C.close();
@@ -255,8 +256,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       // System.out.println(" and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));
       modifiedNorms.set(k, Float.valueOf(origNorm));
-      ir.setNorm(i, "f" + 1, newNorm);
-      ir.setNorm(k, "f" + 1, origNorm);
+      ir.setNorm(i, "f" + 1, Similarity.getDefault().encodeNormValue(newNorm));
+      ir.setNorm(k, "f" + 1, Similarity.getDefault().encodeNormValue(origNorm));
       // System.out.println("setNorm i: "+i);
       // break;
     }
@@ -272,7 +273,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private void verifyIndex(IndexReader ir) throws IOException {
     for (int i = 0; i < NUM_FIELDS; i++) {
       String field = "f" + i;
-      byte b[] = ir.norms(field);
+      byte b[] = MultiNorms.norms(ir, field);
       assertEquals("number of norms mismatches", numDocNorms, b.length);
       ArrayList<Float> storedNorms = (i == 1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {

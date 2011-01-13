@@ -42,14 +42,12 @@ class BooleanScorer2 extends Scorer {
     int maxCoord = 0; // to be increased for each non prohibited scorer
     int nrMatchers; // to be increased by score() of match counting scorers.
     
-    void init() { // use after all scorers have been added.
+    void init(Similarity sim, boolean disableCoord) { // use after all scorers have been added.
       coordFactors = new float[optionalScorers.size() + requiredScorers.size() + 1];
-      Similarity sim = getSimilarity();
       for (int i = 0; i < coordFactors.length; i++) {
-        coordFactors[i] = sim.coord(i, maxCoord);
+        coordFactors[i] = disableCoord ? 1.0f : sim.coord(i, maxCoord);
       }
     }
-    
   }
 
   private final Coordinator coordinator;
@@ -82,9 +80,9 @@ class BooleanScorer2 extends Scorer {
    * @param optional
    *          the list of optional scorers.
    */
-  public BooleanScorer2(Weight weight, Similarity similarity, int minNrShouldMatch,
+  public BooleanScorer2(Weight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
       List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional, int maxCoord) throws IOException {
-    super(similarity, weight);
+    super(null, weight);   // Similarity not used
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
     }
@@ -96,8 +94,8 @@ class BooleanScorer2 extends Scorer {
     requiredScorers = required;    
     prohibitedScorers = prohibited;
     
-    coordinator.init();
-    countingSumScorer = makeCountingSumScorer();
+    coordinator.init(similarity, disableCoord);
+    countingSumScorer = makeCountingSumScorer(disableCoord, similarity);
   }
   
   /** Count a scorer as a single match. */
@@ -109,7 +107,7 @@ class BooleanScorer2 extends Scorer {
     private float lastDocScore = Float.NaN;
 
     SingleMatchScorer(Scorer scorer) {
-      super(scorer.getSimilarity());
+      super(null); // No similarity used.
       this.scorer = scorer;
     }
 
@@ -164,12 +162,12 @@ class BooleanScorer2 extends Scorer {
     };
   }
 
-  private static final Similarity defaultSimilarity = Similarity.getDefault();
-
-  private Scorer countingConjunctionSumScorer(List<Scorer> requiredScorers) throws IOException {
+  private Scorer countingConjunctionSumScorer(boolean disableCoord,
+                                              Similarity similarity,
+                                              List<Scorer> requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
-    return new ConjunctionScorer(defaultSimilarity, requiredScorers) {
+    return new ConjunctionScorer(disableCoord ? 1.0f : similarity.coord(requiredScorers.size(), requiredScorers.size()), requiredScorers) {
       private int lastScoredDoc = -1;
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
@@ -192,8 +190,10 @@ class BooleanScorer2 extends Scorer {
     };
   }
 
-  private Scorer dualConjunctionSumScorer(Scorer req1, Scorer req2) throws IOException { // non counting.
-    return new ConjunctionScorer(defaultSimilarity, req1, req2);
+  private Scorer dualConjunctionSumScorer(boolean disableCoord,
+                                          Similarity similarity,
+                                          Scorer req1, Scorer req2) throws IOException { // non counting.
+    return new ConjunctionScorer(disableCoord ? 1.0f : similarity.coord(2, 2), req1, req2);
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers
@@ -203,13 +203,14 @@ class BooleanScorer2 extends Scorer {
   /** Returns the scorer to be used for match counting and score summing.
    * Uses requiredScorers, optionalScorers and prohibitedScorers.
    */
-  private Scorer makeCountingSumScorer() throws IOException { // each scorer counted as a single matcher
+  private Scorer makeCountingSumScorer(boolean disableCoord,
+                                       Similarity similarity) throws IOException { // each scorer counted as a single matcher
     return (requiredScorers.size() == 0)
-          ? makeCountingSumScorerNoReq()
-          : makeCountingSumScorerSomeReq();
+      ? makeCountingSumScorerNoReq(disableCoord, similarity)
+      : makeCountingSumScorerSomeReq(disableCoord, similarity);
   }
 
-  private Scorer makeCountingSumScorerNoReq() throws IOException { // No required scorers
+  private Scorer makeCountingSumScorerNoReq(boolean disableCoord, Similarity similarity) throws IOException { // No required scorers
     // minNrShouldMatch optional scorers are required, but at least 1
     int nrOptRequired = (minNrShouldMatch < 1) ? 1 : minNrShouldMatch;
     Scorer requiredCountingSumScorer;
@@ -217,24 +218,27 @@ class BooleanScorer2 extends Scorer {
       requiredCountingSumScorer = countingDisjunctionSumScorer(optionalScorers, nrOptRequired);
     else if (optionalScorers.size() == 1)
       requiredCountingSumScorer = new SingleMatchScorer(optionalScorers.get(0));
-    else
-      requiredCountingSumScorer = countingConjunctionSumScorer(optionalScorers);
+    else {
+      requiredCountingSumScorer = countingConjunctionSumScorer(disableCoord, similarity, optionalScorers);
+    }
     return addProhibitedScorers(requiredCountingSumScorer);
   }
 
-  private Scorer makeCountingSumScorerSomeReq() throws IOException { // At least one required scorer.
+  private Scorer makeCountingSumScorerSomeReq(boolean disableCoord, Similarity similarity) throws IOException { // At least one required scorer.
     if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.
       ArrayList<Scorer> allReq = new ArrayList<Scorer>(requiredScorers);
       allReq.addAll(optionalScorers);
-      return addProhibitedScorers(countingConjunctionSumScorer(allReq));
+      return addProhibitedScorers(countingConjunctionSumScorer(disableCoord, similarity, allReq));
     } else { // optionalScorers.size() > minNrShouldMatch, and at least one required scorer
       Scorer requiredCountingSumScorer =
             requiredScorers.size() == 1
             ? new SingleMatchScorer(requiredScorers.get(0))
-            : countingConjunctionSumScorer(requiredScorers);
+            : countingConjunctionSumScorer(disableCoord, similarity, requiredScorers);
       if (minNrShouldMatch > 0) { // use a required disjunction scorer over the optional scorers
         return addProhibitedScorers( 
                       dualConjunctionSumScorer( // non counting
+                              disableCoord,
+                              similarity,
                               requiredCountingSumScorer,
                               countingDisjunctionSumScorer(
                                       optionalScorers,
@@ -276,7 +280,7 @@ class BooleanScorer2 extends Scorer {
   }
   
   @Override
-  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     doc = firstDocID;
     collector.setScorer(this);
     while (doc < max) {

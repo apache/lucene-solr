@@ -270,6 +270,7 @@
              includeAntRuntime="${javac.includeAntRuntime}"
              sourcepath=""
              classpathref="@{classpathref}">
+         <compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
          <nested />
       </javac>
     </sequential>

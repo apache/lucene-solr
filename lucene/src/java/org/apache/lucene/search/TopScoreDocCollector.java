@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 /**
  * A {@link Collector} implementation that collects the top-scoring hits,
@@ -155,8 +155,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
   
   @Override
-  public void setNextReader(IndexReader reader, int base) {
-    docBase = base;
+  public void setNextReader(AtomicReaderContext context) {
+    docBase = context.docBase;
   }
   
   @Override

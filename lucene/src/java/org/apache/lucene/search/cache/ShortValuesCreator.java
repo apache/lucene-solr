@@ -75,7 +75,7 @@ public class ShortValuesCreator extends CachedArrayCreator<ShortValues>
   }
 
   @Override
-  public ShortValues validate(ShortValues entry, IndexReader reader) throws IOException {
+  public synchronized ShortValues validate(ShortValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
     
     if( hasOption(OPTION_CACHE_VALUES) ) {

@@ -19,8 +19,9 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Weight.ScorerContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
 
@@ -68,7 +69,7 @@ public class ValueSourceQuery extends Query {
     float queryNorm;
     float queryWeight;
 
-    public ValueSourceWeight(Searcher searcher) {
+    public ValueSourceWeight(IndexSearcher searcher) {
       this.similarity = getSimilarity(searcher);
     }
 
@@ -99,14 +100,14 @@ public class ValueSourceQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new ValueSourceScorer(similarity, reader, this);
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      return new ValueSourceScorer(similarity, context, this);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      DocValues vals = valSrc.getValues(reader);
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      DocValues vals = valSrc.getValues(context);
       float sc = queryWeight * vals.floatVal(doc);
 
       Explanation result = new ComplexExplanation(
@@ -133,12 +134,13 @@ public class ValueSourceQuery extends Query {
     private int doc = -1;
 
     // constructor
-    private ValueSourceScorer(Similarity similarity, IndexReader reader, ValueSourceWeight w) throws IOException {
+    private ValueSourceScorer(Similarity similarity, AtomicReaderContext context, ValueSourceWeight w) throws IOException {
       super(similarity,w);
+      final IndexReader reader = context.reader;
       qWeight = w.getValue();
       // this is when/where the values are first created.
-      vals = valSrc.getValues(reader);
-      delDocs = MultiFields.getDeletedDocs(reader);
+      vals = valSrc.getValues(context);
+      delDocs = reader.getDeletedDocs();
       maxDoc = reader.maxDoc();
     }
 
@@ -173,7 +175,7 @@ public class ValueSourceQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) {
+  public Weight createWeight(IndexSearcher searcher) {
     return new ValueSourceQuery.ValueSourceWeight(searcher);
   }
 

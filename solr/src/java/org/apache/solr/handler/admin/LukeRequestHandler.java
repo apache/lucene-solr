@@ -97,7 +97,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   {    
     IndexSchema schema = req.getSchema();
     SolrIndexSearcher searcher = req.getSearcher();
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     SolrParams params = req.getParams();
     int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
         
@@ -285,7 +285,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms ) 
     throws Exception {
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     IndexSchema schema = searcher.getSchema();
     
     // Walk the term enum and keep a priority queue for each map in our set

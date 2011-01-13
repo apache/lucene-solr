@@ -18,7 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Weight.ScorerContext;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
@@ -44,8 +47,8 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new QueryDocValues(reader, q, defVal, context==null ? null : (Weight)context.get(this));
+  public DocValues getValues(Map fcontext, AtomicReaderContext readerContext) throws IOException {
+    return new QueryDocValues(readerContext, q, defVal, fcontext);
   }
 
   public int hashCode() {
@@ -59,7 +62,7 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     Weight w = q.weight(searcher);
     context.put(this, w);
   }
@@ -68,9 +71,11 @@ public class QueryValueSource extends ValueSource {
 
 class QueryDocValues extends DocValues {
   final Query q;
-  final IndexReader reader;
+//  final IndexReader reader;
+  final AtomicReaderContext readerContext;
   final Weight weight;
   final float defVal;
+  final Map fcontext;
 
   Scorer scorer;
   int scorerDoc; // the document the scorer is on
@@ -78,19 +83,36 @@ class QueryDocValues extends DocValues {
   // the last document requested... start off with high value
   // to trigger a scorer reset on first access.
   int lastDocRequested=Integer.MAX_VALUE;
+  
 
-  public QueryDocValues(IndexReader reader, Query q, float defVal, Weight w) throws IOException {
-    this.reader = reader;
+  public QueryDocValues(AtomicReaderContext readerContext, Query q, float defVal, Map fcontext) throws IOException {
+    IndexReader reader = readerContext.reader;
+    this.readerContext = readerContext;
     this.q = q;
     this.defVal = defVal;
-    weight = w!=null ? w : q.weight(new IndexSearcher(reader));
+    this.fcontext = fcontext;
+
+    Weight w = fcontext==null ? null : (Weight)fcontext.get(q);
+    // TODO: sort by function doesn't weight (SOLR-1297 is open because of this bug)... so weightSearcher will currently be null
+    if (w == null) {
+      IndexSearcher weightSearcher;
+      if(fcontext == null) {
+        weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext), readerContext);
+      } else {
+        weightSearcher = (IndexSearcher)fcontext.get("searcher");
+        if (weightSearcher == null) {
+          weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext), readerContext);
+        }
+      }
+      w = q.weight(weightSearcher);
+    }
+    weight = w;
   }
 
   public float floatVal(int doc) {
     try {
       if (doc < lastDocRequested) {
-        // out-of-order access.... reset scorer.
-        scorer = weight.scorer(reader, true, false);
+        scorer = weight.scorer(readerContext, ScorerContext.def());
         if (scorer==null) return defVal;
         scorerDoc = -1;
       }

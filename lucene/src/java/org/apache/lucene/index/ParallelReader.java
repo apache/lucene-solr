@@ -53,7 +53,8 @@ public class ParallelReader extends IndexReader {
   private SortedMap<String,IndexReader> fieldToReader = new TreeMap<String,IndexReader>();
   private Map<IndexReader,Collection<String>> readerToFields = new HashMap<IndexReader,Collection<String>>();
   private List<IndexReader> storedFieldReaders = new ArrayList<IndexReader>();
-
+  private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
+  private final ReaderContext topLevelReaderContext = new AtomicReaderContext(this);
   private int maxDoc;
   private int numDocs;
   private boolean hasDeletions;
@@ -88,7 +89,7 @@ public class ParallelReader extends IndexReader {
     buffer.append(')');
     return buffer.toString();
   }
-
+  
  /** Add an IndexReader.
   * @throws IOException if there is a low-level IO error
   */
@@ -141,6 +142,9 @@ public class ParallelReader extends IndexReader {
       reader.incRef();
     }
     decrefOnClose.add(Boolean.valueOf(incRefReaders));
+    synchronized(normsCache) {
+      normsCache.clear(); // TODO: don't need to clear this for all fields really?
+    }
   }
 
   private class ParallelFieldsEnum extends FieldsEnum {
@@ -278,6 +282,7 @@ public class ParallelReader extends IndexReader {
 
     if (reopened) {
       List<Boolean> newDecrefOnClose = new ArrayList<Boolean>();
+      // TODO: maybe add a special reopen-ctor for norm-copying?
       ParallelReader pr = new ParallelReader();
       for (int i = 0; i < readers.size(); i++) {
         IndexReader oldReader = readers.get(i);
@@ -419,27 +424,36 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
-  public byte[] norms(String field) throws IOException {
+  public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     IndexReader reader = fieldToReader.get(field);
-    return reader==null ? null : reader.norms(field);
-  }
 
-  @Override
-  public void norms(String field, byte[] result, int offset)
-    throws IOException {
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(field);
-    if (reader!=null)
-      reader.norms(field, result, offset);
+    if (reader==null)
+      return null;
+    
+    byte[] bytes = normsCache.get(field);
+    if (bytes != null)
+      return bytes;
+    if (!hasNorms(field))
+      return null;
+    if (normsCache.containsKey(field)) // cached omitNorms, not missing key
+      return null;
+
+    bytes = MultiNorms.norms(reader, field);
+    normsCache.put(field, bytes);
+    return bytes;
   }
 
   @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     IndexReader reader = fieldToReader.get(field);
-    if (reader!=null)
+    if (reader!=null) {
+      synchronized(normsCache) {
+        normsCache.remove(field);
+      }
       reader.doSetNorm(n, field, value);
+    }
   }
 
   @Override
@@ -529,6 +543,11 @@ public class ParallelReader extends IndexReader {
     }
     return fieldSet;
   }
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return topLevelReaderContext;
+  }
+
 }
 
 

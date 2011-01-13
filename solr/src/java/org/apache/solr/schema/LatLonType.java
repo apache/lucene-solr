@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
@@ -27,7 +27,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
@@ -281,7 +280,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public Field createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 
@@ -334,16 +333,16 @@ class SpatialDistanceQuery extends Query {
   public void extractTerms(Set terms) {}
 
   protected class SpatialWeight extends Weight {
-    protected Searcher searcher;
+    protected IndexSearcher searcher;
     protected float queryNorm;
     protected float queryWeight;
     protected Map latContext;
     protected Map lonContext;
 
-    public SpatialWeight(Searcher searcher) throws IOException {
+    public SpatialWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
-      this.latContext = latSource.newContext();
-      this.lonContext = lonSource.newContext();
+      this.latContext = latSource.newContext(searcher);
+      this.lonContext = lonSource.newContext(searcher);
       latSource.createWeight(latContext, searcher);
       lonSource.createWeight(lonContext, searcher);
     }
@@ -371,18 +370,13 @@ class SpatialDistanceQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new SpatialScorer(getSimilarity(searcher), reader, this);
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      return new SpatialScorer(getSimilarity(searcher), context, this);
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      SolrIndexReader topReader = (SolrIndexReader)reader;
-      SolrIndexReader[] subReaders = topReader.getLeafReaders();
-      int[] offsets = topReader.getLeafOffsets();
-      int readerPos = SolrIndexReader.readerIndex(doc, offsets);
-      int readerBase = offsets[readerPos];
-      return ((SpatialScorer)scorer(subReaders[readerPos], true, true)).explain(doc-readerBase);
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      return ((SpatialScorer)scorer(context, ScorerContext.def().scoreDocsInOrder(true).topScorer(true))).explain(doc);
     }
   }
 
@@ -410,15 +404,15 @@ class SpatialDistanceQuery extends Query {
     int lastDistDoc;
     double lastDist;
 
-    public SpatialScorer(Similarity similarity, IndexReader reader, SpatialWeight w) throws IOException {
+    public SpatialScorer(Similarity similarity, AtomicReaderContext readerContext, SpatialWeight w) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
-      this.reader = reader;
+      this.reader = readerContext.reader;
       this.maxDoc = reader.maxDoc();
-      this.delDocs = reader.hasDeletions() ? MultiFields.getDeletedDocs(reader) : null;
-      latVals = latSource.getValues(weight.latContext, reader);
-      lonVals = lonSource.getValues(weight.lonContext, reader);
+      this.delDocs = reader.getDeletedDocs();
+      latVals = latSource.getValues(weight.latContext, readerContext);
+      lonVals = lonSource.getValues(weight.lonContext, readerContext);
 
       this.lonMin = SpatialDistanceQuery.this.lonMin;
       this.lonMax = SpatialDistanceQuery.this.lonMax;
@@ -535,7 +529,7 @@ class SpatialDistanceQuery extends Query {
 
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new SpatialWeight(searcher);
   }
 

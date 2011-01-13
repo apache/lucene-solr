@@ -21,7 +21,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -38,13 +40,13 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 public class TestSimilarity extends LuceneTestCase {
   
   public static class SimpleSimilarity extends Similarity {
-    @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
+    @Override public float computeNorm(String field, FieldInvertState state) { return state.getBoost(); }
     @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
     @Override public float coord(int overlap, int maxOverlap) { return 1.0f; }
-    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
       return new IDFExplanation() {
         @Override
         public float getIdf() {
@@ -75,7 +77,7 @@ public class TestSimilarity extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setSimilarity(new SimpleSimilarity());
 
     Term a = new Term("field", "a");
@@ -93,7 +95,7 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals(1.0f, scorer.score());
          }
          @Override
-        public void setNextReader(IndexReader reader, int docBase) {}
+        public void setNextReader(AtomicReaderContext context) {}
          @Override
         public boolean acceptsDocsOutOfOrder() {
            return true;
@@ -117,8 +119,8 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals((float)doc+base+1, scorer.score());
          }
          @Override
-        public void setNextReader(IndexReader reader, int docBase) {
-           base = docBase;
+        public void setNextReader(AtomicReaderContext context) {
+           base = context.docBase;
          }
          @Override
         public boolean acceptsDocsOutOfOrder() {
@@ -143,7 +145,7 @@ public class TestSimilarity extends LuceneTestCase {
            assertEquals(1.0f, scorer.score());
          }
          @Override
-         public void setNextReader(IndexReader reader, int docBase) {}
+         public void setNextReader(AtomicReaderContext context) {}
          @Override
          public boolean acceptsDocsOutOfOrder() {
            return true;
@@ -164,7 +166,7 @@ public class TestSimilarity extends LuceneTestCase {
         assertEquals(2.0f, scorer.score());
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {}
+      public void setNextReader(AtomicReaderContext context) {}
       @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;

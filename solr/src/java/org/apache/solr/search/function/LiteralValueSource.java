@@ -16,7 +16,7 @@ package org.apache.solr.search.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.util.Map;
 import java.io.IOException;
@@ -38,7 +38,7 @@ public class LiteralValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
     return new DocValues() {
       @Override

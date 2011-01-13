@@ -50,7 +50,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
    * @param nameValuePairs underlying List which should be used to implement a SimpleOrderedMap; modifying this List will affect the SimpleOrderedMap.
    */
   @Deprecated
-  public SimpleOrderedMap(List nameValuePairs) {
+  public SimpleOrderedMap(List<Object> nameValuePairs) {
     super(nameValuePairs);
   }
   
@@ -60,7 +60,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
 
   @Override
   public SimpleOrderedMap<T> clone() {
-    ArrayList newList = new ArrayList(nvPairs.size());
+    ArrayList<Object> newList = new ArrayList<Object>(nvPairs.size());
     newList.addAll(nvPairs);
     return new SimpleOrderedMap<T>(newList);
   }

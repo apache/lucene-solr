@@ -59,7 +59,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    Searcher searcher=new IndexSearcher(reader);
+    IndexSearcher searcher=new IndexSearcher(reader);
     num = 50 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       int lower=random.nextInt(Integer.MAX_VALUE);

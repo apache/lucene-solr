@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
@@ -90,6 +91,10 @@ public class TestIndicesEquals extends LuceneTestCase {
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
+    indexWriter.setInfoStream(VERBOSE ? System.out : null);
+    if (VERBOSE) {
+      System.out.println("TEST: make test index");
+    }
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -319,6 +324,9 @@ public class TestIndicesEquals extends LuceneTestCase {
 
   protected void testEquals(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
 
+    if (VERBOSE) {
+      System.out.println("TEST: testEquals");
+    }
     testTermDocsSomeMore(aprioriIndex, testIndex);
 
     IndexReader aprioriReader = IndexReader.open(aprioriIndex, false);
@@ -341,41 +349,12 @@ public class TestIndicesEquals extends LuceneTestCase {
 
       // test norms as used by normal use
 
-      byte[] aprioriNorms = aprioriReader.norms((String) field);
-      byte[] testNorms = testReader.norms((String) field);
+      byte[] aprioriNorms = MultiNorms.norms(aprioriReader, (String) field);
+      byte[] testNorms = MultiNorms.norms(testReader, (String) field);
 
       if (aprioriNorms != null) {
         assertEquals(aprioriNorms.length, testNorms.length);
 
-        for (int i = 0; i < aprioriNorms.length; i++) {
-          assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
-        }
-
-        // test norms as used by multireader
-
-        aprioriNorms = new byte[aprioriReader.maxDoc()];
-        aprioriReader.norms((String) field, aprioriNorms, 0);
-
-        testNorms = new byte[testReader.maxDoc()];
-        testReader.norms((String) field, testNorms, 0);
-
-        assertEquals(aprioriNorms.length, testNorms.length);
-
-        for (int i = 0; i < aprioriNorms.length; i++) {
-          assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
-        }
-
-
-        // test norms as used by multireader
-
-        aprioriNorms = new byte[aprioriReader.maxDoc() + 10];
-        aprioriReader.norms((String) field, aprioriNorms, 10);
-
-        testNorms = new byte[testReader.maxDoc() + 10];
-        testReader.norms((String) field, testNorms, 10);
-
-        assertEquals(aprioriNorms.length, testNorms.length);
-        
         for (int i = 0; i < aprioriNorms.length; i++) {
           assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
         }
@@ -400,6 +379,9 @@ public class TestIndicesEquals extends LuceneTestCase {
     String aprioriField;
     while((aprioriField = aprioriFieldsEnum.next()) != null) {
       String testField = testFieldsEnum.next();
+      if (VERBOSE) {
+        System.out.println("TEST: verify field=" + testField);
+      }
       assertEquals(aprioriField, testField);
 
       TermsEnum aprioriTermEnum = aprioriFieldsEnum.terms();
@@ -408,6 +390,9 @@ public class TestIndicesEquals extends LuceneTestCase {
       BytesRef aprioriText;
       while((aprioriText = aprioriTermEnum.next()) != null) {
         assertEquals(aprioriText, testTermEnum.next());
+        if (VERBOSE) {
+          System.out.println("TEST:   verify term=" + aprioriText.utf8ToString());
+        }
 
         assertTrue(aprioriTermEnum.docFreq() == testTermEnum.docFreq());
 
@@ -433,6 +418,10 @@ public class TestIndicesEquals extends LuceneTestCase {
             assertEquals(DocsEnum.NO_MORE_DOCS, testTermDocs.nextDoc());
             break;
           }
+          if (VERBOSE) {
+            System.out.println("TEST:     verify doc=" + aprioriTermDocs.docID());
+          }
+
           assertTrue(testTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 
           assertEquals(aprioriTermDocs.docID(), testTermDocs.docID());
@@ -444,18 +433,29 @@ public class TestIndicesEquals extends LuceneTestCase {
         DocsAndPositionsEnum aprioriTermPositions = aprioriTermEnum.docsAndPositions(MultiFields.getDeletedDocs(aprioriReader), null);
         DocsAndPositionsEnum testTermPositions = testTermEnum.docsAndPositions(MultiFields.getDeletedDocs(testReader), null);
 
+        if (VERBOSE) {
+          System.out.println("TEST: enum1=" + aprioriTermPositions + " enum2=" + testTermPositions);
+        }
         if (aprioriTermPositions != null) {
 
           for (int docIndex = 0; docIndex < aprioriReader.maxDoc(); docIndex++) {
             boolean hasNext = aprioriTermPositions.nextDoc() != DocsEnum.NO_MORE_DOCS;
             if (hasNext) {
               assertTrue(testTermPositions.nextDoc() != DocsEnum.NO_MORE_DOCS);
+
+              if (VERBOSE) {
+                System.out.println("TEST:     verify doc=" + aprioriTermPositions.docID());
+              }
               
               assertEquals(aprioriTermPositions.freq(), testTermPositions.freq());
 
               for (int termPositionIndex = 0; termPositionIndex < aprioriTermPositions.freq(); termPositionIndex++) {
                 int aprioriPos = aprioriTermPositions.nextPosition();
                 int testPos = testTermPositions.nextPosition();
+
+                if (VERBOSE) {
+                  System.out.println("TEST:       verify pos=" + aprioriPos);
+                }
 
                 assertEquals(aprioriPos, testPos);
 

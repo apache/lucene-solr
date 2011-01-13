@@ -119,6 +119,25 @@ Changes in backwards compatibility policy
   need to change it (e.g. using "\\" to escape '\' itself).  
   (Sunil Kamath, Terry Yang via Robert Muir)
 
+* LUCENE-2771: IndexReader.norms() now throws UOE on non-atomic IndexReaders. If
+  you really want a top-level norms, use MultiNorms or SlowMultiReaderWrapper.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-2837: Collapsed Searcher, Searchable into IndexSearcher;
+  removed contrib/remote and MultiSearcher (Mike McCandless); absorbed
+  ParallelMultiSearcher into IndexSearcher as an optional
+  ExecutorServiced passed to its ctor.  (Mike McCandless)
+
+* LUCENE-2831: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
+  operate on a AtomicReaderContext instead of directly on IndexReader to enable
+  searches to be aware of IndexSearcher's context. (Simon Willnauer)
+  
+* LUCENE-2839: Scorer#score(Collector,int,int) is now public because it is
+  called from other classes and part of public API. (Uwe Schindler)
+  
+* LUCENE-2865: Weight#scorer(AtomicReaderContext, boolean, boolean) now accepts
+  a ScorerContext struct instead of booleans.(Simon Willnauer)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit
@@ -135,6 +154,17 @@ Changes in Runtime Behavior
   the index instead of for every commit. Committing or closing the IndexWriter
   without any changes to the index will not cause any index version increment.
   (Simon Willnauer, Mike McCandless)
+
+* LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
+  omitNorms(true) for field "a" for 1000 documents, but then add a document with
+  omitNorms(false) for field "a", all documents for field "a" will have no norms.
+  Previously, Lucene would fill the first 1000 documents with "fake norms" from
+  Similarity.getDefault(). (Robert Muir, Mike Mccandless)
+
+* LUCENE-2846: When some documents contain field "a", and others do not, the
+  documents that don't have the field get a norm byte value of 0. Previously, Lucene
+  would populate "fake norms" with Similarity.getDefault() for these documents.
+  (Robert Muir, Mike Mccandless)
 
 API Changes
 
@@ -172,6 +202,18 @@ API Changes
 
 * LUCENE-2778: RAMDirectory now exposes newRAMFile() which allows to override
   and return a different RAMFile implementation. (Shai Erera)
+  
+* LUCENE-2831: Weight#scorer, Weight#explain, Filter#getDocIdSet,
+  Collector#setNextReader & FieldComparator#setNextReader now expect an
+  AtomicReaderContext instead of an IndexReader. (Simon Willnauer)
+
+* LUCENE-2846: Remove the deprecated IndexReader.setNorm(int, String, float).
+  This method was only syntactic sugar for setNorm(int, String, byte), but
+  using the global Similarity.getDefault().encodeNormValue.  Use the byte-based
+  method instead to ensure that the norm is encoded with your Similarity.
+  Also removed norms(String, byte[], int), which was only used by MultiReader
+  for building top-level norms. If you really need a top-level norms, use 
+  MultiNorms or SlowMultiReaderWrapper. (Robert Muir, Mike Mccandless)
 
 New features
 
@@ -311,6 +353,12 @@ New features
   extensions within the same segment. Codecs now use their per-segment codec
   ID in the file names. (Simon Willnauer)
 
+* LUCENE-2843: Added a new terms index impl,
+  VariableGapTermsIndexWriter/Reader, that accepts a pluggable
+  IndexTermSelector for picking which terms should be indexed in the
+  terms dict.  This impl stores the indexed terms in an FST, which is
+  much more RAM efficient than FixedGapTermsIndex.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
@@ -333,6 +381,11 @@ Optimizations
   not seek backwards when a sub-range has no terms. It now only seeks
   when the current term is less than the next sub-range's lower end.
   (Uwe Schindler, Mike McCandless)
+  
+* LUCENE-2694: Optimize MultiTermQuery to be single pass for Term lookups.
+  MultiTermQuery now stores TermState per leaf reader during rewrite to re-
+  seek the term dictionary in TermQuery / TermWeight.
+  (Simon Willnauer, Mike McCandless, Robert Muir)
 
 Documentation
 
@@ -353,7 +406,8 @@ Bug fixes
   to a mutable reference to the IndexWriters SegmentInfos. 
   (Simon Willnauer, Earwin Burrfoot)
 
-
+* LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
+  decides whether to return the cached computed size or not. (Shai Erera)
 
 ======================= Lucene 3.x (not yet released) =======================
 

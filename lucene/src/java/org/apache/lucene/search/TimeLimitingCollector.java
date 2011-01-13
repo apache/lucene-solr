@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -213,9 +213,9 @@ public class TimeLimitingCollector extends Collector {
   }
   
   @Override
-  public void setNextReader(IndexReader reader, int base) throws IOException {
-    collector.setNextReader(reader, base);
-    this.docBase = base;
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    collector.setNextReader(context);
+    this.docBase = context.docBase;
   }
   
   @Override

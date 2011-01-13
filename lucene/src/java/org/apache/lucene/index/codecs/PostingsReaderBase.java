@@ -42,17 +42,17 @@ public abstract class PostingsReaderBase implements Closeable {
   public abstract void init(IndexInput termsIn) throws IOException;
 
   /** Return a newly created empty TermState */
-  public abstract TermState newTermState() throws IOException;
+  public abstract PrefixCodedTermState newTermState() throws IOException;
 
-  public abstract void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState state, boolean isIndexTerm) throws IOException;
-
-  /** Must fully consume state, since after this call that
-   *  TermState may be reused. */
-  public abstract DocsEnum docs(FieldInfo fieldInfo, TermState state, Bits skipDocs, DocsEnum reuse) throws IOException;
+  public abstract void readTerm(IndexInput termsIn, FieldInfo fieldInfo, PrefixCodedTermState state, boolean isIndexTerm) throws IOException;
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, TermState state, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
+  public abstract DocsEnum docs(FieldInfo fieldInfo, PrefixCodedTermState state, Bits skipDocs, DocsEnum reuse) throws IOException;
+
+  /** Must fully consume state, since after this call that
+   *  TermState may be reused. */
+  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, PrefixCodedTermState state, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
 
   public abstract void close() throws IOException;
 }

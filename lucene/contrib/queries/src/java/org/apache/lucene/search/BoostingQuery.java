@@ -23,7 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 /**
  * The BoostingQuery class can be used to effectively demote results that match a given query. 
@@ -58,7 +58,7 @@ public class BoostingQuery extends Query {
       BooleanQuery result = new BooleanQuery() {
 
         @Override
-        public Similarity getSimilarity(Searcher searcher) {
+        public Similarity getSimilarity(IndexSearcher searcher) {
           return new DefaultSimilarity() {
 
             @Override

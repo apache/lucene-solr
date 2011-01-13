@@ -22,6 +22,9 @@ import java.util.List;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.CompositeReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 
 /**
  * Common util methods for dealing with {@link IndexReader}s.
@@ -148,7 +151,94 @@ public final class ReaderUtil {
         .toArray(new IndexReader[subReadersList.size()]);
     return subReaders[subIndex];
   }
+  
+  public static ReaderContext buildReaderContext(IndexReader reader) {
+    return new ReaderContextBuilder(reader).build();
+  }
+  
+  public static class ReaderContextBuilder {
+    private final IndexReader reader;
+    private final AtomicReaderContext[] leaves;
+    private int leafOrd = 0;
+    private int leafDocBase = 0;
+    public ReaderContextBuilder(IndexReader reader) {
+      this.reader = reader;
+      leaves = new AtomicReaderContext[numLeaves(reader)];
+    }
+    
+    public ReaderContext build() {
+      return build(null, reader, 0, 0);
+    }
+    
+    private ReaderContext build(CompositeReaderContext parent, IndexReader reader, int ord, int docBase) {
+      IndexReader[] sequentialSubReaders = reader.getSequentialSubReaders();
+      if (sequentialSubReaders == null) {
+        AtomicReaderContext atomic = new AtomicReaderContext(parent, reader, ord, docBase, leafOrd, leafDocBase);
+        leaves[leafOrd++] = atomic;
+        leafDocBase += reader.maxDoc();
+        return atomic;
+      } else {
+        ReaderContext[] children = new ReaderContext[sequentialSubReaders.length];
+        final CompositeReaderContext newParent;
+        if (parent == null) {
+          newParent = new CompositeReaderContext(reader, children, leaves);
+        } else {
+          newParent = new CompositeReaderContext(parent, reader, ord, docBase, children);
+        }
+        
+        int newDocBase = 0;
+        for (int i = 0; i < sequentialSubReaders.length; i++) {
+          build(newParent, sequentialSubReaders[i], i, newDocBase);
+          newDocBase += sequentialSubReaders[i].maxDoc();
+        }
+        return newParent;
+      }
+    }
+    
+    private int numLeaves(IndexReader reader) {
+      final int[] numLeaves = new int[1];
+      try {
+        new Gather(reader) {
+          @Override
+          protected void add(int base, IndexReader r) {
+            numLeaves[0]++;
+          }
+        }.run();
+      } catch (IOException ioe) {
+        // won't happen
+        throw new RuntimeException(ioe);
+      }
+      return numLeaves[0];
+    }
+    
+  }
 
+  /**
+   * Returns the context's leaves or the context itself as the only element of
+   * the returned array. If the context's #leaves() method returns
+   * <code>null</code> the given context must be an instance of
+   * {@link AtomicReaderContext}
+   */
+  public static AtomicReaderContext[] leaves(ReaderContext context) {
+    assert context != null && context.isTopLevel : "context must be non-null & top-level";
+    final AtomicReaderContext[] leaves = context.leaves();
+    if (leaves == null) {
+      assert context.isAtomic : "top-level context without leaves must be atomic";
+      return new AtomicReaderContext[] { (AtomicReaderContext) context };
+    }
+    return leaves;
+  }
+  
+  /**
+   * Walks up the reader tree and return the given context's top level reader
+   * context, or in other words the reader tree's root context.
+   */
+  public static ReaderContext getTopLevelContext(ReaderContext context) {
+    while (context.parent != null) {
+      context = context.parent;
+    }
+    return context;
+  }
 
   /**
    * Returns index of the searcher/reader for document <code>n</code> in the
@@ -168,6 +258,32 @@ public final class ReaderUtil {
         lo = mid + 1;
       else { // found a match
         while (mid + 1 < size && docStarts[mid + 1] == midValue) {
+          mid++; // scan to last match
+        }
+        return mid;
+      }
+    }
+    return hi;
+  }
+  
+  /**
+   * Returns index of the searcher/reader for document <code>n</code> in the
+   * array used to construct this searcher/reader.
+   */
+  public static int subIndex(int n, AtomicReaderContext[] leaves) { // find
+    // searcher/reader for doc n:
+    int size = leaves.length;
+    int lo = 0; // search starts array
+    int hi = size - 1; // for first element less than n, return its index
+    while (hi >= lo) {
+      int mid = (lo + hi) >>> 1;
+      int midValue = leaves[mid].docBase;
+      if (n < midValue)
+        hi = mid - 1;
+      else if (n > midValue)
+        lo = mid + 1;
+      else { // found a match
+        while (mid + 1 < size && leaves[mid + 1].docBase == midValue) {
           mid++; // scan to last match
         }
         return mid;

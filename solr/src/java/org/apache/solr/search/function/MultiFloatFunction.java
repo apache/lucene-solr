@@ -16,8 +16,8 @@ package org.apache.solr.search.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.IndexSearcher;
 
 import java.util.Map;
 import java.util.Arrays;
@@ -54,10 +54,10 @@ public abstract class MultiFloatFunction extends ValueSource {
     return sb.toString();
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final DocValues[] valsArr = new DocValues[sources.length];
     for (int i=0; i<sources.length; i++) {
-      valsArr[i] = sources[i].getValues(context, reader);
+      valsArr[i] = sources[i].getValues(context, readerContext);
     }
 
     return new DocValues() {
@@ -95,7 +95,7 @@ public abstract class MultiFloatFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     for (ValueSource source : sources)
       source.createWeight(context, searcher);
   }

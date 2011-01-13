@@ -17,7 +17,7 @@
 
 package org.apache.lucene.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 
@@ -69,8 +69,8 @@ public class OrdFieldSource extends ValueSource {
 
   /*(non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
   @Override
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
+  public DocValues getValues(AtomicReaderContext context) throws IOException {
+    final DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, field);
     return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       @Override

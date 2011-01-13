@@ -18,15 +18,17 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.util.VersionedFile;
 
 import java.io.*;
@@ -55,19 +57,12 @@ public class FileFloatSource extends ValueSource {
     return "float(" + field + ')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     int offset = 0;
-    if (reader instanceof SolrIndexReader) {
-      SolrIndexReader r = (SolrIndexReader)reader;
-      while (r.getParent() != null) {
-        offset += r.getBase();
-        r = r.getParent();
-      }
-      reader = r;
-    }
+    ReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
     final int off = offset;
 
-    final float[] arr = getCachedFloats(reader);
+    final float[] arr = getCachedFloats(topLevelContext.reader);
     return new DocValues() {
       public float floatVal(int doc) {
         return arr[doc + off];

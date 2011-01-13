@@ -61,6 +61,7 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.mockrandom.MockRandomCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
@@ -226,7 +227,7 @@ public abstract class LuceneTestCase extends Assert {
 
   private static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
 
-  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock"};
+  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "MockRandom"};
 
   private static void swapCodec(Codec c, CodecProvider cp) {
     Codec prior = null;
@@ -279,6 +280,7 @@ public abstract class LuceneTestCase extends Assert {
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
+    swapCodec(new MockRandomCodec(random), cp);
 
     return cp.lookup(codec);
   }
@@ -295,9 +297,9 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockSep"));
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
+    cp.unregister(cp.lookup("MockRandom"));
     swapCodec(new PulsingCodec(1), cp);
     cp.setDefaultFieldCodec(savedDefaultCodec);
-
   }
 
   // randomly picks from core and test codecs
@@ -415,6 +417,16 @@ public abstract class LuceneTestCase extends Assert {
     if (testsFailed) {
       System.err.println("NOTE: all tests run in this JVM:");
       System.err.println(Arrays.toString(testClassesRun.toArray()));
+      System.err.println("NOTE: " + System.getProperty("os.name") + " " 
+          + System.getProperty("os.version") + " " 
+          + System.getProperty("os.arch") + "/"
+          + System.getProperty("java.vendor") + " "
+          + System.getProperty("java.version") + " "
+          + (Constants.JRE_IS_64BIT ? "(64-bit)" : "(32-bit)") + "/"
+          + "cpus=" + Runtime.getRuntime().availableProcessors() + ","
+          + "threads=" + Thread.activeCount() + ","
+          + "free=" + Runtime.getRuntime().freeMemory() + ","
+          + "total=" + Runtime.getRuntime().totalMemory());
     }
   }
 
@@ -1134,8 +1146,15 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-      for (int i = 0; i < TEST_ITER; i++)
+      if (VERBOSE) {
+        System.out.println("\nNOTE: running test " + arg0.getName());
+      }
+      for (int i = 0; i < TEST_ITER; i++) {
+        if (VERBOSE && TEST_ITER > 1) {
+          System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
+        }
         super.runChild(arg0, arg1);
+      }
     }
 
     public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {

@@ -372,7 +372,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
 
 
-    protected void printHits(String test, ScoreDoc[] h, Searcher searcher) throws Exception {
+    protected void printHits(String test, ScoreDoc[] h, IndexSearcher searcher) throws Exception {
 
         System.err.println("------- " + test + " -------");
 

@@ -33,6 +33,7 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.CompoundFileReader;
@@ -739,11 +740,6 @@ public class PreFlexFields extends FieldsProducer {
       } else {
         return BytesRef.getUTF8SortedAsUTF16Comparator();
       }
-    }
-
-    @Override
-    public void cacheCurrentTerm() throws IOException {
-      getTermsDict().cacheCurrentTerm(termEnum);
     }
 
     @Override

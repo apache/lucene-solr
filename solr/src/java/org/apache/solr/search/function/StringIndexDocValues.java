@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueStr;
@@ -33,9 +34,9 @@ public abstract class StringIndexDocValues extends DocValues {
     protected final ValueSource vs;
     protected final MutableValueStr val = new MutableValueStr();
 
-    public StringIndexDocValues(ValueSource vs, IndexReader reader, String field) throws IOException {
+    public StringIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
       try {
-        termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
+        termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, field);
       } catch (RuntimeException e) {
         throw new StringIndexException(field, e);
       }

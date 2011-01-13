@@ -28,6 +28,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 
 public class TestTermScorer extends LuceneTestCase {
@@ -70,8 +72,8 @@ public class TestTermScorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(allTerm);
     
     Weight weight = termQuery.weight(indexSearcher);
-    
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader(), true, true);
+    assertTrue(indexSearcher.getTopReaderContext().isAtomic);
+    Scorer ts = weight.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), ScorerContext.def().scoreDocsInOrder(true).topScorer(true));
     // we have 2 documents with the term all in them, one document for all the
     // other values
     final List<TestHit> docs = new ArrayList<TestHit>();
@@ -97,8 +99,8 @@ public class TestTermScorer extends LuceneTestCase {
       }
       
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        base = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        base = context.docBase;
       }
       
       @Override
@@ -131,8 +133,8 @@ public class TestTermScorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(allTerm);
     
     Weight weight = termQuery.weight(indexSearcher);
-    
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader(), true, true);
+    assertTrue(indexSearcher.getTopReaderContext().isAtomic);
+    Scorer ts = weight.scorer((AtomicReaderContext) indexSearcher.getTopReaderContext(), ScorerContext.def().scoreDocsInOrder(true).topScorer(true));
     assertTrue("next did not return a doc",
         ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertTrue("score is not correct", ts.score() == 1.6931472f);
@@ -149,8 +151,9 @@ public class TestTermScorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(allTerm);
     
     Weight weight = termQuery.weight(indexSearcher);
-    
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader(), true, true);
+    assertTrue(indexSearcher.getTopReaderContext().isAtomic);
+
+    Scorer ts = weight.scorer((AtomicReaderContext) indexSearcher.getTopReaderContext(), ScorerContext.def().scoreDocsInOrder(true).topScorer(true));
     assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     // The next doc should be doc 5
     assertTrue("doc should be number 5", ts.docID() == 5);

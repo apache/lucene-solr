@@ -31,6 +31,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -68,7 +69,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
   private final Comparator<BytesRef> termComp;
 
   // Caches the most recently looked-up field + terms:
-  private final DoubleBarrelLRUCache<FieldAndTerm,TermState> termsCache;
+  private final DoubleBarrelLRUCache<FieldAndTerm,PrefixCodedTermState> termsCache;
 
   // Reads the terms index
   private TermsIndexReaderBase indexReader;
@@ -82,11 +83,6 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     BytesRef term;
 
     public FieldAndTerm() {
-    }
-
-    public FieldAndTerm(String field, BytesRef term) {
-      this.field = field;
-      this.term = new BytesRef(term);
     }
 
     public FieldAndTerm(FieldAndTerm other) {
@@ -116,7 +112,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     throws IOException {
     
     this.postingsReader = postingsReader;
-    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,TermState>(termsCacheSize);
+    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,PrefixCodedTermState>(termsCacheSize);
 
     this.termComp = termComp;
     
@@ -140,12 +136,10 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         final long numTerms = in.readLong();
         assert numTerms >= 0;
         final long termsStartPointer = in.readLong();
-        final TermsIndexReaderBase.FieldReader fieldIndexReader;
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        fieldIndexReader = indexReader.getField(fieldInfo);
         if (numTerms > 0) {
           assert !fields.containsKey(fieldInfo.name);
-          fields.put(fieldInfo.name, new FieldReader(fieldIndexReader, fieldInfo, numTerms, termsStartPointer));
+          fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer));
         }
       }
       success = true;
@@ -251,14 +245,12 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
-    final TermsIndexReaderBase.FieldReader fieldIndexReader;
 
-    FieldReader(TermsIndexReaderBase.FieldReader fieldIndexReader, FieldInfo fieldInfo, long numTerms, long termsStartPointer) {
+    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.termsStartPointer = termsStartPointer;
-      this.fieldIndexReader = fieldIndexReader;
     }
 
     @Override
@@ -281,18 +273,25 @@ public class PrefixCodedTermsReader extends FieldsProducer {
       return numTerms;
     }
 
-    // Iterates through terms in this field
-    private class SegmentTermsEnum extends TermsEnum {
+    // Iterates through terms in this field, not supporting ord()
+    private final class SegmentTermsEnum extends TermsEnum {
       private final IndexInput in;
       private final DeltaBytesReader bytesReader;
-      private final TermState state;
+      private final PrefixCodedTermState state;
       private boolean seekPending;
-      private final TermsIndexReaderBase.TermsIndexResult indexResult = new TermsIndexReaderBase.TermsIndexResult();
       private final FieldAndTerm fieldTerm = new FieldAndTerm();
+      private final TermsIndexReaderBase.FieldIndexEnum indexEnum;
+      private boolean positioned;
+      private boolean didIndexNext;
+      private BytesRef nextIndexTerm;
+      private boolean isIndexTerm;
+      private final boolean doOrd;
 
       SegmentTermsEnum() throws IOException {
         in = (IndexInput) PrefixCodedTermsReader.this.in.clone();
         in.seek(termsStartPointer);
+        indexEnum = indexReader.getFieldEnum(fieldInfo);
+        doOrd = indexReader.supportsOrd();
         bytesReader = new DeltaBytesReader(in);
         fieldTerm.field = fieldInfo.name;
         state = postingsReader.newTermState();
@@ -304,12 +303,26 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         return termComp;
       }
 
-      @Override
-      public void cacheCurrentTerm() {
-        TermState stateCopy = (TermState) state.clone();
-        stateCopy.filePointer = in.getFilePointer();
-        termsCache.put(new FieldAndTerm(fieldInfo.name, bytesReader.term),
-                       stateCopy);
+      // called only from assert
+      private boolean first;
+      private int indexTermCount;
+
+      private boolean startSeek() {
+        first = true;
+        indexTermCount = 0;
+        return true;
+      }
+
+      private boolean checkSeekScan() {
+        if (!first && isIndexTerm) {
+          indexTermCount++;
+          if (indexTermCount >= indexReader.getDivisor()) {
+            //System.out.println("now fail count=" + indexTermCount);
+            return false;
+          }
+        }
+        first = false;
+        return true;
       }
 
       /** Seeks until the first term that's >= the provided
@@ -317,16 +330,24 @@ public class PrefixCodedTermsReader extends FieldsProducer {
        *  is found, SeekStatus.NOT_FOUND if a different term
        *  was found, SeekStatus.END if we hit EOF */
       @Override
-      public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+      public SeekStatus seek(final BytesRef term, final boolean useCache) throws IOException {
+
+        if (indexEnum == null) {
+          throw new IllegalStateException("terms index was not loaded");
+        }
+        
+        //System.out.println("te.seek term=" + fieldInfo.name + ":" + term.utf8ToString() + " current=" + term().utf8ToString() + " useCache=" + useCache + " this="  + this);
+
         // Check cache
         fieldTerm.term = term;
         TermState cachedState;
         if (useCache) {
           cachedState = termsCache.get(fieldTerm);
           if (cachedState != null) {
-            state.copy(cachedState);
-            seekPending = true;
-            bytesReader.term.copy(term);
+            state.copyFrom(cachedState);
+            setTermState(term, state);
+            positioned = false;
+            //System.out.println("  cached!");
             return SeekStatus.FOUND;
           }
         } else {
@@ -335,36 +356,54 @@ public class PrefixCodedTermsReader extends FieldsProducer {
 
         boolean doSeek = true;
 
-        if (state.ord != -1) {
-          // we are positioned
+        if (positioned) {
 
           final int cmp = termComp.compare(bytesReader.term, term);
 
           if (cmp == 0) {
             // already at the requested term
             return SeekStatus.FOUND;
-          }
+          } else if (cmp < 0) {
 
-          if (cmp < 0 &&
-              fieldIndexReader.nextIndexTerm(state.ord, indexResult) &&
-              termComp.compare(indexResult.term, term) > 0) {
-            // Optimization: requested term is within the
-            // same index block we are now in; skip seeking
-            // (but do scanning):
-            doSeek = false;
+            if (seekPending) {
+              seekPending = false;
+              in.seek(state.filePointer);
+              indexEnum.seek(bytesReader.term);
+              didIndexNext = false;
+            }
+
+            // Target term is after current term
+            if (!didIndexNext) {
+              if (indexEnum.next() == -1) {
+                nextIndexTerm = null;
+              } else {
+                nextIndexTerm = indexEnum.term();
+              }
+              //System.out.println("  now do index next() nextIndexTerm=" + (nextIndexTerm == null ? "null" : nextIndexTerm.utf8ToString()));
+              didIndexNext = true;
+            }
+
+            if (nextIndexTerm == null || termComp.compare(term, nextIndexTerm) < 0) {
+              // Optimization: requested term is within the
+              // same index block we are now in; skip seeking
+              // (but do scanning):
+              doSeek = false;
+              //System.out.println("  skip seek: nextIndexTerm=" + nextIndexTerm);
+            }
           }
         }
 
-        // Used only for assert:
-        final long startOrd;
-
         if (doSeek) {
 
-          // As index to find biggest index term that's <=
-          // our text:
-          fieldIndexReader.getIndexOffset(term, indexResult);
+          positioned = true;
 
-          in.seek(indexResult.offset);
+          // Ask terms index to find biggest index term that's <=
+          // our text:
+          in.seek(indexEnum.seek(term));
+          didIndexNext = false;
+          if (doOrd) {
+            state.ord = indexEnum.ord()-1;
+          }
           seekPending = false;
 
           // NOTE: the first next() after an index seek is
@@ -373,65 +412,160 @@ public class PrefixCodedTermsReader extends FieldsProducer {
           // those bytes in the primary file, but then when
           // scanning over an index term we'd have to
           // special case it:
-          bytesReader.reset(indexResult.term);
-          
-          state.ord = indexResult.position-1;
-          assert state.ord >= -1: "ord=" + state.ord + " pos=" + indexResult.position;
-
-          startOrd = indexResult.position;
+          bytesReader.reset(indexEnum.term());
+          //System.out.println("  doSeek term=" + indexEnum.term().utf8ToString() + " vs target=" + term.utf8ToString());
         } else {
-          startOrd = -1;
+          //System.out.println("  skip seek");
         }
 
+        assert startSeek();
+
         // Now scan:
-        while(next() != null) {
+        while (next() != null) {
           final int cmp = termComp.compare(bytesReader.term, term);
           if (cmp == 0) {
-
-            if (doSeek && useCache) {
-              // Store in cache
-              FieldAndTerm entryKey = new FieldAndTerm(fieldTerm);
-              cachedState = (TermState) state.clone();
-              // this is fp after current term
-              cachedState.filePointer = in.getFilePointer();
-              termsCache.put(entryKey, cachedState);
+            // Done!
+            if (useCache) {
+              cacheTerm(fieldTerm);
             }
-              
+
             return SeekStatus.FOUND;
           } else if (cmp > 0) {
             return SeekStatus.NOT_FOUND;
           }
+
           // The purpose of the terms dict index is to seek
           // the enum to the closest index term before the
           // term we are looking for.  So, we should never
           // cross another index term (besides the first
           // one) while we are scanning:
-          assert state.ord == startOrd || !fieldIndexReader.isIndexTerm(state.ord, state.docFreq, true): "state.ord=" + state.ord + " startOrd=" + startOrd + " ir.isIndexTerm=" + fieldIndexReader.isIndexTerm(state.ord, state.docFreq, true) + " state.docFreq=" + state.docFreq;
+          assert checkSeekScan();
         }
 
+        positioned = false;
         return SeekStatus.END;
+      }
+
+      private final void setTermState(BytesRef term, final TermState termState) {
+        assert termState != null && termState instanceof PrefixCodedTermState;
+        state.copyFrom(termState);
+        seekPending = true;
+        bytesReader.term.copy(term);
+      }
+
+      private final void cacheTerm(FieldAndTerm other) {
+        // Store in cache
+        final FieldAndTerm entryKey = new FieldAndTerm(other);
+        final PrefixCodedTermState cachedState = (PrefixCodedTermState) state.clone();
+        // this is fp after current term
+        cachedState.filePointer = in.getFilePointer();
+        termsCache.put(entryKey, cachedState);
+      }
+      
+
+      @Override
+      public BytesRef term() {
+        return bytesReader.term;
+      }
+
+      @Override
+      public BytesRef next() throws IOException {
+
+        if (seekPending) {
+          seekPending = false;
+          in.seek(state.filePointer);
+          indexEnum.seek(bytesReader.term);
+          didIndexNext = false;
+        }
+        
+        if (!bytesReader.read()) {
+          //System.out.println("te.next end!");
+          positioned = false;
+          return null;
+        }
+
+        final byte b = in.readByte();
+        isIndexTerm = (b & 0x80) != 0;
+
+        if ((b & 0x40) == 0) {
+          // Fast case -- docFreq fits in 6 bits
+          state.docFreq = b & 0x3F;
+        } else {
+          state.docFreq = (in.readVInt() << 6) | (b & 0x3F);
+        }
+
+        postingsReader.readTerm(in,
+                                fieldInfo, state,
+                                isIndexTerm);
+        if (doOrd) {
+          state.ord++;
+        }
+        positioned = true;
+
+        //System.out.println("te.next term=" + bytesReader.term.utf8ToString());
+        return bytesReader.term;
+      }
+
+      @Override
+      public int docFreq() {
+        return state.docFreq;
+      }
+
+      @Override
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, skipDocs, reuse);
+        assert docsEnum != null;
+        return docsEnum;
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+        if (fieldInfo.omitTermFreqAndPositions) {
+          return null;
+        } else {
+          return postingsReader.docsAndPositions(fieldInfo, state, skipDocs, reuse);
+        }
+      }
+
+      @Override
+      public SeekStatus seek(BytesRef term, TermState otherState) throws IOException {
+        assert otherState != null && otherState instanceof PrefixCodedTermState;
+        assert otherState.getClass() == this.state.getClass() : "Illegal TermState type " + otherState.getClass();
+        assert ((PrefixCodedTermState)otherState).ord < numTerms;
+        setTermState(term, otherState);
+        positioned = false;
+        return SeekStatus.FOUND;
+      }
+      
+      @Override
+      public TermState termState() throws IOException {
+        final PrefixCodedTermState newTermState = (PrefixCodedTermState) state.clone();
+        newTermState.filePointer = in.getFilePointer();
+        return newTermState;
       }
 
       @Override
       public SeekStatus seek(long ord) throws IOException {
 
-        // TODO: should we cache term lookup by ord as well...?
+        if (indexEnum == null) {
+          throw new IllegalStateException("terms index was not loaded");
+        }
 
         if (ord >= numTerms) {
           state.ord = numTerms-1;
           return SeekStatus.END;
         }
 
-        fieldIndexReader.getIndexOffset(ord, indexResult);
-        in.seek(indexResult.offset);
+        in.seek(indexEnum.seek(ord));
         seekPending = false;
+        positioned = true;
 
         // NOTE: the first next() after an index seek is
         // wasteful, since it redundantly reads the same
         // bytes into the buffer
-        bytesReader.reset(indexResult.term);
+        bytesReader.reset(indexEnum.term());
 
-        state.ord = indexResult.position-1;
+        state.ord = indexEnum.ord()-1;
         assert state.ord >= -1: "ord=" + state.ord;
 
         // Now, scan:
@@ -446,66 +580,11 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         return SeekStatus.FOUND;
       }
 
-      @Override
-      public BytesRef term() {
-        return bytesReader.term;
-      }
-
-      @Override
       public long ord() {
+        if (!doOrd) {
+          throw new UnsupportedOperationException();
+        }
         return state.ord;
-      }
-
-      @Override
-      public BytesRef next() throws IOException {
-
-        if (seekPending) {
-          seekPending = false;
-          in.seek(state.filePointer);
-        }
-        
-        if (state.ord >= numTerms-1) {
-          return null;
-        }
-
-        bytesReader.read();
-        state.docFreq = in.readVInt();
-
-        // TODO: would be cleaner, but space-wasting, to
-        // simply record a bit into each index entry as to
-        // whether it's an index entry or not, rather than
-        // re-compute that information... or, possibly store
-        // a "how many terms until next index entry" in each
-        // index entry, but that'd require some tricky
-        // lookahead work when writing the index
-        postingsReader.readTerm(in,
-                                fieldInfo, state,
-                                fieldIndexReader.isIndexTerm(1+state.ord, state.docFreq, false));
-
-        state.ord++;
-
-        return bytesReader.term;
-      }
-
-      @Override
-      public int docFreq() {
-        return state.docFreq;
-      }
-
-      @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
-        DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, skipDocs, reuse);
-        assert docsEnum != null;
-        return docsEnum;
-      }
-
-      @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
-        if (fieldInfo.omitTermFreqAndPositions) {
-          return null;
-        } else {
-          return postingsReader.docsAndPositions(fieldInfo, state, skipDocs, reuse);
-        }
       }
     }
   }

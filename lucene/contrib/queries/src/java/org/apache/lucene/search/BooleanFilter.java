@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
@@ -41,10 +42,10 @@ public class BooleanFilter extends Filter
   ArrayList<Filter> notFilters = null;
   ArrayList<Filter> mustFilters = null;
   
-  private DocIdSetIterator getDISI(ArrayList<Filter> filters, int index, IndexReader reader)
+  private DocIdSetIterator getDISI(ArrayList<Filter> filters, int index, AtomicReaderContext context)
   throws IOException
   {
-    return filters.get(index).getDocIdSet(reader).iterator();
+    return filters.get(index).getDocIdSet(context).iterator();
   }
 
   /**
@@ -52,21 +53,21 @@ public class BooleanFilter extends Filter
    * of the filters that have been added.
    */
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException
   {
     OpenBitSetDISI res = null;
-  
+    final IndexReader reader = context.reader;
     if (shouldFilters != null) {
       for (int i = 0; i < shouldFilters.size(); i++) {
         if (res == null) {
-          res = new OpenBitSetDISI(getDISI(shouldFilters, i, reader), reader.maxDoc());
+          res = new OpenBitSetDISI(getDISI(shouldFilters, i, context), reader.maxDoc());
         } else { 
-          DocIdSet dis = shouldFilters.get(i).getDocIdSet(reader);
+          DocIdSet dis = shouldFilters.get(i).getDocIdSet(context);
           if(dis instanceof OpenBitSet) {
             // optimized case for OpenBitSets
             res.or((OpenBitSet) dis);
           } else {
-            res.inPlaceOr(getDISI(shouldFilters, i, reader));
+            res.inPlaceOr(getDISI(shouldFilters, i, context));
           }
         }
       }
@@ -75,15 +76,15 @@ public class BooleanFilter extends Filter
     if (notFilters!=null) {
       for (int i = 0; i < notFilters.size(); i++) {
         if (res == null) {
-          res = new OpenBitSetDISI(getDISI(notFilters, i, reader), reader.maxDoc());
+          res = new OpenBitSetDISI(getDISI(notFilters, i, context), reader.maxDoc());
           res.flip(0, reader.maxDoc()); // NOTE: may set bits on deleted docs
         } else {
-          DocIdSet dis = notFilters.get(i).getDocIdSet(reader);
+          DocIdSet dis = notFilters.get(i).getDocIdSet(context);
           if(dis instanceof OpenBitSet) {
             // optimized case for OpenBitSets
             res.andNot((OpenBitSet) dis);
           } else {
-            res.inPlaceNot(getDISI(notFilters, i, reader));
+            res.inPlaceNot(getDISI(notFilters, i, context));
           }
         }
       }
@@ -92,14 +93,14 @@ public class BooleanFilter extends Filter
     if (mustFilters!=null) {
       for (int i = 0; i < mustFilters.size(); i++) {
         if (res == null) {
-          res = new OpenBitSetDISI(getDISI(mustFilters, i, reader), reader.maxDoc());
+          res = new OpenBitSetDISI(getDISI(mustFilters, i, context), reader.maxDoc());
         } else {
-          DocIdSet dis = mustFilters.get(i).getDocIdSet(reader);
+          DocIdSet dis = mustFilters.get(i).getDocIdSet(context);
           if(dis instanceof OpenBitSet) {
             // optimized case for OpenBitSets
             res.and((OpenBitSet) dis);
           } else {
-            res.inPlaceAnd(getDISI(mustFilters, i, reader));
+            res.inPlaceAnd(getDISI(mustFilters, i, context));
           }
         }
       }

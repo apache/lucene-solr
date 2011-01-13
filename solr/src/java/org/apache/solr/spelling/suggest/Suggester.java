@@ -100,7 +100,7 @@ public class Suggester extends SolrSpellChecker {
   public void build(SolrCore core, SolrIndexSearcher searcher) {
     LOG.info("build()");
     if (sourceLocation == null) {
-      reader = searcher.getReader();
+      reader = searcher.getIndexReader();
       dictionary = new HighFrequencyDictionary(reader, field, threshold);
     } else {
       try {

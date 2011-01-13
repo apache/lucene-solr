@@ -27,6 +27,12 @@ public class DistributedClusteringComponentTest extends
     BaseDistributedSearchTestCase {
 
   @Override
+  public String getSolrHome() {
+    // TODO: this should work with just "solr-clustering"...
+    return getFile("solr-clustering").getAbsolutePath();
+  }
+
+  @Override
   public void doTest() throws Exception {
     del("*:*");
     int numberOfDocs = 0;

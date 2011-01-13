@@ -25,6 +25,7 @@ import java.util.Random;
 import junit.framework.Assert;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.store.Directory;
 
 public class CheckHits {
@@ -42,7 +43,7 @@ public class CheckHits {
    * (ie: Explanation value of 0.0f)
    */
   public static void checkNoMatchExplanations(Query q, String defaultFieldName,
-                                              Searcher searcher, int[] results)
+                                              IndexSearcher searcher, int[] results)
     throws IOException {
 
     String d = q.toString(defaultFieldName);
@@ -81,7 +82,7 @@ public class CheckHits {
    * @see #checkHits
    */
   public static void checkHitCollector(Random random, Query query, String defaultFieldName,
-                                       Searcher searcher, int[] results)
+                                       IndexSearcher searcher, int[] results)
     throws IOException {
 
     QueryUtils.check(random,query,searcher);
@@ -99,18 +100,8 @@ public class CheckHits {
 
     for (int i = -1; i < 2; i++) {
       actual.clear();
-      QueryUtils.wrapSearcher(random, searcher, i).search(query, c);
-      Assert.assertEquals("Wrap Searcher " + i + ": " +
-                          query.toString(defaultFieldName),
-                          correct, actual);
-    }
-                        
-    if ( ! ( searcher instanceof IndexSearcher ) ) return;
-
-    for (int i = -1; i < 2; i++) {
-      actual.clear();
       QueryUtils.wrapUnderlyingReader
-        (random, (IndexSearcher)searcher, i).search(query, c);
+        (random, searcher, i).search(query, c);
       Assert.assertEquals("Wrap Reader " + i + ": " +
                           query.toString(defaultFieldName),
                           correct, actual);
@@ -130,8 +121,8 @@ public class CheckHits {
       bag.add(Integer.valueOf(doc + base));
     }
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
-      base = docBase;
+    public void setNextReader(AtomicReaderContext context) {
+      base = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {
@@ -157,7 +148,7 @@ public class CheckHits {
         Random random,
         Query query,
         String defaultFieldName,
-        Searcher searcher,
+        IndexSearcher searcher,
         int[] results)
           throws IOException {
 
@@ -284,7 +275,7 @@ public class CheckHits {
    */
   public static void checkExplanations(Query query,
                                        String defaultFieldName,
-                                       Searcher searcher) throws IOException {
+                                       IndexSearcher searcher) throws IOException {
     checkExplanations(query, defaultFieldName, searcher, false);
   }
 
@@ -301,7 +292,7 @@ public class CheckHits {
    */
   public static void checkExplanations(Query query,
                                        String defaultFieldName,
-                                       Searcher searcher, 
+                                       IndexSearcher searcher, 
                                        boolean deep) throws IOException {
 
     searcher.search(query,
@@ -455,7 +446,7 @@ public class CheckHits {
   public static class ExplanationAsserter extends Collector {
 
     Query q;
-    Searcher s;
+    IndexSearcher s;
     String d;
     boolean deep;
     
@@ -463,10 +454,10 @@ public class CheckHits {
     private int base = 0;
 
     /** Constructs an instance which does shallow tests on the Explanation */
-    public ExplanationAsserter(Query q, String defaultFieldName, Searcher s) {
+    public ExplanationAsserter(Query q, String defaultFieldName, IndexSearcher s) {
       this(q,defaultFieldName,s,false);
     }      
-    public ExplanationAsserter(Query q, String defaultFieldName, Searcher s, boolean deep) {
+    public ExplanationAsserter(Query q, String defaultFieldName, IndexSearcher s, boolean deep) {
       this.q=q;
       this.s=s;
       this.d = q.toString(defaultFieldName);
@@ -493,8 +484,8 @@ public class CheckHits {
       verifyExplanation(d,doc,scorer.score(),deep,exp);
     }
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
-      base = docBase;
+    public void setNextReader(AtomicReaderContext context) {
+      base = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {

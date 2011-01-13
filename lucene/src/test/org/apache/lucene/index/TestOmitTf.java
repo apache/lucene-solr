@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -35,13 +36,13 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 public class TestOmitTf extends LuceneTestCase {
   
   public static class SimpleSimilarity extends Similarity {
-    @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
+    @Override public float computeNorm(String field, FieldInvertState state) { return state.getBoost(); }
     @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
     @Override public float coord(int overlap, int maxOverlap) { return 1.0f; }
-    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
       return new IDFExplanation() {
         @Override
         public float getIdf() {
@@ -279,7 +280,7 @@ public class TestOmitTf extends LuceneTestCase {
     /*
      * Verify the index
      */         
-    Searcher searcher = new IndexSearcher(dir, true);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     searcher.setSimilarity(new SimpleSimilarity());
         
     Term a = new Term("noTf", term);
@@ -414,8 +415,8 @@ public class TestOmitTf extends LuceneTestCase {
     public static int getSum() { return sum; }
     
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
-      this.docBase = docBase;
+    public void setNextReader(AtomicReaderContext context) {
+      docBase = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {

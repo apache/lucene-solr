@@ -18,18 +18,19 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -416,12 +417,12 @@ public class TestSpans extends LuceneTestCase {
                               slop,
                               ordered) {
       @Override
-      public Similarity getSimilarity(Searcher s) {
+      public Similarity getSimilarity(IndexSearcher s) {
         return sim;
       }
-    };
+      };
 
-    Scorer spanScorer = snq.weight(searcher).scorer(new SlowMultiReaderWrapper(searcher.getIndexReader()), true, false);
+    Scorer spanScorer = snq.weight(searcher).scorer(new AtomicReaderContext(new SlowMultiReaderWrapper(searcher.getIndexReader())), ScorerContext.def());
 
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);
@@ -439,7 +440,7 @@ public class TestSpans extends LuceneTestCase {
   }
 
   // LUCENE-1404
-  private int hitCount(Searcher searcher, String word) throws Throwable {
+  private int hitCount(IndexSearcher searcher, String word) throws Throwable {
     return searcher.search(new TermQuery(new Term("text", word)), 10).totalHits;
   }
 

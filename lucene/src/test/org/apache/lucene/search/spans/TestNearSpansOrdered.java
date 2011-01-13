@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -30,6 +31,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -168,7 +170,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   public void testSpanNearScorerSkipTo1() throws Exception {
     SpanNearQuery q = makeQuery();
     Weight w = q.weight(searcher);
-    Scorer s = w.scorer(searcher.getIndexReader(), true, false);
+    assertTrue(searcher.getTopReaderContext().isAtomic);
+    Scorer s = w.scorer((AtomicReaderContext) searcher.getTopReaderContext(), ScorerContext.def());
     assertEquals(1, s.advance(1));
   }
   /**
@@ -177,7 +180,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerExplain() throws Exception {
     SpanNearQuery q = makeQuery();
-    Explanation e = q.weight(searcher).explain(searcher.getIndexReader(), 1);
+    assertTrue(searcher.getTopReaderContext().isAtomic);
+    Explanation e = q.weight(searcher).explain((AtomicReaderContext) searcher.getTopReaderContext(), 1);
     assertTrue("Scorer explanation value for doc#1 isn't positive: "
                + e.toString(),
                0.0f < e.getValue());

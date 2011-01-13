@@ -58,7 +58,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
-import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -1299,68 +1298,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     Element h2 = (Element) nodes.item(0);
     String decodedSnippet = h2.getFirstChild().getNodeValue();
     assertEquals("XHTML Encoding should have worked:", rawDocContent, decodedSnippet);
-  }
-
-  public void testMultiSearcher() throws Exception {
-    // setup index 1
-    Directory ramDir1 = newDirectory();
-    IndexWriter writer1 = new IndexWriter(ramDir1, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
-    Document d = new Document();
-    Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.ANALYZED);
-    d.add(f);
-    writer1.addDocument(d);
-    writer1.optimize();
-    writer1.close();
-    IndexReader reader1 = IndexReader.open(ramDir1, true);
-
-    // setup index 2
-    Directory ramDir2 = newDirectory();
-    IndexWriter writer2 = new IndexWriter(ramDir2, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
-    d = new Document();
-    f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.ANALYZED);
-    d.add(f);
-    writer2.addDocument(d);
-    writer2.optimize();
-    writer2.close();
-    IndexReader reader2 = IndexReader.open(ramDir2, true);
-
-    IndexSearcher searchers[] = new IndexSearcher[2];
-    searchers[0] = new IndexSearcher(ramDir1, true);
-    searchers[1] = new IndexSearcher(ramDir2, true);
-    MultiSearcher multiSearcher = new MultiSearcher(searchers);
-    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
-    parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    query = parser.parse("multi*");
-    if (VERBOSE) System.out.println("Searching for: " + query.toString(FIELD_NAME));
-    // at this point the multisearcher calls combine(query[])
-    hits = multiSearcher.search(query, null, 1000);
-
-    // query = QueryParser.parse("multi*", FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
-    Query expandedQueries[] = new Query[2];
-    expandedQueries[0] = query.rewrite(reader1);
-    expandedQueries[1] = query.rewrite(reader2);
-    query = query.combine(expandedQueries);
-
-    // create an instance of the highlighter with the tags used to surround
-    // highlighted text
-    Highlighter highlighter = new Highlighter(this, new QueryTermScorer(query));
-
-    for (int i = 0; i < hits.totalHits; i++) {
-      String text = multiSearcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
-      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
-      String highlightedText = highlighter.getBestFragment(tokenStream, text);
-      if (VERBOSE) System.out.println(highlightedText);
-    }
-    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
-        numHighlights == 2);
-    reader1.close();
-    reader2.close();
-    searchers[0].close();
-    searchers[1].close();
-    ramDir1.close();
-    ramDir2.close();
   }
 
   public void testFieldSpecificHighlighting() throws Exception {

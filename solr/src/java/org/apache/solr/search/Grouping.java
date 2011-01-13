@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
@@ -151,7 +151,7 @@ public class Grouping {
     
     @Override
     void prepare() throws IOException {
-        Map context = ValueSource.newContext();
+        Map context = ValueSource.newContext(searcher);
         groupBy.createWeight(context, searcher);
     }
 
@@ -457,14 +457,15 @@ class FilterCollector extends GroupCollector {
   @Override
   public void collect(int doc) throws IOException {
     matches++;
-    if (filter.exists(doc + docBase))
+    if (filter.exists(doc + docBase)) {
       collector.collect(doc);
+    }
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.docBase = docBase;
-    collector.setNextReader(reader, docBase);
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    docBase = context.docBase;
+    collector.setNextReader(context);
   }
 
   @Override
@@ -685,13 +686,13 @@ class TopGroupCollector extends GroupCollector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.docBase = docBase;
-    docValues = vs.getValues(context, reader);
+  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
+    this.docBase = readerContext.docBase;
+    docValues = vs.getValues(context, readerContext);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
     for (int i=0; i<comparators.length; i++)
-      comparators[i] = comparators[i].setNextReader(reader, docBase);
+      comparators[i] = comparators[i].setNextReader(readerContext);
   }
 
   @Override
@@ -759,13 +760,13 @@ class Phase2GroupCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.docBase = docBase;
-    docValues = vs.getValues(context, reader);
+  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
+    this.docBase = readerContext.docBase;
+    docValues = vs.getValues(context, readerContext);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
     for (SearchGroupDocs group : groupMap.values())
-      group.collector.setNextReader(reader, docBase);
+      group.collector.setNextReader(readerContext);
   }
 
   @Override
@@ -812,8 +813,8 @@ class Phase2StringGroupCollector extends Phase2GroupCollector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    super.setNextReader(reader, docBase);
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    super.setNextReader(context);
     index = ((StringIndexDocValues)docValues).getDocTermsIndex();
 
     ordSet.clear();

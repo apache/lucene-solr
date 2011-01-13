@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -50,10 +51,10 @@ public class TestSetNorm extends LuceneTestCase {
 
     // reset the boost of each instance of this document
     IndexReader reader = IndexReader.open(store, false);
-    reader.setNorm(0, "field", 1.0f);
-    reader.setNorm(1, "field", 2.0f);
-    reader.setNorm(2, "field", 4.0f);
-    reader.setNorm(3, "field", 16.0f);
+    reader.setNorm(0, "field", Similarity.getDefault().encodeNormValue(1.0f));
+    reader.setNorm(1, "field", Similarity.getDefault().encodeNormValue(2.0f));
+    reader.setNorm(2, "field", Similarity.getDefault().encodeNormValue(4.0f));
+    reader.setNorm(3, "field", Similarity.getDefault().encodeNormValue(16.0f));
     reader.close();
 
     // check that searches are ordered by this boost
@@ -74,8 +75,8 @@ public class TestSetNorm extends LuceneTestCase {
            scores[doc + base] = scorer.score();
          }
          @Override
-         public void setNextReader(IndexReader reader, int docBase) {
-           base = docBase;
+         public void setNextReader(AtomicReaderContext context) {
+           base = context.docBase;
          }
          @Override
          public boolean acceptsDocsOutOfOrder() {

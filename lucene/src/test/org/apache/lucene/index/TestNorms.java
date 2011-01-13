@@ -41,8 +41,9 @@ public class TestNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      // Disable length norm
+      return state.getBoost();
     }
   }
 
@@ -168,8 +169,8 @@ public class TestNorms extends LuceneTestCase {
       //System.out.println("      and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));
       modifiedNorms.set(k, Float.valueOf(origNorm));
-      ir.setNorm(i, "f"+1, newNorm); 
-      ir.setNorm(k, "f"+1, origNorm); 
+      ir.setNorm(i, "f"+1, Similarity.getDefault().encodeNormValue(newNorm)); 
+      ir.setNorm(k, "f"+1, Similarity.getDefault().encodeNormValue(origNorm)); 
     }
     ir.close();
   }
@@ -179,7 +180,7 @@ public class TestNorms extends LuceneTestCase {
     IndexReader ir = IndexReader.open(dir, false);
     for (int i = 0; i < NUM_FIELDS; i++) {
       String field = "f"+i;
-      byte b[] = ir.norms(field);
+      byte b[] = MultiNorms.norms(ir, field);
       assertEquals("number of norms mismatches",numDocNorms,b.length);
       ArrayList<Float> storedNorms = (i==1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {
@@ -236,4 +237,52 @@ public class TestNorms extends LuceneTestCase {
     return norm;
   }
   
+  class CustomNormEncodingSimilarity extends DefaultSimilarity {
+    @Override
+    public byte encodeNormValue(float f) {
+      return (byte) f;
+    }
+    
+    @Override
+    public float decodeNormValue(byte b) {
+      return (float) b;
+    }
+
+    @Override
+    public float computeNorm(String field, FieldInvertState state) {
+      return (float) state.getLength();
+    }
+  }
+  
+  // LUCENE-1260
+  public void testCustomEncoder() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    config.setSimilarity(new CustomNormEncodingSimilarity());
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
+    Document doc = new Document();
+    Field foo = newField("foo", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field bar = newField("bar", "", Field.Store.NO, Field.Index.ANALYZED);
+    doc.add(foo);
+    doc.add(bar);
+    
+    for (int i = 0; i < 100; i++) {
+      bar.setValue("singleton");
+      writer.addDocument(doc);
+    }
+    
+    IndexReader reader = writer.getReader();
+    writer.close();
+    
+    byte fooNorms[] = MultiNorms.norms(reader, "foo");
+    for (int i = 0; i < reader.maxDoc(); i++)
+      assertEquals(0, fooNorms[i]);
+    
+    byte barNorms[] = MultiNorms.norms(reader, "bar");
+    for (int i = 0; i < reader.maxDoc(); i++)
+      assertEquals(1, barNorms[i]);
+    
+    reader.close();
+    dir.close();
+  }
 }

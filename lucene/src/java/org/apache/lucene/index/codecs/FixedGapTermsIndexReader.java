@@ -33,29 +33,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.io.IOException;
 
-/**
- * Uses a simplistic format to record terms dict index
- * information.  Limititations:
- *
- *   - Index for all fields is loaded entirely into RAM up
- *     front 
- *   - Index is stored in RAM using shared byte[] that
- *     wastefully expand every term.  Using FST to share
- *     common prefix & suffix would save RAM.
- *   - Index is taken at regular numTerms (every 128 by
- *     default); might be better to do it by "net docFreqs"
- *     encountered, so that for spans of low-freq terms we
- *     take index less often.
- *
- * A better approach might be something similar to how
- * postings are encoded, w/ multi-level skips.  Ie, load all
- * terms index data into memory, as a single large compactly
- * encoded stream (eg delta bytes + delta offset).  Index
- * that w/ multi-level skipper.  Then to look up a term is
- * the equivalent binary search, using the skipper instead,
- * while data remains compressed in memory.
- */
-
 import org.apache.lucene.index.IndexFileNames;
 
 /** @lucene.experimental */
@@ -74,7 +51,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   final private int indexInterval;
 
   // Closed if indexLoaded is true:
-  final private IndexInput in;
+  private IndexInput in;
   private volatile boolean indexLoaded;
 
   private final Comparator<BytesRef> termComp;
@@ -85,7 +62,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   private final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
   private PagedBytes.Reader termBytesReader;
 
-  final HashMap<FieldInfo,FieldIndexReader> fields = new HashMap<FieldInfo,FieldIndexReader>();
+  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<FieldInfo,FieldIndexData>();
   
   // start of the field info data
   protected long dirOffset;
@@ -95,7 +72,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     this.termComp = termComp;
 
-    IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
     
     boolean success = false;
 
@@ -116,49 +93,137 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       seekDir(in, dirOffset);
 
       // Read directory
-      final int numFields = in.readInt();
-
+      final int numFields = in.readVInt();      
       for(int i=0;i<numFields;i++) {
-        final int field = in.readInt();
-        final int numIndexTerms = in.readInt();
-        final long termsStart = in.readLong();
-        final long indexStart = in.readLong();
-        final long packedIndexStart = in.readLong();
-        final long packedOffsetsStart = in.readLong();
+        final int field = in.readVInt();
+        final int numIndexTerms = in.readVInt();
+        final long termsStart = in.readVLong();
+        final long indexStart = in.readVLong();
+        final long packedIndexStart = in.readVLong();
+        final long packedOffsetsStart = in.readVLong();
         assert packedIndexStart >= indexStart: "packedStart=" + packedIndexStart + " indexStart=" + indexStart + " numIndexTerms=" + numIndexTerms + " seg=" + segment;
-        if (numIndexTerms > 0) {
-          final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-          fields.put(fieldInfo, new FieldIndexReader(in, fieldInfo, numIndexTerms, indexStart, termsStart, packedIndexStart, packedOffsetsStart));
-        }
+        final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        fields.put(fieldInfo, new FieldIndexData(fieldInfo, numIndexTerms, indexStart, termsStart, packedIndexStart, packedOffsetsStart));
       }
       success = true;
     } finally {
       if (indexDivisor > 0) {
         in.close();
-        this.in = null;
+        in = null;
         if (success) {
           indexLoaded = true;
         }
         termBytesReader = termBytes.freeze(true);
-      } else {
-        this.in = in;
       }
     }
   }
   
+  @Override
+  public int getDivisor() {
+    return indexDivisor;
+  }
+
   protected void readHeader(IndexInput input) throws IOException {
     CodecUtil.checkHeader(input, FixedGapTermsIndexWriter.CODEC_NAME,
       FixedGapTermsIndexWriter.VERSION_START, FixedGapTermsIndexWriter.VERSION_START);
     dirOffset = input.readLong();
   }
 
-  private final class FieldIndexReader extends FieldReader {
+  private class IndexEnum extends FieldIndexEnum {
+    private final FieldIndexData.CoreFieldIndex fieldIndex;
+    private final BytesRef term = new BytesRef();
+    private final BytesRef nextTerm = new BytesRef();
+    private long ord;
+
+    public IndexEnum(FieldIndexData.CoreFieldIndex fieldIndex) {
+      this.fieldIndex = fieldIndex;
+    }
+
+    @Override
+    public BytesRef term() {
+      return term;
+    }
+
+    @Override
+    public long seek(BytesRef target) {
+      int lo = 0;				  // binary search
+      int hi = fieldIndex.numIndexTerms - 1;
+      assert totalIndexInterval > 0 : "totalIndexInterval=" + totalIndexInterval;
+
+      while (hi >= lo) {
+        int mid = (lo + hi) >>> 1;
+
+        final long offset = fieldIndex.termOffsets.get(mid);
+        final int length = (int) (fieldIndex.termOffsets.get(1+mid) - offset);
+        termBytesReader.fillSlice(term, fieldIndex.termBytesStart + offset, length);
+
+        int delta = termComp.compare(target, term);
+        if (delta < 0) {
+          hi = mid - 1;
+        } else if (delta > 0) {
+          lo = mid + 1;
+        } else {
+          assert mid >= 0;
+          ord = mid*totalIndexInterval;
+          return fieldIndex.termsStart + fieldIndex.termsDictOffsets.get(mid);
+        }
+      }
+
+      if (hi < 0) {
+        assert hi == -1;
+        hi = 0;
+      }
+
+      final long offset = fieldIndex.termOffsets.get(hi);
+      final int length = (int) (fieldIndex.termOffsets.get(1+hi) - offset);
+      termBytesReader.fillSlice(term, fieldIndex.termBytesStart + offset, length);
+
+      ord = hi*totalIndexInterval;
+      return fieldIndex.termsStart + fieldIndex.termsDictOffsets.get(hi);
+    }
+
+    @Override
+    public long next() {
+      final int idx = 1 + (int) (ord / totalIndexInterval);
+      if (idx >= fieldIndex.numIndexTerms) {
+        return -1;
+      }
+      ord += totalIndexInterval;
+
+      final long offset = fieldIndex.termOffsets.get(idx);
+      final int length = (int) (fieldIndex.termOffsets.get(1+idx) - offset);
+      termBytesReader.fillSlice(nextTerm, fieldIndex.termBytesStart + offset, length);
+      return fieldIndex.termsStart + fieldIndex.termsDictOffsets.get(idx);
+    }
+
+    @Override
+    public long ord() {
+      return ord;
+    }
+
+    @Override
+    public long seek(long ord) {
+      int idx = (int) (ord / totalIndexInterval);
+      // caller must ensure ord is in bounds
+      assert idx < fieldIndex.numIndexTerms;
+      final long offset = fieldIndex.termOffsets.get(idx);
+      final int length = (int) (fieldIndex.termOffsets.get(1+idx) - offset);
+      termBytesReader.fillSlice(term, fieldIndex.termBytesStart + offset, length);
+      this.ord = idx * totalIndexInterval;
+      return fieldIndex.termsStart + fieldIndex.termsDictOffsets.get(idx);
+    }
+  }
+
+  @Override
+  public boolean supportsOrd() {
+    return true;
+  }
+
+  private final class FieldIndexData {
 
     final private FieldInfo fieldInfo;
 
-    private volatile CoreFieldIndex coreIndex;
-
-    private final IndexInput in;
+    volatile CoreFieldIndex coreIndex;
 
     private final long indexStart;
     private final long termsStart;
@@ -167,11 +232,10 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     private final int numIndexTerms;
 
-    public FieldIndexReader(IndexInput in, FieldInfo fieldInfo, int numIndexTerms, long indexStart, long termsStart, long packedIndexStart,
-                            long packedOffsetsStart) throws IOException {
+    public FieldIndexData(FieldInfo fieldInfo, int numIndexTerms, long indexStart, long termsStart, long packedIndexStart,
+                          long packedOffsetsStart) throws IOException {
 
       this.fieldInfo = fieldInfo;
-      this.in = in;
       this.termsStart = termsStart;
       this.indexStart = indexStart;
       this.packedIndexStart = packedIndexStart;
@@ -182,12 +246,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       // is -1, so that PrefixCodedTermsReader can call
       // isIndexTerm for each field:
       if (indexDivisor > 0) {
-        coreIndex = new CoreFieldIndex(indexStart,
-                                       termsStart,
-                                       packedIndexStart,
-                                       packedOffsetsStart,
-                                       numIndexTerms);
-      
+        loadTermsIndex();
       }
     }
 
@@ -197,46 +256,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       }
     }
 
-    @Override
-    public boolean isIndexTerm(long ord, int docFreq, boolean onlyLoaded) {
-      if (onlyLoaded) {
-        return ord % totalIndexInterval == 0;
-      } else {
-        return ord % indexInterval == 0;
-      }
-    }
-
-    @Override
-    public boolean nextIndexTerm(long ord, TermsIndexResult result) throws IOException {
-      if (coreIndex == null) {
-        throw new IllegalStateException("terms index was not loaded");
-      } else {
-        return coreIndex.nextIndexTerm(ord, result);
-      }
-    }
-
-    @Override
-    public void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException {
-      // You must call loadTermsIndex if you had specified -1 for indexDivisor
-      if (coreIndex == null) {
-        throw new IllegalStateException("terms index was not loaded");
-      }
-      coreIndex.getIndexOffset(term, result);
-    }
-
-    @Override
-    public void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
-      // You must call loadTermsIndex if you had specified
-      // indexDivisor < 0 to ctor
-      if (coreIndex == null) {
-        throw new IllegalStateException("terms index was not loaded");
-      }
-      coreIndex.getIndexOffset(ord, result);
-    }
-
     private final class CoreFieldIndex {
 
-      final private long termBytesStart;
+      // where this field's terms begin in the packed byte[]
+      // data
+      final long termBytesStart;
 
       // offset into index termBytes
       final PackedInts.Reader termOffsets;
@@ -245,7 +269,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       final PackedInts.Reader termsDictOffsets;
 
       final int numIndexTerms;
-
       final long termsStart;
 
       public CoreFieldIndex(long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, int numIndexTerms) throws IOException {
@@ -315,7 +338,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
               termsDictOffsetsM.set(upto, termsDictOffsetsIter.next());
 
               termOffsetsM.set(upto, termOffsetUpto);
-              upto++;
 
               long termOffset = termOffsetsIter.next();
               long nextTermOffset = termOffsetsIter.next();
@@ -327,6 +349,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
               termBytes.copy(clone, numTermBytes);
               termOffsetUpto += numTermBytes;
+
+              upto++;
+              if (upto == this.numIndexTerms) {
+                break;
+              }
 
               // skip terms:
               termsDictOffsetsIter.next();
@@ -344,71 +371,10 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           }
         }
       }
-
-      public boolean nextIndexTerm(long ord, TermsIndexResult result) throws IOException {
-        int idx = 1 + (int) (ord / totalIndexInterval);
-        if (idx < numIndexTerms) {
-          fillResult(idx, result);
-          return true;
-        } else {
-          return false;
-        }
-      }
-
-      private void fillResult(int idx, TermsIndexResult result) {
-        final long offset = termOffsets.get(idx);
-        final int length = (int) (termOffsets.get(1+idx) - offset);
-        termBytesReader.fillSlice(result.term, termBytesStart + offset, length);
-        result.position = idx * totalIndexInterval;
-        result.offset = termsStart + termsDictOffsets.get(idx);
-      }
-
-      public void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException {
-        int lo = 0;					  // binary search
-        int hi = numIndexTerms - 1;
-        assert totalIndexInterval > 0 : "totalIndexInterval=" + totalIndexInterval;
-
-        while (hi >= lo) {
-          int mid = (lo + hi) >>> 1;
-
-          final long offset = termOffsets.get(mid);
-          final int length = (int) (termOffsets.get(1+mid) - offset);
-          termBytesReader.fillSlice(result.term, termBytesStart + offset, length);
-
-          int delta = termComp.compare(term, result.term);
-          if (delta < 0) {
-            hi = mid - 1;
-          } else if (delta > 0) {
-            lo = mid + 1;
-          } else {
-            assert mid >= 0;
-            result.position = mid*totalIndexInterval;
-            result.offset = termsStart + termsDictOffsets.get(mid);
-            return;
-          }
-        }
-        if (hi < 0) {
-          assert hi == -1;
-          hi = 0;
-        }
-
-        final long offset = termOffsets.get(hi);
-        final int length = (int) (termOffsets.get(1+hi) - offset);
-        termBytesReader.fillSlice(result.term, termBytesStart + offset, length);
-
-        result.position = hi*totalIndexInterval;
-        result.offset = termsStart + termsDictOffsets.get(hi);
-      }
-
-      public void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
-        int idx = (int) (ord / totalIndexInterval);
-        // caller must ensure ord is in bounds
-        assert idx < numIndexTerms;
-        fillResult(idx, result);
-      }
     }
   }
 
+  // Externally synced in IndexWriter
   @Override
   public void loadTermsIndex(int indexDivisor) throws IOException {
     if (!indexLoaded) {
@@ -420,7 +386,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       }
       this.totalIndexInterval = indexInterval * this.indexDivisor;
 
-      Iterator<FieldIndexReader> it = fields.values().iterator();
+      Iterator<FieldIndexData> it = fields.values().iterator();
       while(it.hasNext()) {
         it.next().loadTermsIndex();
       }
@@ -432,8 +398,13 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   @Override
-  public FieldReader getField(FieldInfo fieldInfo) {
-    return fields.get(fieldInfo);
+  public FieldIndexEnum getFieldEnum(FieldInfo fieldInfo) {
+    final FieldIndexData fieldData = fields.get(fieldInfo);
+    if (fieldData.coreIndex == null) {
+      return null;
+    } else {
+      return new IndexEnum(fieldData.coreIndex);
+    }
   }
 
   public static void files(Directory dir, SegmentInfo info, String id, Collection<String> files) {

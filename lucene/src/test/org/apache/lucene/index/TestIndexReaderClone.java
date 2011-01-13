@@ -272,13 +272,13 @@ public class TestIndexReaderClone extends LuceneTestCase {
    * @throws Exception
    */
   private void performDefaultTests(IndexReader r1) throws Exception {
-    float norm1 = Similarity.getDefault().decodeNormValue(r1.norms("field1")[4]);
+    float norm1 = Similarity.getDefault().decodeNormValue(MultiNorms.norms(r1, "field1")[4]);
 
     IndexReader pr1Clone = (IndexReader) r1.clone();
     pr1Clone.deleteDocument(10);
-    pr1Clone.setNorm(4, "field1", 0.5f);
-    assertTrue(Similarity.getDefault().decodeNormValue(r1.norms("field1")[4]) == norm1);
-    assertTrue(Similarity.getDefault().decodeNormValue(pr1Clone.norms("field1")[4]) != norm1);
+    pr1Clone.setNorm(4, "field1", Similarity.getDefault().encodeNormValue(0.5f));
+    assertTrue(Similarity.getDefault().decodeNormValue(MultiNorms.norms(r1, "field1")[4]) == norm1);
+    assertTrue(Similarity.getDefault().decodeNormValue(MultiNorms.norms(pr1Clone, "field1")[4]) != norm1);
 
     final Bits delDocs = MultiFields.getDeletedDocs(r1);
     assertTrue(delDocs == null || !delDocs.get(10));
@@ -327,7 +327,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(random, dir1, false);
     SegmentReader origSegmentReader = getOnlySegmentReader(IndexReader.open(dir1, false));
     origSegmentReader.deleteDocument(1);
-    origSegmentReader.setNorm(4, "field1", 0.5f);
+    origSegmentReader.setNorm(4, "field1", Similarity.getDefault().encodeNormValue(0.5f));
 
     SegmentReader clonedSegmentReader = (SegmentReader) origSegmentReader
         .clone();
@@ -426,9 +426,9 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader orig = IndexReader.open(dir1, false);
-    orig.setNorm(1, "field1", 17.0f);
+    orig.setNorm(1, "field1", Similarity.getDefault().encodeNormValue(17.0f));
     final byte encoded = Similarity.getDefault().encodeNormValue(17.0f);
-    assertEquals(encoded, orig.norms("field1")[1]);
+    assertEquals(encoded, MultiNorms.norms(orig, "field1")[1]);
 
     // the cloned segmentreader should have 2 references, 1 to itself, and 1 to
     // the original segmentreader
@@ -437,7 +437,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     clonedReader.close();
 
     IndexReader r = IndexReader.open(dir1, false);
-    assertEquals(encoded, r.norms("field1")[1]);
+    assertEquals(encoded, MultiNorms.norms(r, "field1")[1]);
     r.close();
     dir1.close();
   }

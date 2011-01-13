@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.TermsEnum;
@@ -27,7 +28,8 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Bits;
 
 public class DuplicateFilter extends Filter
-{
+{ // TODO: make duplicate filter aware of ReaderContext such that we can 
+  // filter duplicates across segments
 	
 	String fieldName;
 	
@@ -70,15 +72,15 @@ public class DuplicateFilter extends Filter
 	}
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException
 	{
 		if(processingMode==PM_FAST_INVALIDATION)
 		{
-			return fastBits(reader);
+			return fastBits(context.reader);
 		}
 		else
 		{
-			return correctBits(reader);
+			return correctBits(context.reader);
 		}
 	}
 	
@@ -96,7 +98,7 @@ public class DuplicateFilter extends Filter
         } else {
           docs = termsEnum.docs(delDocs, docs);
           int doc = docs.nextDoc();
-          if (doc != docs.NO_MORE_DOCS) {
+          if (doc != DocsEnum.NO_MORE_DOCS) {
             if (keepMode == KM_USE_FIRST_OCCURRENCE) {
               bits.set(doc);
             } else {
@@ -104,7 +106,7 @@ public class DuplicateFilter extends Filter
               while (true) {
                 lastDoc = doc;
                 doc = docs.nextDoc();
-                if (doc == docs.NO_MORE_DOCS) {
+                if (doc == DocsEnum.NO_MORE_DOCS) {
                   break;
                 }
               }
@@ -136,7 +138,7 @@ public class DuplicateFilter extends Filter
             // unset potential duplicates
             docs = termsEnum.docs(delDocs, docs);
             int doc = docs.nextDoc();
-            if (doc != docs.NO_MORE_DOCS) {
+            if (doc != DocsEnum.NO_MORE_DOCS) {
               if (keepMode == KM_USE_FIRST_OCCURRENCE) {
                 doc = docs.nextDoc();
               }
@@ -147,7 +149,7 @@ public class DuplicateFilter extends Filter
               lastDoc = doc;
               bits.clear(lastDoc);
               doc = docs.nextDoc();
-              if (doc == docs.NO_MORE_DOCS) {
+              if (doc == DocsEnum.NO_MORE_DOCS) {
                 break;
               }
             }

@@ -370,7 +370,6 @@ final class DocumentsWriter {
       throws CorruptIndexException, IOException {
     ensureOpen();
 
-    Collection<String> flushedFiles = null;
     SegmentInfo newSegment = null;
 
     ThreadState perThread = perThreadPool.getAndLock(Thread.currentThread(), this, doc);
@@ -390,8 +389,6 @@ final class DocumentsWriter {
       newSegment = finishAddDocument(dwpt, perThreadRAMUsedBeforeAdd);
       if (newSegment != null) {
         perThreadPool.clearThreadBindings(perThread);
-        flushedFiles = new HashSet<String>();
-        flushedFiles.addAll(dwpt.flushState.flushedFiles);
       }
 
     } finally {
@@ -399,7 +396,7 @@ final class DocumentsWriter {
     }
 
     if (newSegment != null) {
-      finishFlushedSegment(newSegment, flushedFiles);
+      finishFlushedSegment(newSegment);
       return true;
     }
 
@@ -443,7 +440,6 @@ final class DocumentsWriter {
     boolean anythingFlushed = false;
 
     while (threadsIterator.hasNext()) {
-      Collection<String> flushedFiles = null;
       SegmentInfo newSegment = null;
 
       ThreadState perThread = threadsIterator.next();
@@ -465,8 +461,6 @@ final class DocumentsWriter {
 
           if (newSegment != null) {
             IndexWriter.setDiagnostics(newSegment, "flush");
-            flushedFiles = new HashSet<String>();
-            flushedFiles.addAll(dwpt.flushState.flushedFiles);
             dwpt.pushDeletes(newSegment, indexWriter.segmentInfos);
             anythingFlushed = true;
             perThreadPool.clearThreadBindings(perThread);
@@ -481,7 +475,7 @@ final class DocumentsWriter {
       if (newSegment != null) {
         // important do unlock the perThread before finishFlushedSegment
         // is called to prevent deadlock on IndexWriter mutex
-        finishFlushedSegment(newSegment, flushedFiles);
+        finishFlushedSegment(newSegment);
       }
     }
 
@@ -500,14 +494,14 @@ final class DocumentsWriter {
     cfsWriter.close();
   }
 
-  void finishFlushedSegment(SegmentInfo newSegment, Collection<String> flushedFiles) throws IOException {
+  void finishFlushedSegment(SegmentInfo newSegment) throws IOException {
     if (indexWriter.useCompoundFile(newSegment)) {
       String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
       message("creating compound file " + compoundFileName);
       // Now build compound file
       boolean success = false;
       try {
-        createCompoundFile(compoundFileName, flushedFiles);
+        createCompoundFile(compoundFileName, newSegment.files());
         success = true;
       } finally {
         if (!success) {
@@ -518,14 +512,14 @@ final class DocumentsWriter {
 
           indexWriter.deleter.deleteFile(IndexFileNames.segmentFileName(newSegment.name, "",
               IndexFileNames.COMPOUND_FILE_EXTENSION));
-          for (String file : flushedFiles) {
+          for (String file : newSegment.files()) {
             indexWriter.deleter.deleteFile(file);
           }
 
         }
       }
 
-      for (String file : flushedFiles) {
+      for (String file : newSegment.files()) {
         indexWriter.deleter.deleteFile(file);
       }
 

@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
@@ -134,7 +136,7 @@ public class MultiPhraseQuery extends Query {
     private float queryNorm;
     private float queryWeight;
 
-    public MultiPhraseWeight(Searcher searcher)
+    public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
 
@@ -167,10 +169,10 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
-
+      final IndexReader reader = context.reader;
       final Bits delDocs = reader.getDeletedDocs();
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
@@ -219,7 +221,7 @@ public class MultiPhraseQuery extends Query {
 
       if (slop == 0) {
         ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
-                                                    reader.norms(field));
+            reader.norms(field));
         if (s.noDocs) {
           return null;
         } else {
@@ -232,7 +234,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
@@ -263,7 +265,7 @@ public class MultiPhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = scorer(reader, true, false);
+      Scorer scorer = scorer(context, ScorerContext.def());
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
@@ -283,7 +285,7 @@ public class MultiPhraseQuery extends Query {
       fieldExpl.addDetail(idfExpl);
 
       Explanation fieldNormExpl = new Explanation();
-      byte[] fieldNorms = reader.norms(field);
+      byte[] fieldNorms = context.reader.norms(field);
       float fieldNorm =
         fieldNorms!=null ? similarity.decodeNormValue(fieldNorms[doc]) : 1.0f;
       fieldNormExpl.setValue(fieldNorm);
@@ -324,7 +326,7 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new MultiPhraseWeight(searcher);
   }
 

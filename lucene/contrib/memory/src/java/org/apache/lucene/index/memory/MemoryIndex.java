@@ -38,6 +38,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
@@ -48,10 +51,10 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
@@ -421,7 +424,7 @@ public class MemoryIndex implements Serializable {
     if (query == null) 
       throw new IllegalArgumentException("query must not be null");
     
-    Searcher searcher = createSearcher();
+    IndexSearcher searcher = createSearcher();
     try {
       final float[] scores = new float[1]; // inits to 0.0f (no match)
       searcher.search(query, new Collector() {
@@ -443,7 +446,7 @@ public class MemoryIndex implements Serializable {
         }
 
         @Override
-        public void setNextReader(IndexReader reader, int docBase) { }
+        public void setNextReader(AtomicReaderContext context) { }
       });
       float score = scores[0];
       return score;
@@ -738,7 +741,8 @@ public class MemoryIndex implements Serializable {
    */
   private final class MemoryIndexReader extends IndexReader {
     
-    private Searcher searcher; // needed to find searcher.getSimilarity() 
+    private IndexSearcher searcher; // needed to find searcher.getSimilarity() 
+    private final ReaderContext readerInfos = new AtomicReaderContext(this);
     
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -764,6 +768,11 @@ public class MemoryIndex implements Serializable {
       if (info != null) freq = info.getPositions(term.bytes()) != null ? 1 : 0;
       if (DEBUG) System.err.println("MemoryIndexReader.docFreq: " + term + ", freq:" + freq);
       return freq;
+    }
+    
+    @Override
+    public ReaderContext getTopReaderContext() {
+      return readerInfos;
     }
   
     @Override
@@ -877,10 +886,6 @@ public class MemoryIndex implements Serializable {
       }
 
       @Override
-      public void cacheCurrentTerm() {
-      }
-
-      @Override
       public long ord() {
         return termUpto;
       }
@@ -910,8 +915,21 @@ public class MemoryIndex implements Serializable {
       public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
-    }
 
+      @Override
+      public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+        assert state != null;
+        return this.seek(((OrdTermState)state).ord);
+      }
+
+      @Override
+      public TermState termState() throws IOException {
+        OrdTermState ts = new OrdTermState();
+        ts.ord = termUpto;
+        return ts;
+      }
+    }
+    
     private class MemoryDocsEnum extends DocsEnum {
       private ArrayIntList positions;
       private boolean hasNext;
@@ -1135,7 +1153,7 @@ public class MemoryIndex implements Serializable {
       return Similarity.getDefault();
     }
     
-    private void setSearcher(Searcher searcher) {
+    private void setSearcher(IndexSearcher searcher) {
       this.searcher = searcher;
     }
     
@@ -1165,13 +1183,6 @@ public class MemoryIndex implements Serializable {
         if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + ":" + n + ":" + norm + ":" + numTokens);
       }
       return norms;
-    }
-  
-    @Override
-    public void norms(String fieldName, byte[] bytes, int offset) {
-      if (DEBUG) System.err.println("MemoryIndexReader.norms*: " + fieldName);
-      byte[] norms = norms(fieldName);
-      System.arraycopy(norms, 0, bytes, offset, norms.length);
     }
   
     @Override

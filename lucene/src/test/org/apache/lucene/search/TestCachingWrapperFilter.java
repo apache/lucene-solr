@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
@@ -39,21 +40,21 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
-
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     MockFilter filter = new MockFilter();
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
     // first time, nested filter is called
-    cacher.getDocIdSet(reader);
+    cacher.getDocIdSet(context);
     assertTrue("first time", filter.wasCalled());
 
     // make sure no exception if cache is holding the wrong docIdSet
-    cacher.getDocIdSet(reader);
+    cacher.getDocIdSet(context);
 
     // second time, nested filter should not be called
     filter.clear();
-    cacher.getDocIdSet(reader);
+    cacher.getDocIdSet(context);
     assertFalse("second time", filter.wasCalled());
 
     reader.close();
@@ -65,18 +66,19 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context) {
         return null;
       }
     };
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
     // the caching filter should return the empty set constant
-    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(reader));
+    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(context));
     
     reader.close();
     dir.close();
@@ -87,11 +89,12 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(dir, true));
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
 
     final Filter filter = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context) {
         return new DocIdSet() {
           @Override
           public DocIdSetIterator iterator() {
@@ -103,16 +106,18 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
     // the caching filter should return the empty set constant
-    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(reader));
+    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(context));
     
     reader.close();
     dir.close();
   }
   
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
+    assertTrue(reader.getTopReaderContext().isAtomic);
+    AtomicReaderContext context = (AtomicReaderContext) reader.getTopReaderContext();
     final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
-    final DocIdSet originalSet = filter.getDocIdSet(reader);
-    final DocIdSet cachedSet = cacher.getDocIdSet(reader);
+    final DocIdSet originalSet = filter.getDocIdSet(context);
+    final DocIdSet cachedSet = cacher.getDocIdSet(context);
     assertTrue(cachedSet.isCacheable());
     assertEquals(shouldCacheable, originalSet.isCacheable());
     //System.out.println("Original: "+originalSet.getClass().getName()+" -- cached: "+cachedSet.getClass().getName());
@@ -140,7 +145,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // a openbitset filter is always cacheable
     assertDocIdSetCacheable(reader, new Filter() {
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) {
+      public DocIdSet getDocIdSet(AtomicReaderContext context) {
         return new OpenBitSet();
       }
     }, true);

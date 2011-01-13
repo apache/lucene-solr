@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 
 /**
@@ -101,7 +102,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     protected ArrayList<Weight> weights = new ArrayList<Weight>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
 
     /* Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
-    public DisjunctionMaxWeight(Searcher searcher) throws IOException {
+    public DisjunctionMaxWeight(IndexSearcher searcher) throws IOException {
       this.similarity = searcher.getSimilarity();
       for (Query disjunctQuery : disjuncts) {
         weights.add(disjunctQuery.createWeight(searcher));
@@ -141,12 +142,11 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /* Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
-        boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       Scorer[] scorers = new Scorer[weights.size()];
       int idx = 0;
       for (Weight w : weights) {
-        Scorer subScorer = w.scorer(reader, true, false);
+        Scorer subScorer = w.scorer(context, ScorerContext.def());
         if (subScorer != null && subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           scorers[idx++] = subScorer;
         }
@@ -158,13 +158,13 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /* Explain the score we computed for doc */
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      if (disjuncts.size() == 1) return weights.get(0).explain(reader,doc);
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      if (disjuncts.size() == 1) return weights.get(0).explain(context,doc);
       ComplexExplanation result = new ComplexExplanation();
       float max = 0.0f, sum = 0.0f;
       result.setDescription(tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:");
       for (Weight wt : weights) {
-        Explanation e = wt.explain(reader, doc);
+        Explanation e = wt.explain(context, doc);
         if (e.isMatch()) {
           result.setMatch(Boolean.TRUE);
           result.addDetail(e);
@@ -180,7 +180,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /* Create the Weight used to score us */
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new DisjunctionMaxWeight(searcher);
   }
 

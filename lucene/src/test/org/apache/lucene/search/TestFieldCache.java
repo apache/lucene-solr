@@ -180,7 +180,14 @@ public class TestFieldCache extends LuceneTestCase {
       assertEquals(val2, val1);
     }
 
-
+    // seek the enum around (note this isn't a great test here)
+    for (int i = 0; i < 100 * RANDOM_MULTIPLIER; i++) {
+      int k = _TestUtil.nextInt(random, 1, nTerms-1);
+      BytesRef val1 = termsIndex.lookup(k, val);
+      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seek(val1));
+      assertEquals(val1, tenum.term());
+    }
+    
     // test bad field
     termsIndex = cache.getTermsIndex(reader, "bogusfield");
 

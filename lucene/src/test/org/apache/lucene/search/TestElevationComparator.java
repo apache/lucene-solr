@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
@@ -177,8 +178,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-       idIndex = FieldCache.DEFAULT.getTermsIndex(reader, fieldname);
+     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+       idIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, fieldname);
        return this;
      }
 

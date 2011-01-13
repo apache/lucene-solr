@@ -22,9 +22,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 
 import java.text.DecimalFormat;
@@ -59,8 +62,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1.0f;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      // Disable length norm
+      return state.getBoost();
     }
     
     @Override
@@ -163,9 +167,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     
     QueryUtils.check(random, dq, s);
-    
+    assertTrue(s.getTopReaderContext().isAtomic);
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
+    final Scorer ds = dw.scorer((AtomicReaderContext)s.getTopReaderContext(), ScorerContext.def());
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
@@ -177,11 +181,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     final DisjunctionMaxQuery dq = new DisjunctionMaxQuery(0.0f);
     dq.add(tq("dek", "albino"));
     dq.add(tq("dek", "DOES_NOT_EXIST"));
-    
+    assertTrue(s.getTopReaderContext().isAtomic);
     QueryUtils.check(random, dq, s);
-    
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
+    final Scorer ds = dw.scorer((AtomicReaderContext)s.getTopReaderContext(), ScorerContext.def());
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));
@@ -473,7 +476,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     return q;
   }
   
-  protected void printHits(String test, ScoreDoc[] h, Searcher searcher)
+  protected void printHits(String test, ScoreDoc[] h, IndexSearcher searcher)
       throws Exception {
     
     System.err.println("------- " + test + " -------");

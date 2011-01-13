@@ -78,7 +78,7 @@ public class FacetComponent extends SearchComponent
               params,
               rb );
 
-      NamedList counts = f.getFacetCounts();
+      NamedList<Object> counts = f.getFacetCounts();
       String[] pivots = params.getParams( FacetParams.FACET_PIVOT );
       if( pivots != null && pivots.length > 0 ) {
         NamedList v = pivotHelper.process(rb, params, pivots);
@@ -264,7 +264,9 @@ public class FacetComponent extends SearchComponent
       int shardNum = rb.getShardNum(srsp.getShard());
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
 
-      fi.addExceptions((List)facet_counts.get("exception"));
+      @SuppressWarnings("unchecked")
+      List<String> excepts = (List<String>)facet_counts.get("exception");
+      fi.addExceptions(excepts);
 
       // handle facet queries
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
@@ -298,7 +300,10 @@ public class FacetComponent extends SearchComponent
       if (dff.limit <= 0) continue; // no need to check these facets for refinement
       if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_INDEX)) continue;
 
-      dff._toRefine = new List[rb.shards.length];
+      @SuppressWarnings("unchecked") // generic array's are anoying
+      List<String>[] tmp = (List<String>[]) new List[rb.shards.length];
+      dff._toRefine = tmp;
+
       ShardFacetCount[] counts = dff.getCountSorted();
       int ntop = Math.min(counts.length, dff.offset + dff.limit);
       long smallestCount = counts.length == 0 ? 0 : counts[ntop-1].count;
@@ -353,8 +358,10 @@ public class FacetComponent extends SearchComponent
       // int shardNum = rb.getShardNum(srsp.shard);
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
       NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
-
-      fi.addExceptions((List)facet_counts.get("exception"));
+  
+      @SuppressWarnings("unchecked") 
+      List<String> excepts = (List<String>)facet_counts.get("exception");
+      fi.addExceptions(excepts);
 
       if (facet_fields == null) continue; // this can happen when there's an exception      
 
@@ -384,23 +391,23 @@ public class FacetComponent extends SearchComponent
 
     FacetInfo fi = rb._facetInfo;
 
-    NamedList facet_counts = new SimpleOrderedMap();
+    NamedList<Object> facet_counts = new SimpleOrderedMap<Object>();
 
     if (fi.exceptionList != null) {
       facet_counts.add("exception",fi.exceptionList);
     }
 
-    NamedList facet_queries = new SimpleOrderedMap();
+    NamedList<Number> facet_queries = new SimpleOrderedMap<Number>();
     facet_counts.add("facet_queries",facet_queries);
     for (QueryFacet qf : fi.queryFacets.values()) {
       facet_queries.add(qf.getKey(), num(qf.count));
     }
 
-    NamedList facet_fields = new SimpleOrderedMap();
+    NamedList<Object> facet_fields = new SimpleOrderedMap<Object>();
     facet_counts.add("facet_fields", facet_fields);
 
     for (DistribFieldFacet dff : fi.facets.values()) {
-      NamedList fieldCounts = new NamedList(); // order is more important for facets
+      NamedList<Object> fieldCounts = new NamedList<Object>(); // order is more important for facets
       facet_fields.add(dff.getKey(), fieldCounts);
 
       ShardFacetCount[] counts;
@@ -486,7 +493,7 @@ public class FacetComponent extends SearchComponent
   public static class FacetInfo {
     public LinkedHashMap<String,QueryFacet> queryFacets;
     public LinkedHashMap<String,DistribFieldFacet> facets;
-    public List exceptionList;
+    public List<String> exceptionList;
 
     void parse(SolrParams params, ResponseBuilder rb) {
       queryFacets = new LinkedHashMap<String,QueryFacet>();
@@ -510,9 +517,9 @@ public class FacetComponent extends SearchComponent
       }
     }
         
-    public void addExceptions(List exceptions) {
+    public void addExceptions(List<String> exceptions) {
       if (exceptions == null) return;
-      if (exceptionList == null) exceptionList = new ArrayList();
+      if (exceptionList == null) exceptionList = new ArrayList<String>();
       exceptionList.addAll(exceptions);
     }
   }

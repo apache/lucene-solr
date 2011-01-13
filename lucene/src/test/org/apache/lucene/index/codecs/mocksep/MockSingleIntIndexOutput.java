@@ -42,6 +42,7 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
   /** Write an int to the primary file */
   @Override
   public void write(int v) throws IOException {
+    assert v >= 0;
     out.writeVInt(v);
   }
 

@@ -18,9 +18,11 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.util.Map;
 import java.io.IOException;
@@ -35,12 +37,12 @@ public abstract class SolrFilter extends Filter {
 
   /** Implementations should propagate createWeight to sub-ValueSources which can store weight info in the context.
    * The context object will be passed to getDocIdSet() where this info can be retrieved. */
-  public abstract void createWeight(Map context, Searcher searcher) throws IOException;
+  public abstract void createWeight(Map context, IndexSearcher searcher) throws IOException;
   
-  public abstract DocIdSet getDocIdSet(Map context, IndexReader reader) throws IOException;
+  public abstract DocIdSet getDocIdSet(Map context, AtomicReaderContext readerContext) throws IOException;
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    return getDocIdSet(null, reader);
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    return getDocIdSet(null, context);
   }
 }

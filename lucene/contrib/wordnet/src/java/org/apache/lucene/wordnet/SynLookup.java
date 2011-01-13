@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -39,7 +40,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 
@@ -60,7 +60,7 @@ public class SynLookup {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {}
+    public void setNextReader(AtomicReaderContext context) {}
     @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
@@ -114,7 +114,7 @@ public class SynLookup {
 	 * @param boost
 	 */ 
 	public static Query expand( String query,
-								Searcher syns,
+								IndexSearcher syns,
 								Analyzer a,
 								final String field,
 								final float boost)
@@ -170,9 +170,9 @@ public class SynLookup {
         }
 
         @Override
-        public void setNextReader(IndexReader reader, int docBase)
+        public void setNextReader(AtomicReaderContext context)
             throws IOException {
-          this.reader = reader;
+          this.reader = context.reader;
         }
 
         @Override

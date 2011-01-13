@@ -16,7 +16,7 @@ package org.apache.solr.search.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.cache.ByteValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.ByteValues;
 
@@ -41,8 +41,8 @@ public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
     return "byte(" + field + ')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final ByteValues vals = cache.getBytes(reader, field, creator);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final ByteValues vals = cache.getBytes(readerContext.reader, field, creator);
     final byte[] arr = vals.values;
     
     return new DocValues() {

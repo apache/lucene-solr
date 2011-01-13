@@ -18,10 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.Bits;
-import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
@@ -60,14 +60,14 @@ public class FunctionQuery extends Query {
   public void extractTerms(Set terms) {}
 
   protected class FunctionWeight extends Weight {
-    protected Searcher searcher;
+    protected IndexSearcher searcher;
     protected float queryNorm;
     protected float queryWeight;
     protected Map context;
 
-    public FunctionWeight(Searcher searcher) throws IOException {
+    public FunctionWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
-      this.context = func.newContext();
+      this.context = func.newContext(searcher);
       func.createWeight(context, searcher);
     }
 
@@ -94,18 +94,13 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new AllScorer(getSimilarity(searcher), reader, this);
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      return new AllScorer(getSimilarity(searcher), context, this);
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      SolrIndexReader topReader = (SolrIndexReader)reader;
-      SolrIndexReader[] subReaders = topReader.getLeafReaders();
-      int[] offsets = topReader.getLeafOffsets();
-      int readerPos = SolrIndexReader.readerIndex(doc, offsets);
-      int readerBase = offsets[readerPos];
-      return ((AllScorer)scorer(subReaders[readerPos], true, true)).explain(doc-readerBase);
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      return ((AllScorer)scorer(context, ScorerContext.def().scoreDocsInOrder(true).topScorer(true))).explain(doc);
     }
   }
 
@@ -119,16 +114,16 @@ public class FunctionQuery extends Query {
     final boolean hasDeletions;
     final Bits delDocs;
 
-    public AllScorer(Similarity similarity, IndexReader reader, FunctionWeight w) throws IOException {
+    public AllScorer(Similarity similarity, AtomicReaderContext context, FunctionWeight w) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
-      this.reader = reader;
+      this.reader = context.reader;
       this.maxDoc = reader.maxDoc();
       this.hasDeletions = reader.hasDeletions();
       this.delDocs = MultiFields.getDeletedDocs(reader);
       assert !hasDeletions || delDocs != null;
-      vals = func.getValues(weight.context, reader);
+      vals = func.getValues(weight.context, context);
     }
 
     @Override
@@ -184,7 +179,7 @@ public class FunctionQuery extends Query {
 
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 

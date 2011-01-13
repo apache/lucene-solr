@@ -54,7 +54,7 @@ class LuceneQueryOptimizer {
   }
 
   public TopDocs optimize(BooleanQuery original,
-                          Searcher searcher,
+                          IndexSearcher searcher,
                           int numHits,
                           Query[] queryOut,
                           Filter[] filterOut

@@ -18,7 +18,9 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -55,26 +57,28 @@ public class ReverseOrdFieldSource extends ValueSource {
     return "rord("+field+')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(reader, field);
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader;
+    final int off = readerContext.docBase;
 
+    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(topReader, field);
     final int end = sindex.numOrd();
 
     return new DocValues() {
       public float floatVal(int doc) {
-        return (float)(end - sindex.getOrd(doc));
+        return (float)(end - sindex.getOrd(doc+off));
       }
 
       public int intVal(int doc) {
-        return (end - sindex.getOrd(doc));
+        return (end - sindex.getOrd(doc+off));
       }
 
       public long longVal(int doc) {
-        return (long)(end - sindex.getOrd(doc));
+        return (long)(end - sindex.getOrd(doc+off));
       }
 
       public int ordVal(int doc) {
-        return (end - sindex.getOrd(doc));
+        return (end - sindex.getOrd(doc+off));
       }
 
       public int numOrd() {
@@ -82,12 +86,12 @@ public class ReverseOrdFieldSource extends ValueSource {
       }
 
       public double doubleVal(int doc) {
-        return (double)(end - sindex.getOrd(doc));
+        return (double)(end - sindex.getOrd(doc+off));
       }
 
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
-        return Integer.toString((end - sindex.getOrd(doc)));
+        return Integer.toString((end - sindex.getOrd(doc+off)));
       }
 
       public String toString(int doc) {

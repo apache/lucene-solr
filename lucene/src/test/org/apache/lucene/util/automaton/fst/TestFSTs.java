@@ -20,13 +20,13 @@ package org.apache.lucene.util.automaton.fst;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -40,6 +40,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -122,8 +123,10 @@ public class TestFSTs extends LuceneTestCase {
   }
 
   public void testBasicFSA() throws IOException {
-    String[] strings = new String[] {"station", "commotion", "elation", "elastic", "plastic", "stop", "ftop", "ftation"};
+    String[] strings = new String[] {"station", "commotion", "elation", "elastic", "plastic", "stop", "ftop", "ftation", "stat"};
+    String[] strings2 = new String[] {"station", "commotion", "elation", "elastic", "plastic", "stop", "ftop", "ftation"};
     IntsRef[] terms = new IntsRef[strings.length];
+    IntsRef[] terms2 = new IntsRef[strings2.length];
     for(int inputMode=0;inputMode<2;inputMode++) {
       if (VERBOSE) {
         System.out.println("TEST: inputMode=" + inputModeToString(inputMode));
@@ -132,6 +135,10 @@ public class TestFSTs extends LuceneTestCase {
       for(int idx=0;idx<strings.length;idx++) {
         terms[idx] = toIntsRef(strings[idx], inputMode);
       }
+      for(int idx=0;idx<strings2.length;idx++) {
+        terms2[idx] = toIntsRef(strings2[idx], inputMode);
+      }
+      Arrays.sort(terms2);
 
       doTest(inputMode, terms);
     
@@ -141,8 +148,8 @@ public class TestFSTs extends LuceneTestCase {
       {
         final Outputs<Object> outputs = NoOutputs.getSingleton();
         final Object NO_OUTPUT = outputs.getNoOutput();      
-        final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms.length);
-        for(IntsRef term : terms) {
+        final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms2.length);
+        for(IntsRef term : terms2) {
           pairs.add(new FSTTester.InputOutput<Object>(term, NO_OUTPUT));
         }
         FST<Object> fst = new FSTTester<Object>(random, dir, inputMode, pairs, outputs).doTest(0, 0);
@@ -154,9 +161,9 @@ public class TestFSTs extends LuceneTestCase {
       // FST ord pos int
       {
         final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
-        final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
-        for(int idx=0;idx<terms.length;idx++) {
-          pairs.add(new FSTTester.InputOutput<Long>(terms[idx], outputs.get(idx)));
+        final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms2.length);
+        for(int idx=0;idx<terms2.length;idx++) {
+          pairs.add(new FSTTester.InputOutput<Long>(terms2[idx], outputs.get(idx)));
         }
         final FST<Long> fst = new FSTTester<Long>(random, dir, inputMode, pairs, outputs).doTest(0, 0);
         assertNotNull(fst);
@@ -168,10 +175,10 @@ public class TestFSTs extends LuceneTestCase {
       {
         final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
         final BytesRef NO_OUTPUT = outputs.getNoOutput();      
-        final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<FSTTester.InputOutput<BytesRef>>(terms.length);
-        for(int idx=0;idx<terms.length;idx++) {
+        final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<FSTTester.InputOutput<BytesRef>>(terms2.length);
+        for(int idx=0;idx<terms2.length;idx++) {
           final BytesRef output = random.nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
-          pairs.add(new FSTTester.InputOutput<BytesRef>(terms[idx], output));
+          pairs.add(new FSTTester.InputOutput<BytesRef>(terms2[idx], output));
         }
         final FST<BytesRef> fst = new FSTTester<BytesRef>(random, dir, inputMode, pairs, outputs).doTest(0, 0);
         assertNotNull(fst);
@@ -322,19 +329,6 @@ public class TestFSTs extends LuceneTestCase {
       }
     }
 
-    private String getRandomString() {
-      final String term;
-      if (random.nextBoolean()) {
-        term = _TestUtil.randomRealisticUnicodeString(random);
-      } else {
-        // we want to mix in limited-alphabet symbols so
-        // we get more sharing of the nodes given how few
-        // terms we are testing...
-        term = simpleRandomString(random);
-      }
-      return term;
-    }
-
     public void doTest() throws IOException {
       // no pruning
       doTest(0, 0);
@@ -346,156 +340,83 @@ public class TestFSTs extends LuceneTestCase {
       doTest(0, _TestUtil.nextInt(random, 1, 1+pairs.size()));
     }
 
-    // NOTE: only copies the stuff this test needs!!
-    private FST.Arc<T> copyArc(FST.Arc<T> arc) {
-      final FST.Arc<T> copy = new FST.Arc<T>();
-      copy.label = arc.label;
-      copy.target = arc.target;
-      copy.output = arc.output;
-      copy.nextFinalOutput = arc.nextFinalOutput;
-      return arc;
-    }
-
     // runs the term, returning the output, or null if term
-    // isn't accepted.  if stopNode is non-null it must be
-    // length 2 int array; stopNode[0] will be the last
-    // matching node (-1 if the term is accepted)
-    // and stopNode[1] will be the length of the
-    // term prefix that matches
-    private T run(FST<T> fst, IntsRef term, int[] stopNode) throws IOException {
-      if (term.length == 0) {
-        final T output = fst.getEmptyOutput();
-        if (stopNode != null) {
-          stopNode[1] = 0;
-          if (output != null) {
-            // accepted
-            stopNode[0] = -1;
-          } else {
-            stopNode[0] = fst.getStartNode();
-          }
-        }
-        return output;
-      }
+    // isn't accepted.  if prefixLength is non-null it must be
+    // length 1 int array; prefixLength[0] is set to the length
+    // of the term prefix that matches
+    private T run(FST<T> fst, IntsRef term, int[] prefixLength) throws IOException {
+      assert prefixLength == null || prefixLength.length == 1;
+      final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
+      final T NO_OUTPUT = fst.outputs.getNoOutput();
+      T output = NO_OUTPUT;
 
-      final FST.Arc<T> arc = new FST.Arc<T>();
-      int node = fst.getStartNode();
-      int lastNode = -1;
-      T output = fst.outputs.getNoOutput();
-      //System.out.println("match?");
-      for(int i=0;i<term.length;i++) {
-        //System.out.println("  int=" + term.ints[i]);
-        if (!fst.hasArcs(node)) {
-          //System.out.println("    no arcs!");
-          // hit end node before term's end
-          if (stopNode != null) {
-            stopNode[0] = lastNode;
-            stopNode[1] = i-1;
+      for(int i=0;i<=term.length;i++) {
+        final int label;
+        if (i == term.length) {
+          label = FST.END_LABEL;
+        } else {
+          label = term.ints[term.offset+i];
+        }
+        //System.out.println("   loop i=" + i + " label=" + label + " output=" + fst.outputs.outputToString(output) + " curArc: target=" + arc.target + " isFinal?=" + arc.isFinal());
+        if (fst.findTargetArc(label, arc, arc) == null) {
+          if (prefixLength != null) {
+            prefixLength[0] = i;
             return output;
           } else {
             return null;
           }
         }
-
-        if (fst.findArc(node, term.ints[term.offset + i], arc) != null) {
-          node = arc.target;
-          //System.out.println("    match final?=" + arc.isFinal());
-          if (arc.output != fst.outputs.getNoOutput()) {
-            output = fst.outputs.add(output, arc.output);
-          }
-        } else if (stopNode != null) {
-          stopNode[0] = node;
-          stopNode[1] = i;
-          return output;
-        } else {
-          //System.out.println("    no match");
-          return null;
-        }
-
-        lastNode = node;
+        output = fst.outputs.add(output, arc.output);
       }
 
-      if (!arc.isFinal()) {
-        // hit term's end before end node
-        if (stopNode != null) {
-          stopNode[0] = node;
-          stopNode[1] = term.length;
-          return output;
-        } else {
-          return null;
-        }
+      if (prefixLength != null) {
+        prefixLength[0] = term.length;
       }
 
-      if (arc.nextFinalOutput != fst.outputs.getNoOutput()) {
-        output = fst.outputs.add(output, arc.nextFinalOutput);
-      }
-
-      if (stopNode != null) {
-        stopNode[0] = -1;
-        stopNode[1] = term.length;
-      }
       return output;
     }
 
     private T randomAcceptedWord(FST<T> fst, IntsRef in) throws IOException {
-      int node = fst.getStartNode();
+      FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
 
-      if (fst.noNodes()) {
-        // degenerate FST: only accepts the empty string
-        assertTrue(fst.getEmptyOutput() != null);
-        in.length = 0;
-        return fst.getEmptyOutput();
-      }
       final List<FST.Arc<T>> arcs = new ArrayList<FST.Arc<T>>();
       in.length = 0;
       in.offset = 0;
-      T output = fst.outputs.getNoOutput();
-      //System.out.println("get random");
+      final T NO_OUTPUT = fst.outputs.getNoOutput();
+      T output = NO_OUTPUT;
+
       while(true) {
         // read all arcs:
-        //System.out.println("  n=" + node);
-        int arcAddress = node;
-        FST.Arc<T> arc = new FST.Arc<T>();
-        fst.readFirstArc(arcAddress, arc);
-        arcs.add(copyArc(arc));
+        fst.readFirstTargetArc(arc, arc);
+        arcs.add(new FST.Arc<T>().copyFrom(arc));
         while(!arc.isLast()) {
           fst.readNextArc(arc);
-          arcs.add(copyArc(arc));
+          arcs.add(new FST.Arc<T>().copyFrom(arc));
         }
       
         // pick one
         arc = arcs.get(random.nextInt(arcs.size()));
-
         arcs.clear();
 
+        // accumulate output
+        output = fst.outputs.add(output, arc.output);
+
         // append label
+        if (arc.label == FST.END_LABEL) {
+          break;
+        }
+
         if (in.ints.length == in.length) {
           in.grow(1+in.length);
         }
         in.ints[in.length++] = arc.label;
-
-        output = fst.outputs.add(output, arc.output);
-
-        // maybe stop
-        if (arc.isFinal()) {
-          if (fst.hasArcs(arc.target)) {
-            // final state but it also has outgoing edges
-            if (random.nextBoolean()) {
-              output = fst.outputs.add(output, arc.nextFinalOutput);
-              break;
-            }
-          } else {
-            break;
-          }
-        }
-
-        node = arc.target;
       }
 
       return output;
     }
 
 
-    private FST<T> doTest(int prune1, int prune2) throws IOException {
+    FST<T> doTest(int prune1, int prune2) throws IOException {
       if (VERBOSE) {
         System.out.println("TEST: prune1=" + prune1 + " prune2=" + prune2);
       }
@@ -524,7 +445,7 @@ public class TestFSTs extends LuceneTestCase {
 
       if (VERBOSE && pairs.size() <= 20 && fst != null) {
         PrintStream ps = new PrintStream("out.dot");
-        fst.toDot(ps);
+        Util.toDot(fst, ps);
         ps.close();
         System.out.println("SAVED out.dot");
       }
@@ -566,11 +487,19 @@ public class TestFSTs extends LuceneTestCase {
 
       assertNotNull(fst);
 
-      // make sure all words are accepted
+      // visit valid paris in order -- make sure all words
+      // are accepted, and FSTEnum's next() steps through
+      // them correctly
+      if (VERBOSE) {
+        System.out.println("TEST: check valid terms/next()");
+      }
       {
         IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
         for(InputOutput<T> pair : pairs) {
           IntsRef term = pair.input;
+          if (VERBOSE) {
+            System.out.println("TEST: check term=" + inputToString(inputMode, term) + " output=" + fst.outputs.outputToString(pair.output));
+          }
           Object output = run(fst, term, null);
 
           assertNotNull("term " + inputToString(inputMode, term) + " is not accepted", output);
@@ -578,8 +507,8 @@ public class TestFSTs extends LuceneTestCase {
 
           // verify enum's next
           IntsRefFSTEnum.InputOutput<T> t = fstEnum.next();
-
-          assertEquals(term, t.input);
+          assertNotNull(t);
+          assertEquals("expected input=" + inputToString(inputMode, term) + " but fstEnum returned " + inputToString(inputMode, t.input), term, t.input);
           assertEquals(pair.output, t.output);
         }
         assertNull(fstEnum.next());
@@ -591,6 +520,9 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // find random matching word and make sure it's valid
+      if (VERBOSE) {
+        System.out.println("TEST: verify random accepted terms");
+      }
       final IntsRef scratch = new IntsRef(10);
       for(int iter=0;iter<500*RANDOM_MULTIPLIER;iter++) {
         T output = randomAcceptedWord(fst, scratch);
@@ -598,10 +530,15 @@ public class TestFSTs extends LuceneTestCase {
         assertEquals(termsMap.get(scratch), output);
       }
     
-      // test single IntsRefFSTEnum.advance:
-      //System.out.println("TEST: verify advance");
+      // test IntsRefFSTEnum.seek:
+      if (VERBOSE) {
+        System.out.println("TEST: verify seek");
+      }
+      IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
       for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
-        final IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
+        if (VERBOSE) {
+          System.out.println("TEST: iter=" + iter);
+        }
         if (random.nextBoolean()) {
           // seek to term that doesn't exist:
           while(true) {
@@ -611,15 +548,35 @@ public class TestFSTs extends LuceneTestCase {
               pos = -(pos+1);
               // ok doesn't exist
               //System.out.println("  seek " + inputToString(inputMode, term));
-              final IntsRefFSTEnum.InputOutput<T> seekResult = fstEnum.advance(term);
-              if (pos < pairs.size()) {
+              final IntsRefFSTEnum.InputOutput<T> seekResult;
+              if (random.nextBoolean()) {
+                if (VERBOSE) {
+                  System.out.println("  do non-exist seekFloor term=" + inputToString(inputMode, term));
+                }
+                seekResult = fstEnum.seekFloor(term);
+                pos--;
+              } else {
+                if (VERBOSE) {
+                  System.out.println("  do non-exist seekCeil term=" + inputToString(inputMode, term));
+                }
+                seekResult = fstEnum.seekCeil(term);
+              }
+
+              if (pos != -1 && pos < pairs.size()) {
                 //System.out.println("    got " + inputToString(inputMode,seekResult.input) + " output=" + fst.outputs.outputToString(seekResult.output));
-                assertEquals(pairs.get(pos).input, seekResult.input);
+                assertNotNull("got null but expected term=" + inputToString(inputMode, pairs.get(pos).input), seekResult);
+                if (VERBOSE) {
+                  System.out.println("    got " + inputToString(inputMode, seekResult.input));
+                }
+                assertEquals("expected " + inputToString(inputMode, pairs.get(pos).input) + " but got " + inputToString(inputMode, seekResult.input), pairs.get(pos).input, seekResult.input);
                 assertEquals(pairs.get(pos).output, seekResult.output);
               } else {
-                // seeked beyond end
+                // seeked before start or beyond end
                 //System.out.println("seek=" + seekTerm);
                 assertNull("expected null but got " + (seekResult==null ? "null" : inputToString(inputMode, seekResult.input)), seekResult);
+                if (VERBOSE) {
+                  System.out.println("    got null");
+                }
               }
 
               break;
@@ -627,24 +584,36 @@ public class TestFSTs extends LuceneTestCase {
           }
         } else {
           // seek to term that does exist:
-          InputOutput pair = pairs.get(random.nextInt(pairs.size()));
-          //System.out.println("  seek " + inputToString(inputMode, pair.input));
-          final IntsRefFSTEnum.InputOutput<T> seekResult = fstEnum.advance(pair.input);
-          assertEquals(pair.input, seekResult.input);
+          InputOutput<T> pair = pairs.get(random.nextInt(pairs.size()));
+          final IntsRefFSTEnum.InputOutput<T> seekResult;
+          if (random.nextBoolean()) {
+            if (VERBOSE) {
+              System.out.println("  do exists seekFloor " + inputToString(inputMode, pair.input));
+            }
+            seekResult = fstEnum.seekFloor(pair.input);
+          } else {
+            if (VERBOSE) {
+              System.out.println("  do exists seekCeil " + inputToString(inputMode, pair.input));
+            }
+            seekResult = fstEnum.seekCeil(pair.input);
+          }
+          assertNotNull(seekResult);
+          assertEquals("got " + inputToString(inputMode, seekResult.input) + " but expected " + inputToString(inputMode, pair.input), pair.input, seekResult.input);
           assertEquals(pair.output, seekResult.output);
         }
       }
 
       if (VERBOSE) {
-        System.out.println("TEST: mixed next/advance");
+        System.out.println("TEST: mixed next/seek");
       }
 
-      // test mixed next/advance
+      // test mixed next/seek
       for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
         if (VERBOSE) {
           System.out.println("TEST: iter " + iter);
         }
-        final IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
+        // reset:
+        fstEnum = new IntsRefFSTEnum<T>(fst);
         int upto = -1;
         while(true) {
           boolean isDone = false;
@@ -660,13 +629,24 @@ public class TestFSTs extends LuceneTestCase {
             for(;attempt<10;attempt++) {
               IntsRef term = toIntsRef(getRandomString(), inputMode);
               if (!termsMap.containsKey(term) && term.compareTo(pairs.get(upto).input) > 0) {
-                if (VERBOSE) {
-                  System.out.println("  do non-exist advance(" + inputToString(inputMode, term) + "]");
-                }
                 int pos = Collections.binarySearch(pairs, new InputOutput<T>(term, null));
                 assert pos < 0;
                 upto = -(pos+1);
-                isDone = fstEnum.advance(term) == null;
+
+                if (random.nextBoolean()) {
+                  upto--;
+                  assertTrue(upto != -1);
+                  if (VERBOSE) {
+                    System.out.println("  do non-exist seekFloor(" + inputToString(inputMode, term) + ")");
+                  }
+                  isDone = fstEnum.seekFloor(term) == null;
+                } else {
+                  if (VERBOSE) {
+                    System.out.println("  do non-exist seekCeil(" + inputToString(inputMode, term) + ")");
+                  }
+                  isDone = fstEnum.seekCeil(term) == null;
+                }
+
                 break;
               }
             }
@@ -681,10 +661,17 @@ public class TestFSTs extends LuceneTestCase {
               upto = 0;
             }
 
-            if (VERBOSE) {
-              System.out.println("  do advance(" + inputToString(inputMode, pairs.get(upto).input) + "]");
+            if (random.nextBoolean()) {
+              if (VERBOSE) {
+                System.out.println("  do advanceCeil(" + inputToString(inputMode, pairs.get(upto).input) + ")");
+              }
+              isDone = fstEnum.seekCeil(pairs.get(upto).input) == null;
+            } else {
+              if (VERBOSE) {
+                System.out.println("  do advanceFloor(" + inputToString(inputMode, pairs.get(upto).input) + ")");
+              }
+              isDone = fstEnum.seekFloor(pairs.get(upto).input) == null;
             }
-            isDone = fstEnum.advance(pairs.get(upto).input) == null;
           }
           if (VERBOSE) {
             if (!isDone) {
@@ -701,6 +688,24 @@ public class TestFSTs extends LuceneTestCase {
             assertFalse(isDone);
             assertEquals(pairs.get(upto).input, fstEnum.current().input);
             assertEquals(pairs.get(upto).output, fstEnum.current().output);
+
+            /*
+            if (upto < pairs.size()-1) {
+              int tryCount = 0;
+              while(tryCount < 10) {
+                final IntsRef t = toIntsRef(getRandomString(), inputMode);
+                if (pairs.get(upto).input.compareTo(t) < 0) {
+                  final boolean expected = t.compareTo(pairs.get(upto+1).input) < 0;
+                  if (VERBOSE) {
+                    System.out.println("TEST: call beforeNext(" + inputToString(inputMode, t) + "); current=" + inputToString(inputMode, pairs.get(upto).input) + " next=" + inputToString(inputMode, pairs.get(upto+1).input) + " expected=" + expected);
+                  }
+                  assertEquals(expected, fstEnum.beforeNext(t));
+                  break;
+                }
+                tryCount++;
+              }
+            }
+            */
           }
         }
       }
@@ -757,7 +762,9 @@ public class TestFSTs extends LuceneTestCase {
         }
       }
 
-      //System.out.println("TEST: now prune");
+      if (VERBOSE) {
+        System.out.println("TEST: now prune");
+      }
 
       // prune 'em
       final Iterator<Map.Entry<IntsRef,CountMinOutput<T>>> it = prefixes.entrySet().iterator();
@@ -765,7 +772,9 @@ public class TestFSTs extends LuceneTestCase {
         Map.Entry<IntsRef,CountMinOutput<T>> ent = it.next();
         final IntsRef prefix = ent.getKey();
         final CountMinOutput<T> cmo = ent.getValue();
-        //System.out.println("  term=" + inputToString(inputMode, prefix) + " count=" + cmo.count + " isLeaf=" + cmo.isLeaf);
+        if (VERBOSE) {
+          System.out.println("  term=" + inputToString(inputMode, prefix) + " count=" + cmo.count + " isLeaf=" + cmo.isLeaf + " output=" + outputs.outputToString(cmo.output) + " isFinal=" + cmo.isFinal);
+        }
         final boolean keep;
         if (prune1 > 0) {
           keep = cmo.count >= prune1;
@@ -824,14 +833,20 @@ public class TestFSTs extends LuceneTestCase {
       assertNotNull(fst);
 
       // make sure FST only enums valid prefixes
+      if (VERBOSE) {
+        System.out.println("TEST: check pruned enum");
+      }
       IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
-      IntsRefFSTEnum.InputOutput current;
+      IntsRefFSTEnum.InputOutput<T> current;
       while((current = fstEnum.next()) != null) {
-        //System.out.println("  fst enum term=" + inputToString(inputMode, current.input) + " output=" + outputs.outputToString(current.output));
+        if (VERBOSE) {
+          System.out.println("  fstEnum.next term=" + inputToString(inputMode, current.input) + " output=" + outputs.outputToString(current.output));
+        }
         final CountMinOutput cmo = prefixes.get(current.input);
         assertNotNull(cmo);
         assertTrue(cmo.isLeaf || cmo.isFinal);
-        if (cmo.isFinal && !cmo.isLeaf) {
+        //if (cmo.isFinal && !cmo.isLeaf) {
+        if (cmo.isFinal) {
           assertEquals(cmo.finalOutput, current.output);
         } else {
           assertEquals(cmo.output, current.output);
@@ -839,19 +854,24 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // make sure all non-pruned prefixes are present in the FST
-      final int[] stopNode = new int[2];
+      if (VERBOSE) {
+        System.out.println("TEST: verify all prefixes");
+      }
+      final int[] stopNode = new int[1];
       for(Map.Entry<IntsRef,CountMinOutput<T>> ent : prefixes.entrySet()) {
         if (ent.getKey().length > 0) {
           final CountMinOutput<T> cmo = ent.getValue();
           final T output = run(fst, ent.getKey(), stopNode);
-          //System.out.println("  term=" + inputToString(inputMode, ent.getKey()) + " output=" + outputs.outputToString(cmo.output));
+          if (VERBOSE) {
+            System.out.println("TEST: verify term=" + inputToString(inputMode, ent.getKey()) + " output=" + outputs.outputToString(cmo.output));
+          }
           // if (cmo.isFinal && !cmo.isLeaf) {
           if (cmo.isFinal) {
             assertEquals(cmo.finalOutput, output);
           } else {
             assertEquals(cmo.output, output);
           }
-          assertEquals(ent.getKey().length, stopNode[1]);
+          assertEquals(ent.getKey().length, stopNode[0]);
         }
       }
     }
@@ -859,7 +879,7 @@ public class TestFSTs extends LuceneTestCase {
 
   public void testRandomWords() throws IOException {
     testRandomWords(1000, 5 * RANDOM_MULTIPLIER);
-    //testRandomWords(10, 100);
+    //testRandomWords(20, 100);
   }
 
   private String inputModeToString(int mode) {
@@ -888,7 +908,7 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
-  private String getRandomString() {
+  static String getRandomString() {
     final String term;
     if (random.nextBoolean()) {
       term = _TestUtil.randomRealisticUnicodeString(random);
@@ -909,10 +929,10 @@ public class TestFSTs extends LuceneTestCase {
   private static String inputToString(int inputMode, IntsRef term) {
     if (inputMode == 0) {
       // utf8
-      return toBytesRef(term).utf8ToString();
+      return toBytesRef(term).utf8ToString() + " " + term;
     } else {
       // utf32
-      return UnicodeUtil.newString(term.ints, term.offset, term.length);
+      return UnicodeUtil.newString(term.ints, term.offset, term.length) + " " + term;
     }
   }
 
@@ -925,12 +945,13 @@ public class TestFSTs extends LuceneTestCase {
       CodecProvider.getDefault().setDefaultFieldCodec("Standard");
     }
 
-    final LineFileDocs docs = new LineFileDocs(false);
+    final LineFileDocs docs = new LineFileDocs(random);
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 100 : 1;
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
     final IndexWriter writer = new IndexWriter(dir, conf);
+    writer.setInfoStream(VERBOSE ? System.out : null);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC * 1000;
     Document doc;
     int docCount = 0;
@@ -986,18 +1007,17 @@ public class TestFSTs extends LuceneTestCase {
         // same:
         final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
         for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
-          fstEnum.reset();
           final BytesRef randomTerm = new BytesRef(getRandomString());
         
-          final TermsEnum.SeekStatus seekResult = termsEnum.seek(randomTerm);
-          final BytesRefFSTEnum.InputOutput fstSeekResult = fstEnum.advance(randomTerm);
-
           if (VERBOSE) {
-            System.out.println("TEST: seek " + randomTerm.utf8ToString());
+            System.out.println("TEST: seek " + randomTerm.utf8ToString() + " " + randomTerm);
           }
 
+          final TermsEnum.SeekStatus seekResult = termsEnum.seek(randomTerm);
+          final BytesRefFSTEnum.InputOutput fstSeekResult = fstEnum.seekCeil(randomTerm);
+
           if (seekResult == TermsEnum.SeekStatus.END) {
-            assertNull(fstSeekResult);
+            assertNull("got " + (fstSeekResult == null ? "null" : fstSeekResult.input.utf8ToString()) + " but expected null", fstSeekResult);
           } else {
             assertSame(termsEnum, fstEnum, storeOrd);
             for(int nextIter=0;nextIter<10;nextIter++) {
@@ -1011,6 +1031,9 @@ public class TestFSTs extends LuceneTestCase {
                 assertNotNull(fstEnum.next());
                 assertSame(termsEnum, fstEnum, storeOrd);
               } else {
+                if (VERBOSE) {
+                  System.out.println("  end!");
+                }
                 BytesRefFSTEnum.InputOutput<Long> nextResult = fstEnum.next();
                 if (nextResult != null) {
                   System.out.println("expected null but got: input=" + nextResult.input.utf8ToString() + " output=" + outputs.outputToString(nextResult.output));
@@ -1032,7 +1055,8 @@ public class TestFSTs extends LuceneTestCase {
     if (termsEnum.term() == null) {
       assertNull(fstEnum.current());
     } else {
-      assertEquals(termsEnum.term(), fstEnum.current().input);
+      assertNotNull(fstEnum.current());
+      assertEquals(termsEnum.term().utf8ToString() + " != " + fstEnum.current().input.utf8ToString(), termsEnum.term(), fstEnum.current().input);
       if (storeOrd) {
         // fst stored the ord
         assertEquals(termsEnum.ord(), ((Long) fstEnum.current().output).longValue());
@@ -1095,7 +1119,7 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.sizeInBytes());
         if (fst.getNodeCount() < 100) {
           PrintStream ps = new PrintStream("out.dot");
-          fst.toDot(ps);
+          Util.toDot(fst, ps);
           ps.close();
           System.out.println("Wrote FST to out.dot");
         }
@@ -1121,7 +1145,7 @@ public class TestFSTs extends LuceneTestCase {
           }
           toIntsRef(w, inputMode, intsRef);
           T expected = getOutput(intsRef, ord);
-          T actual = fst.get(intsRef);
+          T actual = Util.get(fst, intsRef);
           if (actual == null) {
             throw new RuntimeException("unexpected null output on input=" + w);
           }
@@ -1232,5 +1256,58 @@ public class TestFSTs extends LuceneTestCase {
         }
       }.run(limit);
     }
+  }
+
+  public void testSingleString() throws Exception {
+    final Outputs<Object> outputs = NoOutputs.getSingleton();
+    final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+    b.add(new BytesRef("foobar"), outputs.getNoOutput());
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(b.finish());
+    assertNull(fstEnum.seekFloor(new BytesRef("foo")));
+    assertNull(fstEnum.seekCeil(new BytesRef("foobaz")));
+  }
+
+  public void testSimple() throws Exception {
+
+    // Get outputs -- passing true means FST will share
+    // (delta code) the outputs.  This should result in
+    // smaller FST if the outputs grow monotonically.  But
+    // if numbers are "random", false should give smaller
+    // final size:
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+
+    // Build an FST mapping BytesRef -> Long
+    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+
+    final BytesRef a = new BytesRef("a");
+    final BytesRef b = new BytesRef("b");
+    final BytesRef c = new BytesRef("c");
+
+    builder.add(a, outputs.get(17));
+    builder.add(b, outputs.get(42));
+    builder.add(c, outputs.get(13824324872317238L));
+
+    final FST<Long> fst = builder.finish();
+
+    assertEquals(13824324872317238L, (long) Util.get(fst, c));
+    assertEquals(42, (long) Util.get(fst, b));
+    assertEquals(17, (long) Util.get(fst, a));
+
+    BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
+    BytesRefFSTEnum.InputOutput<Long> seekResult;
+    seekResult = fstEnum.seekFloor(a);
+    assertNotNull(seekResult);
+    assertEquals(17, (long) seekResult.output);
+
+    // goes to a
+    seekResult = fstEnum.seekFloor(new BytesRef("aa"));
+    assertNotNull(seekResult);
+    assertEquals(17, (long) seekResult.output);
+
+    // goes to b
+    seekResult = fstEnum.seekCeil(new BytesRef("aa"));
+    assertNotNull(seekResult);
+    assertEquals(b, seekResult.input);
+    assertEquals(42, (long) seekResult.output);
   }
 }

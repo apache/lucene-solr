@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.StringHelper;
@@ -199,7 +200,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           RefCounted<SolrIndexSearcher> searchHolder = null;
           try {
             searchHolder = core.getNewestSearcher(false);
-            IndexReader reader = searchHolder.get().getReader();
+            IndexReader reader = searchHolder.get().getIndexReader();
             getElevationMap( reader, core );
           } finally {
             if (searchHolder != null) searchHolder.decref();
@@ -343,7 +344,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     qstr = getAnalyzedQuery(qstr);
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     ElevationObj booster = null;
     try {
       booster = getElevationMap( reader, req.getCore() ).get( qstr );
@@ -503,8 +504,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
         values[slot] = docVal(doc);
       }
 
-      public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-        idIndex = FieldCache.DEFAULT.getTermsIndex(reader, fieldname);
+      public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+        idIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, fieldname);
         return this;
       }
 

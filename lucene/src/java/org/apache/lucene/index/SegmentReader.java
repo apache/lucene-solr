@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -51,7 +49,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   private SegmentInfo si;
   private int readBufferSize;
-
+  private final ReaderContext readerContext = new AtomicReaderContext(this);
   CloseableThreadLocal<FieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
   CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
@@ -991,22 +989,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     norm.copyOnWrite()[doc] = value;                    // set the value
   }
 
-  /** Read norms into a pre-allocated array. */
-  @Override
-  public synchronized void norms(String field, byte[] bytes, int offset)
-    throws IOException {
-
-    ensureOpen();
-    Norm norm = norms.get(field);
-    if (norm == null) {
-      Arrays.fill(bytes, offset, bytes.length, Similarity.getDefault().encodeNormValue(1.0f));
-      return;
-    }
-  
-    norm.bytes(bytes, offset, maxDoc());
-  }
-
-
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
     long nextNormSeek = SegmentMerger.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
@@ -1182,6 +1164,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
     buffer.append(si.toString(core.dir, pendingDeleteCount));
     return buffer.toString();
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return readerContext;
   }
 
   /**

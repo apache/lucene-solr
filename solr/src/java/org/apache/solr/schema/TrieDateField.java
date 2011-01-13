@@ -160,7 +160,7 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public Field createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
 

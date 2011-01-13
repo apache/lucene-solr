@@ -8,7 +8,7 @@ HTTP data sources quick and easy.
 
 
 $Id$
-==================  1.5.0-dev ==================
+==================  4.0.0-dev ==================
 Upgrading from Solr 1.4
 ----------------------
 
@@ -64,6 +64,9 @@ Bug Fixes
 * SOLR-1767: dataimporter.functions.escapeSql() does not escape backslash character (Sean Timm via noble)
 
 * SOLR-1811: formatDate should use the current NOW value always (Sean Timm via noble)
+
+* SOLR-2310: getTimeElapsedSince() returns incorrect hour value when the elapse is over 60 hours
+  (tom liu via koji)
 
 Other Changes
 ----------------------

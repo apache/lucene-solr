@@ -24,8 +24,11 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.codecs.PrefixCodedTermState;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.util.ArrayUtil;
@@ -240,8 +243,28 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 
       @Override
       public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
-        // TODO - we can support with binary search
-        throw new UnsupportedOperationException();
+        int low = 1;
+        int high = numOrd-1;
+        
+        while (low <= high) {
+          int mid = (low + high) >>> 1;
+          seek(mid);
+          int cmp = term.compareTo(text);
+
+          if (cmp < 0)
+            low = mid + 1;
+          else if (cmp > 0)
+            high = mid - 1;
+          else
+            return SeekStatus.FOUND; // key found
+        }
+        
+        if (low == numOrd) {
+          return SeekStatus.END;
+        } else {
+          seek(low);
+          return SeekStatus.NOT_FOUND;
+        }
       }
 
       @Override
@@ -284,11 +307,6 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public void cacheCurrentTerm() throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
       public BytesRef term() throws IOException {
         return term;
       }
@@ -315,7 +333,20 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 
       @Override
       public Comparator<BytesRef> getComparator() throws IOException {
-        throw new UnsupportedOperationException();
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
+      }
+
+      @Override
+      public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+        assert state != null && state instanceof OrdTermState;
+        return this.seek(((OrdTermState)state).ord);
+      }
+
+      @Override
+      public TermState termState() throws IOException {
+        OrdTermState state = new OrdTermState();
+        state.ord = currentOrd;
+        return state;
       }
     }
   }

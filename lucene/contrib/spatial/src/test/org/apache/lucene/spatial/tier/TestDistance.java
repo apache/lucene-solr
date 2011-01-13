@@ -22,13 +22,16 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.store.Directory;
+
 
 public class TestDistance extends LuceneTestCase {
   
@@ -100,9 +103,9 @@ public class TestDistance extends LuceneTestCase {
     LatLongDistanceFilter f = new LatLongDistanceFilter(new QueryWrapperFilter(new MatchAllDocsQuery()),
                                                         lat, lng, 1.0, latField, lngField);
 
-    IndexReader[] readers = r.getSequentialSubReaders();
-    for(int i=0;i<readers.length;i++) {
-      f.getDocIdSet(readers[i]);
+    AtomicReaderContext[] leaves = ReaderUtil.leaves(r.getTopReaderContext());
+    for (int i = 0; i < leaves.length; i++) {
+      f.getDocIdSet(leaves[i]);
     }
     r.close();
   }

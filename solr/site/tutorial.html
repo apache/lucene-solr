@@ -5,7 +5,7 @@
 <meta content="Apache Forrest" name="Generator">
 <meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="lucene">
-<title>Solr tutorial (version 3.0.0.2010.07.10.11.10.25)</title>
+<title>Solr tutorial (version 4.0.0.2011.01.04.00.08.44)</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
@@ -48,12 +48,12 @@
     |start Search
     +-->
 <div class="searchbox">
-<form action="http://search.lucidimagination.com/p:solr" method="get" class="roundtopsmall">
+<form id="searchform" action="http://search.lucidimagination.com/p:solr" method="get" class="roundtopsmall">
 <input onFocus="getBlank (this, 'Search the site with Solr');" size="25" name="q" id="query" type="text" value="Search the site with Solr">&nbsp; 
-                    <input name="Search" value="Search" type="submit">
+                      <input onclick="selectProvider(this.form)" name="Search" value="Search" type="submit">
+                      @
+                      <select id="searchProvider" name="searchProvider"><option value="any">select provider</option><option value="lucid">Lucid Find</option><option value="sl">Search-Lucene</option></select>
 </form>
-<div style="position: relative; top: -5px; left: -10px">Powered by <a href="http://www.lucidimagination.com" style="color: #033268">Lucid Imagination</a>
-</div>
 </div>
 <!--+
     |end search
@@ -155,9 +155,46 @@ document.write("Last Published: " + document.lastModified);
 <a href="http://lucene.apache.org/nutch/">Nutch</a>
 </div>
 </div>
+<script type="text/javascript">
+              function selectProvider(form) {
+                provider = form.elements['searchProvider'].value;
+                if (provider == "any") {
+                  if (Math.random() > 0.5) {
+                    provider = "lucid";
+                  } else {
+                    provider = "sl";
+                  }
+                }
+
+                if (provider == "lucid") {
+                  form.action = "http://search.lucidimagination.com/p:solr";
+                } else if (provider == "sl") {
+                  form.action = "http://search-lucene.com/solr";
+                }
+
+                days = 365; // cookie will be valid for a year
+                date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toGMTString();
+                document.cookie = "searchProvider=" + provider + expires + "; path=/";
+              }
+
+              if (document.cookie.length>0) {
+                cStart=document.cookie.indexOf("searchProvider=");
+                if (cStart!=-1) {
+                  cStart=cStart + "searchProvider=".length;
+                  cEnd=document.cookie.indexOf(";", cStart);
+                  if (cEnd==-1) {
+                    cEnd=document.cookie.length;
+                  }
+                  provider = unescape(document.cookie.substring(cStart,cEnd));
+                  document.forms['searchform'].elements['searchProvider'].value = provider;
+                }
+              }
+            </script>
 <div id="credit">
 <hr>
-      This document is for Apache Solr version 3.0.0.2010.07.10.11.10.25.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
+      This document is for Apache Solr version 4.0.0.2011.01.04.00.08.44.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
         </div>
 <div id="roundbottom">
 <img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
@@ -181,7 +218,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <h1>Solr tutorial</h1>
 <div id="motd-area">
-      This document is for Apache Solr version 3.0.0.2010.07.10.11.10.25.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
+      This document is for Apache Solr version 4.0.0.2011.01.04.00.08.44.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
         </div>
 <div id="minitoc-area">
 <ul class="minitoc">
@@ -252,14 +289,14 @@ To follow along with this tutorial, you will need...
 </p>
 <ol>
   
-<li>Java 1.5 or greater.  Some places you can get it are from
+<li>Java 1.6 or greater.  Some places you can get it are from
   <a href="http://java.sun.com/j2se/downloads.html">OpenJDK</a>,
   <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
   <a href="http://www.ibm.com/developerworks/java/jdk/">IBM</a>, or
   <a href="http://www.oracle.com/technology/products/jrockit/index.html">Oracle</a>.
   <br>
   Running <span class="codefrag">java -version</span> at the command line should indicate a version
-  number starting with 1.5.  Gnu's GCJ is not supported and does not work with Solr.
+  number starting with 1.6.  Gnu's GCJ is not supported and does not work with Solr.
   </li>
   
 <li>A <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Solr release</a>.

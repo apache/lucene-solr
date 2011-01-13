@@ -123,7 +123,7 @@ class DisjunctionSumScorer extends Scorer {
    * @return true if more matching documents may remain.
    */
   @Override
-  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     // firstDocID is ignored since nextDoc() sets 'currentDoc'
     collector.setScorer(this);
     while (currentDoc < max) {

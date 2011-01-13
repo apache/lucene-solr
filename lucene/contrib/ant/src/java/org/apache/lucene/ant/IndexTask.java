@@ -44,7 +44,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -268,7 +267,7 @@ public class IndexTask extends Task {
 
     FSDirectory dir = FSDirectory.open(indexDir);
     try {
-      Searcher searcher = null;
+      IndexSearcher searcher = null;
       boolean checkLastModified = false;
       if (!create) {
         try {

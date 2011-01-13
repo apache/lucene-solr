@@ -22,16 +22,16 @@ import java.util.Map;
 import org.apache.lucene.analysis.Token;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.spelling.PossibilityIterator;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
 	private static Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
 
-	@BeforeClass
-	public static void beforeClass() throws Exception {
-
+	@Before
+	public void setUp() throws Exception {
+	  super.setUp();
 		suggestions.clear();
 
 		LinkedHashMap<String, Integer> AYE = new LinkedHashMap<String, Integer>();
@@ -72,7 +72,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 		suggestions.put(new Token("BEE", 0, 2), BEE);
 		suggestions.put(new Token("CEE", 0, 2), CEE);
 	}
-
+	
 	@Test
 	public void testSpellPossibilityIterator() throws Exception {
 		PossibilityIterator iter = new PossibilityIterator(suggestions);

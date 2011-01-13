@@ -17,8 +17,8 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import java.io.IOException;
 import java.util.Map;
@@ -39,15 +39,15 @@ public class NormValueSource extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     context.put("searcher",searcher);
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    Searcher searcher = (Searcher)context.get("searcher");
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     final Similarity similarity = searcher.getSimilarity();
-    final byte[] norms = reader.norms(field);
+    final byte[] norms = readerContext.reader.norms(field);
     if (norms == null) {
       return new ConstDoubleDocValues(0.0, this);
     }

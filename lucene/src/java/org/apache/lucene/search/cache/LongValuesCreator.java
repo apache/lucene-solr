@@ -75,7 +75,7 @@ public class LongValuesCreator extends CachedArrayCreator<LongValues>
   }
 
   @Override
-  public LongValues validate(LongValues entry, IndexReader reader) throws IOException {
+  public synchronized LongValues validate(LongValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
     
     if( hasOption(OPTION_CACHE_VALUES) ) {
