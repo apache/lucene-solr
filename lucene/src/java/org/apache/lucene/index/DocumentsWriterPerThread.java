@@ -109,7 +109,7 @@ public class DocumentsWriterPerThread {
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
   void abort() throws IOException {
-    assert aborting;
+    aborting = true;
     try {
       if (infoStream != null) {
         message("docWriter: now abort");
@@ -152,7 +152,6 @@ public class DocumentsWriterPerThread {
   FieldInfos fieldInfos = new FieldInfos();
 
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent, IndexingChain indexingChain) {
-    parent.indexWriter.testPoint("DocumentsWriterPerThread.init start");
     this.directory = directory;
     this.parent = parent;
     this.writer = parent.indexWriter;
@@ -191,7 +190,7 @@ public class DocumentsWriterPerThread {
         if (!aborting) {
           // mark document as deleted
           deleteDocID(docState.docID);
-          commitDocument();
+          numDocsInRAM++;
         }
       }
     }
@@ -203,7 +202,7 @@ public class DocumentsWriterPerThread {
       success = true;
     } finally {
       if (!success) {
-        setAborting();
+        abort();
       }
     }
   }
@@ -249,23 +248,23 @@ public class DocumentsWriterPerThread {
     // confounding exception).
   }
 
-  void deleteQueries(Query... queries) {
+  synchronized void deleteQueries(Query... queries) {
     for (Query query : queries) {
       pendingDeletes.addQuery(query, numDocsInRAM);
     }
   }
 
-  void deleteQuery(Query query) {
+  synchronized void deleteQuery(Query query) {
     pendingDeletes.addQuery(query, numDocsInRAM);
   }
 
-  void deleteTerms(Term... terms) {
+  synchronized void deleteTerms(Term... terms) {
     for (Term term : terms) {
       pendingDeletes.addTerm(term, numDocsInRAM);
     }
   }
 
-  void deleteTerm(Term term) {
+  synchronized void deleteTerm(Term term) {
     pendingDeletes.addTerm(term, numDocsInRAM);
   }
 
@@ -350,7 +349,7 @@ public class DocumentsWriterPerThread {
       return newSegment;
     } finally {
       if (!success) {
-        setAborting();
+        abort();
       }
     }
   }

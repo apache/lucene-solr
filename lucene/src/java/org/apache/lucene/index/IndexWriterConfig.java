@@ -31,12 +31,12 @@ import org.apache.lucene.util.Version;
  * <p>
  * All setter methods return {@link IndexWriterConfig} to allow chaining
  * settings conveniently. Thus someone can do:
- * 
+ *
  * <pre>
  * IndexWriterConfig conf = new IndexWriterConfig(analyzer);
  * conf.setter1().setter2();
  * </pre>
- * 
+ *
  * @since 3.1
  */
 public final class IndexWriterConfig implements Cloneable {
@@ -53,7 +53,7 @@ public final class IndexWriterConfig implements Cloneable {
    * </ul>
    */
   public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
-  
+
   /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
   public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
 
@@ -74,7 +74,7 @@ public final class IndexWriterConfig implements Cloneable {
 
   /**
    * Default value for the write lock timeout (1,000 ms).
-   * 
+   *
    * @see #setDefaultWriteLockTimeout(long)
    */
   public static long WRITE_LOCK_TIMEOUT = 1000;
@@ -102,7 +102,7 @@ public final class IndexWriterConfig implements Cloneable {
   /**
    * Returns the default write lock timeout for newly instantiated
    * IndexWriterConfigs.
-   * 
+   *
    * @see #setDefaultWriteLockTimeout(long)
    */
   public static long getDefaultWriteLockTimeout() {
@@ -126,9 +126,9 @@ public final class IndexWriterConfig implements Cloneable {
   private CodecProvider codecProvider;
   private MergePolicy mergePolicy;
   private boolean readerPooling;
-  private DocumentsWriterThreadPool indexerThreadPool;
+  private DocumentsWriterPerThreadPool indexerThreadPool;
   private int readerTermsIndexDivisor;
-  
+
   // required for clone
   private Version matchVersion;
 
@@ -161,7 +161,7 @@ public final class IndexWriterConfig implements Cloneable {
     indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(DEFAULT_MAX_THREAD_STATES);
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
   }
-  
+
   @Override
   public Object clone() {
     // Shallow clone is the only thing that's possible, since parameters like
@@ -184,7 +184,7 @@ public final class IndexWriterConfig implements Cloneable {
     this.openMode = openMode;
     return this;
   }
-  
+
   /** Returns the {@link OpenMode} set by {@link #setOpenMode(OpenMode)}. */
   public OpenMode getOpenMode() {
     return openMode;
@@ -243,7 +243,7 @@ public final class IndexWriterConfig implements Cloneable {
   /**
    * Returns the maximum number of terms that will be indexed for a single field
    * in a document.
-   * 
+   *
    * @see #setMaxFieldLength(int)
    */
   public int getMaxFieldLength() {
@@ -273,7 +273,7 @@ public final class IndexWriterConfig implements Cloneable {
    * <p>
    * <b>NOTE:</b> the similarity cannot be null. If <code>null</code> is passed,
    * the similarity will be set to the default.
-   * 
+   *
    * @see Similarity#setDefault(Similarity)
    */
   public IndexWriterConfig setSimilarity(Similarity similarity) {
@@ -289,7 +289,7 @@ public final class IndexWriterConfig implements Cloneable {
   public Similarity getSimilarity() {
     return similarity;
   }
-  
+
   /**
    * Expert: set the interval between indexed terms. Large values cause less
    * memory to be used by IndexReader, but slow random-access to terms. Small
@@ -309,7 +309,7 @@ public final class IndexWriterConfig implements Cloneable {
    * In particular, <code>numUniqueTerms/interval</code> terms are read into
    * memory by an IndexReader, and, on average, <code>interval/2</code> terms
    * must be scanned for each random term access.
-   * 
+   *
    * @see #DEFAULT_TERM_INDEX_INTERVAL
    */
   public IndexWriterConfig setTermIndexInterval(int interval) {
@@ -319,7 +319,7 @@ public final class IndexWriterConfig implements Cloneable {
 
   /**
    * Returns the interval between indexed terms.
-   * 
+   *
    * @see #setTermIndexInterval(int)
    */
   public int getTermIndexInterval() {
@@ -355,10 +355,10 @@ public final class IndexWriterConfig implements Cloneable {
     this.writeLockTimeout = writeLockTimeout;
     return this;
   }
-  
+
   /**
    * Returns allowed timeout when acquiring the write lock.
-   * 
+   *
    * @see #setWriteLockTimeout(long)
    */
   public long getWriteLockTimeout() {
@@ -372,7 +372,7 @@ public final class IndexWriterConfig implements Cloneable {
    * created.
 
    * <p>Disabled by default (writer flushes by RAM usage).
-   * 
+   *
    * @throws IllegalArgumentException if maxBufferedDeleteTerms
    * is enabled but smaller than 1
    * @see #setRAMBufferSizeMB
@@ -389,7 +389,7 @@ public final class IndexWriterConfig implements Cloneable {
   /**
    * Returns the number of buffered deleted terms that will trigger a flush if
    * enabled.
-   * 
+   *
    * @see #setMaxBufferedDeleteTerms(int)
    */
   public int getMaxBufferedDeleteTerms() {
@@ -401,33 +401,33 @@ public final class IndexWriterConfig implements Cloneable {
    * and deletions before they are flushed to the Directory. Generally for
    * faster indexing performance it's best to flush by RAM usage instead of
    * document count and use as large a RAM buffer as you can.
-   * 
+   *
    * <p>
    * When this is set, the writer will flush whenever buffered documents and
    * deletions use this much RAM. Pass in {@link #DISABLE_AUTO_FLUSH} to prevent
    * triggering a flush due to RAM usage. Note that if flushing by document
    * count is also enabled, then the flush will be triggered by whichever comes
    * first.
-   * 
+   *
    * <p>
    * <b>NOTE</b>: the account of RAM usage for pending deletions is only
    * approximate. Specifically, if you delete by Query, Lucene currently has no
    * way to measure the RAM usage of individual Queries so the accounting will
    * under-estimate and you should compensate by either calling commit()
    * periodically yourself, or by using {@link #setMaxBufferedDeleteTerms(int)}
-   * to flush by count instead of RAM usage (each buffered delete Query counts 
+   * to flush by count instead of RAM usage (each buffered delete Query counts
    * as one).
-   * 
+   *
    * <p>
    * <b>NOTE</b>: because IndexWriter uses <code>int</code>s when managing its
    * internal storage, the absolute maximum value for this setting is somewhat
    * less than 2048 MB. The precise limit depends on various factors, such as
    * how large your documents are, how many fields have norms, etc., so it's
    * best to set this value comfortably under 2048.
-   * 
+   *
    * <p>
    * The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.
-   * 
+   *
    * @throws IllegalArgumentException
    *           if ramBufferSize is enabled but non-positive, or it disables
    *           ramBufferSize when maxBufferedDocs is already disabled
@@ -456,19 +456,19 @@ public final class IndexWriterConfig implements Cloneable {
    * Determines the minimal number of documents required before the buffered
    * in-memory documents are flushed as a new Segment. Large values generally
    * give faster indexing.
-   * 
+   *
    * <p>
    * When this is set, the writer will flush every maxBufferedDocs added
    * documents. Pass in {@link #DISABLE_AUTO_FLUSH} to prevent triggering a
    * flush due to number of buffered documents. Note that if flushing by RAM
    * usage is also enabled, then the flush will be triggered by whichever comes
    * first.
-   * 
+   *
    * <p>
    * Disabled by default (writer flushes by RAM usage).
-   * 
+   *
    * @see #setRAMBufferSizeMB(double)
-   * 
+   *
    * @throws IllegalArgumentException
    *           if maxBufferedDocs is enabled but smaller than 2, or it disables
    *           maxBufferedDocs when ramBufferSize is already disabled
@@ -488,7 +488,7 @@ public final class IndexWriterConfig implements Cloneable {
   /**
    * Returns the number of buffered added documents that will trigger a flush if
    * enabled.
-   * 
+   *
    * @see #setMaxBufferedDocs(int)
    */
   public int getMaxBufferedDocs() {
@@ -529,10 +529,10 @@ public final class IndexWriterConfig implements Cloneable {
     return codecProvider;
   }
 
-  
+
   /**
    * Returns the current MergePolicy in use by this writer.
-   * 
+   *
    * @see #setMergePolicy(MergePolicy)
    */
   public MergePolicy getMergePolicy() {
@@ -545,15 +545,15 @@ public final class IndexWriterConfig implements Cloneable {
    * <code>maxThreadStates</code> will be set to
    * {@link #DEFAULT_MAX_THREAD_STATES}.
    */
-  public IndexWriterConfig setIndexerThreadPool(DocumentsWriterThreadPool threadPool) {
+  public IndexWriterConfig setIndexerThreadPool(DocumentsWriterPerThreadPool threadPool) {
     this.indexerThreadPool = threadPool;
     return this;
   }
 
-  public DocumentsWriterThreadPool getIndexerThreadPool() {
+  public DocumentsWriterPerThreadPool getIndexerThreadPool() {
     return this.indexerThreadPool;
   }
-  
+
   /** Returns the max number of simultaneous threads that
    *  may be indexing documents at once in IndexWriter. */
   public int getMaxThreadStates() {
@@ -584,7 +584,7 @@ public final class IndexWriterConfig implements Cloneable {
     this.indexingChain = indexingChain == null ? DocumentsWriterPerThread.defaultIndexingChain : indexingChain;
     return this;
   }
-  
+
   /** Returns the indexing chain set on {@link #setIndexingChain(IndexingChain)}. */
   IndexingChain getIndexingChain() {
     return indexingChain;
@@ -606,7 +606,7 @@ public final class IndexWriterConfig implements Cloneable {
   public int getReaderTermsIndexDivisor() {
     return readerTermsIndexDivisor;
   }
-  
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

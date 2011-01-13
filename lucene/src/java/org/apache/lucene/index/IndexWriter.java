@@ -1275,7 +1275,7 @@ public class IndexWriter implements Closeable {
   public void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     ensureOpen();
     try {
-      if (docWriter.deleteTerm(term, false)) {
+      if (docWriter.deleteTerm(term)) {
         flush(true, false);
       }
     } catch (OutOfMemoryError oom) {
@@ -1396,10 +1396,11 @@ public class IndexWriter implements Closeable {
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
+    boolean maybeMerge = false;
     try {
       boolean success = false;
       try {
-        docWriter.updateDocument(doc, analyzer, term);
+        maybeMerge = docWriter.updateDocument(doc, analyzer, term);
         success = true;
       } finally {
         if (!success && infoStream != null)
@@ -1407,6 +1408,10 @@ public class IndexWriter implements Closeable {
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateDocument");
+    }
+
+    if (maybeMerge) {
+      maybeMerge();
     }
   }
 

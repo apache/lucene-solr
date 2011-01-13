@@ -1,66 +1,56 @@
 package org.apache.lucene.index;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 
-public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterThreadPool {
-  private static final class AffinityThreadState extends ThreadState {
-    int numAssignedThreads;
+public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPool {
+  private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
 
-    @Override
-    void finish() {
-      numAssignedThreads--;
-    }
-  }
-
-  private Map<Thread, AffinityThreadState> threadBindings = new HashMap<Thread, AffinityThreadState>();
-
-  public ThreadAffinityDocumentsWriterThreadPool(int maxNumThreadStates) {
-    super(maxNumThreadStates);
+  public ThreadAffinityDocumentsWriterThreadPool(int maxNumPerThreads) {
+    super(maxNumPerThreads);
   }
 
   @Override
-  protected ThreadState selectThreadState(Thread requestingThread, DocumentsWriter documentsWriter, Document doc) {
-    AffinityThreadState threadState = threadBindings.get(requestingThread);
-    // First, find a thread state.  If this thread already
-    // has affinity to a specific ThreadState, use that one
-    // again.
-    if (threadState == null) {
-      AffinityThreadState minThreadState = null;
-      for(int i=0;i<allThreadStates.length;i++) {
-        AffinityThreadState ts = (AffinityThreadState) allThreadStates[i];
-        if (minThreadState == null || ts.numAssignedThreads < minThreadState.numAssignedThreads)
-          minThreadState = ts;
+  public ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter, Document doc) {
+    ThreadState threadState = threadBindings.get(requestingThread);
+    if (threadState != null) {
+      if (threadState.tryLock()) {
+        return threadState;
       }
-      if (minThreadState != null && (minThreadState.numAssignedThreads == 0 || allThreadStates.length >= maxNumThreadStates)) {
-        threadState = minThreadState;
-      } else {
-        threadState = addNewThreadState(documentsWriter, new AffinityThreadState());
-      }
-      threadBindings.put(requestingThread, threadState);
     }
-    threadState.numAssignedThreads++;
 
-    return threadState;
-  }
-
-  @Override
-  protected void clearThreadBindings(ThreadState flushedThread) {
-    Iterator<Entry<Thread, AffinityThreadState>> it = threadBindings.entrySet().iterator();
+    // find the state that has minimum amount of threads waiting
+    Iterator<ThreadState> it = getActivePerThreadsIterator();
+    ThreadState minThreadState = null;
     while (it.hasNext()) {
-      Entry<Thread, AffinityThreadState> e = it.next();
-      if (e.getValue() == flushedThread) {
-        it.remove();
+      ThreadState state = it.next();
+      if (minThreadState == null || state.getQueueLength() < minThreadState.getQueueLength()) {
+        minThreadState = state;
       }
     }
+
+    if (minThreadState == null || minThreadState.hasQueuedThreads()) {
+      ThreadState newState = newThreadState();
+      if (newState != null) {
+        minThreadState = newState;
+        threadBindings.put(requestingThread, newState);
+      }
+    }
+
+    minThreadState.lock();
+    return minThreadState;
   }
 
   @Override
-  protected void clearAllThreadBindings() {
+  public void clearThreadBindings(ThreadState perThread) {
+    threadBindings.clear();
+  }
+
+  @Override
+  public void clearAllThreadBindings() {
     threadBindings.clear();
   }
 }
