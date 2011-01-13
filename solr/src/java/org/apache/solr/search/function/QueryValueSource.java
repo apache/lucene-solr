@@ -20,6 +20,7 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrException;
 
@@ -111,7 +112,7 @@ class QueryDocValues extends DocValues {
   public float floatVal(int doc) {
     try {
       if (doc < lastDocRequested) {
-        scorer = weight.scorer(readerContext, true, false);
+        scorer = weight.scorer(readerContext, ScorerContext.def());
         if (scorer==null) return defVal;
         scorerDoc = -1;
       }

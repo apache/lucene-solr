@@ -91,8 +91,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(context, true, false);
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      Scorer subQueryScorer = qWeight.scorer(context, ScorerContext.def());
       if(subQueryScorer == null) {
         return null;
       }

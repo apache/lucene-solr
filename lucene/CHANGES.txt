@@ -134,6 +134,9 @@ Changes in backwards compatibility policy
   
 * LUCENE-2839: Scorer#score(Collector,int,int) is now public because it is
   called from other classes and part of public API. (Uwe Schindler)
+  
+* LUCENE-2865: Weight#scorer(AtomicReaderContext, boolean, boolean) now accepts
+  a ScorerContext struct instead of booleans.(Simon Willnauer)
 
 Changes in Runtime Behavior
 

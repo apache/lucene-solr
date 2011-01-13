@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
@@ -360,7 +361,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

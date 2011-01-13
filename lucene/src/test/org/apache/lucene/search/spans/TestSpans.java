@@ -25,6 +25,7 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
@@ -421,7 +422,7 @@ public class TestSpans extends LuceneTestCase {
       }
       };
 
-    Scorer spanScorer = snq.weight(searcher).scorer(new AtomicReaderContext(new SlowMultiReaderWrapper(searcher.getIndexReader())), true, false);
+    Scorer spanScorer = snq.weight(searcher).scorer(new AtomicReaderContext(new SlowMultiReaderWrapper(searcher.getIndexReader())), ScorerContext.def());
 
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);

@@ -142,12 +142,11 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /* Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       Scorer[] scorers = new Scorer[weights.size()];
       int idx = 0;
       for (Weight w : weights) {
-        Scorer subScorer = w.scorer(context, true, false);
+        Scorer subScorer = w.scorer(context, ScorerContext.def());
         if (subScorer != null && subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           scorers[idx++] = subScorer;
         }

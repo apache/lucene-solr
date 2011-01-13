@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PerReaderTermState;
 import org.apache.lucene.util.ReaderUtil;
@@ -86,7 +87,7 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       final String field = term.field();
       final IndexReader reader = context.reader;
       assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight is not the same as the current reader's top-reader";

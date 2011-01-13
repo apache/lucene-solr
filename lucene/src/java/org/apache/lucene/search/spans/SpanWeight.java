@@ -72,7 +72,7 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+  public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
     return new SpanScorer(query.getSpans(context.reader), this, similarity, context.reader
         .norms(query.getField()));
   }
@@ -111,7 +111,7 @@ public class SpanWeight extends Weight {
     fieldExpl.setDescription("fieldWeight("+field+":"+query.toString(field)+
                              " in "+doc+"), product of:");
 
-    Explanation tfExpl = ((SpanScorer)scorer(context, true, false)).explain(doc);
+    Explanation tfExpl = ((SpanScorer)scorer(context, ScorerContext.def())).explain(doc);
     fieldExpl.addDetail(tfExpl);
     fieldExpl.addDetail(idfExpl);
 

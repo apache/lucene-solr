@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.ReaderUtil;
@@ -496,12 +497,13 @@ public class IndexSearcher {
 
     // TODO: should we make this
     // threaded...?  the Collector could be sync'd?
-
+    ScorerContext scorerContext =  ScorerContext.def().scoreDocsInOrder(true).topScorer(true);
     // always use single thread:
     if (filter == null) {
       for (int i = 0; i < leafContexts.length; i++) { // search each subreader
         collector.setNextReader(leafContexts[i]);
-        Scorer scorer = weight.scorer(leafContexts[i], !collector.acceptsDocsOutOfOrder(), true);
+        scorerContext = scorerContext.scoreDocsInOrder(!collector.acceptsDocsOutOfOrder());
+        Scorer scorer = weight.scorer(leafContexts[i], scorerContext);
         if (scorer != null) {
           scorer.score(collector);
         }
@@ -519,7 +521,7 @@ public class IndexSearcher {
 
     assert filter != null;
     
-    Scorer scorer = weight.scorer(context, true, false);
+    Scorer scorer = weight.scorer(context, ScorerContext.def());
     if (scorer == null) {
       return;
     }
