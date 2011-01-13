@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -149,10 +148,6 @@ final class DocumentsWriter {
   // we are flushing by doc count instead.
   private long ramBufferSize = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024);
 
-  // If we've allocated 5% over our RAM budget, we then
-  // free down to 95%
-  private long freeLevel = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024*0.95);
-
   // Flush @ this number of docs.  If ramBufferSize is
   // non-zero we will flush by RAM usage instead.
   private int maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
@@ -161,7 +156,6 @@ final class DocumentsWriter {
 
   final BufferedDeletes bufferedDeletes;
   final SegmentDeletes pendingDeletes;
-  private final IndexWriter.FlushControl flushControl;
   final IndexingChain chain;
 
   final DocumentsWriterPerThreadPool perThreadPool;
@@ -175,7 +169,6 @@ final class DocumentsWriter {
     this.perThreadPool = indexerThreadPool;
     this.pendingDeletes = new SegmentDeletes();
     this.chain = chain;
-    flushControl = writer.flushControl;
     this.perThreadPool.initialize(this);
   }
 
@@ -270,7 +263,6 @@ final class DocumentsWriter {
       ramBufferSize = IndexWriterConfig.DISABLE_AUTO_FLUSH;
     } else {
       ramBufferSize = (long) (mb*1024*1024);
-      freeLevel = (long) (0.95 * ramBufferSize);
     }
   }
 

@@ -23,7 +23,6 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,8 +30,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.RecyclingByteBlockAllocator;
 
 public class DocumentsWriterPerThread {
 
@@ -387,33 +386,14 @@ public class DocumentsWriterPerThread {
   final static int INT_BLOCK_SIZE = 1 << INT_BLOCK_SHIFT;
   final static int INT_BLOCK_MASK = INT_BLOCK_SIZE - 1;
 
-  private ArrayList<int[]> freeIntBlocks = new ArrayList<int[]>();
-
   /* Allocate another int[] from the shared pool */
-  synchronized int[] getIntBlock() {
-    final int size = freeIntBlocks.size();
-    final int[] b;
-    if (0 == size) {
-      b = new int[INT_BLOCK_SIZE];
-      bytesUsed.addAndGet(INT_BLOCK_SIZE*RamUsageEstimator.NUM_BYTES_INT);
-    } else
-      b = freeIntBlocks.remove(size-1);
+  int[] getIntBlock() {
+    int[] b = new int[INT_BLOCK_SIZE];
+    bytesUsed.addAndGet(INT_BLOCK_SIZE*RamUsageEstimator.NUM_BYTES_INT);
     return b;
   }
 
-  /* Return int[]s to the pool */
-  synchronized void recycleIntBlocks(int[][] blocks, int start, int end) {
-    for(int i=start;i<end;i++) {
-      freeIntBlocks.add(blocks[i]);
-      blocks[i] = null;
-    }
-  }
-
-  final RecyclingByteBlockAllocator byteBlockAllocator = new RecyclingByteBlockAllocator(BYTE_BLOCK_SIZE, Integer.MAX_VALUE, bytesUsed);
-
-  final static int PER_DOC_BLOCK_SIZE = 1024;
-
-  final RecyclingByteBlockAllocator perDocAllocator = new RecyclingByteBlockAllocator(PER_DOC_BLOCK_SIZE, Integer.MAX_VALUE, bytesUsed);
+  final DirectAllocator byteBlockAllocator = new DirectAllocator();
 
   String toMB(long v) {
     return nf.format(v/1024./1024.);

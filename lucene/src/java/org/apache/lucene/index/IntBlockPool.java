@@ -35,10 +35,6 @@ final class IntBlockPool {
 
   public void reset() {
     if (bufferUpto != -1) {
-      if (bufferUpto > 0)
-        // Recycle all but the first buffer
-        docWriter.recycleIntBlocks(buffers, 1, 1+bufferUpto);
-
       // Reuse first buffer
       bufferUpto = 0;
       intUpto = 0;

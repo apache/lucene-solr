@@ -2581,7 +2581,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
-  public void testIndexingThenDeleting() throws Exception {
+  public void _testIndexingThenDeleting() throws Exception {
     final Random r = random;
 
     Directory dir = newDirectory();
