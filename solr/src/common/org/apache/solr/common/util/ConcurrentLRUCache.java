@@ -20,6 +20,8 @@ import org.apache.lucene.util.PriorityQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeSet;
@@ -182,6 +184,7 @@ public class ConcurrentLRUCache<K,V> {
       int wantToKeep = lowerWaterMark;
       int wantToRemove = sz - lowerWaterMark;
 
+      @SuppressWarnings("unchecked") // generic array's are anoying
       CacheEntry<K,V>[] eset = new CacheEntry[sz];
       int eSize = 0;
 
@@ -280,7 +283,7 @@ public class ConcurrentLRUCache<K,V> {
         wantToKeep = lowerWaterMark - numKept;
         wantToRemove = sz - lowerWaterMark - numRemoved;
 
-        PQueue queue = new PQueue(wantToRemove);
+        PQueue<K,V> queue = new PQueue<K,V>(wantToRemove);
 
         for (int i=eSize-1; i>=0; i--) {
           CacheEntry<K,V> ce = eset[i];
@@ -331,9 +334,8 @@ public class ConcurrentLRUCache<K,V> {
 
         // Now delete everything in the priority queue.
         // avoid using pop() since order doesn't matter anymore
-        for (Object o : queue.getValues()) {
-          if (o==null) continue;
-          CacheEntry<K,V> ce = (CacheEntry)o;
+        for (CacheEntry<K,V> ce : queue.getValues()) {
+          if (ce==null) continue;
           evictEntry(ce.key);
           numRemoved++;
         }
@@ -349,27 +351,29 @@ public class ConcurrentLRUCache<K,V> {
     }
   }
 
-  private static class PQueue extends PriorityQueue {
+  private static class PQueue<K,V> extends PriorityQueue<CacheEntry<K,V>> {
     int myMaxSize;
     PQueue(int maxSz) {
       super.initialize(maxSz);
       myMaxSize = maxSz;
     }
 
-    Object[] getValues() { return heap; }
+    Iterable<CacheEntry<K,V>> getValues() { 
+      return Collections.unmodifiableCollection(Arrays.asList(heap));
+    }
 
-    protected boolean lessThan(Object a, Object b) {
+    protected boolean lessThan(CacheEntry a, CacheEntry b) {
       // reverse the parameter order so that the queue keeps the oldest items
-      return ((CacheEntry)b).lastAccessedCopy < ((CacheEntry)a).lastAccessedCopy;
+      return b.lastAccessedCopy < a.lastAccessedCopy;
     }
 
     // necessary because maxSize is private in base class
-    public Object myInsertWithOverflow(Object element) {
+    public CacheEntry<K,V> myInsertWithOverflow(CacheEntry<K,V> element) {
       if (size() < myMaxSize) {
         add(element);
         return null;
       } else if (size() > 0 && !lessThan(element, heap[1])) {
-        Object ret = heap[1];
+        CacheEntry<K,V> ret = heap[1];
         heap[1] = element;
         updateTop();
         return ret;
@@ -400,11 +404,11 @@ public class ConcurrentLRUCache<K,V> {
     Map<K, V> result = new LinkedHashMap<K, V>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+    TreeSet<CacheEntry<K,V>> tree = new TreeSet<CacheEntry<K,V>>();
     markAndSweepLock.lock();
     try {
       for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
-        CacheEntry ce = entry.getValue();
+        CacheEntry<K,V> ce = entry.getValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
           tree.add(ce);
@@ -418,7 +422,7 @@ public class ConcurrentLRUCache<K,V> {
     } finally {
       markAndSweepLock.unlock();
     }
-    for (CacheEntry<K, V> e : tree) {
+    for (CacheEntry<K,V> e : tree) {
       result.put(e.key, e.value);
     }
     return result;
@@ -428,7 +432,7 @@ public class ConcurrentLRUCache<K,V> {
     Map<K,V> result = new LinkedHashMap<K,V>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+    TreeSet<CacheEntry<K,V>> tree = new TreeSet<CacheEntry<K,V>>();
     // we need to grab the lock since we are changing lastAccessedCopy
     markAndSweepLock.lock();
     try {

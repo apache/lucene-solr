@@ -31,6 +31,7 @@
   <path id="test.classpath">
   	<path refid="classpath"/>
     <path refid="junit-path"/>
+    <path refid="ant-path"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>
 
@@ -44,7 +45,7 @@
 
   <patternset id="src.dist.patterns"
               includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/,backwards/"
-              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/,contrib/benchmark/work/"
+              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/"
   />
   <patternset id="binary.build.dist.patterns"
               includes="${final.name}.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
@@ -67,6 +68,7 @@
 
   <path id="backwards.test.compile.classpath">
     <path refid="junit-path"/>
+    <path refid="ant-path"/>
     <fileset dir="${backwards.dir}/lib">
       <include name="lucene-core*.jar"/>
     </fileset>
@@ -206,7 +208,6 @@
           <!-- Also remember to keep site.xml in sync.            -->		  
 
           <packageset dir="contrib/ant/src/java"/>
-          <packageset dir="contrib/benchmark/src/java"/>
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
           <packageset dir="contrib/demo/src/java"/>
@@ -216,7 +217,6 @@
           <packageset dir="contrib/memory/src/java"/>
           <packageset dir="contrib/misc/src/java"/>
           <packageset dir="contrib/queries/src/java"/>
-          <packageset dir="contrib/remote/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
           <packageset dir="contrib/spellchecker/src/java"/>
           <packageset dir="contrib/swing/src/java"/>
@@ -232,7 +232,6 @@
           <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*:org.apache.lucene.analysis.tokenattributes*"/>
     
           <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
-          <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
           <group title="contrib: Demo" packages="org.apache.lucene.demo*"/>
           <group title="contrib: ICU" packages="org.apache.lucene.collation*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>

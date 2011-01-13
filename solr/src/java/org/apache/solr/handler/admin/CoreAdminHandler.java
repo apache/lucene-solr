@@ -194,7 +194,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);
-        processor.processMergeIndexes(new MergeIndexesCommand(dirs));
+        processor.processMergeIndexes(new MergeIndexesCommand(dirs, req));
       } finally {
         core.close();
         wrappedReq.close();

@@ -33,7 +33,7 @@ import org.apache.lucene.util.AttributeSource;
  * FilteredTermsEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getTermsEnum(IndexReader,AttributeSource)} to provide a {@link
+ * it and define {@link #getTermsEnum(Terms,AttributeSource)} to provide a {@link
  * FilteredTermsEnum} that iterates through the terms to be
  * matched.
  *
@@ -201,7 +201,7 @@ public abstract class MultiTermQuery extends Query {
     
     @Override
     protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost) {
-      final Query q = new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(term, docFreq)));
+      final Query q = new ConstantScoreQuery(new TermQuery(term, docFreq));
       q.setBoost(boost);
       topLevel.add(q, BooleanClause.Occur.SHOULD);
     }

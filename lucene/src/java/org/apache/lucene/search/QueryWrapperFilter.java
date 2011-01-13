@@ -19,8 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 /** 
  * Constrains search results to only match those which also match a provided
@@ -48,12 +47,15 @@ public class QueryWrapperFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    final Weight weight = query.weight(new IndexSearcher(reader));
+  public DocIdSet getDocIdSet(final AtomicReaderContext context) throws IOException {
+    // get a private context that is used to rewrite, createWeight and score eventually
+    assert context.reader.getTopReaderContext().isAtomic;
+    final AtomicReaderContext privateContext = (AtomicReaderContext) context.reader.getTopReaderContext();
+    final Weight weight = query.weight(new IndexSearcher(privateContext));
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
-        return weight.scorer(reader, true, false);
+        return weight.scorer(privateContext, true, false);
       }
       @Override
       public boolean isCacheable() { return false; }

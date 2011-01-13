@@ -42,8 +42,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      // diable length norm
+      return state.getBoost();
     }
   }
 
@@ -272,7 +273,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private void verifyIndex(IndexReader ir) throws IOException {
     for (int i = 0; i < NUM_FIELDS; i++) {
       String field = "f" + i;
-      byte b[] = ir.norms(field);
+      byte b[] = MultiNorms.norms(ir, field);
       assertEquals("number of norms mismatches", numDocNorms, b.length);
       ArrayList<Float> storedNorms = (i == 1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {

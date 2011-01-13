@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.text.analysis.ExtendedWhitespaceTokenizer;
 import org.carrot2.text.analysis.ITokenizer;
-import org.carrot2.text.linguistic.BaseLanguageModelFactory;
+import org.carrot2.text.linguistic.DefaultLanguageModelFactory;
 import org.carrot2.text.linguistic.IStemmer;
 import org.carrot2.text.linguistic.IdentityStemmer;
 import org.carrot2.text.util.MutableCharArray;
@@ -62,7 +62,7 @@ import org.tartarus.snowball.ext.TurkishStemmer;
  * change, the changes can be made in this class.
  */
 @Bindable(prefix = "DefaultLanguageModelFactory")
-public class LuceneLanguageModelFactory extends BaseLanguageModelFactory {
+public class LuceneLanguageModelFactory extends DefaultLanguageModelFactory {
 	final static Logger logger = org.slf4j.LoggerFactory
 			.getLogger(LuceneLanguageModelFactory.class);
 

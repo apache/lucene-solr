@@ -107,6 +107,23 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
     </java>
   </target>
 			
+  <property name="uax29.supp.macros.output.file" 
+            location="../common/src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro"/>
+
+  <target name="gen-uax29-supp-macros" depends="compile-tools">
+    <java
+      classname="org.apache.lucene.analysis.icu.GenerateJFlexSupplementaryMacros"
+      dir="."
+      fork="true"
+      failonerror="true"
+      output="${uax29.supp.macros.output.file}">
+      <classpath>
+      	<path refid="additional.dependencies"/>
+      	<pathelement location="${build.dir}/classes/tools"/>
+      </classpath>
+    </java>
+  </target>
+			
   <target name="compile-tools">
     <compile
       srcdir="src/tools/java"

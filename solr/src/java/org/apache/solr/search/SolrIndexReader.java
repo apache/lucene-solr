@@ -19,12 +19,14 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -40,6 +42,7 @@ public class SolrIndexReader extends FilterIndexReader {
   private int[] leafOffsets;
   private final SolrIndexReader parent;
   private final int base; // docid offset of this reader within parent
+  private final ReaderContext topLevelContext;
 
   private static int[] zeroIntArray = new int[]{0};
 
@@ -79,7 +82,7 @@ public class SolrIndexReader extends FilterIndexReader {
       leafReaders = new SolrIndexReader[]{this};
       leafOffsets = zeroIntArray;
     }
-
+    topLevelContext = ReaderUtil.buildReaderContext(this);
   }
 
   private SolrIndexReader[] getLeaves(int numLeaves) {
@@ -364,11 +367,6 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public int getSubReaderDocBase(IndexReader subReader) {
-    return in.getSubReaderDocBase(subReader);
-  }
-
-  @Override
   public int hashCode() {
     return in.hashCode();
   }
@@ -492,6 +490,11 @@ public class SolrIndexReader extends FilterIndexReader {
   @Override
   public int getTermInfosIndexDivisor() {
     return in.getTermInfosIndexDivisor();
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return topLevelContext;
   }
 }
 

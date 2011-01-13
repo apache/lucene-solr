@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -62,10 +63,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   private ArrayList<BooleanClause> clauses = new ArrayList<BooleanClause>();
-  private boolean disableCoord;
+  private final boolean disableCoord;
 
   /** Constructs an empty boolean query. */
-  public BooleanQuery() {}
+  public BooleanQuery() {
+    disableCoord = false;
+  }
 
   /** Constructs an empty boolean query.
    *
@@ -85,22 +88,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * @see #BooleanQuery(boolean)
    */
   public boolean isCoordDisabled() { return disableCoord; }
-
-  // Implement coord disabling.
-  // Inherit javadoc.
-  @Override
-  public Similarity getSimilarity(Searcher searcher) {
-    Similarity result = super.getSimilarity(searcher);
-    if (disableCoord) {                           // disable coord as requested
-      result = new SimilarityDelegator(result) {
-          @Override
-          public float coord(int overlap, int maxOverlap) {
-            return 1.0f;
-          }
-        };
-    }
-    return result;
-  }
 
   /**
    * Specifies a minimum number of the optional BooleanClauses
@@ -178,10 +165,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     protected Similarity similarity;
     protected ArrayList<Weight> weights;
     protected int maxCoord;  // num optional + num required
+    private final boolean disableCoord;
 
-    public BooleanWeight(Searcher searcher)
+    public BooleanWeight(IndexSearcher searcher, boolean disableCoord)
       throws IOException {
       this.similarity = getSimilarity(searcher);
+      this.disableCoord = disableCoord;
       weights = new ArrayList<Weight>(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = clauses.get(i);
@@ -223,7 +212,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
       final int minShouldMatch =
         BooleanQuery.this.getMinimumNumberShouldMatch();
@@ -237,7 +226,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
-        if (w.scorer(reader, true, true) == null) {
+        if (w.scorer(context, true, true) == null) {
           if (c.isRequired()) {
             fail = true;
             Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -245,7 +234,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           }
           continue;
         }
-        Explanation e = w.explain(reader, doc);
+        Explanation e = w.explain(context, doc);
         if (e.isMatch()) {
           if (!c.isProhibited()) {
             sumExpl.addDetail(e);
@@ -284,10 +273,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       sumExpl.setMatch(0 < coord ? Boolean.TRUE : Boolean.FALSE);
       sumExpl.setValue(sum);
       
-      float coordFactor = similarity.coord(coord, maxCoord);
-      if (coordFactor == 1.0f)                      // coord is no-op
+      final float coordFactor = disableCoord ? 1.0f : similarity.coord(coord, maxCoord);
+      if (coordFactor == 1.0f) {
         return sumExpl;                             // eliminate wrapper
-      else {
+      } else {
         ComplexExplanation result = new ComplexExplanation(sumExpl.isMatch(),
                                                            sum*coordFactor,
                                                            "product of:");
@@ -299,7 +288,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer)
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
         throws IOException {
       List<Scorer> required = new ArrayList<Scorer>();
       List<Scorer> prohibited = new ArrayList<Scorer>();
@@ -307,7 +296,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(reader, true, false);
+        Scorer subScorer = w.scorer(context, true, false);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -323,7 +312,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       
       // Check if we can return a BooleanScorer
       if (!scoreDocsInOrder && topScorer && required.size() == 0 && prohibited.size() < 32) {
-        return new BooleanScorer(this, similarity, minNrShouldMatch, optional, prohibited, maxCoord);
+        return new BooleanScorer(this, disableCoord, similarity, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
       if (required.size() == 0 && optional.size() == 0) {
@@ -337,7 +326,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Return a BooleanScorer2
-      return new BooleanScorer2(this, similarity, minNrShouldMatch, required, prohibited, optional, maxCoord);
+      return new BooleanScorer2(this, disableCoord, similarity, minNrShouldMatch, required, prohibited, optional, maxCoord);
     }
     
     @Override
@@ -362,8 +351,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
-    return new BooleanWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
+    return new BooleanWeight(searcher, disableCoord);
   }
 
   @Override

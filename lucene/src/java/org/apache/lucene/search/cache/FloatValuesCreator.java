@@ -75,7 +75,7 @@ public class FloatValuesCreator extends CachedArrayCreator<FloatValues>
   }
 
   @Override
-  public FloatValues validate(FloatValues entry, IndexReader reader) throws IOException {
+  public synchronized FloatValues validate(FloatValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
     
     if( hasOption(OPTION_CACHE_VALUES) ) {

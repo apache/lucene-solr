@@ -19,12 +19,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -38,116 +36,6 @@ final class JustCompileSearch {
 
   private static final String UNSUPPORTED_MSG = "unsupported: used for back-compat testing only !";
 
-  static final class JustCompileSearcher extends Searcher {
-
-    @Override
-    protected Weight createWeight(Query query) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
-    public void close() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Document doc(int i) throws CorruptIndexException, IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int[] docFreqs(Term[] terms) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Explanation explain(Query query, int doc) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Similarity getSimilarity() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public void search(Query query, Collector results) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public void search(Query query, Filter filter, Collector results)
-        throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public TopDocs search(Query query, Filter filter, int n) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
-    public TopFieldDocs search(Query query, Filter filter, int n, Sort sort)
-        throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
-    public TopDocs search(Query query, int n) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
-    public void setSimilarity(Similarity similarity) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
-    public int docFreq(Term term) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Explanation explain(Weight weight, int doc) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int maxDoc() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Query rewrite(Query query) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public void search(Weight weight, Filter filter, Collector results)
-        throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public TopDocs search(Weight weight, Filter filter, int n)
-        throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
-        throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public Document doc(int n, FieldSelector fieldSelector)
-        throws CorruptIndexException, IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-  
   static final class JustCompileCollector extends Collector {
 
     @Override
@@ -266,7 +154,7 @@ final class JustCompileSearch {
     // still added here in case someone will add abstract methods in the future.
     
     @Override
-    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
       return null;
     }
   }
@@ -327,7 +215,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    protected boolean score(Collector collector, int max, int firstDocID)
+    public boolean score(Collector collector, int max, int firstDocID)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -366,7 +254,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float lengthNorm(String fieldName, int numTokens) {
+    public float computeNorm(String fieldName, FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -395,7 +283,7 @@ final class JustCompileSearch {
     }
     
     @Override
-    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
       return null;
     }    
   }
@@ -447,7 +335,7 @@ final class JustCompileSearch {
   static final class JustCompileWeight extends Weight {
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -472,7 +360,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer)
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

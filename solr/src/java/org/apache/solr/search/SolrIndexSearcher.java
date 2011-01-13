@@ -85,7 +85,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<Integer,Document> documentCache;
-  private final SolrCache<String,Object> fieldValueCache;
+  private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   private final LuceneQueryOptimizer optimizer;
   
@@ -100,14 +100,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
 
-  /** Creates a searcher searching the index in the named directory.
-   * 
-   * @deprecated use alternate constructor
-   */
-  @Deprecated
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, String path, boolean enableCache) throws IOException {
-    this(core, schema,name, core.getIndexReaderFactory().newReader(core.getDirectoryFactory().open(path), false), true, enableCache);
-  }
 
   /*
    * Creates a searcher searching the index in the provided directory. Note:
@@ -498,7 +490,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   ////////////////////////////////////////////////////////////////////////////////
 
   /** expert: internal API, subject to change */
-  public SolrCache getFieldValueCache() {
+  public SolrCache<String,UnInvertedField> getFieldValueCache() {
     return fieldValueCache;
   }
 
@@ -912,22 +904,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     // If there isn't a cache, then do a single filtered query if positive.
     return positive ? getDocSetNC(absQ,filter) : filter.andNot(getPositiveDocSet(absQ));
-  }
-
-
-  /**
-  * Converts a filter into a DocSet.
-  * This method is not cache-aware and no caches are checked.
-  */
-  public DocSet convertFilter(Filter lfilter) throws IOException {
-    DocIdSet docSet = lfilter.getDocIdSet(this.reader);
-    OpenBitSet obs = new OpenBitSet();
-    DocIdSetIterator it = docSet.iterator();
-    int doc;
-    while((doc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      obs.fastSet(doc);
-    }
-    return new BitDocSet(obs);
   }
 
   /**
@@ -1783,8 +1759,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return null;
   }
 
-  public NamedList getStatistics() {
-    NamedList lst = new SimpleOrderedMap();
+  public NamedList<Object> getStatistics() {
+    NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("searcherName", name);
     lst.add("caching", cachingEnabled);
     lst.add("numDocs", reader.numDocs());

@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.*;
 import org.apache.solr.common.params.HighlightParams;
@@ -62,7 +63,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testConfig()
   {
-    SolrHighlighter highlighter = h.getCore().getHighlighter();
+    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
 
     // Make sure we loaded the one formatter
     SolrFormatter fmt1 = highlighter.formatters.get( null );
@@ -697,7 +698,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         10, args);
 
     SolrQueryRequest request = lrf.makeRequest("test");
-    SolrHighlighter highlighter = request.getCore().getHighlighter();
+    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
     List<String> highlightFieldNames = Arrays.asList(highlighter
         .getHighlightFields(null, request, new String[] {}));
     assertTrue("Expected to highlight on field \"title\"", highlightFieldNames
@@ -711,7 +712,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     args.put("hl.fl", "foo_*");
     lrf = h.getRequestFactory("standard", 0, 10, args);
     request = lrf.makeRequest("test");
-    highlighter = request.getCore().getHighlighter();
+    highlighter = HighlightComponent.getHighlighter(h.getCore());
     highlightFieldNames = Arrays.asList(highlighter.getHighlightFields(null,
         request, new String[] {}));
     assertEquals("Expected one field to highlight on", 1, highlightFieldNames

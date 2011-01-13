@@ -12,12 +12,14 @@ import junit.framework.Assert;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.ReaderUtil;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
@@ -85,7 +87,7 @@ public class QueryUtils {
   }
   
   /** deep check that explanations of a query 'score' correctly */
-  public static void checkExplanations (final Query q, final Searcher s) throws IOException {
+  public static void checkExplanations (final Query q, final IndexSearcher s) throws IOException {
     CheckHits.checkExplanations(q, null, s, true);
   }
   
@@ -100,27 +102,19 @@ public class QueryUtils {
    * @see #checkSerialization
    * @see #checkEqual
    */
-  public static void check(Random random, Query q1, Searcher s) {
+  public static void check(Random random, Query q1, IndexSearcher s) {
     check(random, q1, s, true);
   }
-  private static void check(Random random, Query q1, Searcher s, boolean wrap) {
+  private static void check(Random random, Query q1, IndexSearcher s, boolean wrap) {
     try {
       check(q1);
       if (s!=null) {
-        if (s instanceof IndexSearcher) {
-          IndexSearcher is = (IndexSearcher)s;
-          checkFirstSkipTo(q1,is);
-          checkSkipTo(q1,is);
-          if (wrap) {
-            check(random, q1, wrapUnderlyingReader(random, is, -1), false);
-            check(random, q1, wrapUnderlyingReader(random, is,  0), false);
-            check(random, q1, wrapUnderlyingReader(random, is, +1), false);
-          }
-        }
+        checkFirstSkipTo(q1,s);
+        checkSkipTo(q1,s);
         if (wrap) {
-          check(random,q1, wrapSearcher(random, s, -1), false);
-          check(random,q1, wrapSearcher(random, s,  0), false);
-          check(random,q1, wrapSearcher(random, s, +1), false);
+          check(random, q1, wrapUnderlyingReader(random, s, -1), false);
+          check(random, q1, wrapUnderlyingReader(random, s,  0), false);
+          check(random, q1, wrapUnderlyingReader(random, s, +1), false);
         }
         checkExplanations(q1,s);
         checkSerialization(q1,s);
@@ -166,39 +160,6 @@ public class QueryUtils {
     out.setSimilarity(s.getSimilarity());
     return out;
   }
-  /**
-   * Given a Searcher, returns a new MultiSearcher wrapping the  
-   * the original Searcher, 
-   * as well as several "empty" IndexSearchers -- some of which will have
-   * deleted documents in them.  This new MultiSearcher 
-   * should behave exactly the same as the original Searcher.
-   * @param s the Searcher to wrap
-   * @param edge if negative, s will be the first sub; if 0, s will be in hte middle, if positive s will be the last sub
-   */
-  public static MultiSearcher wrapSearcher(Random random, final Searcher s, final int edge) 
-    throws IOException {
-
-    // we can't put deleted docs before the nested reader, because
-    // it will through off the docIds
-    Searcher[] searchers = new Searcher[] {
-      edge < 0 ? s : new IndexSearcher(makeEmptyIndex(random, 0), true),
-      new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(random, edge < 0 ? 65 : 0), true),
-        new IndexSearcher(makeEmptyIndex(random, 0), true),
-        0 == edge ? s : new IndexSearcher(makeEmptyIndex(random, 0), true)
-      }),
-      new IndexSearcher(makeEmptyIndex(random, 0 < edge ? 0 : 3), true),
-      new IndexSearcher(makeEmptyIndex(random, 0), true),
-      new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(random, 0 < edge ? 0 : 5), true),
-        new IndexSearcher(makeEmptyIndex(random, 0), true),
-        0 < edge ? s : new IndexSearcher(makeEmptyIndex(random, 0), true)
-      })
-    };
-    MultiSearcher out = new MultiSearcher(searchers);
-    out.setSimilarity(s.getSimilarity());
-    return out;
-  }
 
   private static Directory makeEmptyIndex(Random random, final int numDeletedDocs) 
     throws IOException {
@@ -231,7 +192,7 @@ public class QueryUtils {
   /** check that the query weight is serializable. 
    * @throws IOException if serialization check fail. 
    */
-  private static void checkSerialization(Query q, Searcher s) throws IOException {
+  private static void checkSerialization(Query q, IndexSearcher s) throws IOException {
     Weight w = q.weight(s);
     try {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -251,6 +212,7 @@ public class QueryUtils {
       throw e2;
     }
   }
+  
 
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc
@@ -258,7 +220,7 @@ public class QueryUtils {
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
-    
+    final AtomicReaderContext[] context = ReaderUtil.leaves(s.getTopReaderContext());
     if (q.weight(s).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
@@ -288,8 +250,8 @@ public class QueryUtils {
 
         s.search(q, new Collector() {
           private Scorer sc;
-          private IndexReader reader;
           private Scorer scorer;
+          private int leafPtr;
 
           @Override
           public void setScorer(Scorer scorer) throws IOException {
@@ -303,7 +265,7 @@ public class QueryUtils {
             try {
               if (scorer == null) {
                 Weight w = q.weight(s);
-                scorer = w.scorer(reader, true, false);
+                scorer = w.scorer(context[leafPtr], true, false);
               }
               
               int op = order[(opidx[0]++) % order.length];
@@ -346,14 +308,17 @@ public class QueryUtils {
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
               final IndexReader previousReader = lastReader[0];
-              Weight w = q.weight(new IndexSearcher(previousReader));
-              Scorer scorer = w.scorer(previousReader, true, false);
+              IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+              Weight w = q.weight(indexSearcher);
+              Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), true, false);
               if (scorer != null) {
                 boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
                 Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
               }
+              leafPtr++;
             }
-            this.reader = lastReader[0] = reader;
+            lastReader[0] = reader;
+            assert context[leafPtr].reader == reader;
             this.scorer = null;
             lastDoc[0] = -1;
           }
@@ -368,8 +333,9 @@ public class QueryUtils {
           // confirm that skipping beyond the last doc, on the
           // previous reader, hits NO_MORE_DOCS
           final IndexReader previousReader = lastReader[0];
-          Weight w = q.weight(new IndexSearcher(previousReader));
-          Scorer scorer = w.scorer(previousReader, true, false);
+          IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+          Weight w = q.weight(indexSearcher);
+          Scorer scorer = w.scorer((AtomicReaderContext)previousReader.getTopReaderContext() , true, false);
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -384,10 +350,10 @@ public class QueryUtils {
     final float maxDiff = 1e-3f;
     final int lastDoc[] = {-1};
     final IndexReader lastReader[] = {null};
-
+    final AtomicReaderContext[] context = ReaderUtil.leaves(s.getTopReaderContext());
     s.search(q,new Collector() {
       private Scorer scorer;
-      private IndexReader reader;
+      private int leafPtr;
       @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
@@ -399,7 +365,7 @@ public class QueryUtils {
           long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = q.weight(s);
-            Scorer scorer = w.scorer(reader, true, false);
+            Scorer scorer = w.scorer(context[leafPtr], true, false);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();
@@ -424,15 +390,17 @@ public class QueryUtils {
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {
           final IndexReader previousReader = lastReader[0];
-          Weight w = q.weight(new IndexSearcher(previousReader));
-          Scorer scorer = w.scorer(previousReader, true, false);
+          IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+          Weight w = q.weight(indexSearcher);
+          Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), true, false);
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
           }
+          leafPtr++;
         }
 
-        this.reader = lastReader[0] = reader;
+        lastReader[0] = reader;
         lastDoc[0] = -1;
       }
       @Override
@@ -445,8 +413,9 @@ public class QueryUtils {
       // confirm that skipping beyond the last doc, on the
       // previous reader, hits NO_MORE_DOCS
       final IndexReader previousReader = lastReader[0];
-      Weight w = q.weight(new IndexSearcher(previousReader));
-      Scorer scorer = w.scorer(previousReader, true, false);
+      IndexSearcher indexSearcher = new IndexSearcher(previousReader);
+      Weight w = q.weight(indexSearcher);
+      Scorer scorer = w.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), true, false);
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
         Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);

@@ -87,8 +87,8 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   
   private Query extractInnerQuery(Query q) {
     if (q instanceof ConstantScoreQuery) {
-      // wrapped as ConstantScoreQuery using QueryWrapperFilter
-      q = ((QueryWrapperFilter) ((ConstantScoreQuery) q).getFilter()).getQuery();
+      // wrapped as ConstantScoreQuery
+      q = ((ConstantScoreQuery) q).getQuery();
     }
     return q;
   }

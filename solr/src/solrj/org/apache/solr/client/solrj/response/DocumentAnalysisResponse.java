@@ -42,24 +42,30 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
   public void setResponse(NamedList<Object> response) {
     super.setResponse(response);
 
-    NamedList<Object> analysis = (NamedList<Object>) response.get("analysis");
-    for (Map.Entry<String, Object> documentEntry : analysis) {
-      DocumentAnalysis documentAnalysis = new DocumentAnalysis(documentEntry.getKey());
-      NamedList<Object> document = (NamedList<Object>) documentEntry.getValue();
-      for (Map.Entry<String, Object> fieldEntry : document) {
+    @SuppressWarnings("unchecked")
+    NamedList<NamedList<NamedList<Object>>> analysis 
+      = (NamedList<NamedList<NamedList<Object>>>) response.get("analysis");
+    for (Map.Entry<String, NamedList<NamedList<Object>>> document : analysis) {
+      DocumentAnalysis documentAnalysis = new DocumentAnalysis(document.getKey());
+      for (Map.Entry<String, NamedList<Object>> fieldEntry : document.getValue()) {
         FieldAnalysis fieldAnalysis = new FieldAnalysis(fieldEntry.getKey());
-        NamedList field = (NamedList) fieldEntry.getValue();
 
-        NamedList<Object> query = (NamedList<Object>) field.get("query");
+        NamedList<Object> field = fieldEntry.getValue();
+
+        @SuppressWarnings("unchecked")
+        NamedList<List<NamedList<Object>>> query 
+          = (NamedList<List<NamedList<Object>>>) field.get("query");
         if (query != null) {
           List<AnalysisPhase> phases = buildPhases(query);
           fieldAnalysis.setQueryPhases(phases);
         }
-
-        NamedList<Object> index = (NamedList<Object>) field.get("index");
-        for (Map.Entry<String, Object> valueEntry : index) {
+        
+        @SuppressWarnings("unchecked")
+        NamedList<NamedList<List<NamedList<Object>>>> index 
+          = (NamedList<NamedList<List<NamedList<Object>>>>) field.get("index");
+        for (Map.Entry<String, NamedList<List<NamedList<Object>>>> valueEntry : index) {
           String fieldValue = valueEntry.getKey();
-          NamedList<Object> valueNL = (NamedList<Object>) valueEntry.getValue();
+          NamedList<List<NamedList<Object>>> valueNL = valueEntry.getValue();
           List<AnalysisPhase> phases = buildPhases(valueNL);
           fieldAnalysis.setIndexPhases(fieldValue, phases);
         }

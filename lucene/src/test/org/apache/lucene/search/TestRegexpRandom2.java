@@ -49,7 +49,7 @@ import org.apache.lucene.util.automaton.RegExp;
  * Generates random regexps, and validates against a simple impl.
  */
 public class TestRegexpRandom2 extends LuceneTestCase {
-  private IndexSearcher searcher;
+  protected IndexSearcher searcher;
   private IndexReader reader;
   private Directory dir;
   
@@ -146,7 +146,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   /** check that the # of hits is the same as from a very
    * simple regexpquery implementation.
    */
-  private void assertSame(String regexp) throws IOException {   
+  protected void assertSame(String regexp) throws IOException {   
     RegexpQuery smart = new RegexpQuery(new Term("field", regexp), RegExp.NONE);
     DumbRegexpQuery dumb = new DumbRegexpQuery(new Term("field", regexp), RegExp.NONE);
     

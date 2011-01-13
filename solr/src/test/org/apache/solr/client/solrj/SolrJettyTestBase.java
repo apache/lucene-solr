@@ -1,5 +1,8 @@
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -11,10 +14,6 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   // Try not introduce a dependency on the example schema or config unless you need to.
   // using configs in the test directory allows more flexibility to change "example"
   // without breaking configs.
-
-  public static String EXAMPLE_HOME="../../../example/solr/";
-  public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"conf/schema.xml";
-  public static String EXAMPLE_CONFIG=EXAMPLE_HOME+"conf/solrconfig.xml";
 
   public String getSolrHome() { return EXAMPLE_HOME; }
 

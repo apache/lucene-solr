@@ -23,14 +23,15 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -40,6 +41,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 
 // TODO: test multiple codecs here?
 
@@ -67,43 +69,6 @@ public class TestCodecs extends LuceneTestCase {
   private final static int NUM_TERMS_RAND = 50; // must be > 16 to test skipping
   private final static int DOC_FREQ_RAND = 500; // must be > 16 to test skipping
   private final static int TERM_DOC_FREQ_RAND = 20;
-
-  // start is inclusive and end is exclusive
-  public int nextInt(final int start, final int end) {
-    return start + random.nextInt(end-start);
-  }
-
-  private int nextInt(final int lim) {
-    return random.nextInt(lim);
-  }
-
-  char[] getRandomText() {
-
-    final int len = 1+this.nextInt(10);
-    final char[] buffer = new char[len+1];
-    for(int i=0;i<len;i++) {
-      buffer[i] = (char) this.nextInt(97, 123);
-      /*
-      final int t = nextInt(5);
-      if (0 == t && i < len-1) {
-        // Make a surrogate pair
-        // High surrogate
-        buffer[i++] = (char) nextInt(0xd800, 0xdc00);
-        // Low surrogate
-        buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      } else if (t <= 1)
-        buffer[i] = (char) nextInt(0x80);
-      else if (2 == t)
-        buffer[i] = (char) nextInt(0x80, 0x800);
-      else if (3 == t)
-        buffer[i] = (char) nextInt(0x800, 0xd800);
-      else
-        buffer[i] = (char) nextInt(0xe000, 0xffff);
-    */
-    }
-    buffer[len] = 0xffff;
-    return buffer;
-  }
 
   class FieldData implements Comparable {
     final FieldInfo fieldInfo;
@@ -163,7 +128,7 @@ public class TestCodecs extends LuceneTestCase {
     }
 
     public int compareTo(final Object o) {
-      return text2.compareTo(((TermData) o).text2);
+      return text.compareTo(((TermData) o).text);
     }
 
     public void write(final TermsConsumer termsConsumer) throws Throwable {
@@ -191,7 +156,7 @@ public class TestCodecs extends LuceneTestCase {
   final private static String SEGMENT = "0";
 
   TermData[] makeRandomTerms(final boolean omitTF, final boolean storePayloads) {
-    final int numTerms = 1+this.nextInt(NUM_TERMS_RAND);
+    final int numTerms = 1+random.nextInt(NUM_TERMS_RAND);
     //final int numTerms = 2;
     final TermData[] terms = new TermData[numTerms];
 
@@ -200,18 +165,16 @@ public class TestCodecs extends LuceneTestCase {
     for(int i=0;i<numTerms;i++) {
 
       // Make term text
-      char[] text;
       String text2;
       while(true) {
-        text = this.getRandomText();
-        text2 = new String(text, 0, text.length-1);
-        if (!termsSeen.contains(text2)) {
+        text2 = _TestUtil.randomUnicodeString(random);
+        if (!termsSeen.contains(text2) && !text2.endsWith(".")) {
           termsSeen.add(text2);
           break;
         }
       }
 
-      final int docFreq = 1+this.nextInt(DOC_FREQ_RAND);
+      final int docFreq = 1+random.nextInt(DOC_FREQ_RAND);
       final int[] docs = new int[docFreq];
       PositionData[][] positions;
 
@@ -222,21 +185,21 @@ public class TestCodecs extends LuceneTestCase {
 
       int docID = 0;
       for(int j=0;j<docFreq;j++) {
-        docID += this.nextInt(1, 10);
+        docID += _TestUtil.nextInt(random, 1, 10);
         docs[j] = docID;
 
         if (!omitTF) {
-          final int termFreq = 1+this.nextInt(TERM_DOC_FREQ_RAND);
+          final int termFreq = 1+random.nextInt(TERM_DOC_FREQ_RAND);
           positions[j] = new PositionData[termFreq];
           int position = 0;
           for(int k=0;k<termFreq;k++) {
-            position += this.nextInt(1, 10);
+            position += _TestUtil.nextInt(random, 1, 10);
 
             final BytesRef payload;
-            if (storePayloads && this.nextInt(4) == 0) {
-              final byte[] bytes = new byte[1+this.nextInt(5)];
+            if (storePayloads && random.nextInt(4) == 0) {
+              final byte[] bytes = new byte[1+random.nextInt(5)];
               for(int l=0;l<bytes.length;l++) {
-                bytes[l] = (byte) this.nextInt(255);
+                bytes[l] = (byte) random.nextInt(255);
               }
               payload = new BytesRef(bytes);
             } else {
@@ -269,7 +232,7 @@ public class TestCodecs extends LuceneTestCase {
     final FieldData[] fields = new FieldData[] {field};
 
     final Directory dir = newDirectory();
-    this.write(fieldInfos, dir, fields);
+    this.write(fieldInfos, dir, fields, true);
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
     si.setHasProx(false);
 
@@ -317,19 +280,25 @@ public class TestCodecs extends LuceneTestCase {
 
     final Directory dir = newDirectory();
 
-    this.write(fieldInfos, dir, fields);
+    if (VERBOSE) {
+      System.out.println("TEST: now write postings");
+    }
+    this.write(fieldInfos, dir, fields, false);
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
 
+    if (VERBOSE) {
+      System.out.println("TEST: now read postings");
+    }
     final FieldsProducer terms = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
     final Verify[] threads = new Verify[NUM_TEST_THREADS-1];
     for(int i=0;i<NUM_TEST_THREADS-1;i++) {
-      threads[i] = new Verify(fields, terms);
+      threads[i] = new Verify(si, fields, terms);
       threads[i].setDaemon(true);
       threads[i].start();
     }
 
-    new Verify(fields, terms).run();
+    new Verify(si, fields, terms).run();
 
     for(int i=0;i<NUM_TEST_THREADS-1;i++) {
       threads[i].join();
@@ -409,11 +378,13 @@ public class TestCodecs extends LuceneTestCase {
   private class Verify extends Thread {
     final Fields termsDict;
     final FieldData[] fields;
+    final SegmentInfo si;
     volatile boolean failed;
 
-    Verify(final FieldData[] fields, final Fields termsDict) {
+    Verify(final SegmentInfo si, final FieldData[] fields, final Fields termsDict) {
       this.fields = fields;
       this.termsDict = termsDict;
+      this.si = si;
     }
 
     @Override
@@ -446,7 +417,7 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(positions[i].pos, pos);
         if (positions[i].payload != null) {
           assertTrue(posEnum.hasPayload());
-          if (TestCodecs.this.nextInt(3) < 2) {
+          if (TestCodecs.random.nextInt(3) < 2) {
             // Verify the payload bytes
             final BytesRef otherPayload = posEnum.getPayload();
             assertTrue("expected=" + positions[i].payload.toString() + " got=" + otherPayload.toString(), positions[i].payload.equals(otherPayload));
@@ -460,22 +431,28 @@ public class TestCodecs extends LuceneTestCase {
     public void _run() throws Throwable {
 
       for(int iter=0;iter<NUM_TEST_ITER;iter++) {
-        final FieldData field = fields[TestCodecs.this.nextInt(fields.length)];
+        final FieldData field = fields[TestCodecs.random.nextInt(fields.length)];
         final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator();
 
-        // Test straight enum of the terms:
+        if (si.getSegmentCodecs().codecs[field.fieldInfo.codecId] instanceof PreFlexCodec) {
+          // code below expects unicode sort order
+          continue;
+        }
+
         int upto = 0;
+        // Test straight enum of the terms:
         while(true) {
           final BytesRef term = termsEnum.next();
           if (term == null) {
             break;
           }
-          assertTrue(new BytesRef(field.terms[upto++].text2).bytesEquals(term));
+          final BytesRef expected = new BytesRef(field.terms[upto++].text2);
+          assertTrue("expected=" + expected + " vs actual " + term, expected.bytesEquals(term));
         }
         assertEquals(upto, field.terms.length);
 
         // Test random seek:
-        TermData term = field.terms[TestCodecs.this.nextInt(field.terms.length)];
+        TermData term = field.terms[TestCodecs.random.nextInt(field.terms.length)];
         TermsEnum.SeekStatus status = termsEnum.seek(new BytesRef(term.text2));
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
@@ -486,7 +463,7 @@ public class TestCodecs extends LuceneTestCase {
         }
 
         // Test random seek by ord:
-        final int idx = TestCodecs.this.nextInt(field.terms.length);
+        final int idx = TestCodecs.random.nextInt(field.terms.length);
         term = field.terms[idx];
         try {
           status = termsEnum.seek(idx);
@@ -507,8 +484,7 @@ public class TestCodecs extends LuceneTestCase {
 
         // Test seek to non-existent terms:
         for(int i=0;i<100;i++) {
-          final char[] text = TestCodecs.this.getRandomText();
-          final String text2 = new String(text, 0, text.length-1) + ".";
+          final String text2 = _TestUtil.randomUnicodeString(random) + ".";
           status = termsEnum.seek(new BytesRef(text2));
           assertTrue(status == TermsEnum.SeekStatus.NOT_FOUND ||
                      status == TermsEnum.SeekStatus.END);
@@ -533,7 +509,7 @@ public class TestCodecs extends LuceneTestCase {
         // Seek to non-existent empty-string term
         status = termsEnum.seek(new BytesRef(""));
         assertNotNull(status);
-        assertEquals(status, TermsEnum.SeekStatus.NOT_FOUND);
+        //assertEquals(TermsEnum.SeekStatus.NOT_FOUND, status);
 
         // Make sure we're now pointing to first term
         assertTrue(termsEnum.term().bytesEquals(new BytesRef(field.terms[0].text2)));
@@ -543,7 +519,7 @@ public class TestCodecs extends LuceneTestCase {
         upto = 0;
         do {
           term = field.terms[upto];
-          if (TestCodecs.this.nextInt(3) == 1) {
+          if (TestCodecs.random.nextInt(3) == 1) {
             final DocsEnum docs = termsEnum.docs(null, null);
             final DocsAndPositionsEnum postings = termsEnum.docsAndPositions(null, null);
 
@@ -558,10 +534,10 @@ public class TestCodecs extends LuceneTestCase {
               // Maybe skip:
               final int left = term.docs.length-upto2;
               int doc;
-              if (TestCodecs.this.nextInt(3) == 1 && left >= 1) {
-                final int inc = 1+TestCodecs.this.nextInt(left-1);
+              if (TestCodecs.random.nextInt(3) == 1 && left >= 1) {
+                final int inc = 1+TestCodecs.random.nextInt(left-1);
                 upto2 += inc;
-                if (TestCodecs.this.nextInt(2) == 1) {
+                if (TestCodecs.random.nextInt(2) == 1) {
                   doc = docsEnum.advance(term.docs[upto2]);
                   assertEquals(term.docs[upto2], doc);
                 } else {
@@ -586,7 +562,7 @@ public class TestCodecs extends LuceneTestCase {
               assertEquals(term.docs[upto2], doc);
               if (!field.omitTF) {
                 assertEquals(term.positions[upto2].length, docsEnum.freq());
-                if (TestCodecs.this.nextInt(2) == 1) {
+                if (TestCodecs.random.nextInt(2) == 1) {
                   this.verifyPositions(term.positions[upto2], postings);
                 }
               }
@@ -603,15 +579,19 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields) throws Throwable {
+  private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields, boolean allowPreFlex) throws Throwable {
 
-    final int termIndexInterval = this.nextInt(13, 27);
+    final int termIndexInterval = _TestUtil.nextInt(random, 13, 27);
     final SegmentCodecs codecInfo = SegmentCodecs.build(fieldInfos, CodecProvider.getDefault());
     final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo);
 
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
     Arrays.sort(fields);
     for (final FieldData field : fields) {
+      if (!allowPreFlex && codecInfo.codecs[field.fieldInfo.codecId] instanceof PreFlexCodec) {
+        // code below expects unicode sort order
+        continue;
+      }
       field.write(consumer);
     }
     consumer.close();

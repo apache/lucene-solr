@@ -90,7 +90,7 @@ public abstract class Scorer extends DocIdSetIterator {
    *          this method.
    * @return true if more matching documents may remain.
    */
-  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     collector.setScorer(this);
     int doc = firstDocID;
     while (doc < max) {

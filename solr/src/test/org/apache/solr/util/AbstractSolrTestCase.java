@@ -20,6 +20,7 @@ package org.apache.solr.util;
 
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -84,6 +85,14 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
   public abstract String getSolrConfigFile();
 
   /**
+   * Subclasses can override this to change a test's solr home
+   * (default is in test-files)
+   */
+  public String getSolrHome() {
+    return SolrTestCaseJ4.TEST_HOME;
+  }
+  
+  /**
    * The directory used to story the index managed by the TestHarness h
    */
   protected File dataDir;
@@ -113,8 +122,8 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     dataDir = new File(TEMP_DIR,
             getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
-
     String configFile = getSolrConfigFile();
+    System.setProperty("solr.solr.home", getSolrHome());
     if (configFile != null) {
 
       solrConfig = h.createConfig(getSolrConfigFile());
@@ -407,5 +416,10 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
       }
     }
     return f.delete();
+  }
+
+  /** @see SolrTestCaseJ4#getFile */
+  public static File getFile(String name) throws IOException {
+    return SolrTestCaseJ4.getFile(name);
   }
 }

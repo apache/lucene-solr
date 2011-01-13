@@ -17,6 +17,7 @@ package org.apache.lucene.search;
 
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.OpenBitSet;
@@ -52,8 +53,8 @@ public class SpanQueryFilter extends SpanFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    SpanFilterResult result = bitSpans(reader);
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    SpanFilterResult result = bitSpans(context.reader);
     return result.getDocIdSet();
   }
 

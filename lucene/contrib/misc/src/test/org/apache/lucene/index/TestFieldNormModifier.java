@@ -43,8 +43,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
   /** inverts the normal notion of lengthNorm */
   public static Similarity s = new DefaultSimilarity() {
     @Override
-    public float lengthNorm(String fieldName, int numTokens) {
-      return numTokens;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
     }
   };
   
@@ -84,7 +84,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
   public void testFieldWithNoNorm() throws Exception {
     
     IndexReader r = IndexReader.open(store, false);
-    byte[] norms = r.norms("nonorm");
+    byte[] norms = MultiNorms.norms(r, "nonorm");
     
     // sanity check, norms should all be 1
     assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
@@ -98,7 +98,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
     // nothing should have changed
     r = IndexReader.open(store, false);
     
-    norms = r.norms("nonorm");
+    norms = MultiNorms.norms(r, "nonorm");
     assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
     assertNull(norms);
 
@@ -183,14 +183,14 @@ public class TestFieldNormModifier extends LuceneTestCase {
   public void testNormKiller() throws IOException {
 
     IndexReader r = IndexReader.open(store, false);
-    byte[] oldNorms = r.norms("untokfield");    
+    byte[] oldNorms = MultiNorms.norms(r, "untokfield");    
     r.close();
     
     FieldNormModifier fnm = new FieldNormModifier(store, s);
     fnm.reSetNorms("untokfield");
 
     r = IndexReader.open(store, false);
-    byte[] newNorms = r.norms("untokfield");
+    byte[] newNorms = MultiNorms.norms(r, "untokfield");
     r.close();
     assertFalse(Arrays.equals(oldNorms, newNorms));    
 

@@ -53,11 +53,7 @@ final class StoredFieldsWriter {
       fieldsWriter = null;
       lastDocID = 0;
 
-      String fieldsName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELDS_EXTENSION);
       String fieldsIdxName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
-      state.flushedFiles.add(fieldsName);
-      state.flushedFiles.add(fieldsIdxName);
-
       if (4 + ((long) state.numDocs) * 8 != state.directory.fileLength(fieldsIdxName)) {
         throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));
       }

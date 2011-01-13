@@ -321,7 +321,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
       
       // TODO: benchmark doing this backwards
       for (int i = 1; i < matchers.length; i++)
-        if (matchers[i].run(term.bytes, 0, term.length)) {
+        if (matchers[i].run(term.bytes, term.offset, term.length)) {
           // this sucks, we convert just to score based on length.
           if (codePointCount == -1) {
             codePointCount = UnicodeUtil.codePointCount(term);

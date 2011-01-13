@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -122,7 +123,15 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     File adminFile = null;
     
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
-    File configdir = new File( loader.getConfigDir() ); 
+    File configdir = new File( loader.getConfigDir() );
+    if (!configdir.exists()) {
+      // TODO: maybe we should just open it this way to start with?
+      try {
+        configdir = new File( loader.getClassLoader().getResource(loader.getConfigDir()).toURI() );
+      } catch (URISyntaxException e) {
+        throw new SolrException( ErrorCode.FORBIDDEN, "Can not access configuration directory!");
+      }
+    }
     String fname = req.getParams().get("file", null);
     if( fname == null ) {
       adminFile = configdir;
@@ -191,12 +200,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase
    * 
    * It is only used so that we can get rid of "/admin/get-file.jsp" and include
    * "admin-extra.html" in "/admin/index.html" using jsp scriptlets
-   * 
-   * @deprecated This functionality is implemented in
-   *             {@link #handleRequestBody(SolrQueryRequest, SolrQueryResponse)}.
    */
-  @Deprecated
-  public static String getFileContents( String path )
+  public static String getFileContents(SolrCore core, String path )
   {
     if( instance != null && instance.hiddenFiles != null ) {
       if( instance.hiddenFiles.contains( path ) ) {
@@ -204,7 +209,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       }
     }
     try {
-      SolrCore core = SolrCore.getSolrCore();
       InputStream input = core.getResourceLoader().openResource(path);
       return IOUtils.toString( input );
     }

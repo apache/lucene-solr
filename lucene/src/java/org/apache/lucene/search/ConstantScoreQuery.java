@@ -18,14 +18,17 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Set;
 
 /**
- * A query that wraps a filter and simply returns a constant score equal to the
- * query boost for every document in the filter.
+ * A query that wraps another query or a filter and simply returns a constant score equal to the
+ * query boost for every document that matches the filter or query.
+ * For queries it therefore simply strips of all scores and returns a constant one.
  *
  * <p><b>NOTE</b>: if the wrapped filter is an instance of
  * {@link CachingWrapperFilter}, you'll likely want to
@@ -35,34 +38,72 @@ import java.util.Set;
  */
 public class ConstantScoreQuery extends Query {
   protected final Filter filter;
+  protected final Query query;
 
-  public ConstantScoreQuery(Filter filter) {
-    this.filter=filter;
+  /** Strips off scores from the passed in Query. The hits will get a constant score
+   * dependent on the boost factor of this query. */
+  public ConstantScoreQuery(Query query) {
+    if (query == null)
+      throw new NullPointerException("Query may not be null");
+    this.filter = null;
+    this.query = query;
   }
 
-  /** Returns the encapsulated filter */
+  /** Wraps a Filter as a Query. The hits will get a constant score
+   * dependent on the boost factor of this query.
+   * If you simply want to strip off scores from a Query, no longer use
+   * {@code new ConstantScoreQuery(new QueryWrapperFilter(query))}, instead
+   * use {@link #ConstantScoreQuery(Query)}!
+   */
+  public ConstantScoreQuery(Filter filter) {
+    if (filter == null)
+      throw new NullPointerException("Filter may not be null");
+    this.filter = filter;
+    this.query = null;
+  }
+
+  /** Returns the encapsulated filter, returns {@code null} if a query is wrapped. */
   public Filter getFilter() {
     return filter;
   }
 
+  /** Returns the encapsulated query, returns {@code null} if a filter is wrapped. */
+  public Query getQuery() {
+    return query;
+  }
+
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (query != null) {
+      Query rewritten = query.rewrite(reader);
+      if (rewritten != query) {
+        rewritten = new ConstantScoreQuery(rewritten);
+        rewritten.setBoost(this.getBoost());
+        return rewritten;
+      }
+    }
     return this;
   }
 
   @Override
   public void extractTerms(Set<Term> terms) {
-    // OK to not add any terms when used for MultiSearcher,
-    // but may not be OK for highlighting
+    // TODO: OK to not add any terms when wrapped a filter
+    // and used with MultiSearcher, but may not be OK for
+    // highlighting.
+    // If a query was wrapped, we delegate to query.
+    if (query != null)
+      query.extractTerms(terms);
   }
 
   protected class ConstantWeight extends Weight {
-    private Similarity similarity;
+    private final Weight innerWeight;
+    private final Similarity similarity;
     private float queryNorm;
     private float queryWeight;
     
-    public ConstantWeight(Searcher searcher) {
+    public ConstantWeight(IndexSearcher searcher) throws IOException {
       this.similarity = getSimilarity(searcher);
+      this.innerWeight = (query == null) ? null : query.createWeight(searcher);
     }
 
     @Override
@@ -77,6 +118,8 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public float sumOfSquaredWeights() throws IOException {
+      // we calculate sumOfSquaredWeights of the inner weight, but ignore it (just to initialize everything)
+      if (innerWeight != null) innerWeight.sumOfSquaredWeights();
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
@@ -85,31 +128,48 @@ public class ConstantScoreQuery extends Query {
     public void normalize(float norm) {
       this.queryNorm = norm;
       queryWeight *= this.queryNorm;
+      // we normalize the inner weight, but ignore it (just to initialize everything)
+      if (innerWeight != null) innerWeight.normalize(norm);
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new ConstantScorer(similarity, reader, this);
+    public Scorer scorer(AtomicReaderContext context,  boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      final DocIdSetIterator disi;
+      if (filter != null) {
+        assert query == null;
+        final DocIdSet dis = filter.getDocIdSet(context);
+        if (dis == null)
+          return null;
+        disi = dis.iterator();
+      } else {
+        assert query != null && innerWeight != null;
+        disi =
+          innerWeight.scorer(context, scoreDocsInOrder, topScorer);
+      }
+      if (disi == null)
+        return null;
+      return new ConstantScorer(similarity, disi, this);
+    }
+    
+    @Override
+    public boolean scoresDocsOutOfOrder() {
+      return (innerWeight != null) ? innerWeight.scoresDocsOutOfOrder() : false;
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      
-      ConstantScorer cs = new ConstantScorer(similarity, reader, this);
-      boolean exists = cs.docIdSetIterator.advance(doc) == doc;
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      final Scorer cs = scorer(context, true, false);
+      final boolean exists = (cs != null && cs.advance(doc) == doc);
 
-      ComplexExplanation result = new ComplexExplanation();
-
+      final ComplexExplanation result = new ComplexExplanation();
       if (exists) {
-        result.setDescription("ConstantScoreQuery(" + filter
-        + "), product of:");
+        result.setDescription(ConstantScoreQuery.this.toString() + ", product of:");
         result.setValue(queryWeight);
         result.setMatch(Boolean.TRUE);
         result.addDetail(new Explanation(getBoost(), "boost"));
-        result.addDetail(new Explanation(queryNorm,"queryNorm"));
+        result.addDetail(new Explanation(queryNorm, "queryNorm"));
       } else {
-        result.setDescription("ConstantScoreQuery(" + filter
-        + ") doesn't match id " + doc);
+        result.setDescription(ConstantScoreQuery.this.toString() + " doesn't match id " + doc);
         result.setValue(0);
         result.setMatch(Boolean.FALSE);
       }
@@ -120,22 +180,11 @@ public class ConstantScoreQuery extends Query {
   protected class ConstantScorer extends Scorer {
     final DocIdSetIterator docIdSetIterator;
     final float theScore;
-    int doc = -1;
 
-    public ConstantScorer(Similarity similarity, IndexReader reader, Weight w) throws IOException {
+    public ConstantScorer(Similarity similarity, DocIdSetIterator docIdSetIterator, Weight w) throws IOException {
       super(similarity,w);
       theScore = w.getValue();
-      DocIdSet docIdSet = filter.getDocIdSet(reader);
-      if (docIdSet == null) {
-        docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
-      } else {
-        DocIdSetIterator iter = docIdSet.iterator();
-        if (iter == null) {
-          docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
-        } else {
-          docIdSetIterator = iter;
-        }
-      }
+      this.docIdSetIterator = docIdSetIterator;
     }
 
     @Override
@@ -162,34 +211,86 @@ public class ConstantScoreQuery extends Query {
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
+    
+    private Collector wrapCollector(final Collector collector) {
+      return new Collector() {
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          // we must wrap again here, but using the scorer passed in as parameter:
+          collector.setScorer(new ConstantScorer(ConstantScorer.this.getSimilarity(),
+            scorer, ConstantScorer.this.weight));
+        }
+        
+        @Override
+        public void collect(int doc) throws IOException {
+          collector.collect(doc);
+        }
+        
+        @Override
+        public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          collector.setNextReader(reader, docBase);
+        }
+        
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return collector.acceptsDocsOutOfOrder();
+        }
+      };
+    }
+
+    // this optimization allows out of order scoring as top scorer!
+    @Override
+    public void score(Collector collector) throws IOException {
+      if (docIdSetIterator instanceof Scorer) {
+        ((Scorer) docIdSetIterator).score(wrapCollector(collector));
+      } else {
+        super.score(collector);
+      }
+    }
+
+    // this optimization allows out of order scoring as top scorer,
+    @Override
+    public boolean score(Collector collector, int max, int firstDocID) throws IOException {
+      if (docIdSetIterator instanceof Scorer) {
+        return ((Scorer) docIdSetIterator).score(wrapCollector(collector), max, firstDocID);
+      } else {
+        return super.score(collector, max, firstDocID);
+      }
+    }
   }
 
   @Override
-  public Weight createWeight(Searcher searcher) {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new ConstantScoreQuery.ConstantWeight(searcher);
   }
 
-  /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
-    return "ConstantScore(" + filter.toString() + ")"
-      + (getBoost()==1.0 ? "" : "^" + getBoost());
+    return new StringBuilder("ConstantScore(")
+      .append((query == null) ? filter.toString() : query.toString(field))
+      .append(')')
+      .append(ToStringUtils.boost(getBoost()))
+      .toString();
   }
 
-  /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof ConstantScoreQuery)) return false;
-    ConstantScoreQuery other = (ConstantScoreQuery)o;
-    return this.getBoost()==other.getBoost() && filter.equals(other.filter);
+    if (!super.equals(o))
+      return false;
+    if (o instanceof ConstantScoreQuery) {
+      final ConstantScoreQuery other = (ConstantScoreQuery) o;
+      return 
+        ((this.filter == null) ? other.filter == null : this.filter.equals(other.filter)) &&
+        ((this.query == null) ? other.query == null : this.query.equals(other.query));
+    }
+    return false;
   }
 
-  /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    // Simple add is OK since no existing filter hashcode has a float component.
-    return filter.hashCode() + Float.floatToIntBits(getBoost());
+    return 31 * super.hashCode() +
+      ((query == null) ? filter : query).hashCode();
   }
 
 }

@@ -51,7 +51,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   private SegmentInfo si;
   private int readBufferSize;
-
+  private final ReaderContext readerContext = new AtomicReaderContext(this);
   CloseableThreadLocal<FieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
   CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
@@ -1182,6 +1182,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
     buffer.append(si.toString(core.dir, pendingDeleteCount));
     return buffer.toString();
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return readerContext;
   }
 
   /**

@@ -42,35 +42,35 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
   public void setResponse(NamedList<Object> response) {
     super.setResponse(response);
 
-    NamedList analysisNL = (NamedList) response.get("analysis");
+    @SuppressWarnings("unchecked")
+    NamedList<NamedList<NamedList<NamedList<List<NamedList<Object>>>>>> analysisNL 
+      = (NamedList<NamedList<NamedList<NamedList<List<NamedList<Object>>>>>>) response.get("analysis");
 
-    NamedList<Object> fieldTypesNL = (NamedList<Object>) analysisNL.get("field_types");
-    for (Map.Entry<String, Object> entry : fieldTypesNL) {
-      Analysis analysis = new Analysis();
-      NamedList fieldTypeNL = (NamedList) entry.getValue();
-      NamedList<Object> queryNL = (NamedList<Object>) fieldTypeNL.get("query");
-      List<AnalysisPhase> phases = (queryNL == null) ? null : buildPhases(queryNL);
-      analysis.setQueryPhases(phases);
-      NamedList<Object> indexNL = (NamedList<Object>) fieldTypeNL.get("index");
-      phases = buildPhases(indexNL);
-      analysis.setIndexPhases(phases);
-      String fieldTypeName = entry.getKey();
-      analysisByFieldTypeName.put(fieldTypeName, analysis);
+    for (Map.Entry<String, NamedList<NamedList<List<NamedList<Object>>>>> entry 
+           : analysisNL.get("field_types")) {
+
+      analysisByFieldTypeName.put(entry.getKey(), buildAnalysis(entry.getValue()));
     }
 
-    NamedList<Object> fieldNamesNL = (NamedList<Object>) analysisNL.get("field_names");
-    for (Map.Entry<String, Object> entry : fieldNamesNL) {
+    for (Map.Entry<String, NamedList<NamedList<List<NamedList<Object>>>>> entry 
+           : analysisNL.get("field_names")) {
+
+      analysisByFieldName.put(entry.getKey(), buildAnalysis(entry.getValue()));
+    }
+  }
+
+  private Analysis buildAnalysis(NamedList<NamedList<List<NamedList<Object>>>> value) {
       Analysis analysis = new Analysis();
-      NamedList fieldNameNL = (NamedList) entry.getValue();
-      NamedList<Object> queryNL = (NamedList<Object>) fieldNameNL.get("query");
+      
+      NamedList<List<NamedList<Object>>> queryNL = value.get("query");
       List<AnalysisPhase> phases = (queryNL == null) ? null : buildPhases(queryNL);
       analysis.setQueryPhases(phases);
-      NamedList<Object> indexNL = (NamedList<Object>) fieldNameNL.get("index");
+
+      NamedList<List<NamedList<Object>>> indexNL = value.get("index");
       phases = buildPhases(indexNL);
       analysis.setIndexPhases(phases);
-      String fieldName = entry.getKey();
-      analysisByFieldName.put(fieldName, analysis);
-    }
+      
+      return analysis;
   }
 
   /**

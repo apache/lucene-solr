@@ -168,8 +168,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     return null;  // this can be overridden, but not required
   }
 
-  public NamedList getStatistics() {
-    NamedList lst = new SimpleOrderedMap();
+  public NamedList<Object> getStatistics() {
+    NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("handlerStart",handlerStart);
     lst.add("requests", numRequests);
     lst.add("errors", numErrors);

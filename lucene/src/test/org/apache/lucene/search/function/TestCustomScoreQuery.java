@@ -329,7 +329,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
   }
 
-  private void logResult(String msg, Searcher s, Query q, int doc, float score1) throws IOException {
+  private void logResult(String msg, IndexSearcher s, Query q, int doc, float score1) throws IOException {
     log(msg+" "+score1);
     log("Explain by: "+q);
     log(s.explain(q,doc));

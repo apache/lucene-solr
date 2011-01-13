@@ -33,6 +33,8 @@
                refid="additional.dependencies"
   />
 
+  <property name="javac.includeAntRuntime" value="true"/>
+
   <import file="../contrib-build.xml"/>
 	
   <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"

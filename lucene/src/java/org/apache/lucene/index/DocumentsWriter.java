@@ -599,7 +599,7 @@ final class DocumentsWriter {
 
       if (infoStream != null) {
         message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
-        message("flushedFiles=" + flushState.flushedFiles);
+        message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());
       }
 
@@ -611,12 +611,11 @@ final class DocumentsWriter {
         }
 
         CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, cfsFileName);
-        for(String fileName : flushState.flushedFiles) {
+        for(String fileName : newSegment.files()) {
           cfsWriter.addFile(fileName);
         }
         cfsWriter.close();
-        deleter.deleteNewFiles(flushState.flushedFiles);
-
+        deleter.deleteNewFiles(newSegment.files());
         newSegment.setUseCompoundFile(true);
       }
 
@@ -906,7 +905,8 @@ final class DocumentsWriter {
   final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
   /* if you increase this, you must fix field cache impl for
-   * getTerms/getTermsIndex requires <= 32768 */
+   * getTerms/getTermsIndex requires <= 32768.  Also fix
+   * DeltaBytesWriter's TERM_EOF if necessary. */
   final static int MAX_TERM_LENGTH_UTF8 = BYTE_BLOCK_SIZE-2;
 
   /* Initial chunks size of the shared int[] blocks used to

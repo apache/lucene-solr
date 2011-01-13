@@ -44,8 +44,8 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new QueryDocValues(reader, q, defVal, context==null ? null : (Weight)context.get(this));
+  public DocValues getValues(Map fcontext, IndexReader reader) throws IOException {
+    return new QueryDocValues(reader, q, defVal, fcontext);
   }
 
   public int hashCode() {
@@ -59,7 +59,7 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     Weight w = q.weight(searcher);
     context.put(this, w);
   }
@@ -71,6 +71,7 @@ class QueryDocValues extends DocValues {
   final IndexReader reader;
   final Weight weight;
   final float defVal;
+  final Map fcontext;
 
   Scorer scorer;
   int scorerDoc; // the document the scorer is on
@@ -79,18 +80,36 @@ class QueryDocValues extends DocValues {
   // to trigger a scorer reset on first access.
   int lastDocRequested=Integer.MAX_VALUE;
 
-  public QueryDocValues(IndexReader reader, Query q, float defVal, Weight w) throws IOException {
+  public QueryDocValues(IndexReader reader, Query q, float defVal, Map fcontext) throws IOException {
     this.reader = reader;
     this.q = q;
     this.defVal = defVal;
-    weight = w!=null ? w : q.weight(new IndexSearcher(reader));
+    this.fcontext = fcontext;
+
+    Weight w = fcontext==null ? null : (Weight)fcontext.get(q);
+    if (w == null) {
+       IndexSearcher weightSearcher = fcontext == null ? new IndexSearcher(reader) : (IndexSearcher)fcontext.get("searcher");
+
+       // TODO: sort by function doesn't weight (SOLR-1297 is open because of this bug)... so weightSearcher will currently be null
+       if (weightSearcher == null) weightSearcher = new IndexSearcher(reader);
+
+       w = q.weight(weightSearcher);
+    }
+    weight = w;
   }
 
   public float floatVal(int doc) {
     try {
       if (doc < lastDocRequested) {
         // out-of-order access.... reset scorer.
-        scorer = weight.scorer(reader, true, false);
+        IndexReader.AtomicReaderContext ctx = ValueSource.readerToContext(fcontext, reader);
+
+        if (ctx == null) {
+          // TODO: this is because SOLR-1297 does not weight
+          ctx = (IndexReader.AtomicReaderContext)reader.getTopReaderContext();  // this is the incorrect context
+        }
+
+        scorer = weight.scorer(ctx, true, false);
         if (scorer==null) return defVal;
         scorerDoc = -1;
       }

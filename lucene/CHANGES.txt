@@ -119,6 +119,22 @@ Changes in backwards compatibility policy
   need to change it (e.g. using "\\" to escape '\' itself).  
   (Sunil Kamath, Terry Yang via Robert Muir)
 
+* LUCENE-2771: IndexReader.norms() now throws UOE on non-atomic IndexReaders. If
+  you really want a top-level norms, use MultiNorms or SlowMultiReaderWrapper.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-2837: Collapsed Searcher, Searchable into IndexSearcher;
+  removed contrib/remote and MultiSearcher (Mike McCandless); absorbed
+  ParallelMultiSearcher into IndexSearcher as an optional
+  ExecutorServiced passed to its ctor.  (Mike McCandless)
+
+* LUCENE-2837: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
+  operate on a ReaderContext instead of directly on IndexReader to enable
+  searches to be aware of IndexSearcher's context. (Simon Willnauer)
+  
+* LUCENE-2839: Scorer#score(Collector,int,int) is now public because it is
+  called from other classes and part of public API. (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit
@@ -134,7 +150,7 @@ Changes in Runtime Behavior
 * LUCENE-2805: IndexWriter now increments the index version on every change to
   the index instead of for every commit. Committing or closing the IndexWriter
   without any changes to the index will not cause any index version increment.
-  (Simon Willnauer, Mike Mccandless)
+  (Simon Willnauer, Mike McCandless)
 
 API Changes
 
@@ -298,7 +314,7 @@ New features
 
 * LUCENE-995: The QueryParser now interprets * as an open end for range
   queries.  Literal asterisks may be represented by quoting or escaping
-  (i.e. \* or "*")  Custom QueryParser sublcasses overriding getRangeQuery()
+  (i.e. \* or "*")  Custom QueryParser subclasses overriding getRangeQuery()
   will be passed null for any open endpoint. (Adriano Crestani, yonik)
 
 * LUCENE-2742: Add native per-field codec support. CodecProvider lets you now
@@ -310,6 +326,12 @@ New features
 * LUCENE-2741: Add support for multiple codecs that use the same file
   extensions within the same segment. Codecs now use their per-segment codec
   ID in the file names. (Simon Willnauer)
+
+* LUCENE-2843: Added a new terms index impl,
+  VariableGapTermsIndexWriter/Reader, that accepts a pluggable
+  IndexTermSelector for picking which terms should be indexed in the
+  terms dict.  This impl stores the indexed terms in an FST, which is
+  much more RAM efficient than FixedGapTermsIndex.  (Mike McCandless)
 
 Optimizations
 
@@ -324,7 +346,7 @@ Optimizations
   efficient copying by sub-classes. Optimized copy is implemented for RAM and FS
   streams. (Shai Erera)
 
-* LUCENE-2588: Don't store unecessary suffixes when writing the terms
+* LUCENE-2588: Don't store unnecessary suffixes when writing the terms
   index, saving RAM in IndexReader; change default terms index
   interval from 128 to 32, because the terms index now requires much
   less RAM.  (Robert Muir, Mike McCandless)
@@ -360,7 +382,7 @@ Bug fixes
 Changes in backwards compatibility policy
 
 * LUCENE-2719: Changed API of internal utility class
-  org.apche.lucene.util.SorterTemplate to support faster quickSort using
+  org.apache.lucene.util.SorterTemplate to support faster quickSort using
   pivot values and also merge sort and insertion sort. If you have used
   this class, you have to implement two more methods for handling pivots.
   (Uwe Schindler, Robert Muir, Mike McCandless)
@@ -632,7 +654,7 @@ New features
 
 * LUCENE-2314: Added AttributeSource.copyTo(AttributeSource) that
   allows to use cloneAttributes() and this method as a replacement
-  for captureState()/restoreState(), if the state itsself
+  for captureState()/restoreState(), if the state itself
   needs to be inspected/modified.  (Uwe Schindler)
 
 * LUCENE-2293: Expose control over max number of threads that
@@ -678,6 +700,12 @@ New features
   Using this wrapper its easy to add fuzzy/wildcard to e.g. a SpanNearQuery.
   (Robert Muir, Uwe Schindler)
   
+* LUCENE-2838: ConstantScoreQuery now directly supports wrapping a Query
+  instance for stripping off scores. The use of a QueryWrapperFilter
+  is no longer needed and discouraged for that use case. Directly wrapping
+  Query improves performance, as out-of-order collection is now supported.
+  (Uwe Schindler)
+  
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
@@ -689,7 +717,7 @@ Optimizations
 
 * LUCENE-2136: If the multi reader (DirectoryReader or MultiReader)
   only has a single sub-reader, delegate all enum requests to it.
-  This avoid the overhead of using a PQ unecessarily.  (Mike
+  This avoid the overhead of using a PQ unnecessarily.  (Mike
   McCandless)
 
 * LUCENE-2137: Switch to AtomicInteger for some ref counting (Earwin
@@ -743,7 +771,7 @@ Optimizations
   cases.  (Mike McCandless)
 
 * LUCENE-2719: Improved TermsHashPerField's sorting to use a better
-  quick sort algorithm that dereferences the privot element not on
+  quick sort algorithm that dereferences the pivot element not on
   every compare call. Also replaced lots of sorting code in Lucene
   by the improved SorterTemplate class.
   (Uwe Schindler, Robert Muir, Mike McCandless)
@@ -771,17 +799,21 @@ Build
 
 * LUCENE-1709: Tests are now parallelized by default (except for benchmark). You
   can force them to run sequentially by passing -Drunsequential=1 on the command
-  line. The number of threads that are spwaned per CPU defaults to '1'. If you 
+  line. The number of threads that are spawned per CPU defaults to '1'. If you 
   wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
   (Robert Muir, Shai Erera, Peter Kofler)
 
 * LUCENE-2516: Backwards tests are now compiled against released lucene-core.jar
   from tarball of previous version. Backwards tests are now packaged together
   with src distribution.  (Uwe Schindler)
+  
+* LUCENE-2611: Added Ant target to install IntelliJ IDEA configuration:
+  "ant idea".  See http://wiki.apache.org/lucene-java/HowtoConfigureIntelliJ
+  (Steven Rowe)
 
 Test Cases
 
-* LUCENE-2037 Allow Junit4 tests in our envrionment (Erick Erickson
+* LUCENE-2037 Allow Junit4 tests in our environment (Erick Erickson
   via Mike McCandless)
 
 * LUCENE-1844: Speed up the unit tests (Mark Miller, Erick Erickson,
@@ -803,14 +835,14 @@ Test Cases
 * LUCENE-2313, LUCENE-2322: Add VERBOSE to LuceneTestCase(J4) to control
   verbosity of tests. If VERBOSE==false (default) tests should not print
   anything other than errors to System.(out|err). The setting can be
-  changed with -Dtests.verbose=true on test invokation.
+  changed with -Dtests.verbose=true on test invocation.
   (Shai Erera, Paul Elschot, Uwe Schindler)
 
 * LUCENE-2318: Remove inconsistent system property code for retrieving
   temp and data directories inside test cases. It is now centralized in
   LuceneTestCase(J4). Also changed lots of tests to use
   getClass().getResourceAsStream() to retrieve test data. Tests needing
-  access to "real" files from the test folder itsself, can use
+  access to "real" files from the test folder itself, can use
   LuceneTestCase(J4).getDataFile().  (Uwe Schindler)
 
 * LUCENE-2398, LUCENE-2611: Improve tests to work better from IDEs such 

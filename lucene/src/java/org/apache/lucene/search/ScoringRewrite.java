@@ -89,7 +89,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       if (bq.clauses().isEmpty())
         return bq;
       // strip the scores off
-      final Query result = new ConstantScoreQuery(new QueryWrapperFilter(bq));
+      final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());
       return result;
     }

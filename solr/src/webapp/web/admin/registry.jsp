@@ -16,7 +16,6 @@
  limitations under the License.
 --%>
 <%@ page import="org.apache.solr.core.SolrInfoMBean,
-                 org.apache.solr.core.SolrInfoRegistry,
                  java.net.URL,
                  java.util.Date,
                  java.util.Map"%>

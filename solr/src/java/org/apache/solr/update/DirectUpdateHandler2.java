@@ -22,6 +22,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -43,6 +44,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.io.IOException;
 import java.net.URL;
 
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -215,33 +221,40 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // why not return number of docs deleted?
   // Depending on implementation, we may not be able to immediately determine the num...
-   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
-     deleteByQueryCommands.incrementAndGet();
-     deleteByQueryCommandsCumulative.incrementAndGet();
+  public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    deleteByQueryCommands.incrementAndGet();
+    deleteByQueryCommandsCumulative.incrementAndGet();
 
     boolean madeIt=false;
     boolean delAll=false;
     try {
-     Query q = QueryParsing.parseQuery(cmd.query, schema);
-     delAll = MatchAllDocsQuery.class == q.getClass();
+      Query q = null;
+      try {
+        QParser parser = QParser.getParser(cmd.query, "lucene", cmd.req);
+        q = parser.getQuery();
+      } catch (ParseException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
 
-     iwCommit.lock();
-     try {
-       if (delAll) {
-         deleteAll();
-       } else {
-        openWriter();
-        writer.deleteDocuments(q);
-       }
-     } finally {
-       iwCommit.unlock();
-     }
+      delAll = MatchAllDocsQuery.class == q.getClass();
 
-     madeIt=true;
+      iwCommit.lock();
+      try {
+        if (delAll) {
+          deleteAll();
+        } else {
+          openWriter();
+          writer.deleteDocuments(q);
+        }
+      } finally {
+        iwCommit.unlock();
+      }
 
-     if( tracker.timeUpperBound > 0 ) {
-       tracker.scheduleCommitWithin( tracker.timeUpperBound );
-     }
+      madeIt=true;
+
+      if( tracker.timeUpperBound > 0 ) {
+        tracker.scheduleCommitWithin( tracker.timeUpperBound );
+      }
     } finally {
       if (!madeIt) {
         numErrors.incrementAndGet();
@@ -502,8 +515,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     /** This is the worker part for the ScheduledFuture **/
     public synchronized void run() {
       long started = System.currentTimeMillis();
+      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
       try {
-        CommitUpdateCommand command = new CommitUpdateCommand( false );
+        CommitUpdateCommand command = new CommitUpdateCommand(req, false );
         command.waitFlush = true;
         command.waitSearcher = true;
         //no need for command.maxOptimizeSegments = 1;  since it is not optimizing
@@ -516,6 +530,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       }
       finally {
         pending = null;
+        req.close();
       }
 
       // check if docs have been submitted since the commit started

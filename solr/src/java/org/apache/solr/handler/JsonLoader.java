@@ -62,14 +62,15 @@ class JsonLoader extends ContentStreamLoader {
       }
 
       JSONParser parser = new JSONParser(reader);
-      this.processUpdate(processor, parser);
+      this.processUpdate(req, processor, parser);
     }
     finally {
       IOUtils.closeQuietly(reader);
     }
   }
 
-  void processUpdate(UpdateRequestProcessor processor, JSONParser parser) throws IOException 
+  @SuppressWarnings("fallthrough")
+  void processUpdate(SolrQueryRequest req, UpdateRequestProcessor processor, JSONParser parser) throws IOException 
   {
     int ev = parser.nextEvent();
     while( ev != JSONParser.EOF ) {
@@ -80,25 +81,25 @@ class JsonLoader extends ContentStreamLoader {
         if( parser.wasKey() ) {
           String v = parser.getString();
           if( v.equals( XmlUpdateRequestHandler.ADD ) ) {
-            processor.processAdd( parseAdd( parser ) );
+            processor.processAdd( parseAdd(req, parser ) );
           }
           else if( v.equals( XmlUpdateRequestHandler.COMMIT ) ) {
-            CommitUpdateCommand cmd = new CommitUpdateCommand( false );
+            CommitUpdateCommand cmd = new CommitUpdateCommand(req,  false );
             cmd.waitFlush = cmd.waitSearcher = true;
             parseCommitOptions( parser, cmd );
             processor.processCommit( cmd );
           }
           else if( v.equals( XmlUpdateRequestHandler.OPTIMIZE ) ) {
-            CommitUpdateCommand cmd = new CommitUpdateCommand( true );
+            CommitUpdateCommand cmd = new CommitUpdateCommand(req, true );
             cmd.waitFlush = cmd.waitSearcher = true;
             parseCommitOptions( parser, cmd );
             processor.processCommit( cmd );
           }
           else if( v.equals( XmlUpdateRequestHandler.DELETE ) ) {
-            processor.processDelete( parseDelete( parser ) );
+            processor.processDelete( parseDelete(req, parser ) );
           }
           else if( v.equals( XmlUpdateRequestHandler.ROLLBACK ) ) {
-            processor.processRollback( parseRollback( parser ) );
+            processor.processRollback( parseRollback(req, parser ) );
           }
           else {
             throw new IOException( "Unknown command: "+v+" ["+parser.getPosition()+"]" );
@@ -129,10 +130,10 @@ class JsonLoader extends ContentStreamLoader {
     }
   }
 
-  DeleteUpdateCommand parseDelete(JSONParser js) throws IOException {
+  DeleteUpdateCommand parseDelete(SolrQueryRequest req, JSONParser js) throws IOException {
     assertNextEvent( js, JSONParser.OBJECT_START );
 
-    DeleteUpdateCommand cmd = new DeleteUpdateCommand();
+    DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
     
     while( true ) {
       int ev = js.nextEvent();
@@ -169,10 +170,10 @@ class JsonLoader extends ContentStreamLoader {
     }
   }
   
-  RollbackUpdateCommand parseRollback(JSONParser js) throws IOException {
+  RollbackUpdateCommand parseRollback(SolrQueryRequest req, JSONParser js) throws IOException {
     assertNextEvent( js, JSONParser.OBJECT_START );
     assertNextEvent( js, JSONParser.OBJECT_END );
-    return new RollbackUpdateCommand();
+    return new RollbackUpdateCommand(req);
   }
 
   void parseCommitOptions( JSONParser js, CommitUpdateCommand cmd ) throws IOException
@@ -211,10 +212,10 @@ class JsonLoader extends ContentStreamLoader {
     }
   }
   
-  AddUpdateCommand parseAdd( JSONParser js ) throws IOException
+  AddUpdateCommand parseAdd(SolrQueryRequest req, JSONParser js ) throws IOException
   {
     assertNextEvent( js, JSONParser.OBJECT_START );
-    AddUpdateCommand cmd = new AddUpdateCommand();
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
     float boost = 1.0f;
     
     while( true ) {

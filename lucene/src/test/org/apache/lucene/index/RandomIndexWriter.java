@@ -87,6 +87,7 @@ public class RandomIndexWriter implements Closeable {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW config=" + w.getConfig());
       System.out.println("codec default=" + w.getConfig().getCodecProvider().getDefaultFieldCodec());
+      w.setInfoStream(System.out);
     }
   } 
 

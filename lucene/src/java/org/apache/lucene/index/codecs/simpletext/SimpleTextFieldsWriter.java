@@ -46,7 +46,6 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   public SimpleTextFieldsWriter(SegmentWriteState state) throws IOException {
     final String fileName = SimpleTextCodec.getPostingsFileName(state.segmentName, state.codecId);
     out = state.directory.createOutput(fileName);
-    state.flushedFiles.add(fileName);
   }
 
   private void write(String s) throws IOException {

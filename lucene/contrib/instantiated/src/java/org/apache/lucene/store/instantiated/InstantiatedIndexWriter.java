@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectorOffsetInfo;
@@ -235,9 +236,10 @@ public class InstantiatedIndexWriter implements Closeable {
         termsInDocument += eFieldTermDocInfoFactoriesByTermText.getValue().size();
 
         if (eFieldTermDocInfoFactoriesByTermText.getKey().indexed && !eFieldTermDocInfoFactoriesByTermText.getKey().omitNorms) {
-          float norm = eFieldTermDocInfoFactoriesByTermText.getKey().boost;
-          norm *= document.getDocument().getBoost();
-          norm *= similarity.lengthNorm(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName, eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
+          final FieldInvertState invertState = new FieldInvertState();
+          invertState.setBoost(eFieldTermDocInfoFactoriesByTermText.getKey().boost * document.getDocument().getBoost());
+          invertState.setLength(eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
+          final float norm = similarity.computeNorm(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName, invertState);
           normsByFieldNameAndDocumentNumber.get(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName)[document.getDocumentNumber()] = similarity.encodeNormValue(norm);
         } else {
           System.currentTimeMillis();

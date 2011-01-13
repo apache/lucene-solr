@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -45,8 +45,8 @@ public class CartesianShapeFilter extends Filter {
   }
   
   @Override
-  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    final Bits delDocs = reader.getDeletedDocs();
+  public DocIdSet getDocIdSet(final AtomicReaderContext context) throws IOException {
+    final Bits delDocs = context.reader.getDeletedDocs();
     final List<Double> area = shape.getArea();
     final int sz = area.size();
     
@@ -58,7 +58,7 @@ public class CartesianShapeFilter extends Filter {
       return new DocIdSet() {
         @Override
         public DocIdSetIterator iterator() throws IOException {
-          return reader.termDocsEnum(delDocs, fieldName, bytesRef);
+          return context.reader.termDocsEnum(delDocs, fieldName, bytesRef);
         }
         
         @Override
@@ -67,11 +67,11 @@ public class CartesianShapeFilter extends Filter {
         }
       };
     } else {
-      final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
+      final OpenBitSet bits = new OpenBitSet(context.reader.maxDoc());
       for (int i =0; i< sz; i++) {
         double boxId = area.get(i).doubleValue();
         NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
-        final DocsEnum docsEnum = reader.termDocsEnum(delDocs, fieldName, bytesRef);
+        final DocsEnum docsEnum = context.reader.termDocsEnum(delDocs, fieldName, bytesRef);
         if (docsEnum == null) continue;
         // iterate through all documents
         // which have this boxId

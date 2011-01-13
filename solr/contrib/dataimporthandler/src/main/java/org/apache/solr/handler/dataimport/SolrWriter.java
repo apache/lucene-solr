@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -51,21 +52,25 @@ public class SolrWriter {
 
   DebugLogger debugLogger;
 
-  public SolrWriter(UpdateRequestProcessor processor, String confDir) {
+  SolrQueryRequest req;
+
+  public SolrWriter(UpdateRequestProcessor processor, String confDir, SolrQueryRequest req) {
     this.processor = processor;
     configDir = confDir;
+    this.req = req;
   }
-  public SolrWriter(UpdateRequestProcessor processor, String confDir, String filePrefix) {
+  public SolrWriter(UpdateRequestProcessor processor, String confDir, String filePrefix, SolrQueryRequest req) {
     this.processor = processor;
     configDir = confDir;
     if(filePrefix != null){
       persistFilename = filePrefix+".properties";
     }
+    this.req = req;
   }
 
   public boolean upload(SolrInputDocument d) {
     try {
-      AddUpdateCommand command = new AddUpdateCommand();
+      AddUpdateCommand command = new AddUpdateCommand(req);
       command.solrDoc = d;
       processor.processAdd(command);
     } catch (Exception e) {
@@ -79,7 +84,7 @@ public class SolrWriter {
   public void deleteDoc(Object id) {
     try {
       log.info("Deleting document: " + id);
-      DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
+      DeleteUpdateCommand delCmd = new DeleteUpdateCommand(req);
       delCmd.id = id.toString();
       processor.processDelete(delCmd);
     } catch (IOException e) {
@@ -153,7 +158,7 @@ public class SolrWriter {
   public void deleteByQuery(String query) {
     try {
       log.info("Deleting documents from Solr with query: " + query);
-      DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
+      DeleteUpdateCommand delCmd = new DeleteUpdateCommand(req);
       delCmd.query = query;
       processor.processDelete(delCmd);
     } catch (IOException e) {
@@ -163,7 +168,7 @@ public class SolrWriter {
 
   public void commit(boolean optimize) {
     try {
-      CommitUpdateCommand commit = new CommitUpdateCommand(optimize);
+      CommitUpdateCommand commit = new CommitUpdateCommand(req,optimize);
       processor.processCommit(commit);
     } catch (Throwable t) {
       log.error("Exception while solr commit.", t);
@@ -172,7 +177,7 @@ public class SolrWriter {
 
   public void rollback() {
     try {
-      RollbackUpdateCommand rollback = new RollbackUpdateCommand();
+      RollbackUpdateCommand rollback = new RollbackUpdateCommand(req);
       processor.processRollback(rollback);
     } catch (Throwable t) {
       log.error("Exception while solr rollback.", t);
@@ -181,7 +186,7 @@ public class SolrWriter {
 
   public void doDeleteAll() {
     try {
-      DeleteUpdateCommand deleteCommand = new DeleteUpdateCommand();
+      DeleteUpdateCommand deleteCommand = new DeleteUpdateCommand(req);
       deleteCommand.query = "*:*";
       processor.processDelete(deleteCommand);
     } catch (IOException e) {

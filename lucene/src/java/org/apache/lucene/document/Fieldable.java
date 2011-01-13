@@ -64,7 +64,7 @@ public interface Fieldable extends Serializable {
    *
    * <p>Note: this value is not stored directly with the document in the index.
    * Documents returned from {@link org.apache.lucene.index.IndexReader#document(int)} and
-   * {@link org.apache.lucene.search.Searcher#doc(int)} may thus not have the same value present as when
+   * {@link org.apache.lucene.search.IndexSearcher#doc(int)} may thus not have the same value present as when
    * this field was indexed.
    *
    * @see #setBoost(float)
@@ -206,7 +206,7 @@ public interface Fieldable extends Serializable {
   * required in the index, it also means any query
   * requiring positional information, such as {@link
   * PhraseQuery} or {@link SpanQuery} subclasses will
-  * silently fail to find results.
+  * fail with an exception.
   */
   void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
 }

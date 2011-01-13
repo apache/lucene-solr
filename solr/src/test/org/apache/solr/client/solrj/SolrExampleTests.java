@@ -266,7 +266,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     Assert.assertEquals( 0, rsp.getResults().getNumFound() );
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update/csv");
-    up.addFile(new File("books.csv"));
+    up.addFile(getFile("books.csv"));
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = server.request(up);
     assertNotNull("Couldn't upload books.csv", result);

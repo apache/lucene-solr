@@ -6,7 +6,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -157,7 +156,7 @@ public class TestDocument extends LuceneTestCase {
     writer.addDocument(makeDocumentWithFields());
     IndexReader reader = writer.getReader();
     
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = new IndexSearcher(reader);
     
     // search for something that does exists
     Query query = new TermQuery(new Term("keyword", "test1"));
@@ -239,7 +238,7 @@ public class TestDocument extends LuceneTestCase {
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = new IndexSearcher(reader);
     
     Query query = new TermQuery(new Term("keyword", "test"));
     

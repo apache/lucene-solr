@@ -249,16 +249,6 @@ public abstract class SolrParams implements Serializable {
     }
   }
 
-  
-  /** how to transform a String into a boolean... more flexible than
-   * Boolean.parseBoolean() to enable easier integration with html forms.
-   * @deprecated Use org.apache.solr.common.util.StrUtils.parseBool
-   */
-  @Deprecated
-  protected boolean parseBool(String s) {
-    return StrUtils.parseBool(s);
-  }
-
   /** Create a Map<String,String> from a NamedList given no keys are repeated */
   public static Map<String,String> toMap(NamedList params) {
     HashMap<String,String> map = new HashMap<String,String>();

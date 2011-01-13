@@ -75,7 +75,7 @@ public class IntValuesCreator extends CachedArrayCreator<IntValues>
   }
 
   @Override
-  public IntValues validate(IntValues entry, IndexReader reader) throws IOException {
+  public synchronized IntValues validate(IntValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
     
     if( hasOption(OPTION_CACHE_VALUES) ) {

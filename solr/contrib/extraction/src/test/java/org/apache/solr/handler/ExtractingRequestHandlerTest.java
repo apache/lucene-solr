@@ -43,7 +43,7 @@ import java.io.File;
 public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    initCore("solrconfig.xml", "schema.xml", "solr-extraction");
   }
 
   @Before
@@ -152,6 +152,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
     try {
       ignoreException("unknown field 'a'");
+      ignoreException("unknown field 'meta'");  // TODO: should this exception be happening?
       loadLocal("simple.html",
       "literal.id","simple2",
       "lowernames", "true",
@@ -367,7 +368,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       // TODO: stop using locally defined streams once stream.file and
       // stream.body work everywhere
       List<ContentStream> cs = new ArrayList<ContentStream>();
-      cs.add(new ContentStreamBase.FileStream(new File(filename)));
+      cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);
       return h.queryAndResponse("/update/extract", req);
     } finally {

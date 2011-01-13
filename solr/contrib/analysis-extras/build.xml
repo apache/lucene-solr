@@ -118,6 +118,10 @@
                 classpathref="test.classpath">
       <src path="src/test"/>
     </solr-javac>
+    <!-- Copy any data files present to the classpath -->
+    <copy todir="${dest}/test-classes">
+      <fileset dir="src/test-files" excludes="**/*.java"/>
+    </copy>
   </target>
 
   <target name="example" depends="build,dist">
@@ -136,7 +140,7 @@
            maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
-           dir="src/test/test-files/"
+           dir="${junit.output.dir}"
            tempdir="${junit.output.dir}"
            forkmode="perBatch"
             >

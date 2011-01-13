@@ -103,7 +103,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
         addClause(bq, placeholderTerm.createTerm(pendingTerms.get(sort[i], new BytesRef())), 1, 1.0f);
       }
       // Strip scores
-      final Query result = new ConstantScoreQuery(new QueryWrapperFilter(bq));
+      final Query result = new ConstantScoreQuery(bq);
       result.setBoost(query.getBoost());
       query.incTotalNumberOfTerms(size);
       return result;

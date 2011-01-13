@@ -20,10 +20,17 @@ package org.apache.lucene.index.codecs;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
 
 final class DeltaBytesWriter {
+
+  // Must be bigger than
+  // DocumentsWriter.MAX_TERM_LENGTH_UTF8.  If you change
+  // this it's an index format change, so that change must be
+  // versioned:
+  final static int TERM_EOF = BYTE_BLOCK_SIZE;
 
   private byte[] lastBytes = new byte[10];
   private int lastLength;
@@ -45,8 +52,9 @@ final class DeltaBytesWriter {
 
     final int limit = length < lastLength ? length : lastLength;
     while(start < limit) {
-      if (bytes[upto] != lastBytes[start])
+      if (bytes[upto] != lastBytes[start]) {
         break;
+      }
       start++;
       upto++;
     }

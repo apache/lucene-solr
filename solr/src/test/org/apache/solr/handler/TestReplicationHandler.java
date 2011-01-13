@@ -250,14 +250,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterClient.commit();
 
     //change the schema on master
-    copyFile(new File(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema.xml"));
+    copyFile(getFile(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema.xml"));
 
     masterJetty.stop();
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
-    copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+    copyFile(getFile(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
 
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
@@ -349,7 +349,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testSnapPullWithMasterUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
-    copyFile(new File(CONF_DIR + "solrconfig-slave1.xml"), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+    copyFile(getFile(CONF_DIR + "solrconfig-slave1.xml"), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
@@ -386,7 +386,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     // NOTE: at this point, the slave is not polling any more
     // restore it.
-    copyFile(new File(CONF_DIR + "solrconfig-slave.xml"), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+    copyFile(getFile(CONF_DIR + "solrconfig-slave.xml"), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
@@ -410,7 +410,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     //change solrconfig having 'replicateAfter startup' option on master
-    copyFile(new File(CONF_DIR + "solrconfig-master2.xml"),
+    copyFile(getFile(CONF_DIR + "solrconfig-master2.xml"),
             new File(master.getConfDir(), "solrconfig.xml"));
 
     masterJetty.stop();
@@ -418,7 +418,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
-    copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+    copyFile(getFile(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
 
     //start slave
     slaveJetty = createJetty(slave);
@@ -435,11 +435,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     // NOTE: the master only replicates after startup now!
     // revert that change.
-    copyFile(new File(CONF_DIR + "solrconfig-master.xml"), new File(master.getConfDir(), "solrconfig.xml"));    
+    copyFile(getFile(CONF_DIR + "solrconfig-master.xml"), new File(master.getConfDir(), "solrconfig.xml"));    
     masterJetty.stop();
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
-    copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+    copyFile(getFile(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
     //start slave
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
@@ -477,20 +477,20 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterClient.commit();
 
     //change solrconfig on master
-    copyFile(new File(CONF_DIR + "solrconfig-master1.xml"), new File(master.getConfDir(), "solrconfig.xml"));
+    copyFile(getFile(CONF_DIR + "solrconfig-master1.xml"), new File(master.getConfDir(), "solrconfig.xml"));
 
     //change schema on master
-    copyFile(new File(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema.xml"));
+    copyFile(getFile(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema.xml"));
 
     //keep a copy of the new schema
-    copyFile(new File(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema-replication2.xml"));
+    copyFile(getFile(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema-replication2.xml"));
 
     masterJetty.stop();
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
-    copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+    copyFile(getFile(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
 
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
@@ -522,7 +522,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testBackup() throws Exception {
 
     masterJetty.stop();
-    copyFile(new File(CONF_DIR + "solrconfig-master1.xml"), new File(master.getConfDir(), "solrconfig.xml"));
+    copyFile(getFile(CONF_DIR + "solrconfig-master1.xml"), new File(master.getConfDir(), "solrconfig.xml"));
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
@@ -708,9 +708,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       confDir.mkdirs();
 
       File f = new File(confDir, "solrconfig.xml");
-      copyFile(new File(getSolrConfigFile()), f, masterPort);
+      copyFile(getFile(getSolrConfigFile()), f, masterPort);
       f = new File(confDir, "schema.xml");
-      copyFile(new File(getSchemaFile()), f);
+      copyFile(getFile(getSchemaFile()), f);
     }
 
     public void tearDown() throws Exception {

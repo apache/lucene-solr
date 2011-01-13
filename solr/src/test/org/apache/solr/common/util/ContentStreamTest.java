@@ -20,15 +20,18 @@ package org.apache.solr.common.util;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.net.ConnectException;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.core.SolrResourceLoader;
 
 /**
  */
@@ -45,8 +48,12 @@ public class ContentStreamTest extends LuceneTestCase
 
   public void testFileStream() throws IOException 
   {
-    File file = new File( "README" );
-    assertTrue( file.exists() ); // "make sure you are running from: solr\src\test\test-files"
+    InputStream is = new SolrResourceLoader(null, null).openResource( "README" );
+    assertNotNull( is );
+    File file = new File(TEMP_DIR, "README");
+    FileOutputStream os = new FileOutputStream(file);
+    IOUtils.copy(is, os);
+    os.close();
     
     ContentStreamBase stream = new ContentStreamBase.FileStream( file );
     assertEquals( file.length(), stream.getSize().intValue() );
@@ -59,12 +66,16 @@ public class ContentStreamTest extends LuceneTestCase
   {
     String content = null;
     URL url = new URL( "http://svn.apache.org/repos/asf/lucene/dev/trunk/" );
-    InputStream in = url.openStream();
+    InputStream in = null;
     try {
+      in = url.openStream();
       content = IOUtils.toString( in );
-    } 
-    finally {
-      IOUtils.closeQuietly(in);
+    } catch (ConnectException ex) {
+      assumeNoException("Unable to connect to " + url + " to run the test.", ex);
+    }finally {
+      if (in != null) {
+        IOUtils.closeQuietly(in);
+      }
     }
     
     assertTrue( content.length() > 10 ); // found something...

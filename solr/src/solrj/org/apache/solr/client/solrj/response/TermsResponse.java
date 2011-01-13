@@ -29,14 +29,14 @@ import java.util.Map;
 public class TermsResponse {
   private Map<String, List<Term>> termMap = new HashMap<String, List<Term>>();
   
-  public TermsResponse(NamedList<Object> termsInfo) {
+  public TermsResponse(NamedList<NamedList<Number>> termsInfo) {
     for (int i = 0; i < termsInfo.size(); i++) {
       String fieldName = termsInfo.getName(i);
       List<Term> itemList = new ArrayList<Term>();
-      NamedList<Object> items = (NamedList<Object>) termsInfo.getVal(i);
+      NamedList<Number> items = termsInfo.getVal(i);
       
       for (int j = 0; j < items.size(); j++) {
-        Term t = new Term(items.getName(j), ((Number) items.getVal(j)).longValue());
+        Term t = new Term(items.getName(j), items.getVal(j).longValue());
         itemList.add(t);
       }
       

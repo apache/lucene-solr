@@ -36,13 +36,17 @@ final class DeltaBytesReader {
     term.copy(text);
   }
 
-  void read() throws IOException {
+  boolean read() throws IOException {
     final int start = in.readVInt();
+    if (start == DeltaBytesWriter.TERM_EOF) {
+      return false;
+    }
     final int suffix = in.readVInt();
     assert start <= term.length: "start=" + start + " length=" + term.length;
     final int newLength = start+suffix;
     term.grow(newLength);
     in.readBytes(term.bytes, start, suffix);
     term.length = newLength;
+    return true;
   }
 }

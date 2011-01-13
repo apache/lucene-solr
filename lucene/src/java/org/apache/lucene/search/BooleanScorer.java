@@ -197,9 +197,9 @@ final class BooleanScorer extends Scorer {
   private Bucket current;
   private int doc = -1;
   
-  BooleanScorer(Weight weight, Similarity similarity, int minNrShouldMatch,
+  BooleanScorer(Weight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
       List<Scorer> optionalScorers, List<Scorer> prohibitedScorers, int maxCoord) throws IOException {
-    super(similarity, weight);
+    super(null, weight);   // Similarity not used
     this.minNrShouldMatch = minNrShouldMatch;
 
     if (optionalScorers != null && optionalScorers.size() > 0) {
@@ -222,15 +222,14 @@ final class BooleanScorer extends Scorer {
     }
 
     coordFactors = new float[optionalScorers.size() + 1];
-    Similarity sim = getSimilarity();
     for (int i = 0; i < coordFactors.length; i++) {
-      coordFactors[i] = sim.coord(i, maxCoord); 
+      coordFactors[i] = disableCoord ? 1.0f : similarity.coord(i, maxCoord); 
     }
   }
 
   // firstDocID is ignored since nextDoc() initializes 'current'
   @Override
-  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     boolean more;
     Bucket tmp;
     BucketScorer bs = new BucketScorer();

@@ -39,7 +39,6 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -104,7 +103,7 @@ public final class SynExpand {
 	 * @return the expanded Query
 	 */ 
 	public static Query expand( String query,
-								Searcher syns,
+								IndexSearcher syns,
 								Analyzer a,
 								String f,
 								final float boost)

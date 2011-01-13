@@ -25,12 +25,14 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.OpenBitSet;
+
 
 
 /**
@@ -59,7 +61,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     directory.close();
   }
 
-  public void searchFiltered(IndexWriter writer, Directory directory, SimpleDocIdSetFilter filter, boolean optimize) {
+  public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean optimize) {
     try {
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
@@ -75,7 +77,6 @@ public class TestFilteredSearch extends LuceneTestCase {
      
      
       IndexSearcher indexSearcher = new IndexSearcher(directory, true);
-      filter.setTopReader(indexSearcher.getIndexReader());
       ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
       assertEquals("Number of matched documents", 1, hits.length);
       indexSearcher.close();
@@ -89,20 +90,17 @@ public class TestFilteredSearch extends LuceneTestCase {
   public static final class SimpleDocIdSetFilter extends Filter {
     private final int[] docs;
     private int index;
-    private IndexReader topReader;
+    
     public SimpleDocIdSetFilter(int[] docs) {
       this.docs = docs;
     }
 
-    public void setTopReader(IndexReader r) {
-      topReader = r;
-    }
-
     @Override
-    public DocIdSet getDocIdSet(IndexReader reader) {
+    public DocIdSet getDocIdSet(AtomicReaderContext context) {
+      assert context.isAtomic;
       final OpenBitSet set = new OpenBitSet();
-      int docBase = topReader.getSubReaderDocBase(reader);
-      final int limit = docBase+reader.maxDoc();
+      int docBase = context.docBase;
+      final int limit = docBase+context.reader.maxDoc();
       for (;index < docs.length; index++) {
         final int docId = docs[index];
         if(docId > limit)

@@ -74,7 +74,7 @@ public class DoubleValuesCreator extends CachedArrayCreator<DoubleValues>
   }
 
   @Override
-  public DoubleValues validate(DoubleValues entry, IndexReader reader) throws IOException {
+  public synchronized DoubleValues validate(DoubleValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
     
     if( hasOption(OPTION_CACHE_VALUES) ) {

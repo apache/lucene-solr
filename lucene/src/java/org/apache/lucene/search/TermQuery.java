@@ -22,8 +22,10 @@ import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.BulkPostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.BulkPostingsEnum.BlockReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
@@ -42,9 +44,11 @@ public class TermQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     private IDFExplanation idfExp;
+    private transient ReaderContext weightContext; // only set if -ea for assert in scorer()
 
-    public TermWeight(Searcher searcher)
+    public TermWeight(IndexSearcher searcher)
       throws IOException {
+      assert setWeightContext(searcher);
       this.similarity = getSimilarity(searcher);
       if (docFreq != -1) {
         idfExp = similarity.idfExplain(term, searcher, docFreq);
@@ -77,7 +81,9 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      assert assertTopReaderContext(context);
+      final IndexReader reader = context.reader;
       assert reader.getSequentialSubReaders() == null;
       BulkPostingsEnum docs = reader.bulkTermPostingsEnum(term.field(),
                                                           term.bytes(),
@@ -98,10 +104,23 @@ public class TermQuery extends Query {
             reader.getDeletedDocs(), similarity, reader.norms(term.field()));
       }
     }
+    
+    private boolean assertTopReaderContext(ReaderContext context) {
+      while (context.parent != null) {
+        context = context.parent;
+      }
+      return weightContext == context;
+    }
+    
+    private boolean setWeightContext(IndexSearcher searcher) {
+      weightContext = searcher.getTopReaderContext();
+      return true;
+    }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
+      final IndexReader reader = context.reader;
 
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
@@ -192,7 +211,7 @@ public class TermQuery extends Query {
   public Term getTerm() { return term; }
 
   @Override
-  public Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new TermWeight(searcher);
   }
 

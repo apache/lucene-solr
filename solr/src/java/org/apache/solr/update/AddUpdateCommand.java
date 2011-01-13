@@ -22,6 +22,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
@@ -45,6 +46,9 @@ public class AddUpdateCommand extends UpdateCommand {
    public Term updateTerm;
    public int commitWithin = -1;
    
+   public AddUpdateCommand(SolrQueryRequest req) {
+     super("add", req);
+   }
 
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {
@@ -101,10 +105,6 @@ public class AddUpdateCommand extends UpdateCommand {
        }
      }
      return "(null)";
-   }
-
-   public AddUpdateCommand() {
-     super("add");
    }
 
    @Override

@@ -18,10 +18,12 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.MultiFields;
@@ -41,18 +43,11 @@ import java.util.Collections;
  */
 public abstract class ValueSource implements Serializable {
 
-  @Deprecated
-  public DocValues getValues(IndexReader reader) throws IOException {
-    return getValues(null, reader);
-  }
-
   /**
    * Gets the values for this reader and the context that was previously
    * passed to createWeight()
    */
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return getValues(reader);
-  }
+  public abstract DocValues getValues(Map context, IndexReader reader) throws IOException;
 
   public abstract boolean equals(Object o);
 
@@ -91,15 +86,51 @@ public abstract class ValueSource implements Serializable {
    * weight info in the context. The context object will be passed to getValues()
    * where this info can be retrieved.
    */
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
   }
 
   /**
    * Returns a new non-threadsafe context map.
    */
-  public static Map newContext() {
-    return new IdentityHashMap();
+  public static Map newContext(IndexSearcher searcher) {
+    Map context = new IdentityHashMap();
+    context.put("searcher", searcher);
+    return context;
   }
+
+  /* @lucene.internal
+   * This will most likely go away in the future.
+   */
+  public static AtomicReaderContext readerToContext(Map fcontext, IndexReader reader) {
+    Object v = fcontext.get(reader);
+    if (v == null) {
+      IndexSearcher searcher = (IndexSearcher)fcontext.get("searcher");
+      if (searcher == null) {
+        return null;
+        // TODO
+        // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no searcher found in function context");
+      }
+      ReaderContext rcontext = searcher.getIndexReader().getTopReaderContext();
+      if (rcontext.isAtomic) {
+        assert rcontext.reader == reader;
+        fcontext.put(rcontext.reader, (AtomicReaderContext)rcontext);
+      } else {
+        for (AtomicReaderContext subCtx : rcontext.leaves()) {
+          fcontext.put(subCtx.reader, subCtx);
+        }
+      }
+
+      v = fcontext.get(reader);
+      if (v == null) {
+        return null;
+        // TODO
+        // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "reader " + reader + " is not from the top reader " + searcher.getIndexReader());
+      }
+    }
+
+    return (AtomicReaderContext)v;
+  }
+
 
   class ValueSourceComparatorSource extends FieldComparatorSource {
 

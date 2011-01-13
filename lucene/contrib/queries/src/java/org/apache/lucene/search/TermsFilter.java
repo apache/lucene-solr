@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Terms;
@@ -57,7 +58,8 @@ public class TermsFilter extends Filter
    * @see org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.IndexReader)
 	 */
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    IndexReader reader = context.reader;
     OpenBitSet result=new OpenBitSet(reader.maxDoc());
     Fields fields = reader.fields();
     BytesRef br = new BytesRef();

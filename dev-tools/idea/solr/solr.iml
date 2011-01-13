@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_6" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/build/solr" />
+    <output-test url="file://$MODULE_DIR$/build/tests" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src/solrj" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/common" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/webapp/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/webapp/web" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test-files" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/build" />
+    </content>
+    <orderEntry type="module" module-name="spatial" />
+    <orderEntry type="module" module-name="highlighter" />
+    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="icu" />
+    <orderEntry type="module" module-name="queries" />
+    <orderEntry type="module" module-name="misc" />
+    <orderEntry type="module" module-name="phonetic" />
+    <orderEntry type="module" module-name="spellchecker" />
+    <orderEntry type="module" module-name="remote" />
+    <orderEntry type="module" module-name="lucene" />
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Solr library" level="project" />
+    <orderEntry type="library" name="Solr example library" level="project" />
+  </component>
+</module>

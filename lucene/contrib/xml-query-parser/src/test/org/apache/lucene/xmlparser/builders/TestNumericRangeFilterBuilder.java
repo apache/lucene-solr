@@ -28,7 +28,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.store.Directory;
@@ -64,10 +66,10 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		writer.commit();
 		try
 		{
-			IndexReader reader = IndexReader.open(ramDir, true);
+			IndexReader reader = new SlowMultiReaderWrapper(IndexReader.open(ramDir, true));
 			try
 			{
-				assertNull(filter.getDocIdSet(reader));
+				assertNull(filter.getDocIdSet((AtomicReaderContext) reader.getTopReaderContext()));
 			}
 			finally
 			{

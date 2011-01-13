@@ -67,7 +67,13 @@ public class MockVariableIntBlockCodec extends Codec {
     return name + "(baseBlockSize="+ baseBlockSize + ")";
   }
 
-  private class MockIntFactory extends IntStreamFactory {
+  public static class MockIntFactory extends IntStreamFactory {
+
+    private final int baseBlockSize;
+
+    public MockIntFactory(int baseBlockSize) {
+      this.baseBlockSize = baseBlockSize;
+    }
 
     @Override
     public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
@@ -104,6 +110,7 @@ public class MockVariableIntBlockCodec extends Codec {
 
         @Override
         protected int add(int value) throws IOException {
+          assert value >= 0;
           buffer[pendingCount++] = value;
           // silly variable block length int encoder: if
           // first value <= 3, we write N vints at once;
@@ -128,7 +135,7 @@ public class MockVariableIntBlockCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new MockIntFactory());
+    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new MockIntFactory(baseBlockSize));
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -162,7 +169,7 @@ public class MockVariableIntBlockCodec extends Codec {
     PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
                                                                       state.segmentInfo,
                                                                       state.readBufferSize,
-                                                                      new MockIntFactory(), state.codecId);
+                                                                      new MockIntFactory(baseBlockSize), state.codecId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;

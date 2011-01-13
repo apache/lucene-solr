@@ -17,7 +17,7 @@ package org.apache.lucene.search;
 
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -61,8 +61,8 @@ public class CachingSpanFilter extends SpanFilter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    SpanFilterResult result = getCachedResult(reader);
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    SpanFilterResult result = getCachedResult(context.reader);
     return result != null ? result.getDocIdSet() : null;
   }
   
@@ -72,7 +72,7 @@ public class CachingSpanFilter extends SpanFilter {
   private SpanFilterResult getCachedResult(IndexReader reader) throws IOException {
 
     final Object coreKey = reader.getCoreCacheKey();
-    final Object delCoreKey = reader.hasDeletions() ? MultiFields.getDeletedDocs(reader) : coreKey;
+    final Object delCoreKey = reader.hasDeletions() ? reader.getDeletedDocs() : coreKey;
 
     SpanFilterResult result = cache.get(reader, coreKey, delCoreKey);
     if (result != null) {

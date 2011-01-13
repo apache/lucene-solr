@@ -56,6 +56,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     conf.setMergePolicy(logByteSizeMergePolicy);
 
     final IndexWriter writer = new IndexWriter(dir, conf);
+    writer.setInfoStream(VERBOSE ? System.out : null);
     return writer;
   }
 
@@ -110,12 +111,15 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   }
 
   /*
-   * Test is hetrogenous index segements are merge sucessfully
+   * Test that heterogeneous index segments are merged sucessfully
    */
   @Test
   public void testChangeCodecAndMerge() throws IOException {
     Directory dir = newDirectory();
     CodecProvider provider = new MockCodecProvider();
+    if (VERBOSE) {
+      System.out.println("TEST: make new index");
+    }
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
              new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(provider);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
@@ -125,6 +129,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     addDocs(writer, 10);
     writer.commit();
     assertQuery(new Term("content", "aaa"), dir, 10, provider);
+    if (VERBOSE) {
+      System.out.println("TEST: addDocs3");
+    }
     addDocs3(writer, 10);
     writer.commit();
     writer.close();
@@ -144,6 +151,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     iwconf.setCodecProvider(provider);
     writer = newWriter(dir, iwconf);
     // swap in new codec for currently written segments
+    if (VERBOSE) {
+      System.out.println("TEST: add docs w/ Standard codec for content field");
+    }
     addDocs2(writer, 10);
     writer.commit();
     Codec origContentCodec = provider.lookup("MockSep");
@@ -152,9 +162,12 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
         origContentCodec, origContentCodec, newContentCodec);
     assertEquals(30, writer.maxDoc());
     assertQuery(new Term("content", "bbb"), dir, 10, provider);
-    assertQuery(new Term("content", "ccc"), dir, 10, provider);
+    assertQuery(new Term("content", "ccc"), dir, 10, provider);   ////
     assertQuery(new Term("content", "aaa"), dir, 10, provider);
 
+    if (VERBOSE) {
+      System.out.println("TEST: add more docs w/ new codec");
+    }
     addDocs2(writer, 10);
     writer.commit();
     assertQuery(new Term("content", "ccc"), dir, 10, provider);
@@ -162,6 +175,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     assertQuery(new Term("content", "aaa"), dir, 10, provider);
     assertEquals(40, writer.maxDoc());
 
+    if (VERBOSE) {
+      System.out.println("TEST: now optimize");
+    }
     writer.optimize();
     assertEquals(40, writer.maxDoc());
     writer.close();
@@ -206,6 +222,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
 
   public void assertQuery(Term t, Directory dir, int num, CodecProvider codecs)
       throws CorruptIndexException, IOException {
+    if (VERBOSE) {
+      System.out.println("\nTEST: assertQuery " + t);
+    }
     IndexReader reader = IndexReader.open(dir, null, true,
         IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, codecs);
     IndexSearcher searcher = new IndexSearcher(reader);

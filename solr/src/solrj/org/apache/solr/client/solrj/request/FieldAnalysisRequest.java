@@ -96,8 +96,8 @@ public class FieldAnalysisRequest extends SolrRequest {
    */
   @Override
   public FieldAnalysisResponse process(SolrServer server) throws SolrServerException, IOException {
-    if (fieldTypes == null || fieldNames == null) {
-      throw new IllegalStateException("A list one field type or field name need to be specified");
+    if (fieldTypes == null && fieldNames == null) {
+      throw new IllegalStateException("At least one field type or field name need to be specified");
     }
     if (fieldValue == null) {
       throw new IllegalStateException("The field value must be set");

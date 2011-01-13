@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
@@ -341,8 +342,8 @@ public class TestIndicesEquals extends LuceneTestCase {
 
       // test norms as used by normal use
 
-      byte[] aprioriNorms = aprioriReader.norms((String) field);
-      byte[] testNorms = testReader.norms((String) field);
+      byte[] aprioriNorms = MultiNorms.norms(aprioriReader, (String) field);
+      byte[] testNorms = MultiNorms.norms(testReader, (String) field);
 
       if (aprioriNorms != null) {
         assertEquals(aprioriNorms.length, testNorms.length);
@@ -354,10 +355,10 @@ public class TestIndicesEquals extends LuceneTestCase {
         // test norms as used by multireader
 
         aprioriNorms = new byte[aprioriReader.maxDoc()];
-        aprioriReader.norms((String) field, aprioriNorms, 0);
+        MultiNorms.norms(aprioriReader, (String) field, aprioriNorms, 0);
 
         testNorms = new byte[testReader.maxDoc()];
-        testReader.norms((String) field, testNorms, 0);
+        MultiNorms.norms(testReader, (String) field, testNorms, 0);
 
         assertEquals(aprioriNorms.length, testNorms.length);
 
@@ -369,10 +370,10 @@ public class TestIndicesEquals extends LuceneTestCase {
         // test norms as used by multireader
 
         aprioriNorms = new byte[aprioriReader.maxDoc() + 10];
-        aprioriReader.norms((String) field, aprioriNorms, 10);
+        MultiNorms.norms(aprioriReader, (String) field, aprioriNorms, 10);
 
         testNorms = new byte[testReader.maxDoc() + 10];
-        testReader.norms((String) field, testNorms, 10);
+        MultiNorms.norms(testReader, (String) field, testNorms, 10);
 
         assertEquals(aprioriNorms.length, testNorms.length);
         

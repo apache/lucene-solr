@@ -221,7 +221,7 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public Field createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
@@ -252,9 +252,9 @@ public abstract class FieldType extends FieldProperties {
    * @param omitNorms true if norms should be omitted
    * @param omitTFPos true if term freq and position should be omitted.
    * @param boost The boost value
-   * @return the {@link org.apache.lucene.document.Field}.
+   * @return the {@link org.apache.lucene.document.Fieldable}.
    */
-  protected Field createField(String name, String val, Field.Store storage, Field.Index index,
+  protected Fieldable createField(String name, String val, Field.Store storage, Field.Index index,
                                     Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
     Field f = new Field(name,
                         val,
@@ -278,7 +278,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #isPolyField()
    */
   public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
-    Field f = createField( field, externalVal, boost);
+    Fieldable f = createField( field, externalVal, boost);
     return f==null ? new Fieldable[]{} : new Fieldable[]{f};
   }
 
@@ -341,7 +341,7 @@ public abstract class FieldType extends FieldProperties {
   public Object toObject(SchemaField sf, BytesRef term) {
     CharArr ext = new CharArr(term.length);
     indexedToReadable(term, ext);
-    Field f = createField(sf, ext.toString(), 1.0f);
+    Fieldable f = createField(sf, ext.toString(), 1.0f);
     return toObject(f);
   }
 
@@ -511,7 +511,6 @@ public abstract class FieldType extends FieldProperties {
    * @param maxInclusive whether the maximum of the range is inclusive or not
    *  @return a Query instance to perform range search according to given parameters
    *
-   * @see org.apache.solr.search.SolrQueryParser#getRangeQuery(String, String, String, boolean)
    */
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // constant score mode is now enabled per default

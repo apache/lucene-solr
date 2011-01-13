@@ -27,6 +27,7 @@ import org.apache.lucene.document.*;
 
 import java.util.Random;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.io.IOException;
 
 public class TestThreadSafe extends LuceneTestCase {
@@ -34,16 +35,16 @@ public class TestThreadSafe extends LuceneTestCase {
 
   IndexReader ir1;
 
-  String failure=null;
-
-
   class Thr extends Thread {
     final int iter;
     final Random rand;
+    final AtomicBoolean failed;
+
     // pass in random in case we want to make things reproducable
-    public Thr(int iter, Random rand) {
+    public Thr(int iter, Random rand, AtomicBoolean failed) {
       this.iter = iter;
       this.rand = rand;
+      this.failed = failed;
     }
 
     @Override
@@ -61,8 +62,8 @@ public class TestThreadSafe extends LuceneTestCase {
 
         }
       } catch (Throwable th) {
-        failure=th.toString();
-        fail(failure);
+        failed.set(true);
+        throw new RuntimeException(th);
       }
     }
 
@@ -124,16 +125,15 @@ public class TestThreadSafe extends LuceneTestCase {
 
   void doTest(int iter, int nThreads) throws Exception {
     Thr[] tarr = new Thr[nThreads];
+    AtomicBoolean failed = new AtomicBoolean();
     for (int i=0; i<nThreads; i++) {
-      tarr[i] = new Thr(iter, new Random(random.nextLong()));
+      tarr[i] = new Thr(iter, new Random(random.nextLong()), failed);
       tarr[i].start();
     }
     for (int i=0; i<nThreads; i++) {
       tarr[i].join();
     }
-    if (failure!=null) {
-      fail(failure);
-    }
+    assertFalse(failed.get());
   }
 
   public void testLazyLoadThreadSafety() throws Exception{
@@ -142,7 +142,7 @@ public class TestThreadSafe extends LuceneTestCase {
     buildDir(dir1, 15, 5, 2000);
 
     // do many small tests so the thread locals go away inbetween
-    int num = 100 * RANDOM_MULTIPLIER;
+    int num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       ir1 = IndexReader.open(dir1, false);
       doTest(10,10);

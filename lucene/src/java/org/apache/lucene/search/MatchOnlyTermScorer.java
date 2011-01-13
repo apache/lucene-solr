@@ -78,7 +78,7 @@ final class MatchOnlyTermScorer extends Scorer {
 
   // firstDocID is ignored since nextDoc() sets 'doc'
   @Override
-  protected boolean score(Collector c, int end, int firstDocID) throws IOException {
+  public boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
     // nocommit -- this can leave scorer on a deleted doc...
     while (doc < end) {                           // for docs in window

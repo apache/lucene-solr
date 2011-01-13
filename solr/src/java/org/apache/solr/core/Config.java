@@ -52,15 +52,6 @@ public class Config {
   private final SolrResourceLoader loader;
 
   /**
-   * @deprecated Use {@link #Config(SolrResourceLoader, String, InputStream, String)} instead. 
-   */
-  @Deprecated
-  public Config(String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
-  {
-    this( null, name, is, prefix );
-  }
-
-  /**
    * Builds a config from a resource name with no xpath prefix.
    * @param loader
    * @param name
@@ -309,56 +300,5 @@ public class Config {
     }
     
     return version;
-  }
-
-  // The following functions were moved to ResourceLoader
-  //-----------------------------------------------------------------------------
-  
-   /**
-    * @deprecated Use {@link SolrResourceLoader#getConfigDir()} instead.
-    */
-  @Deprecated
-  public String getConfigDir() {
-    return loader.getConfigDir();
-  }
-
-  /**
-   * @deprecated Use {@link SolrResourceLoader#openResource(String)} instead.
-   */
-  @Deprecated
-  public InputStream openResource(String resource) {
-    return loader.openResource(resource);
-  }
-
-  /**
-   * @deprecated Use {@link SolrResourceLoader#getLines(String)} instead.
-   */
-  @Deprecated
-  public List<String> getLines(String resource) throws IOException {
-    return loader.getLines(resource);
-  }
-
-  /**
-   * @deprecated Use {@link SolrResourceLoader#findClass(String, String[])} instead.
-   */
-  @Deprecated
-  public Class findClass(String cname, String... subpackages) {
-    return loader.findClass(cname, subpackages);
-  }
-
-  /**
-   * @deprecated Use {@link SolrResourceLoader#newInstance(String, String[])} instead.
-   */
-  @Deprecated
-  public Object newInstance(String cname, String ... subpackages) {
-    return loader.newInstance(cname, subpackages);
-  }
-  
-  /**
-   * @deprecated Use {@link SolrResourceLoader#getInstanceDir()} instead.
-   */
-  @Deprecated
-  public String getInstanceDir() {
-    return loader.getInstanceDir();
   }
 }

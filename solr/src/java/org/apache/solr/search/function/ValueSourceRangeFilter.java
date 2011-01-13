@@ -19,8 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.solr.search.SolrFilter;
 
 import java.io.IOException;
@@ -49,16 +49,16 @@ public class ValueSourceRangeFilter extends SolrFilter {
     this.includeUpper = upperVal != null && includeUpper;
   }
 
-  public DocIdSet getDocIdSet(final Map context, final IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(final Map context, final ReaderContext readerContext) throws IOException {
      return new DocIdSet() {
        public DocIdSetIterator iterator() throws IOException {
-         return valueSource.getValues(context, reader).getRangeScorer(reader, lowerVal, upperVal, includeLower, includeUpper);
+         return valueSource.getValues(context, readerContext.reader).getRangeScorer(readerContext.reader, lowerVal, upperVal, includeLower, includeUpper);
        }
      };
   }
 
   @Override
-  public void createWeight(Map context, Searcher searcher) throws IOException {
+  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     valueSource.createWeight(context, searcher);
   }
 

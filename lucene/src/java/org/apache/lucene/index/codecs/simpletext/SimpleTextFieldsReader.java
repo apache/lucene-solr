@@ -131,9 +131,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
 
-      fstEnum.reset();
       //System.out.println("seek to text=" + text.utf8ToString());
-      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,Long>> result = fstEnum.advance(text);
+      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,Long>> result = fstEnum.seekCeil(text);
       if (result == null) {
         //System.out.println("  end");
         return SeekStatus.END;

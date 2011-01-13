@@ -33,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -168,7 +169,8 @@ public class SolrPluginUtils {
    *
    * If lazy field loading is disabled, this method does nothing.
    */
-  public static void optimizePreFetchDocs(DocList docs,
+  public static void optimizePreFetchDocs(ResponseBuilder rb,
+                                          DocList docs,
                                           Query query,
                                           SolrQueryRequest req,
                                           SolrQueryResponse res) throws IOException {
@@ -178,28 +180,34 @@ public class SolrPluginUtils {
       return;
     }
 
-    Set<String> fieldFilter = null;
     Set<String> returnFields = res.getReturnFields();
+    Set<String> fieldFilter = returnFields;
+
     if(returnFields != null) {
-      // copy return fields list
-      fieldFilter = new HashSet<String>(returnFields);
-      // add highlight fields
-      SolrHighlighter highligher = req.getCore().getHighlighter();
-      if(highligher.isHighlightingEnabled(req.getParams())) {
-        for(String field: highligher.getHighlightFields(query, req, null))
+
+      if (rb.doHighlights) {
+        // copy return fields list
+        fieldFilter = new HashSet<String>(returnFields);
+        // add highlight fields
+
+        SolrHighlighter highlighter = HighlightComponent.getHighlighter(req.getCore());
+        for (String field: highlighter.getHighlightFields(query, req, null))
           fieldFilter.add(field);
-      }
-      // fetch unique key if one exists.
-      SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
-      if(null != keyField)
+
+        // fetch unique key if one exists.
+        SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
+        if(null != keyField)
           fieldFilter.add(keyField.getName());
+      }
+
+      // get documents
+      DocIterator iter = docs.iterator();
+      for (int i=0; i<docs.size(); i++) {
+        searcher.doc(iter.nextDoc(), fieldFilter);
+      }
+
     }
 
-    // get documents
-    DocIterator iter = docs.iterator();
-    for (int i=0; i<docs.size(); i++) {
-      searcher.doc(iter.nextDoc(), fieldFilter);
-    }
   }
 
 
@@ -666,14 +674,6 @@ public class SolrPluginUtils {
       super(qp,defaultField);
       // don't trust that our parent class won't ever change it's default
       setDefaultOperator(QueryParser.Operator.OR);
-    }
-    public DisjunctionMaxQueryParser(IndexSchema s, String defaultField) {
-      super(s,defaultField);
-      // don't trust that our parent class won't ever change it's default
-      setDefaultOperator(QueryParser.Operator.OR);
-    }
-    public DisjunctionMaxQueryParser(IndexSchema s) {
-      this(s,null);
     }
 
     /**

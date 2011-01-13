@@ -49,10 +49,10 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
@@ -422,7 +422,7 @@ public class MemoryIndex implements Serializable {
     if (query == null) 
       throw new IllegalArgumentException("query must not be null");
     
-    Searcher searcher = createSearcher();
+    IndexSearcher searcher = createSearcher();
     try {
       final float[] scores = new float[1]; // inits to 0.0f (no match)
       searcher.search(query, new Collector() {
@@ -739,7 +739,8 @@ public class MemoryIndex implements Serializable {
    */
   private final class MemoryIndexReader extends IndexReader {
     
-    private Searcher searcher; // needed to find searcher.getSimilarity() 
+    private IndexSearcher searcher; // needed to find searcher.getSimilarity() 
+    private final ReaderContext readerInfos = new AtomicReaderContext(this);
     
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -765,6 +766,11 @@ public class MemoryIndex implements Serializable {
       if (info != null) freq = info.getPositions(term.bytes()) != null ? 1 : 0;
       if (DEBUG) System.err.println("MemoryIndexReader.docFreq: " + term + ", freq:" + freq);
       return freq;
+    }
+    
+    @Override
+    public ReaderContext getTopReaderContext() {
+      return readerInfos;
     }
   
     @Override
@@ -1314,7 +1320,7 @@ public class MemoryIndex implements Serializable {
       return Similarity.getDefault();
     }
     
-    private void setSearcher(Searcher searcher) {
+    private void setSearcher(IndexSearcher searcher) {
       this.searcher = searcher;
     }
     

@@ -20,6 +20,7 @@ package org.apache.solr.highlight;
 import java.util.HashMap;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testConfig(){
-    SolrHighlighter highlighter = h.getCore().getHighlighter();
+    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
 
     // Make sure we loaded the one fragListBuilder
     SolrFragListBuilder solrFlbNull = highlighter.fragListBuilders.get( null );

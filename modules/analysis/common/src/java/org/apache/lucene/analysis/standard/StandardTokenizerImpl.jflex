@@ -33,14 +33,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  *   <li>&lt;IDEOGRAPHIC&gt;: A single CJKV ideographic character</li>
  *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
  * </ul>
- * <b>WARNING</b>: Because JFlex does not support Unicode supplementary 
- * characters (characters above the Basic Multilingual Plane, which contains
- * those up to and including U+FFFF), this scanner will not recognize them
- * properly.  If you need to be able to process text containing supplementary 
- * characters, consider using the ICU4J-backed implementation in modules/analysis/icu  
- * (org.apache.lucene.analysis.icu.segmentation.ICUTokenizer)
- * instead of this class, since the ICU4J-backed implementation does not have
- * this limitation.
  */
 %%
 
@@ -53,15 +45,29 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %function getNextToken
 %char
 
+%include src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro
+ALetter = ([\p{WB:ALetter}] | {ALetterSupp})
+Format =  ([\p{WB:Format}] | {FormatSupp})
+Numeric = ([\p{WB:Numeric}] | {NumericSupp})
+Extend =  ([\p{WB:Extend}] | {ExtendSupp})
+Katakana = ([\p{WB:Katakana}] | {KatakanaSupp})
+MidLetter = ([\p{WB:MidLetter}] | {MidLetterSupp})
+MidNum = ([\p{WB:MidNum}] | {MidNumSupp})
+MidNumLet = ([\p{WB:MidNumLet}] | {MidNumLetSupp})
+ExtendNumLet = ([\p{WB:ExtendNumLet}] | {ExtendNumLetSupp})
+ComplexContext = ([\p{LB:Complex_Context}] | {ComplexContextSupp})
+Han = ([\p{Script:Han}] | {HanSupp})
+Hiragana = ([\p{Script:Hiragana}] | {HiraganaSupp})
+
 // UAX#29 WB4. X (Extend | Format)* --> X
 //
-ALetterEx      = \p{WB:ALetter}                     [\p{WB:Format}\p{WB:Extend}]*
+ALetterEx      = {ALetter}                     ({Format} | {Extend})*
 // TODO: Convert hard-coded full-width numeric range to property intersection (something like [\p{Full-Width}&&\p{Numeric}]) once JFlex supports it
-NumericEx      = [\p{WB:Numeric}\uFF10-\uFF19]      [\p{WB:Format}\p{WB:Extend}]*
-KatakanaEx     = \p{WB:Katakana}                    [\p{WB:Format}\p{WB:Extend}]* 
-MidLetterEx    = [\p{WB:MidLetter}\p{WB:MidNumLet}] [\p{WB:Format}\p{WB:Extend}]* 
-MidNumericEx   = [\p{WB:MidNum}\p{WB:MidNumLet}]    [\p{WB:Format}\p{WB:Extend}]*
-ExtendNumLetEx = \p{WB:ExtendNumLet}                [\p{WB:Format}\p{WB:Extend}]*
+NumericEx      = ({Numeric} | [\uFF10-\uFF19]) ({Format} | {Extend})*
+KatakanaEx     = {Katakana}                    ({Format} | {Extend})* 
+MidLetterEx    = ({MidLetter} | {MidNumLet})   ({Format} | {Extend})* 
+MidNumericEx   = ({MidNum} | {MidNumLet})      ({Format} | {Extend})*
+ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 
 
 %{
@@ -156,12 +162,12 @@ ExtendNumLetEx = \p{WB:ExtendNumLet}                [\p{WB:Format}\p{WB:Extend}]
 //
 //    http://www.unicode.org/reports/tr14/#SA
 //
-\p{LB:Complex_Context}+ { return SOUTH_EAST_ASIAN_TYPE; }
+{ComplexContext}+ { return SOUTH_EAST_ASIAN_TYPE; }
 
 // UAX#29 WB14.  Any ÷ Any
 //
-\p{Script:Han} { return IDEOGRAPHIC_TYPE; }
-\p{Script:Hiragana} { return HIRAGANA_TYPE; }
+{Han} { return IDEOGRAPHIC_TYPE; }
+{Hiragana} { return HIRAGANA_TYPE; }
 
 
 // UAX#29 WB3.   CR × LF

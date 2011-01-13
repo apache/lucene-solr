@@ -527,8 +527,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
     //pre-fetch returned documents
     if (!req.getParams().getBool(ShardParams.IS_SHARD,false) && rb.getResults().docList != null && rb.getResults().docList.size()<=50) {
-      // TODO: this may depend on the highlighter component (or other components?)
-      SolrPluginUtils.optimizePreFetchDocs(rb.getResults().docList, rb.getQuery(), req, rsp);
+      SolrPluginUtils.optimizePreFetchDocs(rb, rb.getResults().docList, rb.getQuery(), req, rsp);
     }
   }
 

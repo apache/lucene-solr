@@ -31,6 +31,7 @@ import java.util.Comparator;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
@@ -45,6 +46,8 @@ import org.apache.lucene.util.Bits;
 public class InstantiatedIndexReader extends IndexReader {
 
   private final InstantiatedIndex index;
+  private ReaderContext context = new AtomicReaderContext(this);
+
 
   public InstantiatedIndexReader(InstantiatedIndex index) {
     super();
@@ -423,6 +426,11 @@ public class InstantiatedIndexReader extends IndexReader {
         };
       }
     };
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return context;
   }
 
   @Override

@@ -50,11 +50,11 @@ import java.io.Serializable;
  * @version $Id$
  */
 public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> {
-  protected final List nvPairs;
+  protected final List<Object> nvPairs;
 
   /** Creates an empty instance */
   public NamedList() {
-    nvPairs = new ArrayList();
+    nvPairs = new ArrayList<Object>();
   }
 
 
@@ -88,7 +88,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @deprecated Use {@link #NamedList(java.util.Map.Entry[])} for the NamedList instantiation
    */
   @Deprecated
-  public NamedList(List nameValuePairs) {
+  public NamedList(List<Object> nameValuePairs) {
     nvPairs=nameValuePairs;
   }
 
@@ -104,8 +104,8 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @see https://issues.apache.org/jira/browse/SOLR-912
    */
   @Deprecated
-  private List  nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
-    List result = new ArrayList();
+  private List<Object> nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
+    List<Object> result = new ArrayList<Object>();
     for (Map.Entry<String, ?> ent : nameValuePairs) {
       result.add(ent.getKey());
       result.add(ent.getValue());
@@ -158,6 +158,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   public T setVal(int idx, T val) {
     int index = (idx<<1)+1;
+    @SuppressWarnings("unchecked")
     T old = (T)nvPairs.get( index );
     nvPairs.set(index, val);
     return old;
@@ -170,7 +171,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   public T remove(int idx) {
     int index = (idx<<1);
     nvPairs.remove(index);
-    return (T)nvPairs.remove(index);  // same index, as things shifted in previous remove
+    @SuppressWarnings("unchecked")
+    T result = (T)nvPairs.remove(index);  // same index, as things shifted in previous remove
+    return result;
   }
 
   /**
@@ -315,7 +318,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * Makes a <i>shallow copy</i> of the named list.
    */
   public NamedList<T> clone() {
-    ArrayList newList = new ArrayList(nvPairs.size());
+    ArrayList<Object> newList = new ArrayList<Object>(nvPairs.size());
     newList.addAll(nvPairs);
     return new NamedList<T>(newList);
   }
@@ -330,7 +333,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   public Iterator<Map.Entry<String,T>> iterator() {
 
-    final NamedList list = this;
+    final NamedList<T> list = this;
 
     Iterator<Map.Entry<String,T>> iter = new Iterator<Map.Entry<String,T>>() {
 
@@ -349,7 +352,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
           @SuppressWarnings("unchecked")
           public T getValue() {
-            return (T)list.getVal( index );
+            return list.getVal( index );
           }
 
           public String toString()
@@ -358,7 +361,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
           }
 
     		  public T setValue(T value) {
-    		    return (T) list.setVal(index, value);
+            return list.setVal(index, value);
     		  }
         };
         return nv;

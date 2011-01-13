@@ -115,7 +115,7 @@ public class DebugComponent extends SearchComponent
   @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb.isDebug() && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
-      NamedList info = null;
+      NamedList<Object> info = null;
       NamedList explain = new SimpleOrderedMap();
 
       Map.Entry<String, Object>[]  arr =  new NamedList.NamedListEntry[rb.resultIds.size()];
@@ -140,11 +140,11 @@ public class DebugComponent extends SearchComponent
       }
 
       if (rb.isDebugResults()) {
-        explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap(arr));
+        explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap<Object>(arr));
       }
 
       if (info == null) {
-        info = new SimpleOrderedMap();
+        info = new SimpleOrderedMap<Object>();
       }
       if (rb.isDebugResults()) {
         int idx = info.indexOf("explain",0);
@@ -196,9 +196,11 @@ public class DebugComponent extends SearchComponent
 
 
     if (source instanceof NamedList && dest instanceof NamedList) {
-      NamedList tmp = new NamedList();
-      NamedList sl = (NamedList)source;
-      NamedList dl = (NamedList)dest;
+      NamedList<Object> tmp = new NamedList<Object>();
+      @SuppressWarnings("unchecked")
+      NamedList<Object> sl = (NamedList<Object>)source;
+      @SuppressWarnings("unchecked")
+      NamedList<Object> dl = (NamedList<Object>)dest;
       for (int i=0; i<sl.size(); i++) {
         String skey = sl.getName(i);
         if (exclude != null && exclude.contains(skey)) continue;
@@ -228,7 +230,7 @@ public class DebugComponent extends SearchComponent
     }
 
     // merge unlike elements in a list
-    List t = new ArrayList();
+    List<Object> t = new ArrayList<Object>();
     t.add(dest);
     t.add(source);
     return t;

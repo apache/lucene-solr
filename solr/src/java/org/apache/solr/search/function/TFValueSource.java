@@ -2,7 +2,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -25,7 +25,7 @@ public class TFValueSource extends TermFreqValueSource {
     // use MultiFields, just in case someone did a top() function
     Fields fields = MultiFields.getFields(reader);
     final Terms terms = fields.terms(field);
-    final Similarity similarity = ((Searcher)context.get("searcher")).getSimilarity();
+    final Similarity similarity = ((IndexSearcher)context.get("searcher")).getSimilarity();
 
     return new FloatDocValues(this) {
       DocsEnum docs ;

@@ -27,7 +27,6 @@ import java.util.Date;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Collector;
@@ -35,7 +34,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -43,31 +41,12 @@ import org.apache.lucene.util.Version;
 /** Simple command-line based search demo. */
 public class SearchFiles {
 
-  /** Use the norms from one field for all fields.  Norms are read into memory,
-   * using a byte of memory per document per searched field.  This can cause
-   * search of large collections with a large number of fields to run out of
-   * memory.  If all of the fields contain only a single token, then the norms
-   * are all identical, then single norm vector may be shared. */
-  private static class OneNormsReader extends FilterIndexReader {
-    private String field;
-
-    public OneNormsReader(IndexReader in, String field) {
-      super(in);
-      this.field = field;
-    }
-
-    @Override
-    public byte[] norms(String field) throws IOException {
-      return in.norms(this.field);
-    }
-  }
-
   private SearchFiles() {}
 
   /** Simple command-line based search demo. */
   public static void main(String[] args) throws Exception {
     String usage =
-      "Usage:\tjava org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] [-norms field] [-paging hitsPerPage]";
+      "Usage:\tjava org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] [-paging hitsPerPage]";
     usage += "\n\tSpecify 'false' for hitsPerPage to use streaming instead of paging search.";
     if (args.length > 0 && ("-h".equals(args[0]) || "-help".equals(args[0]))) {
       System.out.println(usage);
@@ -79,7 +58,6 @@ public class SearchFiles {
     String queries = null;
     int repeat = 0;
     boolean raw = false;
-    String normsField = null;
     boolean paging = true;
     int hitsPerPage = 10;
     
@@ -98,9 +76,6 @@ public class SearchFiles {
         i++;
       } else if ("-raw".equals(args[i])) {
         raw = true;
-      } else if ("-norms".equals(args[i])) {
-        normsField = args[i+1];
-        i++;
       } else if ("-paging".equals(args[i])) {
         if (args[i+1].equals("false")) {
           paging = false;
@@ -116,10 +91,7 @@ public class SearchFiles {
     
     IndexReader reader = IndexReader.open(FSDirectory.open(new File(index)), true); // only searching, so read-only=true
 
-    if (normsField != null)
-      reader = new OneNormsReader(reader, normsField);
-
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = new IndexSearcher(reader);
     Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
     BufferedReader in = null;
@@ -171,7 +143,7 @@ public class SearchFiles {
    *  This simulates the streaming search use case, where all hits are supposed to
    *  be processed, regardless of their relevance.
    */
-  public static void doStreamingSearch(final Searcher searcher, Query query) throws IOException {
+  public static void doStreamingSearch(final IndexSearcher searcher, Query query) throws IOException {
     Collector streamingHitCollector = new Collector() {
       private Scorer scorer;
       private int docBase;
@@ -213,7 +185,7 @@ public class SearchFiles {
    * is executed another time and all hits are collected.
    * 
    */
-  public static void doPagingSearch(BufferedReader in, Searcher searcher, Query query, 
+  public static void doPagingSearch(BufferedReader in, IndexSearcher searcher, Query query, 
                                      int hitsPerPage, boolean raw, boolean interactive) throws IOException {
  
     // Collect enough docs to show 5 pages

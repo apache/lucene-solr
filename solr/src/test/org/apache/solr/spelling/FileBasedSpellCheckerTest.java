@@ -65,8 +65,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
 
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
-    File spelling = new File("spellings.txt");
-    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, spelling.getAbsolutePath());
+    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
@@ -102,8 +101,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
-    File spelling = new File("spellings.txt");
-    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, spelling.getAbsolutePath());
+    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
@@ -149,8 +147,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
 
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
-    File spelling = new File("spellings.txt");
-    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, spelling.getAbsolutePath());
+    spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
     spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.FIELD_TYPE, "teststop");

@@ -78,8 +78,6 @@ public class CoreContainer
   protected String adminHandler;
   protected boolean shareSchema;
   protected String solrHome;
-  @Deprecated
-  protected String solrConfigFilenameOverride;
   protected String defaultCoreName = "";
   private ZkController zkController;
   private SolrZkServer zkServer;
@@ -217,15 +215,6 @@ public class CoreContainer
         throw new SolrException
           (SolrException.ErrorCode.SERVER_ERROR,
            "Setting abortOnConfigurationError==false is no longer supported");
-    }
-
-    public String getSolrConfigFilename() {
-      return solrConfigFilename;
-    }
-
-    @Deprecated
-    public void setSolrConfigFilename(String solrConfigFilename) {
-      this.solrConfigFilename = solrConfigFilename;
     }
 
     // core container instantiation
@@ -379,9 +368,7 @@ public class CoreContainer
           // deal with optional settings
           String opt = DOMUtil.getAttr(node, "config", null);
 
-          if(solrConfigFilenameOverride != null) {
-            p.setConfigName(solrConfigFilenameOverride);
-          } else if (opt != null) {
+          if (opt != null) {
             p.setConfigName(opt);
           }
           opt = DOMUtil.getAttr(node, "schema", null);

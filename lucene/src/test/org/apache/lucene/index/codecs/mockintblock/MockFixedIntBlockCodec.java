@@ -67,10 +67,15 @@ public class MockFixedIntBlockCodec extends Codec {
 
   // only for testing
   public IntStreamFactory getIntFactory() {
-    return new MockIntFactory();
+    return new MockIntFactory(blockSize);
   }
 
-  private class MockIntFactory extends IntStreamFactory {
+  public static class MockIntFactory extends IntStreamFactory {
+    private final int blockSize;
+
+    public MockIntFactory(int blockSize) {
+      this.blockSize = blockSize;
+    }
 
     @Override
     public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
@@ -96,6 +101,7 @@ public class MockFixedIntBlockCodec extends Codec {
         @Override
         protected void flushBlock() throws IOException {
           for(int i=0;i<buffer.length;i++) {
+            assert buffer[i] >= 0;
             out.writeVInt(buffer[i]);
           }
         }
@@ -105,7 +111,7 @@ public class MockFixedIntBlockCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new MockIntFactory());
+    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new MockIntFactory(blockSize));
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -139,7 +145,7 @@ public class MockFixedIntBlockCodec extends Codec {
     PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
                                                                       state.segmentInfo,
                                                                       state.readBufferSize,
-                                                                      new MockIntFactory(), state.codecId);
+                                                                      new MockIntFactory(blockSize), state.codecId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;

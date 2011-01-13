@@ -111,7 +111,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
         doc.addField("t10_100_ws", sb.toString());
       }
 
-      AddUpdateCommand cmd = new AddUpdateCommand();
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = doc;
       processor.processAdd(cmd);
     }

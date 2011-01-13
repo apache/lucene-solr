@@ -469,12 +469,12 @@ public class UnInvertedField {
 
 
 
-  public NamedList getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
+  public NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
     use.incrementAndGet();
 
     FieldType ft = searcher.getSchema().getFieldType(field);
 
-    NamedList res = new NamedList();  // order is important
+    NamedList<Integer> res = new NamedList<Integer>();  // order is important
 
     DocSet docs = baseDocs;
     int baseSize = docs.size();
@@ -912,15 +912,15 @@ public class UnInvertedField {
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache cache = searcher.getFieldValueCache();
+    SolrCache<String,UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {
       return new UnInvertedField(field, searcher);
     }
 
-    UnInvertedField uif = (UnInvertedField)cache.get(field);
+    UnInvertedField uif = cache.get(field);
     if (uif == null) {
       synchronized (cache) {
-        uif = (UnInvertedField)cache.get(field);
+        uif = cache.get(field);
         if (uif == null) {
           uif = new UnInvertedField(field, searcher);
           cache.put(field, uif);
@@ -930,7 +930,6 @@ public class UnInvertedField {
 
     return uif;
   }
-
 }
 
 

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -59,7 +60,7 @@ extends Query {
    * This is accomplished by overriding the Scorer returned by the Weight.
    */
   @Override
-  public Weight createWeight(final Searcher searcher) throws IOException {
+  public Weight createWeight(final IndexSearcher searcher) throws IOException {
     final Weight weight = query.createWeight (searcher);
     final Similarity similarity = query.getSimilarity(searcher);
     return new Weight() {
@@ -81,7 +82,7 @@ extends Query {
       }
 
       @Override
-      public Explanation explain (IndexReader ir, int i) throws IOException {
+      public Explanation explain (AtomicReaderContext ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         if (getBoost()!=1) {
           Explanation preBoost = inner;
@@ -111,7 +112,7 @@ extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
+      public Scorer scorer(AtomicReaderContext indexReader, boolean scoreDocsInOrder, boolean topScorer)
           throws IOException {
         final Scorer scorer = weight.scorer(indexReader, true, false);
         if (scorer == null) {

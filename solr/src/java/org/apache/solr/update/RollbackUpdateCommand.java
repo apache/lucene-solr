@@ -17,14 +17,16 @@
 
 package org.apache.solr.update;
 
+import org.apache.solr.request.SolrQueryRequest;
+
 /**
  * @version $Id$
  * @since Solr 1.4
  */
 public class RollbackUpdateCommand extends UpdateCommand {
 
-  public RollbackUpdateCommand() {
-    super("rollback");
+  public RollbackUpdateCommand(SolrQueryRequest req) {
+    super("rollback", req);
   }
 
 }
