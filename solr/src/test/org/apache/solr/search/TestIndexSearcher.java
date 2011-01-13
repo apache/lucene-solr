@@ -35,6 +35,13 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
+  
+  public void tearDown() throws Exception {
+    super.tearDown();
+    assertU(delQ("*:*"));
+    optimize();
+    assertU((commit()));
+  }
 
   private String getStringVal(SolrQueryRequest sqr, String field, int doc) throws IOException {
     SchemaField sf = sqr.getSchema().getField(field);

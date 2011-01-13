@@ -62,7 +62,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     super.setUp();
     System.setProperty("java.naming.factory.initial",
             MockInitialContextFactory.class.getName());
-
+    
     mockControl = EasyMock.createStrictControl();
     driver = mockControl.createMock(Driver.class);
     dataSource = mockControl.createMock(DataSource.class);
@@ -77,6 +77,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
       System.setProperty("java.naming.factory.initial", sysProp);
     }
     super.tearDown();
+    mockControl.reset();
   }
 
   @Test
