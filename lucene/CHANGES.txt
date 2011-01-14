@@ -427,6 +427,10 @@ New features
   is no longer needed and discouraged for that use case. Directly wrapping
   Query improves performance, as out-of-order collection is now supported.
   (Uwe Schindler)
+
+* LUCENE-2864: Add getMaxTermFrequency (maximum within-document TF) to 
+  FieldInvertState so that it can be used in Similarity.computeNorm.
+  (Robert Muir)
   
 Optimizations
 

@@ -125,6 +125,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       postings.docFreqs[termID] = 1;
       writeProx(termID, fieldState.position);
     }
+    fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
   }
 
   @Override
@@ -158,11 +159,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           termsHashPerField.writeVInt(0, postings.docFreqs[termID]);
         }
         postings.docFreqs[termID] = 1;
+        fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
         postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
         postings.lastDocIDs[termID] = docState.docID;
         writeProx(termID, fieldState.position);
       } else {
-        postings.docFreqs[termID]++;
+        fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.docFreqs[termID]);
         writeProx(termID, fieldState.position-postings.lastPositions[termID]);
       }
     }
