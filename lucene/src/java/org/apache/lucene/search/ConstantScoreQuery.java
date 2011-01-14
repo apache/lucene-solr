@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;

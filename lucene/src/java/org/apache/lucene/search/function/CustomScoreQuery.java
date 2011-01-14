@@ -31,7 +31,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.ToStringUtils;
 
 /**

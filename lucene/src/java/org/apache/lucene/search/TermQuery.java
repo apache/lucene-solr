@@ -28,7 +28,6 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation.IDFExplanation;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PerReaderTermState;
 import org.apache.lucene.util.ReaderUtil;
