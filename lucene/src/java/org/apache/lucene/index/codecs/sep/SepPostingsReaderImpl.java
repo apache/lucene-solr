@@ -142,8 +142,8 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       return other;
     }
 
-    public void copy(TermState _other) {
-      super.copy(_other);
+    public void copyFrom(TermState _other) {
+      super.copyFrom(_other);
       SepTermState other = (SepTermState) _other;
       docIndex.set(other.docIndex);
     }

@@ -349,6 +349,7 @@ public class TestNRTThreads extends LuceneTestCase {
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
       
     writer.close(false);
+    _TestUtil.checkIndex(dir);
     dir.close();
     _TestUtil.rmDir(tempDir);
     docs.close();

@@ -357,7 +357,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
           fieldTerm.term = term;
           cachedState = termsCache.get(fieldTerm);
           if (cachedState != null) {
-            state.copy(cachedState);
+            state.copyFrom(cachedState);
             seekPending = true;
             positioned = false;
             bytesReader.term.copy(term);

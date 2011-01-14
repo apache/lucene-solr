@@ -91,12 +91,12 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     public Object clone() {
       DocTermState other = new DocTermState();
-      other.copy(this);
+      other.copyFrom(this);
       return other;
     }
 
-    public void copy(TermState _other) {
-      super.copy(_other);
+    public void copyFrom(TermState _other) {
+      super.copyFrom(_other);
       DocTermState other = (DocTermState) _other;
       freqOffset = other.freqOffset;
       proxOffset = other.proxOffset;
@@ -778,6 +778,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       if (payloadLength > payload.bytes.length) {
         payload.grow(payloadLength);
       }
+
       proxIn.readBytes(payload.bytes, 0, payloadLength);
       payload.length = payloadLength;
       payloadPending = false;
@@ -851,7 +852,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         storePayloads == fieldInfo.storePayloads;
     }
   
-    final void read() throws IOException {
+    void read() throws IOException {
       final int left = docFreq - ord;
       final int limit = left > BULK_BUFFER_SIZE ? BULK_BUFFER_SIZE : left;
       if (freqsReader == null) {

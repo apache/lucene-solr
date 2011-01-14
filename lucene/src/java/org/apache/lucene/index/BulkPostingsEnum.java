@@ -65,6 +65,8 @@ public abstract class BulkPostingsEnum {
      *  always 0. */
     public abstract int fill() throws IOException;
 
+    // nocommit -- need a skip(int count)
+
     /** End index plus 1 of valid data in the buffer. */
     public abstract int end();
 
@@ -102,5 +104,5 @@ public abstract class BulkPostingsEnum {
    *  skipping is not possible, ie you should just scan
    *  yourself). The returned JumpResult will only be valid until
    *  the next call to jump. */
-  abstract public JumpResult jump(int target, int curCount) throws IOException;
+  abstract public JumpResult jump(int targetDocID, int curCount) throws IOException;
 }
