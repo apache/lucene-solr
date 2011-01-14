@@ -1039,6 +1039,22 @@ public abstract class IndexReader implements Cloneable,Closeable {
       return null;
     }
   }
+  
+  public BulkPostingsEnum bulkTermPostingsEnum(String field, BytesRef term, TermState termState, boolean doFreqs, boolean doPositions) throws IOException {
+    assert field != null;
+    assert term != null;
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms != null) {
+      return terms.bulkPostings(term, termState, null, doFreqs, doPositions);
+    } else {
+      return null;
+    }
+  }
+
 
   /** Returns {@link DocsAndPositionsEnum} for the specified
    *  field & term.  This may return null, if either the

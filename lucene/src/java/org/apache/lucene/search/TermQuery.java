@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.BulkPostingsEnum;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.BulkPostingsEnum.BlockReader;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PerReaderTermState;
@@ -99,17 +101,15 @@ public class TermQuery extends Query {
         return null;
       }
       
-      // nocommit: get bulkTermPostingsEnum with TermState
-      assert reader.getSequentialSubReaders() == null;
-      BulkPostingsEnum docs = reader.bulkTermPostingsEnum(term.field(),
-          term.bytes(),
-          true,
-          false);
+      assert reader.bulkTermPostingsEnum(field, term.bytes(), true, false) != null : "TermState was non-null but got null BulkPostingsEnum";
+      // reuse the threads enum to get docFreq and bulkPostings in one go!
+      final Fields fields = reader.fields();
+      final Terms terms = fields.terms(field);
+      final TermsEnum termsEnum = terms.getThreadTermsEnum();
+      termsEnum.seek(term.bytes(), state); // ignore return value -- asserted above!
+      final BulkPostingsEnum docs = termsEnum.bulkPostings(null, true, false);
       
-      assert docs != null; /* nocommit: shouldnt need this assert? termstate should catch this case above */
-      
-      // nocommit: get the segment reader docfreq with TermState
-      final int docFreq = reader.docFreq(field, term.bytes());
+      final int docFreq = termsEnum.docFreq();
       final BlockReader docDeltas = docs.getDocDeltasReader();
       final BlockReader frequencies = docs.getFreqsReader();
       if (frequencies == null) {
