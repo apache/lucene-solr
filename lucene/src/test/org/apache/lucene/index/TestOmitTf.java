@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -414,8 +415,8 @@ public class TestOmitTf extends LuceneTestCase {
     public static int getSum() { return sum; }
     
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
-      this.docBase = docBase;
+    public void setNextReader(AtomicReaderContext context) {
+      docBase = context.docBase;
     }
     @Override
     public boolean acceptsDocsOutOfOrder() {

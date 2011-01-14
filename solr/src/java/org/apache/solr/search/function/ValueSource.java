@@ -187,8 +187,8 @@ public abstract class ValueSource implements Serializable {
       values[slot] = docVals.doubleVal(doc);
     }
 
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      docVals = getValues(Collections.emptyMap(), reader);
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      docVals = getValues(Collections.emptyMap(), context.reader);
       return this;
     }
 

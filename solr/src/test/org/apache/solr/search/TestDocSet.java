@@ -406,7 +406,7 @@ public class TestDocSet extends LuceneTestCase {
     }
   }
 
-  public void doFilterTest(SolrIndexReader reader) throws IOException {
+  public void doFilterTest(IndexReader reader) throws IOException {
     ReaderContext topLevelContext = reader.getTopReaderContext();
     OpenBitSet bs = getRandomSet(reader.maxDoc(), rand.nextInt(reader.maxDoc()+1));
     DocSet a = new BitDocSet(bs);
@@ -450,8 +450,7 @@ public class TestDocSet extends LuceneTestCase {
 
     for (int i=0; i<5000; i++) {
       IndexReader r = dummyMultiReader(maxSeg, maxDoc);
-      SolrIndexReader sir = new SolrIndexReader(r, null, 0);
-      doFilterTest(sir);
+      doFilterTest(r);
     }
   }
 }

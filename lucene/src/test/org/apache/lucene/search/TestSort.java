@@ -506,8 +506,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      docValues = FieldCache.DEFAULT.getInts(context.reader, "parser", new FieldCache.IntParser() {
           public final int parseInt(final BytesRef term) {
             return (term.bytes[term.offset]-'A') * 123456;
           }

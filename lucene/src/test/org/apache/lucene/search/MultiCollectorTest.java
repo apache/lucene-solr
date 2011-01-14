@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.LuceneTestCase;
@@ -46,7 +46,7 @@ public class MultiCollectorTest extends LuceneTestCase {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase) throws IOException {
+    public void setNextReader(AtomicReaderContext context) throws IOException {
       setNextReaderCalled = true;
     }
 
@@ -73,7 +73,7 @@ public class MultiCollectorTest extends LuceneTestCase {
     assertTrue(c instanceof MultiCollector);
     assertTrue(c.acceptsDocsOutOfOrder());
     c.collect(1);
-    c.setNextReader(null, 0);
+    c.setNextReader(null);
     c.setScorer(null);
   }
 
@@ -95,7 +95,7 @@ public class MultiCollectorTest extends LuceneTestCase {
     Collector c = MultiCollector.wrap(dcs);
     assertTrue(c.acceptsDocsOutOfOrder());
     c.collect(1);
-    c.setNextReader(null, 0);
+    c.setNextReader(null);
     c.setScorer(null);
 
     for (DummyCollector dc : dcs) {

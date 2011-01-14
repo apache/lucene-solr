@@ -486,7 +486,7 @@ public class IndexSearcher {
     // always use single thread:
     if (filter == null) {
       for (int i = 0; i < leafContexts.length; i++) { // search each subreader
-        collector.setNextReader(leafContexts[i].reader, leafContexts[i].docBase);
+        collector.setNextReader(leafContexts[i]);
         Scorer scorer = weight.scorer(leafContexts[i], !collector.acceptsDocsOutOfOrder(), true);
         if (scorer != null) {
           scorer.score(collector);
@@ -494,7 +494,7 @@ public class IndexSearcher {
       }
     } else {
       for (int i = 0; i < leafContexts.length; i++) { // search each subreader
-        collector.setNextReader(leafContexts[i].reader, leafContexts[i].docBase);
+        collector.setNextReader(leafContexts[i]);
         searchWithFilter(leafContexts[i], weight, filter, collector);
       }
     }

@@ -32,6 +32,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
@@ -192,7 +193,7 @@ public class ListSearcher extends AbstractListModel {
       }
 
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {}
+      public void setNextReader(AtomicReaderContext context) {}
       @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;

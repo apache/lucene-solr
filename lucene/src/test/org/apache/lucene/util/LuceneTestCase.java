@@ -390,6 +390,16 @@ public abstract class LuceneTestCase extends Assert {
     if (testsFailed) {
       System.err.println("NOTE: all tests run in this JVM:");
       System.err.println(Arrays.toString(testClassesRun.toArray()));
+      System.err.println("NOTE: " + System.getProperty("os.name") + " " 
+          + System.getProperty("os.version") + " " 
+          + System.getProperty("os.arch") + "/"
+          + System.getProperty("java.vendor") + " "
+          + System.getProperty("java.version") + " "
+          + (Constants.JRE_IS_64BIT ? "(64-bit)" : "(32-bit)") + "/"
+          + "cpus=" + Runtime.getRuntime().availableProcessors() + ","
+          + "threads=" + Thread.activeCount() + ","
+          + "free=" + Runtime.getRuntime().freeMemory() + ","
+          + "total=" + Runtime.getRuntime().totalMemory());
     }
   }
 
@@ -1107,8 +1117,15 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-      for (int i = 0; i < TEST_ITER; i++)
+      if (VERBOSE) {
+        System.out.println("\nNOTE: running test " + arg0.getName());
+      }
+      for (int i = 0; i < TEST_ITER; i++) {
+        if (VERBOSE && TEST_ITER > 1) {
+          System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
+        }
         super.runChild(arg0, arg1);
+      }
     }
 
     public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {

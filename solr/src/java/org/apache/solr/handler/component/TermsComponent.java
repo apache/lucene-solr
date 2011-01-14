@@ -27,7 +27,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.request.SimpleFacets.CountPair;
-import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.util.BoundedTreeSet;
 
 import org.apache.solr.client.solrj.response.TermsResponse;
@@ -103,8 +102,8 @@ public class TermsComponent extends SearchComponent {
     boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
 
 
-    SolrIndexReader sr = rb.req.getSearcher().getReader();
-    Fields lfields = MultiFields.getFields(sr);
+    final IndexReader indexReader = rb.req.getSearcher().getTopReaderContext().reader;
+    Fields lfields = MultiFields.getFields(indexReader);
 
     for (String field : fields) {
       NamedList<Integer> fieldTerms = new NamedList<Integer>();

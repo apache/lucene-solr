@@ -220,7 +220,7 @@ public class QueryUtils {
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
-    final AtomicReaderContext[] context = ReaderUtil.leaves(s.getTopReaderContext());
+    final AtomicReaderContext[] readerContextArray = ReaderUtil.leaves(s.getTopReaderContext());
     if (q.weight(s).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
@@ -265,7 +265,7 @@ public class QueryUtils {
             try {
               if (scorer == null) {
                 Weight w = q.weight(s);
-                scorer = w.scorer(context[leafPtr], true, false);
+                scorer = w.scorer(readerContextArray[leafPtr], true, false);
               }
               
               int op = order[(opidx[0]++) % order.length];
@@ -303,7 +303,7 @@ public class QueryUtils {
           }
 
           @Override
-          public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          public void setNextReader(AtomicReaderContext context) throws IOException {
             // confirm that skipping beyond the last doc, on the
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
@@ -317,8 +317,8 @@ public class QueryUtils {
               }
               leafPtr++;
             }
-            lastReader[0] = reader;
-            assert context[leafPtr].reader == reader;
+            lastReader[0] = context.reader;
+            assert readerContextArray[leafPtr].reader == context.reader;
             this.scorer = null;
             lastDoc[0] = -1;
           }
@@ -385,7 +385,7 @@ public class QueryUtils {
       }
 
       @Override
-      public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      public void setNextReader(AtomicReaderContext context) throws IOException {
         // confirm that skipping beyond the last doc, on the
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {
@@ -400,7 +400,7 @@ public class QueryUtils {
           leafPtr++;
         }
 
-        lastReader[0] = reader;
+        lastReader[0] = context.reader;
         lastDoc[0] = -1;
       }
       @Override

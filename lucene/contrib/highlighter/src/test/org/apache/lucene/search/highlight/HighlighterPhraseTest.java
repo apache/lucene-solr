@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -133,9 +134,9 @@ public class HighlighterPhraseTest extends LuceneTestCase {
           }
 
           @Override
-          public void setNextReader(IndexReader indexreader, int i)
+          public void setNextReader(AtomicReaderContext context)
               throws IOException {
-            this.baseDoc = i;
+            this.baseDoc = context.docBase;
           }
 
           @Override

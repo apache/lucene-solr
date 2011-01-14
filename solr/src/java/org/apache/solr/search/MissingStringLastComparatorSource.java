@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
@@ -101,8 +102,8 @@ class TermOrdValComparator_SML extends FieldComparator {
   }
 
   @Override
-  public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-    return TermOrdValComparator_SML.createComparator(reader, this);
+  public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+    return TermOrdValComparator_SML.createComparator(context.reader, this);
   }
 
   // Base class for specialized (per bit width of the
@@ -142,8 +143,8 @@ class TermOrdValComparator_SML extends FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      return TermOrdValComparator_SML.createComparator(reader, parent);
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      return TermOrdValComparator_SML.createComparator(context.reader, parent);
     }
 
     @Override

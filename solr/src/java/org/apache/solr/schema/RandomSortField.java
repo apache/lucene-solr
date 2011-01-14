@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -89,7 +90,7 @@ public class RandomSortField extends FieldType {
     // we use the top-level reader.
     return fieldName.hashCode() + base + (int)top.getVersion();
   }
-
+  
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     return new SortField(field.getName(), randomComparatorSource, reverse);
@@ -127,8 +128,8 @@ public class RandomSortField extends FieldType {
           values[slot] = hash(doc+seed);
         }
 
-        public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-          seed = getSeed(fieldname, reader);
+        public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+          seed = getSeed(fieldname, context.reader);
           return this;
         }
 

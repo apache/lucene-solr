@@ -44,7 +44,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase)
+    public void setNextReader(AtomicReaderContext context)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -127,7 +127,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase)
+    public FieldComparator setNextReader(AtomicReaderContext context)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -300,7 +300,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase)
+    public void setNextReader(AtomicReaderContext context)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

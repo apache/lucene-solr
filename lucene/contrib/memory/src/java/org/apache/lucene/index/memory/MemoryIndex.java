@@ -38,6 +38,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldsEnum;
@@ -444,7 +445,7 @@ public class MemoryIndex implements Serializable {
         }
 
         @Override
-        public void setNextReader(IndexReader reader, int docBase) { }
+        public void setNextReader(AtomicReaderContext context) { }
       });
       float score = scores[0];
       return score;

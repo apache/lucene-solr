@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
@@ -122,8 +123,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
         scores[doc + docBase] = scorer.score();
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        this.docBase = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {
@@ -157,8 +158,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
         scores[doc + docBase] = scorer.score();
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        this.docBase = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {
@@ -209,8 +210,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
         scores[doc + docBase] = scorer.score();
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        this.docBase = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {

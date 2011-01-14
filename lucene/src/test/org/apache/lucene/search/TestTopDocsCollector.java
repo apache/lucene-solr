@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,9 +61,9 @@ public class TestTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase)
+    public void setNextReader(AtomicReaderContext context)
         throws IOException {
-      base = docBase;
+      base = context.docBase;
     }
 
     @Override

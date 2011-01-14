@@ -227,8 +227,8 @@ public class ConstantScoreQuery extends Query {
         }
         
         @Override
-        public void setNextReader(IndexReader reader, int docBase) throws IOException {
-          collector.setNextReader(reader, docBase);
+        public void setNextReader(AtomicReaderContext context) throws IOException {
+          collector.setNextReader(context);
         }
         
         @Override

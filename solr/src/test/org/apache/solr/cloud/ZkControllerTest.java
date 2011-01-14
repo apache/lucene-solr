@@ -71,7 +71,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server = new ZkTestServer(zkDir);
       server.run();
-
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
