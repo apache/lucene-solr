@@ -1365,13 +1365,6 @@ public class MemoryIndex implements Serializable {
     }
   
     @Override
-    public void norms(String fieldName, byte[] bytes, int offset) {
-      if (DEBUG) System.err.println("MemoryIndexReader.norms*: " + fieldName);
-      byte[] norms = norms(fieldName);
-      System.arraycopy(norms, 0, bytes, offset, norms.length);
-    }
-  
-    @Override
     protected void doSetNorm(int doc, String fieldName, byte value) {
       throw new UnsupportedOperationException();
     }

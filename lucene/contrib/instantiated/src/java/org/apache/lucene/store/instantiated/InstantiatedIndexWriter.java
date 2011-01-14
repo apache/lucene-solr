@@ -201,9 +201,9 @@ public class InstantiatedIndexWriter implements Closeable {
       byte[] oldNorms = index.getNormsByFieldNameAndDocumentNumber().get(field);
       if (oldNorms != null) {
         System.arraycopy(oldNorms, 0, norms, 0, oldNorms.length);
-        Arrays.fill(norms, oldNorms.length, norms.length, similarity.encodeNormValue(1.0f));
+        Arrays.fill(norms, oldNorms.length, norms.length, (byte) 0);
       } else {
-        Arrays.fill(norms, 0, norms.length, similarity.encodeNormValue(1.0f));
+        Arrays.fill(norms, 0, norms.length, (byte) 0);
       }
       normsByFieldNameAndDocumentNumber.put(field, norms);
       fieldNames.remove(field);
@@ -211,7 +211,7 @@ public class InstantiatedIndexWriter implements Closeable {
     for (String field : fieldNames) {
       //System.out.println(field);
       byte[] norms = new byte[index.getDocumentsByNumber().length + termDocumentInformationFactoryByDocument.size()];
-      Arrays.fill(norms, 0, norms.length, similarity.encodeNormValue(1.0f));
+      Arrays.fill(norms, 0, norms.length, (byte) 0);
       normsByFieldNameAndDocumentNumber.put(field, norms);
     }
     fieldNames.clear();

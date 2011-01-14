@@ -112,13 +112,13 @@ extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(AtomicReaderContext indexReader, boolean scoreDocsInOrder, boolean topScorer)
+      public Scorer scorer(AtomicReaderContext context, ScorerContext scoreContext)
           throws IOException {
-        final Scorer scorer = weight.scorer(indexReader, true, false);
+        final Scorer scorer = weight.scorer(context, ScorerContext.def());
         if (scorer == null) {
           return null;
         }
-        DocIdSet docIdSet = filter.getDocIdSet(indexReader);
+        DocIdSet docIdSet = filter.getDocIdSet(context);
         if (docIdSet == null) {
           return null;
         }

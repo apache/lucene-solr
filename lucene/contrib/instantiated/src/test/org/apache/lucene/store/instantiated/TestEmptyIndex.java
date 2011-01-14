@@ -71,12 +71,6 @@ public class TestEmptyIndex extends LuceneTestCase {
     byte[] norms = MultiNorms.norms(r, "foo");
     if (norms != null) {
       assertEquals(0, norms.length);
-      norms = new byte[10];
-      Arrays.fill(norms, (byte)10);
-      r.norms("foo", norms, 10);
-      for (byte b : norms) {
-        assertEquals((byte)10, b);
-      }
     }
   }
 

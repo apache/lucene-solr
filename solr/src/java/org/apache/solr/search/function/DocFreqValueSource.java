@@ -17,7 +17,7 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
@@ -239,7 +239,7 @@ public class DocFreqValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes));
     return new ConstIntDocValues(docfreq, this);

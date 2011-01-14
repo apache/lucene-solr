@@ -127,7 +127,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       return new MatchAllScorer(context.reader, similarity, this,
           normsField != null ? context.reader.norms(normsField) : null);
     }

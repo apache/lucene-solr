@@ -99,14 +99,14 @@ public class ValueSourceQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new ValueSourceScorer(similarity, context.reader, this);
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      return new ValueSourceScorer(similarity, context, this);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      DocValues vals = valSrc.getValues(context.reader);
+      DocValues vals = valSrc.getValues(context);
       float sc = queryWeight * vals.floatVal(doc);
 
       Explanation result = new ComplexExplanation(
@@ -133,11 +133,12 @@ public class ValueSourceQuery extends Query {
     private int doc = -1;
 
     // constructor
-    private ValueSourceScorer(Similarity similarity, IndexReader reader, ValueSourceWeight w) throws IOException {
+    private ValueSourceScorer(Similarity similarity, AtomicReaderContext context, ValueSourceWeight w) throws IOException {
       super(similarity,w);
+      final IndexReader reader = context.reader;
       qWeight = w.getValue();
       // this is when/where the values are first created.
-      vals = valSrc.getValues(reader);
+      vals = valSrc.getValues(context);
       delDocs = reader.getDeletedDocs();
       maxDoc = reader.maxDoc();
     }

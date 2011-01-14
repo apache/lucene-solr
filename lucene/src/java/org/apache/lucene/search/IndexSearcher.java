@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;    // javadoc
 import org.apache.lucene.util.ReaderUtil;
@@ -174,18 +175,32 @@ public class IndexSearcher {
       }
     }
   }
-  
-  /* Ctor for concurrent sub-searchers searching only on a specific leaf of the given top-reader context
-   * - instead of searching over all leaves this searcher only searches a single leaf searcher slice. Hence, 
-   * for scorer and filter this looks like an ordinary search in the hierarchy such that there is no difference
-   * between single and multi-threaded */
-  private IndexSearcher(ReaderContext topLevel, AtomicReaderContext leaf) {
+
+  /**
+   * Expert: Creates a searcher from a top-level {@link ReaderContext} with and
+   * executes searches on the given leave slice exclusively instead of searching
+   * over all leaves. This constructor should be used to run one or more leaves
+   * within a single thread. Hence, for scorer and filter this looks like an
+   * ordinary search in the hierarchy such that there is no difference between
+   * single and multi-threaded.
+   * 
+   * @lucene.experimental
+   * */
+  public IndexSearcher(ReaderContext topLevel, AtomicReaderContext... leaves) {
+    assert assertLeaves(topLevel, leaves);
     readerContext = topLevel;
     reader = topLevel.reader;
-    leafContexts = new AtomicReaderContext[] {leaf};
+    leafContexts = leaves;
     executor = null;
     subSearchers = null;
     closeReader = false;
+  }
+  
+  private boolean assertLeaves(ReaderContext topLevel, AtomicReaderContext... leaves) {
+    for (AtomicReaderContext leaf : leaves) {
+      assert ReaderUtil.getTopLevelContext(leaf) == topLevel : "leaf context is not a leaf of the given top-level context";
+    }
+    return true;
   }
   
   /** Return the {@link IndexReader} this searches. */
@@ -482,12 +497,13 @@ public class IndexSearcher {
 
     // TODO: should we make this
     // threaded...?  the Collector could be sync'd?
-
+    ScorerContext scorerContext =  ScorerContext.def().scoreDocsInOrder(true).topScorer(true);
     // always use single thread:
     if (filter == null) {
       for (int i = 0; i < leafContexts.length; i++) { // search each subreader
         collector.setNextReader(leafContexts[i]);
-        Scorer scorer = weight.scorer(leafContexts[i], !collector.acceptsDocsOutOfOrder(), true);
+        scorerContext = scorerContext.scoreDocsInOrder(!collector.acceptsDocsOutOfOrder());
+        Scorer scorer = weight.scorer(leafContexts[i], scorerContext);
         if (scorer != null) {
           scorer.score(collector);
         }
@@ -505,7 +521,7 @@ public class IndexSearcher {
 
     assert filter != null;
     
-    Scorer scorer = weight.scorer(context, true, false);
+    Scorer scorer = weight.scorer(context, ScorerContext.def());
     if (scorer == null) {
       return;
     }

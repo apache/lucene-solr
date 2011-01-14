@@ -281,7 +281,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       IndexCommit indexCommit = delPolicy.getLatestCommit();
 
       if(indexCommit == null) {
-        indexCommit = req.getSearcher().getReader().getIndexCommit();
+        indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
       }
 
       // small race here before the commit point is saved
@@ -481,8 +481,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     long version[] = new long[2];
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
-      version[0] = searcher.get().getReader().getIndexCommit().getVersion();
-      version[1] = searcher.get().getReader().getIndexCommit().getGeneration();
+      version[0] = searcher.get().getIndexReader().getIndexCommit().getVersion();
+      version[1] = searcher.get().getIndexReader().getIndexCommit().getGeneration();
     } catch (IOException e) {
       LOG.warn("Unable to get index version : ", e);
     } finally {
@@ -823,7 +823,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         replicateOnStart = true;
         RefCounted<SolrIndexSearcher> s = core.getNewestSearcher(false);
         try {
-          IndexReader reader = s==null ? null : s.get().getReader();
+          IndexReader reader = s==null ? null : s.get().getIndexReader();
           if (reader!=null && reader.getIndexCommit() != null && reader.getIndexCommit().getGeneration() != 1L) {
             try {
               if(replicateOnOptimize){

@@ -73,7 +73,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     try {
       if (sourceLocation == null) {
         // Load from Solr's index
-        reader = searcher.getReader();
+        reader = searcher.getIndexReader();
       } else {
         // Load from Lucene index at given sourceLocation
         reader = this.reader;

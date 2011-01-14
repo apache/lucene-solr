@@ -931,14 +931,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public abstract byte[] norms(String field) throws IOException;
 
-  /** Reads the byte-encoded normalization factor for the named field of every
-   *  document.  This is used by the search code to score documents.
-   *
-   * @see org.apache.lucene.document.Field#setBoost(float)
-   */
-  public abstract void norms(String field, byte[] bytes, int offset)
-    throws IOException;
-
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
    * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
@@ -969,26 +961,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Implements setNorm in subclass.*/
   protected abstract void doSetNorm(int doc, String field, byte value)
           throws CorruptIndexException, IOException;
-
-  /** Expert: Resets the normalization factor for the named field of the named
-   * document.
-   *
-   * @see #norms(String)
-   * @see Similarity#decodeNormValue(byte)
-   * 
-   * @throws StaleReaderException if the index has changed
-   *  since this reader was opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if there is a low-level IO error
-   */
-  public void setNorm(int doc, String field, float value)
-          throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    ensureOpen();
-    setNorm(doc, field, Similarity.getDefault().encodeNormValue(value));
-  }
 
   /** Flex API: returns {@link Fields} for this reader.
    *  This method may return null if the reader has no

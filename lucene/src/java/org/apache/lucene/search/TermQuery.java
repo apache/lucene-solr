@@ -32,6 +32,7 @@ import org.apache.lucene.index.BulkPostingsEnum.BlockReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a term.
@@ -87,10 +88,10 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       final String field = term.field();
       final IndexReader reader = context.reader;
-      assert assertTopReaderContext(termStates, context) : "The top-reader used to create Weight is not the same as the current reader's top-reader";
+      assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight is not the same as the current reader's top-reader";
       final TermState state = termStates
           .get(context.ord);
       if (state == null) { // term is not present in that reader
@@ -126,14 +127,6 @@ public class TermQuery extends Query {
       return terms == null || terms.docFreq(bytes) == 0;
     }
     
-    private boolean assertTopReaderContext(PerReaderTermState state, ReaderContext context) {
-      while(context.parent != null) {
-        context = context.parent;
-      }
-      return state.topReaderContext == context;
-    }
-    
-   
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {

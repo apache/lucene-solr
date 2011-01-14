@@ -183,7 +183,7 @@ public class UnInvertedField {
   private void uninvert(SolrIndexSearcher searcher) throws IOException {
     long startTime = System.currentTimeMillis();
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     int maxDoc = reader.maxDoc();
 
     int[] index = new int[maxDoc];       // immediate term numbers, or the index into the byte[] representing the last number
@@ -494,6 +494,7 @@ public class UnInvertedField {
       int endTerm = numTermsInField;  // one past the end
 
       NumberedTermsEnum te = ti.getEnumerator(searcher.multiFields.terms(field));
+
       if (prefix != null && prefix.length() > 0) {
         BytesRef prefixBr = new BytesRef(prefix);
         te.skipTo(prefixBr);
@@ -731,7 +732,7 @@ public class UnInvertedField {
     for (String f : facet) {
       FieldType facet_ft = searcher.getSchema().getFieldType(f);
       try {
-        si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), f);
+        si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), f);
       }
       catch (IOException e) {
         throw new RuntimeException("failed to open field cache for: " + f, e);

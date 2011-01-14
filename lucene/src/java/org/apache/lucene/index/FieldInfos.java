@@ -278,14 +278,21 @@ public final class FieldInfos {
   }
 
   public boolean hasVectors() {
-    boolean hasVectors = false;
     for (int i = 0; i < size(); i++) {
       if (fieldInfo(i).storeTermVector) {
-        hasVectors = true;
-        break;
+        return true;
       }
     }
-    return hasVectors;
+    return false;
+  }
+
+  public boolean hasNorms() {
+    for (int i = 0; i < size(); i++) {
+      if (!fieldInfo(i).omitNorms) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public void write(Directory d, String name) throws IOException {

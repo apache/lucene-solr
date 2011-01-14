@@ -548,10 +548,10 @@ public class CheckIndex {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
-      final byte[] b = new byte[reader.maxDoc()];
+      byte[] b;
       for (final String fieldName : fieldNames) {
         if (reader.hasNorms(fieldName)) {
-          reader.norms(fieldName, b, 0);
+          b = reader.norms(fieldName);
           ++status.totFields;
         }
       }

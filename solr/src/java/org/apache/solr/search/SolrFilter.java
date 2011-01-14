@@ -22,7 +22,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.util.Map;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public abstract class SolrFilter extends Filter {
    * The context object will be passed to getDocIdSet() where this info can be retrieved. */
   public abstract void createWeight(Map context, IndexSearcher searcher) throws IOException;
   
-  public abstract DocIdSet getDocIdSet(Map context, ReaderContext readerContext) throws IOException;
+  public abstract DocIdSet getDocIdSet(Map context, AtomicReaderContext readerContext) throws IOException;
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {

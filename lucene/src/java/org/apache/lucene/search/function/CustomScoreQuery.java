@@ -240,19 +240,19 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       // Pass true for "scoresDocsInOrder", because we
       // require in-order scoring, even if caller does not,
       // since we call advance on the valSrcScorers.  Pass
       // false for "topScorer" because we will not invoke
       // score(Collector) on these scorers:
-      Scorer subQueryScorer = subQueryWeight.scorer(context, true, false);
+      Scorer subQueryScorer = subQueryWeight.scorer(context, ScorerContext.def());
       if (subQueryScorer == null) {
         return null;
       }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(context, true, topScorer);
+         valSrcScorers[i] = valSrcWeights[i].scorer(context, scorerContext.scoreDocsInOrder(true));
       }
       return new CustomScorer(similarity, context.reader, this, subQueryScorer, valSrcScorers);
     }

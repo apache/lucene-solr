@@ -40,6 +40,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
+  }
+  
+  public void setUp() throws Exception {
+    super.setUp();
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
     assertU((adoc("id", "1", "lowerfilt",
             "The quick reb fox jumped over the lazy brown dogs.")));
@@ -53,6 +57,14 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertU((adoc("id", "8", "lowerfilt", "blee")));
     assertU((adoc("id", "9", "lowerfilt", "pixmaa")));
     assertU((commit()));
+  }
+  
+  public void tearDown() throws Exception {
+    super.tearDown();
+    assertU(delQ("*:*"));
+    optimize();
+    assertU((commit()));
+
   }
   
   @Test

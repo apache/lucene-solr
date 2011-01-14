@@ -78,7 +78,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     Collection<Token> tokens = queryConverter.convert("fob");
-    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getReader());
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader());
     SpellingResult result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     Map<String, Integer> suggestions = result.get(tokens.iterator().next());
@@ -117,7 +117,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     Collection<Token> tokens = queryConverter.convert("Solar");
 
-    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getReader());
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader());
     SpellingResult result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     //should be lowercased, b/c we are using a lowercasing analyzer
@@ -160,7 +160,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     Collection<Token> tokens = queryConverter.convert("solar");
-    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getReader());
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader());
     SpellingResult result = checker.getSuggestions(spellOpts);
     assertTrue("result is null and it shouldn't be", result != null);
     //should be lowercased, b/c we are using a lowercasing analyzer

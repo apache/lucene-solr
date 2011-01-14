@@ -134,6 +134,9 @@ Changes in backwards compatibility policy
   
 * LUCENE-2839: Scorer#score(Collector,int,int) is now public because it is
   called from other classes and part of public API. (Uwe Schindler)
+  
+* LUCENE-2865: Weight#scorer(AtomicReaderContext, boolean, boolean) now accepts
+  a ScorerContext struct instead of booleans.(Simon Willnauer)
 
 Changes in Runtime Behavior
 
@@ -151,6 +154,17 @@ Changes in Runtime Behavior
   the index instead of for every commit. Committing or closing the IndexWriter
   without any changes to the index will not cause any index version increment.
   (Simon Willnauer, Mike McCandless)
+
+* LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
+  omitNorms(true) for field "a" for 1000 documents, but then add a document with
+  omitNorms(false) for field "a", all documents for field "a" will have no norms.
+  Previously, Lucene would fill the first 1000 documents with "fake norms" from
+  Similarity.getDefault(). (Robert Muir, Mike Mccandless)
+
+* LUCENE-2846: When some documents contain field "a", and others do not, the
+  documents that don't have the field get a norm byte value of 0. Previously, Lucene
+  would populate "fake norms" with Similarity.getDefault() for these documents.
+  (Robert Muir, Mike Mccandless)
 
 API Changes
 
@@ -192,6 +206,14 @@ API Changes
 * LUCENE-2831: Weight#scorer, Weight#explain, Filter#getDocIdSet,
   Collector#setNextReader & FieldComparator#setNextReader now expect an
   AtomicReaderContext instead of an IndexReader. (Simon Willnauer)
+
+* LUCENE-2846: Remove the deprecated IndexReader.setNorm(int, String, float).
+  This method was only syntactic sugar for setNorm(int, String, byte), but
+  using the global Similarity.getDefault().encodeNormValue.  Use the byte-based
+  method instead to ensure that the norm is encoded with your Similarity.
+  Also removed norms(String, byte[], int), which was only used by MultiReader
+  for building top-level norms. If you really need a top-level norms, use 
+  MultiNorms or SlowMultiReaderWrapper. (Robert Muir, Mike Mccandless)
 
 New features
 
@@ -715,6 +737,10 @@ New features
   is no longer needed and discouraged for that use case. Directly wrapping
   Query improves performance, as out-of-order collection is now supported.
   (Uwe Schindler)
+
+* LUCENE-2864: Add getMaxTermFrequency (maximum within-document TF) to 
+  FieldInvertState so that it can be used in Similarity.computeNorm.
+  (Robert Muir)
   
 Optimizations
 

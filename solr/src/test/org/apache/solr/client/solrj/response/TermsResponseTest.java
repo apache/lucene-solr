@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,6 +36,15 @@ public class TermsResponseTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
+  }
+  
+  @Before
+  @Override
+  public void setUp() throws Exception{
+    super.setUp();
+    clearIndex();
+    assertU(commit());
+    assertU(optimize());
   }
 
   @Test

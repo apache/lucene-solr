@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.Weight.ScorerContext;
 
 /** 
  * Constrains search results to only match those which also match a provided
@@ -55,7 +56,7 @@ public class QueryWrapperFilter extends Filter {
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
-        return weight.scorer(privateContext, true, false);
+        return weight.scorer(privateContext, ScorerContext.def());
       }
       @Override
       public boolean isCacheable() { return false; }

@@ -90,7 +90,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       return new ConstantScorer(similarity, context, this);
     }
 

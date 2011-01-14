@@ -43,6 +43,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -464,7 +465,7 @@ public class TestIndexReader extends LuceneTestCase
         }
 
         try {
-          reader.setNorm(5, "aaa", 2.0f);
+          reader.setNorm(5, "aaa", Similarity.getDefault().encodeNormValue(2.0f));
           fail("setNorm after close failed to throw IOException");
         } catch (AlreadyClosedException e) {
           // expected
@@ -504,7 +505,7 @@ public class TestIndexReader extends LuceneTestCase
         }
 
         try {
-          reader.setNorm(5, "aaa", 2.0f);
+          reader.setNorm(5, "aaa", Similarity.getDefault().encodeNormValue(2.0f));
           fail("setNorm should have hit LockObtainFailedException");
         } catch (LockObtainFailedException e) {
           // expected
@@ -534,7 +535,7 @@ public class TestIndexReader extends LuceneTestCase
 
         //  now open reader & set norm for doc 0
         IndexReader reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", (float) 2.0);
+        reader.setNorm(0, "content", Similarity.getDefault().encodeNormValue(2.0f));
 
         // we should be holding the write lock now:
         assertTrue("locked", IndexWriter.isLocked(dir));
@@ -548,7 +549,7 @@ public class TestIndexReader extends LuceneTestCase
         IndexReader reader2 = IndexReader.open(dir, false);
 
         // set norm again for doc 0
-        reader.setNorm(0, "content", (float) 3.0);
+        reader.setNorm(0, "content", Similarity.getDefault().encodeNormValue(3.0f));
         assertTrue("locked", IndexWriter.isLocked(dir));
 
         reader.close();
@@ -581,12 +582,12 @@ public class TestIndexReader extends LuceneTestCase
         //  now open reader & set norm for doc 0 (writes to
         //  _0_1.s0)
         reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", (float) 2.0);
+        reader.setNorm(0, "content", Similarity.getDefault().encodeNormValue(2.0f));
         reader.close();
         
         //  now open reader again & set norm for doc 0 (writes to _0_2.s0)
         reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", (float) 2.0);
+        reader.setNorm(0, "content", Similarity.getDefault().encodeNormValue(2.0f));
         reader.close();
         assertFalse("failed to remove first generation norms file on writing second generation",
                     dir.fileExists("_0_1.s0"));
@@ -954,7 +955,7 @@ public class TestIndexReader extends LuceneTestCase
               int docId = 12;
               for(int i=0;i<13;i++) {
                 reader.deleteDocument(docId);
-                reader.setNorm(docId, "content", (float) 2.0);
+                reader.setNorm(docId, "content", Similarity.getDefault().encodeNormValue(2.0f));
                 docId += 12;
               }
             }
@@ -1113,7 +1114,7 @@ public class TestIndexReader extends LuceneTestCase
 
       reader = IndexReader.open(dir, false);
       try {
-        reader.setNorm(1, "content", (float) 2.0);
+        reader.setNorm(1, "content", Similarity.getDefault().encodeNormValue(2.0f));
         fail("did not hit exception when calling setNorm on an invalid doc number");
       } catch (ArrayIndexOutOfBoundsException e) {
         // expected

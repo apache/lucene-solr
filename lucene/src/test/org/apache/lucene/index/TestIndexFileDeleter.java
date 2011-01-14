@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -68,7 +69,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     assertEquals("didn't delete the right number of documents", 1, delCount);
 
     // Set one norm so we get a .s0 file:
-    reader.setNorm(21, "content", (float) 1.5);
+    reader.setNorm(21, "content", Similarity.getDefault().encodeNormValue(1.5f));
     reader.close();
 
     // Now, artificially create an extra .del file & extra

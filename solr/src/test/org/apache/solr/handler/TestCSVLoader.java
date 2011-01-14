@@ -76,7 +76,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   void cleanup() {
-    assertU(delQ("id:[100 TO 110]"));
+    assertU(delQ("*:*"));
     assertU(commit());
   }
 

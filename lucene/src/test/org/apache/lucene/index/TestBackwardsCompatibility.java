@@ -43,6 +43,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -216,6 +217,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   public void testOptimizeOldIndex() throws Exception {
     for(int i=0;i<oldNames.length;i++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: index=" + oldNames[i]);
+      }
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
 
       String fullPath = fullDir(oldNames[i]);
@@ -223,6 +227,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
+      w.setInfoStream(VERBOSE ? System.out : null);
       w.optimize();
       w.close();
 
@@ -419,7 +424,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("wrong delete count", 1, delCount);
-    reader.setNorm(searcher.search(new TermQuery(new Term("id", "22")), 10).scoreDocs[0].doc, "content", (float) 2.0);
+    reader.setNorm(searcher.search(new TermQuery(new Term("id", "22")), 10).scoreDocs[0].doc, "content", Similarity.getDefault().encodeNormValue(2.0f));
     reader.close();
     searcher.close();
 
@@ -467,7 +472,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("wrong delete count", 1, delCount);
-    reader.setNorm(22, "content", (float) 2.0);
+    reader.setNorm(22, "content", Similarity.getDefault().encodeNormValue(2.0f));
     reader.close();
 
     // make sure they "took":
@@ -526,7 +531,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("didn't delete the right number of documents", 1, delCount);
 
     // Set one norm so we get a .s0 file:
-    reader.setNorm(21, "content", (float) 1.5);
+    reader.setNorm(21, "content", Similarity.getDefault().encodeNormValue(1.5f));
     reader.close();
   }
 
@@ -563,7 +568,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("didn't delete the right number of documents", 1, delCount);
 
       // Set one norm so we get a .s0 file:
-      reader.setNorm(21, "content", (float) 1.5);
+      reader.setNorm(21, "content", Similarity.getDefault().encodeNormValue(1.5f));
       reader.close();
 
       // The numbering of fields can vary depending on which

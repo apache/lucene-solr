@@ -414,7 +414,7 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList<Integer> res = new NamedList<Integer>();
 
-    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), fieldName);
+    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), fieldName);
 
     final BytesRef prefixRef;
     if (prefix == null) {
@@ -612,7 +612,7 @@ public class SimpleFacets {
 
 
     IndexSchema schema = searcher.getSchema();
-    IndexReader r = searcher.getReader();
+    IndexReader r = searcher.getIndexReader();
     FieldType ft = schema.getFieldType(field);
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");

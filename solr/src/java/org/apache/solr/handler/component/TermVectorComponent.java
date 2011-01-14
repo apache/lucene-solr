@@ -174,7 +174,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
     SolrIndexSearcher searcher = rb.req.getSearcher();
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     //the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
     SchemaField keyField = schema.getUniqueKeyField();
     String uniqFieldName = null;

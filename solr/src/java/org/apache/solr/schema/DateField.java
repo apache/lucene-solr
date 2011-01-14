@@ -18,7 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
@@ -427,8 +427,8 @@ class DateFieldSource extends FieldCacheSource {
     return "date(" + field + ')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new StringIndexDocValues(this, reader, field) {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    return new StringIndexDocValues(this, readerContext, field) {
       protected String toTerm(String readableValue) {
         // needed for frange queries to work properly
         return ft.toInternal(readableValue);

@@ -20,6 +20,7 @@ package org.apache.lucene.search.function;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 
 /**
@@ -55,8 +56,8 @@ public abstract class FieldCacheSource extends ValueSource {
 
   /* (non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
   @Override
-  public final DocValues getValues(IndexReader reader) throws IOException {
-    return getCachedFieldValues(FieldCache.DEFAULT, field, reader);
+  public final DocValues getValues(AtomicReaderContext context) throws IOException {
+    return getCachedFieldValues(FieldCache.DEFAULT, field, context.reader);
   }
 
   /* (non-Javadoc) @see org.apache.lucene.search.function.ValueSource#description() */

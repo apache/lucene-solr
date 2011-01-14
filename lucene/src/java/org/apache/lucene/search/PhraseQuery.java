@@ -175,7 +175,7 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
       final IndexReader reader = context.reader;
@@ -268,7 +268,7 @@ public class PhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = scorer(context, true, false);
+      Scorer scorer = scorer(context, ScorerContext.def());
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }

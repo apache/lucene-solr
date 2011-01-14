@@ -18,19 +18,14 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil; // javadoc
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
 import org.apache.lucene.index.MultiReader; // javadoc
-import org.apache.lucene.index.IndexReader.ReaderContext;
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -93,22 +88,12 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
       return bytes;
     if (!hasNorms(field))
       return null;
-
+    if (normsCache.containsKey(field)) // cached omitNorms, not missing key
+      return null;
+    
     bytes = MultiNorms.norms(in, field);
     normsCache.put(field, bytes);
     return bytes;
-  }
-
-  @Override
-  public synchronized void norms(String field, byte[] bytes, int offset) throws IOException {
-    // TODO: maybe optimize
-    ensureOpen();
-    byte[] norms = norms(field);
-    if (norms == null) {
-      Arrays.fill(bytes, offset, bytes.length, Similarity.getDefault().encodeNormValue(1.0f));
-    } else {
-      System.arraycopy(norms, 0, bytes, offset, maxDoc());
-    }
   }
   
   @Override

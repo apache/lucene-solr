@@ -228,6 +228,17 @@ public final class ReaderUtil {
     }
     return leaves;
   }
+  
+  /**
+   * Walks up the reader tree and return the given context's top level reader
+   * context, or in other words the reader tree's root context.
+   */
+  public static ReaderContext getTopLevelContext(ReaderContext context) {
+    while (context.parent != null) {
+      context = context.parent;
+    }
+    return context;
+  }
 
   /**
    * Returns index of the searcher/reader for document <code>n</code> in the

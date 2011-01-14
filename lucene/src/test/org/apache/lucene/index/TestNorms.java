@@ -169,8 +169,8 @@ public class TestNorms extends LuceneTestCase {
       //System.out.println("      and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));
       modifiedNorms.set(k, Float.valueOf(origNorm));
-      ir.setNorm(i, "f"+1, newNorm); 
-      ir.setNorm(k, "f"+1, origNorm); 
+      ir.setNorm(i, "f"+1, Similarity.getDefault().encodeNormValue(newNorm)); 
+      ir.setNorm(k, "f"+1, Similarity.getDefault().encodeNormValue(origNorm)); 
     }
     ir.close();
   }

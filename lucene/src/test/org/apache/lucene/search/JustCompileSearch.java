@@ -360,7 +360,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer)
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

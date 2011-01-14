@@ -216,7 +216,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   private Scorer getQueryScorer(Query query, String fieldName, SolrQueryRequest request) {
      boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
      if (reqFieldMatch) {
-        return new QueryTermScorer(query, request.getSearcher().getReader(), fieldName);
+        return new QueryTermScorer(query, request.getSearcher().getIndexReader(), fieldName);
      }
      else {
         return new QueryTermScorer(query);
@@ -415,7 +415,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     TermOffsetsTokenStream tots = null; // to be non-null iff we're using TermOffsets optimization
     try {
-        TokenStream tvStream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
+        TokenStream tvStream = TokenSources.getTokenStream(searcher.getIndexReader(), docId, fieldName);
         if (tvStream != null) {
           tots = new TermOffsetsTokenStream(tvStream);
         }
@@ -503,7 +503,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       String fieldName ) throws IOException {
     SolrParams params = req.getParams(); 
     SolrFragmentsBuilder solrFb = getSolrFragmentsBuilder( fieldName, params );
-    String[] snippets = highlighter.getBestFragments( fieldQuery, req.getSearcher().getReader(), docId, fieldName,
+    String[] snippets = highlighter.getBestFragments( fieldQuery, req.getSearcher().getIndexReader(), docId, fieldName,
         params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 ),
         params.getFieldInt( fieldName, HighlightParams.SNIPPETS, 1 ),
         getFragListBuilder( fieldName, params ),

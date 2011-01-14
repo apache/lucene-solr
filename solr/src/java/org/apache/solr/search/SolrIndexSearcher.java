@@ -69,7 +69,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private long openTime = System.currentTimeMillis();
   private long registerTime = 0;
   private long warmupTime = 0;
-  private final SolrIndexReader reader;
+  private final IndexReader reader;
   private final boolean closeReader;
 
   public final MultiFields multiFields;
@@ -123,37 +123,25 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     this(core, schema,name,r, false, enableCache);
   }
 
-  private static SolrIndexReader wrap(IndexReader r) {
-    SolrIndexReader sir;
-    // wrap the reader
-    if (!(r instanceof SolrIndexReader)) {
-      sir = new SolrIndexReader(r, null, 0);
-      sir.associateInfo(null);
-    } else {
-      sir = (SolrIndexReader)r;
-    }
-    return sir;
-  }
 
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) throws IOException {
-    super(wrap(r));
-    this.reader = (SolrIndexReader)super.getIndexReader();
+    super(r);
+    this.reader = getIndexReader();
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
 
-    SolrIndexReader.setSearcher(reader, this);
-
     // set up MultiFields
-    SolrIndexReader[] subReaders = reader.getLeafReaders();
+    AtomicReaderContext[] subReaders = ReaderUtil.leaves(getTopReaderContext());
+
     readerSubs = new ReaderUtil.Slice[subReaders.length];
     fieldSubs = new Fields[subReaders.length];
     deletedDocs = new Bits[subReaders.length];
 
     for (int i=0; i<subReaders.length; i++) {
-      SolrIndexReader subReader = subReaders[i];
-      readerSubs[i] = new ReaderUtil.Slice(subReader.getBase(), subReader.maxDoc(), i);
+      IndexReader subReader = subReaders[i].reader;
+      readerSubs[i] = new ReaderUtil.Slice(subReaders[i].docBaseInParent, subReader.maxDoc(), i);
       fieldSubs[i] = MultiFields.getFields(subReader); // hopefully segment level
       deletedDocs[i] = MultiFields.getDeletedDocs(subReader); // hopefully segment level
     }
@@ -267,8 +255,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     numCloses.incrementAndGet();
   }
 
-  /** Direct access to the IndexReader used by this searcher */
-  public SolrIndexReader getReader() { return reader; }
   /** Direct access to the IndexSchema for use with this searcher */
   public IndexSchema getSchema() { return schema; }
   
@@ -505,12 +491,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
-    SolrIndexReader[] subReaders = getReader().getLeafReaders();
+    AtomicReaderContext[] subReaders = ReaderUtil.leaves(getTopReaderContext());
     for (int i=0; i<subReaders.length; i++) {
-      DocsEnum denum = MultiFields.getTermDocsEnum(subReaders[i], deletedDocs[i], t.field(), t.bytes());
+      IndexReader ir = subReaders[i].reader;
+      DocsEnum denum = ir.termDocsEnum(deletedDocs[i], t.field(), t.bytes());
       if (denum == null) continue;
       int id = denum.nextDoc();
-      if (id != DocIdSetIterator.NO_MORE_DOCS) return id + subReaders[i].getBase();
+      if (id != DocIdSetIterator.NO_MORE_DOCS) return id + subReaders[i].docBaseInParent;
     }
     return -1;
   }

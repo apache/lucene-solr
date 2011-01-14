@@ -91,12 +91,12 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(context, true, false);
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      Scorer subQueryScorer = qWeight.scorer(context, ScorerContext.def());
       if(subQueryScorer == null) {
         return null;
       }
-      return new BoostedQuery.CustomScorer(getSimilarity(searcher), searcher, context.reader, this, subQueryScorer, boostVal);
+      return new BoostedQuery.CustomScorer(getSimilarity(searcher), context, this, subQueryScorer, boostVal);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class BoostedQuery extends Query {
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
-      DocValues vals = boostVal.getValues(fcontext, readerContext.reader);
+      DocValues vals = boostVal.getValues(fcontext, readerContext);
       float sc = subQueryExpl.getValue() * vals.floatVal(doc);
       Explanation res = new ComplexExplanation(
         true, sc, BoostedQuery.this.toString() + ", product of:");
@@ -121,18 +121,16 @@ public class BoostedQuery extends Query {
     private final float qWeight;
     private final Scorer scorer;
     private final DocValues vals;
-    private final IndexReader reader;
-    private final IndexSearcher searcher;
+    private final AtomicReaderContext readerContext;
 
-    private CustomScorer(Similarity similarity, IndexSearcher searcher, IndexReader reader, BoostedQuery.BoostedWeight w,
+    private CustomScorer(Similarity similarity, AtomicReaderContext readerContext, BoostedQuery.BoostedWeight w,
         Scorer scorer, ValueSource vs) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
       this.scorer = scorer;
-      this.reader = reader;
-      this.searcher = searcher; // for explain
-      this.vals = vs.getValues(weight.fcontext, reader);
+      this.readerContext = readerContext;
+      this.vals = vs.getValues(weight.fcontext, readerContext);
     }
 
     @Override
@@ -161,7 +159,7 @@ public class BoostedQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(ValueSource.readerToContext(weight.fcontext,reader) ,doc);
+      Explanation subQueryExpl = weight.qWeight.explain(readerContext ,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
