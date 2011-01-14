@@ -27,8 +27,9 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.TermState;
+import org.apache.lucene.index.codecs.PrefixCodedTermState;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -84,20 +85,20 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   // Must keep final because we do non-standard clone
-  private final static class DocTermState extends TermState {
+  private final static class StandardTermState extends PrefixCodedTermState {
     long freqOffset;
     long proxOffset;
     int skipOffset;
 
     public Object clone() {
-      DocTermState other = new DocTermState();
+      StandardTermState other = new StandardTermState();
       other.copyFrom(this);
       return other;
     }
 
     public void copyFrom(TermState _other) {
       super.copyFrom(_other);
-      DocTermState other = (DocTermState) _other;
+      StandardTermState other = (StandardTermState) _other;
       freqOffset = other.freqOffset;
       proxOffset = other.proxOffset;
       skipOffset = other.skipOffset;
@@ -109,8 +110,8 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public TermState newTermState() {
-    return new DocTermState();
+  public PrefixCodedTermState newTermState() {
+    return new StandardTermState();
   }
 
   @Override
@@ -127,10 +128,9 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState termState, boolean isIndexTerm)
+  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, PrefixCodedTermState termState, boolean isIndexTerm)
     throws IOException {
-
-    final DocTermState docTermState = (DocTermState) termState;
+    final StandardTermState docTermState = (StandardTermState) termState;
 
     if (isIndexTerm) {
       docTermState.freqOffset = termsIn.readVLong();
@@ -154,7 +154,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, TermState termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, PrefixCodedTermState termState, Bits skipDocs, DocsEnum reuse) throws IOException {
     SegmentDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SegmentDocsEnum)) {
       docsEnum = new SegmentDocsEnum(freqIn);
@@ -167,7 +167,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         docsEnum = new SegmentDocsEnum(freqIn);
       }
     }
-    return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
+    return docsEnum.reset(fieldInfo, (StandardTermState) termState, skipDocs);
   }
 
   private SegmentBulkPostingsEnum lastBulkEnum;
@@ -179,7 +179,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     if (lastBulkEnum != null && reuse == lastBulkEnum) {
       // fastpath
-      return lastBulkEnum.reset((DocTermState) termState);
+      return lastBulkEnum.reset((StandardTermState) termState);
     } else {
       final SegmentBulkPostingsEnum postingsEnum;
       if (reuse == null || !(reuse instanceof SegmentBulkPostingsEnum) || !((SegmentBulkPostingsEnum) reuse).canReuse(fieldInfo, freqIn, doFreqs, doPositions)) {
@@ -188,12 +188,12 @@ public class StandardPostingsReader extends PostingsReaderBase {
         postingsEnum = (SegmentBulkPostingsEnum) reuse;
       }
       this.lastBulkEnum = postingsEnum;
-      return postingsEnum.reset((DocTermState) termState);
+      return postingsEnum.reset((StandardTermState) termState);
     }
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, TermState termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, PrefixCodedTermState termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (fieldInfo.omitTermFreqAndPositions) {
       return null;
     }
@@ -212,7 +212,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           docsEnum = new SegmentDocsAndPositionsAndPayloadsEnum(freqIn, proxIn);
         }
       }
-      return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
+      return docsEnum.reset(fieldInfo, (StandardTermState) termState, skipDocs);
     } else {
       SegmentDocsAndPositionsEnum docsEnum;
       if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsEnum)) {
@@ -226,7 +226,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
         }
       }
-      return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
+      return docsEnum.reset(fieldInfo, (StandardTermState) termState, skipDocs);
     }
   }
 
@@ -256,7 +256,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       this.freqIn = (IndexInput) freqIn.clone();
     }
 
-    public SegmentDocsEnum reset(FieldInfo fieldInfo, DocTermState termState, Bits skipDocs) throws IOException {
+    public SegmentDocsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits skipDocs) throws IOException {
       omitTF = fieldInfo.omitTermFreqAndPositions;
       if (omitTF) {
         freq = 1;
@@ -399,7 +399,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       this.proxIn = (IndexInput) proxIn.clone();
     }
 
-    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, DocTermState termState, Bits skipDocs) throws IOException {
+    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits skipDocs) throws IOException {
       assert !fieldInfo.omitTermFreqAndPositions;
       assert !fieldInfo.storePayloads;
 
@@ -587,7 +587,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       this.proxIn = (IndexInput) proxIn.clone();
     }
 
-    public SegmentDocsAndPositionsAndPayloadsEnum reset(FieldInfo fieldInfo, DocTermState termState, Bits skipDocs) throws IOException {
+    public SegmentDocsAndPositionsAndPayloadsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits skipDocs) throws IOException {
       assert !fieldInfo.omitTermFreqAndPositions;
       assert fieldInfo.storePayloads;
       if (payload == null) {
@@ -1049,7 +1049,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return positionDeltasReader;
     }
 
-    public SegmentBulkPostingsEnum reset(DocTermState termState) throws IOException {
+    public SegmentBulkPostingsEnum reset(StandardTermState termState) throws IOException {
       freqOffset = termState.freqOffset;
       freqIn.seek(freqOffset);
   

@@ -21,6 +21,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -153,10 +154,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public void cacheCurrentTerm() {
-    }
-
-    @Override
     public BytesRef next() throws IOException {
       assert !ended;
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,Long>> result = fstEnum.next();
@@ -215,7 +212,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } 
       return docsAndPositionsEnum.reset(docsStart, skipDocs);
     }
-
+    
     @Override
     public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreq, boolean doPositions) throws IOException {
       SimpleTextBulkPostingsEnum bulkPostingsEnum;
@@ -635,7 +632,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   private class SimpleTextTerms extends Terms {
-    private final String field;
     private final long termsStart;
     private final boolean omitTF;
     private FST<PairOutputs.Pair<Long,Long>> fst;
@@ -643,7 +639,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final BytesRef scratch = new BytesRef(10);
 
     public SimpleTextTerms(String field, long termsStart) throws IOException {
-      this.field = StringHelper.intern(field);
       this.termsStart = termsStart;
       omitTF = fieldInfos.fieldInfo(field).omitTermFreqAndPositions;
       loadTerms();

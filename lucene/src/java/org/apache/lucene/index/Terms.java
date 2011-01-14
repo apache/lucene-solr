@@ -89,11 +89,57 @@ public abstract class Terms {
     }
   }
 
+  /**
+   * Expert: Get {@link DocsEnum} for the specified {@link TermState}.
+   * This method may return <code>null</code> if the term does not exist.
+   * 
+   * @see TermsEnum#termState()
+   * @see TermsEnum#seek(BytesRef, TermState) */
+  public DocsEnum docs(Bits skipDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
+    final TermsEnum termsEnum = getThreadTermsEnum();
+    if (termsEnum.seek(term, termState) == TermsEnum.SeekStatus.FOUND) {
+      return termsEnum.docs(skipDocs, reuse);
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Get {@link DocsEnum} for the specified {@link TermState}. This
+   * method will may return <code>null</code> if the term does not exists, or positions were
+   * not indexed.
+   * 
+   * @see TermsEnum#termState()
+   * @see TermsEnum#seek(BytesRef, TermState) */
+  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
+    final TermsEnum termsEnum = getThreadTermsEnum();
+    if (termsEnum.seek(term, termState) == TermsEnum.SeekStatus.FOUND) {
+      return termsEnum.docsAndPositions(skipDocs, reuse);
+    } else {
+      return null;
+    }
+  }
+
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
   }
 
-  protected TermsEnum getThreadTermsEnum() throws IOException {
+  /**
+   * Returns a thread-private {@link TermsEnum} instance. Obtaining
+   * {@link TermsEnum} from this method might be more efficient than using
+   * {@link #iterator()} directly since this method doesn't necessarily create a
+   * new {@link TermsEnum} instance.
+   * <p>
+   * NOTE: {@link TermsEnum} instances obtained from this method must not be
+   * shared across threads. The enum should only be used within a local context
+   * where other threads can't access it.
+   * 
+   * @return a thread-private {@link TermsEnum} instance
+   * @throws IOException
+   *           if an IOException occurs
+   * @lucene.internal
+   */
+  public TermsEnum getThreadTermsEnum() throws IOException {
     TermsEnum termsEnum = threadEnums.get();
     if (termsEnum == null) {
       termsEnum = iterator();

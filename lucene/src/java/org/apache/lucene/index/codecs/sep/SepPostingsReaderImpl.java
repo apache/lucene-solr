@@ -26,8 +26,9 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.TermState;
+import org.apache.lucene.index.codecs.PrefixCodedTermState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
@@ -130,12 +131,13 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     }
   }
 
-  private static class SepTermState extends TermState {
+  private static final class SepTermState extends PrefixCodedTermState {
     // We store only the seek point to the docs file because
     // the rest of the info (freqIndex, posIndex, etc.) is
     // stored in the docs file:
     IntIndexInput.Index docIndex;
-
+    
+    @Override
     public Object clone() {
       SepTermState other = (SepTermState) super.clone();
       other.docIndex = (IntIndexInput.Index) docIndex.clone();
@@ -155,19 +157,19 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public TermState newTermState() throws IOException {
+  public PrefixCodedTermState newTermState() throws IOException {
     final SepTermState state =  new SepTermState();
     state.docIndex = docIn.index();
     return state;
   }
 
   @Override
-  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState termState, boolean isIndexTerm) throws IOException {
+  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, PrefixCodedTermState termState, boolean isIndexTerm) throws IOException {
     ((SepTermState) termState).docIndex.read(termsIn, isIndexTerm);
   }
 
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, TermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, PrefixCodedTermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     SepDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SepDocsEnum) || !((SepDocsEnum) reuse).canReuse(docIn)) {
@@ -201,7 +203,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, TermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, PrefixCodedTermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
     assert !fieldInfo.omitTermFreqAndPositions;
     final SepTermState termState = (SepTermState) _termState;
     SepDocsAndPositionsEnum postingsEnum;

@@ -359,6 +359,11 @@ Optimizations
   not seek backwards when a sub-range has no terms. It now only seeks
   when the current term is less than the next sub-range's lower end.
   (Uwe Schindler, Mike McCandless)
+  
+* LUCENE-2694: Optimize MultiTermQuery to be single pass for Term lookups.
+  MultiTermQuery now stores TermState per leaf reader during rewrite to re-
+  seek the term dictionary in TermQuery / TermWeight.
+  (Simon Willnauer, Mike McCandless, Robert Muir)
 
 Documentation
 

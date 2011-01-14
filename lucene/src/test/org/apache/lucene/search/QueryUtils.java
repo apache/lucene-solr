@@ -212,8 +212,6 @@ public class QueryUtils {
       throw e2;
     }
   }
-  
-
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc
    * and ensure a hitcollector receives same docs and scores

@@ -32,6 +32,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -69,7 +70,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
   private final Comparator<BytesRef> termComp;
 
   // Caches the most recently looked-up field + terms:
-  private final DoubleBarrelLRUCache<FieldAndTerm,TermState> termsCache;
+  private final DoubleBarrelLRUCache<FieldAndTerm,PrefixCodedTermState> termsCache;
 
   // Reads the terms index
   private TermsIndexReaderBase indexReader;
@@ -83,11 +84,6 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     BytesRef term;
 
     public FieldAndTerm() {
-    }
-
-    public FieldAndTerm(String field, BytesRef term) {
-      this.field = field;
-      this.term = new BytesRef(term);
     }
 
     public FieldAndTerm(FieldAndTerm other) {
@@ -117,7 +113,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     throws IOException {
     
     this.postingsReader = postingsReader;
-    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,TermState>(termsCacheSize);
+    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,PrefixCodedTermState>(termsCacheSize);
 
     this.termComp = termComp;
     
@@ -279,10 +275,10 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     }
 
     // Iterates through terms in this field, not supporting ord()
-    private class SegmentTermsEnum extends TermsEnum {
+    private final class SegmentTermsEnum extends TermsEnum {
       private final IndexInput in;
       private final DeltaBytesReader bytesReader;
-      private final TermState state;
+      private final PrefixCodedTermState state;
       private boolean seekPending;
       private final FieldAndTerm fieldTerm = new FieldAndTerm();
       private final TermsIndexReaderBase.FieldIndexEnum indexEnum;
@@ -306,14 +302,6 @@ public class PrefixCodedTermsReader extends FieldsProducer {
       @Override
       public Comparator<BytesRef> getComparator() {
         return termComp;
-      }
-
-      @Override
-      public void cacheCurrentTerm() {
-        TermState stateCopy = (TermState) state.clone();
-        stateCopy.filePointer = in.getFilePointer();
-        termsCache.put(new FieldAndTerm(fieldInfo.name, bytesReader.term),
-                       stateCopy);
       }
 
       // called only from assert
@@ -343,7 +331,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
        *  is found, SeekStatus.NOT_FOUND if a different term
        *  was found, SeekStatus.END if we hit EOF */
       @Override
-      public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+      public SeekStatus seek(final BytesRef term, final boolean useCache) throws IOException {
 
         if (indexEnum == null) {
           throw new IllegalStateException("terms index was not loaded");
@@ -358,9 +346,8 @@ public class PrefixCodedTermsReader extends FieldsProducer {
           cachedState = termsCache.get(fieldTerm);
           if (cachedState != null) {
             state.copyFrom(cachedState);
-            seekPending = true;
+            setTermState(term, state);
             positioned = false;
-            bytesReader.term.copy(term);
             //System.out.println("  cached!");
             return SeekStatus.FOUND;
           }
@@ -441,12 +428,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
 
             // Done!
             if (useCache) {
-              // Store in cache
-              FieldAndTerm entryKey = new FieldAndTerm(fieldTerm);
-              cachedState = (TermState) state.clone();
-              // this is fp after current term
-              cachedState.filePointer = in.getFilePointer();
-              termsCache.put(entryKey, cachedState);
+              cacheTerm(fieldTerm);
             }
 
             return SeekStatus.FOUND;
@@ -465,6 +447,23 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         positioned = false;
         return SeekStatus.END;
       }
+
+      private final void setTermState(BytesRef term, final TermState termState) {
+        assert termState != null && termState instanceof PrefixCodedTermState;
+        state.copyFrom(termState);
+        seekPending = true;
+        bytesReader.term.copy(term);
+      }
+
+      private final void cacheTerm(FieldAndTerm other) {
+        // Store in cache
+        final FieldAndTerm entryKey = new FieldAndTerm(other);
+        final PrefixCodedTermState cachedState = (PrefixCodedTermState) state.clone();
+        // this is fp after current term
+        cachedState.filePointer = in.getFilePointer();
+        termsCache.put(entryKey, cachedState);
+      }
+      
 
       @Override
       public BytesRef term() {
@@ -500,7 +499,9 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         postingsReader.readTerm(in,
                                 fieldInfo, state,
                                 isIndexTerm);
-        state.ord++;
+        if (doOrd) {
+          state.ord++;
+        }
         positioned = true;
 
         //System.out.println("te.next term=" + bytesReader.term.utf8ToString());
@@ -514,7 +515,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
 
       @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
-        DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, skipDocs, reuse);
+        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, skipDocs, reuse);
         assert docsEnum != null;
         return docsEnum;
       }
@@ -532,6 +533,23 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         } else {
           return postingsReader.docsAndPositions(fieldInfo, state, skipDocs, reuse);
         }
+      }
+
+      @Override
+      public SeekStatus seek(BytesRef term, TermState otherState) throws IOException {
+        assert otherState != null && otherState instanceof PrefixCodedTermState;
+        assert otherState.getClass() == this.state.getClass() : "Illegal TermState type " + otherState.getClass();
+        assert ((PrefixCodedTermState)otherState).ord < numTerms;
+        setTermState(term, otherState);
+        positioned = false;
+        return SeekStatus.FOUND;
+      }
+      
+      @Override
+      public TermState termState() throws IOException {
+        final PrefixCodedTermState newTermState = (PrefixCodedTermState) state.clone();
+        newTermState.filePointer = in.getFilePointer();
+        return newTermState;
       }
 
       @Override
@@ -570,7 +588,6 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         return SeekStatus.FOUND;
       }
 
-      @Override
       public long ord() {
         if (!doOrd) {
           throw new UnsupportedOperationException();

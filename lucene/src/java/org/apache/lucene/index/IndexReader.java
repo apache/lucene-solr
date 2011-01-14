@@ -1086,6 +1086,47 @@ public abstract class IndexReader implements Cloneable,Closeable {
       return null;
     }
   }
+  
+  /**
+   * Returns {@link DocsEnum} for the specified field and
+   * {@link TermState}. This may return null, if either the field or the term
+   * does not exists or the {@link TermState} is invalid for the underlying
+   * implementation.*/
+  public DocsEnum termDocsEnum(Bits skipDocs, String field, BytesRef term, TermState state) throws IOException {
+    assert state != null;
+    assert field != null;
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms != null) {
+      return terms.docs(skipDocs, term, state, null);
+    } else {
+      return null;
+    }
+  }
+  
+  /**
+   * Returns {@link DocsAndPositionsEnum} for the specified field and
+   * {@link TermState}. This may return null, if either the field or the term
+   * does not exists, the {@link TermState} is invalid for the underlying
+   * implementation, or positions were not stored for this term.*/
+  public DocsAndPositionsEnum termPositionsEnum(Bits skipDocs, String field, BytesRef term, TermState state) throws IOException {
+    assert state != null;
+    assert field != null;
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms != null) {
+      return terms.docsAndPositions(skipDocs, term, state, null);
+    } else {
+      return null;
+    }
+  }
+
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
    * deleted it will not appear in TermDocs or TermPositions enumerations.

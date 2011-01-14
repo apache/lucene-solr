@@ -372,7 +372,6 @@ class BufferedDeletes {
           Query query = entry.getKey();
           int limit = entry.getValue().intValue();
           Weight weight = query.weight(searcher);
-          
           Scorer scorer = weight.scorer(readerContext, true, false);
           if (scorer != null) {
             while(true)  {

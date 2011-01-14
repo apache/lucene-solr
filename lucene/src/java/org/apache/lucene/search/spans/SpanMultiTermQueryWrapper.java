@@ -26,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopTermsRewrite;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.BooleanClause.Occur; // javadocs only
+import org.apache.lucene.util.PerReaderTermState;
 
 /**
  * Wraps any {@link MultiTermQuery} as a {@link SpanQuery}, 
@@ -153,7 +154,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
       }
     
       @Override
-      protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost) {
+      protected void addClause(SpanOrQuery topLevel, Term term, int docCount, float boost, PerReaderTermState states) {
         final SpanTermQuery q = new SpanTermQuery(term);
         q.setBoost(boost);
         topLevel.addClause(q);
@@ -202,7 +203,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
         }
 
         @Override
-        protected void addClause(SpanOrQuery topLevel, Term term, int docFreq, float boost) {
+        protected void addClause(SpanOrQuery topLevel, Term term, int docFreq, float boost, PerReaderTermState states) {
           final SpanTermQuery q = new SpanTermQuery(term);
           q.setBoost(boost);
           topLevel.addClause(q);
