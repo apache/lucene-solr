@@ -28,7 +28,6 @@ import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.PrefixCodedTermState;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.util.ArrayUtil;
@@ -319,6 +318,11 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       @Override
       public int docFreq() {
         throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long totalTermFreq() {
+        return -1;
       }
 
       @Override

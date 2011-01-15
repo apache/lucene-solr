@@ -1865,4 +1865,22 @@ public class TestIndexReader extends LuceneTestCase
     assertTrue(IndexReader.indexExists(dir));
     dir.close();
   }
+
+  // Make sure totalTermFreq works correctly in the terms
+  // dict cache
+  public void testTotalTermFreqCached() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Document d = new Document();
+    d.add(newField("f", "a a b", Field.Index.ANALYZED));
+    writer.addDocument(d);
+    IndexReader r = writer.getReader();
+    writer.close();
+    Terms terms = MultiFields.getTerms(r, "f");
+    assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+    assertEquals(2, terms.totalTermFreq(new BytesRef("a")));
+    assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+    r.close();
+    dir.close();
+  }
 }

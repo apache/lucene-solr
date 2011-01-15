@@ -17,15 +17,16 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -41,8 +42,10 @@ public class TestHighFreqTerms extends LuceneTestCase {
     writer = new IndexWriter(dir, newIndexWriterConfig(random,
        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false))
        .setMaxBufferedDocs(2));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     indexDocs(writer);
     reader = IndexReader.open(dir, true);
+    _TestUtil.checkIndex(dir);
   }
   
   @AfterClass
@@ -75,8 +78,8 @@ public class TestHighFreqTerms extends LuceneTestCase {
     String field="FIELD_1";
     TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
     for (int i = 0; i < terms.length; i++) {
-      if (i >0){
-       assertTrue ("out of order " + terms[i-1].docFreq + "should be >= " + terms[i].docFreq,terms[i-1].docFreq >= terms[i].docFreq);
+      if (i > 0) {
+        assertTrue ("out of order " + terms[i-1].docFreq + "should be >= " + terms[i].docFreq,terms[i-1].docFreq >= terms[i].docFreq);
       }
     }    
   }
@@ -134,11 +137,12 @@ public class TestHighFreqTerms extends LuceneTestCase {
     TermStats[] terms = HighFreqTerms.getHighFreqTerms(reader, numTerms, field);
     TermStats[] termsWithTF = HighFreqTerms.sortByTotalTermFreq(reader, terms);
  
-  for (int i = 0; i < termsWithTF.length; i++) {
-    // check that they are sorted by descending termfreq order
-    if (i >0){
-      assertTrue ("out of order" +termsWithTF[i-1]+ " > " +termsWithTF[i],termsWithTF[i-1].totalTermFreq > termsWithTF[i].totalTermFreq);
-     }
+    for (int i = 0; i < termsWithTF.length; i++) {
+      // check that they are sorted by descending termfreq
+      // order
+      if (i > 0) {
+        assertTrue ("out of order" +termsWithTF[i-1]+ " > " +termsWithTF[i],termsWithTF[i-1].totalTermFreq >= termsWithTF[i].totalTermFreq);
+      }
     } 
   }
   

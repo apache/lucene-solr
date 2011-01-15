@@ -28,7 +28,7 @@ public abstract class TermsIndexWriterBase {
   public abstract void setTermsOutput(IndexOutput out);
 
   public abstract class FieldWriter {
-    public abstract boolean checkIndexTerm(BytesRef text, int docFreq) throws IOException;
+    public abstract boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException;
     public abstract void finish() throws IOException;
   }
 

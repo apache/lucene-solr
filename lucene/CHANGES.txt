@@ -359,6 +359,9 @@ New features
   terms dict.  This impl stores the indexed terms in an FST, which is
   much more RAM efficient than FixedGapTermsIndex.  (Mike McCandless)
 
+* LUCENE-2862: Added TermsEnum.totalTermFreq() and
+  Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

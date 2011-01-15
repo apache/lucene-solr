@@ -66,6 +66,7 @@ public class TestIndicesEquals extends LuceneTestCase {
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
+    
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -395,6 +396,10 @@ public class TestIndicesEquals extends LuceneTestCase {
         }
 
         assertTrue(aprioriTermEnum.docFreq() == testTermEnum.docFreq());
+        final long totalTermFreq = aprioriTermEnum.totalTermFreq();
+        if (totalTermFreq != -1) {
+          assertEquals(totalTermFreq, testTermEnum.totalTermFreq());
+        }
 
         // compare termDocs seeking
 

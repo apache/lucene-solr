@@ -244,6 +244,11 @@ public final class FuzzyTermsEnum extends TermsEnum {
   public int docFreq() {
     return actualEnum.docFreq();
   }
+
+  @Override
+  public long totalTermFreq() {
+    return actualEnum.totalTermFreq();
+  }
   
   @Override
   public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {

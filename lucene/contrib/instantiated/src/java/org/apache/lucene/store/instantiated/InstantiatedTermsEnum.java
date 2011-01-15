@@ -24,7 +24,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.codecs.PrefixCodedTermState;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -108,6 +107,12 @@ public class InstantiatedTermsEnum extends TermsEnum {
   @Override
   public int docFreq() {
     return terms[upto].getAssociatedDocuments().length;
+  }
+
+  @Override
+  public long totalTermFreq() {
+    final long v = terms[upto].getTotalTermFreq();
+    return v == 0 ? -1 : v;
   }
 
   @Override

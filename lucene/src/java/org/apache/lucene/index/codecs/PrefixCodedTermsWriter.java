@@ -60,7 +60,7 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
   final FieldInfos fieldInfos;
   FieldInfo currentField;
   private final TermsIndexWriterBase termsIndexWriter;
-  private final List<TermsConsumer> fields = new ArrayList<TermsConsumer>();
+  private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
   private final Comparator<BytesRef> termComp;
 
   public PrefixCodedTermsWriter(
@@ -96,7 +96,7 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
     TermsIndexWriterBase.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
-    TermsConsumer terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);
+    final TermsWriter terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);
     fields.add(terms);
     return terms;
   }
@@ -105,16 +105,26 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
   public void close() throws IOException {
 
     try {
-      final int fieldCount = fields.size();
+      
+      int nonZeroCount = 0;
+      for(TermsWriter field : fields) {
+        if (field.numTerms > 0) {
+          nonZeroCount++;
+        }
+      }
 
       final long dirStart = out.getFilePointer();
 
-      out.writeInt(fieldCount);
-      for(int i=0;i<fieldCount;i++) {
-        TermsWriter field = (TermsWriter) fields.get(i);
-        out.writeInt(field.fieldInfo.number);
-        out.writeLong(field.numTerms);
-        out.writeLong(field.termsStartPointer);
+      out.writeVInt(nonZeroCount);
+      for(TermsWriter field : fields) {
+        if (field.numTerms > 0) {
+          out.writeVInt(field.fieldInfo.number);
+          out.writeVLong(field.numTerms);
+          out.writeVLong(field.termsStartPointer);
+          if (!field.fieldInfo.omitTermFreqAndPositions) {
+            out.writeVLong(field.sumTotalTermFreq);
+          }
+        }
       }
       writeTrailer(dirStart);
     } finally {
@@ -142,6 +152,7 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     private final long termsStartPointer;
     private long numTerms;
     private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
+    long sumTotalTermFreq;
 
     TermsWriter(
         TermsIndexWriterBase.FieldWriter fieldIndexWriter,
@@ -169,12 +180,12 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     }
 
     @Override
-    public void finishTerm(BytesRef text, int numDocs) throws IOException {
+    public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
-      assert numDocs > 0;
+      assert stats.docFreq > 0;
       //System.out.println("finishTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " fp="  + out.getFilePointer());
 
-      final boolean isIndexTerm = fieldIndexWriter.checkIndexTerm(text, numDocs);
+      final boolean isIndexTerm = fieldIndexWriter.checkIndexTerm(text, stats);
 
       termWriter.write(text);
       final int highBit = isIndexTerm ? 0x80 : 0;
@@ -182,23 +193,28 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
 
       // This is a vInt, except, we steal top bit to record
       // whether this was an indexed term:
-      if ((numDocs & ~0x3F) == 0) {
+      if ((stats.docFreq & ~0x3F) == 0) {
         // Fast case -- docFreq fits in 6 bits
-        out.writeByte((byte) (highBit | numDocs));
+        out.writeByte((byte) (highBit | stats.docFreq));
       } else {
         // Write bottom 6 bits of docFreq, then write the
         // remainder as vInt:
-        out.writeByte((byte) (highBit | 0x40 | (numDocs & 0x3F)));
-        out.writeVInt(numDocs >>> 6);
+        out.writeByte((byte) (highBit | 0x40 | (stats.docFreq & 0x3F)));
+        out.writeVInt(stats.docFreq >>> 6);
       }
-      postingsWriter.finishTerm(numDocs, isIndexTerm);
+      if (!fieldInfo.omitTermFreqAndPositions) {
+        assert stats.totalTermFreq >= stats.docFreq;
+        out.writeVLong(stats.totalTermFreq - stats.docFreq);
+      }
+      postingsWriter.finishTerm(stats, isIndexTerm);
       numTerms++;
     }
 
     // Finishes all terms in this field
     @Override
-    public void finish() throws IOException {
+    public void finish(long sumTotalTermFreq) throws IOException {
       // EOF marker:
+      this.sumTotalTermFreq = sumTotalTermFreq;
       out.writeVInt(DeltaBytesWriter.TERM_EOF);
       fieldIndexWriter.finish();
     }

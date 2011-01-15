@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
@@ -177,7 +178,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(int docCount, boolean isIndexTerm) throws IOException {
+  public void finishTerm(TermStats stats, boolean isIndexTerm) throws IOException {
     //System.out.println("PW   finishTerm docCount=" + docCount);
 
     assert pendingCount > 0 || pendingCount == -1;
@@ -186,7 +187,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
     if (pendingCount == -1) {
       termsOut.writeByte((byte) 0);
-      wrappedPostingsWriter.finishTerm(docCount, pendingIsIndexTerm);
+      wrappedPostingsWriter.finishTerm(stats, pendingIsIndexTerm);
       pendingIsIndexTerm = false;
     } else {
 

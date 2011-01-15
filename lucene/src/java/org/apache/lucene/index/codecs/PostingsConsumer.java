@@ -55,9 +55,10 @@ public abstract class PostingsConsumer {
 
   /** Default merge impl: append documents, mapping around
    *  deletes */
-  public int merge(final MergeState mergeState, final DocsEnum postings) throws IOException {
+  public TermStats merge(final MergeState mergeState, final DocsEnum postings) throws IOException {
 
     int df = 0;
+    long totTF = 0;
 
     if (mergeState.fieldInfo.omitTermFreqAndPositions) {
       while(true) {
@@ -68,6 +69,7 @@ public abstract class PostingsConsumer {
         this.startDoc(doc, postings.freq());
         this.finishDoc();
         df++;
+        totTF++;
       }
     } else {
       final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
@@ -78,6 +80,7 @@ public abstract class PostingsConsumer {
         }
         final int freq = postingsEnum.freq();
         this.startDoc(doc, freq);
+        totTF += freq;
         for(int i=0;i<freq;i++) {
           final int position = postingsEnum.nextPosition();
           final BytesRef payload;
@@ -92,6 +95,6 @@ public abstract class PostingsConsumer {
         df++;
       }
     }
-    return df;
+    return new TermStats(df, totTF);
   }
 }

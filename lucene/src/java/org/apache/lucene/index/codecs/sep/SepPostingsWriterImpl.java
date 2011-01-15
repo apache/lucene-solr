@@ -25,6 +25,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -239,11 +240,11 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(int docCount, boolean isIndexTerm) throws IOException {
+  public void finishTerm(TermStats stats, boolean isIndexTerm) throws IOException {
 
     // TODO: -- wasteful we are counting this in two places?
-    assert docCount > 0;
-    assert docCount == df;
+    assert stats.docFreq > 0;
+    assert stats.docFreq == df;
 
     docIndex.write(termsOut, isIndexTerm);
 
