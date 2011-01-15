@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.SortedSet;
-
+import org.junit.Assume;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1877,10 +1877,15 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader r = writer.getReader();
     writer.close();
     Terms terms = MultiFields.getTerms(r, "f");
-    assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
-    assertEquals(2, terms.totalTermFreq(new BytesRef("a")));
-    assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
-    r.close();
-    dir.close();
+    try {
+      // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(terms.totalTermFreq(new BytesRef("b")) != -1);
+      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+      assertEquals(2, terms.totalTermFreq(new BytesRef("a")));
+      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+    } finally {
+      r.close();
+      dir.close();
+    }
   }
 }
