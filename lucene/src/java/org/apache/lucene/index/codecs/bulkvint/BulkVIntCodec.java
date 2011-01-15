@@ -33,14 +33,14 @@ import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
 import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
+import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
+import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.BytesRef;
@@ -140,7 +140,7 @@ public class BulkVIntCodec extends Codec {
     boolean success = false;
     TermsIndexWriterBase indexWriter;
     try {
-      indexWriter = new FixedGapTermsIndexWriter(state);
+      indexWriter = new VariableGapTermsIndexWriter(state, new VariableGapTermsIndexWriter.EveryNTermSelector(state.termIndexInterval));
       success = true;
     } finally {
       if (!success) {
@@ -174,11 +174,11 @@ public class BulkVIntCodec extends Codec {
     TermsIndexReaderBase indexReader;
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.dir,
-                                                       state.fieldInfos,
-                                                       state.segmentInfo.name,
-                                                       state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator(), state.codecId);
+      indexReader = new VariableGapTermsIndexReader(state.dir,
+                                                    state.fieldInfos,
+                                                    state.segmentInfo.name,
+                                                    state.termsIndexDivisor,
+                                                    state.codecId);
       success = true;
     } finally {
       if (!success) {
@@ -214,13 +214,13 @@ public class BulkVIntCodec extends Codec {
   public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
     PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
+    VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     SepPostingsWriterImpl.getExtensions(extensions);
     PrefixCodedTermsReader.getExtensions(extensions);
-    FixedGapTermsIndexReader.getIndexExtensions(extensions);
+    VariableGapTermsIndexReader.getIndexExtensions(extensions);
   }
 }
