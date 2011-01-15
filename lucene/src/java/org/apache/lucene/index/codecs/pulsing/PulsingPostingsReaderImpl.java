@@ -54,6 +54,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   public void init(IndexInput termsIn) throws IOException {
     CodecUtil.checkHeader(termsIn, PulsingPostingsWriterImpl.CODEC,
       PulsingPostingsWriterImpl.VERSION_START, PulsingPostingsWriterImpl.VERSION_START);
+    maxPositions = termsIn.readVInt();
     wrappedPostingsReader.init(termsIn);
   }
 
@@ -115,8 +116,10 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     termState.pendingIndexTerm |= isIndexTerm;
 
-    // TODO: wasteful to use whole byte for this (need just a 1 bit);
-    if (termsIn.readByte() == 1) {
+    // total TF, but in the omitTFAP case its computed based on docFreq.
+    long count = fieldInfo.omitTermFreqAndPositions ? termState.docFreq : termState.totalTermFreq;
+    
+    if (count <= maxPositions) {
 
       // Inlined into terms dict -- just read the byte[] blob in,
       // but don't decode it now (we only decode when a DocsEnum

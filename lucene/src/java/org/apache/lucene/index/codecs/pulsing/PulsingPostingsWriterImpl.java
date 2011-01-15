@@ -27,10 +27,10 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-// TODO: we now pulse entirely according to docFreq of the
-// term; it might be better to eg pulse by "net bytes used"
-// so that a term that has only 1 doc but zillions of
-// positions would not be inlined.  Though this is
+// TODO: we pulse based on total TF of the term,
+// it might be better to eg pulse by "net bytes used"
+// so that a term that has only 1 posting but a huge
+// payload would not be inlined.  Though this is
 // presumably rare in practice...
 
 /** @lucene.experimental */
@@ -86,6 +86,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   public void start(IndexOutput termsOut) throws IOException {
     this.termsOut = termsOut;
     CodecUtil.writeHeader(termsOut, CODEC, VERSION_CURRENT);
+    termsOut.writeVInt(pending.length); // encode maxPositions in header
     wrappedPostingsWriter.start(termsOut);
   }
 
@@ -186,7 +187,6 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
     pendingIsIndexTerm |= isIndexTerm;
 
     if (pendingCount == -1) {
-      termsOut.writeByte((byte) 0);
       wrappedPostingsWriter.finishTerm(stats, pendingIsIndexTerm);
       pendingIsIndexTerm = false;
     } else {
@@ -194,8 +194,6 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       // There were few enough total occurrences for this
       // term, so we fully inline our postings data into
       // terms dict, now:
-
-      termsOut.writeByte((byte) 1);
 
       // TODO: it'd be better to share this encoding logic
       // in some inner codec that knows how to write a
