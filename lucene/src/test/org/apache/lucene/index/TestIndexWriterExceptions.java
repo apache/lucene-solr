@@ -245,7 +245,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
     dir.close();
   }
-  
+
   // LUCENE-1198
   private static final class MockIndexWriter2 extends IndexWriter {
 
@@ -257,12 +257,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     boolean testPoint(String name) {
-      if (doFail && name.equals("DocumentsWriter.ThreadState.init start"))
+      if (doFail && name.equals("DocumentsWriterPerThread addDocument start"))
         throw new RuntimeException("intentionally failing");
       return true;
     }
   }
-  
+
   private class CrashingFilter extends TokenFilter {
     String fieldName;
     int count;
@@ -334,7 +334,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     dir.close();
-  }    
+  }
 
   private static final class MockIndexWriter3 extends IndexWriter {
 
@@ -354,7 +354,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       return true;
     }
   }
-  
+
 
   // LUCENE-1210
   public void testExceptionOnMergeInit() throws IOException {
@@ -379,7 +379,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     w.close();
     dir.close();
   }
-  
+
   // LUCENE-1072
   public void testExceptionFromTokenStream() throws IOException {
     Directory dir = newDirectory();
@@ -470,9 +470,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         boolean sawAppend = false;
         boolean sawFlush = false;
         for (int i = 0; i < trace.length; i++) {
-          if ("org.apache.lucene.index.FreqProxTermsWriter".equals(trace[i].getClassName()) && "appendPostings".equals(trace[i].getMethodName()))
+          if ("org.apache.lucene.index.FreqProxTermsWriterPerField".equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName()))
             sawAppend = true;
-          if ("doFlush".equals(trace[i].getMethodName()))
+          if ("flush".equals(trace[i].getMethodName()))
             sawFlush = true;
         }
 
@@ -680,7 +680,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
         for(int t=0;t<NUM_THREAD;t++)
           threads[t].join();
-            
+
         writer.close();
       }
 
@@ -727,7 +727,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       dir.close();
     }
   }
-  
+
   // Throws IOException during MockDirectoryWrapper.sync
   private static class FailOnlyInSync extends MockDirectoryWrapper.Failure {
     boolean didFail;
@@ -744,7 +744,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
     }
   }
-  
+
   // TODO: these are also in TestIndexWriter... add a simple doc-writing method
   // like this to LuceneTestCase?
   private void addDoc(IndexWriter writer) throws IOException
@@ -753,7 +753,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
   }
-  
+
   // LUCENE-1044: test exception during sync
   public void testExceptionDuringSync() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
@@ -790,7 +790,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   private static class FailOnlyInCommit extends MockDirectoryWrapper.Failure {
 
     boolean fail1, fail2;
@@ -818,7 +818,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
     }
   }
-  
+
   // LUCENE-1214
   public void testExceptionsDuringCommit() throws Throwable {
     MockDirectoryWrapper dir = newDirectory();
@@ -841,7 +841,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     w.rollback();
     dir.close();
   }
-  
+
   public void testOptimizeExceptions() throws IOException {
     Directory startDir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2);
@@ -873,7 +873,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
     startDir.close();
   }
-  
+
   // LUCENE-1429
   public void testOutOfMemoryErrorCausesCloseToFail() throws Exception {
 
@@ -902,7 +902,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
+
   // LUCENE-1347
   private static final class MockIndexWriter4 extends IndexWriter {
 
@@ -919,7 +919,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       return true;
     }
   }
-  
+
   // LUCENE-1347
   public void testRollbackExceptionHang() throws Throwable {
     Directory dir = newDirectory();
@@ -933,12 +933,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     } catch (RuntimeException re) {
       // expected
     }
-    
+
     w.doFail = false;
     w.rollback();
     dir.close();
   }
-  
+
   // LUCENE-1044: Simulate checksum error in segments_N
   public void testSegmentsChecksumError() throws IOException {
     Directory dir = newDirectory();
@@ -977,7 +977,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   // Simulate a corrupt index by removing last byte of
   // latest segments file and make sure we get an
   // IOException trying to open the index:
@@ -1024,7 +1024,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       dir.close();
   }
-  
+
   // Simulate a corrupt index by removing one of the cfs
   // files and make sure we get an IOException trying to
   // open the index:
@@ -1073,7 +1073,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       dir.close();
   }
-  
+
   // Simulate a writer that crashed while writing segments
   // file: make sure we can still open the index (ie,
   // gracefully fallback to the previous segments file),

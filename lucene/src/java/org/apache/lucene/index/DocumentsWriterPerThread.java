@@ -81,7 +81,7 @@ public class DocumentsWriterPerThread {
   };
 
   // Deletes for our still-in-RAM (to be flushed next) segment
-  private SegmentDeletes pendingDeletes = new SegmentDeletes();
+  SegmentDeletes pendingDeletes = new SegmentDeletes();
 
   static class DocState {
     final DocumentsWriterPerThread docWriter;
@@ -170,6 +170,7 @@ public class DocumentsWriterPerThread {
   }
 
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
+    assert writer.testPoint("DocumentsWriterPerThread addDocument start");
     docState.doc = doc;
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
@@ -206,35 +207,9 @@ public class DocumentsWriterPerThread {
     }
   }
 
-  void pushDeletes(SegmentInfo newSegment, SegmentInfos segmentInfos) {
-    // Lock order: DW -> BD
-    if (pendingDeletes.any()) {
-      if (newSegment != null) {
-        if (infoStream != null) {
-          message("flush: push buffered deletes to newSegment");
-        }
-        parent.bufferedDeletes.pushDeletes(pendingDeletes, newSegment);
-      } else if (segmentInfos.size() > 0) {
-        if (infoStream != null) {
-          message("flush: push buffered deletes to previously flushed segment " + segmentInfos.lastElement());
-        }
-        parent.bufferedDeletes.pushDeletes(pendingDeletes, segmentInfos.lastElement(), true);
-      } else {
-        if (infoStream != null) {
-          message("flush: drop buffered deletes: no segments");
-        }
-        // We can safely discard these deletes: since
-        // there are no segments, the deletions cannot
-        // affect anything.
-      }
-      pendingDeletes = new SegmentDeletes();
-    }
-  }
-
-
   // Buffer a specific docID for deletion.  Currently only
   // used when we hit a exception when adding a document
-  synchronized void deleteDocID(int docIDUpto) {
+  void deleteDocID(int docIDUpto) {
     pendingDeletes.addDocID(docIDUpto);
     // NOTE: we do not trigger flush here.  This is
     // potentially a RAM leak, if you have an app that tries
@@ -247,13 +222,13 @@ public class DocumentsWriterPerThread {
     // confounding exception).
   }
 
-  synchronized void deleteQueries(Query... queries) {
+  void deleteQueries(Query... queries) {
     for (Query query : queries) {
       pendingDeletes.addQuery(query, numDocsInRAM);
     }
   }
 
-  synchronized void deleteQuery(Query query) {
+  void deleteQuery(Query query) {
     pendingDeletes.addQuery(query, numDocsInRAM);
   }
 
@@ -263,7 +238,7 @@ public class DocumentsWriterPerThread {
     }
   }
 
-  synchronized void deleteTerm(Term term) {
+  void deleteTerm(Term term) {
     pendingDeletes.addTerm(term, numDocsInRAM);
   }
 
