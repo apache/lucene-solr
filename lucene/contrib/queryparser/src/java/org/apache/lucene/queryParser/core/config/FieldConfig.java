@@ -17,6 +17,7 @@ package org.apache.lucene.queryParser.core.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.util.StringUtils;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -28,17 +29,28 @@ import org.apache.lucene.util.AttributeSource;
  */
 public class FieldConfig extends AttributeSource {
 
-  private CharSequence fieldName;
+  private String fieldName;
 
   /**
    * Constructs a {@link FieldConfig}
    * 
-   * @param fieldName
-   *          the field name, it cannot be null
-   * @throws IllegalArgumentException
-   *           if the field name is null
+   * @param fieldName the field name, it cannot be null
+   * @throws IllegalArgumentException if the field name is null
+   * 
+   * @deprecated use {@link #FieldConfig(String)} instead
    */
+  @Deprecated
   public FieldConfig(CharSequence fieldName) {
+    this(StringUtils.toString(fieldName));
+  }
+
+  /**
+   * Constructs a {@link FieldConfig}
+   * 
+   * @param fieldName the field name, it cannot be null
+   * @throws IllegalArgumentException if the field name is null
+   */
+  public FieldConfig(String fieldName) {
 
     if (fieldName == null) {
       throw new IllegalArgumentException("field name should not be null!");
@@ -52,14 +64,27 @@ public class FieldConfig extends AttributeSource {
    * Returns the field name this configuration represents.
    * 
    * @return the field name
+   * 
+   * @deprecated use {@link #getField()} instead
    */
+  @Deprecated
   public CharSequence getFieldName() {
     return this.fieldName;
   }
-  
+
+  /**
+   * Returns the field name this configuration represents.
+   * 
+   * @return the field name
+   */
+  public String getField() {
+    return this.fieldName;
+  }
+
   @Override
-  public String toString(){
-    return "<fieldconfig name=\"" + this.fieldName + "\" attributes=\"" + super.toString() + "\"/>";
+  public String toString() {
+    return "<fieldconfig name=\"" + this.fieldName + "\" attributes=\""
+        + super.toString() + "\"/>";
   }
 
 }

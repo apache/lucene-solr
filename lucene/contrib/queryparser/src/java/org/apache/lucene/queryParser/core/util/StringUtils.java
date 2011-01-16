@@ -1,4 +1,4 @@
-package org.apache.lucene.queryParser.spans;
+package org.apache.lucene.queryParser.core.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,27 +17,17 @@ package org.apache.lucene.queryParser.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryParser.core.config.FieldConfig;
-import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+final public class StringUtils {
 
-/**
- * This query config handler only adds the {@link UniqueFieldAttribute} to it.<br/>
- * <br/>
- * 
- * It does not return any configuration for a field in specific.
- */
-public class SpansQueryConfigHandler extends QueryConfigHandler {
-
-  public SpansQueryConfigHandler() {
-    addAttribute(UniqueFieldAttribute.class);
+  public static String toString(Object obj) {
+    
+    if (obj != null) {
+      return obj.toString();
+      
+    } else {
+      return null;
+    }
+    
   }
-
-  @Override
-  public FieldConfig getFieldConfig(String fieldName) {
-
-    // there is no field configuration, always return null
-    return null;
-
-  }
-
+  
 }

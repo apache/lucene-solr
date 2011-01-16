@@ -25,6 +25,7 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.FieldableNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
+import org.apache.lucene.queryParser.core.util.StringUtils;
 import org.apache.lucene.queryParser.standard.parser.EscapeQuerySyntaxImpl;
 
 /**
@@ -76,7 +77,7 @@ public class QueryTreeBuilder implements QueryBuilder {
    * @param fieldName the field name
    * @param builder the builder to be associated
    */
-  public void setBuilder(CharSequence fieldName, QueryBuilder builder) {
+  public void setBuilder(String fieldName, QueryBuilder builder) {
 
     if (this.fieldNameBuilders == null) {
       this.fieldNameBuilders = new HashMap<String, QueryBuilder>();
@@ -84,7 +85,19 @@ public class QueryTreeBuilder implements QueryBuilder {
 
     this.fieldNameBuilders.put(fieldName.toString(), builder);
 
+  }
 
+  /**
+   * Associates a field name with a builder.
+   * 
+   * @param fieldName the field name
+   * @param builder the builder to be associated
+   * 
+   * @deprecated use {@link #setBuilder(String, QueryBuilder)} instead
+   */
+  @Deprecated
+  public void setBuilder(CharSequence fieldName, QueryBuilder builder) {
+    setBuilder(StringUtils.toString(fieldName), builder);
   }
 
   /**
@@ -132,14 +145,8 @@ public class QueryTreeBuilder implements QueryBuilder {
     QueryBuilder builder = null;
 
     if (this.fieldNameBuilders != null && node instanceof FieldableNode) {
-      CharSequence field = ((FieldableNode) node).getField();
-
-      if (field != null) {
-        field = field.toString();
-      }
-
-      builder = this.fieldNameBuilders.get(field);
-
+      builder = this.fieldNameBuilders.get(StringUtils
+          .toString(((FieldableNode) node).getField()));
     }
 
     if (builder == null && this.queryNodeBuilders != null) {

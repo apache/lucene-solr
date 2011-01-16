@@ -43,12 +43,27 @@ public interface QueryNode extends Serializable {
   public boolean isLeaf();
 
   /** verify if a node contains a tag */
+  public boolean containsTag(String tagName);
+  
+  /** verify if a node contains a tag 
+   * @deprecated use {@link #containsTag(String)} instead
+   */
+  @Deprecated
   public boolean containsTag(CharSequence tagName);
 
   /**
    * @param tagName
    * @return of stored on under that tag name
    */
+  public Object getTag(String tagName);
+  
+  /**
+   * @param tagName
+   * @return of stored on under that tag name
+   * 
+   * @deprecated use {@link #getTag(String)} instead
+   */
+  @Deprecated
   public Object getTag(CharSequence tagName);
 
   public QueryNode getParent();
@@ -81,6 +96,19 @@ public interface QueryNode extends Serializable {
    * @param tagName
    * @param value
    */
+  public void setTag(String tagName, Object value);
+  
+  /**
+   * Associate the specified value with the specified tagName. If the tagName
+   * already exists, the old value is replaced. The tagName and value cannot be
+   * null. tagName will be converted to lowercase.
+   * 
+   * @param tagName
+   * @param value
+   * 
+   * @deprecated use {@link #setTag(String, Object)} instead
+   */
+  @Deprecated
   public void setTag(CharSequence tagName, Object value);
 
   /**
@@ -88,8 +116,32 @@ public interface QueryNode extends Serializable {
    * 
    * @param tagName
    */
+  public void unsetTag(String tagName);
+  
+  /**
+   * Unset a tag. tagName will be converted to lowercase.
+   * 
+   * @param tagName
+   * 
+   * @deprecated use {@link #unsetTag(String)} instead
+   */
+  @Deprecated
   public void unsetTag(CharSequence tagName);
 
+  /**
+   * Returns a map containing all tags attached to this query node. 
+   * 
+   * @return a map containing all tags attached to this query node
+   * 
+   * @deprecated use {@link #getTagMap()}
+   */
   public Map<CharSequence, Object> getTags();
+  
+  /**
+   * Returns a map containing all tags attached to this query node. 
+   * 
+   * @return a map containing all tags attached to this query node
+   */
+  public Map<String, Object> getTagMap();
 
 }

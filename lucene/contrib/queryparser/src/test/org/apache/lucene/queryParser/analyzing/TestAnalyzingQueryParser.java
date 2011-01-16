@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * @version $Revision$, $Date$
@@ -112,7 +113,7 @@ final class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-    result = new StandardFilter(result);
+    result = new StandardFilter(Version.LUCENE_31, result);
     result = new ASCIIFoldingFilter(result);
     result = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, result);
     return result;

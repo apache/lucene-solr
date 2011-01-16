@@ -20,6 +20,7 @@ package org.apache.lucene.queryParser.core.config;
 import java.util.LinkedList;
 
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessor;
+import org.apache.lucene.queryParser.core.util.StringUtils;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -59,8 +60,29 @@ public abstract class QueryConfigHandler extends AttributeSource {
    * @return a {@link FieldConfig} object containing the field name
    *         configuration or <code>null</code>, if the implemented
    *         {@link QueryConfigHandler} has no configuration for that field
+   *         
+   * @deprecated use {@link #getFieldConfig(String)} instead
+   * 
    */
+  @Deprecated
   public FieldConfig getFieldConfig(CharSequence fieldName) {
+    return getFieldConfig(StringUtils.toString(fieldName));
+  }
+  
+  /**
+   * Returns an implementation of
+   * {@link FieldConfig} for a specific field name. If the implemented
+   * {@link QueryConfigHandler} does not know a specific field name, it may
+   * return <code>null</code>, indicating there is no configuration for that
+   * field.
+   * 
+   * @param fieldName
+   *          the field name
+   * @return a {@link FieldConfig} object containing the field name
+   *         configuration or <code>null</code>, if the implemented
+   *         {@link QueryConfigHandler} has no configuration for that field
+   */
+  public FieldConfig getFieldConfig(String fieldName) {
     FieldConfig fieldConfig = new FieldConfig(fieldName);
 
     for (FieldConfigListener listener : this.listeners) {

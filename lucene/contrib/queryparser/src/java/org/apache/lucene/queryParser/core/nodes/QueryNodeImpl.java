@@ -18,6 +18,7 @@ package org.apache.lucene.queryParser.core.nodes;
  */
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.ResourceBundle;
 
 import org.apache.lucene.messages.NLS;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
+import org.apache.lucene.queryParser.core.util.StringUtils;
 
 /**
  * A {@link QueryNodeImpl} is the default implementation of the interface
@@ -40,7 +42,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   private boolean isLeaf = true;
 
-  private Hashtable<CharSequence, Object> tags = new Hashtable<CharSequence, Object>();
+  private Hashtable<String, Object> tags = new Hashtable<String, Object>();
 
   private List<QueryNode> clauses = null;
 
@@ -117,7 +119,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     clone.isLeaf = this.isLeaf;
 
     // Reset all tags
-    clone.tags = new Hashtable<CharSequence, Object>();
+    clone.tags = new Hashtable<String, Object>();
 
     // copy children
     if (this.clauses != null) {
@@ -151,19 +153,53 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     return this.clauses;
   }
 
+  /**
+   * @deprecated use {@link #setTag(String, Object)} instead
+   */
+  @Deprecated
   public void setTag(CharSequence tagName, Object value) {
     this.tags.put(tagName.toString().toLowerCase(), value);
   }
 
+  public void setTag(String tagName, Object value) {
+    this.tags.put(tagName.toLowerCase(), value);
+  }
+
+  public void unsetTag(String tagName) {
+    this.tags.remove(tagName.toLowerCase());
+  }
+
+  /**
+   * @deprecated use {@link #unsetTag(String)}
+   */
+  @Deprecated
   public void unsetTag(CharSequence tagName) {
     this.tags.remove(tagName.toString().toLowerCase());
   }
 
+  /**
+   * verify if a node contains a tag
+   * 
+   * @deprecated use {@link #containsTag(String)} instead
+   */
   public boolean containsTag(CharSequence tagName) {
     return this.tags.containsKey(tagName.toString().toLowerCase());
   }
 
+  /** verify if a node contains a tag */
+  public boolean containsTag(String tagName) {
+    return this.tags.containsKey(tagName);
+  }
+
+  /**
+   * @deprecated use {@link #getTag(String)} instead
+   */
+  @Deprecated
   public Object getTag(CharSequence tagName) {
+    return this.tags.get(tagName.toString().toLowerCase());
+  }
+
+  public Object getTag(String tagName) {
     return this.tags.get(tagName.toString().toLowerCase());
   }
 
@@ -189,16 +225,20 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   /**
    * This method is use toQueryString to detect if fld is the default field
    * 
-   * @param fld
-   *          - field name
+   * @param fld - field name
    * @return true if fld is the default field
    */
+  // TODO: remove this method, it's commonly used by {@link
+  // #toQueryString(org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax)}
+  // to figure out what is the default field, however, {@link
+  // #toQueryString(org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax)}
+  // should receive the default field value directly by parameter
   protected boolean isDefaultField(CharSequence fld) {
     if (this.toQueryStringIgnoreFields)
       return true;
     if (fld == null)
       return true;
-    if (QueryNodeImpl.PLAINTEXT_FIELD_NAME.equals(fld.toString()))
+    if (QueryNodeImpl.PLAINTEXT_FIELD_NAME.equals(StringUtils.toString(fld)))
       return true;
     return false;
   }
@@ -216,12 +256,35 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   }
 
   /**
-   * @see org.apache.lucene.queryParser.core.nodes.QueryNode#getTag(CharSequence)
+   * @see org.apache.lucene.queryParser.core.nodes.QueryNode#getTag(String)
    * @return a Map with all tags for this QueryNode
+   * 
+   * @deprecated use {@link #getTagMap()} instead
    */
   @SuppressWarnings( { "unchecked" })
+  @Deprecated
   public Map<CharSequence, Object> getTags() {
-    return (Map<CharSequence, Object>) this.tags.clone();
+    Map<String, Object> map = (Map<String, Object>) this.tags.clone();
+    Map<CharSequence, Object> charSeqMap = new HashMap<CharSequence, Object>();
+
+    for (String key : map.keySet()) {
+      Object obj = map.get(key);
+      charSeqMap.put(key, obj);
+
+    }
+
+    return charSeqMap;
+
+  }
+
+  /**
+   * Returns a map containing all tags attached to this query node.
+   * 
+   * @return a map containing all tags attached to this query node
+   */
+  @SuppressWarnings("unchecked")
+  public Map<String, Object> getTagMap() {
+    return (Map<String, Object>) this.tags.clone();
   }
 
 } // end class QueryNodeImpl
