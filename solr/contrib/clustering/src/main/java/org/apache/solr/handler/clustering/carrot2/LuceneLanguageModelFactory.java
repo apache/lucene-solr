@@ -200,7 +200,7 @@ public class LuceneLanguageModelFactory extends DefaultLanguageModelFactory {
 				logger
 						.warn(
 								"Could not instantiate Lucene stemmer for Arabic, clustering quality "
-										+ "of Chinese content may be degraded. For best quality clusters, "
+										+ "of Arabic content may be degraded. For best quality clusters, "
 										+ "make sure Lucene's Arabic analyzer JAR is in the classpath",
 								e);
 			}
