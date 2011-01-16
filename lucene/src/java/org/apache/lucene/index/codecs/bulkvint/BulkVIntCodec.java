@@ -18,6 +18,7 @@ package org.apache.lucene.index.codecs.bulkvint;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfo;
@@ -83,6 +84,10 @@ public class BulkVIntCodec extends Codec {
             
             public void readBlock() throws IOException {
               final int numBytes = in.readVInt(); // read header
+              if (numBytes == 0) { // 1's
+                Arrays.fill(buffer, 1);
+                return;
+              }
               in.readBytes(bytes, 0, numBytes); // readBytes
               
               int upto = 0;
@@ -113,21 +118,30 @@ public class BulkVIntCodec extends Codec {
         protected void flushBlock() throws IOException {
           int upto = 0;
           
+          boolean allOnes = true;
           // encode ints
           for(int i=0;i<buffer.length;i++) {
             int j = buffer[i];
+            if (j != 1)
+              allOnes = false;
             while ((j & ~0x7F) != 0) {
               bytes[upto++] = (byte)((j & 0x7f) | 0x80);
               j >>>= 7;
             }
             bytes[upto++] = (byte)j;
           }
-              
-          // write header (length in bytes)
-          out.writeVInt(upto);
           
-          // write block
-          out.writeBytes(bytes, 0, upto);
+          if (allOnes) {
+            // the most common int pattern (all 1's)
+            // write a special header (numBytes=0) for this case.
+            out.writeVInt(0);
+          } else {
+            // write header (length in bytes)
+            out.writeVInt(upto);
+          
+            // write block
+            out.writeBytes(bytes, 0, upto);
+          }
         }
       };
     }
