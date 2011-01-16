@@ -59,9 +59,6 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
     public OneComparatorFieldValueHitQueue(SortField[] fields, int size)
         throws IOException {
       super(fields);
-      if (fields.length == 0) {
-        throw new IllegalArgumentException("Sort must contain at least one field");
-      }
 
       SortField field = fields[0];
       comparator = field.getComparator(size, 0);
