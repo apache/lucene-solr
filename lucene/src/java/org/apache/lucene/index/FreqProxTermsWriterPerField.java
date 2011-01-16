@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -130,6 +131,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       postings.docFreqs[termID] = 1;
       writeProx(termID, fieldState.position);
     }
+    fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
   }
 
   @Override
@@ -163,11 +165,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           termsHashPerField.writeVInt(0, postings.docFreqs[termID]);
         }
         postings.docFreqs[termID] = 1;
+        fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
         postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
         postings.lastDocIDs[termID] = docState.docID;
         writeProx(termID, fieldState.position);
       } else {
-        postings.docFreqs[termID]++;
+        fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.docFreqs[termID]);
         writeProx(termID, fieldState.position-postings.lastPositions[termID]);
       }
     }
@@ -237,7 +240,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final ByteSliceReader freq = new ByteSliceReader();
     final ByteSliceReader prox = new ByteSliceReader();
 
-
+    long sumTotalTermFreq = 0;
     for (int i = 0; i < numTerms; i++) {
       final int termID = termIDs[i];
       // Get BytesRef
@@ -261,6 +264,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       // which all share the same term.  Now we must
       // interleave the docID streams.
       int numDocs = 0;
+      long totTF = 0;
       int docID = 0;
       int termFreq = 0;
 
@@ -305,6 +309,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           // omitTermFreqAndPositions == false so we do write positions &
           // payload
           int position = 0;
+          totTF += termDocFreq;
           for(int j=0;j<termDocFreq;j++) {
             final int code = prox.readVInt();
             position += code >> 1;
@@ -338,10 +343,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           postingsConsumer.finishDoc();
         }
       }
-      termsConsumer.finishTerm(text, numDocs);
+      termsConsumer.finishTerm(text, new TermStats(numDocs, totTF));
+      sumTotalTermFreq += totTF;
     }
 
-    termsConsumer.finish();
+    termsConsumer.finish(sumTotalTermFreq);
   }
 
 }

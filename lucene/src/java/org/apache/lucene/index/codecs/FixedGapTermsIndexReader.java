@@ -132,7 +132,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   private class IndexEnum extends FieldIndexEnum {
     private final FieldIndexData.CoreFieldIndex fieldIndex;
     private final BytesRef term = new BytesRef();
-    private final BytesRef nextTerm = new BytesRef();
     private long ord;
 
     public IndexEnum(FieldIndexData.CoreFieldIndex fieldIndex) {
@@ -192,7 +191,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
       final long offset = fieldIndex.termOffsets.get(idx);
       final int length = (int) (fieldIndex.termOffsets.get(1+idx) - offset);
-      termBytesReader.fillSlice(nextTerm, fieldIndex.termBytesStart + offset, length);
+      termBytesReader.fillSlice(term, fieldIndex.termBytesStart + offset, length);
       return fieldIndex.termsStart + fieldIndex.termsDictOffsets.get(idx);
     }
 

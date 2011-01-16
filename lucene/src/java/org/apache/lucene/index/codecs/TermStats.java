@@ -1,4 +1,4 @@
-package org.apache.lucene.misc;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,33 +17,12 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
+public class TermStats {
+  public final int docFreq;
+  public final long totalTermFreq;
 
-public final class TermStats {
-  public BytesRef termtext;
-  public String field;
-  public int docFreq;
-  public long totalTermFreq;
-  
-  TermStats(String field, BytesRef termtext, int df) {
-    this.termtext = new BytesRef(termtext);
-    this.field = field;
-    this.docFreq = df;
-  }
-  
-  TermStats(String field, BytesRef termtext, int df, long tf) {
-    this.termtext = new BytesRef(termtext);
-    this.field = field;
-    this.docFreq = df;
-    this.totalTermFreq = tf;
-  }
-  
-  String getTermText() {
-    return termtext.utf8ToString();
-  }
-
-  @Override
-  public String toString() {
-    return("TermStats: term=" + termtext.utf8ToString() + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq);
+  public TermStats(int docFreq, long totalTermFreq) {
+    this.docFreq = docFreq;
+    this.totalTermFreq = totalTermFreq;
   }
 }

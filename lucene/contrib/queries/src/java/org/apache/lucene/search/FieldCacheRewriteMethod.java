@@ -123,7 +123,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         public TermsEnum iterator() throws IOException {
           return fcsi.getTermsEnum();
         }
-        
+
+        @Override
+        public long getSumTotalTermFreq() {
+          return -1;
+        }
       });
       
       assert termsEnum != null;

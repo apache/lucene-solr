@@ -59,7 +59,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   public static abstract class IndexTermSelector {
     // Called sequentially on every term being written,
     // returning true if this term should be indexed
-    public abstract boolean isIndexTerm(BytesRef term, int docFreq);
+    public abstract boolean isIndexTerm(BytesRef term, TermStats stats);
   }
 
   /** Same policy as {@link FixedGapTermsIndexWriter} */
@@ -74,7 +74,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     }
 
     @Override
-    public boolean isIndexTerm(BytesRef term, int docFreq) {
+    public boolean isIndexTerm(BytesRef term, TermStats stats) {
       if (count >= interval) {
         count = 0;
         return true;
@@ -99,8 +99,8 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     }
 
     @Override
-    public boolean isIndexTerm(BytesRef term, int docFreq) {
-      if (docFreq >= docFreqThresh || count >= interval) {
+    public boolean isIndexTerm(BytesRef term, TermStats stats) {
+      if (stats.docFreq >= docFreqThresh || count >= interval) {
         count = 0;
         return true;
       } else {
@@ -214,8 +214,8 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     }
 
     @Override
-    public boolean checkIndexTerm(BytesRef text, int docFreq) throws IOException {
-      if (policy.isIndexTerm(text, docFreq) || first) {
+    public boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException {
+      if (policy.isIndexTerm(text, stats) || first) {
         first = false;
         //System.out.println("VGW: index term=" + text.utf8ToString() + " fp=" + termsOut.getFilePointer());
         final int lengthSave = text.length;

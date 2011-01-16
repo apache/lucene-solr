@@ -57,6 +57,18 @@ public abstract class Terms {
     }
   }
 
+  /** Returns the number of documents containing the
+   *  specified term text.  Returns 0 if the term does not
+   *  exist. */
+  public long totalTermFreq(BytesRef text) throws IOException {
+    final TermsEnum termsEnum = getThreadTermsEnum();
+    if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+      return termsEnum.totalTermFreq();
+    } else {
+      return 0;
+    }
+  }
+
   /** Get {@link DocsEnum} for the specified term.  This
    *  method may return null if the term does not exist. */
   public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
@@ -114,6 +126,14 @@ public abstract class Terms {
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
   }
+
+  /** Returns the sum of {@link TermsEnum#totalTermFreq} for
+   *  all terms in this field, or -1 if this measure isn't
+   *  stored by the codec (or if this fields omits term freq
+   *  and positions).  Note that, just like other term
+   *  measures, this measure does not take deleted documents
+   *  into account. */
+  public abstract long getSumTotalTermFreq() throws IOException;
 
   /**
    * Returns a thread-private {@link TermsEnum} instance. Obtaining

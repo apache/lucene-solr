@@ -315,6 +315,7 @@ public class InstantiatedIndexWriter implements Closeable {
           }
           associatedDocuments[associatedDocuments.length - 1] = info;          
           term.setAssociatedDocuments(associatedDocuments);
+          term.addPositionsCount(positions.length);
 
           // todo optimize, only if term vector?
           informationByTermOfCurrentDocument.put(term, info);

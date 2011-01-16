@@ -997,6 +997,23 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return terms.docFreq(term);
   }
 
+  /** Returns the number of documents containing the term
+   * <code>t</code>.  This method returns 0 if the term or
+   * field does not exists.  This method does not take into
+   * account deleted documents that have not yet been merged
+   * away. */
+  public long totalTermFreq(String field, BytesRef term) throws IOException {
+    final Fields fields = fields();
+    if (fields == null) {
+      return 0;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms == null) {
+      return 0;
+    }
+    return terms.totalTermFreq(term);
+  }
+
   /** This may return null if the field does not exist.*/
   public Terms terms(String field) throws IOException {
     final Fields fields = fields();

@@ -125,7 +125,15 @@ public abstract class TermsEnum {
    *  first time, after next() returns null or seek returns
    *  {@link SeekStatus#END}.*/
   public abstract int docFreq();
-  
+
+  /** Returns the total number of occurrences of this term
+   *  across all documents (the sum of the freq() for each
+   *  doc that has this term).  This will be -1 if the
+   *  codec doesn't support this measure.  Note that, like
+   *  other term measures, this measure does not take
+   *  deleted documents into account. */
+  public abstract long totalTermFreq();
+
   /** Get {@link DocsEnum} for the current term.  Do not
    *  call this before calling {@link #next} or {@link
    *  #seek} for the first time.  This method will not
@@ -195,6 +203,11 @@ public abstract class TermsEnum {
       
     @Override
     public int docFreq() {
+      throw new IllegalStateException("this method should never be called");
+    }
+
+    @Override
+    public long totalTermFreq() {
       throw new IllegalStateException("this method should never be called");
     }
       

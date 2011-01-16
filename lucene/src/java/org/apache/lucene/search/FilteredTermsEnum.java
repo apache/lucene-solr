@@ -126,6 +126,11 @@ public abstract class FilteredTermsEnum extends TermsEnum {
     return tenum.docFreq();
   }
 
+  @Override
+  public long totalTermFreq() {
+    return tenum.totalTermFreq();
+  }
+
   /** This enum does not support seeking!
    * @throws UnsupportedOperationException
    */

@@ -39,6 +39,7 @@ import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSingleIntFactory;
@@ -66,7 +67,7 @@ public class MockRandomCodec extends Codec {
 
   public MockRandomCodec(Random random) {
     name = "MockRandom";
-    this.seedRandom = random;
+    this.seedRandom = new Random(random.nextLong());
   }
 
   @Override
@@ -148,7 +149,7 @@ public class MockRandomCodec extends Codec {
               final Random rand = new Random(seed2);
 
               @Override
-                public boolean isIndexTerm(BytesRef term, int docFreq) {
+              public boolean isIndexTerm(BytesRef term, TermStats stats) {
                 return random.nextInt(gap) == 17;
               }
             };
