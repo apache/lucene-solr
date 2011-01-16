@@ -370,13 +370,11 @@ final class DocumentsWriter {
       long perThreadRAMUsedBeforeAdd = dwpt.bytesUsed();
       dwpt.addDocument(doc, analyzer);
 
-      synchronized(DocumentsWriter.this) {
-        if (delTerm != null) {
-          deleteTerm(delTerm);
-        }
-        dwpt.commitDocument();
-        numDocsInRAM.incrementAndGet();
+      if (delTerm != null) {
+        deleteTerm(delTerm);
       }
+      dwpt.commitDocument();
+      numDocsInRAM.incrementAndGet();
 
       newSegment = finishAddDocument(dwpt, perThreadRAMUsedBeforeAdd);
       if (newSegment != null) {
@@ -502,19 +500,11 @@ final class DocumentsWriter {
                 "reating compound file for newly flushed segment " + newSegment.name);
           }
 
-          indexWriter.deleter.deleteFile(IndexFileNames.segmentFileName(newSegment.name, "",
-              IndexFileNames.COMPOUND_FILE_EXTENSION));
-          for (String file : newSegment.files()) {
-            indexWriter.deleter.deleteFile(file);
-          }
-
+          indexWriter.deleter.refresh(newSegment.name);
         }
       }
 
-      for (String file : newSegment.files()) {
-        indexWriter.deleter.deleteFile(file);
-      }
-
+      indexWriter.deleter.deleteNewFiles(newSegment.files());
       newSegment.setUseCompoundFile(true);
 
     }

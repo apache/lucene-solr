@@ -112,6 +112,10 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument start");
 
+    if (numVectorFields == 0) {
+      return;
+    }
+
     initTermVectorsWriter();
 
     fill(docState.docID);

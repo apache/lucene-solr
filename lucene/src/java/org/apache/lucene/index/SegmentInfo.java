@@ -409,6 +409,20 @@ public final class SegmentInfo {
   }
 
   @Deprecated
+  public void setDocStoreIsCompoundFile(boolean docStoreIsCompoundFile) {
+    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    clearFiles();
+  }
+
+  @Deprecated
+  void setDocStore(int offset, String segment, boolean isCompoundFile) {
+    docStoreOffset = offset;
+    docStoreSegment = segment;
+    docStoreIsCompoundFile = isCompoundFile;
+    clearFiles();
+  }
+
+  @Deprecated
   public String getDocStoreSegment() {
     return docStoreSegment;
   }

@@ -1396,9 +1396,9 @@ public class IndexWriter implements Closeable {
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean maybeMerge = false;
     try {
       boolean success = false;
+      boolean maybeMerge = false;
       try {
         maybeMerge = docWriter.updateDocument(doc, analyzer, term);
         success = true;
@@ -1406,12 +1406,12 @@ public class IndexWriter implements Closeable {
         if (!success && infoStream != null)
           message("hit exception updating document");
       }
+
+      if (maybeMerge) {
+        maybeMerge();
+      }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateDocument");
-    }
-
-    if (maybeMerge) {
-      maybeMerge();
     }
   }
 
@@ -2186,6 +2186,9 @@ public class IndexWriter implements Closeable {
           }
 
           // Update SI appropriately
+          // if this call is removed in the future we need to make
+          // sure that info.clearFiles() is called here
+          info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
           info.dir = directory;
           info.name = newSegName;
 
@@ -2501,7 +2504,6 @@ public class IndexWriter implements Closeable {
       boolean maybeMerge = docWriter.flushAllThreads(applyAllDeletes);
 
       synchronized(this) {
-
         if (!applyAllDeletes) {
           // If deletes alone are consuming > 1/2 our RAM
           // buffer, force them all to apply now. This is to
@@ -2536,8 +2538,8 @@ public class IndexWriter implements Closeable {
         success = true;
 
         return maybeMerge;
-      }
 
+      }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "doFlush");
       // never hit
@@ -2696,6 +2698,12 @@ public class IndexWriter implements Closeable {
     final int start = ensureContiguousMerge(merge);
 
     commitMergedDeletes(merge, mergedReader);
+
+    // If the doc store we are using has been closed and
+    // is in now compound format (but wasn't when we
+    // started), then we will switch to the compound
+    // format as well:
+    setMergeDocStoreIsCompoundFile(merge);
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
     assert !segmentInfos.contains(merge.info);
@@ -2970,6 +2978,23 @@ public class IndexWriter implements Closeable {
     }
 
     runningMerges.remove(merge);
+  }
+
+  private synchronized void setMergeDocStoreIsCompoundFile(MergePolicy.OneMerge merge) {
+    final String mergeDocStoreSegment = merge.info.getDocStoreSegment();
+    if (mergeDocStoreSegment != null && !merge.info.getDocStoreIsCompoundFile()) {
+      final int size = segmentInfos.size();
+      for(int i=0;i<size;i++) {
+        final SegmentInfo info = segmentInfos.info(i);
+        final String docStoreSegment = info.getDocStoreSegment();
+        if (docStoreSegment != null &&
+            docStoreSegment.equals(mergeDocStoreSegment) &&
+            info.getDocStoreIsCompoundFile()) {
+          merge.info.setDocStoreIsCompoundFile(true);
+          break;
+        }
+      }
+    }
   }
 
   private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
