@@ -18,7 +18,7 @@ $Id$
   This release of C2 also does not have a specific Lucene dependency.  (Stanislaw Osinski, gsingers)
 
 * SOLR-2282: Add distributed search support for search result clustering.
-  (Brad Giaccio, koji)
+  (Brad Giaccio, Dawid Weiss, Stanislaw Osinski, rmuir, koji)
 
 ================== Release 1.4.0 ==================
 

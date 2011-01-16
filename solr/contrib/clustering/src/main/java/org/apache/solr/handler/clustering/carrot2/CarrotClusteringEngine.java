@@ -123,7 +123,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // is included in the code base of Solr, so that it's possible to refactor
     // the Lucene APIs the factory relies on if needed.
     initAttributes.put("PreprocessingPipeline.languageModelFactory",
-      new LuceneLanguageModelFactory());
+      LuceneLanguageModelFactory.class);
     this.controller.init(initAttributes);
 
     this.idFieldName = core.getSchema().getUniqueKeyField().getName();
