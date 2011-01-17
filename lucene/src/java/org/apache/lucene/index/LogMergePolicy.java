@@ -63,6 +63,9 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   protected long minMergeSize;
   protected long maxMergeSize;
+  // Although the core MPs set it explicitly, we must default in case someone
+  // out there wrote his own LMP ...
+  protected long maxMergeSizeForOptimize = Long.MAX_VALUE;
   protected int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
   protected double noCFSRatio = DEFAULT_NO_CFS_RATIO;
@@ -240,9 +243,9 @@ public abstract class LogMergePolicy extends MergePolicy {
     int start = last - 1;
     while (start >= 0) {
       SegmentInfo info = infos.info(start);
-      if (size(info) > maxMergeSize || sizeDocs(info) > maxMergeDocs) {
+      if (size(info) > maxMergeSizeForOptimize || sizeDocs(info) > maxMergeDocs) {
         if (verbose()) {
-          message("optimize: skip segment=" + info + ": size is > maxMergeSize (" + maxMergeSize + ") or sizeDocs is > maxMergeDocs (" + maxMergeDocs + ")");
+          message("optimize: skip segment=" + info + ": size is > maxMergeSize (" + maxMergeSizeForOptimize + ") or sizeDocs is > maxMergeDocs (" + maxMergeDocs + ")");
         }
         // need to skip that segment + add a merge for the 'right' segments,
         // unless there is only 1 which is optimized.
@@ -326,9 +329,12 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
   
   /** Returns the merges necessary to optimize the index.
-   *  This merge policy defines "optimized" to mean only one
-   *  segment in the index, where that segment has no
-   *  deletions pending nor separate norms, and it is in
+   *  This merge policy defines "optimized" to mean only the
+   *  requested number of segments is left in the index, and
+   *  respects the {@link #maxMergeSizeForOptimize} setting.
+   *  By default, and assuming {@code maxNumSegments=1}, only
+   *  one segment will be left in the index, where that segment
+   *  has no deletions pending nor separate norms, and it is in
    *  compound file format if the current useCompoundFile
    *  setting is true.  This method returns multiple merges
    *  (mergeFactor at a time) so the {@link MergeScheduler}
@@ -364,7 +370,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     boolean anyTooLarge = false;
     for (int i = 0; i < last; i++) {
       SegmentInfo info = infos.info(i);
-      if (size(info) > maxMergeSize || sizeDocs(info) > maxMergeDocs) {
+      if (size(info) > maxMergeSizeForOptimize || sizeDocs(info) > maxMergeDocs) {
         anyTooLarge = true;
         break;
       }
@@ -570,6 +576,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     sb.append("minMergeSize=").append(minMergeSize).append(", ");
     sb.append("mergeFactor=").append(mergeFactor).append(", ");
     sb.append("maxMergeSize=").append(maxMergeSize).append(", ");
+    sb.append("maxMergeSizeForOptimize=").append(maxMergeSizeForOptimize).append(", ");
     sb.append("calibrateSizeByDeletes=").append(calibrateSizeByDeletes).append(", ");
     sb.append("maxMergeDocs=").append(maxMergeDocs).append(", ");
     sb.append("useCompoundFile=").append(useCompoundFile);

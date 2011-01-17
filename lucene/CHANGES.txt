@@ -113,9 +113,10 @@ Changes in runtime behavior
   usage, allowing applications to accidentally open two writers on the
   same directory.  (Mike McCandless)
 
-* LUCENE-2701: maxMergeMB and maxMergeDocs constraints set on LogMergePolicy now
-  affect optimize() as well (as opposed to only regular merges). This means that
-  you can run optimize() and too large segments won't be merged. (Shai Erera)
+* LUCENE-2701: maxMergeMBForOptimize and maxMergeDocs constraints set on 
+  LogMergePolicy now affect optimize() as well (as opposed to only regular 
+  merges). This means that you can run optimize() and too large segments won't 
+  be merged. (Shai Erera)
 
 * LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List,
   guaranteeing the commits are sorted from oldest to latest. (Shai Erera)
