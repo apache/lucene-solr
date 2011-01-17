@@ -148,12 +148,13 @@ public class DocumentsWriterPerThread {
 
   final AtomicLong bytesUsed = new AtomicLong(0);
 
-  FieldInfos fieldInfos = new FieldInfos();
+  private final FieldInfos fieldInfos;
 
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent, IndexingChain indexingChain) {
     this.directory = directory;
     this.parent = parent;
     this.writer = parent.indexWriter;
+    this.fieldInfos = new FieldInfos();
     this.infoStream = parent.indexWriter.getInfoStream();
     this.docState = new DocState(this);
     this.docState.similarity = parent.indexWriter.getConfig().getSimilarity();
@@ -169,11 +170,15 @@ public class DocumentsWriterPerThread {
     aborting = true;
   }
 
-  public void addDocument(Document doc, Analyzer analyzer) throws IOException {
+  public void updateDocument(Document doc, Analyzer analyzer, Term delTerm) throws IOException {
     assert writer.testPoint("DocumentsWriterPerThread addDocument start");
     docState.doc = doc;
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
+    if (delTerm != null) {
+      pendingDeletes.addTerm(delTerm, docState.docID);
+    }
+
     if (segment == null) {
       // this call is synchronized on IndexWriter.segmentInfos
       segment = writer.newSegmentName();
@@ -191,12 +196,15 @@ public class DocumentsWriterPerThread {
           // mark document as deleted
           deleteDocID(docState.docID);
           numDocsInRAM++;
+        } else {
+          abort();
         }
       }
     }
 
     success = false;
     try {
+      numDocsInRAM++;
       consumer.finishDocument();
 
       success = true;
@@ -228,22 +236,10 @@ public class DocumentsWriterPerThread {
     }
   }
 
-  void deleteQuery(Query query) {
-    pendingDeletes.addQuery(query, numDocsInRAM);
-  }
-
-  synchronized void deleteTerms(Term... terms) {
+  void deleteTerms(Term... terms) {
     for (Term term : terms) {
       pendingDeletes.addTerm(term, numDocsInRAM);
     }
-  }
-
-  void deleteTerm(Term term) {
-    pendingDeletes.addTerm(term, numDocsInRAM);
-  }
-
-  public void commitDocument() {
-    numDocsInRAM++;
   }
 
   int getNumDocsInRAM() {
@@ -264,6 +260,7 @@ public class DocumentsWriterPerThread {
   /** Reset after a flush */
   private void doAfterFlush() throws IOException {
     segment = null;
+    parent.substractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }
 
@@ -279,45 +276,30 @@ public class DocumentsWriterPerThread {
       message("flush postings as segment " + flushState.segmentName + " numDocs=" + numDocsInRAM);
     }
 
+    if (aborting) {
+      if (infoStream != null) {
+        message("flush: skip because aborting is set");
+      }
+      return null;
+    }
+
     boolean success = false;
 
     try {
-      consumer.flush(flushState);
 
-      boolean hasVectors = flushState.hasVectors;
+      SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false);
+      consumer.flush(flushState);
+      newSegment.setHasVectors(flushState.hasVectors);
 
       if (infoStream != null) {
-        SegmentInfo si = new SegmentInfo(flushState.segmentName,
-            flushState.numDocs,
-            directory, false,
-            hasProx(),
-            getCodec(),
-            hasVectors);
-
-        final long newSegmentSize = si.sizeInBytes(true);
-        String message = "  ramUsed=" + nf.format(((double) bytesUsed.get())/1024./1024.) + " MB" +
-          " newFlushedSize=" + newSegmentSize +
-          " docs/MB=" + nf.format(numDocsInRAM/(newSegmentSize/1024./1024.)) +
-          " new/old=" + nf.format(100.0*newSegmentSize/bytesUsed.get()) + "%";
-        message(message);
+        message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
+        message("flushedFiles=" + newSegment.files());
+        message("flushed codecs=" + newSegment.getSegmentCodecs());
       }
-
       flushedDocCount += flushState.numDocs;
 
       doAfterFlush();
 
-      // Create new SegmentInfo, but do not add to our
-      // segmentInfos until deletes are flushed
-      // successfully.
-      SegmentInfo newSegment = new SegmentInfo(flushState.segmentName,
-                                   flushState.numDocs,
-                                   directory, false,
-                                   hasProx(),
-                                   getCodec(),
-                                   hasVectors);
-
-
-      IndexWriter.setDiagnostics(newSegment, "flush");
       success = true;
 
       return newSegment;

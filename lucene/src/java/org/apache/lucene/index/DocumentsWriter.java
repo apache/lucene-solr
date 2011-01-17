@@ -105,8 +105,6 @@ final class DocumentsWriter {
   final AtomicLong bytesUsed = new AtomicLong(0);
   Directory directory;
 
-  int numDocsInStore;                     // # docs written to doc stores
-
   boolean bufferIsFull;                   // True when it's time to write segment
   private volatile boolean closed;
 
@@ -172,7 +170,7 @@ final class DocumentsWriter {
       }
     }
 
-    return true;
+    return false;
   }
 
   boolean deleteQuery(final Query query) throws IOException {
@@ -219,7 +217,7 @@ final class DocumentsWriter {
       if (state != exclude) {
         state.lock();
         try {
-          state.perThread.deleteTerm(term);
+          state.perThread.deleteTerms(term);
         } finally {
           state.unlock();
         }
@@ -348,18 +346,53 @@ final class DocumentsWriter {
   }
 
   synchronized boolean anyChanges() {
-    // nocommit
-    return numDocsInRAM.get() != 0;
-    //return numDocsInRAM.get() != 0 || pendingDeletes.any();
+    return numDocsInRAM.get() != 0 || anyDeletions();
   }
 
-  // for testing
-  public synchronized SegmentDeletes getPendingDeletes() {
-    return pendingDeletes;
+  public int getBufferedDeleteTermsSize() {
+    int size = 0;
+    Iterator<ThreadState> it = perThreadPool.getActivePerThreadsIterator();
+    while (it.hasNext()) {
+      DocumentsWriterPerThread dwpt = it.next().perThread;
+      size += dwpt.pendingDeletes.terms.size();
+    }
+    size += pendingDeletes.terms.size();
+    return size;
   }
 
+  //for testing
+  public int getNumBufferedDeleteTerms() {
+    int numDeletes = 0;
+    Iterator<ThreadState> it = perThreadPool.getActivePerThreadsIterator();
+    while (it.hasNext()) {
+      DocumentsWriterPerThread dwpt = it.next().perThread;
+      numDeletes += dwpt.pendingDeletes.numTermDeletes.get();
+    }
+    numDeletes += pendingDeletes.numTermDeletes.get();
+    return numDeletes;
+  }
+
+  // TODO: can we improve performance of this method by keeping track
+  // here in DW of whether any DWPT has deletions?
   public synchronized boolean anyDeletions() {
-    return pendingDeletes.any();
+    if (pendingDeletes.any()) {
+      return true;
+    }
+
+    Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
+    while (threadsIterator.hasNext()) {
+      ThreadState state = threadsIterator.next();
+      state.lock();
+      try {
+        if (state.perThread.pendingDeletes.any()) {
+          return true;
+        }
+      } finally {
+        state.unlock();
+      }
+    }
+
+    return false;
   }
 
   synchronized void close() {
@@ -372,31 +405,34 @@ final class DocumentsWriter {
     ensureOpen();
 
     SegmentInfo newSegment = null;
+    SegmentDeletes segmentDeletes = null;
 
     ThreadState perThread = perThreadPool.getAndLock(Thread.currentThread(), this, doc);
     try {
       DocumentsWriterPerThread dwpt = perThread.perThread;
       long perThreadRAMUsedBeforeAdd = dwpt.bytesUsed();
-      dwpt.addDocument(doc, analyzer);
-
-      if (delTerm != null) {
-        dwpt.deleteTerm(delTerm);
-      }
-      dwpt.commitDocument();
+      dwpt.updateDocument(doc, analyzer, delTerm);
       numDocsInRAM.incrementAndGet();
 
       newSegment = finishAddDocument(dwpt, perThreadRAMUsedBeforeAdd);
-      if (newSegment != null && dwpt.pendingDeletes.any()) {
-        bufferedDeletes.pushDeletes(dwpt.pendingDeletes, newSegment);
-        dwpt.pendingDeletes = new SegmentDeletes();
+      if (newSegment != null) {
+        fieldInfos.update(dwpt.getFieldInfos());
+        if (dwpt.pendingDeletes.any()) {
+          segmentDeletes = dwpt.pendingDeletes;
+          dwpt.pendingDeletes = new SegmentDeletes();
+        }
       }
     } finally {
       perThread.unlock();
     }
 
+    if (segmentDeletes != null) {
+      pushDeletes(newSegment, segmentDeletes);
+    }
+
     if (newSegment != null) {
       perThreadPool.clearThreadBindings(perThread);
-      finishFlushedSegment(newSegment);
+      indexWriter.addFlushedSegment(newSegment);
       return true;
     }
 
@@ -413,14 +449,8 @@ final class DocumentsWriter {
       long perThreadRAMUsedBeforeAdd) throws IOException {
     SegmentInfo newSegment = null;
 
-    int numDocsPerThread = perThread.getNumDocsInRAM();
     if (perThread.getNumDocsInRAM() == maxBufferedDocs) {
       newSegment = perThread.flush();
-
-      int oldValue = numDocsInRAM.get();
-      while (!numDocsInRAM.compareAndSet(oldValue, oldValue - numDocsPerThread)) {
-        oldValue = numDocsInRAM.get();
-      }
     }
 
     long deltaRAM = perThread.bytesUsed() - perThreadRAMUsedBeforeAdd;
@@ -432,11 +462,20 @@ final class DocumentsWriter {
     return newSegment;
   }
 
-  private final void pushToLastSegment(SegmentDeletes segmentDeletes) {
+  final void substractFlushedNumDocs(int numFlushed) {
+    int oldValue = numDocsInRAM.get();
+    while (!numDocsInRAM.compareAndSet(oldValue, oldValue - numFlushed)) {
+      oldValue = numDocsInRAM.get();
+    }
+  }
+
+  private final void pushDeletes(SegmentInfo segmentInfo, SegmentDeletes segmentDeletes) {
     synchronized(indexWriter) {
       // Lock order: DW -> BD
       if (segmentDeletes.any()) {
-        if (indexWriter.segmentInfos.size() > 0) {
+        if (segmentInfo != null) {
+          bufferedDeletes.pushDeletes(segmentDeletes, segmentInfo);
+        } else if (indexWriter.segmentInfos.size() > 0) {
           if (infoStream != null) {
             message("flush: push buffered deletes to previously flushed segment " + indexWriter.segmentInfos.lastElement());
           }
@@ -457,7 +496,10 @@ final class DocumentsWriter {
     throws IOException {
 
     if (flushDeletes) {
-      pushToLastSegment(pendingDeletes);
+      synchronized (this) {
+        pushDeletes(null, pendingDeletes);
+        pendingDeletes = new SegmentDeletes();
+      }
     }
 
     Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
@@ -465,6 +507,7 @@ final class DocumentsWriter {
 
     while (threadsIterator.hasNext()) {
       SegmentInfo newSegment = null;
+      SegmentDeletes segmentDeletes = null;
 
       ThreadState perThread = threadsIterator.next();
       perThread.lock();
@@ -484,73 +527,35 @@ final class DocumentsWriter {
           newSegment = dwpt.flush();
 
           if (newSegment != null) {
+            fieldInfos.update(dwpt.getFieldInfos());
             anythingFlushed = true;
             perThreadPool.clearThreadBindings(perThread);
             if (dwpt.pendingDeletes.any()) {
-              bufferedDeletes.pushDeletes(dwpt.pendingDeletes, newSegment);
+              segmentDeletes = dwpt.pendingDeletes;
               dwpt.pendingDeletes = new SegmentDeletes();
             }
           }
-        }
-        else if (flushDeletes && dwpt.pendingDeletes.any()) {
-          pushToLastSegment(dwpt.pendingDeletes);
+        } else if (flushDeletes && dwpt.pendingDeletes.any()) {
+          segmentDeletes = dwpt.pendingDeletes;
+          dwpt.pendingDeletes = new SegmentDeletes();
         }
       } finally {
         perThread.unlock();
       }
 
+      if (segmentDeletes != null) {
+          pushDeletes(newSegment, segmentDeletes);
+      }
+
+
       if (newSegment != null) {
         // important do unlock the perThread before finishFlushedSegment
         // is called to prevent deadlock on IndexWriter mutex
-        finishFlushedSegment(newSegment);
+        indexWriter.addFlushedSegment(newSegment);
       }
     }
 
-    numDocsInRAM.set(0);
     return anythingFlushed;
-  }
-
-  /** Build compound file for the segment we just flushed */
-  void createCompoundFile(String compoundFileName, Collection<String> flushedFiles) throws IOException {
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
-    for(String fileName : flushedFiles) {
-      cfsWriter.addFile(fileName);
-    }
-
-    // Perform the merge
-    cfsWriter.close();
-  }
-
-  void finishFlushedSegment(SegmentInfo newSegment) throws IOException {
-    assert newSegment != null;
-
-    IndexWriter.setDiagnostics(newSegment, "flush");
-
-    if (indexWriter.useCompoundFile(newSegment)) {
-      String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-      message("creating compound file " + compoundFileName);
-      // Now build compound file
-      boolean success = false;
-      try {
-        createCompoundFile(compoundFileName, newSegment.files());
-        success = true;
-      } finally {
-        if (!success) {
-          if (infoStream != null) {
-            message("hit exception " +
-                "reating compound file for newly flushed segment " + newSegment.name);
-          }
-
-          indexWriter.deleter.refresh(newSegment.name);
-        }
-      }
-
-      indexWriter.deleter.deleteNewFiles(newSegment.files());
-      newSegment.setUseCompoundFile(true);
-
-    }
-
-    indexWriter.addNewSegment(newSegment);
   }
 
 //  /* We have three pools of RAM: Postings, byte blocks

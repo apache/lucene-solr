@@ -102,7 +102,7 @@ class SegmentDeletes {
       return s;
     }
   }
-  
+
   void update(SegmentDeletes in, boolean noLimit) {
     numTermDeletes.addAndGet(in.numTermDeletes.get());
     for (Map.Entry<Term,Integer> ent : in.terms.entrySet()) {
@@ -168,7 +168,7 @@ class SegmentDeletes {
       bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length);
     }
   }
-    
+
   void clear() {
     terms.clear();
     queries.clear();
@@ -176,12 +176,12 @@ class SegmentDeletes {
     numTermDeletes.set(0);
     bytesUsed.set(0);
   }
-  
+
   void clearDocIDs() {
     bytesUsed.addAndGet(-docIDs.size()*BYTES_PER_DEL_DOCID);
     docIDs.clear();
   }
-  
+
   boolean any() {
     return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0;
   }

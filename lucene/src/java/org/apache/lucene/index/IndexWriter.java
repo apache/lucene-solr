@@ -222,7 +222,7 @@ public class IndexWriter implements Closeable {
   final SegmentInfos segmentInfos;       // the segments
 
   private DocumentsWriter docWriter;
-  final IndexFileDeleter deleter;
+  private final IndexFileDeleter deleter;
 
   private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
   private int optimizeMaxNumSegments;
@@ -1875,9 +1875,9 @@ public class IndexWriter implements Closeable {
       mergePolicy.close();
       mergeScheduler.close();
 
-      bufferedDeletes.clear();
-
       synchronized(this) {
+
+        bufferedDeletes.clear();
 
         if (pendingCommit != null) {
           pendingCommit.rollbackCommit(directory);
@@ -2047,9 +2047,51 @@ public class IndexWriter implements Closeable {
     deleter.checkpoint(segmentInfos, false);
   }
 
-  synchronized void addNewSegment(SegmentInfo newSegment) throws IOException {
-    segmentInfos.add(newSegment);
-    checkpoint();
+  void addFlushedSegment(SegmentInfo newSegment) throws IOException {
+    assert newSegment != null;
+
+    setDiagnostics(newSegment, "flush");
+
+    if (useCompoundFile(newSegment)) {
+      String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+      message("creating compound file " + compoundFileName);
+      // Now build compound file
+      boolean success = false;
+      try {
+        CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
+        for(String fileName : newSegment.files()) {
+          cfsWriter.addFile(fileName);
+        }
+
+        // Perform the merge
+        cfsWriter.close();
+        synchronized(this) {
+          deleter.deleteNewFiles(newSegment.files());
+        }
+
+        newSegment.setUseCompoundFile(true);
+
+        success = true;
+      } finally {
+        if (!success) {
+          if (infoStream != null) {
+            message("hit exception " +
+                "reating compound file for newly flushed segment " + newSegment.name);
+          }
+
+          synchronized(this) {
+            deleter.refresh(newSegment.name);
+          }
+        }
+      }
+
+
+    }
+
+    synchronized(this) {
+      segmentInfos.add(newSegment);
+      checkpoint();
+    }
   }
 
   synchronized boolean useCompoundFile(SegmentInfo segmentInfo) throws IOException {
@@ -2207,24 +2249,33 @@ public class IndexWriter implements Closeable {
     }
   }
 
-  /** Merges the provided indexes into this index.
-   * <p>After this completes, the index is optimized. </p>
-   * <p>The provided IndexReaders are not closed.</p>
+  /**
+   * Merges the provided indexes into this index.
+   * <p>
+   * After this completes, the index is optimized.
+   * </p>
+   * <p>
+   * The provided IndexReaders are not closed.
+   * </p>
    *
-   * <p><b>NOTE:</b> while this is running, any attempts to
-   * add or delete documents (with another thread) will be
-   * paused until this method completes.
+   * <p>
+   * <b>NOTE:</b> while this is running, any attempts to add or delete documents
+   * (with another thread) will be paused until this method completes.
    *
-   * <p>See {@link #addIndexes} for details on transactional
-   * semantics, temporary free space required in the Directory,
-   * and non-CFS segments on an Exception.</p>
+   * <p>
+   * See {@link #addIndexes} for details on transactional semantics, temporary
+   * free space required in the Directory, and non-CFS segments on an Exception.
+   * </p>
    *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
+   * <p>
+   * <b>NOTE</b>: if this method hits an OutOfMemoryError you should immediately
+   * close the writer. See <a href="#OOME">above</a> for details.
+   * </p>
    *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
+   * @throws CorruptIndexException
+   *           if the index is corrupt
+   * @throws IOException
+   *           if there is a low-level IO error
    */
   public void addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
     ensureOpen();
@@ -3239,12 +3290,12 @@ public class IndexWriter implements Closeable {
 
   // For test purposes.
   final int getBufferedDeleteTermsSize() {
-    return docWriter.getPendingDeletes().terms.size();
+    return docWriter.getBufferedDeleteTermsSize();
   }
 
   // For test purposes.
   final int getNumBufferedDeleteTerms() {
-    return docWriter.getPendingDeletes().numTermDeletes.get();
+    return docWriter.getNumBufferedDeleteTerms();
   }
 
   // utility routines for tests
