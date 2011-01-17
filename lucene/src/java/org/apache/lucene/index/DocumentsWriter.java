@@ -338,7 +338,6 @@ final class DocumentsWriter {
 
       success = true;
     } finally {
-      notifyAll();
       if (infoStream != null) {
         message("docWriter: done abort; abortedFiles=" + abortedFiles + " success=" + success);
       }
@@ -395,9 +394,8 @@ final class DocumentsWriter {
     return false;
   }
 
-  synchronized void close() {
+  void close() {
     closed = true;
-    notifyAll();
   }
 
   boolean updateDocument(final Document doc, final Analyzer analyzer, final Term delTerm)
@@ -512,6 +510,7 @@ final class DocumentsWriter {
       ThreadState perThread = threadsIterator.next();
       perThread.lock();
       try {
+
         DocumentsWriterPerThread dwpt = perThread.perThread;
         final int numDocs = dwpt.getNumDocsInRAM();
 

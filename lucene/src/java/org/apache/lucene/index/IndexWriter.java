@@ -222,7 +222,7 @@ public class IndexWriter implements Closeable {
   final SegmentInfos segmentInfos;       // the segments
 
   private DocumentsWriter docWriter;
-  private final IndexFileDeleter deleter;
+  final IndexFileDeleter deleter;
 
   private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
   private int optimizeMaxNumSegments;

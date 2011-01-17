@@ -305,6 +305,12 @@ public class DocumentsWriterPerThread {
       return newSegment;
     } finally {
       if (!success) {
+        if (segment != null) {
+          synchronized(parent.indexWriter) {
+            parent.indexWriter.deleter.refresh(segment);
+          }
+        }
+
         abort();
       }
     }
