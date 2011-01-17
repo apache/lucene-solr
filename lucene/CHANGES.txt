@@ -89,18 +89,8 @@ Changes in backwards compatibility policy
 * LUCENE-2484: Removed deprecated TermAttribute. Use CharTermAttribute
   and TermToBytesRefAttribute instead.  (Uwe Schindler)
 
-* LUCENE-2602: The default (LogByteSizeMergePolicy) merge policy now
-  takes deletions into account by default.  You can disable this by
-  calling setCalibrateSizeByDeletes(false) on the merge policy.  (Mike
-  McCandless)
-
 * LUCENE-2600: Remove IndexReader.isDeleted in favor of
   IndexReader.getDeletedDocs().  (Mike McCandless)
-
-* LUCENE-2529, LUCENE-2668: Position increment gap and offset gap of empty
-  values in multi-valued field has been changed for some cases in index.
-  If you index empty fields and uses positions/offsets information on that
-  fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
 
 * LUCENE-2667: FuzzyQuery's defaults have changed for more performant 
   behavior: the minimum similarity is 2 edit distances from the word,
@@ -140,21 +130,6 @@ Changes in backwards compatibility policy
 
 Changes in Runtime Behavior
 
-* LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit
-  Windows and Solaris systems that support unmapping, FSDirectory.open returns
-  MMapDirectory. Additionally the behavior of MMapDirectory has been
-  changed to enable unmapping by default if supported by the JRE.
-  (Mike McCandless, Uwe Schindler, Robert Muir)
-
-* LUCENE-2790: LogMergePolicy.useCompoundFile's logic now factors in noCFSRatio 
-  to determine whether the passed in segment should be compound. 
-  (Shai Erera, Earwin Burrfoot)
-
-* LUCENE-2805: IndexWriter now increments the index version on every change to
-  the index instead of for every commit. Committing or closing the IndexWriter
-  without any changes to the index will not cause any index version increment.
-  (Simon Willnauer, Mike McCandless)
-
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
   omitNorms(true) for field "a" for 1000 documents, but then add a document with
   omitNorms(false) for field "a", all documents for field "a" will have no norms.
@@ -181,17 +156,6 @@ API Changes
   deleted docs (getDeletedDocs), providing a new Bits interface to
   directly query by doc ID.
 
-* LUCENE-2402: IndexWriter.deleteUnusedFiles now deletes unreferenced commit
-  points too. If you use an IndexDeletionPolicy which holds onto index commits
-  (such as SnapshotDeletionPolicy), you can call this method to remove those
-  commit points when they are not needed anymore (instead of waiting for the 
-  next commit). (Shai Erera)
-
-* LUCENE-2674: A new idfExplain method was added to Similarity, that
-  accepts an incoming docFreq.  If you subclass Similarity, make sure
-  you also override this method on upgrade.  (Robert Muir, Mike
-  McCandless)
-
 * LUCENE-2691: IndexWriter.getReader() has been made package local and is now
   exposed via open and reopen methods on IndexReader.  The semantics of the
   call is the same as it was prior to the API change.
@@ -199,9 +163,6 @@ API Changes
 
 * LUCENE-2566: QueryParser: Unary operators +,-,! will not be treated as
   operators if they are followed by whitespace. (yonik)
-
-* LUCENE-2778: RAMDirectory now exposes newRAMFile() which allows to override
-  and return a different RAMFile implementation. (Shai Erera)
   
 * LUCENE-2831: Weight#scorer, Weight#explain, Filter#getDocIdSet,
   Collector#setNextReader & FieldComparator#setNextReader now expect an
@@ -253,10 +214,6 @@ New features
   data and payloads in 5 separate files instead of the 2 used by
   standard codec), and int block (really a "base" for using
   block-based compressors like PForDelta for storing postings data).
-
-* LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
-  can be used to prevent commits from ever getting deleted from the index.
-  (Shai Erera)
   
 * LUCENE-1458, LUCENE-2111: The in-memory terms index used by standard
   codec is more RAM efficient: terms data is stored as block byte
@@ -271,16 +228,6 @@ New features
   applications that have many unique terms, since it reduces how often
   a new segment must be flushed given a fixed RAM buffer size.
 
-* LUCENE-1585: IndexWriter now accepts a PayloadProcessorProvider which can 
-  return a DirPayloadProcessor for a given Directory, which returns a 
-  PayloadProcessor for a given Term. The PayloadProcessor will be used to 
-  process the payloads of the segments as they are merged (e.g. if one wants to
-  rewrite payloads of external indexes as they are added, or of local ones). 
-  (Shai Erera, Michael Busch, Mike McCandless)
-
-* LUCENE-2440: Add support for custom ExecutorService in
-  ParallelMultiSearcher (Edward Drapkin via Mike McCandless)
-
 * LUCENE-2489: Added PerFieldCodecWrapper (in oal.index.codecs) which
   lets you set the Codec per field (Mike McCandless)
 
@@ -290,17 +237,6 @@ New features
 * LUCENE-2373: Extend CodecProvider to use SegmentInfosWriter and
   SegmentInfosReader to allow customization of SegmentInfos data.
   (Andrzej Bialecki)
-
-* LUCENE-2559: Added SegmentReader.reopen methods (John Wang via Mike
-  McCandless)
-
-* LUCENE-2590: Added Scorer.visitSubScorers, and Scorer.freq.  Along
-  with a custom Collector these experimental methods make it possible
-  to gather the hit-count per sub-clause and per document while a
-  search is running.  (Simon Willnauer, Mike McCandless)
-
-* LUCENE-2636: Added MultiCollector which allows running the search with several
-  Collectors. (Shai Erera)
 
 * LUCENE-2504: FieldComparator.setNextReader now returns a
   FieldComparator instance.  You can "return this", to just reuse the
@@ -364,17 +300,6 @@ New features
 
 Optimizations
 
-* LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
-  (Mike McCandless)
-
-* LUCENE-2531: Fix issue when sorting by a String field that was
-  causing too many fallbacks to compare-by-value (instead of by-ord).
-  (Mike McCandless)
-
-* LUCENE-2574: IndexInput exposes copyBytes(IndexOutput, long) to allow for 
-  efficient copying by sub-classes. Optimized copy is implemented for RAM and FS
-  streams. (Shai Erera)
-
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
   index, saving RAM in IndexReader; change default terms index
   interval from 128 to 32, because the terms index now requires much
@@ -389,11 +314,6 @@ Optimizations
   MultiTermQuery now stores TermState per leaf reader during rewrite to re-
   seek the term dictionary in TermQuery / TermWeight.
   (Simon Willnauer, Mike McCandless, Robert Muir)
-
-Documentation
-
-* LUCENE-2579: Fix oal.search's package.html description of abstract
-  methods.  (Santiago M. Mola via Mike McCandless)
   
 Bug fixes
 
@@ -403,14 +323,6 @@ Bug fixes
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
-
-* LUCENE-2802: NRT DirectoryReader returned incorrect values from
-  getVersion, isOptimized, getCommitUserData, getIndexCommit and isCurrent due
-  to a mutable reference to the IndexWriters SegmentInfos. 
-  (Simon Willnauer, Earwin Burrfoot)
-
-* LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
-  decides whether to return the cached computed size or not. (Shai Erera)
 
 ======================= Lucene 3.x (not yet released) =======================
 
@@ -476,10 +388,33 @@ Changes in backwards compatibility policy
 * LUCENE-2733: Removed public constructors of utility classes with only static
   methods to prevent instantiation.  (Uwe Schindler)
 
-* LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List
-  instead of a Collection, guaranteeing the commits are sorted from oldest to 
-  latest. (Shai Erera)
+* LUCENE-2602: The default (LogByteSizeMergePolicy) merge policy now
+  takes deletions into account by default.  You can disable this by
+  calling setCalibrateSizeByDeletes(false) on the merge policy.  (Mike
+  McCandless)
+
+* LUCENE-2529, LUCENE-2668: Position increment gap and offset gap of empty
+  values in multi-valued field has been changed for some cases in index.
+  If you index empty fields and uses positions/offsets information on that
+  fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
   
+* LUCENE-2804: Directory.setLockFactory new declares throwing an IOException.
+  (Shai Erera, Robert Muir)
+  
+* LUCENE-2837: Added deprecations noting that in 4.0, Searcher and
+  Searchable are collapsed into IndexSearcher; contrib/remote and
+  MultiSearcher have been removed.  (Mike McCandless)
+
+* LUCENE-2854: Deprecated SimilarityDelegator and
+  Similarity.lengthNorm; the latter is now final, forcing any custom
+  Similarity impls to cutover to the more general computeNorm (Robert
+  Muir, Mike McCandless)
+
+* LUCENE-2674: A new idfExplain method was added to Similarity, that
+  accepts an incoming docFreq.  If you subclass Similarity, make sure
+  you also override this method on upgrade.  (Robert Muir, Mike
+  McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
@@ -495,7 +430,7 @@ Changes in runtime behavior
   invokes a merge on the incoming and target segments, but instead copies the
   segments to the target index. You can call maybeMerge or optimize after this
   method completes, if you need to.
-  
+
   In addition, Directory.copyTo* were removed in favor of copy which takes the
   target Directory, source and target files as arguments, and copies the source
   file to the target Directory under the target file name. (Shai Erera)
@@ -512,6 +447,33 @@ Changes in runtime behavior
   merges). This means that you can run optimize() and too large segments won't 
   be merged. (Shai Erera)
 
+* LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List,
+  guaranteeing the commits are sorted from oldest to latest. (Shai Erera)
+
+* LUCENE-2785: TopScoreDocCollector, TopFieldCollector and
+  the IndexSearcher search methods that take an int nDocs will now
+  throw IllegalArgumentException if nDocs is 0.  Instead, you should
+  use the newly added TotalHitCountCollector.  (Mike McCandless)
+  
+* LUCENE-2790: LogMergePolicy.useCompoundFile's logic now factors in noCFSRatio 
+  to determine whether the passed in segment should be compound. 
+  (Shai Erera, Earwin Burrfoot)
+
+* LUCENE-2805: IndexWriter now increments the index version on every change to
+  the index instead of for every commit. Committing or closing the IndexWriter
+  without any changes to the index will not cause any index version increment.
+  (Simon Willnauer, Mike McCandless)
+
+* LUCENE-2650, LUCENE-2825: The behavior of FSDirectory.open has changed. On 64-bit
+  Windows and Solaris systems that support unmapping, FSDirectory.open returns
+  MMapDirectory. Additionally the behavior of MMapDirectory has been
+  changed to enable unmapping by default if supported by the JRE.
+  (Mike McCandless, Uwe Schindler, Robert Muir)
+
+* LUCENE-2829: Improve the performance of "primary key" lookup use
+  case (running a TermQuery that matches one document) on a
+  multi-segment index.  (Robert Muir, Mike McCandless)
+  
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
@@ -522,7 +484,7 @@ API Changes
   custom Similarity can alter how norms are encoded, though they must
   still be encoded as a single byte (Johan Kindgren via Mike
   McCandless)
-  
+
 * LUCENE-2103: NoLockFactory should have a private constructor;
   until Lucene 4.0 the default one will be deprecated.
   (Shai Erera via Uwe Schindler) 
@@ -594,17 +556,42 @@ API Changes
   (such as SnapshotDeletionPolicy), you can call this method to remove those
   commit points when they are not needed anymore (instead of waiting for the 
   next commit). (Shai Erera)
-
-* LUCENE-2455: IndexWriter.addIndexesNoOptimize was renamed to addIndexes.
-  IndexFileNames.segmentFileName now takes another parameter to accommodate
-  custom file names. You should use this method to name all your files.
-  (Shai Erera)
   
 * LUCENE-2481: SnapshotDeletionPolicy.snapshot() and release() were replaced
   with equivalent ones that take a String (id) as argument. You can pass
   whatever ID you want, as long as you use the same one when calling both. 
   (Shai Erera)
   
+* LUCENE-2356: Add IndexWriterConfig.set/getReaderTermIndexDivisor, to
+  set what IndexWriter passes for termsIndexDivisor to the readers it
+  opens internally when apply deletions or creating a near-real-time
+  reader.  (Earwin Burrfoot via Mike McCandless)
+
+* LUCENE-2167,LUCENE-2699,LUCENE-2763,LUCENE-2847: StandardTokenizer/Analyzer
+  in common/standard/ now implement the Word Break rules from the Unicode 6.0.0
+  Text Segmentation algorithm (UAX#29), covering the full range of Unicode code
+  points, including values from U+FFFF to U+10FFFF
+   
+  ClassicTokenizer/Analyzer retains the old (pre-Lucene 3.1) StandardTokenizer/
+  Analyzer implementation and behavior.  Only the Unicode Basic Multilingual
+  Plane (code points from U+0000 to U+FFFF) is covered.
+
+  UAX29URLEmailTokenizer tokenizes URLs and E-mail addresses according to the
+  relevant RFCs, in addition to implementing the UAX#29 Word Break rules.
+  (Steven Rowe, Robert Muir, Uwe Schindler)
+   
+* LUCENE-2778: RAMDirectory now exposes newRAMFile() which allows to override
+  and return a different RAMFile implementation. (Shai Erera)
+  
+* LUCENE-2785: Added TotalHitCountCollector whose sole purpose is to
+  count the number of hits matching the query.  (Mike McCandless)
+
+* LUCENE-2846: Deprecated IndexReader.setNorm(int, String, float). This method 
+  is only syntactic sugar for setNorm(int, String, byte), but  using the global 
+  Similarity.getDefault().encodeNormValue().  Use the byte-based method instead 
+  to ensure that the norm is encoded with your Similarity.
+  (Robert Muir, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
@@ -625,10 +612,6 @@ Bug fixes
   a prior (corrupt) index missing its segments_N file.  (Mike
   McCandless)
 
-* LUCENE-2534: fix over-sharing bug in
-  MultiTermsEnum.docs/AndPositionsEnum.  (Robert Muir, Mike
-  McCandless)
-
 * LUCENE-2458: QueryParser no longer automatically forms phrase queries,
   assuming whitespace tokenization. Previously all CJK queries, for example,
   would be turned into phrase queries. The old behavior is preserved with
@@ -647,7 +630,22 @@ Bug fixes
   can cause the same document to score to differently depending on
   what segment it resides in. (yonik)
 
-* LUCENE-2272: Fix explain in PayloadNearQuery and also fix scoring issue (Peter Keegan via Grant Ingersoll)  
+* LUCENE-2272: Fix explain in PayloadNearQuery and also fix scoring issue (Peter Keegan via Grant Ingersoll)
+
+* LUCENE-2732: Fix charset problems in XML loading in
+  HyphenationCompoundWordTokenFilter.  (Uwe Schindler)
+
+* LUCENE-2802: NRT DirectoryReader returned incorrect values from
+  getVersion, isOptimized, getCommitUserData, getIndexCommit and isCurrent due
+  to a mutable reference to the IndexWriters SegmentInfos. 
+  (Simon Willnauer, Earwin Burrfoot)
+
+* LUCENE-2852: Fixed corner case in RAMInputStream that would hit a
+  false EOF after seeking to EOF then seeking back to same block you
+  were just in and then calling readBytes (Robert Muir, Mike McCandless)
+
+* LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
+  decides whether to return the cached computed size or not. (Shai Erera)
 
 New features
 
@@ -720,6 +718,16 @@ New features
   can be used to prevent commits from ever getting deleted from the index.
   (Shai Erera)
   
+* LUCENE-1585: IndexWriter now accepts a PayloadProcessorProvider which can 
+  return a DirPayloadProcessor for a given Directory, which returns a 
+  PayloadProcessor for a given Term. The PayloadProcessor will be used to 
+  process the payloads of the segments as they are merged (e.g. if one wants to
+  rewrite payloads of external indexes as they are added, or of local ones). 
+  (Shai Erera, Michael Busch, Mike McCandless)
+
+* LUCENE-2440: Add support for custom ExecutorService in
+  ParallelMultiSearcher (Edward Drapkin via Mike McCandless)
+
 * LUCENE-2295: Added a LimitTokenCountAnalyzer / LimitTokenCountFilter
   to wrap any other Analyzer and provide the same functionality as
   MaxFieldLength provided on IndexWriter.  This patch also fixes a bug
@@ -727,9 +735,17 @@ New features
 
 * LUCENE-2526: Don't throw NPE from MultiPhraseQuery.toString when
   it's empty.  (Ross Woolf via Mike McCandless)
+  
+* LUCENE-2559: Added SegmentReader.reopen methods (John Wang via Mike
+  McCandless)
 
-* LUCENE-2671: Add SortField.setMissingValue( v ) to enable sorting
-  behavior for documents that do not include the given field. (ryan)
+* LUCENE-2590: Added Scorer.visitSubScorers, and Scorer.freq.  Along
+  with a custom Collector these experimental methods make it possible
+  to gather the hit-count per sub-clause and per document while a
+  search is running.  (Simon Willnauer, Mike McCandless)
+
+* LUCENE-2636: Added MultiCollector which allows running the search with several
+  Collectors. (Shai Erera)
 
 * LUCENE-2754, LUCENE-2757: Added a wrapper around MultiTermQueries
   to add span support: SpanMultiTermQueryWrapper<Q extends MultiTermQuery>.
@@ -747,6 +763,9 @@ New features
   (Robert Muir)
   
 Optimizations
+
+* LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of
+  simple polling for results. (Edward Drapkin, Simon Willnauer)
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
   of being stored separately in thread local storage.  Also fixed
@@ -809,6 +828,17 @@ Optimizations
   getTermsIndex), which replace the older String equivalents
   (getStrings, getStringIndex), consume quite a bit less RAM in most
   cases.  (Mike McCandless)
+
+* LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
+  (Mike McCandless)
+
+* LUCENE-2531: Fix issue when sorting by a String field that was
+  causing too many fallbacks to compare-by-value (instead of by-ord).
+  (Mike McCandless)
+
+* LUCENE-2574: IndexInput exposes copyBytes(IndexOutput, long) to allow for 
+  efficient copying by sub-classes. Optimized copy is implemented for RAM and FS
+  streams. (Shai Erera)
 
 * LUCENE-2719: Improved TermsHashPerField's sorting to use a better
   quick sort algorithm that dereferences the pivot element not on
@@ -889,6 +919,18 @@ Test Cases
   as Eclipse and IntelliJ.
   (Paolo Castagna, Steven Rowe via Robert Muir)
 
+* LUCENE-2804: add newFSDirectory to LuceneTestCase to create a FSDirectory at
+  random. (Shai Erera, Robert Muir)
+  
+Documentation
+
+* LUCENE-2579: Fix oal.search's package.html description of abstract
+  methods.  (Santiago M. Mola via Mike McCandless)
+   
+* LUCENE-2625: Add a note to IndexReader.termDocs() with additional verbiage
+  that the TermEnum must be seeked since it is unpositioned.
+  (Adriano Crestani via Robert Muir)
+  
 ================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
 
 Changes in runtime behavior
