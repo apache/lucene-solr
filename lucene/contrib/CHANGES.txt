@@ -4,53 +4,39 @@ Lucene contrib change Log
   
 Build
 
- * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
-   (Robert Muir)
-
  * LUCENE-2845: Moved contrib/benchmark to modules.
 
 New Features
 
-  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
-    (Simon Willnauer, Robert Muir)
+ * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
+   (Simon Willnauer, Robert Muir)
 
-  * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
-    Directory impl that uses the O_DIRECT flag to bypass the buffer
-    cache.  This is useful to prevent segment merging from evicting
-    pages from the buffer cache, since fadvise/madvise do not seem.
-    (Michael McCandless)
+ * LUCENE-2373: Added a Codec implementation that works with append-only
+   filesystems (such as e.g. Hadoop DFS). SegmentInfos writing/reading
+   code is refactored to support append-only FS, and to allow for future
+   customization of per-segment information. (Andrzej Bialecki)
 
-  * LUCENE-2373: Added a Codec implementation that works with append-only
-    filesystems (such as e.g. Hadoop DFS). SegmentInfos writing/reading
-    code is refactored to support append-only FS, and to allow for future
-    customization of per-segment information. (Andrzej Bialecki)
+ * LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
+   with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
 
-  * LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
-    with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
-
-  * LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
-    method is also still available.  (Grant Ingersoll)
+ * LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
+   method is also still available.  (Grant Ingersoll)
     
-  * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
-    from the term dictionary using levenshtein automata.  (Robert Muir)
+ * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
+   from the term dictionary using levenshtein automata.  (Robert Muir)
 
-  * LUCENE-2791: Added WindowsDirectory, a Windows-specific Directory impl
-    that doesn't synchronize on the file handle. This can be useful to 
-    avoid the performance problems of SimpleFSDirectory and NIOFSDirectory.
-    (Robert Muir, Simon Willnauer, Uwe Schindler, Michael McCandless)
-
-  * LUCENE-2836: Add FieldCacheRewriteMethod, which rewrites MultiTermQueries
-    using the FieldCache's TermsEnum.  (Robert Muir)
+ * LUCENE-2836: Add FieldCacheRewriteMethod, which rewrites MultiTermQueries
+   using the FieldCache's TermsEnum.  (Robert Muir)
   
 API Changes
 
-  * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
-    safety, serialization, and performance problems. If you have
-    written a custom RegexCapabilities it will need to be updated
-    to the new API.  (Robert Muir, Uwe Schindler)
+ * LUCENE-2606: Changed RegexCapabilities interface to fix thread 
+   safety, serialization, and performance problems. If you have
+   written a custom RegexCapabilities it will need to be updated
+   to the new API.  (Robert Muir, Uwe Schindler)
 
-  * LUCENE-2638 MakeHighFreqTerms.TermStats public to make it more useful
-    for API use. (Andrzej Bialecki)
+ * LUCENE-2638 MakeHighFreqTerms.TermStats public to make it more useful
+   for API use. (Andrzej Bialecki)
 
 ======================= Lucene 3.x (not yet released) =======================
 
@@ -100,6 +86,11 @@ Changes in runtime behavior
 
 Bug fixes
 
+ * LUCENE-2855: contrib queryparser was using CharSequence as key in some internal 
+   Map instances, which was leading to incorrect behaviour, since some CharSequence
+   implementors do not override hashcode and equals methods. Now the internal Maps 
+   are using String instead. (Adriano Crestani)
+
  * LUCENE-2068: Fixed ReverseStringFilter which was not aware of supplementary
    characters. During reverse the filter created unpaired surrogates, which
    will be replaced by U+FFFD by the indexer, but not at query time. The filter
@@ -117,40 +108,44 @@ Bug fixes
    default.  (Robert Muir, Uwe Schindler, Simon Willnauer)
 
  * LUCENE-2184: Fixed bug with handling best fit value when the proper best fit value is
-		not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
+   not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
 		
  * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
-		the 180th meridian (Grant Ingersoll)
+   the 180th meridian (Grant Ingersoll)
 
  * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
    For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
    will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
 
-* LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
-  permissions to newly created files, and to not silently hardwire
-  buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
+ * LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
+   permissions to newly created files, and to not silently hardwire
+   buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
 
-* LUCENE-2629: Fix gennorm2 task for generating ICUFoldingFilter's .nrm file. This allows
-  you to customize its normalization/folding, by editing the source data files in src/data
-  and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
+ * LUCENE-2629: Fix gennorm2 task for generating ICUFoldingFilter's .nrm file. This allows
+   you to customize its normalization/folding, by editing the source data files in src/data
+   and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
 
-* LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
-  always the case. If the dictionary is unavailable, the filter will now throw 
-  UnsupportedOperationException in the constructor.  (Robert Muir)
+ * LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
+   always the case. If the dictionary is unavailable, the filter will now throw 
+   UnsupportedOperationException in the constructor.  (Robert Muir)
 
-* LUCENE-589: Fix contrib/demo for international documents. 
-  (Curtis d'Entremont via Robert Muir)
+ * LUCENE-589: Fix contrib/demo for international documents. 
+   (Curtis d'Entremont via Robert Muir)
   
-* LUCENE-2246: Fix contrib/demo for Turkish html documents.
-  (Selim Nadi via Robert Muir)  
+ * LUCENE-2246: Fix contrib/demo for Turkish html documents.
+   (Selim Nadi via Robert Muir)  
   
-* LUCENE-590: Demo HTML parser gives incorrect summaries when title is repeated as a heading
-  (Curtis d'Entremont via Robert Muir)
+ * LUCENE-590: Demo HTML parser gives incorrect summaries when title is repeated as a heading
+   (Curtis d'Entremont via Robert Muir)
 
-* LUCENE-591: The demo indexer now indexes meta keywords.
-  (Curtis d'Entremont via Robert Muir)
+ * LUCENE-591: The demo indexer now indexes meta keywords.
+   (Curtis d'Entremont via Robert Muir)
    
 API Changes
+
+ * LUCENE-2867: Some contrib queryparser methods that receives CharSequence as
+   identifier, such as QueryNode#unsetTag(CharSequence), were deprecated and
+   will be removed on version 4. (Adriano Crestani)
 
  * LUCENE-2147: Spatial GeoHashUtils now always decode GeoHash strings
    with full precision. GeoHash#decode_exactly(String) was merged into
@@ -192,6 +187,12 @@ API Changes
    
 New features
 
+ * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
+   Directory impl that uses the O_DIRECT flag to bypass the buffer
+   cache.  This is useful to prevent segment merging from evicting
+   pages from the buffer cache, since fadvise/madvise do not seem.
+   (Michael McCandless)
+    
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
 
@@ -281,6 +282,11 @@ New features
    BooleanModifiersQueryNodeProcessor, for example instead of GroupQueryNodeProcessor.
    (Adriano Crestani via Robert Muir)
 
+ * LUCENE-2791: Added WindowsDirectory, a Windows-specific Directory impl
+   that doesn't synchronize on the file handle. This can be useful to 
+   avoid the performance problems of SimpleFSDirectory and NIOFSDirectory.
+   (Robert Muir, Simon Willnauer, Uwe Schindler, Michael McCandless)
+
  * LUCENE-2842: Add analyzer for Galician. Also adds the RSLP (Orengo) stemmer
    for Portuguese.  (Robert Muir)
 
@@ -305,7 +311,10 @@ Build
    (Robert Muir)
 
  * LUCENE-2833: Upgrade contrib/ant's jtidy jar file to r938 (Robert Muir)
-   
+
+ * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
+   (Robert Muir)
+
 Optimizations
 
  * LUCENE-2157: DelimitedPayloadTokenFilter no longer copies the buffer
