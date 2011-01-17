@@ -20,6 +20,8 @@
 package org.apache.solr.analysis;
 
 import java.io.Reader;
+import java.util.Map;
+
 import org.apache.lucene.analysis.cn.ChineseTokenizer;
 
 /** 
@@ -28,6 +30,11 @@ import org.apache.lucene.analysis.cn.ChineseTokenizer;
  */
 @Deprecated
 public class ChineseTokenizerFactory extends BaseTokenizerFactory {
+  public void init(Map<String,String> args) {
+    super.init(args);
+    warnDeprecated("Use StandardTokenizerFactory instead.");
+  }
+  
   public ChineseTokenizer create(Reader in) {
     return new ChineseTokenizer(in);
   }

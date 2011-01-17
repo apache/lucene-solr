@@ -17,6 +17,8 @@
  
 package org.apache.solr.analysis;
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.ISOLatin1AccentFilter;
 import org.apache.lucene.analysis.TokenStream;
 
@@ -26,6 +28,11 @@ import org.apache.lucene.analysis.TokenStream;
  */
 @Deprecated
 public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory {
+  public void init(Map<String,String> args) {
+    super.init(args);
+    warnDeprecated("use ASCIIFoldingFilterFactory instead");
+  }
+  
   public ISOLatin1AccentFilter create(TokenStream input) {
     return new ISOLatin1AccentFilter(input);
   }

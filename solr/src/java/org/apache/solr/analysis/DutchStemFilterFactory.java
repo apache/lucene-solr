@@ -19,6 +19,8 @@
 
 package org.apache.solr.analysis;
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -29,6 +31,12 @@ import org.apache.lucene.analysis.TokenStream;
  */
 @Deprecated
 public class DutchStemFilterFactory extends BaseTokenFilterFactory {
+  
+  public void init(Map<String,String> args) {
+    super.init(args);
+    warnDeprecated("use SnowballPorterFilterFactory with 'Dutch' instead");
+  }
+
   public TokenFilter create(TokenStream _in) {
     return new SnowballFilter(_in, new org.tartarus.snowball.ext.DutchStemmer());
   }

@@ -26,6 +26,7 @@ import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @version $Id$
@@ -36,6 +37,11 @@ import java.io.IOException;
 public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
 
+  public void init(Map<String,String> args) {
+    super.init(args);
+    warnDeprecated("use PorterStemFilterFactory (Porter1) or SnowballPorterFilterFactory with 'English' (Porter2) instead");
+  }
+  
   public void inform(ResourceLoader loader) {
     String wordFiles = args.get(PROTECTED_TOKENS);
     if (wordFiles != null) {

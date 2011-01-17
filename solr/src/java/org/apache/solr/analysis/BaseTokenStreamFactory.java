@@ -75,6 +75,10 @@ abstract class BaseTokenStreamFactory {
     }
   }
 
+  protected final void warnDeprecated(String message) {
+    log.warn(getClass().getSimpleName() + " is deprecated. " + message);
+  }
+  
   // TODO: move these somewhere that tokenizers and others
   // can also use them...
   protected int getInt(String name) {

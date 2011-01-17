@@ -39,6 +39,7 @@ public class RussianLowerCaseFilterFactory extends BaseTokenFilterFactory {
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "The charset parameter is no longer supported.  "
           + "Please process your documents as Unicode instead.");
+    warnDeprecated("Use LowerCaseFilterFactory instead");
   }
 
   public TokenFilter create(TokenStream in) {
