@@ -252,13 +252,14 @@
     <fieldtype name="engporterfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-        <filter class="solr.EnglishPorterFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
     </fieldtype>
     <fieldtype name="custengporterfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-        <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
     </fieldtype>
     <fieldtype name="stopfilt" class="solr.TextField">
@@ -286,14 +287,14 @@
           <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
           <filter class="solr.LowerCaseFilterFactory"/>
           <filter class="solr.StopFilterFactory"/>
-          <filter class="solr.EnglishPorterFilterFactory"/>
+          <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
       <analyzer type="query">
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
           <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
           <filter class="solr.LowerCaseFilterFactory"/>
           <filter class="solr.StopFilterFactory"/>
-          <filter class="solr.EnglishPorterFilterFactory"/>
+          <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
     </fieldtype>
 
@@ -303,14 +304,14 @@
           <filter class="solr.LowerCaseFilterFactory"/>
           <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
           <filter class="solr.StopFilterFactory"/>
-          <filter class="solr.EnglishPorterFilterFactory"/>
+          <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
       <analyzer type="query">
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
           <filter class="solr.LowerCaseFilterFactory"/>
           <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
           <filter class="solr.StopFilterFactory"/>
-          <filter class="solr.EnglishPorterFilterFactory"/>
+          <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
     </fieldtype>
 
@@ -375,7 +376,7 @@
         <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1"
                 catenateNumbers="1" catenateAll="0" splitOnCaseChange="0"/>
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.EnglishPorterFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
       <analyzer type="query">
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -384,7 +385,7 @@
         <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0"
                 catenateNumbers="0" catenateAll="0" splitOnCaseChange="0"/>
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.EnglishPorterFilterFactory"/>
+        <filter class="solr.PorterStemFilterFactory"/>
       </analyzer>
     </fieldType>
 
@@ -397,7 +398,7 @@
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
           <filter class="solr.SynonymFilterFactory"
                   synonyms="synonyms.txt" expand="true" />
-          <filter class="solr.EnglishPorterFilterFactory"/>
+          <filter class="solr.PorterStemFilterFactory"/>
           <filter class="solr.RemoveDuplicatesTokenFilterFactory" />
       </analyzer>
     </fieldtype>
