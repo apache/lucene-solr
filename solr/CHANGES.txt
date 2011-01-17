@@ -399,18 +399,6 @@ New Features
 * SOLR-2010: Added ability to verify that spell checking collations have
    actual results in the index.  (James Dyer via gsingers)
 
-* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
-
-* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
-  tokenizer and filters to contrib/analysis-extras (rmuir)
-
-* SOLR-2211,LUCENE-2763: Added UAX29URLEmailTokenizerFactory, which implements
-  UAX#29, a unicode algorithm with good results for most languages, as well as
-  URL and E-mail tokenization according to the relevant RFCs.
-  (Tom Burton-West via rmuir)
-
-* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
-
 * SOLR-2188: Added "maxTokenLength" argument to the factories for ClassicTokenizer,
   StandardTokenizer, and UAX29URLEmailTokenizer. (Steven Rowe)
 
@@ -434,9 +422,6 @@ Optimizations
   yield speedups over 3x. (yonik)
 
 * SOLR-2046: add common functions to scripts-util. (koji)
-
-* SOLR-2200: Improve the performance of DataImportHandler for large delta-import
-  updates. (Mark Waddle via rmuir)
 
 Bug Fixes
 ----------------------
@@ -573,8 +558,6 @@ Bug Fixes
   by making SolreCore close the UpdateHandler before closing the
   SearchExecutor.  (NarasimhaRaju, hossman)
 
-* SOLR-1902: Upgraded Tika to 0.8-SNAPSHOT (gsingers)
-
 * SOLR-2036: Avoid expensive fieldCache ram estimation for the
   admin stats page. (yonik)
 
@@ -630,9 +613,6 @@ Bug Fixes
   SingleResponseWriter.end to be called 2x 
   (Chris A. Mattmann via hossman) 
   
-* SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
-  (koji)
-
 * SOLR-2219: The init() method of every SolrRequestHandler was being
   called twice. (ambikeshwar singh and hossman)
 
@@ -713,9 +693,6 @@ Other Changes
 * SOLR-1776: DismaxQParser and ExtendedDismaxQParser now use the schema.xml
   "defaultSearchField" as the default value for the "qf" param instead of failing
   with an error when "qf" is not specified.  (hossman)
-
-* SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
-  (Chris Male via rmuir)
 
 * SOLR-1851: luceneAutoCommit no longer has any effect - it has been remove (Mark Miller)
 

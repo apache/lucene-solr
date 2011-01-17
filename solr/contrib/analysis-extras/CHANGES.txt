@@ -1,0 +1,30 @@
+                    Apache Solr - Analysis Extras
+                            Release Notes
+
+Introduction
+------------
+The analysis-extras plugin provides additional analyzers that rely
+upon large dependencies/dictionaries.
+
+It includes integration with ICU for multilingual support, and 
+analyzers for Chinese and Polish.
+
+
+$Id$
+================== Release 4.0-dev ==================
+
+(No Changes)
+
+================== Release 3.1-dev ==================
+
+* SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-1336: Add SmartChinese (word segmentation for Simplified Chinese) 
+  tokenizer and filters to contrib/analysis-extras (rmuir)
+
+* SOLR-2211,LUCENE-2763: Added UAX29URLEmailTokenizerFactory, which implements
+  UAX#29, a unicode algorithm with good results for most languages, as well as
+  URL and E-mail tokenization according to the relevant RFCs.
+  (Tom Burton-West via rmuir)
+
+* SOLR-2237: Added StempelPolishStemFilterFactory to contrib/analysis-extras (rmuir)
