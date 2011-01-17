@@ -44,6 +44,9 @@ New Features
 Optimizations
 ----------------------
 
+* SOLR-2200: Improve the performance of DataImportHandler for large delta-import
+  updates. (Mark Waddle via rmuir)
+  
 Bug Fixes
 ----------------------
 * SOLR-1638: Fixed NullPointerException during import if uniqueKey is not specified
@@ -68,9 +71,14 @@ Bug Fixes
 * SOLR-2310: getTimeElapsedSince() returns incorrect hour value when the elapse is over 60 hours
   (tom liu via koji)
 
+* SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
+  (koji)
+
 Other Changes
 ----------------------
 
+* SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
+  (Chris Male via rmuir)
 
 Build
 ----------------------
