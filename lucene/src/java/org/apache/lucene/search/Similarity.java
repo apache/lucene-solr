@@ -816,7 +816,7 @@ public abstract class Similarity implements Serializable {
 
   /**
    * This method forwards to {@link
-   * #idfExplain(Term,IndexSearcher,int)} by passing
+   * #idfExplain(Term,Searcher,int)} by passing
    * <code>searcher.docFreq(term)</code> as the docFreq.
    *
    * WARNING: if you subclass Similariary and override this
