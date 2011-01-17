@@ -70,42 +70,42 @@ Bug fixes
    default.  (Robert Muir, Uwe Schindler, Simon Willnauer)
 
  * LUCENE-2184: Fixed bug with handling best fit value when the proper best fit value is
-		not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
+   not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
 		
  * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
-		the 180th meridian (Grant Ingersoll)
+   the 180th meridian (Grant Ingersoll)
 
  * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
    For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
    will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
 
-* LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
-  permissions to newly created files, and to not silently hardwire
-  buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
+ * LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
+   permissions to newly created files, and to not silently hardwire
+   buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
 
-* LUCENE-2629: Fix gennorm2 task for generating ICUFoldingFilter's .nrm file. This allows
-  you to customize its normalization/folding, by editing the source data files in src/data
-  and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
+ * LUCENE-2629: Fix gennorm2 task for generating ICUFoldingFilter's .nrm file. This allows
+   you to customize its normalization/folding, by editing the source data files in src/data
+   and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
 
-* LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
-  always the case. If the dictionary is unavailable, the filter will now throw 
-  UnsupportedOperationException in the constructor.  (Robert Muir)
+ * LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
+   always the case. If the dictionary is unavailable, the filter will now throw 
+   UnsupportedOperationException in the constructor.  (Robert Muir)
 
-* LUCENE-589: Fix contrib/demo for international documents. 
-  (Curtis d'Entremont via Robert Muir)
+ * LUCENE-589: Fix contrib/demo for international documents. 
+   (Curtis d'Entremont via Robert Muir)
   
-* LUCENE-2246: Fix contrib/demo for Turkish html documents.
-  (Selim Nadi via Robert Muir)  
+ * LUCENE-2246: Fix contrib/demo for Turkish html documents.
+   (Selim Nadi via Robert Muir)  
   
-* LUCENE-590: Demo HTML parser gives incorrect summaries when title is repeated as a heading
-  (Curtis d'Entremont via Robert Muir)
+ * LUCENE-590: Demo HTML parser gives incorrect summaries when title is repeated as a heading
+   (Curtis d'Entremont via Robert Muir)
 
-* LUCENE-591: The demo indexer now indexes meta keywords.
-  (Curtis d'Entremont via Robert Muir)
+ * LUCENE-591: The demo indexer now indexes meta keywords.
+   (Curtis d'Entremont via Robert Muir)
    
 API Changes
 
-*  LUCENE-2867: Some contrib queryparser methods that receives CharSequence as
+ * LUCENE-2867: Some contrib queryparser methods that receives CharSequence as
    identifier, such as QueryNode#unsetTag(CharSequence), were deprecated and
    will be removed on version 4. (Adriano Crestani)
 
@@ -149,6 +149,12 @@ API Changes
    
 New features
 
+ * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
+   Directory impl that uses the O_DIRECT flag to bypass the buffer
+   cache.  This is useful to prevent segment merging from evicting
+   pages from the buffer cache, since fadvise/madvise do not seem.
+   (Michael McCandless)
+    
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
 
@@ -267,7 +273,10 @@ Build
    (Robert Muir)
 
  * LUCENE-2833: Upgrade contrib/ant's jtidy jar file to r938 (Robert Muir)
-   
+
+ * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
+   (Robert Muir)
+
 Optimizations
 
  * LUCENE-2157: DelimitedPayloadTokenFilter no longer copies the buffer
