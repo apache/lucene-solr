@@ -484,6 +484,9 @@ Bug Fixes
   addresses "commitWithin" option on Update requests.
   (noble, hossman, and Maxim Valyanskiy)
 
+* SOLR-2261: fix velocity template layout.vm that referred to an older
+  version of jquery.  (Eric Pugh via rmuir)
+
 
 Other Changes
 ----------------------
