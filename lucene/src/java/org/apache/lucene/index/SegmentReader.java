@@ -335,29 +335,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       }
     }
 
-    // Load bytes but do not cache them if they were not
-    // already cached
-    public synchronized void bytes(byte[] bytesOut, int offset, int len) throws IOException {
-      assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
-      if (bytes != null) {
-        // Already cached -- copy from cache:
-        assert len <= maxDoc();
-        System.arraycopy(bytes, 0, bytesOut, offset, len);
-      } else {
-        // Not cached
-        if (origNorm != null) {
-          // Ask origNorm to load
-          origNorm.bytes(bytesOut, offset, len);
-        } else {
-          // We are orig -- read ourselves from disk:
-          synchronized(in) {
-            in.seek(normSeek);
-            in.readBytes(bytesOut, offset, len, false);
-          }
-        }
-      }
-    }
-
     // Load & cache full bytes array.  Returns bytes.
     public synchronized byte[] bytes() throws IOException {
       assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);

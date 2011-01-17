@@ -34,14 +34,6 @@ import org.apache.lucene.util.Version;
  * Unicode Text Segmentation algorithm, as specified in 
  * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>.
  * <p/>
- * <b>WARNING</b>: Because JFlex does not support Unicode supplementary 
- * characters (characters above the Basic Multilingual Plane, which contains
- * those up to and including U+FFFF), this scanner will not recognize them
- * properly.  If you need to be able to process text containing supplementary 
- * characters, consider using the ICU4J-backed implementation in modules/analysis/icu  
- * (org.apache.lucene.analysis.icu.segmentation.ICUTokenizer)
- * instead of this class, since the ICU4J-backed implementation does not have
- * this limitation.
  * <p>Many applications have specific tokenizer needs.  If this tokenizer does
  * not suit your application, please consider copying this source code
  * directory to your project and maintaining your own grammar-based tokenizer.
