@@ -82,7 +82,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       priority queue.  The {@link FieldValueHitQueue}
  *       calls this method when a new hit is competitive.
  *
- *  <li> {@link #setNextReader(AtomicReaderContext)} Invoked
+ *  <li> {@link #setNextReader(IndexReader.AtomicReaderContext)} Invoked
  *       when the search is switching to the next segment.
  *       You may need to update internal state of the
  *       comparator, for example retrieving new values from

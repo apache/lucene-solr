@@ -19,7 +19,6 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.CompositeReaderContext;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.function.DocValues;
 
@@ -52,7 +51,7 @@ public abstract class ValueSource implements Serializable {
    * Return the DocValues used by the function query.
    * @deprecated (4.0) This method is temporary, to ease the migration to segment-based
    * searching. Please change your code to not pass {@link CompositeReaderContext} to these
-   * APIs. Use {@link #getValues(AtomicReaderContext)} instead
+   * APIs. Use {@link #getValues(IndexReader.AtomicReaderContext)} instead
    */
   @Deprecated
   public DocValues getValues(ReaderContext context) throws IOException {

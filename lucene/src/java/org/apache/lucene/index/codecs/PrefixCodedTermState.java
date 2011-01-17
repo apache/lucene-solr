@@ -16,6 +16,7 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 
