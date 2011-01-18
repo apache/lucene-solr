@@ -274,7 +274,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   protected synchronized int mergeThreadCount() {
     int count = 0;
     for (MergeThread mt : mergeThreads) {
-      if (mt.isAlive()) count++;
+      if (mt.isAlive() && mt.getCurrentMerge() != null) {
+        count++;
+      }
     }
     return count;
   }
