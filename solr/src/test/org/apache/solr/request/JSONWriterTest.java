@@ -62,24 +62,9 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     buf = new StringWriter();
     w.write(buf, req, rsp);
     assertEquals(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");
-
+    req.close();
   }
 
-  @Test
-  public void testPHPS() throws IOException {
-    SolrQueryRequest req = req("dummy");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    QueryResponseWriter w = new PHPSerializedResponseWriter();
-
-    StringWriter buf = new StringWriter();
-    rsp.add("data1", "hello");
-    rsp.add("data2", 42);
-    rsp.add("data3", true);
-    w.write(buf, req, rsp);
-    assertEquals(buf.toString(), "a:3:{s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;}");
-  }
-
-  @Test
   public void testJSON() throws IOException {
     SolrQueryRequest req = req("wt","json","json.nl","arrarr");
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -93,7 +78,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     w.write(buf, req, rsp);
     assertEquals(buf.toString(), "{\"nl\":[[\"data1\",\"hello\"],[null,42]]}");
-
+    req.close();
   }
   
 }
