@@ -127,7 +127,6 @@ final class DocumentsWriter {
   private boolean aborting;               // True if an abort is pending
 
   PrintStream infoStream;
-  int maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
   Similarity similarity;
 
   // max # simultaneous threads; if there are more than
@@ -140,7 +139,6 @@ final class DocumentsWriter {
   static class DocState {
     DocumentsWriter docWriter;
     Analyzer analyzer;
-    int maxFieldLength;
     PrintStream infoStream;
     Similarity similarity;
     int docID;
@@ -191,6 +189,7 @@ final class DocumentsWriter {
     /**
      * Allocate bytes used from shared pool.
      */
+    @Override
     protected byte[] newBuffer(int size) {
       assert size == PER_DOC_BLOCK_SIZE;
       return perDocAllocator.getByteBlock();
@@ -355,13 +354,6 @@ final class DocumentsWriter {
     this.infoStream = infoStream;
     for(int i=0;i<threadStates.length;i++) {
       threadStates[i].docState.infoStream = infoStream;
-    }
-  }
-
-  synchronized void setMaxFieldLength(int maxFieldLength) {
-    this.maxFieldLength = maxFieldLength;
-    for(int i=0;i<threadStates.length;i++) {
-      threadStates[i].docState.maxFieldLength = maxFieldLength;
     }
   }
 

@@ -84,8 +84,7 @@ public class IndexHTML {
       }
       writer = new IndexWriter(FSDirectory.open(index), new IndexWriterConfig(
           Version.LUCENE_CURRENT, new StandardAnalyzer(Version.LUCENE_CURRENT))
-          .setMaxFieldLength(1000000).setOpenMode(
-              create ? OpenMode.CREATE : OpenMode.CREATE_OR_APPEND));
+          .setOpenMode(create ? OpenMode.CREATE : OpenMode.CREATE_OR_APPEND));
       indexDocs(root, index, create);		  // add new docs
 
       System.out.println("Optimizing index...");
