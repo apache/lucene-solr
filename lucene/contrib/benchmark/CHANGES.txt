@@ -2,6 +2,15 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+1/18/2010
+  The locally built patched version of the Xerces-J jar introduced
+  as part of LUCENE-1591 is no longer required, because Xerces
+  2.10.0, which contains a fix for XERCESJ-1257 (see
+  http://svn.apache.org/viewvc?view=revision&revision=554069),
+  was released last year.  Upgraded
+  xerces-2.9.1-patched-XERCESJ-1257.jar and xml-apis-2.9.0.jar
+  to xercesImpl-2.10.0.jar and xml-apis-2.10.0.jar. (Steven Rowe)
+
 4/27/2010
   LUCENE-2416: WriteLineDocTask now supports multi-threading. Also, 
   StringBufferReader was renamed to StringBuilderReader and works on 
