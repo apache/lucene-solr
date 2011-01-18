@@ -4078,7 +4078,7 @@ public class IndexWriter implements Closeable {
     // NOTE: the callers of this method should in theory
     // be able to do simply wait(), but, as a defense
     // against thread timing hazards where notifyAll()
-    // falls to be called, we wait for at most 1 second
+    // fails to be called, we wait for at most 1 second
     // and then return so caller can check if wait
     // conditions are satisfied:
     try {
