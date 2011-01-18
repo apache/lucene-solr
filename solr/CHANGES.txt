@@ -152,6 +152,11 @@ Bug Fixes
 * SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
   (Erick Erickson via hossman)
 
+* SOLR-2307: fix bug in PHPSerializedResponseWriter (wt=phps) when
+  dealing with SolrDocumentList objects -- ie: sharded queries.
+  (Antonio Verni via hossman)
+  
+
 Other Changes
 ----------------------
 
