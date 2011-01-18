@@ -546,6 +546,8 @@ final class DocumentsWriter {
   // Lock order: IW -> DW
   synchronized SegmentInfo flush(IndexWriter writer, IndexFileDeleter deleter, MergePolicy mergePolicy, SegmentInfos segmentInfos) throws IOException {
 
+    final long startTime = System.currentTimeMillis();
+
     // We change writer's segmentInfos:
     assert Thread.holdsLock(writer);
 
@@ -645,6 +647,10 @@ final class DocumentsWriter {
 
     // Lock order: IW -> DW -> BD
     pushDeletes(newSegment, segmentInfos);
+
+    if (infoStream != null) {
+      message("flush time " + (System.currentTimeMillis()-startTime) + " msec");
+    }
 
     return newSegment;
   }
