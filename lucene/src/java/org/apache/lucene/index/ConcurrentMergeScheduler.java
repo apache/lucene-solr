@@ -283,9 +283,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   protected synchronized int mergeThreadCount() {
     int count = 0;
     for (MergeThread mt : mergeThreads) {
-      if (mt.isAlive() && mt.getCurrentMerge() != null) {
-        count++;
-      }
+      if (mt.isAlive()) count++;
     }
     return count;
   }
@@ -340,16 +338,10 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           while (mergeThreadCount() >= maxMergeCount) {
             startStallTime = System.currentTimeMillis();
             if (verbose()) {
-              message("    too many merges (" + mergeThreadCount() + " vs " + maxMergeCount + "); stalling...");
+              message("    too many merges; stalling...");
             }
-            // NOTE: in theory we should be able to do
-            // simply wait(), but, as a defense against
-            // thread timing hazards where notifyAll()
-            // fails to be called, we wait for at most 1
-            // second and then re-check:
             try {
-              // nocommit
-              wait(10000000);
+              wait();
             } catch (InterruptedException ie) {
               throw new ThreadInterruptedException(ie);
             }
@@ -585,5 +577,4 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   public static void setTestMode() {
     allInstances = new ArrayList<ConcurrentMergeScheduler>();
   }
-
 }
