@@ -49,7 +49,7 @@ Changes in runtime behavior
 Bug fixes
 
  * LUCENE-2855: contrib queryparser was using CharSequence as key in some internal 
-   Map instances, which was leading to incorrect behaviour, since some CharSequence
+   Map instances, which was leading to incorrect behavior, since some CharSequence
    implementors do not override hashcode and equals methods. Now the internal Maps 
    are using String instead. (Adriano Crestani)
 
