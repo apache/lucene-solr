@@ -1,12 +1,17 @@
 package org.apache.lucene.index;
 
+import java.io.IOException;
+import java.util.Iterator;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -42,6 +47,43 @@ public class TestSegmentInfo extends LuceneTestCase {
     long sizeInBytesNoStore = si.sizeInBytes(false);
     long sizeInBytesWithStore = si.sizeInBytes(true);
     assertTrue("sizeInBytesNoStore=" + sizeInBytesNoStore + " sizeInBytesWithStore=" + sizeInBytesWithStore, sizeInBytesWithStore > sizeInBytesNoStore);
+    dir.close();
+  }
+  
+  // LUCENE-2584: calling files() by multiple threads could lead to ConcurrentModificationException
+  public void testFilesConcurrency() throws Exception {
+    Directory dir = newDirectory();
+    // Create many files
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new Field("a", "b", Store.YES, Index.ANALYZED, TermVector.YES));
+    writer.addDocument(doc);
+    writer.close();
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    final SegmentInfo si = sis.info(0);
+    Thread[] threads = new Thread[_TestUtil.nextInt(random, 2, 5)];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          try {
+            // Verify that files() does not throw an exception and that the
+            // iteration afterwards succeeds.
+            Iterator<String> iter = si.files().iterator();
+            while (iter.hasNext()) iter.next();
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+    }
+    
+    for (Thread t : threads) t.start();
+    for (Thread t : threads) t.join();
+    
     dir.close();
   }
   

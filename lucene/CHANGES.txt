@@ -323,6 +323,9 @@ Bug fixes
 * LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
   decides whether to return the cached computed size or not. (Shai Erera)
 
+* LUCENE-2584: SegmentInfo.files() could hit ConcurrentModificationException if
+  called by multiple threads. (Alexander Kanarsky via Shai Erera)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
