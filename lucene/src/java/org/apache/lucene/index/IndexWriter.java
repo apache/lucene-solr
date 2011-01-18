@@ -982,7 +982,6 @@ public class IndexWriter implements Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  @Override
   public void close() throws CorruptIndexException, IOException {
     close(true);
   }
