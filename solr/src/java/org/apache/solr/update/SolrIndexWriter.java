@@ -86,6 +86,10 @@ public class SolrIndexWriter extends IndexWriter {
             setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
             setIndexDeletionPolicy(delPolicy)
     );
+
+    if (config.maxFieldLength != -1)
+      setMaxFieldLength(config.maxFieldLength);
+
     log.debug("Opened Writer " + name);
     this.name = name;
 

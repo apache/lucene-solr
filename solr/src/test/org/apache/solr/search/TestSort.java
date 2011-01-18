@@ -33,7 +33,9 @@ import java.io.IOException;
 import java.util.*;
 
 public class TestSort extends AbstractSolrTestCase {
+  @Override
   public String getSchemaFile() { return null; }
+  @Override
   public String getSolrConfigFile() { return null; }
 
   Random r = random;
@@ -49,6 +51,7 @@ public class TestSort extends AbstractSolrTestCase {
     String val;
     String val2;
 
+    @Override
     public String toString() {
       return "{id=" +doc + " val1="+val + " val2="+val2 + "}";
     }
@@ -63,9 +66,7 @@ public class TestSort extends AbstractSolrTestCase {
       IndexWriter iw = new IndexWriter(
           dir,
           new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).
-              setOpenMode(IndexWriterConfig.OpenMode.CREATE).
-              setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH)
-      );
+              setOpenMode(IndexWriterConfig.OpenMode.CREATE));
       final MyDoc[] mydocs = new MyDoc[ndocs];
 
       int v1EmptyPercent = 50;

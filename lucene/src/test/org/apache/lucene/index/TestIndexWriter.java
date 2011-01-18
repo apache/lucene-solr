@@ -947,7 +947,8 @@ public class TestIndexWriter extends LuceneTestCase {
     public void testHighFreqTerm() throws IOException {
       MockDirectoryWrapper dir = newDirectory();      
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxFieldLength(100000000).setRAMBufferSizeMB(0.01));
+          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setRAMBufferSizeMB(0.01));
+      writer.setMaxFieldLength(100000000);
       // Massive doc that has 128 K a's
       StringBuilder b = new StringBuilder(1024*1024);
       for(int i=0;i<4096;i++) {
@@ -1395,7 +1396,8 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxFieldLength(100000));
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    writer.setMaxFieldLength(100000);
 
     Document doc = new Document();
     StringBuilder b = new StringBuilder();

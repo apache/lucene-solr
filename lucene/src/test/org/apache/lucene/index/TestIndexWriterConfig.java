@@ -65,7 +65,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(WhitespaceAnalyzer.class, conf.getAnalyzer().getClass());
     assertNull(conf.getIndexCommit());
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
-    assertEquals(IndexWriterConfig.UNLIMITED_FIELD_LENGTH, conf.getMaxFieldLength());
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
     assertEquals(OpenMode.CREATE_OR_APPEND, conf.getOpenMode());
     assertTrue(Similarity.getDefault() == conf.getSimilarity());
@@ -87,7 +86,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getAnalyzer");
     getters.add("getIndexCommit");
     getters.add("getIndexDeletionPolicy");
-    getters.add("getMaxFieldLength");
     getters.add("getMergeScheduler");
     getters.add("getOpenMode");
     getters.add("getSimilarity");
@@ -129,7 +127,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     // Tests that the values of the constants does not change
     assertEquals(1000, IndexWriterConfig.WRITE_LOCK_TIMEOUT);
     assertEquals(128, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL);
-    assertEquals(Integer.MAX_VALUE, IndexWriterConfig.UNLIMITED_FIELD_LENGTH);
     assertEquals(-1, IndexWriterConfig.DISABLE_AUTO_FLUSH);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
@@ -269,9 +266,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
     writer.setMaxBufferedDocs(10);
     assertEquals(10, writer.getConfig().getMaxBufferedDocs());
-
-    writer.setMaxFieldLength(10);
-    assertEquals(10, writer.getConfig().getMaxFieldLength());
     
     writer.setMergeScheduler(new SerialMergeScheduler());
     assertEquals(SerialMergeScheduler.class, writer.getConfig().getMergeScheduler().getClass());

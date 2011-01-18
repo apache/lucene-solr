@@ -153,9 +153,6 @@ public class SolrIndexConfig {
     if (termIndexInterval != -1)
       iwc.setTermIndexInterval(termIndexInterval);
 
-    if (maxFieldLength != -1)
-      iwc.setMaxFieldLength(maxFieldLength);
-
     if (writeLockTimeout != -1)
       iwc.setWriteLockTimeout(writeLockTimeout);
 

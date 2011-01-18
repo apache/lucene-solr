@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LimitTokenCountAnalyzer;
+import org.apache.lucene.analysis.LimitTokenCountFilter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
@@ -232,7 +234,7 @@ public class IndexWriter implements Closeable {
    * @deprecated see {@link IndexWriterConfig}
    */
   @Deprecated
-  public final static int DEFAULT_MAX_FIELD_LENGTH = 10000;
+  public final static int DEFAULT_MAX_FIELD_LENGTH = MaxFieldLength.UNLIMITED.getLimit();
 
   /**
    * Default value is 128. Change using {@link #setTermIndexInterval(int)}.
@@ -877,8 +879,8 @@ public class IndexWriter implements Closeable {
   public IndexWriter(Directory d, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a).setOpenMode(
-        create ? OpenMode.CREATE : OpenMode.APPEND).setMaxFieldLength(
-        mfl.getLimit()));
+        create ? OpenMode.CREATE : OpenMode.APPEND));
+    setMaxFieldLength(mfl.getLimit());
   }
 
   /**
@@ -903,8 +905,8 @@ public class IndexWriter implements Closeable {
   @Deprecated
   public IndexWriter(Directory d, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    this(d, new IndexWriterConfig(Version.LUCENE_31, a)
-        .setMaxFieldLength(mfl.getLimit()));
+    this(d, new IndexWriterConfig(Version.LUCENE_31, a));
+    setMaxFieldLength(mfl.getLimit());
   }
 
   /**
@@ -929,8 +931,8 @@ public class IndexWriter implements Closeable {
   @Deprecated
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    this(d, new IndexWriterConfig(Version.LUCENE_31, a).setMaxFieldLength(
-        mfl.getLimit()).setIndexDeletionPolicy(deletionPolicy));
+    this(d, new IndexWriterConfig(Version.LUCENE_31, a).setIndexDeletionPolicy(deletionPolicy));
+    setMaxFieldLength(mfl.getLimit());
   }
 
   /**
@@ -962,8 +964,8 @@ public class IndexWriter implements Closeable {
   public IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a).setOpenMode(
-        create ? OpenMode.CREATE : OpenMode.APPEND).setMaxFieldLength(
-        mfl.getLimit()).setIndexDeletionPolicy(deletionPolicy));
+        create ? OpenMode.CREATE : OpenMode.APPEND).setIndexDeletionPolicy(deletionPolicy));
+    setMaxFieldLength(mfl.getLimit());
   }
   
   /**
@@ -1003,8 +1005,8 @@ public class IndexWriter implements Closeable {
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexCommit commit)
        throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a)
-        .setOpenMode(OpenMode.APPEND).setMaxFieldLength(mfl.getLimit())
-        .setIndexDeletionPolicy(deletionPolicy).setIndexCommit(commit));
+        .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(deletionPolicy).setIndexCommit(commit));
+    setMaxFieldLength(mfl.getLimit());
   }
 
   /**
@@ -1041,7 +1043,6 @@ public class IndexWriter implements Closeable {
     directory = d;
     analyzer = conf.getAnalyzer();
     infoStream = defaultInfoStream;
-    maxFieldLength = conf.getMaxFieldLength();
     termIndexInterval = conf.getTermIndexInterval();
     writeLockTimeout = conf.getWriteLockTimeout();
     similarity = conf.getSimilarity();
@@ -1338,18 +1339,25 @@ public class IndexWriter implements Closeable {
 
   /**
    * The maximum number of terms that will be indexed for a single field in a
-   * document.  This limits the amount of memory required for indexing, so that
+   * document. This limits the amount of memory required for indexing, so that
    * collections with very large files will not crash the indexing process by
-   * running out of memory.  This setting refers to the number of running terms,
-   * not to the number of different terms.<p/>
-   * <strong>Note:</strong> this silently truncates large documents, excluding from the
-   * index all terms that occur further in the document.  If you know your source
-   * documents are large, be sure to set this value high enough to accomodate
-   * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
-   * is your memory, but you should anticipate an OutOfMemoryError.<p/>
-   * By default, no more than {@link #DEFAULT_MAX_FIELD_LENGTH} terms
-   * will be indexed for a field.
-   * @deprecated use {@link IndexWriterConfig#setMaxFieldLength(int)} instead
+   * running out of memory. This setting refers to the number of running terms,
+   * not to the number of different terms.
+   * <p/>
+   * <strong>Note:</strong> this silently truncates large documents, excluding
+   * from the index all terms that occur further in the document. If you know
+   * your source documents are large, be sure to set this value high enough to
+   * accomodate the expected size. If you set it to Integer.MAX_VALUE, then the
+   * only limit is your memory, but you should anticipate an OutOfMemoryError.
+   * <p/>
+   * By default, no more than {@link #DEFAULT_MAX_FIELD_LENGTH} terms will be
+   * indexed for a field.
+   * 
+   * @deprecated use {@link LimitTokenCountAnalyzer} instead. Note that the
+   *             behvaior slightly changed - the analyzer limits the number of
+   *             tokens per token stream created, while this setting limits the
+   *             total number of tokens to index. This only matters if you index
+   *             many multi-valued fields though.
    */
   @Deprecated
   public void setMaxFieldLength(int maxFieldLength) {
@@ -1358,16 +1366,13 @@ public class IndexWriter implements Closeable {
     docWriter.setMaxFieldLength(maxFieldLength);
     if (infoStream != null)
       message("setMaxFieldLength " + maxFieldLength);
-    // Required so config.getMaxFieldLength returns the right value. But this
-    // will go away together with the method in 4.0.
-    config.setMaxFieldLength(maxFieldLength);
   }
 
   /**
    * Returns the maximum number of terms that will be
    * indexed for a single field in a document.
    * @see #setMaxFieldLength
-   * @deprecated use {@link IndexWriterConfig#getMaxFieldLength()} instead
+   * @deprecated use {@link LimitTokenCountAnalyzer} to limit number of tokens.
    */
   @Deprecated
   public int getMaxFieldLength() {
@@ -1956,8 +1961,9 @@ public class IndexWriter implements Closeable {
    * By default, no more than 10,000 terms will be indexed for a field.
    *
    * @see MaxFieldLength
+   * @deprecated remove in 4.0
    */
-  private int maxFieldLength;
+  private int maxFieldLength = DEFAULT_MAX_FIELD_LENGTH;
 
   /**
    * Adds a document to this index.  If the document contains more than
@@ -4281,7 +4287,7 @@ public class IndexWriter implements Closeable {
      * {@link #DEFAULT_MAX_FIELD_LENGTH} 
      * */
     public static final MaxFieldLength LIMITED
-        = new MaxFieldLength("LIMITED", DEFAULT_MAX_FIELD_LENGTH);
+        = new MaxFieldLength("LIMITED", 10000);
   }
 
   /** If {@link #getReader} has been called (ie, this writer

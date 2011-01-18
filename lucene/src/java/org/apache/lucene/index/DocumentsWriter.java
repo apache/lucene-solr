@@ -124,7 +124,7 @@ final class DocumentsWriter {
   private boolean aborting;               // True if an abort is pending
 
   PrintStream infoStream;
-  int maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
+  int maxFieldLength = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
   Similarity similarity;
 
   // max # simultaneous threads; if there are more than

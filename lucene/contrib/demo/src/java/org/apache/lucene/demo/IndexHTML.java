@@ -79,10 +79,10 @@ public class IndexHTML {
         deleting = true;
         indexDocs(root, index, create);
       }
-      writer = new IndexWriter(FSDirectory.open(index), new IndexWriterConfig(
-          Version.LUCENE_CURRENT, new StandardAnalyzer(Version.LUCENE_CURRENT))
-          .setMaxFieldLength(1000000).setOpenMode(
-              create ? OpenMode.CREATE : OpenMode.CREATE_OR_APPEND));
+      writer = new IndexWriter(FSDirectory.open(index),
+          new IndexWriterConfig(Version.LUCENE_CURRENT, new StandardAnalyzer(
+              Version.LUCENE_CURRENT)).setOpenMode(create ? OpenMode.CREATE
+              : OpenMode.CREATE_OR_APPEND));
       indexDocs(root, index, create);		  // add new docs
 
       System.out.println("Optimizing index...");

@@ -147,7 +147,6 @@ public class CreateIndexTask extends PerfTask {
         logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
       }
     }
-    iwConf.setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
     final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
     if (maxBuffered == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
@@ -163,6 +162,8 @@ public class CreateIndexTask extends PerfTask {
   
   public static IndexWriter configureWriter(Config config, PerfRunData runData, OpenMode mode, IndexCommit commit) throws CorruptIndexException, LockObtainFailedException, IOException {
     IndexWriter writer = new IndexWriter(runData.getDirectory(), createWriterConfig(config, runData, mode, commit));
+    writer.setMaxFieldLength(config.get("max.field.length", OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
+
     String infoStreamVal = config.get("writer.info.stream", null);
     if (infoStreamVal != null) {
       if (infoStreamVal.equals("SystemOut")) {
