@@ -18,36 +18,84 @@ package org.apache.lucene.index.values;
  */
 import java.util.Comparator;
 
+import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.util.BytesRef;
 
 /**
+ * Per document and field values consumed by {@link DocValuesConsumer}. 
+ * @see DocValuesField
+ * @see Fieldable#setDocValues(PerDocFieldValues)
  * 
  * @lucene.experimental
  */
 public interface PerDocFieldValues {
 
+  /**
+   * Sets the given <code>long</code> value.
+   */
   public void setInt(long value);
 
+  /**
+   * Sets the given <code>float</code> value.
+   */
   public void setFloat(float value);
 
+  /**
+   * Sets the given <code>double</code> value.
+   */
   public void setFloat(double value);
 
+  /**
+   * Sets the given {@link BytesRef} value and the field's {@link Type}. The
+   * comparator for this field is set to <code>null</code>. If a
+   * <code>null</code> comparator is set the default comparator for the given
+   * {@link Type} is used.
+   */
   public void setBytes(BytesRef value, Type type);
 
+  /**
+   * Sets the given {@link BytesRef} value, the field's {@link Type} and the
+   * field's comparator. If the {@link Comparator} is set to <code>null</code>
+   * the default for the given {@link Type} is used instead.
+   */
   public void setBytes(BytesRef value, Type type, Comparator<BytesRef> comp);
 
+  /**
+   * Returns the set {@link BytesRef} or <code>null</code> if not set.
+   */
   public BytesRef getBytes();
 
+  /**
+   * Returns the set {@link BytesRef} comparator or <code>null</code> if not set
+   */
   public Comparator<BytesRef> bytesComparator();
 
+  /**
+   * Returns the set floating point value or <code>0.0d</code> if not set.
+   */
   public double getFloat();
 
+  /**
+   * Returns the set <code>long</code> value of <code>0</code> if not set.
+   */
   public long getInt();
 
+  /**
+   * Sets the {@link BytesRef} comparator for this field. If the field has a
+   * numeric {@link Type} the comparator will be ignored.
+   */
   public void setBytesComparator(Comparator<BytesRef> comp);
 
+  /**
+   * Sets the {@link Type}
+   */
   public void setType(Type type);
 
+  /**
+  * Returns the {@link Type}
+  */
   public Type type();
 
 }

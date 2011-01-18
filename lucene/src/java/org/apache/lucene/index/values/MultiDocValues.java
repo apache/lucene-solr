@@ -124,7 +124,7 @@ public class MultiDocValues extends DocValues {
       maxDoc = last.start + last.length;
       final DocValuesIndex idx = docValuesIdx[0];
       currentEnum = idx.docValues.getEnum(this.attributes());
-      currentEnum.copyReferences(this);
+      currentEnum.copyFrom(this);
       intsRef = currentEnum.intsRef;
       currentMax = idx.length;
       currentStart = 0;
@@ -148,8 +148,8 @@ public class MultiDocValues extends DocValues {
         if (target >= currentMax) {
           final int idx = ReaderUtil.subIndex(target, starts);
           currentEnum.close();
-          currentEnum = docValuesIdx[idx].docValues.getEnum(this.attributes());
-          currentEnum.copyReferences(this);
+          currentEnum = docValuesIdx[idx].docValues.getEnum();
+          currentEnum.copyFrom(this);
           currentStart = docValuesIdx[idx].start;
           currentMax = currentStart + docValuesIdx[idx].length;
           relativeDoc = target - currentStart;

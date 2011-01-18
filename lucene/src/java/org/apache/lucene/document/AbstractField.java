@@ -49,6 +49,8 @@ public abstract class AbstractField implements Fieldable {
   // length/offset for all primitive types
   protected int binaryLength;
   protected int binaryOffset;
+  protected PerDocFieldValues docValues;
+
 
   protected AbstractField()
   {
@@ -294,8 +296,7 @@ public abstract class AbstractField implements Fieldable {
     result.append('>');
     return result.toString();
   }
-  protected PerDocFieldValues docValues;
-  
+
   public PerDocFieldValues getDocValues() {
     return docValues;
   }

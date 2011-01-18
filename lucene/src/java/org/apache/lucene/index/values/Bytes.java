@@ -178,6 +178,7 @@ public final class Bytes {
     throw new IllegalArgumentException("Illegal Mode: " + mode);
   }
 
+  // TODO open up this API?
   static abstract class BytesBaseSource extends Source {
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
@@ -325,6 +326,7 @@ public final class Bytes {
     }
   }
 
+  // TODO: open up this API?!
   static abstract class BytesWriterBase extends Writer {
 
     private final Directory dir;

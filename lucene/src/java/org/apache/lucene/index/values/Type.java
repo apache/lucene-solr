@@ -1,7 +1,4 @@
 package org.apache.lucene.index.values;
-
-import org.apache.lucene.index.values.DocValues.SortedSource;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +15,8 @@ import org.apache.lucene.index.values.DocValues.SortedSource;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.index.values.DocValues.SortedSource;
 
 /**
  * {@link Type} specifies the type of the {@link DocValues} for a certain field.

@@ -129,7 +129,7 @@ public abstract class DocValues implements Closeable {
    * close {@link DocValues} instances.
    */
   public void close() throws IOException {
-    this.cache.close(this);
+    cache.close(this);
   }
 
   /**
@@ -141,9 +141,12 @@ public abstract class DocValues implements Closeable {
    * <p>
    * Note: All instances previously obtained from {@link #load()} or
    * {@link #loadSorted(Comparator)} will be closed.
+   * @throws IllegalArgumentException if the given cache is <code>null</code>
+   * 
    */
   public void setCache(SourceCache cache) {
-    assert cache != null : "cache must not be null";
+    if (cache == null)
+      throw new IllegalArgumentException("cache must not be null");
     synchronized (this.cache) {
       this.cache.close(this);
       this.cache = cache;

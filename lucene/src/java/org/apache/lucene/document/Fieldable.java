@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.Type;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
@@ -212,11 +213,28 @@ public interface Fieldable extends Serializable {
   */
   void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
   
-  public PerDocFieldValues getDocValues() ;
-  
+  /**
+   * Returns the {@link PerDocFieldValues}
+   */
+  public PerDocFieldValues getDocValues();
+
+  /**
+   * Sets the {@link PerDocFieldValues} for this field. If
+   * {@link PerDocFieldValues} is set this field will store per-document values
+   * 
+   * @see DocValues
+   */
   public void setDocValues(PerDocFieldValues docValues);
-  
+
+  /**
+   * Returns <code>true</code> iff {@link PerDocFieldValues} are set on this
+   * field.
+   */
   public boolean hasDocValues();
-  
+
+  /**
+   * Returns the {@link Type} of the set {@link PerDocFieldValues} or
+   * <code>null</code> if not set.
+   */
   public Type docValuesType();
 }

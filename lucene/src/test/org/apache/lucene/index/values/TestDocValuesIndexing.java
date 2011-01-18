@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.AbstractField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.ValuesField;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.CorruptIndexException;
@@ -71,10 +71,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * TODO: Roadmap to land on trunk
    * 
    * - Add documentation for: 
-   *  - Source and ValuesEnum 
    *  - DocValues 
-   *  - ValuesField
-   *  - Values 
    * - Add @lucene.experimental to all necessary classes 
    * - add test for unoptimized case with deletes
    * - run RAT
@@ -106,7 +103,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
-      ValuesField valuesField = new ValuesField("docId");
+      DocValuesField valuesField = new DocValuesField("docId");
       valuesField.setInt(i);
       doc.add(valuesField);
       doc.add(new Field("docId", "" + i, Store.NO, Index.ANALYZED));
@@ -532,11 +529,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     OpenBitSet deleted = new OpenBitSet(numValues);
     Document doc = new Document();
     Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
-    AbstractField field = random.nextBoolean() ? new ValuesField(value.name())
+    AbstractField field = random.nextBoolean() ? new DocValuesField(value.name())
         : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
             10), idx == Index.NO ? Store.YES : Store.NO, idx);
     doc.add(field);
-    ValuesField valField = new ValuesField("prototype");
+    DocValuesField valField = new DocValuesField("prototype");
     final BytesRef bytesRef = new BytesRef();
 
     final String idBase = value.name() + "_";
@@ -564,7 +561,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         for (int j = 0; j < b.length; j++) {
           b[j] = upto++;
         }
-        valField.setBytes(bytesRef, value);
+        if (bytesRef != null) {
+          valField.setBytes(bytesRef, value);
+        }
       }
       doc.removeFields("id");
       doc.add(new Field("id", idBase + i, Store.YES,

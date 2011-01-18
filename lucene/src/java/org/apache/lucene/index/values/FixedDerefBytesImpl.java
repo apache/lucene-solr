@@ -215,7 +215,7 @@ class FixedDerefBytesImpl {
         valueCount = idx.size();
       }
 
-      protected void copyReferences(DocValuesEnum valuesEnum) {
+      protected void copyFrom(DocValuesEnum valuesEnum) {
         bytesRef = valuesEnum.bytesRef;
         if (bytesRef.bytes.length < size) {
           bytesRef.grow(size);

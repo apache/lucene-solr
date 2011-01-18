@@ -23,7 +23,21 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
+
 /**
+ * {@link DocValuesEnum} is a {@link DocIdSetIterator} iterating <tt>byte[]</tt>
+ * , <tt>long</tt> and <tt>double</tt> stored per document. Depending on the
+ * enum's {@link Type} ({@link #type()}) the enum might skip over documents that
+ * have no value stored. Types like {@link Type#BYTES_VAR_STRAIGHT} might not
+ * skip over documents even if there is no value associated with a document. The
+ * value for document without values again depends on the types implementation
+ * although a reference for a {@link Type} returned from a accessor method
+ * {@link #getFloat()}, {@link #getInt()} or {@link #bytes()} will never be
+ * <code>null</code> even if a document has no value.
+ * <p>
+ * Note: Only the reference for the enum's type are initialized to non
+ * <code>null</code> ie. {@link #getInt()} will always return <code>null</code>
+ * if the enum's Type is {@link Type#SIMPLE_FLOAT_4BYTE}.
  * 
  * @lucene.experimental
  */
@@ -34,10 +48,17 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
   protected FloatsRef floatsRef;
   protected LongsRef intsRef;
 
+  /**
+   * Creates a new {@link DocValuesEnum} for the given type. The
+   * {@link AttributeSource} for this enum is set to <code>null</code>
+   */
   protected DocValuesEnum(Type enumType) {
     this(null, enumType);
   }
 
+  /**
+   * Creates a new {@link DocValuesEnum} for the given type.
+   */
   protected DocValuesEnum(AttributeSource source, Type enumType) {
     this.source = source;
     this.enumType = enumType;
@@ -56,32 +77,57 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
     case SIMPLE_FLOAT_4BYTE:
     case SIMPLE_FLOAT_8BYTE:
       floatsRef = new FloatsRef(1);
-      break;  
+      break;
     }
   }
 
+  /**
+   * Returns the type of this enum
+   */
   public Type type() {
     return enumType;
   }
 
+  /**
+   * Returns a {@link BytesRef} or <code>null</code> if this enum doesn't
+   * enumerate byte[] values
+   */
   public BytesRef bytes() {
     return bytesRef;
   }
 
+  /**
+   * Returns a {@link FloatsRef} or <code>null</code> if this enum doesn't
+   * enumerate floating point values
+   */
   public FloatsRef getFloat() {
     return floatsRef;
   }
 
+  /**
+   * Returns a {@link LongsRef} or <code>null</code> if this enum doesn't
+   * enumerate integer values.
+   */
   public LongsRef getInt() {
     return intsRef;
   }
-  
-  protected void copyReferences(DocValuesEnum valuesEnum) {
+
+  /**
+   * Copies the internal state from the given enum
+   */
+  protected void copyFrom(DocValuesEnum valuesEnum) {
     intsRef = valuesEnum.intsRef;
     floatsRef = valuesEnum.floatsRef;
     bytesRef = valuesEnum.bytesRef;
+    source = valuesEnum.source;
   }
 
+  /**
+   * Returns the {@link AttributeSource} associated with this enum.
+   * <p>
+   * Note: this method might create a new AttribueSource if no
+   * {@link AttributeSource} has been provided during enum creation.
+   */
   public AttributeSource attributes() {
     if (source == null) {
       source = new AttributeSource();
@@ -89,28 +135,37 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
     return source;
   }
 
+  /**
+   * Closes the enum
+   * 
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   */
   public abstract void close() throws IOException;
 
+  /**
+   * Returns an empty {@link DocValuesEnum} for the given {@link Type}.
+   */
   public static DocValuesEnum emptyEnum(Type type) {
     return new DocValuesEnum(type) {
       @Override
       public int nextDoc() throws IOException {
         return NO_MORE_DOCS;
       }
-      
+
       @Override
       public int docID() {
         return NO_MORE_DOCS;
       }
-      
+
       @Override
       public int advance(int target) throws IOException {
         return NO_MORE_DOCS;
       }
-      
+
       @Override
       public void close() throws IOException {
-        
+
       }
     };
   }

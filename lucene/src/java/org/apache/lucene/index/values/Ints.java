@@ -28,7 +28,7 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
  */
 public class Ints {
-//TODO - add bulk copy where possible
+  // TODO - add bulk copy where possible
 
   private Ints() {
   }
