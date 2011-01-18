@@ -407,7 +407,15 @@ public class IndexWriter implements Closeable {
    *  memory.  By setting this to a value > 1 you can reduce
    *  memory usage, at the expense of higher latency when
    *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely. */
+   *  to -1 to skip loading the terms index entirely.
+   *  
+   *  @deprecated this method cannot guarantee the reader (and its sub-readers)
+   *  will be opened with the termInfosIndexDivisor setting because some of them
+   *  may have already been opened according to
+   *  {@link IndexWriterConfig#setReaderTermsIndexDivisor}. You should set the 
+   *  requested termInfosIndexDivisor through 
+   *  {@link IndexWriterConfig#setReaderTermsIndexDivisor} and use 
+   *  {@link #getReader()}. */
   public IndexReader getReader(int termInfosIndexDivisor) throws IOException {
 
     ensureOpen();
