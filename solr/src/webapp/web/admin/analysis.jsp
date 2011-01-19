@@ -418,22 +418,22 @@
       },false,verbose,null);
     }
 
-    printRow(out, "term", CharTermAttribute.class.getName(), arr, new TokToStr() {
+    printRow(out, "term text", CharTermAttribute.class.getName(), arr, new TokToStr() {
       public String toStr(Tok t) {
         return ft.indexedToReadable(t.term);
       }
     },true,verbose,match);
 
-    if (needRaw && verbose) {
-      printRow(out, "raw term", CharTermAttribute.class.getName(), arr, new TokToStr() {
-      public String toStr(Tok t) {
-          // page is UTF-8, so anything goes.
-          return t.term;
-        }
-      },true,verbose,match);
-    }
-
     if (verbose) {
+      if (needRaw) {
+        printRow(out, "raw text", CharTermAttribute.class.getName(), arr, new TokToStr() {
+        public String toStr(Tok t) {
+            // page is UTF-8, so anything goes.
+            return t.term;
+          }
+        },true,verbose,match);
+      }
+
       for (int att=0; att < reflectionCount; att++) {
         final ReflectItem item0 = arr[0].get(0).reflected.get(att);
         final int i = att;
