@@ -162,7 +162,7 @@ public class Grouping {
       // if we aren't going to return any groups, disregard the offset 
       if (numGroups == 0) maxGroupToFind = 0;
 
-      collector = new TopGroupCollector(groupBy, context, normalizeSort(sort), maxGroupToFind);
+      collector = new TopGroupCollector(groupBy, context, searcher.weightSort(normalizeSort(sort)), maxGroupToFind);
 
       /*** if we need a different algorithm when sort != group.sort
       if (compareSorts(sort, groupSort)) {
@@ -185,9 +185,9 @@ public class Grouping {
       int collectorOffset = format==Format.Simple ? 0 : offset;
 
       if (groupBy instanceof StrFieldSource) {
-        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
+        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, searcher.weightSort(groupSort), docsToCollect, needScores, collectorOffset);
       } else {
-        collector2 = new Phase2GroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
+        collector2 = new Phase2GroupCollector(collector, groupBy, context, searcher.weightSort(groupSort), docsToCollect, needScores, collectorOffset);
       }
       return collector2;
     }
@@ -306,11 +306,11 @@ public class Grouping {
     return v;
   }
 
-  static TopDocsCollector newCollector(Sort sort, int numHits, boolean fillFields, boolean needScores) throws IOException {
+  TopDocsCollector newCollector(Sort sort, int numHits, boolean fillFields, boolean needScores) throws IOException {
     if (sort==null || sort==byScoreDesc) {
       return TopScoreDocCollector.create(numHits, true);
     } else {
-      return TopFieldCollector.create(sort, numHits, false, needScores, needScores, true);
+      return TopFieldCollector.create(searcher.weightSort(sort), numHits, false, needScores, needScores, true);
     }
   }
 
@@ -505,12 +505,12 @@ class TopGroupCollector extends GroupCollector {
 
   int matches;
 
-  public TopGroupCollector(ValueSource groupByVS, Map vsContext, Sort sort, int nGroups) throws IOException {
+  public TopGroupCollector(ValueSource groupByVS, Map vsContext, Sort weightedSort, int nGroups) throws IOException {
     this.vs = groupByVS;
     this.context = vsContext;
     this.nGroups = nGroups = Math.max(1,nGroups);  // we need a minimum of 1 for this collector
 
-    SortField[] sortFields = sort.getSort();
+    SortField[] sortFields = weightedSort.getSort();
     this.comparators = new FieldComparator[sortFields.length];
     this.reversed = new int[sortFields.length];
     for (int i = 0; i < sortFields.length; i++) {
@@ -719,7 +719,7 @@ class Phase2GroupCollector extends Collector {
   int docBase;
 
   // TODO: may want to decouple from the phase1 collector
-  public Phase2GroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores, int offset) throws IOException {
+  public Phase2GroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort weightedSort, int docsPerGroup, boolean getScores, int offset) throws IOException {
     boolean getSortFields = false;
 
     if (topGroups.orderedGroups == null)
@@ -733,10 +733,10 @@ class Phase2GroupCollector extends Collector {
       }
       SearchGroupDocs groupDocs = new SearchGroupDocs();
       groupDocs.groupValue = group.groupValue;
-      if (sort==null)
+      if (weightedSort==null)
         groupDocs.collector = TopScoreDocCollector.create(docsPerGroup, true);        
       else
-        groupDocs.collector = TopFieldCollector.create(sort, docsPerGroup, getSortFields, getScores, getScores, true);
+        groupDocs.collector = TopFieldCollector.create(weightedSort, docsPerGroup, getSortFields, getScores, getScores, true);
       groupMap.put(groupDocs.groupValue, groupDocs);
     }
 
@@ -791,8 +791,8 @@ class Phase2StringGroupCollector extends Phase2GroupCollector {
   final SearchGroupDocs[] groups;
   final BytesRef spare = new BytesRef();
 
-  public Phase2StringGroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores, int offset) throws IOException {
-    super(topGroups, groupByVS, vsContext,sort,docsPerGroup,getScores,offset);
+  public Phase2StringGroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort weightedSort, int docsPerGroup, boolean getScores, int offset) throws IOException {
+    super(topGroups, groupByVS, vsContext,weightedSort,docsPerGroup,getScores,offset);
     ordSet = new SentinelIntSet(groupMap.size(), -1);
     groups = new SearchGroupDocs[ordSet.keys.length];
   }
