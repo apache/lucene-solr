@@ -107,11 +107,6 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public Similarity getSimilarity(IndexSearcher searcher) {
-    return maskedQuery.getSimilarity(searcher);
-  }
-
-  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     FieldMaskingSpanQuery clone = null;
 

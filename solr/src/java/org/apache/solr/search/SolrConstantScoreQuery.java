@@ -61,7 +61,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     private Map context;
 
     public ConstantWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
       this.context = ValueSource.newContext(searcher);
       if (filter instanceof SolrFilter)
         ((SolrFilter)filter).createWeight(context, searcher);

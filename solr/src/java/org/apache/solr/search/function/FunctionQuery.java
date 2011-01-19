@@ -95,7 +95,7 @@ public class FunctionQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new AllScorer(getSimilarity(searcher), context, this);
+      return new AllScorer(searcher.getSimilarity(), context, this);
     }
 
     @Override

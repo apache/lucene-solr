@@ -62,7 +62,7 @@ extends Query {
   @Override
   public Weight createWeight(final IndexSearcher searcher) throws IOException {
     final Weight weight = query.createWeight (searcher);
-    final Similarity similarity = query.getSimilarity(searcher);
+    final Similarity similarity = searcher.getSimilarity();
     return new Weight() {
       private float value;
         

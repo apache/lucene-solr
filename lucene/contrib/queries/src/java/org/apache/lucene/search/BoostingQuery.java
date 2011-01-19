@@ -21,10 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Similarity;
+
 /**
  * The BoostingQuery class can be used to effectively demote results that match a given query. 
  * Unlike the "NOT" clause, this still selects documents that contain undesirable terms, 
@@ -56,10 +55,9 @@ public class BoostingQuery extends Query {
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
       BooleanQuery result = new BooleanQuery() {
-
         @Override
-        public Similarity getSimilarity(IndexSearcher searcher) {
-          return new DefaultSimilarity() {
+        public Weight createWeight(IndexSearcher searcher) throws IOException {
+          return new BooleanWeight(searcher, false) {
 
             @Override
             public float coord(int overlap, int max) {

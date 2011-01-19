@@ -102,7 +102,7 @@ public class ConstantScoreQuery extends Query {
     private float queryWeight;
     
     public ConstantWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
       this.innerWeight = (query == null) ? null : query.createWeight(searcher);
     }
 
