@@ -22,6 +22,7 @@ import java.nio.CharBuffer;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -283,6 +284,11 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   public String toString() {
     // CharSequence requires that only the contents are returned, but this is orginal code: "term=" + new String(termBuffer, 0, termLength)
     return new String(termBuffer, 0, termLength);
+  }
+  
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(CharTermAttribute.class, "term", toString());
   }
   
   @Override

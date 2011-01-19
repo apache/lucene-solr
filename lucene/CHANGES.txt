@@ -38,9 +38,9 @@ Changes in backwards compatibility policy
 * LUCENE-2302: The new interface for term attributes, CharTermAttribute,
   now implements CharSequence. This requires the toString() methods of
   CharTermAttribute, deprecated TermAttribute, and Token to return only
-  the term text and no other attribute contents.
-  TODO: Point to new attribute inspection API coming with LUCENE-2374.
-  (Uwe Schindler, Robert Muir)
+  the term text and no other attribute contents. LUCENE-2374 implements
+  an attribute reflection API to no longer rely on toString() for attribute
+  inspection. (Uwe Schindler, Robert Muir)
 
 * LUCENE-2372, LUCENE-2389: StandardAnalyzer, KeywordAnalyzer,
   PerFieldAnalyzerWrapper, WhitespaceTokenizer are now final.  Also removed
@@ -267,6 +267,23 @@ API Changes
   Similarity.getDefault().encodeNormValue().  Use the byte-based method instead 
   to ensure that the norm is encoded with your Similarity.
   (Robert Muir, Mike McCandless)
+
+* LUCENE-2374: Added Attribute reflection API: It's now possible to inspect the
+  contents of AttributeImpl and AttributeSource using a well-defined API.
+  This is e.g. used by Solr's AnalysisRequestHandlers to display all attributes
+  in a structured way.
+  There are also some backwards incompatible changes in toString() output,
+  as LUCENE-2302 introduced the CharSequence interface to CharTermAttribute
+  leading to changed toString() return values. The new API allows to get a
+  string representation in a well-defined way using a new method
+  reflectAsString(). For backwards compatibility reasons, when toString()
+  was implemented by implementation subclasses, the default implementation of
+  AttributeImpl.reflectWith() uses toString()s output instead to report the
+  Attribute's properties. Otherwise, reflectWith() uses Java's reflection
+  (like toString() did before) to get the attribute properties.
+  In addition, the mandatory equals() and hashCode() are no longer required
+  for AttributeImpls, but can still be provided (if needed).
+  (Uwe Schindler)
 
 Bug fixes
 

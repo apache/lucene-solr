@@ -21,6 +21,10 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util._TestUtil;
+
+import java.util.Collections;
+import java.util.HashMap;
 
 @Deprecated
 public class TestSimpleAttributeImpls extends LuceneTestCase {
@@ -40,6 +44,9 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
     
     att.clear();
     assertEquals(0, att.getFlags());
+    
+    _TestUtil.assertAttributeReflection(att,
+      Collections.singletonMap(FlagsAttribute.class.getName() + "#flags", att.getFlags()));
   }
   
   public void testPositionIncrementAttribute() throws Exception {
@@ -57,6 +64,9 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
     
     att.clear();
     assertEquals(1, att.getPositionIncrement());
+    
+    _TestUtil.assertAttributeReflection(att,
+      Collections.singletonMap(PositionIncrementAttribute.class.getName() + "#positionIncrement", att.getPositionIncrement()));
   }
   
   public void testTypeAttribute() throws Exception {
@@ -74,6 +84,9 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
     
     att.clear();
     assertEquals(TypeAttribute.DEFAULT_TYPE, att.type());
+    
+    _TestUtil.assertAttributeReflection(att,
+      Collections.singletonMap(TypeAttribute.class.getName() + "#type", att.type()));
   }
   
   public void testPayloadAttribute() throws Exception {
@@ -82,6 +95,9 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
 
     Payload pl = new Payload(new byte[]{1,2,3,4});
     att.setPayload(pl);
+    
+    _TestUtil.assertAttributeReflection(att,
+      Collections.singletonMap(PayloadAttribute.class.getName() + "#payload", pl));
 
     PayloadAttributeImpl att2 = (PayloadAttributeImpl) assertCloneIsEqual(att);
     assertEquals(pl, att2.getPayload());
@@ -102,6 +118,12 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
 
     att.setOffset(12, 34);
     // no string test here, because order unknown
+    
+    _TestUtil.assertAttributeReflection(att,
+      new HashMap<String,Object>() {{
+        put(OffsetAttribute.class.getName() + "#startOffset", 12);
+        put(OffsetAttribute.class.getName() + "#endOffset", 34);
+      }});
 
     OffsetAttributeImpl att2 = (OffsetAttributeImpl) assertCloneIsEqual(att);
     assertEquals(12, att2.startOffset());
@@ -133,6 +155,9 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
     att.copyTo(assertCloneIsEqual);
     assertTrue(assertCloneIsEqual.isKeyword());
     assertTrue(att.isKeyword());
+    
+    _TestUtil.assertAttributeReflection(att,
+      Collections.singletonMap(KeywordAttribute.class.getName() + "#keyword", att.isKeyword()));
   }
   
   public static final AttributeImpl assertCloneIsEqual(AttributeImpl att) {

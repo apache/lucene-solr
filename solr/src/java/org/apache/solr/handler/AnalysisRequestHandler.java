@@ -23,6 +23,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -45,6 +47,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -132,25 +137,33 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
       }
     }
   }
+  
+  // a static mapping of the reflected attribute keys to the names used in Solr 1.3/1.4
+  static Map<String,String> ATTRIBUTE_MAPPING = Collections.unmodifiableMap(new HashMap<String,String>() {{
+    put(CharTermAttribute.class.getName() + "#term", "value");
+    put(OffsetAttribute.class.getName() + "#startOffset", "start");
+    put(OffsetAttribute.class.getName() + "#endOffset", "end");
+    put(PositionIncrementAttribute.class.getName() + "#positionIncrement", "posInc");
+    put(TypeAttribute.class.getName() + "#type", "type");
+  }});
 
   static NamedList<NamedList<Object>> getTokens(TokenStream tstream) throws IOException {
     // outer is namedList since order of tokens is important
     NamedList<NamedList<Object>> tokens = new NamedList<NamedList<Object>>();
-    // TODO: support custom attributes
-    final CharTermAttribute termAtt = tstream.getAttribute(CharTermAttribute.class);
-    final OffsetAttribute offsetAtt = tstream.addAttribute(OffsetAttribute.class);
-    final TypeAttribute typeAtt = tstream.addAttribute(TypeAttribute.class);
-    final PositionIncrementAttribute posIncAtt = tstream.addAttribute(PositionIncrementAttribute.class);
     
     while (tstream.incrementToken()) {
-      NamedList<Object> token = new SimpleOrderedMap<Object>();
+      final NamedList<Object> token = new SimpleOrderedMap<Object>();
       tokens.add("token", token);
-      token.add("value", termAtt.toString());
-      token.add("start", offsetAtt.startOffset());
-      token.add("end", offsetAtt.endOffset());
-      token.add("posInc", posIncAtt.getPositionIncrement());
-      token.add("type", typeAtt.type());
-      //TODO: handle payloads
+      tstream.reflectWith(new AttributeReflector() {
+        public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+          String k = attClass.getName() + '#' + key;
+          // map keys for "standard attributes":
+          if (ATTRIBUTE_MAPPING.containsKey(k)) {
+            k = ATTRIBUTE_MAPPING.get(k);
+          }
+          token.add(k, value);
+        }
+      });
     }
     return tokens;
   }

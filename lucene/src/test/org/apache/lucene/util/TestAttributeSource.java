@@ -21,6 +21,8 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.tokenattributes.*;
 
 import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TestAttributeSource extends LuceneTestCase {
 
@@ -175,4 +177,70 @@ public class TestAttributeSource extends LuceneTestCase {
       fail("Should throw IllegalArgumentException");
     } catch (IllegalArgumentException iae) {}
   }
+  
+  // this class is included in external class check, so no assertion errors occur
+  @Deprecated
+  static class TestAttributeImpl extends AttributeImpl implements FlagsAttribute {
+  
+    private int flags = 0;
+    
+    public int getFlags() { return flags; }
+    public void setFlags(int flags) { this.flags = flags; }
+    
+    @Override
+    public void clear() { flags = 0; }
+    
+    @Override
+    public void copyTo(AttributeImpl target) {
+      FlagsAttribute t = (FlagsAttribute) target;
+      t.setFlags(flags);
+    }
+    
+    @Override
+    public String toString() {
+      return "foo=bar,moo=mae";
+    }
+  
+  }
+  
+  // this class is excluded in external class check, so assertion on calling reflectWith should occur
+  @Deprecated
+  static class TestAttributeImpl2 extends TestAttributeImpl {}
+  
+  @Deprecated
+  public void testReflectionOfToString() throws Exception {
+    final AttributeSource src = new AttributeSource();
+    final AttributeImpl att = new TestAttributeImpl();
+    src.addAttributeImpl(att);
+    
+    assertSame("FlagsAttribute is not implemented by same instance of TestAttributeImpl",
+      att, src.addAttribute(FlagsAttribute.class));
+    
+    final Map<String,Object> map = new HashMap<String,Object>();
+    final AttributeReflector reflector = new AttributeReflector() {
+      public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+        assertSame(FlagsAttribute.class, attClass);
+        map.put(key, value);
+      }
+    };
+    att.reflectWith(reflector);
+    assertEquals(2, map.size());
+    assertEquals("bar", map.get("foo"));
+    assertEquals("mae", map.get("moo"));
+    
+    map.clear();
+    src.reflectWith(reflector);
+    assertEquals(2, map.size());
+    assertEquals("bar", map.get("foo"));
+    assertEquals("mae", map.get("moo"));
+    
+    map.clear();
+    try {
+      new TestAttributeImpl2().reflectWith(reflector);
+      fail("TestAttributeImpl2 should fail assertion on toString() parsing");
+    } catch (AssertionError e) {
+      // pass
+    }
+  }
+  
 }

@@ -20,14 +20,16 @@ package org.apache.solr.handler;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeReflector;
+import org.apache.lucene.util.SorterTemplate;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
@@ -42,6 +44,7 @@ import org.apache.solr.schema.FieldType;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
+import java.math.BigInteger;
 
 /**
  * A base class for all analysis request handlers.
@@ -109,7 +112,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     }
 
     TokenStream tokenStream = tfac.create(tokenizerChain.charStream(new StringReader(value)));
-    List<Token> tokens = analyzeTokenStream(tokenStream);
+    List<AttributeSource> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
 
@@ -117,7 +120,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     for (TokenFilterFactory tokenFilterFactory : filtfacs) {
       tokenStream = tokenFilterFactory.create(listBasedTokenStream);
-      List<Token> tokenList = analyzeTokenStream(tokenStream);
+      List<AttributeSource> tokenList = analyzeTokenStream(tokenStream);
       namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokenList, context));
       listBasedTokenStream = new ListBasedTokenStream(tokenList);
     }
@@ -132,10 +135,34 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @param analyzer The analyzer to use.
    *
    * @return The produces token list.
+   * @deprecated This method is no longer used by Solr
+   * @see #getQueryTokenSet
    */
-  protected List<Token> analyzeValue(String value, Analyzer analyzer) {
+  @Deprecated
+  protected List<AttributeSource> analyzeValue(String value, Analyzer analyzer) {
     TokenStream tokenStream = analyzer.tokenStream("", new StringReader(value));
     return analyzeTokenStream(tokenStream);
+  }
+
+  /**
+   * Analyzes the given text using the given analyzer and returns the produced tokens.
+   *
+   * @param query    The query to analyze.
+   * @param analyzer The analyzer to use.
+   */
+  protected Set<String> getQueryTokenSet(String query, Analyzer analyzer) {
+    final Set<String> tokens = new HashSet<String>();
+    final TokenStream tokenStream = analyzer.tokenStream("", new StringReader(query));
+    final CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
+    try {
+      tokenStream.reset();
+      while (tokenStream.incrementToken()) {
+        tokens.add(termAtt.toString());
+      }
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
+    }
+    return tokens;
   }
 
   /**
@@ -145,27 +172,17 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return List of tokens produced from the TokenStream
    */
-  private List<Token> analyzeTokenStream(TokenStream tokenStream) {
-    List<Token> tokens = new ArrayList<Token>();
-
-    // TODO change this API to support custom attributes
-    final CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
-    final OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
-    final TypeAttribute typeAtt = tokenStream.addAttribute(TypeAttribute.class);
-    final PositionIncrementAttribute posIncAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
-    final FlagsAttribute flagsAtt = tokenStream.addAttribute(FlagsAttribute.class);
-    final PayloadAttribute payloadAtt = tokenStream.addAttribute(PayloadAttribute.class);
-    
+  private List<AttributeSource> analyzeTokenStream(TokenStream tokenStream) {
+    List<AttributeSource> tokens = new ArrayList<AttributeSource>();
+    // for backwards compatibility, add all "common" attributes
+    tokenStream.addAttribute(CharTermAttribute.class);
+    tokenStream.addAttribute(PositionIncrementAttribute.class);
+    tokenStream.addAttribute(OffsetAttribute.class);
+    tokenStream.addAttribute(TypeAttribute.class);
     try {
+      tokenStream.reset();
       while (tokenStream.incrementToken()) {
-        Token token = new Token();
-        token.setEmpty().append(termAtt);
-        token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
-        token.setType(typeAtt.type());
-        token.setFlags(flagsAtt.getFlags());
-        token.setPayload(payloadAtt.getPayload());
-        token.setPositionIncrement(posIncAtt.getPositionIncrement());
-        tokens.add((Token) token.clone());
+        tokens.add(tokenStream.cloneAttributes());
       }
     } catch (IOException ioe) {
       throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
@@ -173,6 +190,13 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     return tokens;
   }
+
+  // a static mapping of the reflected attribute keys to the names used in Solr 1.4
+  static Map<String,String> ATTRIBUTE_MAPPING = Collections.unmodifiableMap(new HashMap<String,String>() {{
+    put(OffsetAttribute.class.getName() + "#startOffset", "start");
+    put(OffsetAttribute.class.getName() + "#endOffset", "end");
+    put(TypeAttribute.class.getName() + "#type", "type");
+  }});
 
   /**
    * Converts the list of Tokens to a list of NamedLists representing the tokens.
@@ -182,41 +206,95 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return List of NamedLists containing the relevant information taken from the tokens
    */
-  private List<NamedList> convertTokensToNamedLists(List<Token> tokens, AnalysisContext context) {
-    List<NamedList> tokensNamedLists = new ArrayList<NamedList>();
+  private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokens, AnalysisContext context) {
+    final List<NamedList> tokensNamedLists = new ArrayList<NamedList>();
 
-    Collections.sort(tokens, new Comparator<Token>() {
-      public int compare(Token o1, Token o2) {
-        return o1.endOffset() - o2.endOffset();
+    final int[] positions = new int[tokens.size()];
+    int position = 0;    
+    for (int i = 0, c = tokens.size(); i < c; i++) {
+      AttributeSource token = tokens.get(i);
+      position += token.addAttribute(PositionIncrementAttribute.class).getPositionIncrement();
+      positions[i] = position;
+    }
+    
+    // sort the tokens by absoulte position
+    new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        Collections.swap(tokens, i, j);
       }
-    });
+      
+      @Override
+      protected int compare(int i, int j) {
+        return positions[i] - positions[j];
+      }
 
-    int position = 0;
+      @Override
+      protected void setPivot(int i) {
+        pivot = positions[i];
+      }
+  
+      @Override
+      protected int comparePivot(int j) {
+        return pivot - positions[j];
+      }
+      
+      private int pivot;
+    }.mergeSort(0, tokens.size() - 1);
 
     FieldType fieldType = context.getFieldType();
 
-    for (Token token : tokens) {
-      NamedList<Object> tokenNamedList = new SimpleOrderedMap<Object>();
+    for (int i = 0, c = tokens.size(); i < c; i++) {
+      AttributeSource token = tokens.get(i);
+      final NamedList<Object> tokenNamedList = new SimpleOrderedMap<Object>();
+      final String rawText = token.addAttribute(CharTermAttribute.class).toString();
 
-      String text = fieldType.indexedToReadable(token.toString());
+      String text = fieldType.indexedToReadable(rawText);
       tokenNamedList.add("text", text);
-      if (!text.equals(token.toString())) {
-        tokenNamedList.add("raw_text", token.toString());
+      if (!text.equals(rawText)) {
+        tokenNamedList.add("raw_text", rawText);
       }
-      tokenNamedList.add("type", token.type());
-      tokenNamedList.add("start", token.startOffset());
-      tokenNamedList.add("end", token.endOffset());
 
-      position += token.getPositionIncrement();
-      tokenNamedList.add("position", position);
-
-      if (context.getTermsToMatch().contains(token.toString())) {
+      if (context.getTermsToMatch().contains(rawText)) {
         tokenNamedList.add("match", true);
       }
 
-      if (token.getPayload() != null) {
-        tokenNamedList.add("payload", token.getPayload());
-      }
+      tokenNamedList.add("position", positions[i]);
+
+      token.reflectWith(new AttributeReflector() {
+        public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+          // leave out position and term
+          if (CharTermAttribute.class.isAssignableFrom(attClass))
+            return;
+          if (PositionIncrementAttribute.class.isAssignableFrom(attClass))
+            return;
+          
+          String k = attClass.getName() + '#' + key;
+          
+          // map keys for "standard attributes":
+          if (ATTRIBUTE_MAPPING.containsKey(k)) {
+            k = ATTRIBUTE_MAPPING.get(k);
+          }
+          
+          // TODO: special handling for payloads - move this to ResponseWriter?
+          if (value instanceof Payload) {
+            Payload p = (Payload) value;
+            if( null != p ) {
+              BigInteger bi = new BigInteger( p.getData() );
+              String ret = bi.toString( 16 );
+              if (ret.length() % 2 != 0) {
+                // Pad with 0
+                ret = "0"+ret;
+              }
+              value = ret;
+            } else { 
+              value = null;
+            }
+          }
+
+          tokenNamedList.add(k, value);
+        }
+      });
 
       tokensNamedLists.add(tokenNamedList);
     }
@@ -250,38 +328,27 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    */
   // TODO refactor to support custom attributes
   protected final static class ListBasedTokenStream extends TokenStream {
-    private final List<Token> tokens;
-    private Iterator<Token> tokenIterator;
+    private final List<AttributeSource> tokens;
+    private Iterator<AttributeSource> tokenIterator;
 
-    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-    private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
-    private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
-    private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     /**
      * Creates a new ListBasedTokenStream which uses the given tokens as its token source.
      *
      * @param tokens Source of tokens to be used
      */
-    ListBasedTokenStream(List<Token> tokens) {
+    ListBasedTokenStream(List<AttributeSource> tokens) {
       this.tokens = tokens;
       tokenIterator = tokens.iterator();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean incrementToken() throws IOException {
       if (tokenIterator.hasNext()) {
-        Token next = tokenIterator.next();
-        termAtt.copyBuffer(next.buffer(), 0, next.length());
-        typeAtt.setType(next.type());
-        offsetAtt.setOffset(next.startOffset(), next.endOffset());
-        flagsAtt.setFlags(next.getFlags());
-        payloadAtt.setPayload(next.getPayload());
-        posIncAtt.setPositionIncrement(next.getPositionIncrement());
+        AttributeSource next = tokenIterator.next();
+        Iterator<Class<? extends Attribute>> atts = next.getAttributeClassesIterator();
+        while (atts.hasNext()) // make sure all att impls in the token exist here
+          addAttribute(atts.next());
+        next.copyTo(this);
         return true;
       } else {
         return false;

@@ -35,6 +35,8 @@ public class LowercaseExpandedTermsAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -2804760312723049527L;
 
+  { enableBackwards = false; }
+  
   private boolean lowercaseExpandedTerms = true;
 
   public LowercaseExpandedTermsAttributeImpl() {

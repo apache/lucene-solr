@@ -35,6 +35,8 @@ public class LocaleAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -6804760312720049526L;
 
+  { enableBackwards = false; }
+  
   private Locale locale = Locale.getDefault();
 
   public LocaleAttributeImpl() {

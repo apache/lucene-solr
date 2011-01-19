@@ -35,6 +35,8 @@ public class MultiFieldAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -6809760312720049526L;
 
+  { enableBackwards = false; }
+  
   private CharSequence[] fields;
 
   public MultiFieldAttributeImpl() {

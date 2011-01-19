@@ -35,6 +35,8 @@ public class FuzzyAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -2104763012527049527L;
 
+  { enableBackwards = false; }
+  
   private int prefixLength = FuzzyQuery.defaultPrefixLength;
 
   private float minSimilarity = FuzzyQuery.defaultMinSimilarity;
@@ -90,7 +92,7 @@ public class FuzzyAttributeImpl extends AttributeImpl
 
   @Override
   public String toString() {
-    return "<fuzzyAttribute prefixLength=" + this.prefixLength + "/>";
+    return "<fuzzyAttribute prefixLength=" + this.prefixLength + ",minSimilarity=" + this.minSimilarity + "/>";
   }
 
 }

@@ -34,6 +34,8 @@ public class DefaultOperatorAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -6804760312723049526L;
 
+  { enableBackwards = false; }
+  
   private Operator operator = Operator.OR;
 
   public DefaultOperatorAttributeImpl() {

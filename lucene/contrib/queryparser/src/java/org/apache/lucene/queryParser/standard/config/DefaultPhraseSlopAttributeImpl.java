@@ -34,6 +34,8 @@ public class DefaultPhraseSlopAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -2104763012527049527L;
 
+  { enableBackwards = false; }
+  
   private int defaultPhraseSlop = 0;
 
   public DefaultPhraseSlopAttributeImpl() {

@@ -33,6 +33,8 @@ public class PositionIncrementsAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -2804763012793049527L;
 
+  { enableBackwards = false; }
+  
   private boolean positionIncrementsEnabled = false;
 
   public PositionIncrementsAttributeImpl() {

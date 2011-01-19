@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.icu.tokenattributes;
 import java.io.Serializable;
 
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 
 import com.ibm.icu.lang.UScript;
 
@@ -77,7 +78,7 @@ public class ScriptAttributeImpl extends AttributeImpl implements ScriptAttribut
   }
 
   @Override
-  public String toString() {
-    return "script=" + getName();
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(ScriptAttribute.class, "script", getName());
   }
 }

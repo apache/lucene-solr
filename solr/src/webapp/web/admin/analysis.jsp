@@ -23,6 +23,7 @@
                  org.apache.lucene.analysis.CharReader,
                  org.apache.lucene.analysis.CharStream,
                  org.apache.lucene.analysis.tokenattributes.*,
+                 org.apache.lucene.util.AttributeReflector,
                  org.apache.solr.analysis.CharFilterFactory,
                  org.apache.solr.analysis.TokenFilterFactory,
                  org.apache.solr.analysis.TokenizerChain,
@@ -70,19 +71,19 @@
 <table>
 <tr>
   <td>
-	<strong>Field
+  <strong>Field
           <select name="nt">
-	  <option <%= nt.equals("name") ? "selected=\"selected\"" : "" %> >name</option>
-	  <option <%= nt.equals("type") ? "selected=\"selected\"" : "" %>>type</option>
+    <option <%= nt.equals("name") ? "selected=\"selected\"" : "" %> >name</option>
+    <option <%= nt.equals("type") ? "selected=\"selected\"" : "" %>>type</option>
           </select></strong>
   </td>
   <td>
-	<input class="std" name="name" type="text" value="<% XML.escapeCharData(name, out); %>">
+  <input class="std" name="name" type="text" value="<% XML.escapeCharData(name, out); %>">
   </td>
 </tr>
 <tr>
   <td>
-	<strong>Field value (Index)</strong>
+  <strong>Field value (Index)</strong>
   <br/>
   verbose output
   <input name="verbose" type="checkbox"
@@ -93,19 +94,19 @@
      <%= highlight ? "checked=\"true\"" : "" %> >
   </td>
   <td>
-	<textarea class="std" rows="8" cols="70" name="val"><% XML.escapeCharData(val,out); %></textarea>
+  <textarea class="std" rows="8" cols="70" name="val"><% XML.escapeCharData(val,out); %></textarea>
   </td>
 </tr>
 <tr>
   <td>
-	<strong>Field value (Query)</strong>
+  <strong>Field value (Query)</strong>
   <br/>
   verbose output
   <input name="qverbose" type="checkbox"
      <%= qverbose ? "checked=\"true\"" : "" %> >
   </td>
   <td>
-	<textarea class="std" rows="1" cols="70" name="qval"><% XML.escapeCharData(qval,out); %></textarea>
+  <textarea class="std" rows="1" cols="70" name="qval"><% XML.escapeCharData(qval,out); %></textarea>
   </td>
 </tr>
 <tr>
@@ -114,7 +115,7 @@
   </td>
 
   <td>
-	<input class="stdbutton" type="submit" value="analyze">
+  <input class="stdbutton" type="submit" value="analyze">
   </td>
 
 </tr>
@@ -147,24 +148,26 @@
   }
 
   if (field!=null) {
-    HashSet<Tok> matches = null;
+    HashSet<String> matches = null;
     if (qval!="" && highlight) {
       Reader reader = new StringReader(qval);
       Analyzer analyzer =  field.getType().getQueryAnalyzer();
       TokenStream tstream = analyzer.reusableTokenStream(field.getName(),reader);
+      CharTermAttribute termAtt = tstream.addAttribute(CharTermAttribute.class);
       tstream.reset();
-      List<AttributeSource> tokens = getTokens(tstream);
-      matches = new HashSet<Tok>();
-      for (AttributeSource t : tokens) { matches.add( new Tok(t,0)); }
+      matches = new HashSet<String>();
+      while (tstream.incrementToken()) {
+        matches.add(termAtt.toString());
+      }
     }
 
     if (val!="") {
       out.println("<h3>Index Analyzer</h3>");
-      doAnalyzer(out, field, val, false, verbose,matches);
+      doAnalyzer(out, field, val, false, verbose, matches);
     }
     if (qval!="") {
       out.println("<h3>Query Analyzer</h3>");
-      doAnalyzer(out, field, qval, true, qverbose,null);
+      doAnalyzer(out, field, qval, true, qverbose, null);
     }
   }
 
@@ -176,7 +179,7 @@
 
 
 <%!
-  private static void doAnalyzer(JspWriter out, SchemaField field, String val, boolean queryAnalyser, boolean verbose, Set<Tok> match) throws Exception {
+  private static void doAnalyzer(JspWriter out, SchemaField field, String val, boolean queryAnalyser, boolean verbose, Set<String> match) throws Exception {
 
     FieldType ft = field.getType();
      Analyzer analyzer = queryAnalyser ?
@@ -239,7 +242,7 @@
        tstream.reset();
        List<AttributeSource> tokens = getTokens(tstream);
        if (verbose) {
-         writeHeader(out, analyzer.getClass(), new HashMap<String,String>());
+         writeHeader(out, analyzer.getClass(), Collections.EMPTY_MAP);
        }
        writeTokens(out, tokens, ft, verbose, match);
      }
@@ -248,45 +251,51 @@
 
   static List<AttributeSource> getTokens(TokenStream tstream) throws IOException {
     List<AttributeSource> tokens = new ArrayList<AttributeSource>();
-   
-    while (true) {
-      if (!tstream.incrementToken())
-        break;
-      else {
-      	tokens.add(tstream.cloneAttributes());
-      }
+    tstream.reset();
+    while (tstream.incrementToken()) {
+      tokens.add(tstream.cloneAttributes());
     }
     return tokens;
   }
 
-
+  private static class ReflectItem {
+    final Class<? extends Attribute> attClass;
+    final String key;
+    final Object value;
+    
+    ReflectItem(Class<? extends Attribute> attClass, String key, Object value) {
+      this.attClass = attClass;
+      this.key = key;
+      this.value = value;
+    }
+  }
+  
   private static class Tok {
-    AttributeSource token;
-    int pos;
+    final String term;
+    final int pos;
+    final List<ReflectItem> reflected = new ArrayList<ReflectItem>();
+    
     Tok(AttributeSource token, int pos) {
-      this.token=token;
-      this.pos=pos;
-    }
-
-    public boolean equals(Object o) {
-      return ((Tok)o).token.toString().equals(token.toString());
-    }
-    public int hashCode() {
-      return token.toString().hashCode();
-    }
-    public String toString() {
-      return token.toString();
-    }
-    public String toPrintableString() {
-      return token.addAttribute(CharTermAttribute.class).toString();
+      this.term = token.addAttribute(CharTermAttribute.class).toString();
+      this.pos = pos;
+      token.reflectWith(new AttributeReflector() {
+        public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+          // leave out position and term
+          if (CharTermAttribute.class.isAssignableFrom(attClass))
+            return;
+          if (PositionIncrementAttribute.class.isAssignableFrom(attClass))
+            return;
+          reflected.add(new ReflectItem(attClass, key, value));
+        }
+      });
     }
   }
 
-  private static interface ToStr {
-    public String toStr(Object o);
+  private static interface TokToStr {
+    public String toStr(Tok o);
   }
 
-  private static void printRow(JspWriter out, String header, List[] arrLst, ToStr converter, boolean multival, boolean verbose, Set<Tok> match) throws IOException {
+  private static void printRow(JspWriter out, String header, String headerTitle, List<Tok>[] arrLst, TokToStr converter, boolean multival, boolean verbose, Set<String> match) throws IOException {
     // find the maximum number of terms for any position
     int maxSz=1;
     if (multival) {
@@ -300,7 +309,13 @@
       out.println("<tr>");
       if (idx==0 && verbose) {
         if (header != null) {
-          out.print("<th NOWRAP rowspan=\""+maxSz+"\">");
+          out.print("<th NOWRAP rowspan=\""+maxSz+"\"");
+          if (headerTitle != null) {
+            out.print(" title=\"");
+            XML.escapeCharData(headerTitle,out);
+            out.print("\"");
+          }
+          out.print(">");
           XML.escapeCharData(header,out);
           out.println("</th>");
         }
@@ -309,7 +324,7 @@
       for (int posIndex=0; posIndex<arrLst.length; posIndex++) {
         List<Tok> lst = arrLst[posIndex];
         if (lst.size() <= idx) continue;
-        if (match!=null && match.contains(lst.get(idx))) {
+        if (match!=null && match.contains(lst.get(idx).term)) {
           out.print("<td class=\"highlight\"");
         } else {
           out.print("<td class=\"debugdata\"");
@@ -332,14 +347,16 @@
 
   }
 
+  /* this method is totally broken, as no charset involved: new String(byte[]) is crap!
   static String isPayloadString( Payload p ) {
-  	String sp = new String( p.getData() );
-	for( int i=0; i < sp.length(); i++ ) {
-	if( !Character.isDefined( sp.charAt(i) ) || Character.isISOControl( sp.charAt(i) ) )
-	  return "";
-	}
-	return "(" + sp + ")";
+    String sp = new String(p.getData());
+    for( int i=0; i < sp.length(); i++ ) {
+      if( !Character.isDefined( sp.charAt(i) ) || Character.isISOControl( sp.charAt(i) ) )
+        return "";
+      }
+    return "(" + sp + ")";
   }
+  */
 
   static void writeHeader(JspWriter out, Class clazz, Map<String,String> args) throws IOException {
     out.print("<h4>");
@@ -351,16 +368,17 @@
 
 
   // readable, raw, pos, type, start/end
-  static void writeTokens(JspWriter out, List<AttributeSource> tokens, final FieldType ft, boolean verbose, Set<Tok> match) throws IOException {
+  static void writeTokens(JspWriter out, List<AttributeSource> tokens, final FieldType ft, boolean verbose, Set<String> match) throws IOException {
 
     // Use a map to tell what tokens are in what positions
     // because some tokenizers/filters may do funky stuff with
     // very large increments, or negative increments.
     HashMap<Integer,List<Tok>> map = new HashMap<Integer,List<Tok>>();
     boolean needRaw=false;
-    int pos=0;
+    int pos=0, reflectionCount = -1;
     for (AttributeSource t : tokens) {
-      if (!t.toString().equals(ft.indexedToReadable(t.toString()))) {
+      String text = t.addAttribute(CharTermAttribute.class).toString();
+      if (!text.equals(ft.indexedToReadable(text))) {
         needRaw=true;
       }
 
@@ -371,117 +389,78 @@
         map.put(pos,lst);
       }
       Tok tok = new Tok(t,pos);
+      // sanity check
+      if (reflectionCount < 0) {
+        reflectionCount = tok.reflected.size();
+      } else {
+        if (reflectionCount != tok.reflected.size())
+          throw new RuntimeException("Should not happen: Number of reflected entries differs for position=" + pos);
+      }
       lst.add(tok);
     }
 
     List<Tok>[] arr = (List<Tok>[])map.values().toArray(new ArrayList[map.size()]);
 
-    /* Jetty 6.1.3 miscompiles this generics version...
-    Arrays.sort(arr, new Comparator<List<Tok>>() {
-      public int compare(List<Tok> toks, List<Tok> toks1) {
-        return toks.get(0).pos - toks1.get(0).pos;
-      }
-    }
-    */
-
+    // Jetty 6.1.3 miscompiles a generics-enabled version..., without generics:
     Arrays.sort(arr, new Comparator() {
       public int compare(Object toks, Object toks1) {
         return ((List<Tok>)toks).get(0).pos - ((List<Tok>)toks1).get(0).pos;
       }
-    }
-
-
-    );
+    });
 
     out.println("<table width=\"auto\" class=\"analysis\" border=\"1\">");
 
     if (verbose) {
-      printRow(out,"term position", arr, new ToStr() {
-        public String toStr(Object o) {
-          return Integer.toString(((Tok)o).pos);
+      printRow(out, "position", "calculated from " + PositionIncrementAttribute.class.getName(), arr, new TokToStr() {
+        public String toStr(Tok t) {
+          return Integer.toString(t.pos);
         }
-      }
-              ,false
-              ,verbose
-              ,null);
+      },false,verbose,null);
     }
 
-
-    printRow(out,"term text", arr, new ToStr() {
-      public String toStr(Object o) {
-        return ft.indexedToReadable( ((Tok)o).toPrintableString() );
+    printRow(out, "term", CharTermAttribute.class.getName(), arr, new TokToStr() {
+      public String toStr(Tok t) {
+        return ft.indexedToReadable(t.term);
       }
-    }
-            ,true
-            ,verbose
-            ,match
-   );
+    },true,verbose,match);
 
-    if (needRaw) {
-      printRow(out,"raw text", arr, new ToStr() {
-        public String toStr(Object o) {
+    if (needRaw && verbose) {
+      printRow(out, "raw term", CharTermAttribute.class.getName(), arr, new TokToStr() {
+      public String toStr(Tok t) {
           // page is UTF-8, so anything goes.
-          return ((Tok)o).toPrintableString();
+          return t.term;
         }
-      }
-              ,true
-              ,verbose
-              ,match
-      );
+      },true,verbose,match);
     }
 
     if (verbose) {
-      printRow(out,"term type", arr, new ToStr() {
-        public String toStr(Object o) {
-          String tt =  ((Tok)o).token.addAttribute(TypeAttribute.class).type();
-          if (tt == null) {
-             return "null";
-          } else {
-             return tt;
-          }
-        }
-      }
-              ,true
-              ,verbose,
-              null
-      );
-    }
-
-    if (verbose) {
-      printRow(out,"source start,end", arr, new ToStr() {
-        public String toStr(Object o) {
-          AttributeSource t = ((Tok)o).token;
-          return Integer.toString(t.addAttribute(OffsetAttribute.class).startOffset()) + ',' + t.addAttribute(OffsetAttribute.class).endOffset() ;
-        }
-      }
-              ,true
-              ,verbose
-              ,null
-      );
-    }
-
-    if (verbose) {
-      printRow(out,"payload", arr, new ToStr() {
-        public String toStr(Object o) {
-          AttributeSource t = ((Tok)o).token;
-          Payload p = t.addAttribute(PayloadAttribute.class).getPayload();
-          if( null != p ) {
-            BigInteger bi = new BigInteger( p.getData() );
-            String ret = bi.toString( 16 );
-            if (ret.length() % 2 != 0) {
-              // Pad with 0
-              ret = "0"+ret;
+      for (int att=0; att < reflectionCount; att++) {
+        final ReflectItem item0 = arr[0].get(0).reflected.get(att);
+        final int i = att;
+        printRow(out, item0.key, item0.attClass.getName(), arr, new TokToStr() {
+          public String toStr(Tok t) {
+            final ReflectItem item = t.reflected.get(i);
+            if (item0.attClass != item.attClass || !item0.key.equals(item.key))
+              throw new RuntimeException("Should not happen: attribute types suddenly change at position=" + t.pos);
+            if (item.value instanceof Payload) {
+              Payload p = (Payload) item.value;
+              if( null != p ) {
+                BigInteger bi = new BigInteger( p.getData() );
+                String ret = bi.toString( 16 );
+                if (ret.length() % 2 != 0) {
+                  // Pad with 0
+                  ret = "0"+ret;
+                }
+                //TODO maybe fix: ret += isPayloadString(p);
+                return ret;
+              }
+              return "";
+            } else {
+              return (item.value != null) ? item.value.toString() : "";
             }
-            ret += isPayloadString( p );
-            return ret;
           }
-          return "";			
-        }
+        },true,verbose,null);
       }
-              ,true
-              ,verbose
-              ,null
-      );
     }
     
     out.println("</table>");

@@ -18,7 +18,9 @@ package org.apache.lucene.analysis.tokenattributes;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import java.nio.CharBuffer;
+import java.util.Collections;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -123,6 +125,13 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     copy = (CharTermAttributeImpl) TestSimpleAttributeImpls.assertCopyIsEqual(t);
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
+  }
+  
+  public void testAttributeReflection() throws Exception {
+    CharTermAttributeImpl t = new CharTermAttributeImpl();
+    t.append("foobar");
+    _TestUtil.assertAttributeReflection(t,
+      Collections.singletonMap(CharTermAttribute.class.getName() + "#term", "foobar"));
   }
   
   public void testCharSequenceInterface() {

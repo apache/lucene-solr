@@ -35,6 +35,8 @@ public class AnalyzerAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -6804760312723049526L;
 
+  { enableBackwards = false; }
+  
   private Analyzer analyzer;
 
   public AnalyzerAttributeImpl() {

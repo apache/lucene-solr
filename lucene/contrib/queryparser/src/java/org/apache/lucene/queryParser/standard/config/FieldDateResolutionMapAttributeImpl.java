@@ -35,6 +35,8 @@ public class FieldDateResolutionMapAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -2104763012523049527L;
 
+  { enableBackwards = false; }
+  
   private Map<CharSequence, DateTools.Resolution> dateRes = new HashMap<CharSequence, DateTools.Resolution>();
   
 

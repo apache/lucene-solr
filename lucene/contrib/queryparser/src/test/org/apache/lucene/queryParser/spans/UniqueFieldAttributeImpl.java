@@ -33,6 +33,8 @@ public class UniqueFieldAttributeImpl extends AttributeImpl implements
 
   private static final long serialVersionUID = 8553318595851064232L;
 
+  { enableBackwards = false; }
+  
   private CharSequence uniqueField;
 
   public UniqueFieldAttributeImpl() {

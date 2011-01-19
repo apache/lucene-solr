@@ -38,6 +38,8 @@ public class FieldBoostMapAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -2104763012523049527L;
 
+  { enableBackwards = false; }
+  
   private Map<String, Float> boosts = new LinkedHashMap<String, Float>();
   
 

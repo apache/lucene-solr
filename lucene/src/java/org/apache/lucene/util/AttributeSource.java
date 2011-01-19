@@ -188,20 +188,9 @@ public class AttributeSource {
   private static final WeakHashMap<Class<? extends AttributeImpl>,LinkedList<WeakReference<Class<? extends Attribute>>>> knownImplClasses =
     new WeakHashMap<Class<? extends AttributeImpl>,LinkedList<WeakReference<Class<? extends Attribute>>>>();
   
-  /** <b>Expert:</b> Adds a custom AttributeImpl instance with one or more Attribute interfaces.
-   * <p><font color="red"><b>Please note:</b> It is not guaranteed, that <code>att</code> is added to
-   * the <code>AttributeSource</code>, because the provided attributes may already exist.
-   * You should always retrieve the wanted attributes using {@link #getAttribute} after adding
-   * with this method and cast to your class.
-   * The recommended way to use custom implementations is using an {@link AttributeFactory}.
-   * </font></p>
-   */
-  public void addAttributeImpl(final AttributeImpl att) {
-    final Class<? extends AttributeImpl> clazz = att.getClass();
-    if (attributeImpls.containsKey(clazz)) return;
-    LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces;
+  static LinkedList<WeakReference<Class<? extends Attribute>>> getAttributeInterfaces(final Class<? extends AttributeImpl> clazz) {
     synchronized(knownImplClasses) {
-      foundInterfaces = knownImplClasses.get(clazz);
+      LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces = knownImplClasses.get(clazz);
       if (foundInterfaces == null) {
         // we have a strong reference to the class instance holding all interfaces in the list (parameter "att"),
         // so all WeakReferences are never evicted by GC
@@ -218,7 +207,23 @@ public class AttributeSource {
           actClazz = actClazz.getSuperclass();
         } while (actClazz != null);
       }
+      return foundInterfaces;
     }
+  }
+  
+  /** <b>Expert:</b> Adds a custom AttributeImpl instance with one or more Attribute interfaces.
+   * <p><font color="red"><b>Please note:</b> It is not guaranteed, that <code>att</code> is added to
+   * the <code>AttributeSource</code>, because the provided attributes may already exist.
+   * You should always retrieve the wanted attributes using {@link #getAttribute} after adding
+   * with this method and cast to your class.
+   * The recommended way to use custom implementations is using an {@link AttributeFactory}.
+   * </font></p>
+   */
+  public void addAttributeImpl(final AttributeImpl att) {
+    final Class<? extends AttributeImpl> clazz = att.getClass();
+    if (attributeImpls.containsKey(clazz)) return;
+    final LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces =
+      getAttributeInterfaces(clazz);
     
     // add all interfaces of this AttributeImpl to the maps
     for (WeakReference<Class<? extends Attribute>> curInterfaceRef : foundInterfaces) {
@@ -439,9 +444,21 @@ public class AttributeSource {
       return false;
   }
   
+  /**
+   * Returns a string representation of the object. In general, the {@code toString} method
+   * returns a string that &quot;textually represents&quot; this object.
+   *
+   * <p><b>WARNING:</b> For backwards compatibility this method is implemented as
+   * in Lucene 2.9/3.0. In Lucene 4.0 this default implementation
+   * will be removed.
+   *
+   * <p>It is recommeneded to use {@link #reflectAsString} or {@link #reflectWith}
+   * to get a well-defined output of AttributeSource's internals.
+   */
+  // TODO: @deprecated remove this method in 4.0
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder().append('(');
+    final StringBuilder sb = new StringBuilder().append('(');
     if (hasAttributes()) {
       if (currentState == null) {
         computeCurrentState();
@@ -454,6 +471,53 @@ public class AttributeSource {
     return sb.append(')').toString();
   }
   
+  /**
+   * This method returns the current attribute values as a string in the following format
+   * by calling the {@link #reflectWith(AttributeReflector)} method:
+   * 
+   * <ul>
+   * <li><em>iff {@code prependAttClass=true}:</em> {@code "AttributeClass#key=value,AttributeClass#key=value"}
+   * <li><em>iff {@code prependAttClass=false}:</em> {@code "key=value,key=value"}
+   * </ul>
+   *
+   * @see #reflectWith(AttributeReflector)
+   */
+  public final String reflectAsString(final boolean prependAttClass) {
+    final StringBuilder buffer = new StringBuilder();
+    reflectWith(new AttributeReflector() {
+      public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+        if (buffer.length() > 0) {
+          buffer.append(',');
+        }
+        if (prependAttClass) {
+          buffer.append(attClass.getName()).append('#');
+        }
+        buffer.append(key).append('=').append((value == null) ? "null" : value);
+      }
+    });
+    return buffer.toString();
+  }
+  
+  /**
+   * This method is for introspection of attributes, it should simply
+   * add the key/values this AttributeSource holds to the given {@link AttributeReflector}.
+   *
+   * <p>This method iterates over all Attribute implementations and calls the
+   * corresponding {@link AttributeImpl#reflectWith} method.</p>
+   *
+   * @see AttributeImpl#reflectWith
+   */
+  public final void reflectWith(AttributeReflector reflector) {
+    if (hasAttributes()) {
+      if (currentState == null) {
+        computeCurrentState();
+      }
+      for (State state = currentState; state != null; state = state.next) {
+        state.attribute.reflectWith(reflector);
+      }
+    }
+  }
+
   /**
    * Performs a clone of all {@link AttributeImpl} instances returned in a new
    * {@code AttributeSource} instance. This method can be used to e.g. create another TokenStream

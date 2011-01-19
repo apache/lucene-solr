@@ -22,6 +22,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Random;
+import java.util.Map;
+import java.util.HashMap;
+
+import org.junit.Assert;
 
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -240,5 +244,18 @@ public class _TestUtil {
       ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);
       ((ConcurrentMergeScheduler) ms).setMaxMergeCount(3);
     }
+  }
+
+  /** Checks some basic behaviour of an AttributeImpl
+   * @param reflectedValues contains a map with "AttributeClass#key" as values
+   */
+  public static <T> void assertAttributeReflection(final AttributeImpl att, Map<String,T> reflectedValues) {
+    final Map<String,Object> map = new HashMap<String,Object>();
+    att.reflectWith(new AttributeReflector() {
+      public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
+        map.put(attClass.getName() + '#' + key, value);
+      }
+    });
+    Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
   }
 }
