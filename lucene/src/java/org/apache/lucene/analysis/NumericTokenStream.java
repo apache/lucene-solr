@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.document.NumericField; // for javadocs
@@ -168,17 +169,18 @@ public final class NumericTokenStream extends TokenStream {
       // this attribute has no contents to clear!
       // we keep it untouched as it's fully controlled by outer class.
     }
-
-    @Override
-    public boolean equals(Object other) {
-      return other == this;
-    }
-
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
-    }
     
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      final BytesRef bytes = new BytesRef();
+      toBytesRef(bytes);
+      reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes);
+      reflector.reflect(NumericTermAttribute.class, "shift", shift);
+      reflector.reflect(NumericTermAttribute.class, "rawValue", rawValue);
+      reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);
+      reflector.reflect(NumericTermAttribute.class, "precisionStep", precisionStep);
+    }
+  
     @Override
     public void copyTo(AttributeImpl target) {
       final NumericTermAttribute a = (NumericTermAttribute) target;

@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,29 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.AttributeImpl;
-
-/** Implementation class for {@link BoostAttribute}.
- * @lucene.internal
+/**
+ * This interface is used to reflect contents of {@link AttributeSource} or {@link AttributeImpl}.
  */
-public final class BoostAttributeImpl extends AttributeImpl implements BoostAttribute {
-  private float boost = 1.0f;
+public interface AttributeReflector {
 
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
+  /**
+   * This method gets called for every property in an {@link AttributeImpl}/{@link AttributeSource}
+   * passing the class name of the {@link Attribute}, a key and the actual value.
+   * E.g., an invocation of {@link org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl#reflectWith}
+   * would call this method once using {@code org.apache.lucene.analysis.tokenattributes.CharTermAttribute.class}
+   * as attribute class, {@code "term"} as key and the actual value as a String.
+   */
+  public void reflect(Class<? extends Attribute> attClass, String key, Object value);
   
-  public float getBoost() {
-    return boost;
-  }
-
-  @Override
-  public void clear() {
-    boost = 1.0f;
-  }
-  
-  @Override
-  public void copyTo(AttributeImpl target) {
-    ((BoostAttribute) target).setBoost(boost);
-  }
 }
