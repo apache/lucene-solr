@@ -105,7 +105,8 @@ class PHPSerializedWriter extends JSONWriter {
   @Override
   public void writeDoc(String name, Collection<Fieldable> fields, Set<String> returnFields, Map pseudoFields) throws IOException {
     ArrayList<Fieldable> single = new ArrayList<Fieldable>();
-    HashMap<String, MultiValueField> multi = new HashMap<String, MultiValueField>();
+    LinkedHashMap<String, MultiValueField> multi 
+      = new LinkedHashMap<String, MultiValueField>();
 
     for (Fieldable ff : fields) {
       String fname = ff.name();
@@ -202,8 +203,8 @@ class PHPSerializedWriter extends JSONWriter {
   
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
-    HashMap <String,Object> single = new HashMap<String, Object>();
-    HashMap <String,Object> multi = new HashMap<String, Object>();
+    LinkedHashMap <String,Object> single = new LinkedHashMap<String, Object>();
+    LinkedHashMap <String,Object> multi = new LinkedHashMap<String, Object>();
     int pseudoSize = pseudoFields != null ? pseudoFields.size() : 0;
 
     for (String fname : doc.getFieldNames()) {
