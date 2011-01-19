@@ -868,7 +868,7 @@
       <!-- ========== SOLR ARTIFACTS ========== -->
 
       <m2-deploy  pom.xml="lib/apache-solr-noggit-pom.xml.template"
-                 jar.file="lib/apache-solr-noggit-r730138.jar" />
+                 jar.file="lib/apache-solr-noggit-r944541.jar" />
 
       <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-pom.xml.template"
                  jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">
