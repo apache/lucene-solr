@@ -140,6 +140,9 @@ Bug fixes
 
  * LUCENE-591: The demo indexer now indexes meta keywords.
    (Curtis d'Entremont via Robert Muir)
+
+ * LUCENE-2874: Highlighting overlapping tokens outputted doubled words.
+   (Pierre Gossé via Robert Muir)
    
 API Changes
 

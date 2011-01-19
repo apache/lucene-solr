@@ -233,7 +233,10 @@ public class TokenSources {
           .size()]);
       ArrayUtil.quickSort(tokensInOriginalOrder, new Comparator<Token>() {
         public int compare(Token t1, Token t2) {
-          return t1.startOffset() - t2.endOffset();
+          if (t1.startOffset() == t2.startOffset())
+            return t1.endOffset() - t2.endOffset();
+          else
+            return t1.startOffset() - t2.startOffset();
         }
       });
     }
