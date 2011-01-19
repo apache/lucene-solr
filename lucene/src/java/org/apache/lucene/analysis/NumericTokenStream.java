@@ -96,23 +96,28 @@ public final class NumericTokenStream extends TokenStream {
   /** The lower precision tokens gets this token type assigned. */
   public static final String TOKEN_TYPE_LOWER_PREC = "lowerPrecNumeric";
   
-  /** <b>Expert:</b> Use this attribute to get the details of the currently generated token
+  /** <b>Expert:</b> Use this attribute to get the details of the currently generated token.
    * @lucene.experimental
    * @since 4.0
    */
   public interface NumericTermAttribute extends Attribute {
     /** Returns current shift value, undefined before first token */
     int getShift();
-    /** Returns {@link NumericTokenStream}'s raw value as {@code long} */
+    /** Returns current token's raw value as {@code long} with all {@link #getShift} applied, undefined before first token */
     long getRawValue();
     /** Returns value size in bits (32 for {@code float}, {@code int}; 64 for {@code double}, {@code long}) */
     int getValueSize();
     
-    /** @lucene.internal Don't call this method! */
-    void init(long rawValue, int valSize, int precisionStep);
-    /** @lucene.internal Don't call this method! */
+    /** <em>Don't call this method!</em>
+      * @lucene.internal */
+    void init(long value, int valSize, int precisionStep, int shift);
+
+    /** <em>Don't call this method!</em>
+      * @lucene.internal */
     void setShift(int shift);
-    /** @lucene.internal Don't call this method! */
+
+    /** <em>Don't call this method!</em>
+      * @lucene.internal */
     int incShift();
   }
   
@@ -132,16 +137,20 @@ public final class NumericTokenStream extends TokenStream {
     }
   }
 
+  /** Implementatation of {@link NumericTermAttribute}.
+   * @lucene.internal
+   * @since 4.0
+   */
   public static final class NumericTermAttributeImpl extends AttributeImpl implements NumericTermAttribute,TermToBytesRefAttribute {
-    private long rawValue = 0L;
+    private long value = 0L;
     private int valueSize = 0, shift = 0, precisionStep = 0;
     
     public int toBytesRef(BytesRef bytes) {
       try {
         assert valueSize == 64 || valueSize == 32;
         return (valueSize == 64) ? 
-          NumericUtils.longToPrefixCoded(rawValue, shift, bytes) :
-          NumericUtils.intToPrefixCoded((int) rawValue, shift, bytes);
+          NumericUtils.longToPrefixCoded(value, shift, bytes) :
+          NumericUtils.intToPrefixCoded((int) value, shift, bytes);
       } catch (IllegalArgumentException iae) {
         // return empty token before first or after last
         bytes.length = 0;
@@ -155,13 +164,14 @@ public final class NumericTokenStream extends TokenStream {
       return (shift += precisionStep);
     }
 
-    public long getRawValue() { return rawValue; }
+    public long getRawValue() { return value  & ~((1L << shift) - 1L); }
     public int getValueSize() { return valueSize; }
 
-    public void init(long rawValue, int valueSize, int precisionStep) {
-      this.rawValue = rawValue;
+    public void init(long value, int valueSize, int precisionStep, int shift) {
+      this.value = value;
       this.valueSize = valueSize;
       this.precisionStep = precisionStep;
+      this.shift = shift;
     }
 
     @Override
@@ -176,16 +186,14 @@ public final class NumericTokenStream extends TokenStream {
       toBytesRef(bytes);
       reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes);
       reflector.reflect(NumericTermAttribute.class, "shift", shift);
-      reflector.reflect(NumericTermAttribute.class, "rawValue", rawValue);
+      reflector.reflect(NumericTermAttribute.class, "rawValue", getRawValue());
       reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);
-      reflector.reflect(NumericTermAttribute.class, "precisionStep", precisionStep);
     }
   
     @Override
     public void copyTo(AttributeImpl target) {
       final NumericTermAttribute a = (NumericTermAttribute) target;
-      a.init(rawValue, valueSize, precisionStep);
-      a.setShift(shift);
+      a.init(value, valueSize, precisionStep, shift);
     }
   }
   
@@ -229,8 +237,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setLongValue(value))</code>
    */
   public NumericTokenStream setLongValue(final long value) {
-    numericAtt.init(value, valSize = 64, precisionStep);
-    numericAtt.setShift(-precisionStep);
+    numericAtt.init(value, valSize = 64, precisionStep, -precisionStep);
     return this;
   }
   
@@ -241,8 +248,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setIntValue(value))</code>
    */
   public NumericTokenStream setIntValue(final int value) {
-    numericAtt.init(value, valSize = 32, precisionStep);
-    numericAtt.setShift(-precisionStep);
+    numericAtt.init(value, valSize = 32, precisionStep, -precisionStep);
     return this;
   }
   
@@ -253,8 +259,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setDoubleValue(value))</code>
    */
   public NumericTokenStream setDoubleValue(final double value) {
-    numericAtt.init(NumericUtils.doubleToSortableLong(value), valSize = 64, precisionStep);
-    numericAtt.setShift(-precisionStep);
+    numericAtt.init(NumericUtils.doubleToSortableLong(value), valSize = 64, precisionStep, -precisionStep);
     return this;
   }
   
@@ -265,8 +270,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setFloatValue(value))</code>
    */
   public NumericTokenStream setFloatValue(final float value) {
-    numericAtt.init(NumericUtils.floatToSortableInt(value), valSize = 32, precisionStep);
-    numericAtt.setShift(-precisionStep);
+    numericAtt.init(NumericUtils.floatToSortableInt(value), valSize = 32, precisionStep, -precisionStep);
     return this;
   }
   
