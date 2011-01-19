@@ -86,6 +86,10 @@ Changes in backwards compatibility policy
   Similarity impls to cutover to the more general computeNorm (Robert
   Muir, Mike McCandless)
 
+* LUCENE-2869: Deprecated Query.getSimilarity: instead of using
+  "runtime" subclassing/delegation, subclass the Weight instead.
+  (Robert Muir)
+
 * LUCENE-2674: A new idfExplain method was added to Similarity, that
   accepts an incoming docFreq.  If you subclass Similarity, make sure
   you also override this method on upgrade.  (Robert Muir, Mike

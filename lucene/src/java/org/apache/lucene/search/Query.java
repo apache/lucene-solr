@@ -201,7 +201,10 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   /** Expert: Returns the Similarity implementation to be used for this query.
    * Subclasses may override this method to specify their own Similarity
    * implementation, perhaps one that delegates through that of the Searcher.
-   * By default the Searcher's Similarity implementation is returned.*/
+   * By default the Searcher's Similarity implementation is returned.
+   * @deprecated Instead of using "runtime" subclassing/delegation, subclass the Weight instead.
+   */
+  @Deprecated
   public Similarity getSimilarity(Searcher searcher) {
     return searcher.getSimilarity();
   }
