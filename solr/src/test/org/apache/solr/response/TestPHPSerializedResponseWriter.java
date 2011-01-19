@@ -20,7 +20,7 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
@@ -76,10 +76,14 @@ public class TestPHPSerializedResponseWriter extends SolrTestCaseJ4 {
     d.addField("data3",true);
 
     // multivalued fields: 
-    // map value
-    HashMap<String,String> nl = new HashMap<String,String>();
-    nl.put("data4.1", "hello");
-    nl.put("data4.2", "hashmap");
+
+    // extremely odd edge case: value is a map
+
+    // we use LinkedHashMap because we are doing a string comparison 
+    // later and we need predictible ordering
+    LinkedHashMap<String,String> nl = new LinkedHashMap<String,String>();
+    nl.put("data4.1", "hashmap");
+    nl.put("data4.2", "hello");
     d.addField("data4",nl);
     // array value 
     d.addField("data5",Arrays.asList("data5.1", "data5.2", "data5.3"));
@@ -95,7 +99,7 @@ public class TestPHPSerializedResponseWriter extends SolrTestCaseJ4 {
     rsp.add("response", sdl); 
     
     w.write(buf, req, rsp);
-    assertEquals("a:1:{s:8:\"response\";a:3:{s:8:\"numFound\";i:0;s:5:\"start\";i:0;s:4:\"docs\";a:2:{i:0;a:6:{s:2:\"id\";s:1:\"1\";s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;s:5:\"data4\";a:2:{s:7:\"data4.2\";s:7:\"hashmap\";s:7:\"data4.1\";s:5:\"hello\";}s:5:\"data5\";a:3:{i:0;s:7:\"data5.1\";i:1;s:7:\"data5.2\";i:2;s:7:\"data5.3\";}}i:1;a:1:{s:2:\"id\";s:1:\"2\";}}}}", 
+    assertEquals("a:1:{s:8:\"response\";a:3:{s:8:\"numFound\";i:0;s:5:\"start\";i:0;s:4:\"docs\";a:2:{i:0;a:6:{s:2:\"id\";s:1:\"1\";s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;s:5:\"data4\";a:2:{s:7:\"data4.1\";s:7:\"hashmap\";s:7:\"data4.2\";s:5:\"hello\";}s:5:\"data5\";a:3:{i:0;s:7:\"data5.1\";i:1;s:7:\"data5.2\";i:2;s:7:\"data5.3\";}}i:1;a:1:{s:2:\"id\";s:1:\"2\";}}}}", 
                  buf.toString());
     req.close();
   }
