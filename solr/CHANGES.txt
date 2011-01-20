@@ -106,6 +106,8 @@ New Features
   Adding a parameter NOW=<time_in_ms> to the request will override the
   current time.  (Peter Sturge, yonik)
 
+* SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
+
 Optimizations
 ----------------------
 
