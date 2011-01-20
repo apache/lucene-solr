@@ -133,14 +133,17 @@ public class SimpleFacets {
       List<Query> qlist = new ArrayList<Query>();
 
       // add the base query
-      qlist.add(rb.getQuery());
+      if (!excludeSet.containsKey(rb.getQuery())) {
+        qlist.add(rb.getQuery());
+      }
 
       // add the filters
-      for (Query q : rb.getFilters()) {
-        if (!excludeSet.containsKey(q)) {
-          qlist.add(q);
+      if (rb.getFilters() != null) {
+        for (Query q : rb.getFilters()) {
+          if (!excludeSet.containsKey(q)) {
+            qlist.add(q);
+          }
         }
-
       }
 
       // get the new base docset for this facet
