@@ -938,9 +938,9 @@ public class MemoryIndex implements Serializable {
       }
 
       @Override
-      public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+      public void seek(BytesRef term, TermState state) throws IOException {
         assert state != null;
-        return this.seek(((OrdTermState)state).ord);
+        this.seek(((OrdTermState)state).ord);
       }
 
       @Override

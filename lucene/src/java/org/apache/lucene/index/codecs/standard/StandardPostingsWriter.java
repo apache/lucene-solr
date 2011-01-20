@@ -22,13 +22,14 @@ package org.apache.lucene.index.codecs.standard;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermStats;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
@@ -59,8 +60,15 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   int lastPayloadLength;
   int lastPosition;
 
+  private int pendingCount;
+
+  //private String segment;
+
+  private RAMOutputStream bytesWriter = new RAMOutputStream();
+
   public StandardPostingsWriter(SegmentWriteState state) throws IOException {
     super();
+    //this.segment = state.segmentName;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName);
 
@@ -96,6 +104,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void startTerm() {
+    //System.out.println("StandardW: startTerm seg=" + segment + " pendingCount=" + pendingCount);
     freqStart = freqOut.getFilePointer();
     if (proxOut != null) {
       proxStart = proxOut.getFilePointer();
@@ -109,9 +118,12 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public void setField(FieldInfo fieldInfo) {
+    //System.out.println("SPW: setField");
     this.fieldInfo = fieldInfo;
     omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
     storePayloads = fieldInfo.storePayloads;
+    //System.out.println("  set init blockFreqStart=" + freqStart);
+    //System.out.println("  set init blockProxStart=" + proxStart);
   }
 
   int lastDocID;
@@ -121,6 +133,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
    *  then we just skip consuming positions/payloads. */
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
+    //System.out.println("StandardW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq);
 
     final int delta = docID - lastDocID;
     
@@ -151,6 +164,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
+    //System.out.println("StandardW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
     assert !omitTermFreqAndPositions: "omitTermFreqAndPositions is true";
     assert proxOut != null;
 
@@ -185,40 +199,51 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(TermStats stats, boolean isIndexTerm) throws IOException {
+  public void finishTerm(TermStats stats) throws IOException {
+    //System.out.println("StandardW.finishTerm seg=" + segment);
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
     // for this term) in two places?
     assert stats.docFreq == df;
 
-    if (isIndexTerm) {
-      // Write absolute at seek points
-      termsOut.writeVLong(freqStart);
-    } else {
-      // Write delta between seek points
-      termsOut.writeVLong(freqStart - lastFreqStart);
-    }
+    final boolean isFirstTerm = pendingCount == 0;
+    //System.out.println("  isFirstTerm=" + isFirstTerm);
 
+    //System.out.println("  freqFP=" + freqStart);
+    if (isFirstTerm) {
+      bytesWriter.writeVLong(freqStart);
+    } else {
+      bytesWriter.writeVLong(freqStart-lastFreqStart);
+    }
     lastFreqStart = freqStart;
 
     if (df >= skipInterval) {
-      termsOut.writeVInt((int) (skipListWriter.writeSkip(freqOut)-freqStart));
+      bytesWriter.writeVInt((int) (skipListWriter.writeSkip(freqOut)-freqStart));
     }
-     
+
     if (!omitTermFreqAndPositions) {
-      if (isIndexTerm) {
-        // Write absolute at seek points
-        termsOut.writeVLong(proxStart);
+      //System.out.println("  proxFP=" + proxStart);
+      if (isFirstTerm) {
+        bytesWriter.writeVLong(proxStart);
       } else {
-        // Write delta between seek points
-        termsOut.writeVLong(proxStart - lastProxStart);
+        bytesWriter.writeVLong(proxStart - lastProxStart);
       }
       lastProxStart = proxStart;
     }
-
+     
     lastDocID = 0;
     df = 0;
+    pendingCount++;
+  }
+
+  @Override
+  public void flushTermsBlock() throws IOException {
+    //System.out.println("SPW.flushBlock pendingCount=" + pendingCount);
+    termsOut.writeVInt((int) bytesWriter.getFilePointer());
+    bytesWriter.writeTo(termsOut);
+    bytesWriter.reset();
+    pendingCount = 0;
   }
 
   @Override

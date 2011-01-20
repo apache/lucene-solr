@@ -882,6 +882,10 @@ public class TestIndexReader extends LuceneTestCase
       // First build up a starting index:
       MockDirectoryWrapper startDir = newDirectory();
       IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+      if (VERBOSE) {
+        System.out.println("TEST: create initial index");
+        writer.setInfoStream(System.out);
+      }
       for(int i=0;i<157;i++) {
         Document d = new Document();
         d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -891,6 +895,19 @@ public class TestIndexReader extends LuceneTestCase
           writer.commit();
       }
       writer.close();
+
+      {
+        IndexReader r = IndexReader.open(startDir);
+        IndexSearcher searcher = new IndexSearcher(r);
+        ScoreDoc[] hits = null;
+        try {
+          hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+        } catch (IOException e) {
+          e.printStackTrace();
+          fail("exception when init searching: " + e);
+        }
+        r.close();
+      }
 
       long diskUsage = startDir.getRecomputedActualSizeInBytes();
       long diskFree = diskUsage+100;

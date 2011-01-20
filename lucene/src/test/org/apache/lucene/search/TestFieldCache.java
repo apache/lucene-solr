@@ -49,6 +49,10 @@ public class TestFieldCache extends LuceneTestCase {
     int theInt = Integer.MAX_VALUE;
     float theFloat = Float.MAX_VALUE;
     unicodeStrings = new String[NUM_DOCS];
+    if (VERBOSE) {
+      System.out.println("TEST: setUp");
+    }
+    writer.w.setInfoStream(VERBOSE ? System.out : null);
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
       doc.add(newField("theLong", String.valueOf(theLong--), Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -117,7 +121,7 @@ public class TestFieldCache extends LuceneTestCase {
     assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.DEFAULT_LONG_PARSER));
     assertTrue("longs Size: " + longs.length + " is not: " + NUM_DOCS, longs.length == NUM_DOCS);
     for (int i = 0; i < longs.length; i++) {
-      assertTrue(longs[i] + " does not equal: " + (Long.MAX_VALUE - i), longs[i] == (Long.MAX_VALUE - i));
+      assertTrue(longs[i] + " does not equal: " + (Long.MAX_VALUE - i) + " i=" + i, longs[i] == (Long.MAX_VALUE - i));
 
     }
     

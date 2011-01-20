@@ -22,13 +22,13 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
+import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-public class AppendingTermsDictWriter extends PrefixCodedTermsWriter {
+public class AppendingTermsDictWriter extends BlockTermsWriter {
   final static String CODEC_NAME = "APPENDING_TERMS_DICT";
 
   public AppendingTermsDictWriter(TermsIndexWriterBase indexWriter,

@@ -164,9 +164,6 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       this.fieldInfo = fieldInfo;
       this.indexStart = indexStart;
 
-      // We still create the indexReader when indexDivisor
-      // is -1, so that PrefixCodedTermsReader can call
-      // isIndexTerm for each field:
       if (indexDivisor > 0) {
         loadTermsIndex();
       }

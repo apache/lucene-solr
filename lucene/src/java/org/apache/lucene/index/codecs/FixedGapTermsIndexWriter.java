@@ -53,7 +53,6 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
   private final List<SimpleFieldWriter> fields = new ArrayList<SimpleFieldWriter>();
   private final FieldInfos fieldInfos; // unread
-  private IndexOutput termsOut;
 
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_INDEX_EXTENSION);
@@ -71,13 +70,9 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   }
 
   @Override
-  public void setTermsOutput(IndexOutput termsOut) {
-    this.termsOut = termsOut;
-  }
-  
-  @Override
-  public FieldWriter addField(FieldInfo field) {
-    SimpleFieldWriter writer = new SimpleFieldWriter(field);
+  public FieldWriter addField(FieldInfo field, long termsFilePointer) {
+    //System.out.println("FGW: addFfield=" + field.name);
+    SimpleFieldWriter writer = new SimpleFieldWriter(field, termsFilePointer);
     fields.add(writer);
     return writer;
   }
@@ -119,10 +114,10 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
     private final BytesRef lastTerm = new BytesRef();
 
-    SimpleFieldWriter(FieldInfo fieldInfo) {
+    SimpleFieldWriter(FieldInfo fieldInfo, long termsFilePointer) {
       this.fieldInfo = fieldInfo;
       indexStart = out.getFilePointer();
-      termsStart = lastTermsPointer = termsOut.getFilePointer();
+      termsStart = lastTermsPointer = termsFilePointer;
       termLengths = new short[0];
       termsPointerDeltas = new int[0];
     }
@@ -130,33 +125,8 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     @Override
     public boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException {
       // First term is first indexed term:
+      //System.out.println("FGW: checkIndexTerm text=" + text.utf8ToString());
       if (0 == (numTerms++ % termIndexInterval)) {
-
-        final int indexedTermLength = indexedTermPrefixLength(lastTerm, text);
-
-        // write only the min prefix that shows the diff
-        // against prior term
-        out.writeBytes(text.bytes, text.offset, indexedTermLength);
-
-        if (termLengths.length == numIndexTerms) {
-          termLengths = ArrayUtil.grow(termLengths);
-        }
-        if (termsPointerDeltas.length == numIndexTerms) {
-          termsPointerDeltas = ArrayUtil.grow(termsPointerDeltas);
-        }
-
-        // save delta terms pointer
-        final long fp = termsOut.getFilePointer();
-        termsPointerDeltas[numIndexTerms] = (int) (fp - lastTermsPointer);
-        lastTermsPointer = fp;
-
-        // save term length (in bytes)
-        assert indexedTermLength <= Short.MAX_VALUE;
-        termLengths[numIndexTerms] = (short) indexedTermLength;
-        totTermLength += indexedTermLength;
-
-        lastTerm.copy(text);
-        numIndexTerms++;
         return true;
       } else {
         if (0 == numTerms % termIndexInterval) {
@@ -169,13 +139,41 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException {
+      final int indexedTermLength = indexedTermPrefixLength(lastTerm, text);
+      //System.out.println("FGW: add text=" + text.utf8ToString() + " " + text + " fp=" + termsFilePointer);
+
+      // write only the min prefix that shows the diff
+      // against prior term
+      out.writeBytes(text.bytes, text.offset, indexedTermLength);
+
+      if (termLengths.length == numIndexTerms) {
+        termLengths = ArrayUtil.grow(termLengths);
+      }
+      if (termsPointerDeltas.length == numIndexTerms) {
+        termsPointerDeltas = ArrayUtil.grow(termsPointerDeltas);
+      }
+
+      // save delta terms pointer
+      termsPointerDeltas[numIndexTerms] = (int) (termsFilePointer - lastTermsPointer);
+      lastTermsPointer = termsFilePointer;
+
+      // save term length (in bytes)
+      assert indexedTermLength <= Short.MAX_VALUE;
+      termLengths[numIndexTerms] = (short) indexedTermLength;
+      totTermLength += indexedTermLength;
+
+      lastTerm.copy(text);
+      numIndexTerms++;
+    }
+
+    @Override
+    public void finish(long termsFilePointer) throws IOException {
 
       // write primary terms dict offsets
       packedIndexStart = out.getFilePointer();
 
-      final long maxValue = termsOut.getFilePointer();
-      PackedInts.Writer w = PackedInts.getWriter(out, numIndexTerms, PackedInts.bitsRequired(maxValue));
+      PackedInts.Writer w = PackedInts.getWriter(out, numIndexTerms, PackedInts.bitsRequired(termsFilePointer));
 
       // relative to our indexStart
       long upto = 0;

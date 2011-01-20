@@ -108,6 +108,9 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       Query query = parser.parse(HIGH_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));
+      if (VERBOSE) {
+        System.out.println("TEST: search query=" + query);
+      }
 
       ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS).scoreDocs;
       printHits(out, hits, searcher);

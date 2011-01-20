@@ -27,8 +27,8 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-// TODO: we pulse based on total TF of the term,
-// it might be better to eg pulse by "net bytes used"
+// TODO: we now inline based on total TF of the term,
+// but it might be better to inline by "net bytes used"
 // so that a term that has only 1 posting but a huge
 // payload would not be inlined.  Though this is
 // presumably rare in practice...
@@ -62,8 +62,9 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   }
 
   // TODO: -- lazy init this?  ie, if every single term
-  // was pulsed then we never need to use this fallback?
-  // Fallback writer for non-pulsed terms:
+  // was inlined (eg for a "primary key" field) then we
+  // never need to use this fallback?  Fallback writer for
+  // non-inlined terms:
   final PostingsWriterBase wrappedPostingsWriter;
 
   /** If the total number of positions (summed across all docs
@@ -173,22 +174,18 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
     }
   }
 
-  private boolean pendingIsIndexTerm;
-
   private final RAMOutputStream buffer = new RAMOutputStream();
+  private final RAMOutputStream buffer2 = new RAMOutputStream();
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(TermStats stats, boolean isIndexTerm) throws IOException {
-    //System.out.println("PW   finishTerm docCount=" + docCount);
+  public void finishTerm(TermStats stats) throws IOException {
+    //System.out.println("PW   finishTerm docCount=" + stats.docFreq);
 
     assert pendingCount > 0 || pendingCount == -1;
 
-    pendingIsIndexTerm |= isIndexTerm;
-
     if (pendingCount == -1) {
-      wrappedPostingsWriter.finishTerm(stats, pendingIsIndexTerm);
-      pendingIsIndexTerm = false;
+      wrappedPostingsWriter.finishTerm(stats);
     } else {
 
       // There were few enough total occurrences for this
@@ -254,8 +251,8 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       }
       
       //System.out.println("  bytes=" + buffer.getFilePointer());
-      termsOut.writeVInt((int) buffer.getFilePointer());
-      buffer.writeTo(termsOut);
+      buffer2.writeVInt((int) buffer.getFilePointer());
+      buffer.writeTo(buffer2);
       buffer.reset();
     }
 
@@ -265,6 +262,18 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   @Override
   public void close() throws IOException {
     wrappedPostingsWriter.close();
+  }
+
+  @Override
+  public void flushTermsBlock() throws IOException {
+    termsOut.writeVInt((int) buffer2.getFilePointer());
+    buffer2.writeTo(termsOut);
+    buffer2.reset();
+
+    // TODO: can we avoid calling this if all terms
+    // were inlined...?  Eg for a "primary key" field, the
+    // wrapped codec is never invoked...
+    wrappedPostingsWriter.flushTermsBlock();
   }
 
   // Pushes pending positions to the wrapped codec

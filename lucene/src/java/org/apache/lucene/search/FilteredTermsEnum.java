@@ -122,12 +122,12 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
     
   @Override
-  public int docFreq() {
+  public int docFreq() throws IOException {
     return tenum.docFreq();
   }
 
   @Override
-  public long totalTermFreq() {
+  public long totalTermFreq() throws IOException {
     return tenum.totalTermFreq();
   }
 
@@ -166,7 +166,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    * @throws UnsupportedOperationException
    */
   @Override
-  public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+  public void seek(BytesRef term, TermState state) throws IOException {
     throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
   }
   

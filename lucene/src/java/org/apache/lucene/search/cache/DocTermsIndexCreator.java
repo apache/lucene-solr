@@ -341,9 +341,9 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+      public void seek(BytesRef term, TermState state) throws IOException {
         assert state != null && state instanceof OrdTermState;
-        return this.seek(((OrdTermState)state).ord);
+        this.seek(((OrdTermState)state).ord);
       }
 
       @Override

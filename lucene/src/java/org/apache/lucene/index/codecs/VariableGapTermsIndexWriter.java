@@ -52,7 +52,6 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
 
   private final List<FSTFieldWriter> fields = new ArrayList<FSTFieldWriter>();
   private final FieldInfos fieldInfos; // unread
-  private IndexOutput termsOut;
   private final IndexTermSelector policy;
 
   /** @lucene.experimental */
@@ -60,6 +59,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     // Called sequentially on every term being written,
     // returning true if this term should be indexed
     public abstract boolean isIndexTerm(BytesRef term, TermStats stats);
+    public abstract void newField(FieldInfo fieldInfo);
   }
 
   /** Same policy as {@link FixedGapTermsIndexWriter} */
@@ -83,6 +83,11 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
         return false;
       }
     }
+
+    @Override
+    public void newField(FieldInfo fieldInfo) {
+      count = interval;
+    }
   }
 
   /** Sets an index term when docFreq >= docFreqThresh, or
@@ -96,6 +101,9 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     public EveryNOrDocFreqTermSelector(int docFreqThresh, int interval) {
       this.interval = interval;
       this.docFreqThresh = docFreqThresh;
+
+      // First term is first indexed term:
+      count = interval;
     }
 
     @Override
@@ -107,6 +115,11 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
         count++;
         return false;
       }
+    }
+
+    @Override
+    public void newField(FieldInfo fieldInfo) {
+      count = interval;
     }
   }
 
@@ -158,14 +171,10 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   }
 
   @Override
-  public void setTermsOutput(IndexOutput termsOut) {
-    this.termsOut = termsOut;
-  }
-  
-  @Override
-  public FieldWriter addField(FieldInfo field) throws IOException {
-    //System.out.println("VGW: field=" + field.name);
-    FSTFieldWriter writer = new FSTFieldWriter(field);
+  public FieldWriter addField(FieldInfo field, long termsFilePointer) throws IOException {
+    ////System.out.println("VGW: field=" + field.name);
+    policy.newField(field);
+    FSTFieldWriter writer = new FSTFieldWriter(field, termsFilePointer);
     fields.add(writer);
     return writer;
   }
@@ -200,42 +209,48 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     private final BytesRef lastTerm = new BytesRef();
     private boolean first = true;
 
-    public FSTFieldWriter(FieldInfo fieldInfo) throws IOException {
+    public FSTFieldWriter(FieldInfo fieldInfo, long termsFilePointer) throws IOException {
       this.fieldInfo = fieldInfo;
       fstOutputs = PositiveIntOutputs.getSingleton(true);
       fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE1,
                                      0, 0, true,
                                      fstOutputs);
       indexStart = out.getFilePointer();
-      //System.out.println("VGW: field=" + fieldInfo.name);
+      ////System.out.println("VGW: field=" + fieldInfo.name);
 
       // Always put empty string in
-      fstBuilder.add(new BytesRef(), fstOutputs.get(termsOut.getFilePointer()));
+      fstBuilder.add(new BytesRef(), fstOutputs.get(termsFilePointer));
     }
 
     @Override
     public boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException {
+      //System.out.println("VGW: index term=" + text.utf8ToString());
+      // NOTE: we must force the first term per field to be
+      // indexed, in case policy doesn't:
       if (policy.isIndexTerm(text, stats) || first) {
         first = false;
-        //System.out.println("VGW: index term=" + text.utf8ToString() + " fp=" + termsOut.getFilePointer());
-        final int lengthSave = text.length;
-        text.length = indexedTermPrefixLength(lastTerm, text);
-        try {
-          fstBuilder.add(text, fstOutputs.get(termsOut.getFilePointer()));
-        } finally {
-          text.length = lengthSave;
-        }
-        lastTerm.copy(text);
+        //System.out.println("  YES");
         return true;
       } else {
-        //System.out.println("VGW: not index term=" + text.utf8ToString() + " fp=" + termsOut.getFilePointer());
         lastTerm.copy(text);
         return false;
       }
     }
 
     @Override
-    public void finish() throws IOException {
+    public void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException {
+      final int lengthSave = text.length;
+      text.length = indexedTermPrefixLength(lastTerm, text);
+      try {
+        fstBuilder.add(text, fstOutputs.get(termsFilePointer));
+      } finally {
+        text.length = lengthSave;
+      }
+      lastTerm.copy(text);
+    }
+
+    @Override
+    public void finish(long termsFilePointer) throws IOException {
       fst = fstBuilder.finish();
       if (fst != null) {
         fst.save(out);

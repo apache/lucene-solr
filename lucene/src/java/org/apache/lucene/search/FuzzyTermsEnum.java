@@ -241,12 +241,12 @@ public final class FuzzyTermsEnum extends TermsEnum {
   
   // proxy all other enum calls to the actual enum
   @Override
-  public int docFreq() {
+  public int docFreq() throws IOException {
     return actualEnum.docFreq();
   }
 
   @Override
-  public long totalTermFreq() {
+  public long totalTermFreq() throws IOException {
     return actualEnum.totalTermFreq();
   }
   
@@ -261,8 +261,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return actualEnum.docsAndPositions(skipDocs, reuse);
   }
   
-  public SeekStatus seek(BytesRef term, TermState state) throws IOException {
-    return actualEnum.seek(term, state);
+  public void seek(BytesRef term, TermState state) throws IOException {
+    actualEnum.seek(term, state);
   }
   
   @Override
