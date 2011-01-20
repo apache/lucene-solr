@@ -328,3 +328,10 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
 * LUCENE-2761: DataInput.readVInt/readVLong and DataOutput.writeVInt/writeVLong
   are final. If you subclassed this code before to encode variable-length
   integers in some specialized way, use the Codec API instead.
+
+* LUCENE-2374: The backwards layer in AttributeImpl was removed. To support correct
+  reflection of AttributeImpl instances, where the reflection was done using deprecated
+  toString() parsing, you have to now override reflectWith() to customize output.
+  toString() is no longer implemented by AttributeImpl, so if you have overridden
+  toString(), port your customization over to reflectWith(). reflectAsString() would
+  then return what toString() did before.

@@ -63,8 +63,7 @@ public class TestSort extends AbstractSolrTestCase {
       IndexWriter iw = new IndexWriter(
           dir,
           new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).
-              setOpenMode(IndexWriterConfig.OpenMode.CREATE).
-              setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH)
+              setOpenMode(IndexWriterConfig.OpenMode.CREATE)
       );
       final MyDoc[] mydocs = new MyDoc[ndocs];
 

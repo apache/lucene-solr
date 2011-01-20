@@ -270,6 +270,19 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
+  public long totalTermFreq() {
+    long sum = 0;
+    for(int i=0;i<numTop;i++) {
+      final long v = top[i].terms.totalTermFreq();
+      if (v == -1) {
+        return v;
+      }
+      sum += v;
+    }
+    return sum;
+  }
+
+  @Override
   public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
     final MultiDocsEnum docsEnum;
     if (reuse != null) {

@@ -16,6 +16,7 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 
@@ -27,7 +28,8 @@ import org.apache.lucene.index.TermState;
 public class PrefixCodedTermState extends OrdTermState {
   public int docFreq; // how many docs have this term
   public long filePointer; // fp into the terms dict primary file (_X.tis)
-
+  public long totalTermFreq;                           // total number of occurrences of this term
+  
   @Override
   public void copyFrom(TermState _other) {
     assert _other instanceof PrefixCodedTermState : "can not copy from " + _other.getClass().getName();
@@ -35,11 +37,12 @@ public class PrefixCodedTermState extends OrdTermState {
     super.copyFrom(_other);
     filePointer = other.filePointer;
     docFreq = other.docFreq;
+    totalTermFreq = other.totalTermFreq;
   }
 
   @Override
   public String toString() {
-    return super.toString() + "[ord=" + ord + ", tis.filePointer=" + filePointer + "]";
+    return super.toString() + "[ord=" + ord + ", tis.filePointer=" + filePointer + ", docFreq=" + docFreq + ", totalTermFreq=" + totalTermFreq + "]";
   }
   
 }

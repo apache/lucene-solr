@@ -77,6 +77,19 @@ public final class MultiTerms extends Terms {
   }
 
   @Override
+  public long getSumTotalTermFreq() throws IOException {
+    long sum = 0;
+    for(Terms terms : subs) {
+      final long v = terms.getSumTotalTermFreq();
+      if (v == -1) {
+        return -1;
+      }
+      sum += v;
+    }
+    return sum;
+  }
+
+  @Override
   public Comparator<BytesRef> getComparator() {
     return termComp;
   }

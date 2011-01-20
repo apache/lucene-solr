@@ -45,6 +45,8 @@ public class InstantiatedTerm
   
   private Term term;
 
+  private long totalTermFreq;
+
   /**
    * index of term in InstantiatedIndex
    * @see org.apache.lucene.store.instantiated.InstantiatedIndex#getOrderedTerms() */
@@ -90,6 +92,14 @@ public class InstantiatedTerm
    */
   void setAssociatedDocuments(InstantiatedTermDocumentInformation[] associatedDocuments) {
     this.associatedDocuments = associatedDocuments;
+  }
+
+  void addPositionsCount(long count) {
+    totalTermFreq += count;
+  }
+
+  public long getTotalTermFreq() {
+    return totalTermFreq;
   }
 
   /**

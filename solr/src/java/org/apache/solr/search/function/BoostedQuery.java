@@ -96,7 +96,7 @@ public class BoostedQuery extends Query {
       if(subQueryScorer == null) {
         return null;
       }
-      return new BoostedQuery.CustomScorer(getSimilarity(searcher), context, this, subQueryScorer, boostVal);
+      return new BoostedQuery.CustomScorer(searcher.getSimilarity(), context, this, subQueryScorer, boostVal);
     }
 
     @Override

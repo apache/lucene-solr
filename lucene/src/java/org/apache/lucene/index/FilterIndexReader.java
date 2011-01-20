@@ -99,6 +99,11 @@ public class FilterIndexReader extends IndexReader {
     public long getUniqueTermCount() throws IOException {
       return in.getUniqueTermCount();
     }
+
+    @Override
+    public long getSumTotalTermFreq() throws IOException {
+      return in.getSumTotalTermFreq();
+    }
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */
@@ -153,6 +158,11 @@ public class FilterIndexReader extends IndexReader {
     @Override
     public int docFreq() {
       return in.docFreq();
+    }
+
+    @Override
+    public long totalTermFreq() {
+      return in.totalTermFreq();
     }
 
     @Override

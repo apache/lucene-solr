@@ -21,15 +21,16 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-// TODO: we now pulse entirely according to docFreq of the
-// term; it might be better to eg pulse by "net bytes used"
-// so that a term that has only 1 doc but zillions of
-// positions would not be inlined.  Though this is
+// TODO: we pulse based on total TF of the term,
+// it might be better to eg pulse by "net bytes used"
+// so that a term that has only 1 posting but a huge
+// payload would not be inlined.  Though this is
 // presumably rare in practice...
 
 /** @lucene.experimental */
@@ -85,6 +86,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   public void start(IndexOutput termsOut) throws IOException {
     this.termsOut = termsOut;
     CodecUtil.writeHeader(termsOut, CODEC, VERSION_CURRENT);
+    termsOut.writeVInt(pending.length); // encode maxPositions in header
     wrappedPostingsWriter.start(termsOut);
   }
 
@@ -177,7 +179,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(int docCount, boolean isIndexTerm) throws IOException {
+  public void finishTerm(TermStats stats, boolean isIndexTerm) throws IOException {
     //System.out.println("PW   finishTerm docCount=" + docCount);
 
     assert pendingCount > 0 || pendingCount == -1;
@@ -185,16 +187,13 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
     pendingIsIndexTerm |= isIndexTerm;
 
     if (pendingCount == -1) {
-      termsOut.writeByte((byte) 0);
-      wrappedPostingsWriter.finishTerm(docCount, pendingIsIndexTerm);
+      wrappedPostingsWriter.finishTerm(stats, pendingIsIndexTerm);
       pendingIsIndexTerm = false;
     } else {
 
       // There were few enough total occurrences for this
       // term, so we fully inline our postings data into
       // terms dict, now:
-
-      termsOut.writeByte((byte) 1);
 
       // TODO: it'd be better to share this encoding logic
       // in some inner codec that knows how to write a

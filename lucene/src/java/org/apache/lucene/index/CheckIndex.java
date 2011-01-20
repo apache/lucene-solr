@@ -610,6 +610,8 @@ public class CheckIndex {
 
         Comparator<BytesRef> termComp = terms.getComparator();
 
+        long sumTotalTermFreq = 0;
+
         while(true) {
 
           final BytesRef term = terms.next();
@@ -660,6 +662,8 @@ public class CheckIndex {
           }
 
           int lastDoc = -1;
+          int docCount = 0;
+          long totalTermFreq = 0;
           while(true) {
             final int doc = docs2.nextDoc();
             if (doc == DocIdSetIterator.NO_MORE_DOCS) {
@@ -667,6 +671,8 @@ public class CheckIndex {
             }
             final int freq = docs2.freq();
             status.totPos += freq;
+            totalTermFreq += freq;
+            docCount++;
 
             if (doc <= lastDoc) {
               throw new RuntimeException("term " + term + ": doc " + doc + " <= lastDoc " + lastDoc);
@@ -697,19 +703,36 @@ public class CheckIndex {
               }
             }
           }
+          
+          final long totalTermFreq2 = terms.totalTermFreq();
+          final boolean hasTotalTermFreq = postings != null && totalTermFreq2 != -1;
 
-          // Now count how many deleted docs occurred in
-          // this term:
-
+          // Re-count if there are deleted docs:
           if (reader.hasDeletions()) {
             final DocsEnum docsNoDel = terms.docs(null, docs);
-            int count = 0;
+            docCount = 0;
+            totalTermFreq = 0;
             while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-              count++;
+              docCount++;
+              totalTermFreq += docsNoDel.freq();
             }
-            if (count != docFreq) {
-              throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + count);
+          }
+
+          if (docCount != docFreq) {
+            throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
+          }
+          if (hasTotalTermFreq) {
+            sumTotalTermFreq += totalTermFreq;
+            if (totalTermFreq != totalTermFreq2) {
+              throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
             }
+          }
+        }
+
+        if (sumTotalTermFreq != 0) {
+          final long v = fields.terms(field).getSumTotalTermFreq();
+          if (v != -1 && sumTotalTermFreq != v) {
+            throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
           }
         }
 

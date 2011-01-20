@@ -74,7 +74,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     return null;
   }
 
-  @SuppressWarnings("unchecked")
   private void loadExternalFileDictionary(SolrCore core) {
     try {
 
@@ -92,7 +91,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
             new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getAnalyzer()).
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
-                setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH).
                 setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         );
 

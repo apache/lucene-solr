@@ -69,7 +69,7 @@ public class ValueSourceQuery extends Query {
     float queryWeight;
 
     public ValueSourceWeight(IndexSearcher searcher) {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#getQuery() */

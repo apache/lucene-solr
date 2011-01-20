@@ -128,7 +128,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     }
 
     @Override
-    public boolean checkIndexTerm(BytesRef text, int docFreq) throws IOException {
+    public boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException {
       // First term is first indexed term:
       if (0 == (numTerms++ % termIndexInterval)) {
 

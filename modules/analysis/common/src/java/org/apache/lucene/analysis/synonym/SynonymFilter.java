@@ -46,6 +46,9 @@ public final class SynonymFilter extends TokenFilter {
 
   public SynonymFilter(TokenStream in, SynonymMap map) {
     super(in);
+    if (map == null)
+      throw new IllegalArgumentException("map is required");
+
     this.map = map;
     // just ensuring these attributes exist...
     addAttribute(CharTermAttribute.class);

@@ -611,6 +611,8 @@ public class MemoryIndex implements Serializable {
     /** Term for this field's fieldName, lazily computed on demand */
     public transient Term template;
 
+    private final long sumTotalTermFreq;
+
     private static final long serialVersionUID = 2882195016849084649L;  
 
     public Info(HashMap<BytesRef,ArrayIntList> terms, int numTokens, int numOverlapTokens, float boost) {
@@ -618,6 +620,15 @@ public class MemoryIndex implements Serializable {
       this.numTokens = numTokens;
       this.numOverlapTokens = numOverlapTokens;
       this.boost = boost;
+      long sum = 0;
+      for(Map.Entry<BytesRef,ArrayIntList> ent : terms.entrySet()) {
+        sum += ent.getValue().size();
+      }
+      sumTotalTermFreq = sum;
+    }
+
+    public long getSumTotalTermFreq() {
+      return sumTotalTermFreq;
     }
     
     /**
@@ -827,6 +838,11 @@ public class MemoryIndex implements Serializable {
               public long getUniqueTermCount() {
                 return info.sortedTerms.length;
               }
+
+              @Override
+              public long getSumTotalTermFreq() {
+                return info.getSumTotalTermFreq();
+              }
             };
           }
         }
@@ -894,6 +910,11 @@ public class MemoryIndex implements Serializable {
       @Override
       public int docFreq() {
         return 1;
+      }
+
+      @Override
+      public long totalTermFreq() {
+        return info.sortedTerms[termUpto].getValue().size();
       }
 
       @Override

@@ -46,8 +46,7 @@ import java.io.PrintStream;
  * Create an index. <br>
  * Other side effects: index writer object in perfRunData is set. <br>
  * Relevant properties: <code>merge.factor (default 10),
- * max.buffered (default no flush), max.field.length (default
- * 10,000 tokens), max.field.length, compound (default true), ram.flush.mb [default 0],
+ * max.buffered (default no flush), compound (default true), ram.flush.mb [default 0],
  * merge.policy (default org.apache.lucene.index.LogByteSizeMergePolicy),
  * merge.scheduler (default
  * org.apache.lucene.index.ConcurrentMergeScheduler),
@@ -153,7 +152,6 @@ public class CreateIndexTask extends PerfTask {
         logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
       }
     }
-    iwConf.setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
     final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
     if (maxBuffered == IndexWriterConfig.DISABLE_AUTO_FLUSH) {

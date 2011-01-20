@@ -169,7 +169,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     public BooleanWeight(IndexSearcher searcher, boolean disableCoord)
       throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
       this.disableCoord = disableCoord;
       weights = new ArrayList<Weight>(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
@@ -201,6 +201,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       return sum ;
     }
 
+    public float coord(int overlap, int maxOverlap) {
+      return similarity.coord(overlap, maxOverlap);
+    }
 
     @Override
     public void normalize(float norm) {
@@ -273,7 +276,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       sumExpl.setMatch(0 < coord ? Boolean.TRUE : Boolean.FALSE);
       sumExpl.setValue(sum);
       
-      final float coordFactor = disableCoord ? 1.0f : similarity.coord(coord, maxCoord);
+      final float coordFactor = disableCoord ? 1.0f : coord(coord, maxCoord);
       if (coordFactor == 1.0f) {
         return sumExpl;                             // eliminate wrapper
       } else {
@@ -312,7 +315,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       
       // Check if we can return a BooleanScorer
       if (!scorerContext.scoreDocsInOrder && scorerContext.topScorer && required.size() == 0 && prohibited.size() < 32) {
-        return new BooleanScorer(this, disableCoord, similarity, minNrShouldMatch, optional, prohibited, maxCoord);
+        return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
       if (required.size() == 0 && optional.size() == 0) {
@@ -326,7 +329,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Return a BooleanScorer2
-      return new BooleanScorer2(this, disableCoord, similarity, minNrShouldMatch, required, prohibited, optional, maxCoord);
+      return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord);
     }
     
     @Override

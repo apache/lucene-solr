@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.document.NumericField; // for javadocs
@@ -95,22 +96,34 @@ public final class NumericTokenStream extends TokenStream {
   /** The lower precision tokens gets this token type assigned. */
   public static final String TOKEN_TYPE_LOWER_PREC = "lowerPrecNumeric";
   
-  /** <b>Expert:</b> Use this attribute to get the details of the currently generated token
+  /** <b>Expert:</b> Use this attribute to get the details of the currently generated token.
    * @lucene.experimental
    * @since 4.0
    */
   public interface NumericTermAttribute extends Attribute {
     /** Returns current shift value, undefined before first token */
     int getShift();
-    /** Returns {@link NumericTokenStream}'s raw value as {@code long} */
+    /** Returns current token's raw value as {@code long} with all {@link #getShift} applied, undefined before first token */
     long getRawValue();
     /** Returns value size in bits (32 for {@code float}, {@code int}; 64 for {@code double}, {@code long}) */
     int getValueSize();
+    
+    /** <em>Don't call this method!</em>
+      * @lucene.internal */
+    void init(long value, int valSize, int precisionStep, int shift);
+
+    /** <em>Don't call this method!</em>
+      * @lucene.internal */
+    void setShift(int shift);
+
+    /** <em>Don't call this method!</em>
+      * @lucene.internal */
+    int incShift();
   }
   
+  // just a wrapper to prevent adding CTA
   private static final class NumericAttributeFactory extends AttributeFactory {
     private final AttributeFactory delegate;
-    private NumericTokenStream ts = null;
 
     NumericAttributeFactory(AttributeFactory delegate) {
       this.delegate = delegate;
@@ -118,72 +131,79 @@ public final class NumericTokenStream extends TokenStream {
   
     @Override
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
-      if (attClass == NumericTermAttribute.class)
-        return new NumericTermAttributeImpl(ts);
       if (CharTermAttribute.class.isAssignableFrom(attClass))
         throw new IllegalArgumentException("NumericTokenStream does not support CharTermAttribute.");
       return delegate.createAttributeInstance(attClass);
     }
   }
 
-  private static final class NumericTermAttributeImpl extends AttributeImpl implements NumericTermAttribute,TermToBytesRefAttribute {
-    private final NumericTokenStream ts;
+  /** Implementatation of {@link NumericTermAttribute}.
+   * @lucene.internal
+   * @since 4.0
+   */
+  public static final class NumericTermAttributeImpl extends AttributeImpl implements NumericTermAttribute,TermToBytesRefAttribute {
+    private long value = 0L;
+    private int valueSize = 0, shift = 0, precisionStep = 0;
     
-    public NumericTermAttributeImpl(NumericTokenStream ts) {
-      this.ts = ts;
-    }
-  
     public int toBytesRef(BytesRef bytes) {
       try {
-        assert ts.valSize == 64 || ts.valSize == 32;
-        return (ts.valSize == 64) ? 
-          NumericUtils.longToPrefixCoded(ts.value, ts.shift, bytes) :
-          NumericUtils.intToPrefixCoded((int) ts.value, ts.shift, bytes);
+        assert valueSize == 64 || valueSize == 32;
+        return (valueSize == 64) ? 
+          NumericUtils.longToPrefixCoded(value, shift, bytes) :
+          NumericUtils.intToPrefixCoded((int) value, shift, bytes);
       } catch (IllegalArgumentException iae) {
-        // return empty token before first
+        // return empty token before first or after last
         bytes.length = 0;
         return 0;
       }
     }
 
-    public int getShift() { return ts.shift; }
-    public long getRawValue() { return ts.value; }
-    public int getValueSize() { return ts.valSize; }
+    public int getShift() { return shift; }
+    public void setShift(int shift) { this.shift = shift; }
+    public int incShift() {
+      return (shift += precisionStep);
+    }
+
+    public long getRawValue() { return value  & ~((1L << shift) - 1L); }
+    public int getValueSize() { return valueSize; }
+
+    public void init(long value, int valueSize, int precisionStep, int shift) {
+      this.value = value;
+      this.valueSize = valueSize;
+      this.precisionStep = precisionStep;
+      this.shift = shift;
+    }
 
     @Override
     public void clear() {
-      // this attribute has no contents to clear
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return other == this;
-    }
-
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
+      // this attribute has no contents to clear!
+      // we keep it untouched as it's fully controlled by outer class.
     }
     
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      final BytesRef bytes = new BytesRef();
+      toBytesRef(bytes);
+      reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes);
+      reflector.reflect(NumericTermAttribute.class, "shift", shift);
+      reflector.reflect(NumericTermAttribute.class, "rawValue", getRawValue());
+      reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);
+    }
+  
     @Override
     public void copyTo(AttributeImpl target) {
-      // this attribute has no contents to copy
-    }
-    
-    @Override
-    public Object clone() {
-      // cannot throw CloneNotSupportedException (checked)
-      throw new UnsupportedOperationException();
+      final NumericTermAttribute a = (NumericTermAttribute) target;
+      a.init(value, valueSize, precisionStep, shift);
     }
   }
-
+  
   /**
    * Creates a token stream for numeric values using the default <code>precisionStep</code>
    * {@link NumericUtils#PRECISION_STEP_DEFAULT} (4). The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public NumericTokenStream() {
-    this(NumericUtils.PRECISION_STEP_DEFAULT);
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, NumericUtils.PRECISION_STEP_DEFAULT);
   }
   
   /**
@@ -192,15 +212,7 @@ public final class NumericTokenStream extends TokenStream {
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public NumericTokenStream(final int precisionStep) {
-    super(new NumericAttributeFactory(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY));
-    // we must do this after the super call :(
-    ((NumericAttributeFactory) getAttributeFactory()).ts = this;
-    addAttribute(NumericTermAttribute.class);
-
-    this.precisionStep = precisionStep;
-    if (precisionStep < 1)
-      throw new IllegalArgumentException("precisionStep must be >=1");
-    shift = -precisionStep;
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, precisionStep);
   }
 
   /**
@@ -212,14 +224,10 @@ public final class NumericTokenStream extends TokenStream {
    */
   public NumericTokenStream(AttributeFactory factory, final int precisionStep) {
     super(new NumericAttributeFactory(factory));
-    // we must do this after the super call :(
-    ((NumericAttributeFactory) getAttributeFactory()).ts = this;
-    addAttribute(NumericTermAttribute.class);
-
-    this.precisionStep = precisionStep;
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
-    shift = -precisionStep;
+    this.precisionStep = precisionStep;
+    numericAtt.setShift(-precisionStep);
   }
 
   /**
@@ -229,9 +237,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setLongValue(value))</code>
    */
   public NumericTokenStream setLongValue(final long value) {
-    this.value = value;
-    valSize = 64;
-    shift = -precisionStep;
+    numericAtt.init(value, valSize = 64, precisionStep, -precisionStep);
     return this;
   }
   
@@ -242,9 +248,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setIntValue(value))</code>
    */
   public NumericTokenStream setIntValue(final int value) {
-    this.value = value;
-    valSize = 32;
-    shift = -precisionStep;
+    numericAtt.init(value, valSize = 32, precisionStep, -precisionStep);
     return this;
   }
   
@@ -255,9 +259,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setDoubleValue(value))</code>
    */
   public NumericTokenStream setDoubleValue(final double value) {
-    this.value = NumericUtils.doubleToSortableLong(value);
-    valSize = 64;
-    shift = -precisionStep;
+    numericAtt.init(NumericUtils.doubleToSortableLong(value), valSize = 64, precisionStep, -precisionStep);
     return this;
   }
   
@@ -268,9 +270,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setFloatValue(value))</code>
    */
   public NumericTokenStream setFloatValue(final float value) {
-    this.value = NumericUtils.floatToSortableInt(value);
-    valSize = 32;
-    shift = -precisionStep;
+    numericAtt.init(NumericUtils.floatToSortableInt(value), valSize = 32, precisionStep, -precisionStep);
     return this;
   }
   
@@ -278,40 +278,28 @@ public final class NumericTokenStream extends TokenStream {
   public void reset() {
     if (valSize == 0)
       throw new IllegalStateException("call set???Value() before usage");
-    shift = -precisionStep;
+    numericAtt.setShift(-precisionStep);
   }
 
   @Override
   public boolean incrementToken() {
     if (valSize == 0)
       throw new IllegalStateException("call set???Value() before usage");
-    shift += precisionStep;
-    if (shift >= valSize) {
-      // reset so the attribute still works after exhausted stream
-      shift -= precisionStep;
-      return false;
-    }
-
+    
+    // this will only clear all other attributes in this TokenStream
     clearAttributes();
-    // the TermToBytesRefAttribute is directly accessing shift & value.
+
+    final int shift = numericAtt.incShift();
     typeAtt.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC : TOKEN_TYPE_LOWER_PREC);
     posIncrAtt.setPositionIncrement((shift == 0) ? 1 : 0);
-    return true;
-  }
-  
-  @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder("(numeric,valSize=").append(valSize);
-    sb.append(",precisionStep=").append(precisionStep).append(')');
-    return sb.toString();
+    return (shift < valSize);
   }
 
   // members
+  private final NumericTermAttribute numericAtt = addAttribute(NumericTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   
-  int shift, valSize = 0; // valSize==0 means not initialized
+  private int valSize = 0; // valSize==0 means not initialized
   private final int precisionStep;
-  
-  long value = 0L;
 }

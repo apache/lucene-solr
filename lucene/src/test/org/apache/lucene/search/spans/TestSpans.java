@@ -410,20 +410,21 @@ public class TestSpans extends LuceneTestCase {
       }
     };
 
-    SpanNearQuery snq = new SpanNearQuery(
+    final Similarity oldSim = searcher.getSimilarity();
+    Scorer spanScorer;
+    try {
+      searcher.setSimilarity(sim);
+      SpanNearQuery snq = new SpanNearQuery(
                               new SpanQuery[] {
                                 makeSpanTermQuery("t1"),
                                 makeSpanTermQuery("t2") },
                               slop,
-                              ordered) {
-      @Override
-      public Similarity getSimilarity(IndexSearcher s) {
-        return sim;
-      }
-      };
+                              ordered);
 
-    Scorer spanScorer = snq.weight(searcher).scorer(new AtomicReaderContext(new SlowMultiReaderWrapper(searcher.getIndexReader())), ScorerContext.def());
-
+      spanScorer = snq.weight(searcher).scorer(new AtomicReaderContext(new SlowMultiReaderWrapper(searcher.getIndexReader())), ScorerContext.def());
+    } finally {
+      searcher.setSimilarity(oldSim);
+    }
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);
     float score = spanScorer.score();

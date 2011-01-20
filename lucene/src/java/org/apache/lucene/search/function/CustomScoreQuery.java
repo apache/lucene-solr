@@ -189,7 +189,7 @@ public class CustomScoreQuery extends Query {
     boolean qStrict;
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
       this.subQueryWeight = subQuery.weight(searcher);
       this.valSrcWeights = new Weight[valSrcQueries.length];
       for(int i = 0; i < valSrcQueries.length; i++) {

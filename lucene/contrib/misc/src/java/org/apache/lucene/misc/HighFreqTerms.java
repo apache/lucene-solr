@@ -189,6 +189,17 @@ public class HighFreqTerms {
       @Override
       protected void add(int base, IndexReader r) throws IOException {
         Bits skipDocs = r.getDeletedDocs();
+        if (skipDocs == null) {
+          // TODO: we could do this up front, during the scan
+          // (next()), instead of after-the-fact here w/ seek,
+          // if the codec supports it and there are no del
+          // docs...
+          final long totTF = r.totalTermFreq(field, termtext);
+          if (totTF != -1) {
+            totalTF[0] += totTF;
+            return;
+          }
+        }
         DocsEnum de = r.termDocsEnum(skipDocs, field, termtext);
         if (de != null) {
           while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)

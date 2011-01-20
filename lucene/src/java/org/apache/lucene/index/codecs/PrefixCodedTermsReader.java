@@ -130,18 +130,17 @@ public class PrefixCodedTermsReader extends FieldsProducer {
       // Read per-field details
       seekDir(in, dirOffset);
 
-      final int numFields = in.readInt();
+      final int numFields = in.readVInt();
 
       for(int i=0;i<numFields;i++) {
-        final int field = in.readInt();
-        final long numTerms = in.readLong();
+        final int field = in.readVInt();
+        final long numTerms = in.readVLong();
         assert numTerms >= 0;
-        final long termsStartPointer = in.readLong();
+        final long termsStartPointer = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        if (numTerms > 0) {
-          assert !fields.containsKey(fieldInfo.name);
-          fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer));
-        }
+        final long sumTotalTermFreq = fieldInfo.omitTermFreqAndPositions ? -1 : in.readVLong();
+        assert !fields.containsKey(fieldInfo.name);
+        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq));
       }
       success = true;
     } finally {
@@ -246,12 +245,14 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
+    final long sumTotalTermFreq;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer) {
+    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.termsStartPointer = termsStartPointer;
+      this.sumTotalTermFreq = sumTotalTermFreq;
     }
 
     @Override
@@ -272,6 +273,11 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     @Override
     public long getUniqueTermCount() {
       return numTerms;
+    }
+
+    @Override
+    public long getSumTotalTermFreq() {
+      return sumTotalTermFreq;
     }
 
     // Iterates through terms in this field, not supporting ord()
@@ -296,6 +302,7 @@ public class PrefixCodedTermsReader extends FieldsProducer {
         bytesReader = new DeltaBytesReader(in);
         fieldTerm.field = fieldInfo.name;
         state = postingsReader.newTermState();
+        state.totalTermFreq = -1;
         state.ord = -1;
       }
 
@@ -496,6 +503,10 @@ public class PrefixCodedTermsReader extends FieldsProducer {
           state.docFreq = (in.readVInt() << 6) | (b & 0x3F);
         }
 
+        if (!fieldInfo.omitTermFreqAndPositions) {
+          state.totalTermFreq = state.docFreq + in.readVLong();
+        }
+
         postingsReader.readTerm(in,
                                 fieldInfo, state,
                                 isIndexTerm);
@@ -511,6 +522,11 @@ public class PrefixCodedTermsReader extends FieldsProducer {
       @Override
       public int docFreq() {
         return state.docFreq;
+      }
+
+      @Override
+      public long totalTermFreq() {
+        return state.totalTermFreq;
       }
 
       @Override

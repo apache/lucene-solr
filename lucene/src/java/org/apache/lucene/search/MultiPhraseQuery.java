@@ -137,7 +137,7 @@ public class MultiPhraseQuery extends Query {
 
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
 
       // compute idf
       final int maxDoc = searcher.maxDoc();

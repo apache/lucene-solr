@@ -398,16 +398,31 @@ public class InstantiatedIndexReader extends IndexReader {
         if (i < 0) {
           i = -i - 1;
         }
-        if (i >= orderedTerms.length || !orderedTerms[i].field().equals(field)) {
+        if (i >= orderedTerms.length || orderedTerms[i].field() != field) {
           // field does not exist
           return null;
         }
         final int startLoc = i;
 
+        // TODO: heavy to do this here; would be better to
+        // do it up front & cache
+        long sum = 0;
+        int upto = i;
+        while(upto < orderedTerms.length && orderedTerms[i].field() == field) {
+          sum += orderedTerms[i].getTotalTermFreq();
+          upto++;
+        }
+        final long sumTotalTermFreq = sum;
+
         return new Terms() {
           @Override 
           public TermsEnum iterator() {
             return new InstantiatedTermsEnum(orderedTerms, startLoc, field);
+          }
+
+          @Override
+          public long getSumTotalTermFreq() {
+            return sumTotalTermFreq;
           }
 
           @Override

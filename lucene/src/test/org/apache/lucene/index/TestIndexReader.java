@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.SortedSet;
-
+import org.junit.Assume;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1864,5 +1864,28 @@ public class TestIndexReader extends LuceneTestCase
     writer.close();
     assertTrue(IndexReader.indexExists(dir));
     dir.close();
+  }
+
+  // Make sure totalTermFreq works correctly in the terms
+  // dict cache
+  public void testTotalTermFreqCached() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Document d = new Document();
+    d.add(newField("f", "a a b", Field.Index.ANALYZED));
+    writer.addDocument(d);
+    IndexReader r = writer.getReader();
+    writer.close();
+    Terms terms = MultiFields.getTerms(r, "f");
+    try {
+      // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(terms.totalTermFreq(new BytesRef("b")) != -1);
+      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+      assertEquals(2, terms.totalTermFreq(new BytesRef("a")));
+      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+    } finally {
+      r.close();
+      dir.close();
+    }
   }
 }

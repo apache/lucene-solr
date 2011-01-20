@@ -481,6 +481,30 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return fieldValueCache;
   }
 
+  /** Returns a weighted sort according to this searcher */
+  public Sort weightSort(Sort sort) throws IOException {
+    if (sort == null) return null;
+    SortField[] sorts = sort.getSort();
+
+    boolean needsWeighting = false;
+    for (SortField sf : sorts) {
+      if (sf instanceof SolrSortField) {
+        needsWeighting = true;
+        break;
+      }
+    }
+    if (!needsWeighting) return sort;
+
+    SortField[] newSorts = Arrays.copyOf(sorts, sorts.length);
+    for (int i=0; i<newSorts.length; i++) {
+      if (newSorts[i] instanceof SolrSortField) {
+        newSorts[i] = ((SolrSortField)newSorts[i]).weight(this);
+      }
+    }
+
+    return new Sort(newSorts);
+  }
+
 
   /**
    * Returns the first document number containing the term <code>t</code>
@@ -1166,7 +1190,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if (cmd.getSort() == null) {
         topCollector = TopScoreDocCollector.create(len, true);
       } else {
-        topCollector = TopFieldCollector.create(cmd.getSort(), len, false, needScores, needScores, true);
+        topCollector = TopFieldCollector.create(weightSort(cmd.getSort()), len, false, needScores, needScores, true);
       }
       Collector collector = topCollector;
       if( timeAllowed > 0 ) {
@@ -1276,7 +1300,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if (cmd.getSort() == null) {
         topCollector = TopScoreDocCollector.create(len, true);
       } else {
-        topCollector = TopFieldCollector.create(cmd.getSort(), len, false, needScores, needScores, true);
+        topCollector = TopFieldCollector.create(weightSort(cmd.getSort()), len, false, needScores, needScores, true);
       }
 
       DocSetCollector setCollector = new DocSetDelegateCollector(smallSetSize, maxDoc, topCollector);
@@ -1558,7 +1582,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     // bit of a hack to tell if a set is sorted - do it better in the futute.
     boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
 
-    TopDocsCollector topCollector = TopFieldCollector.create(sort, nDocs, false, false, false, inOrder);
+    TopDocsCollector topCollector = TopFieldCollector.create(weightSort(sort), nDocs, false, false, false, inOrder);
 
     DocIterator iter = set.iterator();
     int base=0;

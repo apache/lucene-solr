@@ -1005,6 +1005,10 @@ class NumberedTermsEnum extends TermsEnum {
     return tenum.docFreq();
   }
 
+  @Override
+  public long totalTermFreq() {
+    return tenum.totalTermFreq();
+  }
 
   public BytesRef skipTo(BytesRef target) throws IOException {
 

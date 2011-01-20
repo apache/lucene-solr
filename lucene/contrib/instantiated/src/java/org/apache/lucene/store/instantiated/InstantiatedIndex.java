@@ -238,6 +238,10 @@ public class InstantiatedIndex
           while((text = termsEnum.next()) != null) {
             String termText = text.utf8ToString();
             InstantiatedTerm instantiatedTerm = new InstantiatedTerm(field, termText);
+            final long totalTermFreq = termsEnum.totalTermFreq();
+            if (totalTermFreq != -1) {
+              instantiatedTerm.addPositionsCount(totalTermFreq);
+            }
             getTermsByFieldAndText().get(field).put(termText, instantiatedTerm);
             instantiatedTerm.setTermIndex(terms.size());
             terms.add(instantiatedTerm);

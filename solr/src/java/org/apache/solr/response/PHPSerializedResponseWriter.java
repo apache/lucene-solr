@@ -32,7 +32,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
-
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 /**
  * A description of the PHP serialization format can be found here:
  * http://www.hurring.com/scott/code/perl/serialize/
@@ -105,7 +106,8 @@ class PHPSerializedWriter extends JSONWriter {
   @Override
   public void writeDoc(String name, Collection<Fieldable> fields, Set<String> returnFields, Map pseudoFields) throws IOException {
     ArrayList<Fieldable> single = new ArrayList<Fieldable>();
-    HashMap<String, MultiValueField> multi = new HashMap<String, MultiValueField>();
+    LinkedHashMap<String, MultiValueField> multi 
+      = new LinkedHashMap<String, MultiValueField>();
 
     for (Fieldable ff : fields) {
       String fname = ff.name();
@@ -199,6 +201,96 @@ class PHPSerializedWriter extends JSONWriter {
 
     writeMapCloser();
   }
+  
+  @Override
+  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
+    LinkedHashMap <String,Object> single = new LinkedHashMap<String, Object>();
+    LinkedHashMap <String,Object> multi = new LinkedHashMap<String, Object>();
+    int pseudoSize = pseudoFields != null ? pseudoFields.size() : 0;
+
+    for (String fname : doc.getFieldNames()) {
+      if(returnFields != null && !returnFields.contains(fname)){
+        continue;
+      }
+
+      Object val = doc.getFieldValue(fname);
+      SchemaField sf = schema.getFieldOrNull(fname);
+      if (sf != null && sf.multiValued()) {
+        multi.put(fname, val);
+      }else{
+        single.put(fname, val);
+      }
+    }
+
+    writeMapOpener(single.size() + multi.size() + pseudoSize);
+    for(String fname: single.keySet()){
+      Object val = single.get(fname);
+      writeKey(fname, true);
+      writeVal(fname, val);
+    }
+    
+    for(String fname: multi.keySet()){
+      writeKey(fname, true);
+
+      Object val = multi.get(fname);
+      if (!(val instanceof Collection)) {
+        // should never be reached if multivalued fields are stored as a Collection
+        // so I'm assuming a size of 1 just to wrap the single value
+        writeArrayOpener(1);
+        writeVal(fname, val);
+        writeArrayCloser();
+      }else{
+        writeVal(fname, val);
+      }
+    }
+
+    if (pseudoSize > 0) {
+      writeMap(null,pseudoFields,true, false);
+    }
+    writeMapCloser();
+  }
+
+
+  @Override
+  public void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException {
+    boolean includeScore=false;
+    if (fields!=null) {
+      includeScore = fields.contains("score");
+      if (fields.size()==0 || (fields.size()==1 && includeScore) || fields.contains("*")) {
+        fields=null;  // null means return all stored fields
+      }
+    }
+
+    int sz = docs.size();
+
+    writeMapOpener(includeScore ? 4 : 3);
+
+    writeKey("numFound",false);
+    writeLong(null,docs.getNumFound());
+
+    writeKey("start",false);
+    writeLong(null,docs.getStart());
+
+    if (includeScore && docs.getMaxScore() != null) {
+      writeKey("maxScore",false);
+      writeFloat(null,docs.getMaxScore());
+    }
+
+    writeKey("docs",false);
+
+    writeArrayOpener(sz);
+    for (int i=0; i<sz; i++) {
+      writeKey(i, false);
+      writeSolrDocument(null, docs.get(i), fields, otherFields);
+    }
+    writeArrayCloser();
+
+    if (otherFields !=null) {
+      writeMap(null, otherFields, true, false);
+    }
+    writeMapCloser();
+  }
+
   
   @Override
   public void writeArray(String name, Object[] val) throws IOException {

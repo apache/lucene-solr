@@ -169,6 +169,16 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[@name='Pig'][.='1']"
             );
 
+    // test excluding main query
+    assertQ(req("q", "{!tag=main}id:43"
+                 ,"facet", "true"
+                 ,"facet.query", "{!key=foo}id:42"
+                 ,"facet.query", "{!ex=main key=bar}id:42"    // only matches when we exclude main query
+                 )
+             ,"//lst[@name='facet_queries']/int[@name='foo'][.='0']"
+             ,"//lst[@name='facet_queries']/int[@name='bar'][.='1']"
+             );
+
     assertQ("check counts for applied facet queries using filtering (fq)",
             req("q", "id:[42 TO 47]"
                 ,"facet", "true"

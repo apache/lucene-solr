@@ -28,6 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
@@ -184,12 +185,12 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(int docCount, boolean isIndexTerm) throws IOException {
-    assert docCount > 0;
+  public void finishTerm(TermStats stats, boolean isIndexTerm) throws IOException {
+    assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
     // for this term) in two places?
-    assert docCount == df;
+    assert stats.docFreq == df;
 
     if (isIndexTerm) {
       // Write absolute at seek points

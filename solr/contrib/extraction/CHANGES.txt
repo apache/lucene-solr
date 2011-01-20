@@ -24,9 +24,13 @@ Current Version: Tika 0.8 (released 11/07/2010)
 
 $Id:$
 
+================== Release 4.0-dev ==================
+
+(No Changes)
+
 ================== Release 3.1-dev ==================
 
-* Upgraded to Tika 0.8 and changed deprecated parse call
+* SOLR-1902: Upgraded to Tika 0.8 and changed deprecated parse call
 
 * SOLR-1756: The date.format setting causes ClassCastException when enabled and the config code that
   parses this setting does not properly use the same iterator instance. (Christoph Brill, Mark Miller)

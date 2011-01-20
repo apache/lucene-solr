@@ -20,13 +20,14 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Comparator;
 
-import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 
@@ -165,6 +166,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     // multiple threads and interacting with the
     // TermsConsumer, only calling out to us (passing us the
     // DocsConsumer) to handle delivery of docs/positions
+    long sumTotalTermFreq = 0;
     while(numFields > 0) {
 
       // Get the next term to merge
@@ -197,6 +199,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       // which all share the same term.  Now we must
       // interleave the docID streams.
       int numDocs = 0;
+      long totTF = 0;
       while(numToMerge > 0) {
         
         FreqProxFieldMergeState minState = termStates[0];
@@ -222,6 +225,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
           // omitTermFreqAndPositions == false so we do write positions &
           // payload          
           int position = 0;
+          totTF += termDocFreq;
           for(int j=0;j<termDocFreq;j++) {
             final int code = prox.readVInt();
             position += code >> 1;
@@ -286,9 +290,10 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       }
 
       assert numDocs > 0;
-      termsConsumer.finishTerm(text, numDocs);
+      termsConsumer.finishTerm(text, new TermStats(numDocs, totTF));
+      sumTotalTermFreq += totTF;
     }
 
-    termsConsumer.finish();
+    termsConsumer.finish(sumTotalTermFreq);
   }
 }

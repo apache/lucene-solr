@@ -25,6 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -68,6 +69,13 @@ public class TestBooleanScorer extends LuceneTestCase
     // 'more' variable to work properly, and this test ensures that if the logic
     // changes, we have a test to back it up.
     
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    writer.commit();
+    IndexReader ir = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = new IndexSearcher(ir);
+    
     Similarity sim = Similarity.getDefault();
     Scorer[] scorers = new Scorer[] {new Scorer(sim) {
       private int doc = -1;
@@ -83,10 +91,15 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
     }};
-    BooleanScorer bs = new BooleanScorer(null, false, sim, 1, Arrays.asList(scorers), null, scorers.length);
+    BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
+    BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), null, scorers.length);
     
     assertEquals("should have received 3000", 3000, bs.nextDoc());
     assertEquals("should have received NO_MORE_DOCS", DocIdSetIterator.NO_MORE_DOCS, bs.nextDoc());
+    searcher.close();
+    ir.close();
+    directory.close();
+    
   }
 
 }

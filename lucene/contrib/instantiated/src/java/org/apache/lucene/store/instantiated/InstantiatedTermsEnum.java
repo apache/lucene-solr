@@ -111,6 +111,12 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
+  public long totalTermFreq() {
+    final long v = terms[upto].getTotalTermFreq();
+    return v == 0 ? -1 : v;
+  }
+
+  @Override
   public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
     if (reuse == null || !(reuse instanceof InstantiatedDocsEnum)) {
       reuse = new InstantiatedDocsEnum();

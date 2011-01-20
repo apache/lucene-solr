@@ -99,8 +99,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     Directory dir = newFSDirectory(newDir);
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40)).
-            setMaxFieldLength(1000)
+        new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40))
     );
     Document doc = new Document();
     doc.add(new Field("id", "2", Field.Store.YES, Field.Index.ANALYZED));
