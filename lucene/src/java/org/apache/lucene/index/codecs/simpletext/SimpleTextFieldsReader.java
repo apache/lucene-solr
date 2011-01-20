@@ -527,6 +527,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
             final int value = Integer.parseInt(new String(scratch.bytes, scratch.offset+prefix.length, scratch.length-prefix.length));            
             buffer[upto++] = value - lastValue;
             lastValue = value;
+          } else if (scratch.startsWith(DOC)) { 
+            lastValue = 0;
           }
         }
         return limit = upto;
