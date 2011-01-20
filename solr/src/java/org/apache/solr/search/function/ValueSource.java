@@ -109,7 +109,6 @@ public abstract class ValueSource implements Serializable {
       super(description(), dummyComparator, reverse);
     }
 
-    @Override
     public SortField weight(IndexSearcher searcher) throws IOException {
       Map context = newContext();
       createWeight(context, searcher);

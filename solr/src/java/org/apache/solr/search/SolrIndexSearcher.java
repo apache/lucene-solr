@@ -495,7 +495,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
     if (!needsWeighting) return sort;
 
-    SortField[] newSorts = Arrays.copyOf(sorts, sorts.length);
+    SortField[] newSorts = sorts.clone();
     for (int i=0; i<newSorts.length; i++) {
       if (newSorts[i] instanceof SolrSortField) {
         newSorts[i] = ((SolrSortField)newSorts[i]).weight(this);
