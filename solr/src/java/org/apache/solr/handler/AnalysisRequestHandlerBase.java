@@ -209,6 +209,9 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     new SorterTemplate() {
       @Override
       protected void swap(int i, int j) {
+        final int p = positions[i];
+        positions[i] = positions[j];
+        positions[j] = p;
         Collections.swap(tokens, i, j);
       }
       
