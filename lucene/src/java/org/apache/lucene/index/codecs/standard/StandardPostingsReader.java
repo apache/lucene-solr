@@ -1126,6 +1126,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
             if (positionDeltasReader != null) {
               positionDeltasReader.limit = 0;
               positionDeltasReader.pending = 0;
+              payloadLength = skipper.getPayloadLength();
               proxIn.seek(skipper.getProxPointer());
             }
           }
