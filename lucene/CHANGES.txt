@@ -289,6 +289,9 @@ API Changes
   for AttributeImpls, but can still be provided (if needed).
   (Uwe Schindler)
 
+* LUCENE-2691: Deprecate IndexWriter.getReader in favor of
+  IndexReader.open(IndexWriter) (Grant Ingersoll, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on

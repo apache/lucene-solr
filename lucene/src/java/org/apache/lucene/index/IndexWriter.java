@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LimitTokenCountAnalyzer;
-import org.apache.lucene.analysis.LimitTokenCountFilter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
@@ -341,7 +340,7 @@ public class IndexWriter implements Closeable {
    * the writer nor calling {@link #commit}.
    *
    * <p>Note that this is functionally equivalent to calling
-   * {#commit} and then using {@link IndexReader#open} to
+   * {#flush} and then using {@link IndexReader#open} to
    * open a new reader.  But the turarnound time of this
    * method should be faster since it avoids the potentially
    * costly {@link #commit}.</p>
@@ -389,8 +388,12 @@ public class IndexWriter implements Closeable {
    * @return IndexReader that covers entire index plus all
    * changes made so far by this IndexWriter instance
    *
+   * @deprecated Please use {@link
+   * IndexReader#open(IndexWriter)} instead.
+   *
    * @throws IOException
    */
+  @Deprecated
   public IndexReader getReader() throws IOException {
     return getReader(config.getReaderTermsIndexDivisor());
   }
@@ -409,13 +412,17 @@ public class IndexWriter implements Closeable {
    *  loading a TermInfo.  The default value is 1.  Set this
    *  to -1 to skip loading the terms index entirely.
    *  
-   *  @deprecated this method cannot guarantee the reader (and its sub-readers)
-   *  will be opened with the termInfosIndexDivisor setting because some of them
-   *  may have already been opened according to
-   *  {@link IndexWriterConfig#setReaderTermsIndexDivisor}. You should set the 
-   *  requested termInfosIndexDivisor through 
+   *  @deprecated Please use {@link
+   *  IndexReader#open(IndexWriter)} instead.  Furthermore,
+   *  this method cannot guarantee the reader (and its
+   *  sub-readers) will be opened with the
+   *  termInfosIndexDivisor setting because some of them may
+   *  have already been opened according to {@link
+   *  IndexWriterConfig#setReaderTermsIndexDivisor}. You
+   *  should set the requested termInfosIndexDivisor through 
    *  {@link IndexWriterConfig#setReaderTermsIndexDivisor} and use 
    *  {@link #getReader()}. */
+  @Deprecated
   public IndexReader getReader(int termInfosIndexDivisor) throws IOException {
 
     ensureOpen();
@@ -1971,6 +1978,7 @@ public class IndexWriter implements Closeable {
    * @see MaxFieldLength
    * @deprecated remove in 4.0
    */
+  @Deprecated
   private int maxFieldLength = DEFAULT_MAX_FIELD_LENGTH;
 
   /**

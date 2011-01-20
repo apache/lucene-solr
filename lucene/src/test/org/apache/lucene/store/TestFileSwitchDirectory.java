@@ -47,7 +47,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(fsd, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
-    IndexReader reader = writer.getReader();
+    IndexReader reader = IndexReader.open(writer);
     assertEquals(100, reader.maxDoc());
     writer.commit();
     // we should see only fdx,fdt files here
