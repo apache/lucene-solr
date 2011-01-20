@@ -76,7 +76,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     @Override
     public boolean isIndexTerm(BytesRef term, TermStats stats) {
       if (count >= interval) {
-        count = 0;
+        count = 1;
         return true;
       } else {
         count++;
@@ -101,7 +101,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     @Override
     public boolean isIndexTerm(BytesRef term, TermStats stats) {
       if (stats.docFreq >= docFreqThresh || count >= interval) {
-        count = 0;
+        count = 1;
         return true;
       } else {
         count++;
