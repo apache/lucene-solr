@@ -834,6 +834,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     // are also encoded into the position deltas
     private final class PosPayloadReader extends BulkPostingsEnum.BlockReader {
       final BulkPostingsEnum.BlockReader other;
+      private boolean fillPending;
       private int pendingOffset;
       private int limit;
       private boolean skipNext;
@@ -842,7 +843,11 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
         this.other = other;
       }
 
-      void doAfterSeek() {}
+      void doAfterSeek() {
+        limit = 0;
+        skipNext = false;
+        fillPending = false;
+      }
 
       @Override
       public int[] getBuffer() {
@@ -868,23 +873,33 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
         // any changes in payload length.  NOTE: this is a
         // perf hit on indices that encode payloads, even if
         // they use "normal" positional queries
-        final int otherLimit = other.fill();
         limit = 0;
-        final int[] buffer = other.getBuffer();
-        for(int i=pendingOffset;i<otherLimit;i++) {
-          if (skipNext) {
-            skipNext = false;
-          } else {
-            final int code = buffer[i];
-            buffer[limit++] = code >>> 1;
-            if ((code & 1) != 0) {
-              // skip the payload length
-              skipNext = true;
+        boolean skippedLast = false;
+        do { 
+          final int otherLimit = fillPending ? other.fill() : other.end();
+          fillPending = true;
+          assert otherLimit > pendingOffset;
+          final int[] buffer = other.getBuffer();
+          for(int i=pendingOffset;i<otherLimit;i++) {
+            if (skipNext) {
+              skipNext = false;
+              skippedLast = true;
+            } else {
+              skippedLast = false;
+              final int code = buffer[i];
+              buffer[limit++] = code >>> 1;
+              if ((code & 1) != 0) {
+                // skip the payload length
+                skipNext = true;
+              }
             }
           }
-        }
-        pendingOffset = 0;
-
+          pendingOffset = 0;
+          /*
+           *  some readers will only fill a single element of the buffer
+           *  if that single element is skipped we need to do another round.
+           */
+        }while(limit == 0 && skippedLast);
         return limit;
       }
 
@@ -1014,9 +1029,14 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
             skipper.getFreqIndex().seek(freqReader);
           }
           if (posReader != null) {
-            skipper.getPosIndex().seek(posReader);
+            if (storePayloads) {
+              PosPayloadReader posPayloadReader = (PosPayloadReader) posReader;
+              skipper.getPosIndex().seek(posPayloadReader.other);
+              posPayloadReader.doAfterSeek();
+            } else {
+              skipper.getPosIndex().seek(posReader);
+            }
           }
-
           jumpResult.count = newCount;
           jumpResult.docID = skipper.getDoc();
           return jumpResult;
