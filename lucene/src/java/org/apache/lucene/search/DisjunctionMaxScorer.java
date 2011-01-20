@@ -40,22 +40,20 @@ class DisjunctionMaxScorer extends Scorer {
   /**
    * Creates a new instance of DisjunctionMaxScorer
    * 
+   * @param weight
+   *          The Weight to be used.
    * @param tieBreakerMultiplier
    *          Multiplier applied to non-maximum-scoring subqueries for a
    *          document as they are summed into the result.
-   * @param similarity
-   *          -- not used since our definition involves neither coord nor terms
-   *          directly
    * @param subScorers
    *          The sub scorers this Scorer should iterate on
    * @param numScorers
    *          The actual number of scorers to iterate on. Note that the array's
    *          length may be larger than the actual number of scorers.
    */
-  public DisjunctionMaxScorer(float tieBreakerMultiplier,
-      Similarity similarity, Scorer[] subScorers, int numScorers) throws IOException {
-    super(similarity);
-
+  public DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier,
+      Scorer[] subScorers, int numScorers) throws IOException {
+    super(weight);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
     // The passed subScorers array includes only scorers which have documents
     // (DisjunctionMaxQuery takes care of that), and their nextDoc() was already

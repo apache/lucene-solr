@@ -36,10 +36,12 @@ public class SpanScorer extends Scorer {
 
   protected int doc;
   protected float freq;
-
+  protected final Similarity similarity;
+  
   protected SpanScorer(Spans spans, Weight weight, Similarity similarity, byte[] norms)
   throws IOException {
-    super(similarity, weight);
+    super(weight);
+    this.similarity = similarity;
     this.spans = spans;
     this.norms = norms;
     this.value = weight.getValue();
@@ -81,7 +83,7 @@ public class SpanScorer extends Scorer {
     freq = 0.0f;
     do {
       int matchLength = spans.end() - spans.start();
-      freq += getSimilarity().sloppyFreq(matchLength);
+      freq += similarity.sloppyFreq(matchLength);
       more = spans.next();
     } while (more && (doc == spans.doc()));
     return true;
@@ -92,8 +94,8 @@ public class SpanScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    float raw = getSimilarity().tf(freq) * value; // raw score
-    return norms == null? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize
+    float raw = similarity.tf(freq) * value; // raw score
+    return norms == null? raw : raw * similarity.decodeNormValue(norms[doc]); // normalize
   }
   
   @Override
@@ -109,7 +111,7 @@ public class SpanScorer extends Scorer {
     int expDoc = advance(doc);
 
     float phraseFreq = (expDoc == doc) ? freq : 0.0f;
-    tfExplanation.setValue(getSimilarity().tf(phraseFreq));
+    tfExplanation.setValue(similarity.tf(phraseFreq));
     tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
 
     return tfExplanation;

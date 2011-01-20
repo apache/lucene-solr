@@ -97,12 +97,10 @@ public class ConstantScoreQuery extends Query {
 
   protected class ConstantWeight extends Weight {
     private final Weight innerWeight;
-    private final Similarity similarity;
     private float queryNorm;
     private float queryWeight;
     
     public ConstantWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = searcher.getSimilarity();
       this.innerWeight = (query == null) ? null : query.createWeight(searcher);
     }
 
@@ -148,7 +146,7 @@ public class ConstantScoreQuery extends Query {
       }
       if (disi == null)
         return null;
-      return new ConstantScorer(similarity, disi, this);
+      return new ConstantScorer(disi, this);
     }
     
     @Override
@@ -181,8 +179,8 @@ public class ConstantScoreQuery extends Query {
     final DocIdSetIterator docIdSetIterator;
     final float theScore;
 
-    public ConstantScorer(Similarity similarity, DocIdSetIterator docIdSetIterator, Weight w) throws IOException {
-      super(similarity,w);
+    public ConstantScorer(DocIdSetIterator docIdSetIterator, Weight w) throws IOException {
+      super(w);
       theScore = w.getValue();
       this.docIdSetIterator = docIdSetIterator;
     }
@@ -212,8 +210,7 @@ public class ConstantScoreQuery extends Query {
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           // we must wrap again here, but using the scorer passed in as parameter:
-          collector.setScorer(new ConstantScorer(ConstantScorer.this.getSimilarity(),
-            scorer, ConstantScorer.this.weight));
+          collector.setScorer(new ConstantScorer(scorer, ConstantScorer.this.weight));
         }
         
         @Override

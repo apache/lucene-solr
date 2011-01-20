@@ -75,9 +75,8 @@ public class TestBooleanScorer extends LuceneTestCase
     IndexReader ir = writer.getReader();
     writer.close();
     IndexSearcher searcher = new IndexSearcher(ir);
-    
-    Similarity sim = Similarity.getDefault();
-    Scorer[] scorers = new Scorer[] {new Scorer(sim) {
+    BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
+    Scorer[] scorers = new Scorer[] {new Scorer(weight) {
       private int doc = -1;
       @Override public float score() throws IOException { return 0; }
       @Override public int docID() { return doc; }
@@ -91,7 +90,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
     }};
-    BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
+    
     BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), null, scorers.length);
     
     assertEquals("should have received 3000", 3000, bs.nextDoc());

@@ -95,7 +95,7 @@ public class FunctionQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new AllScorer(searcher.getSimilarity(), context, this);
+      return new AllScorer(context, this);
     }
 
     @Override
@@ -114,8 +114,8 @@ public class FunctionQuery extends Query {
     final boolean hasDeletions;
     final Bits delDocs;
 
-    public AllScorer(Similarity similarity, AtomicReaderContext context, FunctionWeight w) throws IOException {
-      super(similarity);
+    public AllScorer(AtomicReaderContext context, FunctionWeight w) throws IOException {
+      super(w);
       this.weight = w;
       this.qWeight = w.getValue();
       this.reader = context.reader;

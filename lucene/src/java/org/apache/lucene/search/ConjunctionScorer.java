@@ -29,12 +29,12 @@ class ConjunctionScorer extends Scorer {
   private final float coord;
   private int lastDoc = -1;
 
-  public ConjunctionScorer(float coord, Collection<Scorer> scorers) throws IOException {
-    this(coord, scorers.toArray(new Scorer[scorers.size()]));
+  public ConjunctionScorer(Weight weight, float coord, Collection<Scorer> scorers) throws IOException {
+    this(weight, coord, scorers.toArray(new Scorer[scorers.size()]));
   }
 
-  public ConjunctionScorer(float coord, Scorer... scorers) throws IOException {
-    super(null);
+  public ConjunctionScorer(Weight weight, float coord, Scorer... scorers) throws IOException {
+    super(weight);
     this.scorers = scorers;
     this.coord = coord;
     
