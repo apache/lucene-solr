@@ -20,17 +20,21 @@ package org.apache.lucene.index.codecs.standard;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.codecs.BlockTermState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.PrefixCodedTermState;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -47,9 +51,12 @@ public class StandardPostingsReader extends PostingsReaderBase {
   int skipInterval;
   int maxSkipLevels;
 
+  //private String segment;
+
   public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize, String codecId) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
                            readBufferSize);
+    //this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
@@ -85,10 +92,15 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   // Must keep final because we do non-standard clone
-  private final static class StandardTermState extends PrefixCodedTermState {
+  private final static class StandardTermState extends BlockTermState {
     long freqOffset;
     long proxOffset;
     int skipOffset;
+
+    // Only used by the "primary" TermState -- clones don't
+    // copy this (basically they are "transient"):
+    ByteArrayDataInput bytesReader;
+    byte[] bytes;
 
     public Object clone() {
       StandardTermState other = new StandardTermState();
@@ -102,6 +114,11 @@ public class StandardPostingsReader extends PostingsReaderBase {
       freqOffset = other.freqOffset;
       proxOffset = other.proxOffset;
       skipOffset = other.skipOffset;
+
+      // Do not copy bytes, bytesReader (else TermState is
+      // very heavy, ie drags around the entire block's
+      // byte[]).  On seek back, if next() is in fact used
+      // (rare!), they will be re-read from disk.
     }
 
     public String toString() {
@@ -110,7 +127,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public PrefixCodedTermState newTermState() {
+  public BlockTermState newTermState() {
     return new StandardTermState();
   }
 
@@ -127,34 +144,58 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
   }
 
+  /* Reads but does not decode the byte[] blob holding
+     metadata for the current terms block */
   @Override
-  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, PrefixCodedTermState termState, boolean isIndexTerm)
-    throws IOException {
-    final StandardTermState docTermState = (StandardTermState) termState;
+  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+    final StandardTermState termState = (StandardTermState) _termState;
 
-    if (isIndexTerm) {
-      docTermState.freqOffset = termsIn.readVLong();
-    } else {
-      docTermState.freqOffset += termsIn.readVLong();
+    final int len = termsIn.readVInt();
+    //System.out.println("SPR.readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
+    if (termState.bytes == null) {
+      termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
+      termState.bytesReader = new ByteArrayDataInput(null);
+    } else if (termState.bytes.length < len) {
+      termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
     }
 
-    if (docTermState.docFreq >= skipInterval) {
-      docTermState.skipOffset = termsIn.readVInt();
+    termsIn.readBytes(termState.bytes, 0, len);
+    termState.bytesReader.reset(termState.bytes, 0, len);
+  }
+
+  @Override
+  public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState)
+    throws IOException {
+    final StandardTermState termState = (StandardTermState) _termState;
+    //System.out.println("StandardR.nextTerm seg=" + segment);
+    final boolean isFirstTerm = termState.termCount == 0;
+
+    if (isFirstTerm) {
+      termState.freqOffset = termState.bytesReader.readVLong();
     } else {
-      docTermState.skipOffset = 0;
+      termState.freqOffset += termState.bytesReader.readVLong();
+    }
+    //System.out.println("  freqFP=" + termState.freqOffset);
+
+    if (termState.docFreq >= skipInterval) {
+      termState.skipOffset = termState.bytesReader.readVInt();
+      //System.out.println("  skipOffset=" + termState.skipOffset);
+    } else {
+      // undefined
     }
 
     if (!fieldInfo.omitTermFreqAndPositions) {
-      if (isIndexTerm) {
-        docTermState.proxOffset = termsIn.readVLong();
+      if (isFirstTerm) {
+        termState.proxOffset = termState.bytesReader.readVLong();
       } else {
-        docTermState.proxOffset += termsIn.readVLong();
+        termState.proxOffset += termState.bytesReader.readVLong();
       }
+      //System.out.println("  proxFP=" + termState.proxOffset);
     }
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, PrefixCodedTermState termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits skipDocs, DocsEnum reuse) throws IOException {
     SegmentDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SegmentDocsEnum)) {
       docsEnum = new SegmentDocsEnum(freqIn);
@@ -173,7 +214,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
   private SegmentBulkPostingsEnum lastBulkEnum;
 
   @Override
-  public BulkPostingsEnum bulkPostings(FieldInfo fieldInfo, TermState termState, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
+  public BulkPostingsEnum bulkPostings(FieldInfo fieldInfo, BlockTermState termState, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
     // must assign to local, first, for thread safety:
     final SegmentBulkPostingsEnum lastBulkEnum = this.lastBulkEnum;
 
@@ -192,8 +233,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
   }
 
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, PrefixCodedTermState termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (fieldInfo.omitTermFreqAndPositions) {
       return null;
     }
@@ -274,6 +314,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       assert limit > 0;
       ord = 0;
       doc = 0;
+      //System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
 
       skipped = false;
 
@@ -413,6 +454,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       limit = termState.docFreq;
       assert limit > 0;
+
       ord = 0;
       doc = 0;
       position = 0;
@@ -423,6 +465,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       freqOffset = termState.freqOffset;
       proxOffset = termState.proxOffset;
       skipOffset = termState.skipOffset;
+      //System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
 
       return this;
     }
@@ -431,6 +474,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     public int nextDoc() throws IOException {
       while(true) {
         if (ord == limit) {
+          //System.out.println("StandardR.D&PE seg=" + segment + " nextDoc return doc=END");
           return doc = NO_MORE_DOCS;
         }
 
@@ -454,6 +498,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       position = 0;
 
+      //System.out.println("StandardR.D&PE nextDoc seg=" + segment + " return doc=" + doc);
       return doc;
     }
 
@@ -469,6 +514,8 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
+
+      //System.out.println("StandardR.D&PE advance target=" + target);
 
       // TODO: jump right to next() if target is < X away
       // from where we are now?
@@ -615,6 +662,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       freqOffset = termState.freqOffset;
       proxOffset = termState.proxOffset;
       skipOffset = termState.skipOffset;
+      //System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
 
       return this;
     }
@@ -623,6 +671,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     public int nextDoc() throws IOException {
       while(true) {
         if (ord == limit) {
+          //System.out.println("StandardR.D&PE seg=" + segment + " nextDoc return doc=END");
           return doc = NO_MORE_DOCS;
         }
 
@@ -646,6 +695,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       position = 0;
 
+      //System.out.println("StandardR.D&PE nextDoc seg=" + segment + " return doc=" + doc);
       return doc;
     }
 
@@ -741,6 +791,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         posPendingCount--;
         position = 0;
         payloadPending = false;
+        //System.out.println("StandardR.D&PE skipPos");
       }
 
       // read next position
@@ -764,6 +815,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       assert posPendingCount >= 0: "nextPosition() was called too many times (more than freq() times) posPendingCount=" + posPendingCount;
 
+      //System.out.println("StandardR.D&PE nextPos   return pos=" + position);
       return position;
     }
 

@@ -25,6 +25,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 
 // TODO: much of this can be shared code w/ the fixed case
@@ -157,7 +158,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
     // This is used when reading skip data:
     @Override
-    public void read(final IndexInput indexIn, final boolean absolute) throws IOException {
+    public void read(final DataInput indexIn, final boolean absolute) throws IOException {
       if (absolute) {
         fp = indexIn.readVLong();
         upto = indexIn.readByte()&0xFF;

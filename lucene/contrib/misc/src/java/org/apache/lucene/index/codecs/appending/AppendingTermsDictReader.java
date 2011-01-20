@@ -22,15 +22,15 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
-import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
+import org.apache.lucene.index.codecs.BlockTermsReader;
+import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
-public class AppendingTermsDictReader extends PrefixCodedTermsReader {
+public class AppendingTermsDictReader extends BlockTermsReader {
 
   public AppendingTermsDictReader(TermsIndexReaderBase indexReader,
           Directory dir, FieldInfos fieldInfos, String segment,
@@ -43,7 +43,7 @@ public class AppendingTermsDictReader extends PrefixCodedTermsReader {
   @Override
   protected void readHeader(IndexInput in) throws IOException {
     CodecUtil.checkHeader(in, AppendingTermsDictWriter.CODEC_NAME,
-      PrefixCodedTermsWriter.VERSION_START, PrefixCodedTermsWriter.VERSION_CURRENT);    
+      BlockTermsWriter.VERSION_START, BlockTermsWriter.VERSION_CURRENT);    
   }
 
   @Override

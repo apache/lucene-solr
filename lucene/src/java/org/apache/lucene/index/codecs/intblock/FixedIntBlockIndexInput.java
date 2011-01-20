@@ -25,6 +25,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.BulkPostingsEnum;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 
 /** Abstract base class that reads fixed-size blocks of ints
@@ -144,7 +145,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
     // This is used when reading skip data:
     @Override
-    public void read(final IndexInput indexIn, final boolean absolute) throws IOException {
+    public void read(final DataInput indexIn, final boolean absolute) throws IOException {
       // nocommit -- somehow we should share the "upto" for
       // doc & freq since they will always be "in sync"
       if (absolute) {

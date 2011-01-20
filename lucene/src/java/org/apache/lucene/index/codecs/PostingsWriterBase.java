@@ -33,8 +33,10 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
 
   public abstract void startTerm() throws IOException;
 
+  public abstract void flushTermsBlock() throws IOException;
+
   /** Finishes the current term */
-  public abstract void finishTerm(TermStats stats, boolean isIndexTerm) throws IOException;
+  public abstract void finishTerm(TermStats stats) throws IOException;
 
   public abstract void setField(FieldInfo fieldInfo);
 

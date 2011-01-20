@@ -26,6 +26,9 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.codecs.BlockTermsReader;
+import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -33,13 +36,11 @@ import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
-import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSingleIntFactory;
@@ -152,6 +153,10 @@ public class MockRandomCodec extends Codec {
               public boolean isIndexTerm(BytesRef term, TermStats stats) {
                 return random.nextInt(gap) == 17;
               }
+
+              @Override
+              public void newField(FieldInfo fieldInfo) {
+              }
             };
         }
         indexWriter = new VariableGapTermsIndexWriter(state, selector);
@@ -165,7 +170,7 @@ public class MockRandomCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
       return ret;
     } finally {
@@ -269,15 +274,15 @@ public class MockRandomCodec extends Codec {
 
     success = false;
     try {
-      FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
-                                                      state.dir,
-                                                      state.fieldInfos,
-                                                      state.segmentInfo.name,
-                                                      postingsReader,
-                                                      state.readBufferSize,
-                                                      BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                      termsCacheSize,
-                                                      state.codecId);
+      FieldsProducer ret = new BlockTermsReader(indexReader,
+                                                state.dir,
+                                                state.fieldInfos,
+                                                state.segmentInfo.name,
+                                                postingsReader,
+                                                state.readBufferSize,
+                                                BytesRef.getUTF8SortedAsUnicodeComparator(),
+                                                termsCacheSize,
+                                                state.codecId);
       success = true;
       return ret;
     } finally {
@@ -297,7 +302,7 @@ public class MockRandomCodec extends Codec {
     files.add(seedFileName);
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
     StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-    PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+    BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     
@@ -315,7 +320,7 @@ public class MockRandomCodec extends Codec {
   @Override
   public void getExtensions(Set<String> extensions) {
     SepPostingsWriterImpl.getExtensions(extensions);
-    PrefixCodedTermsReader.getExtensions(extensions);
+    BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
     extensions.add(SEED_EXT);

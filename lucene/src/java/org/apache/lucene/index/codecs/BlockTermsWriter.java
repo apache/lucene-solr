@@ -19,31 +19,35 @@ package org.apache.lucene.index.codecs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Comparator;
+import java.util.List;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.RamUsageEstimator;
+
+// TODO: currently we encode all terms between two indexed
+// terms as a block; but, we could decouple the two, ie
+// allow several blocks in between two indexed terms
 
 /**
- * Writes terms dict and interacts with docs/positions
- * consumers to write the postings files.
+ * Writes terms dict, block-encoding (column stride) each
+ * term's metadata for each set of terms between two
+ * index terms.
  *
- * The [new] terms dict format is field-centric: each field
- * has its own section in the file.  Fields are written in
- * UTF16 string comparison order.  Within each field, each
- * term's text is written in UTF16 string comparison order.
  * @lucene.experimental
  */
 
-public class PrefixCodedTermsWriter extends FieldsConsumer {
+public class BlockTermsWriter extends FieldsConsumer {
 
-  final static String CODEC_NAME = "STANDARD_TERMS_DICT";
+  final static String CODEC_NAME = "BLOCK_TERMS_DICT";
 
   // Initial format
   public static final int VERSION_START = 0;
@@ -51,9 +55,7 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
   public static final int VERSION_CURRENT = VERSION_START;
 
   /** Extension of terms file */
-  static final String TERMS_EXTENSION = "tis";
-
-  private final DeltaBytesWriter termWriter;
+  static final String TERMS_EXTENSION = "tib";
 
   protected final IndexOutput out;
   final PostingsWriterBase postingsWriter;
@@ -62,8 +64,9 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
   private final TermsIndexWriterBase termsIndexWriter;
   private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
   private final Comparator<BytesRef> termComp;
+  private final String segment;
 
-  public PrefixCodedTermsWriter(
+  public BlockTermsWriter(
       TermsIndexWriterBase termsIndexWriter,
       SegmentWriteState state,
       PostingsWriterBase postingsWriter,
@@ -73,19 +76,18 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     this.termsIndexWriter = termsIndexWriter;
     this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);
-    termsIndexWriter.setTermsOutput(out);
-
     fieldInfos = state.fieldInfos;
     writeHeader(out);
-    termWriter = new DeltaBytesWriter(out);
     currentField = null;
     this.postingsWriter = postingsWriter;
+    segment = state.segmentName;
+
+    //System.out.println("BTW.init seg=" + state.segmentName);
 
     postingsWriter.start(out);                          // have consumer write its format/header
   }
   
   protected void writeHeader(IndexOutput out) throws IOException {
-    // Count indexed fields up front
     CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
 
     out.writeLong(0);                             // leave space for end index pointer    
@@ -93,14 +95,15 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
 
   @Override
   public TermsConsumer addField(FieldInfo field) throws IOException {
+    //System.out.println("\nBTW.addField seg=" + segment + " field=" + field.name);
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
-    TermsIndexWriterBase.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
+    TermsIndexWriterBase.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field, out.getFilePointer());
     final TermsWriter terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);
     fields.add(terms);
     return terms;
   }
-  
+
   @Override
   public void close() throws IOException {
 
@@ -146,6 +149,11 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     out.writeLong(dirStart);    
   }
   
+  private static class TermEntry {
+    public final BytesRef term = new BytesRef();
+    public TermStats stats;
+  }
+
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
     private final PostingsWriterBase postingsWriter;
@@ -153,6 +161,11 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     private long numTerms;
     private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
     long sumTotalTermFreq;
+    private final BytesRef lastTerm = new BytesRef();
+
+    private TermEntry[] pendingTerms;
+
+    private int pendingCount;
 
     TermsWriter(
         TermsIndexWriterBase.FieldWriter fieldIndexWriter,
@@ -161,8 +174,10 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
     {
       this.fieldInfo = fieldInfo;
       this.fieldIndexWriter = fieldIndexWriter;
-
-      termWriter.reset();
+      pendingTerms = new TermEntry[32];
+      for(int i=0;i<pendingTerms.length;i++) {
+        pendingTerms[i] = new TermEntry();
+      }
       termsStartPointer = out.getFilePointer();
       postingsWriter.setField(fieldInfo);
       this.postingsWriter = postingsWriter;
@@ -175,48 +190,127 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
 
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
+      //System.out.println("BTW.startTerm seg=" + segment + " term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text);
       postingsWriter.startTerm();
       return postingsWriter;
     }
+
+    private final BytesRef lastPrevTerm = new BytesRef();
 
     @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
       assert stats.docFreq > 0;
-      //System.out.println("finishTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " fp="  + out.getFilePointer());
+      //System.out.println("BTW.finishTerm seg=" + segment + " term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " df=" + stats.docFreq);
 
       final boolean isIndexTerm = fieldIndexWriter.checkIndexTerm(text, stats);
 
-      termWriter.write(text);
-      final int highBit = isIndexTerm ? 0x80 : 0;
-      //System.out.println("  isIndex=" + isIndexTerm);
+      if (isIndexTerm) {
+        if (pendingCount > 0) {
+          // Instead of writing each term, live, we gather terms
+          // in RAM in a pending buffer, and then write the
+          // entire block in between index terms:
+          flushBlock();
+        }
+        fieldIndexWriter.add(text, stats, out.getFilePointer());
+      }
 
-      // This is a vInt, except, we steal top bit to record
-      // whether this was an indexed term:
-      if ((stats.docFreq & ~0x3F) == 0) {
-        // Fast case -- docFreq fits in 6 bits
-        out.writeByte((byte) (highBit | stats.docFreq));
-      } else {
-        // Write bottom 6 bits of docFreq, then write the
-        // remainder as vInt:
-        out.writeByte((byte) (highBit | 0x40 | (stats.docFreq & 0x3F)));
-        out.writeVInt(stats.docFreq >>> 6);
+      if (pendingTerms.length == pendingCount) {
+        final TermEntry[] newArray = new TermEntry[ArrayUtil.oversize(pendingCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        System.arraycopy(pendingTerms, 0, newArray, 0, pendingCount);
+        for(int i=pendingCount;i<newArray.length;i++) {
+          newArray[i] = new TermEntry();
+        }
+        pendingTerms = newArray;
       }
-      if (!fieldInfo.omitTermFreqAndPositions) {
-        assert stats.totalTermFreq >= stats.docFreq;
-        out.writeVLong(stats.totalTermFreq - stats.docFreq);
-      }
-      postingsWriter.finishTerm(stats, isIndexTerm);
+      final TermEntry te = pendingTerms[pendingCount];
+      te.term.copy(text);
+      te.stats = stats;
+
+      pendingCount++;
+
+      postingsWriter.finishTerm(stats);
       numTerms++;
     }
 
     // Finishes all terms in this field
     @Override
     public void finish(long sumTotalTermFreq) throws IOException {
+      if (pendingCount > 0) {
+        flushBlock();
+      }
       // EOF marker:
+      out.writeVInt(0);
+
       this.sumTotalTermFreq = sumTotalTermFreq;
-      out.writeVInt(DeltaBytesWriter.TERM_EOF);
-      fieldIndexWriter.finish();
+      fieldIndexWriter.finish(out.getFilePointer());
+    }
+
+    private int sharedPrefix(BytesRef term1, BytesRef term2) {
+      assert term1.offset == 0;
+      assert term2.offset == 0;
+      int pos1 = 0;
+      int pos1End = pos1 + Math.min(term1.length, term2.length);
+      int pos2 = 0;
+      while(pos1 < pos1End) {
+        if (term1.bytes[pos1] != term2.bytes[pos2]) {
+          return pos1;
+        }
+        pos1++;
+        pos2++;
+      }
+      return pos1;
+    }
+
+    private final RAMOutputStream bytesWriter = new RAMOutputStream();
+
+    private void flushBlock() throws IOException {
+      //System.out.println("BTW.flushBlock pendingCount=" + pendingCount);
+
+      // First pass: compute common prefix for all terms
+      // in the block, against term before first term in
+      // this block:
+      int commonPrefix = sharedPrefix(lastPrevTerm, pendingTerms[0].term);
+      for(int termCount=1;termCount<pendingCount;termCount++) {
+        commonPrefix = Math.min(commonPrefix,
+                                sharedPrefix(lastPrevTerm,
+                                             pendingTerms[termCount].term));
+      }        
+
+      out.writeVInt(pendingCount);
+      out.writeVInt(commonPrefix);
+
+      // 2nd pass: write suffixes, as separate byte[] blob
+      for(int termCount=0;termCount<pendingCount;termCount++) {
+        final int suffix = pendingTerms[termCount].term.length - commonPrefix;
+        // TODO: cutover to better intblock codec, instead
+        // of interleaving here:
+        bytesWriter.writeVInt(suffix);
+        bytesWriter.writeBytes(pendingTerms[termCount].term.bytes, commonPrefix, suffix);
+      }
+      out.writeVInt((int) bytesWriter.getFilePointer());
+      bytesWriter.writeTo(out);
+      bytesWriter.reset();
+
+      // 3rd pass: write the freqs as byte[] blob
+      // TODO: cutover to better intblock codec.  simple64?
+      // write prefix, suffix first:
+      for(int termCount=0;termCount<pendingCount;termCount++) {
+        final TermStats stats = pendingTerms[termCount].stats;
+        assert stats != null;
+        bytesWriter.writeVInt(stats.docFreq);
+        if (!fieldInfo.omitTermFreqAndPositions) {
+          bytesWriter.writeVLong(stats.totalTermFreq-stats.docFreq);
+        }
+      }
+
+      out.writeVInt((int) bytesWriter.getFilePointer());
+      bytesWriter.writeTo(out);
+      bytesWriter.reset();
+
+      postingsWriter.flushTermsBlock();
+      lastPrevTerm.copy(pendingTerms[pendingCount-1].term);
+      pendingCount = 0;
     }
   }
 }

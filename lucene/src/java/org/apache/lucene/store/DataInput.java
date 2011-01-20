@@ -79,7 +79,7 @@ public abstract class DataInput implements Cloneable {
    * supported.
    * @see DataOutput#writeVInt(int)
    */
-  public final int readVInt() throws IOException {
+  public int readVInt() throws IOException {
     byte b = readByte();
     int i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
@@ -99,7 +99,7 @@ public abstract class DataInput implements Cloneable {
   /** Reads a long stored in variable-length format.  Reads between one and
    * nine bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported. */
-  public final long readVLong() throws IOException {
+  public long readVLong() throws IOException {
     byte b = readByte();
     long i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {

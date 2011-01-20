@@ -16,7 +16,6 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 
@@ -25,24 +24,32 @@ import org.apache.lucene.index.TermState;
  * to produce a {@link DocsEnum} without re-seeking the
  * terms dict.
  */
-public class PrefixCodedTermState extends OrdTermState {
-  public int docFreq; // how many docs have this term
-  public long filePointer; // fp into the terms dict primary file (_X.tis)
-  public long totalTermFreq;                           // total number of occurrences of this term
-  
+public class BlockTermState extends OrdTermState {
+  public int docFreq;            // how many docs have this term
+  public long totalTermFreq;     // total number of occurrences of this term
+
+  public int termCount;          // term ord are in the current block
+  public long blockFilePointer;  // fp into the terms dict primary file (_X.tib) that holds this term
+
+  public int blockTermCount;     // how many terms in current block
+
   @Override
   public void copyFrom(TermState _other) {
-    assert _other instanceof PrefixCodedTermState : "can not copy from " + _other.getClass().getName();
-    PrefixCodedTermState other = (PrefixCodedTermState) _other;
+    assert _other instanceof BlockTermState : "can not copy from " + _other.getClass().getName();
+    BlockTermState other = (BlockTermState) _other;
     super.copyFrom(_other);
-    filePointer = other.filePointer;
     docFreq = other.docFreq;
     totalTermFreq = other.totalTermFreq;
+    termCount = other.termCount;
+    blockFilePointer = other.blockFilePointer;
+
+    // NOTE: don't copy blockTermCount;
+    // it's "transient": used only by the "primary"
+    // termState, and regenerated on seek by TermState
   }
 
   @Override
   public String toString() {
-    return super.toString() + "[ord=" + ord + ", tis.filePointer=" + filePointer + ", docFreq=" + docFreq + ", totalTermFreq=" + totalTermFreq + "]";
+    return super.toString() + "ord=" + ord + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termCount=" + termCount + " blockFP=" + blockFilePointer;
   }
-  
 }

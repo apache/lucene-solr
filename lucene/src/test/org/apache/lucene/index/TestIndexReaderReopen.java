@@ -977,7 +977,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   static void modifyIndex(int i, Directory dir) throws IOException {
     switch (i) {
       case 0: {
+        if (VERBOSE) {
+          System.out.println("TEST: modify index");
+        }
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        w.setInfoStream(VERBOSE ? System.out : null);
         w.deleteDocuments(new Term("field2", "a11"));
         w.deleteDocuments(new Term("field2", "b30"));
         w.close();

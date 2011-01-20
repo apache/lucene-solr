@@ -17,7 +17,6 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
@@ -25,14 +24,13 @@ import java.io.IOException;
 /** @lucene.experimental */
 public abstract class TermsIndexWriterBase {
 
-  public abstract void setTermsOutput(IndexOutput out);
-
   public abstract class FieldWriter {
     public abstract boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException;
-    public abstract void finish() throws IOException;
+    public abstract void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException;
+    public abstract void finish(long termsFilePointer) throws IOException;
   }
 
-  public abstract FieldWriter addField(FieldInfo fieldInfo) throws IOException;
+  public abstract FieldWriter addField(FieldInfo fieldInfo, long termsFilePointer) throws IOException;
 
   public abstract void close() throws IOException;
 }

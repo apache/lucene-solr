@@ -91,11 +91,8 @@ public abstract class Terms {
   
   public BulkPostingsEnum bulkPostings(BytesRef text, TermState termState, BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(text, termState) == TermsEnum.SeekStatus.FOUND) {
-      return termsEnum.bulkPostings(reuse, doFreqs, doPositions);
-    } else {
-      return null;
-    }
+    termsEnum.seek(text, termState);
+    return termsEnum.bulkPostings(reuse, doFreqs, doPositions);
   }
 
   /** Get {@link DocsEnum} for the specified term.  This
@@ -118,11 +115,8 @@ public abstract class Terms {
    * @see TermsEnum#seek(BytesRef, TermState) */
   public DocsEnum docs(Bits skipDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(term, termState) == TermsEnum.SeekStatus.FOUND) {
-      return termsEnum.docs(skipDocs, reuse);
-    } else {
-      return null;
-    }
+    termsEnum.seek(term, termState);
+    return termsEnum.docs(skipDocs, reuse);
   }
 
   /**
@@ -134,11 +128,8 @@ public abstract class Terms {
    * @see TermsEnum#seek(BytesRef, TermState) */
   public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(term, termState) == TermsEnum.SeekStatus.FOUND) {
-      return termsEnum.docsAndPositions(skipDocs, reuse);
-    } else {
-      return null;
-    }
+    termsEnum.seek(term, termState);
+    return termsEnum.docsAndPositions(skipDocs, reuse);
   }
 
   public long getUniqueTermCount() throws IOException {

@@ -245,7 +245,6 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
     }
 
-
     // Classes for reading from the postings state
     static class RAMFieldsEnum extends FieldsEnum {
       private final RAMPostings postings;
@@ -651,7 +650,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict
       success = false;
       try {
-        FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
+        FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
         success = true;
         return ret;
       } finally {
@@ -692,15 +691,15 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict reader
       success = false;
       try {
-        FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
-                                                         state.dir,
-                                                         state.fieldInfos,
-                                                         state.segmentInfo.name,
-                                                         pulsingReader,
-                                                         state.readBufferSize,
-                                                         reverseUnicodeComparator,
-                                                         StandardCodec.TERMS_CACHE_SIZE,
-                                                         state.codecId);
+        FieldsProducer ret = new BlockTermsReader(indexReader,
+                                                  state.dir,
+                                                  state.fieldInfos,
+                                                  state.segmentInfo.name,
+                                                  pulsingReader,
+                                                  state.readBufferSize,
+                                                  reverseUnicodeComparator,
+                                                  StandardCodec.TERMS_CACHE_SIZE,
+                                                  state.codecId);
         success = true;
         return ret;
       } finally {
@@ -717,7 +716,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     @Override
     public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
       StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-      PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+      BlockTermsReader.files(dir, segmentInfo, codecId, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     }
 
@@ -745,6 +744,7 @@ public class TestExternalCodecs extends LuceneTestCase {
             setCodecProvider(provider).
             setMergePolicy(newLogMergePolicy(3))
     );
+    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     // uses default codec:
     doc.add(newField("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));

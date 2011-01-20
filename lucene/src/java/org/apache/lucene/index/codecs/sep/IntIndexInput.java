@@ -17,11 +17,11 @@ package org.apache.lucene.index.codecs.sep;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.index.BulkPostingsEnum;
-
-import java.io.IOException;
 import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.index.BulkPostingsEnum;
 
 // nocommit -- move to oal.store?
 
@@ -39,7 +39,7 @@ public abstract class IntIndexInput implements Closeable {
   
   public abstract static class Index {
 
-    public abstract void read(IndexInput indexIn, boolean absolute) throws IOException;
+    public abstract void read(DataInput indexIn, boolean absolute) throws IOException;
 
     public abstract void read(BulkPostingsEnum.BlockReader indexIn, boolean absolute) throws IOException;
 

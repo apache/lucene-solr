@@ -32,7 +32,7 @@ import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
-import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
+import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -131,7 +131,7 @@ public class AppendingCodec extends Codec {
   public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files)
           throws IOException {
     StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-    PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+    BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
   }
 
