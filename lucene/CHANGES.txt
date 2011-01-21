@@ -584,6 +584,9 @@ Build
   "ant idea".  See http://wiki.apache.org/lucene-java/HowtoConfigureIntelliJ
   (Steven Rowe)
 
+* LUCENE-2657: Switch from using Maven POM templates to full POMs when
+  generating Maven artifacts (Steven Rowe)
+
 Test Cases
 
 * LUCENE-2037 Allow Junit4 tests in our environment (Erick Erickson

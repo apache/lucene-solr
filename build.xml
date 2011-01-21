@@ -39,6 +39,13 @@
     </sequential>
   </target>
 
+  <target name="get-maven-poms" 
+          description="Copy Maven POMs from dev-tools/maven/ to their target locations">
+    <copy todir=".">
+      <fileset dir="${basedir}/dev-tools/maven"/>
+    </copy>
+  </target>
+
   <target name="generate-maven-artifacts" description="Generate Maven Artifacts for Lucene and Solr">
     <sequential>
       <subant target="generate-maven-artifacts" inheritall="false" failonerror="true">
