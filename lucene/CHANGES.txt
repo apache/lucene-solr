@@ -880,6 +880,9 @@ Optimizations
   DirectoryReaders or other MultiReaders. This saves lots of memory
   during merge of norms.  (Uwe Schindler, Mike McCandless)
 
+* LUCENE-2824: Optimize BufferedIndexInput to do less bounds checks.
+  (Robert Muir)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
