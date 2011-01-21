@@ -100,7 +100,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     /** The Weights for our subqueries, in 1-1 correspondence with disjuncts */
     protected ArrayList<Weight> weights = new ArrayList<Weight>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
 
-    /* Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
+    /** Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
     public DisjunctionMaxWeight(Searcher searcher) throws IOException {
       this.similarity = searcher.getSimilarity();
       for (Query disjunctQuery : disjuncts) {
@@ -108,15 +108,15 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       }
     }
 
-    /* Return our associated DisjunctionMaxQuery */
+    /** Return our associated DisjunctionMaxQuery */
     @Override
     public Query getQuery() { return DisjunctionMaxQuery.this; }
 
-    /* Return our boost */
+    /** Return our boost */
     @Override
     public float getValue() { return getBoost(); }
 
-    /* Compute the sub of squared weights of us applied to our subqueries.  Used for normalization. */
+    /** Compute the sub of squared weights of us applied to our subqueries.  Used for normalization. */
     @Override
     public float sumOfSquaredWeights() throws IOException {
       float max = 0.0f, sum = 0.0f;
@@ -130,7 +130,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       return (((sum - max) * tieBreakerMultiplier * tieBreakerMultiplier) + max) * boost * boost;
     }
 
-    /* Apply the computed normalization factor to our subqueries */
+    /** Apply the computed normalization factor to our subqueries */
     @Override
     public void normalize(float norm) {
       norm *= getBoost();  // Incorporate our boost
@@ -139,7 +139,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       }
     }
 
-    /* Create the scorer used to score our associated DisjunctionMaxQuery */
+    /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
         boolean topScorer) throws IOException {
@@ -152,11 +152,11 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
         }
       }
       if (idx == 0) return null; // all scorers did not have documents
-      DisjunctionMaxScorer result = new DisjunctionMaxScorer(tieBreakerMultiplier, similarity, scorers, idx);
+      DisjunctionMaxScorer result = new DisjunctionMaxScorer(this, tieBreakerMultiplier, similarity, scorers, idx);
       return result;
     }
 
-    /* Explain the score we computed for doc */
+    /** Explain the score we computed for doc */
     @Override
     public Explanation explain(IndexReader reader, int doc) throws IOException {
       if (disjuncts.size() == 1) return weights.get(0).explain(reader,doc);
@@ -178,7 +178,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     
   }  // end of DisjunctionMaxWeight inner class
 
-  /* Create the Weight used to score us */
+  /** Create the Weight used to score us */
   @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     return new DisjunctionMaxWeight(searcher);

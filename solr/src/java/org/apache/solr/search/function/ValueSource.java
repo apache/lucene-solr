@@ -197,7 +197,7 @@ class ValueSourceScorer extends Scorer {
   protected boolean checkDeletes;
 
   protected ValueSourceScorer(IndexReader reader, DocValues values) {
-    super(null);
+    super(null, null);
     this.reader = reader;
     this.maxDoc = reader.maxDoc();
     this.values = values;

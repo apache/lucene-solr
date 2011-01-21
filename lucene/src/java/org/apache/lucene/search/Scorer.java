@@ -43,9 +43,19 @@ public abstract class Scorer extends DocIdSetIterator {
   private final Similarity similarity;
   protected final Weight weight;
 
+  /**
+   * Constructs a Scorer
+   * @param weight The scorers <code>Weight</code>.
+   */
+  protected Scorer(Weight weight) {
+    this(null, weight);
+  }
+  
   /** Constructs a Scorer.
    * @param similarity The <code>Similarity</code> implementation used by this scorer.
+   * @deprecated Use {@link #Scorer(Weight)} instead.
    */
+  @Deprecated
   protected Scorer(Similarity similarity) {
     this(similarity, null);
   }
@@ -54,13 +64,18 @@ public abstract class Scorer extends DocIdSetIterator {
    * Constructs a Scorer
    * @param similarity The <code>Similarity</code> implementation used by this scorer.
    * @param weight The scorers <code>Weight</code>
+   * @deprecated Use {@link #Scorer(Weight)} instead.
    */
+  @Deprecated
   protected Scorer(Similarity similarity, Weight weight) {
     this.similarity = similarity;
     this.weight = weight;
   }
 
-  /** Returns the Similarity implementation used by this scorer. */
+  /** Returns the Similarity implementation used by this scorer. 
+   * @deprecated Store any Similarity you might need privately in your implementation instead.
+   */
+  @Deprecated
   public Similarity getSimilarity() {
     return this.similarity;
   }
@@ -178,7 +193,7 @@ public abstract class Scorer extends DocIdSetIterator {
    * <p>
    * Note: this method will throw {@link UnsupportedOperationException} if no
    * associated {@link Weight} instance is provided to
-   * {@link #Scorer(Similarity, Weight)}
+   * {@link #Scorer(Weight)}
    * </p>
    * 
    * @lucene.experimental

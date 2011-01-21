@@ -29,7 +29,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     private int doc = -1;
     
     public SimpleScorer() {
-      super(null);
+      super((Similarity)null);
     }
     
     @Override public float score() throws IOException {

@@ -118,7 +118,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     int doc = -1;
 
     public ConstantScorer(Similarity similarity, IndexReader reader, ConstantWeight w) throws IOException {
-      super(similarity);
+      super(similarity, w);
       theScore = w.getValue();
       DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(w.context, reader) : filter.getDocIdSet(reader);
       if (docIdSet == null) {

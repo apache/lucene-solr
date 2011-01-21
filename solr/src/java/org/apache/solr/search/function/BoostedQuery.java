@@ -133,7 +133,7 @@ public class BoostedQuery extends Query {
 
     private CustomScorer(Similarity similarity, Searcher searcher, IndexReader reader, BoostedQuery.BoostedWeight w,
         Scorer scorer, ValueSource vs) throws IOException {
-      super(similarity);
+      super(similarity, w);
       this.weight = w;
       this.qWeight = w.getValue();
       this.scorer = scorer;

@@ -292,6 +292,11 @@ API Changes
 * LUCENE-2691: Deprecate IndexWriter.getReader in favor of
   IndexReader.open(IndexWriter) (Grant Ingersoll, Mike McCandless)
 
+* LUCENE-2876: Deprecated Scorer.getSimilarity(). If your Scorer uses a Similarity,
+  it should keep it itself. Fixed Scorers to pass their parent Weight, so that
+  Scorer.visitSubScorers (LUCENE-2590) will work correctly.
+  (Robert Muir, Doron Cohen)
+  
 Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on

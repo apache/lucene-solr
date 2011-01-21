@@ -416,7 +416,7 @@ class SpatialDistanceQuery extends Query {
     double lastDist;
 
     public SpatialScorer(Similarity similarity, IndexReader reader, SpatialWeight w) throws IOException {
-      super(similarity);
+      super(similarity, w);
       this.weight = w;
       this.qWeight = w.getValue();
       this.reader = reader;

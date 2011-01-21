@@ -113,7 +113,7 @@ public class FunctionQuery extends Query {
     final boolean hasDeletions;
 
     public AllScorer(Similarity similarity, IndexReader reader, FunctionWeight w) throws IOException {
-      super(similarity);
+      super(similarity, w);
       this.weight = w;
       this.qWeight = w.getValue();
       this.reader = reader;

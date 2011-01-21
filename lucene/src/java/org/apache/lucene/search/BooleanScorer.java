@@ -118,7 +118,7 @@ final class BooleanScorer extends Scorer {
     int doc = NO_MORE_DOCS;
     int freq;
     
-    public BucketScorer() { super(null); }
+    public BucketScorer(Weight weight) { super(weight); }
     
     @Override
     public int advance(int target) throws IOException { return NO_MORE_DOCS; }
@@ -199,7 +199,7 @@ final class BooleanScorer extends Scorer {
   
   BooleanScorer(Weight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
       List<Scorer> optionalScorers, List<Scorer> prohibitedScorers, int maxCoord) throws IOException {
-    super(null, weight);   // Similarity not used
+    super(weight);
     this.minNrShouldMatch = minNrShouldMatch;
 
     if (optionalScorers != null && optionalScorers.size() > 0) {
@@ -232,7 +232,7 @@ final class BooleanScorer extends Scorer {
   protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     boolean more;
     Bucket tmp;
-    BucketScorer bs = new BucketScorer();
+    BucketScorer bs = new BucketScorer(weight);
     // The internal loop will set the score and doc before calling collect.
     collector.setScorer(bs);
     do {

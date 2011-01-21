@@ -38,7 +38,7 @@ public class ScoreCachingWrappingScorer extends Scorer {
   
   /** Creates a new instance by wrapping the given scorer. */
   public ScoreCachingWrappingScorer(Scorer scorer) {
-    super(scorer.getSimilarity());
+    super(scorer.getSimilarity(), scorer.weight);
     this.scorer = scorer;
   }
 
