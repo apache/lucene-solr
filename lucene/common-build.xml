@@ -318,31 +318,21 @@
   	</fail>
   </target>
 
-  <property name="pom.xml" value="pom.xml.template"/>
-
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
   	<element name="artifact-attachments" optional="yes"/>
-    <attribute name="pom.xml" default="${pom.xml}"/>
+    <attribute name="pom.xml" default="pom.xml"/>
     <sequential>
-      <copy file="@{pom.xml}" tofile="${build.dir}/@{pom.xml}">
-        <filterset begintoken="@" endtoken="@"> 
-          <filter token="version" value="${version}"/>
-        </filterset>
-      </copy>
-	  <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
-    	
-      <artifact:pom id="maven.project" file="${build.dir}/@{pom.xml}" />
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="maven.project" file="@{pom.xml}"/>
       <artifact:deploy file="${build.dir}/${maven.project.build.finalName}.jar">
         <artifact-attachments/>
       	<remoteRepository url="${m2.repository.url}">
           <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
-		</remoteRepository>
+        </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
     </sequential>
   </macrodef>  	
-	
-	
 	
   <macrodef name="build-manifest" description="Builds a manifest file">
   	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}" />

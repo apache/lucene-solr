@@ -378,19 +378,34 @@
 
   <!-- NOTE, the pom.xml MUST be a relative path.  An absolute path may break the build on windows -->
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
-        <element name="artifact-attachments" optional="yes"/>
-    <attribute name="pom.xml" default="${pom.xml}"/>
+    <element name="artifact-attachments" optional="yes"/>
+    <attribute name="pom.xml" default="pom.xml"/>
     <attribute name="jar.file" default="${jar.file}"/>
+    <sequential>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:deploy file="@{jar.file}">
+        <artifact-attachments/>
+        <remoteRepository url="${m2.repository.url}">
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+        </remoteRepository>
+        <pom refid="maven.project"/>
+      </artifact:deploy>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="m2-deploy-with-pom-template" description="Builds a Maven artifact given a POM template">
+    <attribute name="pom.xml"/>
+    <attribute name="jar.file"/>
     <sequential>
       <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
         <filterset begintoken="@" endtoken="@">
           <filter token="version" value="${version}"/>
         </filterset>
       </copy>
-      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />
-      <artifact:deploy file="@{jar.file}" uniqueVersion="false">
-        <artifact-attachments/>
+      <artifact:deploy file="@{jar.file}">
         <remoteRepository url="${m2.repository.url}">
           <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
         </remoteRepository>
@@ -434,6 +449,17 @@
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar" gpg.passphrase="@{gpg.passphrase}"/>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-javadoc.jar" gpg.passphrase="@{gpg.passphrase}"/>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-sources.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="sign-maven-war-artifacts" description="Signs maven artifacts">
+    <attribute name="artifact.id"/>
+    <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
+    <attribute name="maven.version" default="${version}"/>
+    <attribute name="gpg.passphrase"/>
+    <sequential>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.war" gpg.passphrase="@{gpg.passphrase}"/>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>

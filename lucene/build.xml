@@ -391,8 +391,11 @@
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package, jar-src, javadocs">
     <sequential>
-      <m2-deploy pom.xml="lucene-parent-pom.xml.template"/>
-      <m2-deploy pom.xml="lucene-core-pom.xml.template">
+	  <ant target="get-maven-poms" inheritAll="false" dir=".."/>
+ 
+      <m2-deploy pom.xml="../pom.xml"/> <!-- Lucene/Solr grandparent POM -->
+      <m2-deploy pom.xml="pom.xml"/>    <!-- Lucene parent POM -->
+      <m2-deploy pom.xml="src/pom.xml"> <!-- Lucene core POM -->
         <artifact-attachments>
           <attach file="${build.dir}/${final.name}-src.jar"
                   classifier="sources"/>
@@ -400,8 +403,6 @@
                   classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
-           
-      <m2-deploy pom.xml="lucene-contrib-pom.xml.template"/>
       <contrib-crawl target="dist-maven"/>
     </sequential>
   </target>
