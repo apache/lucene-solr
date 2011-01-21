@@ -156,12 +156,12 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public int docFreq() {
+    public int docFreq() throws IOException {
       return in.docFreq();
     }
 
     @Override
-    public long totalTermFreq() {
+    public long totalTermFreq() throws IOException {
       return in.totalTermFreq();
     }
 
@@ -181,8 +181,8 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public SeekStatus seek(BytesRef term, TermState state) throws IOException {
-      return in.seek(term, state);
+    public void seek(BytesRef term, TermState state) throws IOException {
+      in.seek(term, state);
     }
 
     @Override

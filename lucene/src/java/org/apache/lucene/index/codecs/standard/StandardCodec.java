@@ -33,8 +33,8 @@ import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
-import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
-import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
+import org.apache.lucene.index.codecs.BlockTermsWriter;
+import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.store.Directory;
 
 /** Default codec. 
@@ -66,7 +66,7 @@ public class StandardCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, docs, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, docs, BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
       return ret;
     } finally {
@@ -103,15 +103,15 @@ public class StandardCodec extends Codec {
 
     success = false;
     try {
-      FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
-                                                       state.dir,
-                                                       state.fieldInfos,
-                                                       state.segmentInfo.name,
-                                                       postings,
-                                                       state.readBufferSize,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       TERMS_CACHE_SIZE,
-                                                       state.codecId);
+      FieldsProducer ret = new BlockTermsReader(indexReader,
+                                                state.dir,
+                                                state.fieldInfos,
+                                                state.segmentInfo.name,
+                                                postings,
+                                                state.readBufferSize,
+                                                BytesRef.getUTF8SortedAsUnicodeComparator(),
+                                                TERMS_CACHE_SIZE,
+                                                state.codecId);
       success = true;
       return ret;
     } finally {
@@ -134,7 +134,7 @@ public class StandardCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException {
     StandardPostingsReader.files(dir, segmentInfo, id, files);
-    PrefixCodedTermsReader.files(dir, segmentInfo, id, files);
+    BlockTermsReader.files(dir, segmentInfo, id, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
   }
 
@@ -146,7 +146,7 @@ public class StandardCodec extends Codec {
   public static void getStandardExtensions(Set<String> extensions) {
     extensions.add(FREQ_EXTENSION);
     extensions.add(PROX_EXTENSION);
-    PrefixCodedTermsReader.getExtensions(extensions);
+    BlockTermsReader.getExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
   }
 }

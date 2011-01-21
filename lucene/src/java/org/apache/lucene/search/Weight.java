@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
  * {@link IndexReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, boolean, boolean)})
+ * {@link AtomicReaderContext} ({@link #scorer(IndexReader.AtomicReaderContext, ScorerContext)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link ReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -49,7 +49,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
  * <li>The query normalization factor is passed to {@link #normalize(float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(AtomicReaderContext, ScorerContext)}.
+ * {@link #scorer(IndexReader.AtomicReaderContext, ScorerContext)}.
  * </ol>
  * 
  * @since 2.9
@@ -89,7 +89,7 @@ public abstract class Weight implements Serializable {
    * 
    * @param context
    *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
-   * @param scorercontext the {@link ScorerContext} holding the scores context variables
+   * @param scorerContext the {@link ScorerContext} holding the scores context variables
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException
    */
@@ -102,7 +102,7 @@ public abstract class Weight implements Serializable {
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #scorer(AtomicReaderContext, boolean, boolean)} to
+   * {@link #scorer(IndexReader.AtomicReaderContext, ScorerContext)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>

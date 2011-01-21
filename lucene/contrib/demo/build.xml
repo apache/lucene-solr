@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="demo" default="default">
+<project name="demo" default="default" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <description>
     Lucene Demo
@@ -75,4 +75,23 @@
                      outputDir="src/java/org/apache/lucene/demo/html"
     />
   </target>
+
+  <target name="dist-maven" if="pom.xml.present" depends="compile-core,jar-src">
+    <sequential>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="maven.project" file="pom.xml"/>
+      <artifact:deploy file="${build.dir}/${demo.war.name}.war">
+        <attach file="${build.dir}/${maven.project.build.finalName}.jar"
+                classifier="classes"/>
+        <attach file="${build.dir}/${final.name}-src.jar"
+                classifier="sources"/>
+        <attach file="${build.dir}/${final.name}-javadoc.jar"
+                classifier="javadoc"/>
+        <remoteRepository url="${m2.repository.url}">
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+        </remoteRepository>
+        <pom refid="maven.project"/>
+      </artifact:deploy>
+    </sequential>
+  </target>  	
 </project>

@@ -138,9 +138,9 @@ public final class PerReaderTermState {
 
   /**
    *  Returns the accumulated document frequency of all {@link TermState}
-   *         instances passed to {@link #register(TermState, int)}.
+   *         instances passed to {@link #register(TermState, int, int)}.
    * @return the accumulated document frequency of all {@link TermState}
-   *         instances passed to {@link #register(TermState, int)}.
+   *         instances passed to {@link #register(TermState, int, int)}.
    */
   public int docFreq() {
     return docFreq;

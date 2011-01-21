@@ -784,7 +784,7 @@ public class TestIndexWriter extends LuceneTestCase {
     public void testHighFreqTerm() throws IOException {
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxFieldLength(100000000).setRAMBufferSizeMB(0.01));
+          TEST_VERSION_CURRENT, new MockAnalyzer()).setRAMBufferSizeMB(0.01));
       // Massive doc that has 128 K a's
       StringBuilder b = new StringBuilder(1024*1024);
       for(int i=0;i<4096;i++) {
@@ -1236,30 +1236,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-
-  // LUCENE-1084: test user-specified field length
-  public void testUserSpecifiedMaxFieldLength() throws IOException {
-    Directory dir = newDirectory();
-
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxFieldLength(100000));
-
-    Document doc = new Document();
-    StringBuilder b = new StringBuilder();
-    for(int i=0;i<10000;i++)
-      b.append(" a");
-    b.append(" x");
-    doc.add(newField("field", b.toString(), Field.Store.NO, Field.Index.ANALYZED));
-    writer.addDocument(doc);
-    writer.close();
-
-    IndexReader reader = IndexReader.open(dir, true);
-    Term t = new Term("field", "x");
-    assertEquals(1, reader.docFreq(t));
-    reader.close();
-    dir.close();
-  }
-
+  
   // LUCENE-325: test expungeDeletes, when 2 singular merges
   // are required
   public void testExpungeDeletes() throws IOException {

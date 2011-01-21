@@ -229,7 +229,9 @@ class BufferedDeletes {
           if (mergedDeletes == null) {
             mergedDeletes = getDeletes(segmentInfos.info(firstIdx-1));
             numTerms.addAndGet(-mergedDeletes.numTermDeletes.get());
+            assert numTerms.get() >= 0;
             bytesUsed.addAndGet(-mergedDeletes.bytesUsed.get());
+            assert bytesUsed.get() >= 0;
           }
 
           mergedDeletes.update(deletes, true);

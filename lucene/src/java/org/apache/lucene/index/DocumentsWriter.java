@@ -109,7 +109,6 @@ final class DocumentsWriter {
   private volatile boolean closed;
 
   PrintStream infoStream;
-  int maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
   Similarity similarity;
 
   List<String> newFiles;
@@ -244,11 +243,6 @@ final class DocumentsWriter {
     pushConfigChange();
   }
 
-  synchronized void setMaxFieldLength(int maxFieldLength) {
-    this.maxFieldLength = maxFieldLength;
-    pushConfigChange();
-  }
-
   synchronized void setSimilarity(Similarity similarity) {
     this.similarity = similarity;
     pushConfigChange();
@@ -259,7 +253,6 @@ final class DocumentsWriter {
     while (it.hasNext()) {
       DocumentsWriterPerThread perThread = it.next().perThread;
       perThread.docState.infoStream = this.infoStream;
-      perThread.docState.maxFieldLength = this.maxFieldLength;
       perThread.docState.similarity = this.similarity;
     }
   }

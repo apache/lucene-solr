@@ -111,6 +111,9 @@ public class TestSearch extends LuceneTestCase {
       for (int j = 0; j < queries.length; j++) {
         Query query = parser.parse(queries[j]);
         out.println("Query: " + query.toString("contents"));
+        if (VERBOSE) {
+          System.out.println("TEST: query=" + query);
+        }
 
         hits = searcher.search(query, null, 1000).scoreDocs;
 

@@ -28,12 +28,12 @@ import org.apache.lucene.util.Bits;
 
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter; // javadocs
 
-/** PrefixCodedTermsReader interacts with a single instance
- *  of this to manage creation of {@link DocsEnum} and
+/** BlockTermsReader interacts with a single instance
+ *  of this class to manage creation of {@link DocsEnum} and
  *  {@link DocsAndPositionsEnum} instances.  It provides an
  *  IndexInput (termsIn) where this class may read any
  *  previously stored data that it had written in its
- *  corresponding {@link StandardPostingsWriter} at indexing
+ *  corresponding {@link PostingsWriterBase} at indexing
  *  time. 
  *  @lucene.experimental */
 
@@ -42,17 +42,23 @@ public abstract class PostingsReaderBase implements Closeable {
   public abstract void init(IndexInput termsIn) throws IOException;
 
   /** Return a newly created empty TermState */
-  public abstract PrefixCodedTermState newTermState() throws IOException;
+  public abstract BlockTermState newTermState() throws IOException;
 
-  public abstract void readTerm(IndexInput termsIn, FieldInfo fieldInfo, PrefixCodedTermState state, boolean isIndexTerm) throws IOException;
-
-  /** Must fully consume state, since after this call that
-   *  TermState may be reused. */
-  public abstract DocsEnum docs(FieldInfo fieldInfo, PrefixCodedTermState state, Bits skipDocs, DocsEnum reuse) throws IOException;
+  /** Actually decode metadata for next term */
+  public abstract void nextTerm(FieldInfo fieldInfo, BlockTermState state) throws IOException;
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, PrefixCodedTermState state, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
+  public abstract DocsEnum docs(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsEnum reuse) throws IOException;
+
+  /** Must fully consume state, since after this call that
+   *  TermState may be reused. */
+  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
 
   public abstract void close() throws IOException;
+
+  /** Reads data for all terms in the next block; this
+   *  method should merely load the byte[] blob but not
+   *  decode, which is done in {@link #nextTerm}. */
+  public abstract void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState termState) throws IOException;
 }

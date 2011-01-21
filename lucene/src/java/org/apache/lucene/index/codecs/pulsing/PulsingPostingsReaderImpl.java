@@ -24,7 +24,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.PrefixCodedTermState;
+import org.apache.lucene.index.codecs.BlockTermState;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -58,11 +58,13 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     wrappedPostingsReader.init(termsIn);
   }
 
-  private static class PulsingTermState extends PrefixCodedTermState {
+  private static class PulsingTermState extends BlockTermState {
     private byte[] postings;
     private int postingsSize;                     // -1 if this term was not inlined
-    private PrefixCodedTermState wrappedTermState;
-    private boolean pendingIndexTerm;
+    private BlockTermState wrappedTermState;
+
+    ByteArrayDataInput inlinedBytesReader;
+    private byte[] inlinedBytes;
 
     @Override
     public Object clone() {
@@ -73,7 +75,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         System.arraycopy(postings, 0, clone.postings, 0, postingsSize);
       } else {
         assert wrappedTermState != null;
-        clone.wrappedTermState = (PrefixCodedTermState) wrappedTermState.clone();
+        clone.wrappedTermState = (BlockTermState) wrappedTermState.clone();
       }
       return clone;
     }
@@ -91,56 +93,86 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       } else {
         wrappedTermState.copyFrom(other.wrappedTermState);
       }
+
+      // NOTE: we do not copy the
+      // inlinedBytes/inlinedBytesReader; these are only
+      // stored on the "primary" TermState.  They are
+      // "transient" to cloned term states.
     }
 
     @Override
     public String toString() {
       if (postingsSize == -1) {
-        return "PulsingTermState: not inlined";
+        return "PulsingTermState: not inlined: wrapped=" + wrappedTermState;
       } else {
-        return "PulsingTermState: inlined size=" + postingsSize;
+        return "PulsingTermState: inlined size=" + postingsSize + " " + super.toString();
       }
     }
   }
 
   @Override
-  public PrefixCodedTermState newTermState() throws IOException {
+  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+    final PulsingTermState termState = (PulsingTermState) _termState;
+    if (termState.inlinedBytes == null) {
+      termState.inlinedBytes = new byte[128];
+      termState.inlinedBytesReader = new ByteArrayDataInput(null);
+    }
+    int len = termsIn.readVInt();
+    if (termState.inlinedBytes.length < len) {
+      termState.inlinedBytes = new byte[ArrayUtil.oversize(len, 1)];
+    }
+    termsIn.readBytes(termState.inlinedBytes, 0, len);
+    termState.inlinedBytesReader.reset(termState.inlinedBytes);
+    termState.wrappedTermState.termCount = 0;
+    wrappedPostingsReader.readTermsBlock(termsIn, fieldInfo, termState.wrappedTermState);
+  }
+
+  @Override
+  public BlockTermState newTermState() throws IOException {
     PulsingTermState state = new PulsingTermState();
     state.wrappedTermState = wrappedPostingsReader.newTermState();
     return state;
   }
 
   @Override
-  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, PrefixCodedTermState _termState, boolean isIndexTerm) throws IOException {
+  public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+    //System.out.println("PR nextTerm");
     PulsingTermState termState = (PulsingTermState) _termState;
-
-    termState.pendingIndexTerm |= isIndexTerm;
 
     // total TF, but in the omitTFAP case its computed based on docFreq.
     long count = fieldInfo.omitTermFreqAndPositions ? termState.docFreq : termState.totalTermFreq;
-    
+    //System.out.println("  count=" + count + " threshold=" + maxPositions);
+
     if (count <= maxPositions) {
+      //System.out.println("  inlined");
 
       // Inlined into terms dict -- just read the byte[] blob in,
       // but don't decode it now (we only decode when a DocsEnum
       // or D&PEnum is pulled):
-      termState.postingsSize = termsIn.readVInt();
+      termState.postingsSize = termState.inlinedBytesReader.readVInt();
       if (termState.postings == null || termState.postings.length < termState.postingsSize) {
         termState.postings = new byte[ArrayUtil.oversize(termState.postingsSize, 1)];
       }
-      termsIn.readBytes(termState.postings, 0, termState.postingsSize);
+      // TODO: sort of silly to copy from one big byte[]
+      // (the blob holding all inlined terms' blobs for
+      // current term block) into another byte[] (just the
+      // blob for this term)...
+      termState.inlinedBytesReader.readBytes(termState.postings, 0, termState.postingsSize);
     } else {
+      //System.out.println("  not inlined");
       termState.postingsSize = -1;
+      // TODO: should we do full copyFrom?  much heavier...?
       termState.wrappedTermState.docFreq = termState.docFreq;
-      wrappedPostingsReader.readTerm(termsIn, fieldInfo, termState.wrappedTermState, termState.pendingIndexTerm);
-      termState.pendingIndexTerm = false;
+      termState.wrappedTermState.totalTermFreq = termState.totalTermFreq;
+      wrappedPostingsReader.nextTerm(fieldInfo, termState.wrappedTermState);
+      termState.wrappedTermState.termCount++;
     }
   }
 
   // TODO: we could actually reuse, by having TL that
   // holds the last wrapped reuse, and vice-versa
   @Override
-  public DocsEnum docs(FieldInfo field, PrefixCodedTermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo field, BlockTermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
     PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.postingsSize != -1) {
       PulsingDocsEnum postings;
@@ -165,7 +197,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
   // TODO: -- not great that we can't always reuse
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, PrefixCodedTermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (field.omitTermFreqAndPositions) {
       return null;
     }

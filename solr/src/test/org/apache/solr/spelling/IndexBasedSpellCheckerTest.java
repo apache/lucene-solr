@@ -284,8 +284,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     Directory dir = newFSDirectory(altIndexDir);
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).
-            setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH)
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
     );
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();

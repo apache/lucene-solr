@@ -30,8 +30,8 @@ import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
-import org.apache.lucene.index.codecs.PrefixCodedTermsWriter;
+import org.apache.lucene.index.codecs.BlockTermsReader;
+import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
@@ -70,7 +70,7 @@ public class MockSepCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
       return ret;
     } finally {
@@ -108,15 +108,15 @@ public class MockSepCodec extends Codec {
 
     success = false;
     try {
-      FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
-                                                       state.dir,
-                                                       state.fieldInfos,
-                                                       state.segmentInfo.name,
-                                                       postingsReader,
-                                                       state.readBufferSize,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       StandardCodec.TERMS_CACHE_SIZE,
-                                                       state.codecId);
+      FieldsProducer ret = new BlockTermsReader(indexReader,
+                                                state.dir,
+                                                state.fieldInfos,
+                                                state.segmentInfo.name,
+                                                postingsReader,
+                                                state.readBufferSize,
+                                                BytesRef.getUTF8SortedAsUnicodeComparator(),
+                                                StandardCodec.TERMS_CACHE_SIZE,
+                                                state.codecId);
       success = true;
       return ret;
     } finally {
@@ -133,7 +133,7 @@ public class MockSepCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
-    PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+    BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
   }
 
@@ -144,7 +144,7 @@ public class MockSepCodec extends Codec {
 
   public static void getSepExtensions(Set<String> extensions) {
     SepPostingsWriterImpl.getExtensions(extensions);
-    PrefixCodedTermsReader.getExtensions(extensions);
+    BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
   }
 }

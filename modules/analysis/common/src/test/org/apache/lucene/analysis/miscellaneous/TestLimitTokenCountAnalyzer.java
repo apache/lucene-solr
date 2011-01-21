@@ -22,8 +22,16 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
 
 public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
 
@@ -37,6 +45,28 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
     // dont use assertAnalyzesTo here, as the end offset is not the end of the string!
     assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1 2 3 4 5")), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, 3);
     assertTokenStreamContents(a.reusableTokenStream("dummy", new StringReader("1 2 3 4 5")), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, 3);
+  }
+
+  public void testLimitTokenCountIndexWriter() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new LimitTokenCountAnalyzer(new MockAnalyzer(), 100000)));
+
+    Document doc = new Document();
+    StringBuilder b = new StringBuilder();
+    for(int i=0;i<10000;i++)
+      b.append(" a");
+    b.append(" x");
+    doc.add(newField("field", b.toString(), Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir, true);
+    Term t = new Term("field", "x");
+    assertEquals(1, reader.docFreq(t));
+    reader.close();
+    dir.close();
   }
 
 }

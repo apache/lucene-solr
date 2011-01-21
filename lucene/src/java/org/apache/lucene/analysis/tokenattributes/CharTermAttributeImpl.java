@@ -23,6 +23,7 @@ import java.nio.CharBuffer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -241,6 +242,14 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   @Override
   public String toString() {
     return new String(termBuffer, 0, termLength);
+  }
+  
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    reflector.reflect(CharTermAttribute.class, "term", toString());
+    final BytesRef bytes = new BytesRef();
+    toBytesRef(bytes);
+    reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes);
   }
   
   @Override

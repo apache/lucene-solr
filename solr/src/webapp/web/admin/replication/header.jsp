@@ -19,7 +19,7 @@
 <%@ page import="org.apache.solr.common.util.NamedList,
 				 org.apache.solr.common.util.SimpleOrderedMap,
 				 org.apache.solr.request.LocalSolrQueryRequest,
-				 org.apache.solr.request.SolrQueryResponse,
+				 org.apache.solr.response.SolrQueryResponse,
 				 org.apache.solr.request.SolrRequestHandler,
                                  java.util.Map"%>
 <%@ page import="org.apache.solr.handler.ReplicationHandler" %>

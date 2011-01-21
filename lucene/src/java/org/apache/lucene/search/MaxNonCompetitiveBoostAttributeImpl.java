@@ -48,25 +48,6 @@ public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl imp
     maxNonCompetitiveBoost = Float.NEGATIVE_INFINITY;
     competitiveTerm = null;
   }
-
-  @Override
-  public boolean equals(Object other) {
-    if (this == other)
-      return true;
-    if (other instanceof MaxNonCompetitiveBoostAttributeImpl) {
-      final MaxNonCompetitiveBoostAttributeImpl o = (MaxNonCompetitiveBoostAttributeImpl) other;
-      return (o.maxNonCompetitiveBoost == maxNonCompetitiveBoost)
-        && (o.competitiveTerm == null ? competitiveTerm == null : o.competitiveTerm.equals(competitiveTerm));
-    }
-    return false;
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = Float.floatToIntBits(maxNonCompetitiveBoost);
-    if (competitiveTerm != null) hash = 31 * hash + competitiveTerm.hashCode();
-    return hash;
-  }
   
   @Override
   public void copyTo(AttributeImpl target) {

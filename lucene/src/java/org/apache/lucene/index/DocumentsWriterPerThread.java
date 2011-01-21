@@ -86,7 +86,6 @@ public class DocumentsWriterPerThread {
   static class DocState {
     final DocumentsWriterPerThread docWriter;
     Analyzer analyzer;
-    int maxFieldLength;
     PrintStream infoStream;
     Similarity similarity;
     int docID;
@@ -158,7 +157,6 @@ public class DocumentsWriterPerThread {
     this.infoStream = parent.indexWriter.getInfoStream();
     this.docState = new DocState(this);
     this.docState.similarity = parent.indexWriter.getConfig().getSimilarity();
-    this.docState.maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
 
     consumer = indexingChain.getChain(this);
     if (consumer instanceof DocFieldProcessor) {

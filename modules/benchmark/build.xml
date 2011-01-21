@@ -260,5 +260,6 @@
     </target>
 
     <target name="init" depends="contrib-build.init,compile-demo,compile-memory,compile-highlighter,compile-analyzers-common"/>
-    
+  
+    <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven"/>
 </project>

@@ -54,7 +54,7 @@ public class TermQuery extends Query {
       throws IOException {
       assert termStates != null : "PerReaderTermState must not be null";
       this.termStates = termStates;
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
       if (docFreq != -1) {
         idfExp = similarity.idfExplain(term, searcher, docFreq);
       } else {

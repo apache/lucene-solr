@@ -96,7 +96,7 @@ public class BoostedQuery extends Query {
       if(subQueryScorer == null) {
         return null;
       }
-      return new BoostedQuery.CustomScorer(getSimilarity(searcher), context, this, subQueryScorer, boostVal);
+      return new BoostedQuery.CustomScorer(context, this, subQueryScorer, boostVal);
     }
 
     @Override
@@ -123,9 +123,9 @@ public class BoostedQuery extends Query {
     private final DocValues vals;
     private final AtomicReaderContext readerContext;
 
-    private CustomScorer(Similarity similarity, AtomicReaderContext readerContext, BoostedQuery.BoostedWeight w,
+    private CustomScorer(AtomicReaderContext readerContext, BoostedQuery.BoostedWeight w,
         Scorer scorer, ValueSource vs) throws IOException {
-      super(similarity);
+      super(w);
       this.weight = w;
       this.qWeight = w.getValue();
       this.scorer = scorer;

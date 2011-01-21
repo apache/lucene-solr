@@ -95,6 +95,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
+    query("q","*:*", "sort","{!func}add("+i1+",5)"+" desc");
     query("q","*:*", "sort",i1+" asc");
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
     query("q","*:*", "sort",tlong+" asc", "fl","score");  // test legacy behavior - "score"=="*,score"

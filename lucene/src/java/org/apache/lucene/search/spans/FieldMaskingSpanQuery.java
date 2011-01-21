@@ -25,7 +25,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -104,11 +103,6 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     return maskedQuery.createWeight(searcher);
-  }
-
-  @Override
-  public Similarity getSimilarity(IndexSearcher searcher) {
-    return maskedQuery.getSimilarity(searcher);
   }
 
   @Override

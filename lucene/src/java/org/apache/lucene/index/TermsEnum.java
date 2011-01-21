@@ -80,7 +80,7 @@ public abstract class TermsEnum {
    * use this method. Low-level implementations may position the TermsEnum
    * without re-seeking the term dictionary.
    * <p>
-   * Seeking by {@link TermState} should only be used iff the enu the state was
+   * Seeking by {@link TermState} should only be used iff the enum the state was
    * obtained from and the enum the state is used for seeking are obtained from
    * the same {@link IndexReader}, otherwise a {@link #seek(BytesRef, TermState)} call can
    * leave the enum in undefined state.
@@ -97,8 +97,8 @@ public abstract class TermsEnum {
    * @param term the term the TermState corresponds to
    * @param state the {@link TermState}
    * */
-  public SeekStatus seek(BytesRef term, TermState state) throws IOException {
-    return seek(term);
+  public void seek(BytesRef term, TermState state) throws IOException {
+    seek(term);
   }
 
   /** Increments the enumeration to the next element.
@@ -124,7 +124,7 @@ public abstract class TermsEnum {
    *  term.  Do not call this before calling next() for the
    *  first time, after next() returns null or seek returns
    *  {@link SeekStatus#END}.*/
-  public abstract int docFreq();
+  public abstract int docFreq() throws IOException;
 
   /** Returns the total number of occurrences of this term
    *  across all documents (the sum of the freq() for each
@@ -132,7 +132,7 @@ public abstract class TermsEnum {
    *  codec doesn't support this measure.  Note that, like
    *  other term measures, this measure does not take
    *  deleted documents into account. */
-  public abstract long totalTermFreq();
+  public abstract long totalTermFreq() throws IOException;
 
   /** Get {@link DocsEnum} for the current term.  Do not
    *  call this before calling {@link #next} or {@link
@@ -242,7 +242,7 @@ public abstract class TermsEnum {
     }
 
     @Override
-    public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+    public void seek(BytesRef term, TermState state) throws IOException {
       throw new IllegalStateException("this method should never be called");
     }
   };

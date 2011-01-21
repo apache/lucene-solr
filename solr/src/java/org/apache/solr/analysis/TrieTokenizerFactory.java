@@ -17,6 +17,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.DateField;
@@ -56,6 +57,9 @@ final class TrieTokenizer extends Tokenizer {
   protected final int precisionStep;
   protected final TrieTypes type;
   protected final NumericTokenStream ts;
+  
+  protected final OffsetAttribute ofsAtt = addAttribute(OffsetAttribute.class);
+  protected int startOfs, endOfs;
 
   static NumericTokenStream getNumericTokenStream(int precisionStep) {
     return new NumericTokenStream(precisionStep);
@@ -82,6 +86,8 @@ final class TrieTokenizer extends Tokenizer {
       input = super.input;
       char[] buf = new char[32];
       int len = input.read(buf);
+      this.startOfs = correctOffset(0);
+      this.endOfs = correctOffset(len);
       String v = new String(buf, 0, len);
       switch (type) {
         case INTEGER:
@@ -105,13 +111,32 @@ final class TrieTokenizer extends Tokenizer {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create TrieIndexTokenizer", e);
     }
+  }
 
+  @Override
+  public void close() throws IOException {
+    super.close();
+    ts.close();
+  }
+  
+  @Override
+  public void reset() throws IOException {
+    super.reset();
     ts.reset();
   }
 
-
   @Override
   public boolean incrementToken() throws IOException {
-    return ts.incrementToken();
+    if (ts.incrementToken()) {
+      ofsAtt.setOffset(startOfs, endOfs);
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public void end() throws IOException {
+    ts.end();
+    ofsAtt.setOffset(endOfs, endOfs);
   }
 }

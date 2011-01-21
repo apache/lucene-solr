@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -118,7 +119,7 @@ final class BooleanScorer extends Scorer {
     int doc = NO_MORE_DOCS;
     int freq;
     
-    public BucketScorer() { super(null); }
+    public BucketScorer(Weight weight) { super(weight); }
     
     @Override
     public int advance(int target) throws IOException { return NO_MORE_DOCS; }
@@ -197,9 +198,9 @@ final class BooleanScorer extends Scorer {
   private Bucket current;
   private int doc = -1;
   
-  BooleanScorer(Weight weight, boolean disableCoord, Similarity similarity, int minNrShouldMatch,
+  BooleanScorer(BooleanWeight weight, boolean disableCoord, int minNrShouldMatch,
       List<Scorer> optionalScorers, List<Scorer> prohibitedScorers, int maxCoord) throws IOException {
-    super(null, weight);   // Similarity not used
+    super(weight);
     this.minNrShouldMatch = minNrShouldMatch;
 
     if (optionalScorers != null && optionalScorers.size() > 0) {
@@ -223,7 +224,7 @@ final class BooleanScorer extends Scorer {
 
     coordFactors = new float[optionalScorers.size() + 1];
     for (int i = 0; i < coordFactors.length; i++) {
-      coordFactors[i] = disableCoord ? 1.0f : similarity.coord(i, maxCoord); 
+      coordFactors[i] = disableCoord ? 1.0f : weight.coord(i, maxCoord); 
     }
   }
 
@@ -232,7 +233,7 @@ final class BooleanScorer extends Scorer {
   public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     boolean more;
     Bucket tmp;
-    BucketScorer bs = new BucketScorer();
+    BucketScorer bs = new BucketScorer(weight);
     // The internal loop will set the score and doc before calling collect.
     collector.setScorer(bs);
     do {

@@ -30,7 +30,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -183,13 +182,11 @@ public class CustomScoreQuery extends Query {
   //=========================== W E I G H T ============================
   
   private class CustomWeight extends Weight {
-    Similarity similarity;
     Weight subQueryWeight;
     Weight[] valSrcWeights;
     boolean qStrict;
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = getSimilarity(searcher);
       this.subQueryWeight = subQuery.weight(searcher);
       this.valSrcWeights = new Weight[valSrcQueries.length];
       for(int i = 0; i < valSrcQueries.length; i++) {
@@ -254,7 +251,7 @@ public class CustomScoreQuery extends Query {
       for(int i = 0; i < valSrcScorers.length; i++) {
          valSrcScorers[i] = valSrcWeights[i].scorer(context, scorerContext.scoreDocsInOrder(true));
       }
-      return new CustomScorer(similarity, context.reader, this, subQueryScorer, valSrcScorers);
+      return new CustomScorer(context.reader, this, subQueryScorer, valSrcScorers);
     }
 
     @Override
@@ -303,9 +300,9 @@ public class CustomScoreQuery extends Query {
     private float vScores[]; // reused in score() to avoid allocating this array for each doc 
 
     // constructor
-    private CustomScorer(Similarity similarity, IndexReader reader, CustomWeight w,
+    private CustomScorer(IndexReader reader, CustomWeight w,
         Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
-      super(similarity,w);
+      super(w);
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;

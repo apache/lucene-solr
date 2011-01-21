@@ -40,29 +40,14 @@ import org.apache.lucene.search.BooleanClause.Occur;
  * with these scores.
  */
 public abstract class Scorer extends DocIdSetIterator {
-  private final Similarity similarity;
   protected final Weight weight;
 
-  /** Constructs a Scorer.
-   * @param similarity The <code>Similarity</code> implementation used by this scorer.
-   */
-  protected Scorer(Similarity similarity) {
-    this(similarity, null);
-  }
-  
   /**
    * Constructs a Scorer
-   * @param similarity The <code>Similarity</code> implementation used by this scorer.
-   * @param weight The scorers <code>Weight</code>
+   * @param weight The scorers <code>Weight</code>.
    */
-  protected Scorer(Similarity similarity, Weight weight) {
-    this.similarity = similarity;
+  protected Scorer(Weight weight) {
     this.weight = weight;
-  }
-
-  /** Returns the Similarity implementation used by this scorer. */
-  public Similarity getSimilarity() {
-    return this.similarity;
   }
 
   /** Scores and collects all matching documents.
@@ -172,7 +157,7 @@ public abstract class Scorer extends DocIdSetIterator {
    * <p>
    * Note: this method will throw {@link UnsupportedOperationException} if no
    * associated {@link Weight} instance is provided to
-   * {@link #Scorer(Similarity, Weight)}
+   * {@link #Scorer(Weight)}
    * </p>
    * 
    * @lucene.experimental

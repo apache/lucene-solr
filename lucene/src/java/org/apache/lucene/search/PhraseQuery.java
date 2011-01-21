@@ -146,7 +146,7 @@ public class PhraseQuery extends Query {
 
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
 
       idfExp = similarity.idfExplain(terms, searcher);
       idf = idfExp.getIdf();

@@ -76,7 +76,11 @@ public class HighFrequencyDictionary implements Dictionary {
     }
     
     public float freq() {
-      return termsEnum.docFreq();
+      try {
+        return termsEnum.docFreq();
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
     }
     
     public String next() {
@@ -112,8 +116,12 @@ public class HighFrequencyDictionary implements Dictionary {
         }
 
         // got a valid term, does it pass the threshold?
-        if (isFrequent(termsEnum.docFreq())) {
-          return true;
+        try {
+          if (isFrequent(termsEnum.docFreq())) {
+            return true;
+          }
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
         }
       }
     }

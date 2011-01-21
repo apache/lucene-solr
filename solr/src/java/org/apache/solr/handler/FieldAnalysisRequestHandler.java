@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler;
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
@@ -30,10 +30,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.commons.io.IOUtils;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.io.Reader;
 import java.io.IOException;
 
@@ -222,14 +219,10 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    */
   private NamedList<NamedList> analyzeValues(FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
 
-    Set<String> termsToMatch = new HashSet<String>();
-    String queryValue = analysisRequest.getQuery();
-    if (queryValue != null && analysisRequest.isShowMatch()) {
-      List<Token> tokens = analyzeValue(queryValue, fieldType.getQueryAnalyzer());
-      for (Token token : tokens) {
-        termsToMatch.add(token.toString());
-      }
-    }
+    final String queryValue = analysisRequest.getQuery();
+    final Set<BytesRef> termsToMatch = (queryValue != null && analysisRequest.isShowMatch())
+      ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
+      : EMPTY_BYTES_SET;
 
     NamedList<NamedList> analyzeResults = new SimpleOrderedMap<NamedList>();
     if (analysisRequest.getFieldValue() != null) {

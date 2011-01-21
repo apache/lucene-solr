@@ -71,7 +71,7 @@
 	
   <available 
     type="file" 
-    file="${pom.xml}" 
+    file="pom.xml" 
     property="pom.xml.present">
   </available>
 			

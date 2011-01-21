@@ -144,9 +144,9 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seek(BytesRef term, TermState state) throws IOException {
+  public void seek(BytesRef term, TermState state) throws IOException {
     assert state != null && state instanceof OrdTermState;
-    return seek(((OrdTermState)state).ord); // just use the ord for simplicity
+    seek(((OrdTermState)state).ord); // just use the ord for simplicity
   }
 }
 

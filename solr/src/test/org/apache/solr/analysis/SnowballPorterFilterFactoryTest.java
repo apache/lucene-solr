@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
 
@@ -53,37 +52,6 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
 
     factory.init(args);
     factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
-        new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
-    TokenStream stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, gold);
-  }
-
-  /**
-   * Tests the protected words mechanism of EnglishPorterFilterFactory
-   */
-  @Deprecated
-  public void testProtectedOld() throws Exception {
-    EnglishStemmer stemmer = new EnglishStemmer();
-    String[] test = {"The", "fledgling", "banks", "were", "counting", "on", "a", "big", "boom", "in", "banking"};
-    String[] gold = new String[test.length];
-    for (int i = 0; i < test.length; i++) {
-      if (test[i].equals("fledgling") == false && test[i].equals("banks") == false) {
-        stemmer.setCurrent(test[i]);
-        stemmer.stem();
-        gold[i] = stemmer.getCurrent();
-      } else {
-        gold[i] = test[i];
-      }
-    }
-
-    EnglishPorterFilterFactory factory = new EnglishPorterFilterFactory();
-    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
-    args.put(SnowballPorterFilterFactory.PROTECTED_TOKENS, "who-cares.txt");
-    factory.init(args);
-    List<String> lines = new ArrayList<String>();
-    Collections.addAll(lines, "banks", "fledgling");
-    factory.inform(new LinesMockSolrResourceLoader(lines));
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
         new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
     TokenStream stream = factory.create(tokenizer);

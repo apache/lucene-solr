@@ -111,6 +111,11 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
       lastUpto = upto;
       lastFP = fp;
     }
+
+    @Override
+    public String toString() {
+      return "fp=" + fp + " upto=" + upto;
+    }
   }
 
   @Override

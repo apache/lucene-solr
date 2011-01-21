@@ -61,7 +61,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     private Map context;
 
     public ConstantWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarity();
       this.context = ValueSource.newContext(searcher);
       if (filter instanceof SolrFilter)
         ((SolrFilter)filter).createWeight(context, searcher);
@@ -91,13 +91,13 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new ConstantScorer(similarity, context, this);
+      return new ConstantScorer(context, this);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
 
-      ConstantScorer cs = new ConstantScorer(similarity, context, this);
+      ConstantScorer cs = new ConstantScorer(context, this);
       boolean exists = cs.docIdSetIterator.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();
@@ -124,8 +124,8 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     final float theScore;
     int doc = -1;
 
-    public ConstantScorer(Similarity similarity, AtomicReaderContext context, ConstantWeight w) throws IOException {
-      super(similarity);
+    public ConstantScorer(AtomicReaderContext context, ConstantWeight w) throws IOException {
+      super(w);
       theScore = w.getValue();
       DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(w.context, context) : filter.getDocIdSet(context);
       if (docIdSet == null) {

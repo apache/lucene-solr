@@ -37,10 +37,11 @@ public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "The charset parameter is no longer supported.  "
           + "Please process your documents as Unicode instead.");
+    assureMatchVersion();
+    warnDeprecated("Use StandardTokenizerFactory instead.");
   }
 
   public RussianLetterTokenizer create(Reader in) {
-    assureMatchVersion();
     return new RussianLetterTokenizer(luceneMatchVersion,in);
   }
 }

@@ -94,6 +94,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
       // Read directory
       final int numFields = in.readVInt();      
+      //System.out.println("FGR: init seg=" + segment + " div=" + indexDivisor + " nF=" + numFields);
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final int numIndexTerms = in.readVInt();
@@ -241,9 +242,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       this.packedOffsetsStart = packedOffsetsStart;
       this.numIndexTerms = numIndexTerms;
 
-      // We still create the indexReader when indexDivisor
-      // is -1, so that PrefixCodedTermsReader can call
-      // isIndexTerm for each field:
       if (indexDivisor > 0) {
         loadTermsIndex();
       }

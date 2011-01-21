@@ -41,8 +41,6 @@ import org.apache.lucene.util.Version;
  */
 public final class IndexWriterConfig implements Cloneable {
 
-  public static final int UNLIMITED_FIELD_LENGTH = Integer.MAX_VALUE;
-
   /**
    * Specifies the open mode for {@link IndexWriter}:
    * <ul>
@@ -55,7 +53,7 @@ public final class IndexWriterConfig implements Cloneable {
   public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
 
   /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;                   // TODO: this should be private to the codec, not settable here
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32; // TODO: this should be private to the codec, not settable here
 
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;
@@ -113,7 +111,6 @@ public final class IndexWriterConfig implements Cloneable {
   private IndexDeletionPolicy delPolicy;
   private IndexCommit commit;
   private OpenMode openMode;
-  private int maxFieldLength;
   private Similarity similarity;
   private int termIndexInterval; // TODO: this should be private to the codec, not settable here
   private MergeScheduler mergeScheduler;
@@ -145,7 +142,6 @@ public final class IndexWriterConfig implements Cloneable {
     delPolicy = new KeepOnlyLastCommitDeletionPolicy();
     commit = null;
     openMode = OpenMode.CREATE_OR_APPEND;
-    maxFieldLength = UNLIMITED_FIELD_LENGTH;
     similarity = Similarity.getDefault();
     termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL; // TODO: this should be private to the codec, not settable here
     mergeScheduler = new ConcurrentMergeScheduler();
@@ -217,37 +213,6 @@ public final class IndexWriterConfig implements Cloneable {
    */
   public IndexDeletionPolicy getIndexDeletionPolicy() {
     return delPolicy;
-  }
-
-  /**
-   * The maximum number of terms that will be indexed for a single field in a
-   * document. This limits the amount of memory required for indexing, so that
-   * collections with very large files will not crash the indexing process by
-   * running out of memory. This setting refers to the number of running terms,
-   * not to the number of different terms.
-   * <p>
-   * <b>NOTE:</b> this silently truncates large documents, excluding from the
-   * index all terms that occur further in the document. If you know your source
-   * documents are large, be sure to set this value high enough to accomodate
-   * the expected size. If you set it to {@link #UNLIMITED_FIELD_LENGTH}, then
-   * the only limit is your memory, but you should anticipate an
-   * OutOfMemoryError.
-   * <p>
-   * By default it is set to {@link #UNLIMITED_FIELD_LENGTH}.
-   */
-  public IndexWriterConfig setMaxFieldLength(int maxFieldLength) {
-    this.maxFieldLength = maxFieldLength;
-    return this;
-  }
-
-  /**
-   * Returns the maximum number of terms that will be indexed for a single field
-   * in a document.
-   *
-   * @see #setMaxFieldLength(int)
-   */
-  public int getMaxFieldLength() {
-    return maxFieldLength;
   }
 
   /**
@@ -615,7 +580,6 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
     sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
     sb.append("openMode=").append(openMode).append("\n");
-    sb.append("maxFieldLength=").append(maxFieldLength).append("\n");
     sb.append("similarity=").append(similarity.getClass().getName()).append("\n");
     sb.append("termIndexInterval=").append(termIndexInterval).append("\n"); // TODO: this should be private to the codec, not settable here
     sb.append("mergeScheduler=").append(mergeScheduler.getClass().getName()).append("\n");

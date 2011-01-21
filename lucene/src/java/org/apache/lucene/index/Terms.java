@@ -100,11 +100,8 @@ public abstract class Terms {
    * @see TermsEnum#seek(BytesRef, TermState) */
   public DocsEnum docs(Bits skipDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(term, termState) == TermsEnum.SeekStatus.FOUND) {
-      return termsEnum.docs(skipDocs, reuse);
-    } else {
-      return null;
-    }
+    termsEnum.seek(term, termState);
+    return termsEnum.docs(skipDocs, reuse);
   }
 
   /**
@@ -116,11 +113,8 @@ public abstract class Terms {
    * @see TermsEnum#seek(BytesRef, TermState) */
   public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(term, termState) == TermsEnum.SeekStatus.FOUND) {
-      return termsEnum.docsAndPositions(skipDocs, reuse);
-    } else {
-      return null;
-    }
+    termsEnum.seek(term, termState);
+    return termsEnum.docsAndPositions(skipDocs, reuse);
   }
 
   public long getUniqueTermCount() throws IOException {

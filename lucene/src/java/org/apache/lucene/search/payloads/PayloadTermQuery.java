@@ -100,12 +100,11 @@ public class PayloadTermQuery extends SpanTermQuery {
         freq = 0.0f;
         payloadScore = 0;
         payloadsSeen = 0;
-        Similarity similarity1 = getSimilarity();
         while (more && doc == spans.doc()) {
           int matchLength = spans.end() - spans.start();
 
-          freq += similarity1.sloppyFreq(matchLength);
-          processPayload(similarity1);
+          freq += similarity.sloppyFreq(matchLength);
+          processPayload(similarity);
 
           more = spans.next();// this moves positions to the next match in this
                               // document

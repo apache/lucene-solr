@@ -56,6 +56,8 @@
 
   <target name="generate-maven-artifacts" description="Generate Maven Artifacts for Modules">
     <sequential>
+	  <ant target="get-maven-poms" inheritAll="false" dir=".."/>
+
       <subant target="dist-maven" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />

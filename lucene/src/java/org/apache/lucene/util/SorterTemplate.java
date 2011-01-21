@@ -36,14 +36,14 @@ public abstract class SorterTemplate {
   protected abstract void swap(int i, int j);
   
   /** Compares slots {@code i} and {@code j} of you data.
-   * Should be implemented like <code><em>valueOf(j)</em>.compareTo(<em>valueOf(i)</em>)</code> */
+   * Should be implemented like <code><em>valueOf(i)</em>.compareTo(<em>valueOf(j)</em>)</code> */
   protected abstract int compare(int i, int j);
 
   /** Implement this method, that stores the value of slot {@code i} as pivot value */
   protected abstract void setPivot(int i);
   
   /** Implements the compare function for the previously stored pivot value.
-   * Should be implemented like <code>pivot.compareTo(<em>valueOf(i)</em>)</code> */
+   * Should be implemented like <code>pivot.compareTo(<em>valueOf(j)</em>)</code> */
   protected abstract int comparePivot(int j);
   
   /** Sorts via stable in-place InsertionSort algorithm

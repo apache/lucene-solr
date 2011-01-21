@@ -19,10 +19,11 @@ package org.apache.lucene.index.codecs.mocksep;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.codecs.sep.IntIndexInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.index.codecs.sep.IntIndexInput;
 
 /** Reads IndexInputs written with {@link
  *  SingleIntIndexOutput}.  NOTE: this class is just for
@@ -63,6 +64,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     /** Reads next single int */
     @Override
     public int next() throws IOException {
+      //System.out.println("msii.next() fp=" + in.getFilePointer() + " vs " + in.length());
       return in.readVInt();
     }
   }
@@ -71,7 +73,7 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     private long fp;
 
     @Override
-    public void read(IndexInput indexIn, boolean absolute)
+    public void read(DataInput indexIn, boolean absolute)
       throws IOException {
       if (absolute) {
         fp = indexIn.readVLong();

@@ -55,6 +55,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     // add 100 documents
     addDocs(writer, 100);
     assertEquals(100, writer.maxDoc());
