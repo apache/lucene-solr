@@ -1459,6 +1459,7 @@ public class PreFlexFields extends FieldsProducer {
           if (positionDeltasReader != null) {
             positionDeltasReader.limit = 0;
             proxIn.seek(skipper.getProxPointer());
+            payloadLength = skipper.getPayloadLength();
           }
 
           jumpResult.count = ord = newOrd;
