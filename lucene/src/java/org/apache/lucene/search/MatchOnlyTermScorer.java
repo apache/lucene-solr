@@ -41,6 +41,7 @@ final class MatchOnlyTermScorer extends Scorer {
   private final Bits skipDocs;
   private final int docFreq;
   private int count;
+  private final Similarity similarity;
 
   /**
    * Construct a <code>TermScorer</code>.
@@ -56,8 +57,8 @@ final class MatchOnlyTermScorer extends Scorer {
    *          The field norms of the document fields for the <code>Term</code>.
    */
   MatchOnlyTermScorer(Weight weight, BulkPostingsEnum td, BlockReader docDeltasReader, int docFreq, Bits skipDocs, Similarity similarity, byte[] norms) throws IOException {
-    super(similarity, weight);
-    
+    super(weight);
+    this.similarity = similarity;
     assert td.getFreqsReader() == null;
     
     this.docsEnum = td;
@@ -68,7 +69,7 @@ final class MatchOnlyTermScorer extends Scorer {
 
     this.skipDocs = skipDocs;
     this.norms = norms;
-    rawScore = getSimilarity().tf(1f) * weight.getValue();
+    rawScore = similarity.tf(1f) * weight.getValue();
   }
 
   @Override
@@ -136,7 +137,7 @@ final class MatchOnlyTermScorer extends Scorer {
     assert !first;
     assert doc != NO_MORE_DOCS;
 
-    return norms == null ? rawScore : rawScore * getSimilarity().decodeNormValue(norms[doc]); // normalize for field
+    return norms == null ? rawScore : rawScore * similarity.decodeNormValue(norms[doc]); // normalize for field
   }
 
   /**

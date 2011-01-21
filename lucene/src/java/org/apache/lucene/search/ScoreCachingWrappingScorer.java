@@ -38,18 +38,13 @@ public class ScoreCachingWrappingScorer extends Scorer {
   
   /** Creates a new instance by wrapping the given scorer. */
   public ScoreCachingWrappingScorer(Scorer scorer) {
-    super(scorer.getSimilarity());
+    super(scorer.weight);
     this.scorer = scorer;
   }
 
   @Override
   public boolean score(Collector collector, int max, int firstDocID) throws IOException {
     return scorer.score(collector, max, firstDocID);
-  }
-
-  @Override
-  public Similarity getSimilarity() {
-    return scorer.getSimilarity();
   }
   
   @Override

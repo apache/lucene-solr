@@ -371,7 +371,7 @@ class SpatialDistanceQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new SpatialScorer(searcher.getSimilarity(), context, this);
+      return new SpatialScorer(context, this);
     }
 
     @Override
@@ -404,8 +404,8 @@ class SpatialDistanceQuery extends Query {
     int lastDistDoc;
     double lastDist;
 
-    public SpatialScorer(Similarity similarity, AtomicReaderContext readerContext, SpatialWeight w) throws IOException {
-      super(similarity);
+    public SpatialScorer(AtomicReaderContext readerContext, SpatialWeight w) throws IOException {
+      super(w);
       this.weight = w;
       this.qWeight = w.getValue();
       this.reader = readerContext.reader;

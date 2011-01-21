@@ -51,10 +51,12 @@ public class MatchAllDocsQuery extends Query {
     private int doc = -1;
     private final int maxDoc;
     private final Bits delDocs;
+    private final Similarity similarity;
     
     MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
         byte[] norms) throws IOException {
-      super(similarity,w);
+      super(w);
+      this.similarity = similarity;
       delDocs = reader.getDeletedDocs();
       score = w.getValue();
       maxDoc = reader.maxDoc();
@@ -80,7 +82,7 @@ public class MatchAllDocsQuery extends Query {
     
     @Override
     public float score() {
-      return norms == null ? score : score * getSimilarity().decodeNormValue(norms[docID()]);
+      return norms == null ? score : score * similarity.decodeNormValue(norms[docID()]);
     }
 
     @Override

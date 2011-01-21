@@ -50,7 +50,8 @@ final class TermScorer extends Scorer {
   private final Bits skipDocs;
   private final int docFreq;
   private int count;
-
+  private final Similarity similarity;
+  
   /**
    * Construct a <code>TermScorer</code>.
    * 
@@ -65,7 +66,8 @@ final class TermScorer extends Scorer {
    *          The field norms of the document fields for the <code>Term</code>.
    */
   TermScorer(Weight weight, BulkPostingsEnum td, BlockReader docDeltaReader, BlockReader freqReader, int docFreq, Bits skipDocs, Similarity similarity, byte[] norms) throws IOException {
-    super(similarity, weight);
+    super(weight);
+    this.similarity = similarity;
     this.docsEnum = td;
     this.docFreq = docFreq;
     this.docDeltasReader = docDeltaReader;
@@ -78,7 +80,7 @@ final class TermScorer extends Scorer {
     this.weightValue = weight.getValue();
 
     for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-      scoreCache[i] = getSimilarity().tf(i) * weightValue;
+      scoreCache[i] = similarity.tf(i) * weightValue;
   }
 
   @Override
@@ -150,9 +152,9 @@ final class TermScorer extends Scorer {
     float raw =                                   // compute tf(f)*weight
       freq < SCORE_CACHE_SIZE                        // check cache
       ? scoreCache[freq]                             // cache hit
-      : getSimilarity().tf(freq)*weightValue;        // cache miss
+      : similarity.tf(freq)*weightValue;        // cache miss
 
-    return norms == null ? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize for field
+    return norms == null ? raw : raw * similarity.decodeNormValue(norms[doc]); // normalize for field
   }
 
   /**

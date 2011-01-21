@@ -153,7 +153,6 @@ public class PayloadNearQuery extends SpanNearQuery {
     Spans spans;
     protected float payloadScore;
     private int payloadsSeen;
-    Similarity similarity = getSimilarity();
 
     protected PayloadNearSpanScorer(Spans spans, Weight weight,
         Similarity similarity, byte[] norms) throws IOException {
@@ -211,7 +210,7 @@ public class PayloadNearQuery extends SpanNearQuery {
           payloadsSeen = 0;
           do {
             int matchLength = spans.end() - spans.start();
-            freq += getSimilarity().sloppyFreq(matchLength);
+            freq += similarity.sloppyFreq(matchLength);
             Spans[] spansArr = new Spans[1];
             spansArr[0] = spans;
             getPayloads(spansArr);            

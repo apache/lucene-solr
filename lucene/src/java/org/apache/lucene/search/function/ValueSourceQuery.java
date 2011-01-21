@@ -64,12 +64,10 @@ public class ValueSourceQuery extends Query {
   }
 
   class ValueSourceWeight extends Weight {
-    Similarity similarity;
     float queryNorm;
     float queryWeight;
 
     public ValueSourceWeight(IndexSearcher searcher) {
-      this.similarity = searcher.getSimilarity();
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#getQuery() */
@@ -100,7 +98,7 @@ public class ValueSourceQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new ValueSourceScorer(similarity, context, this);
+      return new ValueSourceScorer(context, this);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
@@ -133,8 +131,8 @@ public class ValueSourceQuery extends Query {
     private int doc = -1;
 
     // constructor
-    private ValueSourceScorer(Similarity similarity, AtomicReaderContext context, ValueSourceWeight w) throws IOException {
-      super(similarity,w);
+    private ValueSourceScorer(AtomicReaderContext context, ValueSourceWeight w) throws IOException {
+      super(w);
       final IndexReader reader = context.reader;
       qWeight = w.getValue();
       // this is when/where the values are first created.

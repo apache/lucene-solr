@@ -210,8 +210,8 @@ final class JustCompileSearch {
   
   static final class JustCompileScorer extends Scorer {
 
-    protected JustCompileScorer(Similarity similarity) {
-      super(similarity);
+    protected JustCompileScorer(Weight weight) {
+      super(weight);
     }
 
     @Override

@@ -613,6 +613,11 @@ API Changes
   for AttributeImpls, but can still be provided (if needed).
   (Uwe Schindler)
 
+* LUCENE-2876: Deprecated Scorer.getSimilarity(). If your Scorer uses a Similarity,
+  it should keep it itself. Fixed Scorers to pass their parent Weight, so that
+  Scorer.visitSubScorers (LUCENE-2590) will work correctly.
+  (Robert Muir, Doron Cohen)
+  
 Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
@@ -875,6 +880,9 @@ Optimizations
   DirectoryReaders or other MultiReaders. This saves lots of memory
   during merge of norms.  (Uwe Schindler, Mike McCandless)
 
+* LUCENE-2824: Optimize BufferedIndexInput to do less bounds checks.
+  (Robert Muir)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
@@ -901,6 +909,9 @@ Build
 * LUCENE-2611: Added Ant target to install IntelliJ IDEA configuration:
   "ant idea".  See http://wiki.apache.org/lucene-java/HowtoConfigureIntelliJ
   (Steven Rowe)
+
+* LUCENE-2657: Switch from using Maven POM templates to full POMs when
+  generating Maven artifacts (Steven Rowe)
 
 Test Cases
 
