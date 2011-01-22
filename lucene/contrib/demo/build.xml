@@ -64,6 +64,8 @@
   <target name="dist-maven" if="pom.xml.present" depends="compile-core,jar-src">
     <sequential>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="lucene.solr.grandparent" file="${common.dir}/../pom.xml"/>
+      <artifact:pom id="lucene.parent" file="${common.dir}/pom.xml"/>
       <artifact:pom id="maven.project" file="pom.xml"/>
       <artifact:deploy file="${build.dir}/${demo.war.name}.war">
         <attach file="${build.dir}/${maven.project.build.finalName}.jar"
