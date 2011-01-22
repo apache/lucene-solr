@@ -38,10 +38,15 @@
     </sequential>
   </target>
 
+  <property name="version" value="4.0-SNAPSHOT"/>
   <target name="get-maven-poms" 
           description="Copy Maven POMs from dev-tools/maven/ to their target locations">
     <copy todir=".">
       <fileset dir="${basedir}/dev-tools/maven"/>
+      <filterset begintoken="@" endtoken="@">
+        <filter token="version" value="${version}"/>
+      </filterset>
+      <globmapper from="*.template" to="*"/>
     </copy>
   </target>
 
