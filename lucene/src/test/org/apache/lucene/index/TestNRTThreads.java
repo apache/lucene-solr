@@ -38,6 +38,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
@@ -122,6 +123,13 @@ public class TestNRTThreads extends LuceneTestCase {
                 if (doc == null) {
                   break;
                 }
+                final String addedField;
+                if (random.nextBoolean()) {
+                  addedField = "extra" + random.nextInt(10);
+                  doc.add(new Field(addedField, "a random field", Field.Store.NO, Field.Index.ANALYZED));
+                } else {
+                  addedField = null;
+                }
                 if (random.nextBoolean()) {
                   if (VERBOSE) {
                     //System.out.println(Thread.currentThread().getName() + ": add doc id:" + doc.get("id"));
@@ -156,6 +164,9 @@ public class TestNRTThreads extends LuceneTestCase {
                   toDeleteIDs.clear();
                 }
                 addCount.getAndIncrement();
+                if (addedField != null) {
+                  doc.removeField(addedField);
+                }
               } catch (Exception exc) {
                 System.out.println(Thread.currentThread().getName() + ": hit exc");
                 exc.printStackTrace();
@@ -337,7 +348,8 @@ public class TestNRTThreads extends LuceneTestCase {
 
     writer.commit();
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
-      
+
+    assertFalse(writer.anyNonBulkMerges);
     writer.close(false);
     _TestUtil.checkIndex(dir);
     dir.close();

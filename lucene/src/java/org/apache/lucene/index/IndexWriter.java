@@ -331,6 +331,9 @@ public class IndexWriter implements Closeable {
   // The PayloadProcessorProvider to use when segments are merged
   private PayloadProcessorProvider payloadProcessorProvider;
 
+  // for testing
+  boolean anyNonBulkMerges;
+
   /**
    * Expert: returns a readonly reader, covering all
    * committed as well as un-committed changes to the index.
@@ -427,6 +430,8 @@ public class IndexWriter implements Closeable {
 
     ensureOpen();
 
+    final long tStart = System.currentTimeMillis();
+
     if (infoStream != null) {
       message("flush at getReader");
     }
@@ -450,6 +455,9 @@ public class IndexWriter implements Closeable {
 
     maybeMerge();
 
+    if (infoStream != null) {
+      message("getReader took " + (System.currentTimeMillis() - tStart) + " msec");
+    }
     return r;
   }
 
@@ -3932,6 +3940,8 @@ public class IndexWriter implements Closeable {
         message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + numSegments);
       }
 
+      anyNonBulkMerges |= merger.getMatchedSubReaderCount() != numSegments;
+      
       // Very important to do this before opening the reader
       // because SegmentReader must know if prox was written for
       // this segment:
