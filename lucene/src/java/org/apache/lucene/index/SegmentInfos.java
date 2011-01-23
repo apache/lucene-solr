@@ -92,8 +92,11 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   /** Each segment records whether it has term vectors */
   public static final int FORMAT_HAS_VECTORS = -10;
 
+  /** Each segment records the Lucene version that created it. */
+  public static final int FORMAT_3_1 = -11;
+  
   /* This must always point to the most recent file format. */
-  public static final int CURRENT_FORMAT = FORMAT_HAS_VECTORS;
+  public static final int CURRENT_FORMAT = FORMAT_3_1;
   
   public int counter = 0;    // used to name new segments
   /**
@@ -267,7 +270,30 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       }
       
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-        add(new SegmentInfo(directory, format, input));
+        SegmentInfo si = new SegmentInfo(directory, format, input);
+        if (si.getVersion() == null) {
+          // It's a pre-3.1 segment, upgrade its version to either 3.0 or 2.x
+          Directory dir = directory;
+          if (si.getDocStoreOffset() != -1) {
+            if (si.getDocStoreIsCompoundFile()) {
+              dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
+                  si.getDocStoreSegment(),
+                  IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), 1024);
+            }
+          } else if (si.getUseCompoundFile()) {
+            dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
+                si.name, IndexFileNames.COMPOUND_FILE_EXTENSION), 1024);
+          }
+
+          try {
+            String store = si.getDocStoreOffset() != -1 ? si.getDocStoreSegment() : si.name;
+            si.setVersion(FieldsReader.detectCodeVersion(dir, store));
+          } finally {
+            // If we opened the directory, close it
+            if (dir != directory) dir.close();
+          }
+        }
+        add(si);
       }
       
       if(format >= 0){    // in old format the version number may be at the end of the file
@@ -351,8 +377,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
-      for (int i = 0; i < size(); i++) {
-        info(i).write(segnOutput);
+      for (SegmentInfo si : this) {
+        si.write(segnOutput);
       }
       segnOutput.writeStringStringMap(userData);
       segnOutput.prepareCommit();

@@ -469,6 +469,9 @@ New features
 * LUCENE-2864: Add getMaxTermFrequency (maximum within-document TF) to 
   FieldInvertState so that it can be used in Similarity.computeNorm.
   (Robert Muir)
+
+* LUCENE-2720: Segments now record the code version which created them. 
+  (Shai Erera, Mike McCandless, Uwe Schindler)
   
 Optimizations
 

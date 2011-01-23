@@ -75,6 +75,26 @@ final class FieldsReader implements Cloneable {
     ensureOpen();
     return new FieldsReader(fieldInfos, numTotalDocs, size, format, formatSize, docStoreOffset, cloneableFieldsStream, cloneableIndexStream);
   }
+
+  /**
+   * Detects the code version this segment was written with. Returns either
+   * "2.x" for all pre-3.0 segments, or "3.0" for 3.0 segments. This method
+   * should not be called for 3.1+ segments since they already record their code
+   * version.
+   */
+  static String detectCodeVersion(Directory dir, String segment) throws IOException {
+    IndexInput idxStream = dir.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION), 1024);
+    try {
+      int format = idxStream.readInt();
+      if (format < FieldsWriter.FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS) {
+        return "2.x";
+      } else {
+        return "3.0";
+      }
+    } finally {
+      idxStream.close();
+    }
+  }
   
   // Used only by clone
   private FieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, int format, int formatSize,
