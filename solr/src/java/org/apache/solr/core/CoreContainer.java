@@ -697,7 +697,7 @@ public class CoreContainer
   
   /** Write the cores configuration through a writer.*/
   void persist(Writer w) throws IOException {
-    w.write("<?xml version='1.0' encoding='UTF-8'?>");
+    w.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
     w.write("<solr");
     if (this.libDir != null) {
       writeAttribute(w,"sharedLib",libDir);
@@ -706,9 +706,9 @@ public class CoreContainer
     w.write(">\n");
 
     if (containerProperties != null && !containerProperties.isEmpty())  {
-      writeProperties(w, containerProperties);
+      writeProperties(w, containerProperties, "  ");
     }
-    w.write("<cores");
+    w.write("  <cores");
     writeAttribute(w, "adminPath",adminPath);
     if(adminHandler != null) writeAttribute(w, "adminHandler",adminHandler);
     if(shareSchema) writeAttribute(w, "shareSchema","true");
@@ -720,7 +720,7 @@ public class CoreContainer
       }
     }
 
-    w.write("</cores>\n");
+    w.write("  </cores>\n");
     w.write("</solr>\n");
   }
 
@@ -735,8 +735,8 @@ public class CoreContainer
   
   /** Writes the cores configuration node for a given core. */
   void persist(Writer w, CoreDescriptor dcore) throws IOException {
-    w.write("  <core");
-    writeAttribute(w,"name",dcore.name);
+    w.write("    <core");
+    writeAttribute(w,"name",dcore.name.equals("") ? defaultCoreName : dcore.name);
     writeAttribute(w,"instanceDir",dcore.getInstanceDir());
     //write config (if not default)
     String opt = dcore.getConfigName();
@@ -758,14 +758,14 @@ public class CoreContainer
       w.write("/>\n"); // core
     else  {
       w.write(">\n");
-      writeProperties(w, dcore.getCoreProperties());
-      w.write("</core>");
+      writeProperties(w, dcore.getCoreProperties(), "      ");
+      w.write("    </core>\n");
     }
   }
 
-  private void writeProperties(Writer w, Properties props) throws IOException {
+  private void writeProperties(Writer w, Properties props, String indent) throws IOException {
     for (Map.Entry<Object, Object> entry : props.entrySet()) {
-      w.write("<property");
+      w.write(indent + "<property");
       writeAttribute(w,"name",entry.getKey());
       writeAttribute(w,"value",entry.getValue());
       w.write("/>\n");
