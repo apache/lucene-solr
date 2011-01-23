@@ -443,8 +443,6 @@ Bug Fixes
 
 * SOLR-2173: Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
 
-* SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
-
 * SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
   (Drew Farris via koji)
 
