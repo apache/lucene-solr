@@ -679,8 +679,8 @@ Bug fixes
 * LUCENE-2584: SegmentInfo.files() could hit ConcurrentModificationException if
   called by multiple threads. (Alexander Kanarsky via Shai Erera)
 
-* LUCENE-2809: Fixed IndexWriter.numDocs to take into account take
-  into account applied but not yet flushed deletes.  (Mike McCandless)
+* LUCENE-2809: Fixed IndexWriter.numDocs to take into account
+  applied but not yet flushed deletes.  (Mike McCandless)
 
 New features
 
