@@ -140,6 +140,9 @@ Changes in Runtime Behavior
   documents that don't have the field get a norm byte value of 0. Previously, Lucene
   would populate "fake norms" with Similarity.getDefault() for these documents.
   (Robert Muir, Mike Mccandless)
+  
+* LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
+  than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
 
 API Changes
 

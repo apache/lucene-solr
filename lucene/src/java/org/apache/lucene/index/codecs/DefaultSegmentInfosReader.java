@@ -19,7 +19,10 @@ package org.apache.lucene.index.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.CompoundFileReader;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldsReader;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.SegmentInfo;
@@ -55,7 +58,41 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
       infos.counter = input.readInt(); // read counter
   
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-        infos.add(new SegmentInfo(directory, format, input, codecs));
+        SegmentInfo si = new SegmentInfo(directory, format, input, codecs);
+        if (si.getVersion() == null) {
+          // Could be a 3.0 - try to open the doc stores - if it fails, it's a
+          // 2.x segment, and an IndexFormatTooOldException will be thrown,
+          // which is what we want.
+          Directory dir = directory;
+          if (si.getDocStoreOffset() != -1) {
+            if (si.getDocStoreIsCompoundFile()) {
+              dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
+                  si.getDocStoreSegment(), "",
+                  IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), 1024);
+            }
+          } else if (si.getUseCompoundFile()) {
+            dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
+                si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), 1024);
+          }
+
+          try {
+            FieldsReader.checkCodeVersion(dir, si.getDocStoreSegment());
+          } finally {
+            // If we opened the directory, close it
+            if (dir != directory) dir.close();
+          }
+          
+          // Above call succeeded, so it's a 3.0 segment. Upgrade it so the next
+          // time the segment is read, its version won't be null and we won't
+          // need to open FieldsReader every time for each such segment.
+          si.setVersion("3.0");
+        } else if (si.getVersion().equals("2.x")) {
+          // If it's a 3x index touched by 3.1+ code, then segments record their
+          // version, whether they are 2.x ones or not. We detect that and throw
+          // appropriate exception.
+          throw new IndexFormatTooOldException(si.name, si.getVersion());
+        }
+        infos.add(si);
       }
       
       infos.userData = input.readStringStringMap();

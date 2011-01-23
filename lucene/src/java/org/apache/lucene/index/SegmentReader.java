@@ -226,6 +226,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           assert storeDir != null;
         }
 
+        // nocommit: this can be simplified to always be si.getDocStoreSegment()
         final String storesSegment;
         if (si.getDocStoreOffset() != -1) {
           storesSegment = si.getDocStoreSegment();

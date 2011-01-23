@@ -605,8 +605,6 @@ public class IndexWriter implements Closeable {
     }
   }
   
-  
-  
   /**
    * Obtain the number of deleted docs for a pooled reader.
    * If the reader isn't being pooled, the segmentInfo's 
@@ -715,11 +713,8 @@ public class IndexWriter implements Closeable {
 
     boolean success = false;
 
-    // TODO: we should check whether this index is too old,
-    // and throw an IndexFormatTooOldExc up front, here,
-    // instead of later when merge, applyDeletes, getReader
-    // is attempted.  I think to do this we should store the
-    // oldest segment's version in segments_N.
+    // If index is too old, reading the segments will throw
+    // IndexFormatTooOldException.
     segmentInfos = new SegmentInfos(codecs);
     try {
       if (create) {
@@ -982,6 +977,7 @@ public class IndexWriter implements Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  @Override
   public void close() throws CorruptIndexException, IOException {
     close(true);
   }
