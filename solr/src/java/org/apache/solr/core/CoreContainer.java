@@ -712,6 +712,7 @@ public class CoreContainer
     writeAttribute(w, "adminPath",adminPath);
     if(adminHandler != null) writeAttribute(w, "adminHandler",adminHandler);
     if(shareSchema) writeAttribute(w, "shareSchema","true");
+    if(!defaultCoreName.equals("")) writeAttribute(w, "defaultCoreName", defaultCoreName);
     w.write(">\n");
 
     synchronized(cores) {
