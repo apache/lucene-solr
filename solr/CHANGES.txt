@@ -158,6 +158,8 @@ Bug Fixes
   dealing with SolrDocumentList objects -- ie: sharded queries.
   (Antonio Verni via hossman)
   
+* SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
+  (Ephraim Ofir, Mark Miller)
 
 Other Changes
 ----------------------
