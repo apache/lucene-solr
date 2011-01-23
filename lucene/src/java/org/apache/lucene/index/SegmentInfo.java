@@ -103,6 +103,7 @@ public final class SegmentInfo {
     delGen = NO;
     this.isCompoundFile = isCompoundFile;
     this.docStoreOffset = -1;
+    this.docStoreSegment = name;
     this.hasProx = hasProx;
     this.segmentCodecs = segmentCodecs;
     this.hasVectors = hasVectors;
@@ -121,6 +122,7 @@ public final class SegmentInfo {
     dir = src.dir;
     delGen = src.delGen;
     docStoreOffset = src.docStoreOffset;
+    docStoreSegment = src.docStoreSegment;
     docStoreIsCompoundFile = src.docStoreIsCompoundFile;
     hasVectors = src.hasVectors;
     hasProx = src.hasProx;
