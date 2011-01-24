@@ -110,7 +110,7 @@ public abstract class MergePolicy implements java.io.Closeable {
       return aborted;
     }
 
-    synchronized void checkAborted(Directory dir) throws MergeAbortedException {
+    public synchronized void checkAborted(Directory dir) throws MergeAbortedException {
       if (aborted) {
         throw new MergeAbortedException("merge is aborted: " + segString(dir));
       }
