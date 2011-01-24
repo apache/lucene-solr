@@ -21,6 +21,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,6 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedList;
 
 /**
@@ -278,4 +280,44 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     new MultiPhraseQuery().toString();
   }
   
+  public void testCustomIDF() throws Exception {
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    add("This is a test", "object", writer);
+    add("a note", "note", writer);
+    
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setSimilarity(new DefaultSimilarity() {
+      
+      @Override
+      public IDFExplanation idfExplain(Collection<Term> terms,
+          Searcher searcher) throws IOException {
+        return new IDFExplanation() {
+
+          @Override
+          public float getIdf() {
+            return 10f;
+          }
+
+          @Override
+          public String explain() {
+            return "just a test";
+          }
+          
+        };
+      }   
+    });
+    
+    MultiPhraseQuery query = new MultiPhraseQuery();
+    query.add(new Term[] { new Term("body", "this"), new Term("body", "that") });
+    query.add(new Term("body", "is"));
+    Weight weight = query.createWeight(searcher);
+    assertEquals(10f * 10f, weight.sumOfSquaredWeights(), 0.001f);
+
+    writer.close();
+    searcher.close();
+    reader.close();
+    indexStore.close();
+  }
 }
