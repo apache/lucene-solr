@@ -832,7 +832,7 @@ public class SimpleFacets {
     
     final String f = sf.getName();
     final NamedList res = new SimpleOrderedMap();
-    final NamedList counts = new SimpleOrderedMap();
+    final NamedList counts = new NamedList();
     res.add("counts", counts);
 
     final T start = calc.getValue(required.getFieldParam(f,FacetParams.FACET_RANGE_START));
