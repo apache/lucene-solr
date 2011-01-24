@@ -140,8 +140,11 @@ class SegmentDeletes {
   }
 
   public void addQuery(Query query, int docIDUpto) {
-    queries.put(query, docIDUpto);
-    bytesUsed.addAndGet(BYTES_PER_DEL_QUERY);
+    Integer current = queries.put(query, docIDUpto);
+    // increment bytes used only if the query wasn't added so far.
+    if (current == null) {
+      bytesUsed.addAndGet(BYTES_PER_DEL_QUERY);
+    }
   }
 
   public void addDocID(int docID) {
