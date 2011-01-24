@@ -400,7 +400,6 @@ public class IndexWriter implements Closeable {
   public IndexReader getReader() throws IOException {
     return getReader(config.getReaderTermsIndexDivisor());
   }
-
   /** Expert: like {@link #getReader}, except you can
    *  specify which termInfosIndexDivisor should be used for
    *  any newly opened readers.
@@ -1846,8 +1845,9 @@ public class IndexWriter implements Closeable {
   private void closeInternal(boolean waitForMerges) throws CorruptIndexException, IOException {
 
     try {
-      if (infoStream != null)
-        message("now flush at close");
+      if (infoStream != null) {
+        message("now flush at close waitForMerges=" + waitForMerges);
+      }
 
       docWriter.close();
 
@@ -2839,12 +2839,19 @@ public class IndexWriter implements Closeable {
    *    will have completed once this method completes.</p>
    */
   public synchronized void waitForMerges() {
+    if (infoStream != null) {
+      message("waitForMerges");
+    }
     while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
       doWait();
     }
 
     // sanity check
     assert 0 == mergingSegments.size();
+
+    if (infoStream != null) {
+      message("waitForMerges done");
+    }
   }
 
   /**
