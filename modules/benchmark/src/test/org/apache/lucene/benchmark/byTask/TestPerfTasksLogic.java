@@ -514,6 +514,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "{ [ AddDoc]: 4} : * ",
         "ResetInputs ",
         "{ [ AddDoc]: 4} : * ",
+        "WaitForMerges",
         "CloseIndex",
     };
     
@@ -549,6 +550,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "  ResetSystemErase",
         "  CreateIndex",
         "  { \"AddDocs\"  AddDoc > : * ",
+        "  WaitForMerges",
         "  CloseIndex",
         "} : 2",
     };
