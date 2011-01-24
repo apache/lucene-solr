@@ -1153,9 +1153,11 @@ public class MemoryIndex implements Serializable {
         private ArrayIntList positions;
         private int posUpto;
         private int limit;
+        private int lastPos;
 
         public void reset(ArrayIntList positions) {
           posUpto = 0;
+          lastPos = 0;
           this.positions = positions;
           fill();
         }
@@ -1183,8 +1185,11 @@ public class MemoryIndex implements Serializable {
         @Override
         public int fill() {
           final int chunk = Math.min(buffer.length, positions.size() - posUpto);
+          int absolutePos = 0; // positions contains absolute values but Bulk API expects deltas
           for(int i=0;i<chunk;i++) {
-            buffer[i] = positions.get(posUpto++);
+            absolutePos = positions.get(posUpto++);
+            buffer[i] = absolutePos - lastPos;
+            lastPos = absolutePos;
           }
           return limit = chunk;
         }
