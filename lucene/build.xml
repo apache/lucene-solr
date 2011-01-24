@@ -404,7 +404,7 @@
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package, jar-src, javadocs">
     <sequential>
-	  <ant target="get-maven-poms" inheritAll="false" dir=".."/>
+      <ant target="get-maven-poms" dir=".."/>
 
       <m2-deploy pom.xml="../pom.xml"/> <!-- Lucene/Solr grandparent POM -->
       <m2-deploy pom.xml="pom.xml"/>    <!-- Lucene parent POM -->

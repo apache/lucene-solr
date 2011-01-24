@@ -35,6 +35,7 @@
     <module>clustering</module>
     <module>dataimporthandler</module>
     <module>extraction</module>
+    <module>uima</module>
   </modules>
   <build>
     <directory>../build/solr-contrib-aggregator</directory>
