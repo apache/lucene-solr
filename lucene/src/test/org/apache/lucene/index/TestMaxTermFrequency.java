@@ -46,7 +46,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(MockTokenizer.SIMPLE, true));
-    config.setSimilarity(new TestSimilarity());
+    config.setSimilarityProvider(new TestSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", Field.Store.NO, Field.Index.ANALYZED);

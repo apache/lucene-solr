@@ -42,7 +42,8 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectorOffsetInfo;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CollectionUtil;
@@ -67,7 +68,7 @@ public class InstantiatedIndexWriter implements Closeable {
   private final InstantiatedIndex index;
   private final Analyzer analyzer;
 
-  private Similarity similarity = Similarity.getDefault(); // how to normalize;
+  private SimilarityProvider similarityProvider = IndexSearcher.getDefaultSimilarityProvider(); // how to normalize;
 
   private transient Set<String> fieldNameBuffer;
   /**
@@ -236,11 +237,12 @@ public class InstantiatedIndexWriter implements Closeable {
         termsInDocument += eFieldTermDocInfoFactoriesByTermText.getValue().size();
 
         if (eFieldTermDocInfoFactoriesByTermText.getKey().indexed && !eFieldTermDocInfoFactoriesByTermText.getKey().omitNorms) {
+          final String fieldName = eFieldTermDocInfoFactoriesByTermText.getKey().fieldName;
           final FieldInvertState invertState = new FieldInvertState();
           invertState.setBoost(eFieldTermDocInfoFactoriesByTermText.getKey().boost * document.getDocument().getBoost());
           invertState.setLength(eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
-          final float norm = similarity.computeNorm(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName, invertState);
-          normsByFieldNameAndDocumentNumber.get(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName)[document.getDocumentNumber()] = similarity.encodeNormValue(norm);
+          final float norm = similarityProvider.get(fieldName).computeNorm(fieldName, invertState);
+          normsByFieldNameAndDocumentNumber.get(fieldName)[document.getDocumentNumber()] = similarityProvider.get(fieldName).encodeNormValue(norm);
         } else {
           System.currentTimeMillis();
         }
@@ -659,12 +661,12 @@ public class InstantiatedIndexWriter implements Closeable {
     addDocument(doc, analyzer);
   }
 
-  public Similarity getSimilarity() {
-    return similarity;
+  public SimilarityProvider getSimilarityProvider() {
+    return similarityProvider;
   }
 
-  public void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
+  public void setSimilarityProvider(SimilarityProvider similarityProvider) {
+    this.similarityProvider = similarityProvider;
   }
 
   public Analyzer getAnalyzer() {

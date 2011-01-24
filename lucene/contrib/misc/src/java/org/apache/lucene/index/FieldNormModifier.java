@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.StringHelper;
@@ -57,13 +58,13 @@ public class FieldNormModifier {
       System.exit(1);
     }
 
-    Similarity s = null;
+    SimilarityProvider s = null;
 
     if (args[1].equals("-d"))
       args[1] = DefaultSimilarity.class.getName();
 
     try {
-      s = Class.forName(args[1]).asSubclass(Similarity.class).newInstance();
+      s = Class.forName(args[1]).asSubclass(SimilarityProvider.class).newInstance();
     } catch (Exception e) {
       System.err.println("Couldn't instantiate similarity with empty constructor: " + args[1]);
       e.printStackTrace(System.err);
@@ -84,7 +85,7 @@ public class FieldNormModifier {
   
   
   private Directory dir;
-  private Similarity sim;
+  private SimilarityProvider sim;
   
   /**
    * Constructor for code that wishes to use this class programmatically
@@ -93,7 +94,7 @@ public class FieldNormModifier {
    * @param d the Directory to modify
    * @param s the Similarity to use (can be null)
    */
-  public FieldNormModifier(Directory d, Similarity s) {
+  public FieldNormModifier(Directory d, SimilarityProvider s) {
     dir = d;
     sim = s;
   }
@@ -111,7 +112,7 @@ public class FieldNormModifier {
    */
   public void reSetNorms(String field) throws IOException {
     String fieldName = StringHelper.intern(field);
-    
+    Similarity fieldSim = sim.get(field); 
     IndexReader reader = null;
     try {
       reader = IndexReader.open(dir, false);
@@ -148,7 +149,7 @@ public class FieldNormModifier {
         for (int d = 0; d < termCounts.length; d++) {
           if (delDocs == null || !delDocs.get(d)) {
             invertState.setLength(termCounts[d]);
-            subReader.setNorm(d, fieldName, sim.encodeNormValue(sim.computeNorm(fieldName, invertState)));
+            subReader.setNorm(d, fieldName, fieldSim.encodeNormValue(fieldSim.computeNorm(fieldName, invertState)));
           }
         }
       }

@@ -27,7 +27,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -83,7 +83,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
   @Test
   public void testSimilarityFactory() {
     SolrCore core = h.getCore();
-    Similarity similarity = core.getSchema().getSimilarity();
+    SimilarityProvider similarity = core.getSchema().getSimilarityProvider();
     assertTrue("wrong class", similarity instanceof MockConfigurableSimilarity);
     assertEquals("is there an echo?", ((MockConfigurableSimilarity)similarity).getPassthrough());
   }

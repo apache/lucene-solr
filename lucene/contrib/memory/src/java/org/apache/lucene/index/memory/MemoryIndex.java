@@ -57,6 +57,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -1169,9 +1170,9 @@ public class MemoryIndex implements Serializable {
       };
     }
 
-    private Similarity getSimilarity() {
-      if (searcher != null) return searcher.getSimilarity();
-      return Similarity.getDefault();
+    private SimilarityProvider getSimilarityProvider() {
+      if (searcher != null) return searcher.getSimilarityProvider();
+      return IndexSearcher.getDefaultSimilarityProvider();
     }
     
     private void setSearcher(IndexSearcher searcher) {
@@ -1181,20 +1182,21 @@ public class MemoryIndex implements Serializable {
     /** performance hack: cache norms to avoid repeated expensive calculations */
     private byte[] cachedNorms;
     private String cachedFieldName;
-    private Similarity cachedSimilarity;
+    private SimilarityProvider cachedSimilarity;
     
     @Override
     public byte[] norms(String fieldName) {
       byte[] norms = cachedNorms;
-      Similarity sim = getSimilarity();
+      SimilarityProvider sim = getSimilarityProvider();
       if (fieldName != cachedFieldName || sim != cachedSimilarity) { // not cached?
         Info info = getInfo(fieldName);
+        Similarity fieldSim = sim.get(fieldName);
         int numTokens = info != null ? info.numTokens : 0;
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
-        float n = sim.computeNorm(fieldName, invertState);
-        byte norm = sim.encodeNormValue(n);
+        float n = fieldSim.computeNorm(fieldName, invertState);
+        byte norm = fieldSim.encodeNormValue(n);
         norms = new byte[] {norm};
         
         // cache it for future reuse

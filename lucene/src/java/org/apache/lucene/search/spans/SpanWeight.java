@@ -42,7 +42,7 @@ public class SpanWeight extends Weight {
 
   public SpanWeight(SpanQuery query, IndexSearcher searcher)
     throws IOException {
-    this.similarity = searcher.getSimilarity();
+    this.similarity = searcher.getSimilarityProvider().get(query.getField());
     this.query = query;
     
     terms=new HashSet<Term>();

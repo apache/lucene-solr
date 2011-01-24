@@ -362,7 +362,7 @@ import org.apache.lucene.util.SmallFloat;
  *      Typically, a document that contains more of the query's terms will receive a higher score
  *      than another document with fewer query terms.
  *      This is a search time factor computed in
- *      {@link #coord(int, int) coord(q,d)}
+ *      {@link SimilarityProvider#coord(int, int) coord(q,d)}
  *      by the Similarity in effect at search time.
  *      <br>&nbsp;<br>
  *    </li>
@@ -522,39 +522,12 @@ import org.apache.lucene.util.SmallFloat;
  *    </li>
  * </ol>
  *
- * @see #setDefault(Similarity)
- * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
- * @see IndexSearcher#setSimilarity(Similarity)
+ * @see org.apache.lucene.index.IndexWriterConfig#setSimilarityProvider(SimilarityProvider)
+ * @see IndexSearcher#setSimilarityProvider(SimilarityProvider)
  */
 public abstract class Similarity implements Serializable {
   
-  /**
-   * The Similarity implementation used by default.
-   **/
-  private static Similarity defaultImpl = new DefaultSimilarity();
   public static final int NO_DOC_ID_PROVIDED = -1;
-
-  /** Set the default Similarity implementation used by indexing and search
-   * code.
-   *
-   * @see IndexSearcher#setSimilarity(Similarity)
-   * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
-   */
-  public static void setDefault(Similarity similarity) {
-    Similarity.defaultImpl = similarity;
-  }
-
-  /** Return the default Similarity implementation used by indexing and search
-   * code.
-   *
-   * <p>This is initially an instance of {@link DefaultSimilarity}.
-   *
-   * @see IndexSearcher#setSimilarity(Similarity)
-   * @see org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)
-   */
-  public static Similarity getDefault() {
-    return Similarity.defaultImpl;
-  }
 
   /** Cache of decoded bytes. */
   private static final float[] NORM_TABLE = new float[256];
@@ -631,21 +604,6 @@ public abstract class Similarity implements Serializable {
   public final float lengthNorm(String fieldName, int numTokens) {
     throw new UnsupportedOperationException("please use computeNorm instead");
   }
-
-  /** Computes the normalization value for a query given the sum of the squared
-   * weights of each of the query terms.  This value is multiplied into the
-   * weight of each query term. While the classic query normalization factor is
-   * computed as 1/sqrt(sumOfSquaredWeights), other implementations might
-   * completely ignore sumOfSquaredWeights (ie return 1).
-   *
-   * <p>This does not affect ranking, but the default implementation does make scores
-   * from different queries more comparable than they would be by eliminating the
-   * magnitude of the Query vector as a factor in the score.
-   *
-   * @param sumOfSquaredWeights the sum of the squares of query term weights
-   * @return a normalization factor for query weights
-   */
-  public abstract float queryNorm(float sumOfSquaredWeights);
 
   /** Encodes a normalization factor for storage in an index.
    *
@@ -815,20 +773,6 @@ public abstract class Similarity implements Serializable {
    * @return a score factor based on the term's document frequency
    */
   public abstract float idf(int docFreq, int numDocs);
-
-  /** Computes a score factor based on the fraction of all query terms that a
-   * document contains.  This value is multiplied into scores.
-   *
-   * <p>The presence of a large portion of the query terms indicates a better
-   * match with the query, so implementations of this method usually return
-   * larger values when the ratio between these parameters is large and smaller
-   * values when the ratio between them is small.
-   *
-   * @param overlap the number of query terms matched in the document
-   * @param maxOverlap the total number of terms in the query
-   * @return a score factor based on term overlap with the query
-   */
-  public abstract float coord(int overlap, int maxOverlap);
 
   /**
    * Calculate a scoring factor based on the data in the payload.  Overriding implementations

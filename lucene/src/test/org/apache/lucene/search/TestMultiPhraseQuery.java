@@ -295,7 +295,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(new DefaultSimilarity() {
+    searcher.setSimilarityProvider(new DefaultSimilarity() {
       
       @Override
       public IDFExplanation idfExplain(Collection<Term> terms,

@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -55,7 +55,8 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
     assertEquals(OpenMode.CREATE_OR_APPEND, conf.getOpenMode());
-    assertTrue(Similarity.getDefault() == conf.getSimilarity());
+    // we don't need to assert this, it should be unspecified
+    assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
     assertEquals(IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, conf.getTermIndexInterval());
     assertEquals(IndexWriterConfig.getDefaultWriteLockTimeout(), conf.getWriteLockTimeout());
     assertEquals(IndexWriterConfig.WRITE_LOCK_TIMEOUT, IndexWriterConfig.getDefaultWriteLockTimeout());
@@ -77,7 +78,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMaxFieldLength");
     getters.add("getMergeScheduler");
     getters.add("getOpenMode");
-    getters.add("getSimilarity");
+    getters.add("getSimilarityProvider");
     getters.add("getTermIndexInterval");
     getters.add("getWriteLockTimeout");
     getters.add("getDefaultWriteLockTimeout");
@@ -173,12 +174,13 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     conf.setMergeScheduler(null);
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
 
-    // Test Similarity
-    assertTrue(Similarity.getDefault() == conf.getSimilarity());
-    conf.setSimilarity(new MySimilarity());
-    assertEquals(MySimilarity.class, conf.getSimilarity().getClass());
-    conf.setSimilarity(null);
-    assertTrue(Similarity.getDefault() == conf.getSimilarity());
+    // Test Similarity: 
+    // we shouldnt assert what the default is, just that its not null.
+    assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
+    conf.setSimilarityProvider(new MySimilarity());
+    assertEquals(MySimilarity.class, conf.getSimilarityProvider().getClass());
+    conf.setSimilarityProvider(null);
+    assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
 
     // Test IndexingChain
     assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());

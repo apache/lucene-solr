@@ -110,7 +110,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
-        .setSimilarity(similarity));
+        .setSimilarityProvider(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -125,7 +125,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     writer.close();
 
     searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(similarity);
+    searcher.setSimilarityProvider(similarity);
   }
 
   @Override
@@ -220,7 +220,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction(), false);
 
     IndexSearcher theSearcher = new IndexSearcher(directory, true);
-    theSearcher.setSimilarity(new FullSimilarity());
+    theSearcher.setSimilarityProvider(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);

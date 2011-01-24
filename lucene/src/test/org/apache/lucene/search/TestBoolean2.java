@@ -208,9 +208,9 @@ public class TestBoolean2 extends LuceneTestCase {
   public void testQueries10() throws Exception {
     String queryText = "+w3 +xx +w2 zz";
     int[] expDocNrs = {2, 3};
-    Similarity oldSimilarity = searcher.getSimilarity();
+    SimilarityProvider oldSimilarity = searcher.getSimilarityProvider();
     try {
-      searcher.setSimilarity(new DefaultSimilarity(){
+      searcher.setSimilarityProvider(new DefaultSimilarity(){
         @Override
         public float coord(int overlap, int maxOverlap) {
           return overlap / ((float)maxOverlap - 1);
@@ -218,7 +218,7 @@ public class TestBoolean2 extends LuceneTestCase {
       });
       queriesTest(queryText, expDocNrs);
     } finally {
-      searcher.setSimilarity(oldSimilarity);
+      searcher.setSimilarityProvider(oldSimilarity);
     }
   }
 

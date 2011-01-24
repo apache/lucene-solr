@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
@@ -127,7 +127,7 @@ final class DocumentsWriter {
   private boolean aborting;               // True if an abort is pending
 
   PrintStream infoStream;
-  Similarity similarity;
+  SimilarityProvider similarityProvider;
 
   // max # simultaneous threads; if there are more than
   // this, they wait for others to finish first
@@ -140,7 +140,7 @@ final class DocumentsWriter {
     DocumentsWriter docWriter;
     Analyzer analyzer;
     PrintStream infoStream;
-    Similarity similarity;
+    SimilarityProvider similarityProvider;
     int docID;
     Document doc;
     String maxTermPrefix;
@@ -284,7 +284,7 @@ final class DocumentsWriter {
   DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos, BufferedDeletes bufferedDeletes) throws IOException {
     this.directory = directory;
     this.writer = writer;
-    this.similarity = writer.getConfig().getSimilarity();
+    this.similarityProvider = writer.getConfig().getSimilarityProvider();
     this.maxThreadStates = maxThreadStates;
     this.fieldInfos = fieldInfos;
     this.bufferedDeletes = bufferedDeletes;
@@ -357,10 +357,10 @@ final class DocumentsWriter {
     }
   }
 
-  synchronized void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
+  synchronized void setSimilarityProvider(SimilarityProvider similarity) {
+    this.similarityProvider = similarity;
     for(int i=0;i<threadStates.length;i++) {
-      threadStates[i].docState.similarity = similarity;
+      threadStates[i].docState.similarityProvider = similarity;
     }
   }
 
