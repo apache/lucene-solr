@@ -682,6 +682,10 @@ Bug fixes
 * LUCENE-2809: Fixed IndexWriter.numDocs to take into account
   applied but not yet flushed deletes.  (Mike McCandless)
 
+* LUCENE-2879: MultiPhraseQuery previously calculated its phrase IDF by summing
+  internally, it now calls Similarity.idfExplain(Collection, IndexSearcher).
+  (Robert Muir)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
