@@ -846,7 +846,7 @@
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, create-package">
     <sequential>
-	  <ant target="get-maven-poms" inheritAll="false" dir=".."/>
+	  <ant target="get-maven-poms" dir=".."/>
 
       <!--
 
@@ -912,7 +912,7 @@
         </artifact-attachments>
       </m2-deploy>
 
-      <m2-deploy pom.xml="contrib/extraction/solr-uima-pom.xml.template"
+      <m2-deploy pom.xml="contrib/uima/pom.xml"
                  jar.file="${dist}/apache-solr-uima-${version}.jar">
         <artifact-attachments>
           <attach file="${dist}/apache-solr-uima-src-${version}.jar" classifier="sources"/>
