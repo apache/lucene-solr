@@ -62,14 +62,15 @@ public class CachingSpanFilter extends SpanFilter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-    SpanFilterResult result = getCachedResult(context.reader);
+    SpanFilterResult result = getCachedResult(context);
     return result != null ? result.getDocIdSet() : null;
   }
   
   // for testing
   int hitCount, missCount;
 
-  private SpanFilterResult getCachedResult(IndexReader reader) throws IOException {
+  private SpanFilterResult getCachedResult(AtomicReaderContext context) throws IOException {
+    final IndexReader reader = context.reader;
 
     final Object coreKey = reader.getCoreCacheKey();
     final Object delCoreKey = reader.hasDeletions() ? reader.getDeletedDocs() : coreKey;
@@ -81,7 +82,7 @@ public class CachingSpanFilter extends SpanFilter {
     }
 
     missCount++;
-    result = filter.bitSpans(reader);
+    result = filter.bitSpans(context);
 
     cache.put(coreKey, delCoreKey, result);
     return result;
@@ -89,8 +90,8 @@ public class CachingSpanFilter extends SpanFilter {
 
 
   @Override
-  public SpanFilterResult bitSpans(IndexReader reader) throws IOException {
-    return getCachedResult(reader);
+  public SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException {
+    return getCachedResult(context);
   }
 
   @Override

@@ -24,7 +24,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
@@ -254,7 +253,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     SpanQuery q  = new SpanOrQuery(q1, new FieldMaskingSpanQuery(q2, "gender"));
     check(q, new int[] { 0, 1, 2, 3, 4 });
   
-    Spans span = q.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+    Spans span = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     
     assertEquals(true, span.next());
     assertEquals(s(0,0,1), s(span));
@@ -295,8 +294,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     check(qA, new int[] { 0, 1, 2, 4 });
     check(qB, new int[] { 0, 1, 2, 4 });
   
-    Spans spanA = qA.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
-    Spans spanB = qB.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+    Spans spanA = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), qA);
+    Spans spanB = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), qB);
     
     while (spanA.next()) {
       assertTrue("spanB not still going", spanB.next());
@@ -316,7 +315,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
         new FieldMaskingSpanQuery(qB, "id") }, -1, false );
     check(q, new int[] { 0, 1, 2, 3 });
   
-    Spans span = q.getSpans(new SlowMultiReaderWrapper(searcher.getIndexReader()));
+    Spans span = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     
     assertEquals(true, span.next());
     assertEquals(s(0,0,1), s(span));

@@ -75,7 +75,7 @@ public class PayloadTermQuery extends SpanTermQuery {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new PayloadTermSpanScorer((TermSpans) query.getSpans(context.reader),
+      return new PayloadTermSpanScorer((TermSpans) query.getSpans(context),
           this, similarity, context.reader.norms(query.getField()));
     }
 

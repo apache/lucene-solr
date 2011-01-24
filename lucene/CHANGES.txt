@@ -127,6 +127,9 @@ Changes in backwards compatibility policy
   
 * LUCENE-2865: Weight#scorer(AtomicReaderContext, boolean, boolean) now accepts
   a ScorerContext struct instead of booleans.(Simon Willnauer)
+  
+* LUCENE-2882: Cut over SpanQuery#getSpans to AtomicReaderContext to enforce
+  per segment semantics on SpanQuery & Spans. (Simon Willnauer)
 
 Changes in Runtime Behavior
 

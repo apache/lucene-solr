@@ -27,6 +27,7 @@ import java.util.Set;
 
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ToStringUtils;
@@ -116,16 +117,16 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final IndexReader reader) throws IOException {
+  public Spans getSpans(final AtomicReaderContext context) throws IOException {
     if (clauses.size() == 0)                      // optimize 0-clause case
-      return new SpanOrQuery(getClauses()).getSpans(reader);
+      return new SpanOrQuery(getClauses()).getSpans(context);
 
     if (clauses.size() == 1)                      // optimize 1-clause case
-      return clauses.get(0).getSpans(reader);
+      return clauses.get(0).getSpans(context);
 
     return inOrder
-            ? (Spans) new NearSpansOrdered(this, reader, collectPayloads)
-            : (Spans) new NearSpansUnordered(this, reader);
+            ? (Spans) new NearSpansOrdered(this, context, collectPayloads)
+            : (Spans) new NearSpansUnordered(this, context);
   }
 
   @Override
