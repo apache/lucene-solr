@@ -212,6 +212,12 @@ public abstract class LuceneTestCase extends Assert {
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
+    // this code consumes randoms where 4.0's lucenetestcase would: to make seeds work across both branches.
+    // TODO: doesn't completely work, because what if we get mockrandom codec?!
+    if (random.nextInt(4) != 0) {
+      random.nextInt(); // consume RandomCodecProvider's seed.
+    }
+    // end compatibility random-consumption
     savedLocale = Locale.getDefault();
     locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
