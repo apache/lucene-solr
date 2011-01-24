@@ -218,6 +218,7 @@
           <packageset dir="contrib/dataimporthandler/src/main/java" />
           <packageset dir="contrib/clustering/src/main/java" />
           <packageset dir="contrib/extraction/src/main/java" />
+          <packageset dir="contrib/uima/src/main/java" />
           <packageset dir="contrib/analysis-extras/src/java" />
           <group title="Core" packages="org.apache.*" />
           <group title="Common" packages="org.apache.solr.common.*" />
@@ -225,6 +226,7 @@
           <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
           <group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />
           <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />
+          <group title="contrib: Solr UIMA" packages="org.apache.solr.uima*" />
         </sources>
       </invoke-javadoc>
     </sequential>
@@ -513,6 +515,7 @@
       <fileset dir="contrib/dataimporthandler/src/main/java" />
       <fileset dir="contrib/clustering/src/main/java" />
       <fileset dir="contrib/extraction/src/main/java" />
+      <fileset dir="contrib/uima/src/main/java" />
       <fileset dir="contrib/analysis-extras/src/java" />
     </clover-setup>
   </target>
@@ -616,6 +619,10 @@
               basedir="contrib/clustering/src" />
     <solr-jar destfile="${dist}/apache-solr-analysis-extras-src-${version}.jar"
               basedir="contrib/analysis-extras/src" />
+    <solr-jar destfile="${dist}/apache-solr-uima-src-${version}.jar"
+              basedir="contrib/uima/src/main/java" >
+       <fileset dir="contrib/uima/src/main/resources" />
+    </solr-jar>
   </target>
 
   <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
@@ -634,6 +641,8 @@
               basedir="${build.javadoc}/contrib-solr-cell" />
     <solr-jar destfile="${dist}/apache-solr-analysis-extras-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-analysis-extras" />
+    <solr-jar destfile="${dist}/apache-solr-uima-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-uima" />
   </target>
 
   <!-- Creates the solr jar. -->
@@ -730,7 +739,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lucene-libs/** lib/** src/** example/** client/** contrib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/**" />
+        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/** contrib/uima/lib/**" />
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
@@ -902,6 +911,14 @@
         </artifact-attachments>
       </m2-deploy>
 
+      <m2-deploy pom.xml="contrib/extraction/solr-uima-pom.xml.template"
+                 jar.file="${dist}/apache-solr-uima-${version}.jar">
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-uima-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-uima-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+
       <m2-deploy pom.xml="src/pom.xml"
                  jar.file="${dist}/apache-solr-core-${version}.jar">
         <artifact-attachments>
@@ -951,6 +968,8 @@
       <fileset dir="contrib/extraction/src/test/java"/>
       <fileset dir="contrib/analysis-extras/src/test"/>
       <fileset dir="contrib/analysis-extras/src/test"/>
+      <fileset dir="contrib/uima/src/main/java"/>
+      <fileset dir="contrib/uima/src/test/java"/>
     </rat:report>
   </target>
 
