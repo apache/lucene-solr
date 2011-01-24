@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
@@ -91,8 +92,8 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   // ...this is done to be more consistent with things like SpanFirstQuery
   
   @Override
-  public Spans getSpans(IndexReader reader) throws IOException {
-    return maskedQuery.getSpans(reader);
+  public Spans getSpans(AtomicReaderContext context) throws IOException {
+    return maskedQuery.getSpans(context);
   }
 
   @Override

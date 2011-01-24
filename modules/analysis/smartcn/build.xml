@@ -25,7 +25,6 @@
 	
   <property name="build.dir" location="../build/smartcn" />
   <property name="dist.dir" location="../dist/smartcn" />
-  <property name="maven.dist.dir" location="../dist/maven" />
 
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 

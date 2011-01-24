@@ -37,8 +37,10 @@ import java.io.Reader;
  * Class responsible for access to stored document fields.
  * <p/>
  * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
+ * 
+ * @lucene.internal
  */
-final class FieldsReader implements Cloneable {
+public final class FieldsReader implements Cloneable {
   private final static int FORMAT_SIZE = 4;
 
   private final FieldInfos fieldInfos;
@@ -74,6 +76,23 @@ final class FieldsReader implements Cloneable {
     ensureOpen();
     return new FieldsReader(fieldInfos, numTotalDocs, size, format, docStoreOffset, cloneableFieldsStream, cloneableIndexStream);
   }
+
+  /** Verifies that the code version which wrote the segment is supported. */
+  public static void checkCodeVersion(Directory dir, String segment) throws IOException {
+    final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+    IndexInput idxStream = dir.openInput(indexStreamFN, 1024);
+    
+    try {
+      int format = idxStream.readInt();
+      if (format < FieldsWriter.FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(indexStreamFN, format, FieldsWriter.FORMAT_MINIMUM, FieldsWriter.FORMAT_CURRENT);
+      if (format > FieldsWriter.FORMAT_CURRENT)
+        throw new IndexFormatTooNewException(indexStreamFN, format, FieldsWriter.FORMAT_MINIMUM, FieldsWriter.FORMAT_CURRENT);
+    } finally {
+      idxStream.close();
+    }
+  
+  }
   
   // Used only by clone
   private FieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, int format, int docStoreOffset,
@@ -89,11 +108,11 @@ final class FieldsReader implements Cloneable {
     indexStream = (IndexInput) cloneableIndexStream.clone();
   }
   
-  FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
+  public FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
     this(d, segment, fn, BufferedIndexInput.BUFFER_SIZE, -1, 0);
   }
 
-  FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize, int docStoreOffset, int size) throws IOException {
+  public FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize, int docStoreOffset, int size) throws IOException {
     boolean success = false;
     isOriginal = true;
     try {
@@ -157,7 +176,7 @@ final class FieldsReader implements Cloneable {
    *
    * @throws IOException
    */
-  final void close() throws IOException {
+  public final void close() throws IOException {
     if (!closed) {
       if (fieldsStream != null) {
         fieldsStream.close();
@@ -178,7 +197,7 @@ final class FieldsReader implements Cloneable {
     }
   }
 
-  final int size() {
+  public final int size() {
     return size;
   }
 
@@ -186,7 +205,7 @@ final class FieldsReader implements Cloneable {
     indexStream.seek(FORMAT_SIZE + (docID + docStoreOffset) * 8L);
   }
 
-  final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+  public final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     seekIndex(n);
     long position = indexStream.readLong();
     fieldsStream.seek(position);
@@ -237,7 +256,7 @@ final class FieldsReader implements Cloneable {
    *  contiguous range of length numDocs starting with
    *  startDocID.  Returns the IndexInput (the fieldStream),
    *  already seeked to the starting point for startDocID.*/
-  final IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException {
+  public final IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException {
     seekIndex(startDocID);
     long startOffset = indexStream.readLong();
     long lastOffset = startOffset;

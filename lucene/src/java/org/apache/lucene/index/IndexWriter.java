@@ -270,6 +270,9 @@ public class IndexWriter implements Closeable {
   // The PayloadProcessorProvider to use when segments are merged
   private PayloadProcessorProvider payloadProcessorProvider;
 
+  // for testing
+  boolean anyNonBulkMerges;
+
   /**
    * Expert: returns a readonly reader, covering all
    * committed as well as un-committed changes to the index.
@@ -330,8 +333,9 @@ public class IndexWriter implements Closeable {
    * @throws IOException
    */
   IndexReader getReader() throws IOException {
-
     ensureOpen();
+
+    final long tStart = System.currentTimeMillis();
 
     if (infoStream != null) {
       message("flush at getReader");
@@ -355,6 +359,9 @@ public class IndexWriter implements Closeable {
     }
     maybeMerge();
 
+    if (infoStream != null) {
+      message("getReader took " + (System.currentTimeMillis() - tStart) + " msec");
+    }
     return r;
   }
 
@@ -605,8 +612,6 @@ public class IndexWriter implements Closeable {
     }
   }
 
-
-
   /**
    * Obtain the number of deleted docs for a pooled reader.
    * If the reader isn't being pooled, the segmentInfo's
@@ -718,11 +723,8 @@ public class IndexWriter implements Closeable {
 
     boolean success = false;
 
-    // TODO: we should check whether this index is too old,
-    // and throw an IndexFormatTooOldExc up front, here,
-    // instead of later when merge, applyDeletes, getReader
-    // is attempted.  I think to do this we should store the
-    // oldest segment's version in segments_N.
+    // If index is too old, reading the segments will throw
+    // IndexFormatTooOldException.
     segmentInfos = new SegmentInfos(codecs);
     try {
       if (create) {
@@ -1049,8 +1051,9 @@ public class IndexWriter implements Closeable {
   private void closeInternal(boolean waitForMerges) throws CorruptIndexException, IOException {
 
     try {
-      if (infoStream != null)
-        message("now flush at close");
+      if (infoStream != null) {
+        message("now flush at close waitForMerges=" + waitForMerges);
+      }
 
       docWriter.close();
 
@@ -2010,12 +2013,19 @@ public class IndexWriter implements Closeable {
    *    will have completed once this method completes.</p>
    */
   public synchronized void waitForMerges() {
+    if (infoStream != null) {
+      message("waitForMerges");
+    }
     while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
       doWait();
     }
 
     // sanity check
     assert 0 == mergingSegments.size();
+
+    if (infoStream != null) {
+      message("waitForMerges done");
+    }
   }
 
   /**
@@ -3143,6 +3153,7 @@ public class IndexWriter implements Closeable {
         message("merge segmentCodecs=" + merger.getSegmentCodecs());
         message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + numSegments);
       }
+      anyNonBulkMerges |= merger.getMatchedSubReaderCount() != numSegments;
 
       assert mergedDocCount == totDocCount;
 

@@ -30,7 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 
@@ -109,7 +109,7 @@ final class DocumentsWriter {
   private volatile boolean closed;
 
   PrintStream infoStream;
-  Similarity similarity;
+  SimilarityProvider similarityProvider;
 
   List<String> newFiles;
 
@@ -137,7 +137,7 @@ final class DocumentsWriter {
   DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain chain, DocumentsWriterPerThreadPool indexerThreadPool, FieldInfos fieldInfos, BufferedDeletes bufferedDeletes) throws IOException {
     this.directory = directory;
     this.indexWriter = writer;
-    this.similarity = writer.getConfig().getSimilarity();
+    this.similarityProvider = writer.getConfig().getSimilarityProvider();
     this.fieldInfos = fieldInfos;
     this.bufferedDeletes = bufferedDeletes;
     this.perThreadPool = indexerThreadPool;
@@ -243,8 +243,8 @@ final class DocumentsWriter {
     pushConfigChange();
   }
 
-  synchronized void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
+  synchronized void setSimilarityProvider(SimilarityProvider similarityProvider) {
+    this.similarityProvider = similarityProvider;
     pushConfigChange();
   }
 
@@ -253,7 +253,7 @@ final class DocumentsWriter {
     while (it.hasNext()) {
       DocumentsWriterPerThread perThread = it.next().perThread;
       perThread.docState.infoStream = this.infoStream;
-      perThread.docState.similarity = this.similarity;
+      perThread.docState.similarityProvider = this.similarityProvider;
     }
   }
 

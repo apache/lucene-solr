@@ -41,7 +41,7 @@ public class IDFValueSource extends DocFreqValueSource {
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    Similarity sim = searcher.getSimilarity();
+    Similarity sim = searcher.getSimilarityProvider().get(field);
     // todo: we need docFreq that takes a BytesRef
     String strVal = ByteUtils.UTF8toUTF16(indexedBytes);
     int docfreq = searcher.docFreq(new Term(indexedField, strVal));

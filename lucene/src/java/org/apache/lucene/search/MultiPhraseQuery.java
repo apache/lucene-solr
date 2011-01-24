@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
@@ -131,21 +132,24 @@ public class MultiPhraseQuery extends Query {
   private class MultiPhraseWeight extends Weight {
     private Similarity similarity;
     private float value;
+    private final IDFExplanation idfExp;
     private float idf;
     private float queryNorm;
     private float queryWeight;
 
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
-      this.similarity = searcher.getSimilarity();
+      this.similarity = searcher.getSimilarityProvider().get(field);
 
       // compute idf
-      final int maxDoc = searcher.maxDoc();
+      ArrayList<Term> allTerms = new ArrayList<Term>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          idf += this.similarity.idf(searcher.docFreq(term), maxDoc);
+          allTerms.add(term);
         }
       }
+      idfExp = similarity.idfExplain(allTerms, searcher);
+      idf = idfExp.getIdf();
     }
 
     @Override
@@ -238,7 +242,7 @@ public class MultiPhraseQuery extends Query {
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
-      Explanation idfExpl = new Explanation(idf, "idf("+getQuery()+")");
+      Explanation idfExpl = new Explanation(idf, "idf(" + field + ":" + idfExp.explain() +")");
 
       // explain query weight
       Explanation queryExpl = new Explanation();

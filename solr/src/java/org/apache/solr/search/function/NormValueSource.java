@@ -46,7 +46,7 @@ public class NormValueSource extends ValueSource {
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    final Similarity similarity = searcher.getSimilarity();
+    final Similarity similarity = searcher.getSimilarityProvider().get(field);
     final byte[] norms = readerContext.reader.norms(field);
     if (norms == null) {
       return new ConstDoubleDocValues(0.0, this);

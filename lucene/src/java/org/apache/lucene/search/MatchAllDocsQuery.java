@@ -98,7 +98,7 @@ public class MatchAllDocsQuery extends Query {
     private float queryNorm;
 
     public MatchAllDocsWeight(IndexSearcher searcher) {
-      this.similarity = searcher.getSimilarity();
+      this.similarity = normsField == null ? null : searcher.getSimilarityProvider().get(normsField);
     }
 
     @Override

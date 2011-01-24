@@ -70,6 +70,9 @@ public final class Constants {
     return s.toString();
   }
   
+  // NOTE: we track per-segment version as a String with the "X.Y" format, e.g.
+  // "4.0", "3.1", "3.0". Therefore when we change this constant, we should keep
+  // the format.
   public static final String LUCENE_MAIN_VERSION = ident("4.0");
 
   public static final String LUCENE_VERSION;

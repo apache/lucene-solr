@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -87,7 +87,7 @@ public class DocumentsWriterPerThread {
     final DocumentsWriterPerThread docWriter;
     Analyzer analyzer;
     PrintStream infoStream;
-    Similarity similarity;
+    SimilarityProvider similarityProvider;
     int docID;
     Document doc;
     String maxTermPrefix;
@@ -156,7 +156,7 @@ public class DocumentsWriterPerThread {
     this.fieldInfos = new FieldInfos();
     this.infoStream = parent.indexWriter.getInfoStream();
     this.docState = new DocState(this);
-    this.docState.similarity = parent.indexWriter.getConfig().getSimilarity();
+    this.docState.similarityProvider = parent.indexWriter.getConfig().getSimilarityProvider();
 
     consumer = indexingChain.getChain(this);
     if (consumer instanceof DocFieldProcessor) {

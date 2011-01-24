@@ -21,7 +21,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.util.Version;
 
 /**
@@ -111,7 +112,7 @@ public final class IndexWriterConfig implements Cloneable {
   private IndexDeletionPolicy delPolicy;
   private IndexCommit commit;
   private OpenMode openMode;
-  private Similarity similarity;
+  private SimilarityProvider similarityProvider;
   private int termIndexInterval; // TODO: this should be private to the codec, not settable here
   private MergeScheduler mergeScheduler;
   private long writeLockTimeout;
@@ -142,7 +143,7 @@ public final class IndexWriterConfig implements Cloneable {
     delPolicy = new KeepOnlyLastCommitDeletionPolicy();
     commit = null;
     openMode = OpenMode.CREATE_OR_APPEND;
-    similarity = Similarity.getDefault();
+    similarityProvider = IndexSearcher.getDefaultSimilarityProvider();
     termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL; // TODO: this should be private to the codec, not settable here
     mergeScheduler = new ConcurrentMergeScheduler();
     writeLockTimeout = WRITE_LOCK_TIMEOUT;
@@ -234,25 +235,22 @@ public final class IndexWriterConfig implements Cloneable {
   }
 
   /**
-   * Expert: set the {@link Similarity} implementation used by this IndexWriter.
+   * Expert: set the {@link SimilarityProvider} implementation used by this IndexWriter.
    * <p>
-   * <b>NOTE:</b> the similarity cannot be null. If <code>null</code> is passed,
-   * the similarity will be set to the default.
-   *
-   * @see Similarity#setDefault(Similarity)
+   * <b>NOTE:</b> the similarity provider cannot be null. If <code>null</code> is passed,
+   * the similarity provider will be set to the default implementation (unspecified).
    */
-  public IndexWriterConfig setSimilarity(Similarity similarity) {
-    this.similarity = similarity == null ? Similarity.getDefault() : similarity;
+  public IndexWriterConfig setSimilarityProvider(SimilarityProvider similarityProvider) {
+    this.similarityProvider = similarityProvider == null ? IndexSearcher.getDefaultSimilarityProvider() : similarityProvider;
     return this;
   }
 
   /**
-   * Expert: returns the {@link Similarity} implementation used by this
-   * IndexWriter. This defaults to the current value of
-   * {@link Similarity#getDefault()}.
+   * Expert: returns the {@link SimilarityProvider} implementation used by this
+   * IndexWriter.
    */
-  public Similarity getSimilarity() {
-    return similarity;
+  public SimilarityProvider getSimilarityProvider() {
+    return similarityProvider;
   }
 
   /**
@@ -580,7 +578,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
     sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
     sb.append("openMode=").append(openMode).append("\n");
-    sb.append("similarity=").append(similarity.getClass().getName()).append("\n");
+    sb.append("similarityProvider=").append(similarityProvider.getClass().getName()).append("\n");
     sb.append("termIndexInterval=").append(termIndexInterval).append("\n"); // TODO: this should be private to the codec, not settable here
     sb.append("mergeScheduler=").append(mergeScheduler.getClass().getName()).append("\n");
     sb.append("default WRITE_LOCK_TIMEOUT=").append(WRITE_LOCK_TIMEOUT).append("\n");

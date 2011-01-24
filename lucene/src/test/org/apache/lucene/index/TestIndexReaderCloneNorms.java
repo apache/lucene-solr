@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -50,7 +51,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private static final int NUM_FIELDS = 10;
 
-  private Similarity similarityOne;
+  private SimilarityProvider similarityOne;
 
   private Analyzer anlzr;
 
@@ -203,19 +204,20 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader4C = (IndexReader) reader3C.clone();
     SegmentReader segmentReader4C = getOnlySegmentReader(reader4C);
     assertEquals(4, reader3CCNorm.bytesRef().get());
-    reader4C.setNorm(5, "field1", Similarity.getDefault().encodeNormValue(0.33f));
+    Similarity sim = new DefaultSimilarity().get("field1");
+    reader4C.setNorm(5, "field1", sim.encodeNormValue(0.33f));
     
     // generate a cannot update exception in reader1
     try {
-      reader3C.setNorm(1, "field1", Similarity.getDefault().encodeNormValue(0.99f));
+      reader3C.setNorm(1, "field1", sim.encodeNormValue(0.99f));
       fail("did not hit expected exception");
     } catch (Exception ex) {
       // expected
     }
     
     // norm values should be different 
-    assertTrue(Similarity.getDefault().decodeNormValue(segmentReader3C.norms("field1")[5]) 
-    		!= Similarity.getDefault().decodeNormValue(segmentReader4C.norms("field1")[5]));
+    assertTrue(sim.decodeNormValue(segmentReader3C.norms("field1")[5]) 
+    		!= sim.decodeNormValue(segmentReader4C.norms("field1")[5]));
     Norm reader4CCNorm = segmentReader4C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().get());
     assertEquals(1, reader4CCNorm.bytesRef().get());
@@ -223,7 +225,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader5C = (IndexReader) reader4C.clone();
     SegmentReader segmentReader5C = getOnlySegmentReader(reader5C);
     Norm reader5CCNorm = segmentReader5C.norms.get("field1");
-    reader5C.setNorm(5, "field1", Similarity.getDefault().encodeNormValue(0.7f));
+    reader5C.setNorm(5, "field1", sim.encodeNormValue(0.7f));
     assertEquals(1, reader5CCNorm.bytesRef().get());
 
     reader5C.close();
@@ -237,7 +239,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne));
+        .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
@@ -256,8 +258,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       // System.out.println(" and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));
       modifiedNorms.set(k, Float.valueOf(origNorm));
-      ir.setNorm(i, "f" + 1, Similarity.getDefault().encodeNormValue(newNorm));
-      ir.setNorm(k, "f" + 1, Similarity.getDefault().encodeNormValue(origNorm));
+      Similarity sim = new DefaultSimilarity().get("f" + 1);
+      ir.setNorm(i, "f" + 1, sim.encodeNormValue(newNorm));
+      ir.setNorm(k, "f" + 1, sim.encodeNormValue(origNorm));
       // System.out.println("setNorm i: "+i);
       // break;
     }
@@ -277,7 +280,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       assertEquals("number of norms mismatches", numDocNorms, b.length);
       ArrayList<Float> storedNorms = (i == 1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {
-        float norm = Similarity.getDefault().decodeNormValue(b[j]);
+        Similarity sim = new DefaultSimilarity().get(field);
+        float norm = sim.decodeNormValue(b[j]);
         float norm1 =  storedNorms.get(j).floatValue();
         assertEquals("stored norm value of " + field + " for doc " + j + " is "
             + norm + " - a mismatch!", norm, norm1, 0.000001);
@@ -289,7 +293,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       throws IOException {
     IndexWriterConfig conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-            .setMaxBufferedDocs(5).setSimilarity(similarityOne);
+            .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne);
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
@@ -303,7 +307,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   // create the next document
   private Document newDoc() {
     Document d = new Document();
-    float boost = nextNorm();
+    float boost = nextNorm("anyfield"); // in this test the same similarity is used for all fields so it does not matter what field is passed
     for (int i = 0; i < 10; i++) {
       Field f = newField("f" + i, "v" + i, Store.NO, Index.NOT_ANALYZED);
       f.setBoost(boost);
@@ -313,11 +317,12 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
 
   // return unique norm values that are unchanged by encoding/decoding
-  private float nextNorm() {
+  private float nextNorm(String fname) {
     float norm = lastNorm + normDelta;
+    Similarity sim = new DefaultSimilarity().get(fname);
     do {
-      float norm1 = Similarity.getDefault().decodeNormValue(
-    		  Similarity.getDefault().encodeNormValue(norm));
+      float norm1 = sim.decodeNormValue(
+    		  sim.encodeNormValue(norm));
       if (norm1 > lastNorm) {
         // System.out.println(norm1+" > "+lastNorm);
         norm = norm1;

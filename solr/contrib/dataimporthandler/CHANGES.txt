@@ -78,6 +78,8 @@ Bug Fixes
 * SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
   (koji)
 
+* SOLR-2330: solrconfig.xml files in example-DIH are broken. (Matt Parker, koji)
+
 Other Changes
 ----------------------
 

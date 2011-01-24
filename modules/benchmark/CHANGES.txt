@@ -2,6 +2,10 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+01/24/2011
+  LUCENE-2885: Add WaitForMerges task (calls IndexWriter.waitForMerges()).
+  (Mike McCandless)
+
 10/10/2010
   The locally built patched version of the Xerces-J jar introduced
   as part of LUCENE-1591 is no longer required, because Xerces

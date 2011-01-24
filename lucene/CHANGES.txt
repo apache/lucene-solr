@@ -127,6 +127,12 @@ Changes in backwards compatibility policy
   
 * LUCENE-2865: Weight#scorer(AtomicReaderContext, boolean, boolean) now accepts
   a ScorerContext struct instead of booleans.(Simon Willnauer)
+  
+* LUCENE-2882: Cut over SpanQuery#getSpans to AtomicReaderContext to enforce
+  per segment semantics on SpanQuery & Spans. (Simon Willnauer)
+
+* LUCENE-2236: Similarity can now be configured on a per-field basis. See the
+  migration notes in MIGRATE.txt for more details.  (Robert Muir, Doron Cohen)
 
 Changes in Runtime Behavior
 
@@ -140,6 +146,9 @@ Changes in Runtime Behavior
   documents that don't have the field get a norm byte value of 0. Previously, Lucene
   would populate "fake norms" with Similarity.getDefault() for these documents.
   (Robert Muir, Mike Mccandless)
+  
+* LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
+  than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
 
 API Changes
 
@@ -672,6 +681,19 @@ Bug fixes
 
 * LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
   decides whether to return the cached computed size or not. (Shai Erera)
+
+* LUCENE-2584: SegmentInfo.files() could hit ConcurrentModificationException if
+  called by multiple threads. (Alexander Kanarsky via Shai Erera)
+
+* LUCENE-2809: Fixed IndexWriter.numDocs to take into account
+  applied but not yet flushed deletes.  (Mike McCandless)
+
+* LUCENE-2879: MultiPhraseQuery previously calculated its phrase IDF by summing
+  internally, it now calls Similarity.idfExplain(Collection, IndexSearcher).
+  (Robert Muir)
+
+* LUCENE-2693: RAM used by IndexWriter was slightly incorrectly computed. 
+  (Jason Rutherglen via Shai Erera)
 
 New features
 

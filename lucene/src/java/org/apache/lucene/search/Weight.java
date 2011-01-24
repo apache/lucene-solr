@@ -44,7 +44,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
  * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher)}).
  * <li>The {@link #sumOfSquaredWeights()} method is called on the
  * <code>Weight</code> to compute the query normalization factor
- * {@link Similarity#queryNorm(float)} of the query clauses contained in the
+ * {@link SimilarityProvider#queryNorm(float)} of the query clauses contained in the
  * query.
  * <li>The query normalization factor is passed to {@link #normalize(float)}. At
  * this point the weighting is complete.

@@ -39,13 +39,11 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
  */
 public class TestSimilarity extends LuceneTestCase {
   
-  public static class SimpleSimilarity extends Similarity {
+  public static class SimpleSimilarity extends Similarity implements SimilarityProvider {
     @Override public float computeNorm(String field, FieldInvertState state) { return state.getBoost(); }
-    @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-    @Override public float coord(int overlap, int maxOverlap) { return 1.0f; }
     @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
       return new IDFExplanation() {
         @Override
@@ -58,13 +56,18 @@ public class TestSimilarity extends LuceneTestCase {
         }
       };
     }
+    public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
+    public float coord(int overlap, int maxOverlap) { return 1.0f; }
+    public Similarity get(String field) {
+      return this;
+    }
   }
 
   public void testSimilarity() throws Exception {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, 
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setSimilarity(new SimpleSimilarity()));
+        .setSimilarityProvider(new SimpleSimilarity()));
     
     Document d1 = new Document();
     d1.add(newField("field", "a c", Field.Store.YES, Field.Index.ANALYZED));
@@ -78,7 +81,7 @@ public class TestSimilarity extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(new SimpleSimilarity());
+    searcher.setSimilarityProvider(new SimpleSimilarity());
 
     Term a = new Term("field", "a");
     Term b = new Term("field", "b");

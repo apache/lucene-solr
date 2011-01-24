@@ -56,6 +56,7 @@ public abstract class TermsConsumer {
     BytesRef term;
     assert termsEnum != null;
     long sumTotalTermFreq = 0;
+    long sumDF = 0;
 
     if (mergeState.fieldInfo.omitTermFreqAndPositions) {
       if (docsEnum == null) {
@@ -73,6 +74,11 @@ public abstract class TermsConsumer {
           final TermStats stats = postingsConsumer.merge(mergeState, docsEnum);
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
+            sumDF += stats.docFreq;
+            if (sumDF > 60000) {
+              mergeState.checkAbort.work(sumDF/5.0);
+              sumDF = 0;
+            }
           }
         }
       }
@@ -99,6 +105,11 @@ public abstract class TermsConsumer {
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
             sumTotalTermFreq += stats.totalTermFreq;
+            sumDF += stats.docFreq;
+            if (sumDF > 60000) {
+              mergeState.checkAbort.work(sumDF/5.0);
+              sumDF = 0;
+            }
           }
         }
       }

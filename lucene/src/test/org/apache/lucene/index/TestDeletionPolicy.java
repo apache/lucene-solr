@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -608,7 +607,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3*i+1);
-        reader.setNorm(4*i+1, "content", Similarity.getDefault().encodeNormValue(2.0F));
+        reader.setNorm(4*i+1, "content", conf.getSimilarityProvider().get("content").encodeNormValue(2.0F));
         IndexSearcher searcher = new IndexSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16*(1+i), hits.length);
@@ -716,7 +715,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3);
-        reader.setNorm(5, "content", Similarity.getDefault().encodeNormValue(2.0F));
+        reader.setNorm(5, "content", conf.getSimilarityProvider().get("content").encodeNormValue(2.0F));
         IndexSearcher searcher = new IndexSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16, hits.length);

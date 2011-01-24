@@ -172,6 +172,8 @@ public abstract class MultiLevelSkipListReader {
   public void init(long skipPointer, int df) {
     this.skipPointer[0] = skipPointer;
     this.docCount = df;
+    assert skipPointer >= 0 && skipPointer <= skipStream[0].length() 
+    : "invalid skip pointer: " + skipPointer + ", length=" + skipStream[0].length();
     Arrays.fill(skipDoc, 0);
     Arrays.fill(numSkipped, 0);
     Arrays.fill(childPointer, 0);

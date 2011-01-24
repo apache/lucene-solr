@@ -33,6 +33,7 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/swing/swing.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/wordnet/wordnet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/xml-query-parser/xml-query-parser.iml" />
+      <module filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
     </modules>
   </component>
 </project>

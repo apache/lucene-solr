@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ToStringUtils;
@@ -162,9 +163,9 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final IndexReader reader) throws IOException {
+  public Spans getSpans(final AtomicReaderContext context) throws IOException {
     if (clauses.size() == 1)                      // optimize 1-clause case
-      return (clauses.get(0)).getSpans(reader);
+      return (clauses.get(0)).getSpans(context);
 
     return new Spans() {
         private SpanQueue queue = null;
@@ -173,7 +174,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
           queue = new SpanQueue(clauses.size());
           Iterator<SpanQuery> i = clauses.iterator();
           while (i.hasNext()) {
-            Spans spans = i.next().getSpans(reader);
+            Spans spans = i.next().getSpans(context);
             if (   ((target == -1) && spans.next())
                 || ((target != -1) && spans.skipTo(target))) {
               queue.add(spans);

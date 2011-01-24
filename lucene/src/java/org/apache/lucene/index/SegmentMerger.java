@@ -59,7 +59,7 @@ final class SegmentMerger {
 
   private int mergedDocs;
 
-  private final CheckAbort checkAbort;
+  private final MergeState.CheckAbort checkAbort;
 
   /** Maximum number of contiguous documents to bulk-copy
       when merging stored fields */
@@ -78,9 +78,9 @@ final class SegmentMerger {
     this.fieldInfos = fieldInfos;
     segment = name;
     if (merge != null) {
-      checkAbort = new CheckAbort(merge, directory);
+      checkAbort = new MergeState.CheckAbort(merge, directory);
     } else {
-      checkAbort = new CheckAbort(null, null) {
+      checkAbort = new MergeState.CheckAbort(null, null) {
         @Override
         public void work(double units) throws MergeAbortedException {
           // do nothing
@@ -508,6 +508,7 @@ final class SegmentMerger {
     mergeState.hasPayloadProcessorProvider = payloadProcessorProvider != null;
     mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[mergeState.readerCount];
     mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[mergeState.readerCount];
+    mergeState.checkAbort = checkAbort;
 
     docBase = 0;
     int inputDocBase = 0;
@@ -612,31 +613,4 @@ final class SegmentMerger {
       }
     }
   }
-
-  static class CheckAbort {
-    private double workCount;
-    private MergePolicy.OneMerge merge;
-    private Directory dir;
-    public CheckAbort(MergePolicy.OneMerge merge, Directory dir) {
-      this.merge = merge;
-      this.dir = dir;
-    }
-
-    /**
-     * Records the fact that roughly units amount of work
-     * have been done since this method was last called.
-     * When adding time-consuming code into SegmentMerger,
-     * you should test different values for units to ensure
-     * that the time in between calls to merge.checkAborted
-     * is up to ~ 1 second.
-     */
-    public void work(double units) throws MergePolicy.MergeAbortedException {
-      workCount += units;
-      if (workCount >= 10000.0) {
-        merge.checkAborted(dir);
-        workCount = 0;
-      }
-    }
-  }
-
 }

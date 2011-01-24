@@ -35,9 +35,11 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -615,8 +617,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     IndexReader reader2 = reader1.reopen();
     modifier = IndexReader.open(dir1, false);
-    modifier.setNorm(1, "field1", Similarity.getDefault().encodeNormValue(50f));
-    modifier.setNorm(1, "field2", Similarity.getDefault().encodeNormValue(50f));
+    SimilarityProvider sim = new DefaultSimilarity();
+    modifier.setNorm(1, "field1", sim.get("field1").encodeNormValue(50f));
+    modifier.setNorm(1, "field2", sim.get("field2").encodeNormValue(50f));
     modifier.close();
     
     IndexReader reader3 = reader2.reopen();
@@ -709,7 +712,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       protected void modifyIndex(int i) throws IOException {
         if (i % 3 == 0) {
           IndexReader modifier = IndexReader.open(dir, false);
-          modifier.setNorm(i, "field1", Similarity.getDefault().encodeNormValue(50f));
+          Similarity sim = new DefaultSimilarity().get("field1");
+          modifier.setNorm(i, "field1", sim.encodeNormValue(50f));
           modifier.close();
         } else if (i % 3 == 1) {
           IndexReader modifier = IndexReader.open(dir, false);
@@ -989,9 +993,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       case 1: {
         IndexReader reader = IndexReader.open(dir, false);
-        reader.setNorm(4, "field1", Similarity.getDefault().encodeNormValue(123f));
-        reader.setNorm(44, "field2", Similarity.getDefault().encodeNormValue(222f));
-        reader.setNorm(44, "field4", Similarity.getDefault().encodeNormValue(22f));
+        SimilarityProvider sim = new DefaultSimilarity();
+        reader.setNorm(4, "field1", sim.get("field1").encodeNormValue(123f));
+        reader.setNorm(44, "field2", sim.get("field2").encodeNormValue(222f));
+        reader.setNorm(44, "field4", sim.get("field4").encodeNormValue(22f));
         reader.close();
         break;
       }
@@ -1012,8 +1017,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       case 4: {
         IndexReader reader = IndexReader.open(dir, false);
-        reader.setNorm(5, "field1", Similarity.getDefault().encodeNormValue(123f));
-        reader.setNorm(55, "field2", Similarity.getDefault().encodeNormValue(222f));
+        SimilarityProvider sim = new DefaultSimilarity();
+        reader.setNorm(5, "field1", sim.get("field1").encodeNormValue(123f));
+        reader.setNorm(55, "field2", sim.get("field2").encodeNormValue(222f));
         reader.close();
         break;
       }

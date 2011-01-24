@@ -158,7 +158,7 @@ public class QueryUtils {
           0 < edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true))
     };
     IndexSearcher out = new IndexSearcher(new MultiReader(readers));
-    out.setSimilarity(s.getSimilarity());
+    out.setSimilarityProvider(s.getSimilarityProvider());
     return out;
   }
 

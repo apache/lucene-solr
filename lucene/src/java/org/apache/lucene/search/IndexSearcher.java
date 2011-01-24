@@ -70,8 +70,22 @@ public class IndexSearcher {
   private final ExecutorService executor;
   protected final IndexSearcher[] subSearchers;
 
-  /** The Similarity implementation used by this searcher. */
-  private Similarity similarity = Similarity.getDefault();
+  // the default SimilarityProvider
+  private static final SimilarityProvider defaultProvider = new DefaultSimilarity();
+  
+  /**
+   * Expert: returns a default SimilarityProvider instance.
+   * In general, this method is only called to initialize searchers and writers.
+   * User code and query implementations should respect
+   * {@link IndexSearcher#getSimilarityProvider()}.
+   * @lucene.internal
+   */
+  public static SimilarityProvider getDefaultSimilarityProvider() {
+    return defaultProvider;
+  }
+  
+  /** The SimilarityProvider implementation used by this searcher. */
+  private SimilarityProvider similarityProvider = defaultProvider;
 
   /** Creates a searcher searching the index in the named
    *  directory, with readOnly=true
@@ -248,16 +262,15 @@ public class IndexSearcher {
     return reader.document(docID, fieldSelector);
   }
   
-  /** Expert: Set the Similarity implementation used by this Searcher.
+  /** Expert: Set the SimilarityProvider implementation used by this Searcher.
    *
-   * @see Similarity#setDefault(Similarity)
    */
-  public void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
+  public void setSimilarityProvider(SimilarityProvider similarityProvider) {
+    this.similarityProvider = similarityProvider;
   }
 
-  public Similarity getSimilarity() {
-    return similarity;
+  public SimilarityProvider getSimilarityProvider() {
+    return similarityProvider;
   }
 
   /**

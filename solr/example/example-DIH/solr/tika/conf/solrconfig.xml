@@ -17,14 +17,14 @@
 -->
 
 <config>
-  <!-- Set this to 'false' if you want solr to continue working after it has 
-       encountered an severe configuration error.  In a production environment, 
-       you may want solr to keep working even if one handler is mis-configured.
-
-       You may also set this to false using by setting the system property:
-         -Dsolr.abortOnConfigurationError=false
-     -->
-  <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
+  
+  <!--
+    Controls what version of Lucene various components of Solr adhere to. Generally, you want
+    to use the latest version to get all bug fixes and improvements. It is highly recommended 
+    that you fully re-index after changing this setting as it can affect both how text is indexed
+    and queried.
+  -->
+  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
 
   <lib dir="../../../../contrib/extraction/lib" />
   <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-extras-\d.*\.jar" />

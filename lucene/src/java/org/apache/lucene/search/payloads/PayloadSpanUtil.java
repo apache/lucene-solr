@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -38,6 +40,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.ReaderUtil;
 
 /**
  * Experimental class to get set of payloads for most standard Lucene queries.
@@ -48,14 +51,16 @@ import org.apache.lucene.search.spans.Spans;
  * 
  */
 public class PayloadSpanUtil {
-  private IndexReader reader;
+  private ReaderContext context;
 
   /**
-   * @param reader
+   * @param context
    *          that contains doc with payloads to extract
+   *          
+   * @see IndexReader#getTopReaderContext()
    */
-  public PayloadSpanUtil(IndexReader reader) {
-    this.reader = reader;
+  public PayloadSpanUtil(ReaderContext context) {
+    this.context = context;
   }
 
   /**
@@ -169,15 +174,16 @@ public class PayloadSpanUtil {
 
   private void getPayloads(Collection<byte []> payloads, SpanQuery query)
       throws IOException {
-    Spans spans = query.getSpans(reader);
-
-    while (spans.next() == true) {
-      if (spans.isPayloadAvailable()) {
-        Collection<byte[]> payload = spans.getPayload();
-        for (byte [] bytes : payload) {
-          payloads.add(bytes);
+    final AtomicReaderContext[] leaves = ReaderUtil.leaves(context);
+    for (AtomicReaderContext atomicReaderContext : leaves) {
+      final Spans spans = query.getSpans(atomicReaderContext);
+      while (spans.next() == true) {
+        if (spans.isPayloadAvailable()) {
+          Collection<byte[]> payload = spans.getPayload();
+          for (byte [] bytes : payload) {
+            payloads.add(bytes);
+          }
         }
-
       }
     }
   }
