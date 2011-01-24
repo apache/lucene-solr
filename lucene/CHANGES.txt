@@ -689,6 +689,9 @@ Bug fixes
   internally, it now calls Similarity.idfExplain(Collection, IndexSearcher).
   (Robert Muir)
 
+* LUCENE-2693: RAM used by IndexWriter was slightly incorrectly computed. 
+  (Jason Rutherglen via Shai Erera)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
