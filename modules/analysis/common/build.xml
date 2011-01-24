@@ -25,7 +25,6 @@
 	
   <property name="build.dir" location="../build/common" />
   <property name="dist.dir" location="../dist/common" />
-  <property name="maven.dist.dir" location="../dist/maven" />
 
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 	

@@ -1,0 +1,17 @@
+Apache Solr UIMA Metadata Extraction Library
+                            Release Notes
+
+This file describes changes to the Solr UIMA (contrib/uima) module. See SOLR-2129 for details.
+
+Introduction
+------------
+This module is intended to be used while indexing documents.
+Its purpose is to provide additional on the fly automatically generated fields to the Solr index.
+Such fields could be language, concepts, keywords, sentences, named entities, etc.
+
+ UIMA Dependency
+ ---------------
+uima-core, OpenCalaisAnnotator, WhitespaceTokenizer, HMMTagger, AlchemyAPIAnnotator
+Current Version:  2.3.1-SNAPSHOT rev. 999276
+
+$Id$

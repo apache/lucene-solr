@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.ToStringUtils;
@@ -80,7 +81,8 @@ public class SpanTermQuery extends SpanQuery {
   }
 
   @Override
-  public Spans getSpans(final IndexReader reader) throws IOException {
+  public Spans getSpans(final AtomicReaderContext context) throws IOException {
+    final IndexReader reader = context.reader;
     final DocsAndPositionsEnum postings = reader.termPositionsEnum(reader.getDeletedDocs(),
                                                                    term.field(),
                                                                    term.bytes());

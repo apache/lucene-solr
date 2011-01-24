@@ -26,7 +26,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.English;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
@@ -127,7 +126,7 @@ public class PayloadHelper {
       doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = new SlowMultiReaderWrapper(IndexReader.open(writer));
+    reader = IndexReader.open(writer);
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(reader);

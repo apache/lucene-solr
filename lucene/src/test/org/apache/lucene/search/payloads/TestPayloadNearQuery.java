@@ -301,7 +301,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
 
     @Override public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
-      return payload[0];
+      return payload[offset];
     }
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload

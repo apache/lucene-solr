@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState;
@@ -278,7 +277,7 @@ final class JustCompileSearch {
   static final class JustCompileSpanFilter extends SpanFilter {
 
     @Override
-    public SpanFilterResult bitSpans(IndexReader reader) throws IOException {
+    public SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

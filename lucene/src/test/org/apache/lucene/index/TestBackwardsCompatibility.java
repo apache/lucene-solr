@@ -171,15 +171,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       try {
         writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer())
-          .setMergeScheduler(new SerialMergeScheduler()) // no threads!
-        );
-        // TODO: Make IndexWriter fail on open!
-        if (random.nextBoolean()) {
-          writer.optimize();
-        } else {
-          reader = writer.getReader();
-        }
+          TEST_VERSION_CURRENT, new MockAnalyzer()));
         fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
@@ -188,17 +180,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           e.printStackTrace(System.out);
         }
       } finally {
-        if (reader != null) reader.close();
-        reader = null;
+        // we should fail to open IW, and so it should be null when we get here.
+        // However, if the test fails (i.e., IW did not fail on open), we need
+        // to close IW. However, if merges are run, IW may throw
+        // IndexFormatTooOldException, and we don't want to mask the fail()
+        // above, so close without waiting for merges.
         if (writer != null) {
-          try {
-            writer.close();
-          } catch (IndexFormatTooOldException e) {
-            // OK -- since IW gives merge scheduler a chance
-            // to merge at close, it's possible and fine to
-            // hit this exc here
-            writer.close(false);
-          }
+          writer.close(false);
         }
         writer = null;
       }

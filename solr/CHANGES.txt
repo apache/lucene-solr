@@ -158,6 +158,8 @@ Bug Fixes
   dealing with SolrDocumentList objects -- ie: sharded queries.
   (Antonio Verni via hossman)
   
+* SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
+  (Ephraim Ofir, Mark Miller)
 
 Other Changes
 ----------------------
@@ -409,6 +411,9 @@ New Features
 * SOLR-2188: Added "maxTokenLength" argument to the factories for ClassicTokenizer,
   StandardTokenizer, and UAX29URLEmailTokenizer. (Steven Rowe)
 
+* SOLR-2129: Added a Solr module for dynamic metadata extraction/indexing with Apache UIMA.
+  See contrib/uima/README.txt for more information.  (Tommaso Teofili via rmuir)
+
 Optimizations
 ----------------------
 
@@ -604,8 +609,6 @@ Bug Fixes
   open if a request threw an exception. (yonik)
 
 * SOLR-2173: Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
-
-* SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
 
 * SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
   (Drew Farris via koji)
