@@ -3276,6 +3276,15 @@ public class IndexWriter implements Closeable {
     }
   }
 
+  private boolean keepFullyDeletedSegments;
+
+  /** Only for testing.
+   *
+   * @lucene.internal */
+  void keepFullyDeletedSegments() {
+    keepFullyDeletedSegments = true;
+  }
+
   // called only from assert
   private boolean filesExist(SegmentInfos toSync) throws IOException {
     Collection<String> files = toSync.files(directory, false);
@@ -3334,6 +3343,10 @@ public class IndexWriter implements Closeable {
         readerPool.commit();
         
         toSync = (SegmentInfos) segmentInfos.clone();
+        if (!keepFullyDeletedSegments) {
+          toSync.pruneDeletedSegments();
+        }
+
         assert filesExist(toSync);
         
         if (commitUserData != null)
