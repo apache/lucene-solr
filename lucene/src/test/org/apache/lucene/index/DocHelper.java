@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
@@ -220,7 +220,7 @@ class DocHelper {
    */ 
   public static SegmentInfo writeDoc(Directory dir, Document doc) throws IOException
   {
-    return writeDoc(dir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), Similarity.getDefault(), doc);
+    return writeDoc(dir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), null, doc);
   }
 
   /**
@@ -233,9 +233,9 @@ class DocHelper {
    * @param doc
    * @throws IOException
    */ 
-  public static SegmentInfo writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
+  public static SegmentInfo writeDoc(Directory dir, Analyzer analyzer, SimilarityProvider similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
+        TEST_VERSION_CURRENT, analyzer).setSimilarityProvider(similarity));
     //writer.setUseCompoundFile(false);
     writer.addDocument(doc);
     writer.commit();

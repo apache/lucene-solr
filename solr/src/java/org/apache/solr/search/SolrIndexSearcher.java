@@ -153,7 +153,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
 
     this.closeReader = closeReader;
-    setSimilarity(schema.getSimilarity());
+    setSimilarityProvider(schema.getSimilarityProvider());
 
     SolrConfig solrConfig = core.getSolrConfig();
     queryResultWindowSize = solrConfig.queryResultWindowSize;

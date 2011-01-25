@@ -105,7 +105,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
-        .setSimilarity(similarity));
+        .setSimilarityProvider(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -118,7 +118,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     writer.close();
 
     searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(similarity);
+    searcher.setSimilarityProvider(similarity);
   }
 
   @Override

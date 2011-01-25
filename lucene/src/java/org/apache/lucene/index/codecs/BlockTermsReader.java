@@ -515,7 +515,7 @@ public class BlockTermsReader extends FieldsProducer {
          metadata, ie docFreq, totalTermFreq or pulls a D/&PEnum, we then (lazily)
          decode all metadata up to the current term. */
       private BytesRef _next() throws IOException {
-        //System.out.println("BTR._next this=" + this + " termCount=" + state.termCount + " (vs " + state.blockTermCount + ")");
+        //System.out.println("BTR._next seg=" + segment + " this=" + this + " termCount=" + state.termCount + " (vs " + state.blockTermCount + ")");
         if (state.termCount == state.blockTermCount) {
           if (!nextBlock()) {
             //System.out.println("  eof");

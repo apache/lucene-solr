@@ -72,18 +72,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   /** Constructs an empty boolean query.
    *
-   * {@link Similarity#coord(int,int)} may be disabled in scoring, as
+   * {@link SimilarityProvider#coord(int,int)} may be disabled in scoring, as
    * appropriate. For example, this score factor does not make sense for most
    * automatically generated queries, like {@link WildcardQuery} and {@link
    * FuzzyQuery}.
    *
-   * @param disableCoord disables {@link Similarity#coord(int,int)} in scoring.
+   * @param disableCoord disables {@link SimilarityProvider#coord(int,int)} in scoring.
    */
   public BooleanQuery(boolean disableCoord) {
     this.disableCoord = disableCoord;
   }
 
-  /** Returns true iff {@link Similarity#coord(int,int)} is disabled in
+  /** Returns true iff {@link SimilarityProvider#coord(int,int)} is disabled in
    * scoring for this query instance.
    * @see #BooleanQuery(boolean)
    */
@@ -162,14 +162,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    */
   protected class BooleanWeight extends Weight {
     /** The Similarity implementation. */
-    protected Similarity similarity;
+    protected SimilarityProvider similarityProvider;
     protected ArrayList<Weight> weights;
     protected int maxCoord;  // num optional + num required
     private final boolean disableCoord;
 
     public BooleanWeight(IndexSearcher searcher, boolean disableCoord)
       throws IOException {
-      this.similarity = searcher.getSimilarity();
+      this.similarityProvider = searcher.getSimilarityProvider();
       this.disableCoord = disableCoord;
       weights = new ArrayList<Weight>(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
@@ -202,7 +202,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     public float coord(int overlap, int maxOverlap) {
-      return similarity.coord(overlap, maxOverlap);
+      return similarityProvider.coord(overlap, maxOverlap);
     }
 
     @Override

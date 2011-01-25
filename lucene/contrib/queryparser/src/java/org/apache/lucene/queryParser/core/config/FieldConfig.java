@@ -28,17 +28,15 @@ import org.apache.lucene.util.AttributeSource;
  */
 public class FieldConfig extends AttributeSource {
 
-  private CharSequence fieldName;
-
+  private String fieldName;
+  
   /**
    * Constructs a {@link FieldConfig}
    * 
-   * @param fieldName
-   *          the field name, it cannot be null
-   * @throws IllegalArgumentException
-   *           if the field name is null
+   * @param fieldName the field name, it cannot be null
+   * @throws IllegalArgumentException if the field name is null
    */
-  public FieldConfig(CharSequence fieldName) {
+  public FieldConfig(String fieldName) {
 
     if (fieldName == null) {
       throw new IllegalArgumentException("field name should not be null!");
@@ -53,13 +51,14 @@ public class FieldConfig extends AttributeSource {
    * 
    * @return the field name
    */
-  public CharSequence getFieldName() {
+  public String getField() {
     return this.fieldName;
   }
-  
+
   @Override
-  public String toString(){
-    return "<fieldconfig name=\"" + this.fieldName + "\" attributes=\"" + super.toString() + "\"/>";
+  public String toString() {
+    return "<fieldconfig name=\"" + this.fieldName + "\" attributes=\""
+        + super.toString() + "\"/>";
   }
 
 }

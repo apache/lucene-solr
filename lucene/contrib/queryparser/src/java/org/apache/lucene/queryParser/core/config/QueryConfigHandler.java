@@ -46,7 +46,7 @@ import org.apache.lucene.util.AttributeSource;
 public abstract class QueryConfigHandler extends AttributeSource {
 
   private LinkedList<FieldConfigListener> listeners = new LinkedList<FieldConfigListener>();
-
+  
   /**
    * Returns an implementation of
    * {@link FieldConfig} for a specific field name. If the implemented
@@ -60,7 +60,7 @@ public abstract class QueryConfigHandler extends AttributeSource {
    *         configuration or <code>null</code>, if the implemented
    *         {@link QueryConfigHandler} has no configuration for that field
    */
-  public FieldConfig getFieldConfig(CharSequence fieldName) {
+  public FieldConfig getFieldConfig(String fieldName) {
     FieldConfig fieldConfig = new FieldConfig(fieldName);
 
     for (FieldConfigListener listener : this.listeners) {

@@ -32,6 +32,7 @@
       <module filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/dataimporthandler.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/src/extras/extras.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/extraction/extraction.iml" />
+      <module filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
     </modules>
   </component>
 </project>

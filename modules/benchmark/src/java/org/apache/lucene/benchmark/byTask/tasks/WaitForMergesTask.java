@@ -1,3 +1,4 @@
+package org.apache.lucene.benchmark.byTask.tasks;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,12 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
 
-import org.apache.lucene.search.SimilarityProvider;
+import java.util.HashMap;
+import java.util.Map;
 
-public class CustomSimilarityFactory extends SimilarityFactory {
-  public SimilarityProvider getSimilarityProvider() {
-    return new MockConfigurableSimilarity(params.get("echo"));
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+
+/**
+ * Waits for merges to finish.
+ */
+public class WaitForMergesTask extends PerfTask {
+
+  public WaitForMergesTask(PerfRunData runData) {
+    super(runData);
+  }
+  
+  @Override
+  public int doLogic() throws Exception {
+    getRunData().getIndexWriter().waitForMerges();
+    return 1;
   }
 }

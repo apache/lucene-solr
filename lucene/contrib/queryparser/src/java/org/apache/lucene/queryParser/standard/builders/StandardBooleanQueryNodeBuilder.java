@@ -31,7 +31,7 @@ import org.apache.lucene.queryParser.standard.parser.EscapeQuerySyntaxImpl;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 
 /**
@@ -41,7 +41,7 @@ import org.apache.lucene.search.BooleanQuery.TooManyClauses;
  * 
  * @see BooleanQueryNodeBuilder
  * @see BooleanQuery
- * @see Similarity#coord(int, int)
+ * @see SimilarityProvider#coord(int, int)
  */
 public class StandardBooleanQueryNodeBuilder implements StandardQueryBuilder {
 

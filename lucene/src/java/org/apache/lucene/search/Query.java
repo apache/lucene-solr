@@ -98,7 +98,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     Query query = searcher.rewrite(this);
     Weight weight = query.createWeight(searcher);
     float sum = weight.sumOfSquaredWeights();
-    float norm = searcher.getSimilarity().queryNorm(sum);
+    float norm = searcher.getSimilarityProvider().queryNorm(sum);
     if (Float.isInfinite(norm) || Float.isNaN(norm))
       norm = 1.0f;
     weight.normalize(norm);

@@ -153,7 +153,7 @@ public class SolrIndexConfig {
     if (writeLockTimeout != -1)
       iwc.setWriteLockTimeout(writeLockTimeout);
 
-    iwc.setSimilarity(schema.getSimilarity());
+    iwc.setSimilarityProvider(schema.getSimilarityProvider());
     iwc.setMergePolicy(buildMergePolicy(schema));
     iwc.setMergeScheduler(buildMergeScheduler(schema));
 

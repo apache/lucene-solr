@@ -17,13 +17,16 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.util.List;
+
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import java.util.List;
 
 /** Holds common state used during segment merging
  *
@@ -37,6 +40,7 @@ public class MergeState {
   public int[] docBase;                           // New docID base per reader
   public int mergedDocCount;                      // Total # merged docs
   public Bits multiDeletedDocs;
+  public CheckAbort checkAbort;
 
   // Updated per field;
   public FieldInfo fieldInfo;
@@ -45,5 +49,30 @@ public class MergeState {
   public boolean hasPayloadProcessorProvider;
   public DirPayloadProcessor[] dirPayloadProcessor;
   public PayloadProcessor[] currentPayloadProcessor;
-  
+
+  public static class CheckAbort {
+    private double workCount;
+    private MergePolicy.OneMerge merge;
+    private Directory dir;
+    public CheckAbort(MergePolicy.OneMerge merge, Directory dir) {
+      this.merge = merge;
+      this.dir = dir;
+    }
+
+    /**
+     * Records the fact that roughly units amount of work
+     * have been done since this method was last called.
+     * When adding time-consuming code into SegmentMerger,
+     * you should test different values for units to ensure
+     * that the time in between calls to merge.checkAborted
+     * is up to ~ 1 second.
+     */
+    public void work(double units) throws MergePolicy.MergeAbortedException {
+      workCount += units;
+      if (workCount >= 10000.0) {
+        merge.checkAborted(dir);
+        workCount = 0;
+      }
+    }
+  }
 }

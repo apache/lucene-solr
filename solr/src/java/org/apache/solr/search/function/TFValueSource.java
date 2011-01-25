@@ -25,7 +25,7 @@ public class TFValueSource extends TermFreqValueSource {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader.fields();
     final Terms terms = fields.terms(field);
-    final Similarity similarity = ((IndexSearcher)context.get("searcher")).getSimilarity();
+    final Similarity similarity = ((IndexSearcher)context.get("searcher")).getSimilarityProvider().get(field);
 
     return new FloatDocValues(this) {
       DocsEnum docs ;

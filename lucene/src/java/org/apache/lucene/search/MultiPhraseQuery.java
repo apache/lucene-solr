@@ -139,7 +139,7 @@ public class MultiPhraseQuery extends Query {
 
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
-      this.similarity = searcher.getSimilarity();
+      this.similarity = searcher.getSimilarityProvider().get(field);
 
       // compute idf
       ArrayList<Term> allTerms = new ArrayList<Term>();

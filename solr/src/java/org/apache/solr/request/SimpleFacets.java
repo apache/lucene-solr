@@ -1013,7 +1013,7 @@ public class SimpleFacets {
     
     final String f = sf.getName();
     final NamedList<Object> res = new SimpleOrderedMap<Object>();
-    final NamedList<Integer> counts = new SimpleOrderedMap<Integer>();
+    final NamedList<Integer> counts = new NamedList<Integer>();
     res.add("counts", counts);
 
     final T start = calc.getValue(required.getFieldParam(f,FacetParams.FACET_RANGE_START));

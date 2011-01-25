@@ -53,7 +53,7 @@ public class FieldDateResolutionFCListener implements FieldConfigListener {
       FieldDateResolutionMapAttribute dateResMapAttr = this.config
           .addAttribute(FieldDateResolutionMapAttribute.class);
       dateRes = dateResMapAttr.getFieldDateResolutionMap().get(
-          fieldConfig.getFieldName().toString());
+          fieldConfig.getField());
     }
 
     if (dateRes == null) {

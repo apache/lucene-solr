@@ -73,7 +73,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
   }
   
-  public Similarity sim = new TestSimilarity();
+  public SimilarityProvider sim = new TestSimilarity();
   public Directory index;
   public IndexReader r;
   public IndexSearcher s;
@@ -85,7 +85,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index,
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-            .setSimilarity(sim));
+            .setSimilarityProvider(sim));
     
     // hed is the most important field, dek is secondary
     
@@ -150,7 +150,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     r = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
     s = new IndexSearcher(r);
-    s.setSimilarity(sim);
+    s.setSimilarityProvider(sim);
   }
   
   @Override

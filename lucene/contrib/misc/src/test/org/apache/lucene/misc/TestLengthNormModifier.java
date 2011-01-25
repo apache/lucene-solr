@@ -33,7 +33,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -47,7 +47,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
     public Directory store;
 
     /** inverts the normal notion of lengthNorm */
-    public static Similarity s = new DefaultSimilarity() {
+    public static SimilarityProvider s = new DefaultSimilarity() {
         @Override
         public float computeNorm(String fieldName, FieldInvertState state) {
           return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
@@ -163,7 +163,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	}
 
 	// override the norms to be inverted
-	Similarity s = new DefaultSimilarity() {
+	SimilarityProvider s = new DefaultSimilarity() {
             @Override
             public float computeNorm(String fieldName, FieldInvertState state) {
               return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());

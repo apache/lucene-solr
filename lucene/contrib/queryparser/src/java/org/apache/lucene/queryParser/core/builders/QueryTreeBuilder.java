@@ -61,7 +61,7 @@ public class QueryTreeBuilder implements QueryBuilder {
 
   private HashMap<Class<? extends QueryNode>, QueryBuilder> queryNodeBuilders;
 
-  private HashMap<CharSequence, QueryBuilder> fieldNameBuilders;
+  private HashMap<String, QueryBuilder> fieldNameBuilders;
 
   /**
    * {@link QueryTreeBuilder} constructor.
@@ -73,28 +73,25 @@ public class QueryTreeBuilder implements QueryBuilder {
   /**
    * Associates a field name with a builder.
    * 
-   * @param fieldName
-   *          the field name
-   * @param builder
-   *          the builder to be associated
+   * @param fieldName the field name
+   * @param builder the builder to be associated
    */
   public void setBuilder(CharSequence fieldName, QueryBuilder builder) {
 
     if (this.fieldNameBuilders == null) {
-      this.fieldNameBuilders = new HashMap<CharSequence, QueryBuilder>();
+      this.fieldNameBuilders = new HashMap<String, QueryBuilder>();
     }
 
-    this.fieldNameBuilders.put(fieldName, builder);
+    this.fieldNameBuilders.put(fieldName.toString(), builder);
+
 
   }
 
   /**
    * Associates a class with a builder
    * 
-   * @param queryNodeClass
-   *          the class
-   * @param builder
-   *          the builder to be associated
+   * @param queryNodeClass the class
+   * @param builder the builder to be associated
    */
   public void setBuilder(Class<? extends QueryNode> queryNodeClass,
       QueryBuilder builder) {
@@ -135,8 +132,13 @@ public class QueryTreeBuilder implements QueryBuilder {
     QueryBuilder builder = null;
 
     if (this.fieldNameBuilders != null && node instanceof FieldableNode) {
+      CharSequence field = ((FieldableNode) node).getField();
 
-      builder = this.fieldNameBuilders.get(((FieldableNode) node).getField());
+      if (field != null) {
+        field = field.toString();
+      }
+
+      builder = this.fieldNameBuilders.get(field);
 
     }
 
@@ -203,14 +205,13 @@ public class QueryTreeBuilder implements QueryBuilder {
    * Builds some kind of object from a query tree. Each node in the query tree
    * is built using an specific builder associated to it.
    * 
-   * @param queryNode
-   *          the query tree root node
+   * @param queryNode the query tree root node
    * 
    * @return the built object
    * 
-   * @throws QueryNodeException
-   *           if some node builder throws a {@link QueryNodeException} or if
-   *           there is a node which had no builder associated to it
+   * @throws QueryNodeException if some node builder throws a
+   *         {@link QueryNodeException} or if there is a node which had no
+   *         builder associated to it
    */
   public Object build(QueryNode queryNode) throws QueryNodeException {
     process(queryNode);

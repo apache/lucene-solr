@@ -481,6 +481,7 @@ public abstract class LogMergePolicy extends MergePolicy {
       if (size < 1)
         size = 1;
       levels[i] = (float) Math.log(size)/norm;
+      message("seg " + info.name + " level=" + levels[i]);
     }
 
     final float levelFloor;

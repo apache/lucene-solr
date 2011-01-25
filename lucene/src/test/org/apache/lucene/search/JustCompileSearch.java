@@ -243,22 +243,12 @@ final class JustCompileSearch {
   static final class JustCompileSimilarity extends Similarity {
 
     @Override
-    public float coord(int overlap, int maxOverlap) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
     public float idf(int docFreq, int numDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
     public float computeNorm(String fieldName, FieldInvertState state) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -270,8 +260,22 @@ final class JustCompileSearch {
     @Override
     public float tf(float freq) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }  
+  }
+  
+  static final class JustCompileSimilarityProvider implements SimilarityProvider {
+
+    public float queryNorm(float sumOfSquaredWeights) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
+    public float coord(int overlap, int maxOverlap) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
+    public Similarity get(String field) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
 
   static final class JustCompileSpanFilter extends SpanFilter {

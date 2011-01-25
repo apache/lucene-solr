@@ -34,7 +34,7 @@ public class TestComplexExplanations extends TestExplanations {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    searcher.setSimilarity(createQnorm1Similarity());
+    searcher.setSimilarityProvider(createQnorm1Similarity());
   }
 
   // must be static for weight serialization tests 

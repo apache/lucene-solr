@@ -175,11 +175,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
     } else {
       termState.freqOffset += termState.bytesReader.readVLong();
     }
+    //System.out.println("  dF=" + termState.docFreq);
     //System.out.println("  freqFP=" + termState.freqOffset);
+    assert termState.freqOffset < freqIn.length();
 
     if (termState.docFreq >= skipInterval) {
       termState.skipOffset = termState.bytesReader.readVInt();
-      //System.out.println("  skipOffset=" + termState.skipOffset);
+      //System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
+      assert termState.freqOffset + termState.skipOffset < freqIn.length();
     } else {
       // undefined
     }
@@ -367,7 +370,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       // TODO: jump right to next() if target is < X away
       // from where we are now?
 
-      if (skipOffset > 0) {
+      if (limit >= skipInterval) {
 
         // There are enough docs in the posting to have
         // skip data
@@ -520,7 +523,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       // TODO: jump right to next() if target is < X away
       // from where we are now?
 
-      if (skipOffset > 0) {
+      if (limit >= skipInterval) {
 
         // There are enough docs in the posting to have
         // skip data
@@ -662,7 +665,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       freqOffset = termState.freqOffset;
       proxOffset = termState.proxOffset;
       skipOffset = termState.skipOffset;
-      //System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
+      //System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset + " this=" + this);
 
       return this;
     }
@@ -712,10 +715,11 @@ public class StandardPostingsReader extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
 
+      //System.out.println("StandardR.D&PE advance seg=" + segment + " target=" + target + " this=" + this);
       // TODO: jump right to next() if target is < X away
       // from where we are now?
 
-      if (skipOffset > 0) {
+      if (limit >= skipInterval) {
 
         // There are enough docs in the posting to have
         // skip data
@@ -730,7 +734,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           // This is the first time this posting has
           // skipped, since reset() was called, so now we
           // load the skip data for this posting
-
+          //System.out.println("  init skipper freqOffset=" + freqOffset + " skipOffset=" + skipOffset + " vs len=" + freqIn.length());
           skipper.init(freqOffset+skipOffset,
                        freqOffset, proxOffset,
                        limit, true);

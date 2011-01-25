@@ -31,5 +31,6 @@
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/clustering/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/extraction/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/uima/build.xml" />
   </component>
 </project>

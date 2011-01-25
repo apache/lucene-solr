@@ -17,15 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.IOUtils;
-
-import java.util.LinkedList;
-import java.util.HashSet;
-
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.LinkedList;
+
+import org.apache.lucene.index.codecs.MergeState;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Combines multiple files into a single compound file.
@@ -76,7 +76,7 @@ final class CompoundFileWriter {
     private HashSet<String> ids;
     private LinkedList<FileEntry> entries;
     private boolean merged = false;
-    private SegmentMerger.CheckAbort checkAbort;
+    private MergeState.CheckAbort checkAbort;
 
     /** Create the compound stream in the specified file. The file name is the
      *  entire name (no extensions are added).
@@ -86,7 +86,7 @@ final class CompoundFileWriter {
       this(dir, name, null);
     }
 
-    CompoundFileWriter(Directory dir, String name, SegmentMerger.CheckAbort checkAbort) {
+    CompoundFileWriter(Directory dir, String name, MergeState.CheckAbort checkAbort) {
         if (dir == null)
             throw new NullPointerException("directory cannot be null");
         if (name == null)

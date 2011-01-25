@@ -131,6 +131,9 @@ Changes in backwards compatibility policy
 * LUCENE-2882: Cut over SpanQuery#getSpans to AtomicReaderContext to enforce
   per segment semantics on SpanQuery & Spans. (Simon Willnauer)
 
+* LUCENE-2236: Similarity can now be configured on a per-field basis. See the
+  migration notes in MIGRATE.txt for more details.  (Robert Muir, Doron Cohen)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -688,6 +691,9 @@ Bug fixes
 * LUCENE-2879: MultiPhraseQuery previously calculated its phrase IDF by summing
   internally, it now calls Similarity.idfExplain(Collection, IndexSearcher).
   (Robert Muir)
+
+* LUCENE-2693: RAM used by IndexWriter was slightly incorrectly computed. 
+  (Jason Rutherglen via Shai Erera)
 
 New features
 
