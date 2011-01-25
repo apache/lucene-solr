@@ -213,10 +213,8 @@ public class QueryUtils {
         // Carefully invoke what is a package-private (test
         // only, internal) method on IndexWriter:
         Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
-        if (m != null) {
-          m.setAccessible(true);
-          m.invoke(w);
-        }
+        m.setAccessible(true);
+        m.invoke(w);
       } catch (Exception e) {
         // Should not happen?
         throw new RuntimeException(e);
