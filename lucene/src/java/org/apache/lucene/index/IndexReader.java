@@ -1095,11 +1095,13 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Undeletes all documents currently marked as deleted in
    * this index.
    *
-   * <p>NOTE: this is only a best-effort process.  For
-   * example, if all documents in a given segment were
-   * deleted, Lucene now drops that segment from the index,
-   * which means its documents will not be recovered by this
-   * method.
+   * <p>NOTE: this method can only recover documents marked
+   * for deletion but not yet removed from the index; when
+   * and how Lucene removes deleted documents is an
+   * implementation detail, subject to change from release
+   * to release.  However, you can use {@link
+   * #numDeletedDocs} on the current IndexReader instance to
+   * see how many documents will be un-deleted.
    *
    * @throws StaleReaderException if the index has changed
    *  since this reader was opened
