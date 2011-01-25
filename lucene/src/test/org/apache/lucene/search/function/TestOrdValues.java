@@ -253,4 +253,13 @@ public class TestOrdValues extends FunctionTestSetup {
     return getClass().getName() + "." + getName();
   }
 
+  // LUCENE-1250
+  public void testEqualsNull() throws Exception {
+    OrdFieldSource ofs = new OrdFieldSource("f");
+    assertFalse(ofs.equals(null));
+    
+    ReverseOrdFieldSource rofs = new ReverseOrdFieldSource("f");
+    assertFalse(rofs.equals(null));
+  }
+  
 }
