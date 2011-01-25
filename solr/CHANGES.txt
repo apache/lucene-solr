@@ -478,6 +478,9 @@ Bug Fixes
 * SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
   (Ephraim Ofir, Mark Miller)
 
+* SOLR-2320: Fixed ReplicationHandler detail reporting for masters
+  (hossman)
+
 Other Changes
 ----------------------
 
