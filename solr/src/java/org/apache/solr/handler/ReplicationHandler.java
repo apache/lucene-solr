@@ -687,12 +687,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           LOG.error("Exception while writing replication details: ", e);
         }
       }
-      if (isMaster)
-        details.add("master", master);
-      if (isSlave && showSlaveDetails)
-        details.add("slave", slave);
-
     }
+
+    if (isMaster)
+      details.add("master", master);
+    if (isSlave && showSlaveDetails)
+      details.add("slave", slave);
     
     NamedList snapshotStats = snapShootDetails;
     if (snapshotStats != null)

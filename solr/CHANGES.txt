@@ -163,6 +163,9 @@ Bug Fixes
 
 * SOLR-482: Provide more exception handling in CSVLoader (gsingers)
 
+* SOLR-2320: Fixed ReplicationHandler detail reporting for masters
+  (hossman)
+
 Other Changes
 ----------------------
 
