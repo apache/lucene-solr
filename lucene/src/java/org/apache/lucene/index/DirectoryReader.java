@@ -37,8 +37,6 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
-
 /** 
  * An IndexReader which reads indexes with multiple segments.
  */
@@ -106,6 +104,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     } else {
       this.codecs = codecs;
     }
+    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
 
     // To reduce the chance of hitting FileNotFound
     // (and having to retry), we open segments in
@@ -117,6 +116,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       boolean success = false;
       try {
         readers[i] = SegmentReader.get(readOnly, sis.info(i), termInfosIndexDivisor);
+        readers[i].readerFinishedListeners = readerFinishedListeners;
         success = true;
       } finally {
         if (!success) {
@@ -146,6 +146,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     } else {
       this.codecs = codecs;
     }
+    readerFinishedListeners = writer.getReaderFinishedListeners();
 
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
@@ -160,6 +161,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
         final SegmentInfo info = infos.info(i);
         assert info.dir == dir;
         readers[i] = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
+        readers[i].readerFinishedListeners = readerFinishedListeners;
         success = true;
       } finally {
         if (!success) {
@@ -182,11 +184,14 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   /** This constructor is only used for {@link #reopen()} */
   DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,
-                  boolean readOnly, boolean doClone, int termInfosIndexDivisor, CodecProvider codecs) throws IOException {
+                  boolean readOnly, boolean doClone, int termInfosIndexDivisor, CodecProvider codecs,
+                  Collection<ReaderFinishedListener> readerFinishedListeners) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
     this.segmentInfos = infos;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
+    this.readerFinishedListeners = readerFinishedListeners;
+
     if (codecs == null) {
       this.codecs = CodecProvider.getDefault();
     } else {
@@ -232,8 +237,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
           // this is a new reader; in case we hit an exception we can close it safely
           newReader = SegmentReader.get(readOnly, infos.info(i), termInfosIndexDivisor);
+          newReader.readerFinishedListeners = readerFinishedListeners;
         } else {
           newReader = newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);
+          assert newReader.readerFinishedListeners == readerFinishedListeners;
         }
         if (newReader == newReaders[i]) {
           // this reader will be shared between the old and the new one,
@@ -357,6 +364,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       writeLock = null;
       hasChanges = false;
     }
+    assert newReader.readerFinishedListeners != null;
 
     return newReader;
   }
@@ -391,7 +399,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
     // TODO: right now we *always* make a new reader; in
     // the future we could have write make some effort to
     // detect that no changes have occurred
-    return writer.getReader();
+    IndexReader reader = writer.getReader();
+    reader.readerFinishedListeners = readerFinishedListeners;
+    return reader;
   }
 
   private IndexReader doReopen(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
@@ -458,7 +468,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   private synchronized DirectoryReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryReader reader;
-    reader = new DirectoryReader(directory, infos, subReaders, starts, openReadOnly, doClone, termInfosIndexDivisor, codecs);
+    reader = new DirectoryReader(directory, infos, subReaders, starts, openReadOnly, doClone, termInfosIndexDivisor, codecs, readerFinishedListeners);
     return reader;
   }
 
@@ -807,11 +817,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
         if (ioe == null) ioe = e;
       }
     }
-
-    // NOTE: only needed in case someone had asked for
-    // FieldCache for top-level reader (which is generally
-    // not a good idea):
-    FieldCache.DEFAULT.purge(this);
 
     if (writer != null) {
       // Since we just closed, writer may now be able to

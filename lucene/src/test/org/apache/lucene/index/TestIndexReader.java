@@ -1905,4 +1905,42 @@ public class TestIndexReader extends LuceneTestCase
       dir.close();
     }
   }
+
+  // LUCENE-2474
+  public void testReaderFinishedListener() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
+    writer.setInfoStream(VERBOSE ? System.out : null);
+    writer.addDocument(new Document());
+    writer.commit();
+    writer.addDocument(new Document());
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    final int[] closeCount = new int[1];
+    final IndexReader.ReaderFinishedListener listener = new IndexReader.ReaderFinishedListener() {
+      public void finished(IndexReader reader) {
+        closeCount[0]++;
+      }
+    };
+
+    reader.addReaderFinishedListener(listener);
+
+    reader.close();
+
+    // Just the top reader
+    assertEquals(1, closeCount[0]);
+    writer.close();
+
+    // Now also the subs
+    assertEquals(3, closeCount[0]);
+
+    IndexReader reader2 = IndexReader.open(dir);
+    reader2.addReaderFinishedListener(listener);
+
+    closeCount[0] = 0;
+    reader2.close();
+    assertEquals(3, closeCount[0]);
+    dir.close();
+  }
 }

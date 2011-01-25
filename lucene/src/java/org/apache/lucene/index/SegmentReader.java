@@ -38,7 +38,6 @@ import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -183,13 +182,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
           storeCFSReader.close();
         }
 
-        // Force FieldCache to evict our entries at this
-        // point.  If the exception occurred while
-        // initializing the core readers, then
-        // origInstance will be null, and we don't want
-        // to call FieldCache.purge (it leads to NPE):
+        // Now, notify any ReaderFinished listeners:
         if (origInstance != null) {
-          FieldCache.DEFAULT.purge(origInstance);
+          origInstance.notifyReaderFinishedListeners();
         }
       }
     }
@@ -633,6 +628,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       clone.si = si;
       clone.readBufferSize = readBufferSize;
       clone.pendingDeleteCount = pendingDeleteCount;
+      clone.readerFinishedListeners = readerFinishedListeners;
 
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
@@ -1202,5 +1198,15 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
+  }
+
+  @Override
+  protected void readerFinished() {
+    // Do nothing here -- we have more careful control on
+    // when to notify that a SegmentReader has finished,
+    // because a given core is shared across many cloned
+    // SegmentReaders.  We only notify once that core is no
+    // longer used (all SegmentReaders sharing it have been
+    // closed).
   }
 }

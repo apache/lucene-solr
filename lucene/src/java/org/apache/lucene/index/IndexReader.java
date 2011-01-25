@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -80,6 +81,65 @@ import java.util.concurrent.atomic.AtomicInteger;
  (non-Lucene) objects instead.
 */
 public abstract class IndexReader implements Cloneable,Closeable {
+
+  /**
+   * A custom listener that's invoked when the IndexReader
+   * is finished.
+   *
+   * <p>For a SegmentReader, this listener is called only
+   * once all SegmentReaders sharing the same core are
+   * closed.  At this point it is safe for apps to evict
+   * this reader from any caches keyed on {@link
+   * #getCoreCacheKey}.  This is the same interface that
+   * {@link FieldCache} uses, internally, to evict
+   * entries.</p>
+   *
+   * <p>For other readers, this listener is called when they
+   * are closed.</p>
+   *
+   * @lucene.experimental
+   */
+  public static interface ReaderFinishedListener {
+    public void finished(IndexReader reader);
+  }
+
+  // Impls must set this if they may call add/removeReaderFinishedListener:
+  protected volatile Collection<ReaderFinishedListener> readerFinishedListeners;
+
+  /** Expert: adds a {@link ReaderFinishedListener}.  The
+   * provided listener is also added to any sub-readers, if
+   * this is a composite reader.  Also, any reader reopened
+   * or cloned from this one will also copy the listeners at
+   * the time of reopen.
+   *
+   * @lucene.experimental */
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    readerFinishedListeners.add(listener);
+  }
+
+  /** Expert: remove a previously added {@link ReaderFinishedListener}.
+   *
+   * @lucene.experimental */
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    readerFinishedListeners.remove(listener);
+  }
+
+  protected void notifyReaderFinishedListeners() {
+    // Defensive (should never be null -- all impls must set
+    // this):
+    if (readerFinishedListeners != null) {
+
+      // Clone the set so that we don't have to sync on
+      // readerFinishedListeners while invoking them:
+      for(ReaderFinishedListener listener : new HashSet<ReaderFinishedListener>(readerFinishedListeners)) {
+        listener.finished(this);
+      }
+    }
+  }
+
+  protected void readerFinished() {
+    notifyReaderFinishedListeners();
+  }
 
   /**
    * Constants describing field properties, for example used for
@@ -195,6 +255,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
           refCount.incrementAndGet();
         }
       }
+      readerFinished();
     }
   }
   

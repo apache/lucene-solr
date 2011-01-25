@@ -812,6 +812,11 @@ New features
 * LUCENE-2864: Add getMaxTermFrequency (maximum within-document TF) to 
   FieldInvertState so that it can be used in Similarity.computeNorm.
   (Robert Muir)
+
+* LUCENE-2474: Added expert ReaderFinishedListener API to
+  IndexReader, to allow apps that maintain external per-segment caches
+  to evict entries when a segment is finished.  (Shay Banon, Yonik
+  Seeley, Mike McCandless)
   
 Optimizations
 
