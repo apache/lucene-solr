@@ -47,7 +47,7 @@ public class FieldBoostMapFCListener implements FieldConfigListener {
       FieldBoostMapAttribute fieldBoostMapAttr = this.config.getAttribute(FieldBoostMapAttribute.class);
       BoostAttribute boostAttr = fieldConfig.addAttribute(BoostAttribute.class);
       
-      Float boost = fieldBoostMapAttr.getFieldBoostMap().get(fieldConfig.getFieldName());
+      Float boost = fieldBoostMapAttr.getFieldBoostMap().get(fieldConfig.getField());
 
       if (boost != null) {
         boostAttr.setBoost(boost.floatValue());
