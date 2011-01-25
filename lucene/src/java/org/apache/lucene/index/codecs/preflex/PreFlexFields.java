@@ -1002,7 +1002,7 @@ public class PreFlexFields extends FieldsProducer {
 
   private final class PreDocsEnum extends DocsEnum {
     final private SegmentTermDocs docs;
-
+    private int docID = -1;
     PreDocsEnum() throws IOException {
       docs = new SegmentTermDocs(freqStream, getTermsDict(), fieldInfos);
     }
@@ -1020,18 +1020,18 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public int nextDoc() throws IOException {
       if (docs.next()) {
-        return docs.doc();
+        return docID = docs.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
     @Override
     public int advance(int target) throws IOException {
       if (docs.skipTo(target)) {
-        return docs.doc();
+        return docID = docs.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
@@ -1042,13 +1042,13 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public int docID() {
-      return docs.doc();
+      return docID;
     }
   }
 
   private final class PreDocsAndPositionsEnum extends DocsAndPositionsEnum {
     final private SegmentTermPositions pos;
-
+    private int docID = -1;
     PreDocsAndPositionsEnum() throws IOException {
       pos = new SegmentTermPositions(freqStream, proxStream, getTermsDict(), fieldInfos);
     }
@@ -1066,18 +1066,18 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public int nextDoc() throws IOException {
       if (pos.next()) {
-        return pos.doc();
+        return docID = pos.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
     @Override
     public int advance(int target) throws IOException {
       if (pos.skipTo(target)) {
-        return pos.doc();
+        return docID = pos.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
@@ -1088,16 +1088,18 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public int docID() {
-      return pos.doc();
+      return docID;
     }
 
     @Override
     public int nextPosition() throws IOException {
+      assert docID != NO_MORE_DOCS;
       return pos.nextPosition();
     }
 
     @Override
     public boolean hasPayload() {
+      assert docID != NO_MORE_DOCS;
       return pos.isPayloadAvailable();
     }
 

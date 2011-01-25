@@ -710,6 +710,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
         for (int i = 0; i < subReaders.length; i++)
           subReaders[i].commit();
 
+        // Remove segments that contain only 100% deleted docs:
+        segmentInfos.pruneDeletedSegments();
+
         // Sync all files we just wrote
         directory.sync(segmentInfos.files(directory, false));
         segmentInfos.commit(directory);

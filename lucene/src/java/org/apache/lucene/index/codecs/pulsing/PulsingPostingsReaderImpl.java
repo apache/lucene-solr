@@ -287,7 +287,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       while(true) {
         if (postings.eof()) {
           //System.out.println("PR   END");
-          return NO_MORE_DOCS;
+          return docID = NO_MORE_DOCS;
         }
 
         final int code = postings.readVInt();
@@ -345,7 +345,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         if (doc >= target)
           return doc;
       }
-      return NO_MORE_DOCS;
+      return docID = NO_MORE_DOCS;
     }
   }
 
@@ -614,7 +614,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
         if (postings.eof()) {
           //System.out.println("PR   END");
-          return NO_MORE_DOCS;
+          return docID = NO_MORE_DOCS;
         }
 
         final int code = postings.readVInt();
@@ -652,7 +652,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           return doc;
         }
       }
-      return NO_MORE_DOCS;
+      return docID = NO_MORE_DOCS;
     }
 
     @Override

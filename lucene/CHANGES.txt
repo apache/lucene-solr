@@ -486,6 +486,9 @@ Changes in runtime behavior
 * LUCENE-2829: Improve the performance of "primary key" lookup use
   case (running a TermQuery that matches one document) on a
   multi-segment index.  (Robert Muir, Mike McCandless)
+
+* LUCENE-2010: Segments with 100% deleted documents are now removed on
+  IndexReader or IndexWriter commit.   (Uwe Schindler, Mike McCandless)
   
 API Changes
 
@@ -905,6 +908,9 @@ Optimizations
 * LUCENE-2824: Optimize BufferedIndexInput to do less bounds checks.
   (Robert Muir)
 
+* LUCENE-2010: Segments with 100% deleted documents are now removed on
+  IndexReader or IndexWriter commit.  (Uwe Schindler, Mike McCandless)
+  
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

@@ -428,7 +428,7 @@ public class TestAddIndexes extends LuceneTestCase {
     );
 
     writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
-    assertEquals(1060, writer.maxDoc());
+    assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
     dir.close();
@@ -480,7 +480,7 @@ public class TestAddIndexes extends LuceneTestCase {
     );
 
     writer.addIndexes(aux, aux2);
-    assertEquals(1060, writer.maxDoc());
+    assertEquals(1040, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
     dir.close();

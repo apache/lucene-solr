@@ -161,6 +161,8 @@ Bug Fixes
 * SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
   (Ephraim Ofir, Mark Miller)
 
+* SOLR-482: Provide more exception handling in CSVLoader (gsingers)
+
 Other Changes
 ----------------------
 

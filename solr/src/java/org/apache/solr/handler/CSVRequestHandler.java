@@ -305,10 +305,25 @@ abstract class CSVLoader extends ContentStreamLoader {
 
   private void input_err(String msg, String[] line, int lineno) {
     StringBuilder sb = new StringBuilder();
-    sb.append(errHeader+", line="+lineno + ","+msg+"\n\tvalues={");
-    for (String val: line) { sb.append("'"+val+"',"); }
+    sb.append(errHeader).append(", line=").append(lineno).append(",").append(msg).append("\n\tvalues={");
+    for (String val: line) {
+      sb.append("'").append(val).append("',"); }
     sb.append('}');
     throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,sb.toString());
+  }
+
+  private void input_err(String msg, String[] lines, int lineNo, Throwable e) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(errHeader).append(", line=").append(lineNo).append(",").append(msg).append("\n\tvalues={");
+    if (lines != null) {
+      for (String val : lines) {
+        sb.append("'").append(val).append("',");
+      }
+    } else {
+      sb.append("NO LINES AVAILABLE");
+    }
+    sb.append('}');
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,sb.toString(), e);
   }
 
   /** load the CSV input */
@@ -341,7 +356,13 @@ abstract class CSVLoader extends ContentStreamLoader {
       // read the rest of the CSV file
       for(;;) {
         int line = parser.getLineNumber();  // for error reporting in MT mode
-        String[] vals = parser.getLine();
+        String[] vals = null;
+        try {
+          vals = parser.getLine();
+        } catch (IOException e) {
+          //Catch the exception and rethrow it with more line information
+         input_err("can't read line: " + line, null, line, e);
+        }
         if (vals==null) break;
 
         if (vals.length != fields.length) {
