@@ -1200,7 +1200,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     IndexReader r = IndexReader.open(dir, false);
     assertEquals(0, r.numDocs());
-    assertEquals(4, r.maxDoc());
 
     Collection<IndexCommit> commits = IndexReader.listCommits(dir);
     for (final IndexCommit commit : commits) {

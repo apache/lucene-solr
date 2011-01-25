@@ -101,19 +101,12 @@ public class TestIndexWriter extends LuceneTestCase {
         }
         reader.close();
 
-        // test doc count before segments are merged/index is optimized
-        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-        assertEquals(100, writer.maxDoc());
-        writer.close();
-
         reader = IndexReader.open(dir, true);
-        assertEquals(100, reader.maxDoc());
         assertEquals(60, reader.numDocs());
         reader.close();
 
         // optimize the index and check that the new doc count is correct
         writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-        assertEquals(100, writer.maxDoc());
         assertEquals(60, writer.numDocs());
         writer.optimize();
         assertEquals(60, writer.maxDoc());
@@ -1601,7 +1594,6 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
-    assertEquals(1, ir.maxDoc());
     assertEquals(0, ir.numDocs());
     ir.close();
 

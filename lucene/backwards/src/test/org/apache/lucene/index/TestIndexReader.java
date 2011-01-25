@@ -340,7 +340,7 @@ public class TestIndexReader extends LuceneTestCase
 
         // CREATE A NEW READER and re-test
         reader = IndexReader.open(dir, false);
-        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
+        assertEquals("deleted docFreq", 0, reader.docFreq(searchTerm));
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
         reader.close();
         reader2.close();
@@ -688,7 +688,6 @@ public class TestIndexReader extends LuceneTestCase
 
         // CREATE A NEW READER and re-test
         reader = IndexReader.open(dir, false);
-        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
         assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm2));
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
         assertTermDocsCount("deleted termDocs", reader, searchTerm2, 100);
@@ -839,7 +838,6 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
       IndexReader reader = IndexReader.open(dir, false);
       reader.deleteDocument(0);
-      reader.deleteDocument(1);
       reader.close();
       reader = IndexReader.open(dir, false);
       reader.undeleteAll();
@@ -856,7 +854,6 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
       IndexReader reader = IndexReader.open(dir, false);
       reader.deleteDocument(0);
-      reader.deleteDocument(1);
       reader.close();
       reader = IndexReader.open(dir, false);
       reader.undeleteAll();
@@ -1254,9 +1251,6 @@ public class TestIndexReader extends LuceneTestCase
 
         // Open another reader to confirm that everything is deleted
         reader2 = IndexReader.open(dir, false);
-        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm1));
-        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm2));
-        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm3));
         assertTermDocsCount("reopened 2", reader2, searchTerm1, 0);
         assertTermDocsCount("reopened 2", reader2, searchTerm2, 0);
         assertTermDocsCount("reopened 2", reader2, searchTerm3, 100);

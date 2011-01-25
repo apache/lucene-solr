@@ -7,8 +7,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-
 import junit.framework.Assert;
+import java.lang.reflect.Method;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -209,6 +209,18 @@ public class QueryUtils {
       }
       w.commit();
       w.deleteDocuments( new MatchAllDocsQuery() );
+      try {
+        // Carefully invoke what is a package-private (test
+        // only, internal) method on IndexWriter:
+        Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
+        if (m != null) {
+          m.setAccessible(true);
+          m.invoke(w);
+        }
+      } catch (Exception e) {
+        // Should not happen?
+        throw new RuntimeException(e);
+      }
       w.commit();
 
       if (0 < numDeletedDocs)

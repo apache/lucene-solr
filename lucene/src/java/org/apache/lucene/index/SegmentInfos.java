@@ -404,6 +404,19 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     }
   }
 
+  /** Prunes any segment whose docs are all deleted. */
+  public void pruneDeletedSegments() throws IOException {
+    int segIdx = 0;
+    while(segIdx < size()) {
+      final SegmentInfo info = info(segIdx);
+      if (info.getDelCount() == info.docCount) {
+        remove(segIdx);
+      } else {
+        segIdx++;
+      }
+    }
+  }
+
   /**
    * Returns a copy of this instance, also copying each
    * SegmentInfo.

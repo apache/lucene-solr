@@ -12,6 +12,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
 
   @Override
   public void doTest() throws Exception {
+    del("*:*");
     index(id, 18, "b_t", "snake spider shark snail slug seal");
     index(id, 19, "b_t", "snake spider shark snail slug");
     index(id, 20, "b_t", "snake spider shark snail");

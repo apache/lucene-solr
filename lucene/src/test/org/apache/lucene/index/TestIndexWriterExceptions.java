@@ -562,21 +562,22 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         System.out.println("TEST: open reader");
       }
       IndexReader reader = IndexReader.open(dir, true);
-      int expected = 3+(1-i)*2;
-      assertEquals(expected, reader.docFreq(new Term("contents", "here")));
-      assertEquals(expected, reader.maxDoc());
-      int numDel = 0;
-      for(int j=0;j<reader.maxDoc();j++) {
-        if (reader.isDeleted(j))
-          numDel++;
-        else {
-          reader.document(j);
-          reader.getTermFreqVectors(j);
+      if (i == 0) { 
+        int expected = 5;
+        assertEquals(expected, reader.docFreq(new Term("contents", "here")));
+        assertEquals(expected, reader.maxDoc());
+        int numDel = 0;
+        for(int j=0;j<reader.maxDoc();j++) {
+          if (reader.isDeleted(j))
+            numDel++;
+          else {
+            reader.document(j);
+            reader.getTermFreqVectors(j);
+          }
         }
+        assertEquals(1, numDel);
       }
       reader.close();
-
-      assertEquals(1, numDel);
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
           analyzer).setMaxBufferedDocs(10));
@@ -589,10 +590,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       writer.close();
 
       reader = IndexReader.open(dir, true);
-      expected = 19+(1-i)*2;
+      int expected = 19+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
-      numDel = 0;
+      int numDel = 0;
       for(int j=0;j<reader.maxDoc();j++) {
         if (reader.isDeleted(j))
           numDel++;

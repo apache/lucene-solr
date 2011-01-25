@@ -3173,7 +3173,6 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
-    assertEquals(1, ir.maxDoc());
     assertEquals(0, ir.numDocs());
     ir.close();
 

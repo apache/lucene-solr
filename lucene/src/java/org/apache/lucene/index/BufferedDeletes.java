@@ -270,9 +270,9 @@ class BufferedDeletes {
   }
   
   private synchronized long applyDeletes(IndexWriter.ReaderPool readerPool,
-                                            SegmentInfo info, 
-                                            SegmentDeletes coalescedDeletes,
-                                            SegmentDeletes segmentDeletes) throws IOException {    
+                                         SegmentInfo info, 
+                                         SegmentDeletes coalescedDeletes,
+                                         SegmentDeletes segmentDeletes) throws IOException {    
     assert readerPool.infoIsLive(info);
     
     assert coalescedDeletes == null || coalescedDeletes.docIDs.size() == 0;

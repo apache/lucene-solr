@@ -394,7 +394,7 @@ public class TestAddIndexes extends LuceneTestCase {
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
     writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)) });
-    assertEquals(1060, writer.maxDoc());
+    assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
     dir.close();
@@ -438,7 +438,7 @@ public class TestAddIndexes extends LuceneTestCase {
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
     writer.addIndexes(new Directory[] { aux, aux2 });
-    assertEquals(1060, writer.maxDoc());
+    assertEquals(1040, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
     dir.close();

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Random;
+import java.lang.reflect.Method;
 
 import junit.framework.Assert;
 
@@ -214,6 +215,16 @@ public class QueryUtils {
       }
       w.commit();
       w.deleteDocuments( new MatchAllDocsQuery() );
+      try {
+        // Carefully invoke what is a package-private (test
+        // only, internal) method on IndexWriter:
+        Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
+        m.setAccessible(true);
+        m.invoke(w);
+      } catch (Exception e) {
+        // Should not happen?
+        throw new RuntimeException(e);
+      }
       w.commit();
 
       if (0 < numDeletedDocs)
