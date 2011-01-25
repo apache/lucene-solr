@@ -20,11 +20,12 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Collections;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -108,6 +109,7 @@ public class FilterIndexReader extends IndexReader {
   public FilterIndexReader(IndexReader in) {
     super();
     this.in = in;
+    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
   }
 
   @Override
@@ -244,11 +246,6 @@ public class FilterIndexReader extends IndexReader {
   @Override
   protected void doClose() throws IOException {
     in.close();
-
-    // NOTE: only needed in case someone had asked for
-    // FieldCache for top-level reader (which is generally
-    // not a good idea):
-    FieldCache.DEFAULT.purge(this);
   }
 
 
@@ -305,4 +302,17 @@ public class FilterIndexReader extends IndexReader {
     buffer.append(')');
     return buffer.toString();
   }
+
+  @Override
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    super.addReaderFinishedListener(listener);
+    in.addReaderFinishedListener(listener);
+  }
+
+  @Override
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    super.removeReaderFinishedListener(listener);
+    in.removeReaderFinishedListener(listener);
+  }
 }
+

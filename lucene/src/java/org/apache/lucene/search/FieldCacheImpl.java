@@ -132,6 +132,13 @@ class FieldCacheImpl implements FieldCache {
   static final class StopFillCacheException extends RuntimeException {
   }
 
+  final static IndexReader.ReaderFinishedListener purgeReader = new IndexReader.ReaderFinishedListener() {
+    // @Override -- not until Java 1.6
+    public void finished(IndexReader reader) {
+      FieldCache.DEFAULT.purge(reader);
+    }
+  };
+
   /** Expert: Internal cache. */
   abstract static class Cache {
     Cache() {
@@ -164,8 +171,10 @@ class FieldCacheImpl implements FieldCache {
       synchronized (readerCache) {
         innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
+          // First time this reader is using FieldCache
           innerCache = new HashMap<Entry,Object>();
           readerCache.put(readerKey, innerCache);
+          reader.addReaderFinishedListener(purgeReader);
           value = null;
         } else {
           value = innerCache.get(key);

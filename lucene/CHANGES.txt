@@ -488,6 +488,11 @@ New features
 
 * LUCENE-2720: Segments now record the code version which created them. 
   (Shai Erera, Mike McCandless, Uwe Schindler)
+
+* LUCENE-2474: Added expert ReaderFinishedListener API to
+  IndexReader, to allow apps that maintain external per-segment caches
+  to evict entries when a segment is finished.  (Shay Banon, Yonik
+  Seeley, Mike McCandless)
   
 Optimizations
 

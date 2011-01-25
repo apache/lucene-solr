@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -460,6 +461,13 @@ public class IndexWriter implements Closeable {
     return r;
   }
 
+  // Used for all SegmentReaders we open
+  private final Collection<IndexReader.ReaderFinishedListener> readerFinishedListeners = Collections.synchronizedSet(new HashSet<IndexReader.ReaderFinishedListener>());
+
+  Collection<IndexReader.ReaderFinishedListener> getReaderFinishedListeners() throws IOException {
+    return readerFinishedListeners;
+  }
+
   /** Holds shared SegmentReader instances. IndexWriter uses
    *  SegmentReaders for 1) applying deletes, 2) doing
    *  merges, 3) handing out a real-time reader.  This pool
@@ -669,6 +677,7 @@ public class IndexWriter implements Closeable {
         // synchronized
         // Returns a ref, which we xfer to readerMap:
         sr = SegmentReader.get(false, info.dir, info, readBufferSize, doOpenStores, termsIndexDivisor);
+        sr.readerFinishedListeners = readerFinishedListeners;
 
         if (info.dir == directory) {
           // Only pool if reader is not external
