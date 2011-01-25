@@ -911,6 +911,10 @@ Optimizations
 * LUCENE-2010: Segments with 100% deleted documents are now removed on
   IndexReader or IndexWriter commit.  (Uwe Schindler, Mike McCandless)
   
+* LUCENE-1472: Removed synchronization from static DateTools methods
+  by using a ThreadLocal. Also converted DateTools.Resolution to a
+  Java 5 enum (this should not break backwards).  (Uwe Schindler)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
