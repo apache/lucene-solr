@@ -583,6 +583,12 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
       // too many boolean clauses, so ParseException is expected
     }
   }
+  
+  // LUCENE-792
+  public void testNOT() throws Exception {
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    assertQueryEquals("NOT foo AND bar", a, "-foo +bar");
+  }
 
   /**
    * This test differs from the original QueryParser, showing how the precedence
