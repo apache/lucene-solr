@@ -368,6 +368,9 @@ Bug fixes
 * LUCENE-2693: RAM used by IndexWriter was slightly incorrectly computed. 
   (Jason Rutherglen via Shai Erera)
 
+* LUCENE-1846: DateTools now uses the US locale everywhere, so DateTools.round()
+  is safe also in strange locales.  (Uwe Schindler)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

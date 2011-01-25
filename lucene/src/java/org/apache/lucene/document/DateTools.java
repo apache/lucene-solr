@@ -73,7 +73,7 @@ public class DateTools {
       MILLISECOND_FORMAT.setTimeZone(GMT);
     }
     
-    final Calendar calInstance = Calendar.getInstance(GMT);
+    final Calendar calInstance = Calendar.getInstance(GMT, Locale.US);
   }
   
   private static final ThreadLocal<DateFormats> FORMATS = new ThreadLocal<DateFormats>() {
