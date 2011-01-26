@@ -82,7 +82,6 @@
 
     </target>
     <target name="extract-reuters" depends="check-files" unless="reuters.extracted">
-        <mkdir dir="${working.dir}/reuters-out"/>
         <java classname="org.apache.lucene.benchmark.utils.ExtractReuters" maxmemory="1024M" fork="true">
             <classpath refid="run.classpath"/>
             <arg file="${working.dir}/reuters"/>

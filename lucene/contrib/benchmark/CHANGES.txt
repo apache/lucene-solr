@@ -2,6 +2,11 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+01/26/2011
+  LUCENE-929: ExtractReuters first extracts to a tmp dir and then renames. That 
+  way, if a previous extract attempt failed, "ant extract-reuters" will still 
+  extract the files. (Shai Erera, Doron Cohen, Grant Ingersoll)
+  
 01/24/2011
   LUCENE-2885: Add WaitForMerges task (calls IndexWriter.waitForMerges()).
   (Mike McCandless)
