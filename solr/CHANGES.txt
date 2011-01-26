@@ -733,6 +733,9 @@ Other Changes
   
 * SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
 
+* SOLR-1826: Add unit tests for highlighting with termOffsets=true
+  and overlapping tokens. (Stefan Oestreicher via rmuir)
+
 
 Build
 ----------------------
