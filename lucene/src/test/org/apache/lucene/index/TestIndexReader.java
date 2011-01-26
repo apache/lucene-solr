@@ -960,9 +960,6 @@ public class TestIndexReader extends LuceneTestCase {
             }
           }
 
-          IndexWriter.unlock(dir);
-          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
-
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if
           // we failed, we see either all docs or no docs
