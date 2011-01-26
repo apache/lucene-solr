@@ -48,7 +48,7 @@
               excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/"
   />
   <patternset id="binary.build.dist.patterns"
-              includes="${final.name}.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
+              includes="${final.name}*.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
   />
   <patternset id="binary.root.dist.patterns"
               includes="docs/,*.txt,contrib/*/README*,**/CHANGES.txt"
@@ -259,7 +259,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, build-contrib, init-dist, changes-to-html"/>
+  <target name="package" depends="jar-core, jar-core-test, javadocs, build-contrib, init-dist, changes-to-html"/>
 
   <target name="nightly" depends="test, package-tgz">
   </target>
@@ -401,6 +401,8 @@
                   classifier="sources"/>
           <attach file="${build.dir}/${final.name}-javadoc.jar"
                   classifier="javadoc"/>
+          <attach file="${build.dir}/${final.name}-tests.jar"
+                  classifier="tests"/>
         </artifact-attachments>
       </m2-deploy>
       <contrib-crawl target="dist-maven"/>
