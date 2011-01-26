@@ -484,6 +484,10 @@ Bug Fixes
 
 * SOLR-482: Provide more exception handling in CSVLoader (gsingers)
 
+* SOLR-1283: HTMLStripCharFilter sometimes threw a "Mark Invalid" exception. 
+  (Julien Coloos, hossman, yonik)
+
+
 Other Changes
 ----------------------
 

@@ -103,6 +103,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
     if (len>0) {
       return pushed.charAt(len-1);
     }
+    numRead++;
     int ch = input.read();
     push(ch);
     return ch;
