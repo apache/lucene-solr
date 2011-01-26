@@ -302,6 +302,10 @@
     <jarify/>
   </target>
 
+ <target name="jar-core-test" depends="compile-test">
+    <jarify basedir="${build.dir}/classes/test" destfile="${build.dir}/${final.name}-tests.jar"/>
+  </target>
+
   <target name="maven.ant.tasks-check">
 	<fail unless="maven.ant.tasks.present">
 	  ##################################################################
