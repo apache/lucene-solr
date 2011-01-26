@@ -215,7 +215,6 @@ public class IndexWriter implements Closeable {
   private long lastCommitChangeCount; // last changeCount that was committed
 
   private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
-  private HashMap<SegmentInfo,Integer> rollbackSegments;
 
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
@@ -860,10 +859,6 @@ public class IndexWriter implements Closeable {
 
   private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
     rollbackSegmentInfos = (SegmentInfos) infos.clone();
-    rollbackSegments = new HashMap<SegmentInfo,Integer>();
-    final int size = rollbackSegmentInfos.size();
-    for(int i=0;i<size;i++)
-      rollbackSegments.put(rollbackSegmentInfos.info(i), Integer.valueOf(i));
   }
 
   /**
