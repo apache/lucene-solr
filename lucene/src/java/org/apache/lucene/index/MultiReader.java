@@ -22,8 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.HashSet;
-import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -31,6 +30,7 @@ import org.apache.lucene.index.DirectoryReader.MultiTermDocs;
 import org.apache.lucene.index.DirectoryReader.MultiTermEnum;
 import org.apache.lucene.index.DirectoryReader.MultiTermPositions;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.MapBackedSet;
 
 /** An IndexReader which reads multiple indexes, appending
  * their content. */
@@ -85,7 +85,7 @@ public class MultiReader extends IndexReader implements Cloneable {
         hasDeletions = true;
     }
     starts[subReaders.length] = maxDoc;
-    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
   
   /**

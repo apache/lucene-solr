@@ -29,6 +29,7 @@ import java.util.List;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -36,6 +37,8 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.MapBackedSet;
+
 /** 
  * An IndexReader which reads indexes with multiple segments.
  */
@@ -90,7 +93,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.termInfosIndexDivisor = termInfosIndexDivisor;
 
     if (readerFinishedListeners == null) {
-      this.readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
+      this.readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     } else {
       this.readerFinishedListeners = readerFinishedListeners;
     }

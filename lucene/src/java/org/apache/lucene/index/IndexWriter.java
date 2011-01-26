@@ -30,8 +30,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LimitTokenCountAnalyzer;
@@ -48,6 +48,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.MapBackedSet;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -461,7 +462,7 @@ public class IndexWriter implements Closeable {
   }
 
   // Used for all SegmentReaders we open
-  private final Collection<IndexReader.ReaderFinishedListener> readerFinishedListeners = Collections.synchronizedSet(new HashSet<IndexReader.ReaderFinishedListener>());
+  private final Collection<IndexReader.ReaderFinishedListener> readerFinishedListeners = new MapBackedSet<IndexReader.ReaderFinishedListener>(new ConcurrentHashMap<IndexReader.ReaderFinishedListener,Boolean>());
 
   Collection<IndexReader.ReaderFinishedListener> getReaderFinishedListeners() throws IOException {
     return readerFinishedListeners;
