@@ -55,7 +55,7 @@ import org.apache.lucene.search.NumericRangeFilter; // for javadocs
  * {@link String#compareTo(String)}) representations of numeric data types for other
  * usages (e.g. sorting).
  *
- * @lucene.experimental
+ * @lucene.internal
  *
  * @since 2.9
  */

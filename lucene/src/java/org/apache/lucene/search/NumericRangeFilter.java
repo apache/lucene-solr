@@ -39,8 +39,6 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * See {@link NumericRangeQuery} for details on how Lucene
  * indexes and searches numeric valued fields.
  *
- * @lucene.experimental
- *
  * @since 2.9
  **/
 public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWrapperFilter<NumericRangeQuery<T>> {

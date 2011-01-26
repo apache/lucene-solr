@@ -75,8 +75,6 @@ import org.apache.lucene.index.TermEnum;
  * BooleanQuery rewrite methods without changing
  * BooleanQuery's default max clause count.
  *
- * @lucene.experimental
- *
  * <br><h3>How it works</h3>
  *
  * <p>See the publication about <a target="_blank" href="http://www.panfmp.org">panFMP</a>,
