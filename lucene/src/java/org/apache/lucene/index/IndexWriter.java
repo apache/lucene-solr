@@ -2339,6 +2339,11 @@ public class IndexWriter implements Closeable {
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
    *
+   * <p><b>NOTE</b>: if you call {@link #close(boolean)}
+   * with <tt>false</tt>, which aborts all running merges,
+   * then any thread still running this method might hit a
+   * {@link MergePolicy.MergeAbortedException}.
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @see MergePolicy#findMergesForOptimize
@@ -2488,6 +2493,11 @@ public class IndexWriter implements Closeable {
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
+   *
+   * <p><b>NOTE</b>: if you call {@link #close(boolean)}
+   * with <tt>false</tt>, which aborts all running merges,
+   * then any thread still running this method might hit a
+   * {@link MergePolicy.MergeAbortedException}.
    */
   public void expungeDeletes(boolean doWait)
     throws CorruptIndexException, IOException {
@@ -2758,8 +2768,9 @@ public class IndexWriter implements Closeable {
    *
    * <p>NOTE: this method will forcefully abort all merges
    *    in progress.  If other threads are running {@link
-   *    #optimize()} or any of the addIndexes methods, they
-   *    will receive {@link MergePolicy.MergeAbortedException}s.
+   *    #optimize()}, {@link #addIndexes(IndexReader[])} or
+   *    {@link #expungeDeletes} methods, they may receive
+   *    {@link MergePolicy.MergeAbortedException}s.
    */
   public synchronized void deleteAll() throws IOException {
     try {
@@ -2918,6 +2929,11 @@ public class IndexWriter implements Closeable {
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.
+   *
+   * <p><b>NOTE</b>: if you call {@link #close(boolean)}
+   * with <tt>false</tt>, which aborts all running merges,
+   * then any thread still running this method might hit a
+   * {@link MergePolicy.MergeAbortedException}.
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
