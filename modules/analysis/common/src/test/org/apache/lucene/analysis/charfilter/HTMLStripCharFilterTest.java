@@ -169,7 +169,7 @@ public class HTMLStripCharFilterTest extends LuceneTestCase {
 
   public void testBufferOverflow() throws Exception {
     StringBuilder testBuilder = new StringBuilder(HTMLStripCharFilter.DEFAULT_READ_AHEAD + 50);
-    testBuilder.append("ah<?> ");
+    testBuilder.append("ah<?> ??????");
     appendChars(testBuilder, HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
     processBuffer(testBuilder.toString(), "Failed on pseudo proc. instr.");//processing instructions
 
