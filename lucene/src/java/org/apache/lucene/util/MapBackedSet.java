@@ -28,7 +28,7 @@ import java.util.Map;
  * 
  * @lucene.internal
  */
-public class MapBackedSet<E> extends AbstractSet<E> implements Serializable {
+public final class MapBackedSet<E> extends AbstractSet<E> implements Serializable {
 
   private static final long serialVersionUID = -6761513279741915432L;
 
