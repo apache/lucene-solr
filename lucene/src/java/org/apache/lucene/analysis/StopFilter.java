@@ -118,7 +118,7 @@ public final class StopFilter extends TokenFilter {
    */
   @Deprecated
   public StopFilter(boolean enablePositionIncrements, TokenStream in, Set<?> stopWords) {
-    this(Version.LUCENE_CURRENT, enablePositionIncrements, in, stopWords, false);
+    this(Version.LUCENE_30, enablePositionIncrements, in, stopWords, false);
   }
   
   /**
