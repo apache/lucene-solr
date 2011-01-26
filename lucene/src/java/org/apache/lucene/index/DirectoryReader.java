@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -36,6 +37,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MapBackedSet;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
@@ -104,7 +106,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     } else {
       this.codecs = codecs;
     }
-    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
 
     // To reduce the chance of hitting FileNotFound
     // (and having to retry), we open segments in

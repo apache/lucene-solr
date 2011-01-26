@@ -23,13 +23,13 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MapBackedSet;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -287,7 +287,7 @@ public class FilterIndexReader extends IndexReader {
   public FilterIndexReader(IndexReader in) {
     super();
     this.in = in;
-    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
 
   @Override

@@ -20,14 +20,14 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.HashSet;
-import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.MapBackedSet;
 
 /** An IndexReader which reads multiple indexes, appending
  *  their content. */
@@ -83,7 +83,7 @@ public class MultiReader extends IndexReader implements Cloneable {
       }
     }
     starts[subReaders.length] = maxDoc;
-    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     return ReaderUtil.buildReaderContext(this);
   }
 

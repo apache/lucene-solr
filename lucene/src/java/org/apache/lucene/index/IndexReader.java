@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.List;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -128,10 +127,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     // Defensive (should never be null -- all impls must set
     // this):
     if (readerFinishedListeners != null) {
-
-      // Clone the set so that we don't have to sync on
-      // readerFinishedListeners while invoking them:
-      for(ReaderFinishedListener listener : new HashSet<ReaderFinishedListener>(readerFinishedListeners)) {
+      for(ReaderFinishedListener listener : readerFinishedListeners) {
         listener.finished(this);
       }
     }
