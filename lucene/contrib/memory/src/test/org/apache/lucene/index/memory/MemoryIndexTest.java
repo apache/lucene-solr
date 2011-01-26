@@ -31,12 +31,18 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.BulkPostingsEnumWrapper;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -79,6 +85,34 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   public void testRandomQueries() throws Exception {
     for (int i = 0; i < ITERATIONS; i++)
       assertAgainstRAMDirectory();
+  }
+  
+  
+  public void testBulkPostings() throws IOException {
+    String fieldName = "field";
+    final int num = random.nextInt(1000);
+    MemoryIndex index = new MemoryIndex();
+    StringBuilder builder = new StringBuilder();
+    String content = "1 2 3 4 5 6 7 8 9 10 ";
+    for (int i = 0; i < num; i++) {
+      builder.append(content);
+    }
+    content = builder.toString();
+    index.addField(fieldName, content, new MockAnalyzer(
+        MockTokenizer.WHITESPACE, true, false));
+    IndexSearcher searcher = index.createSearcher();
+    AtomicReaderContext leaf = ReaderUtil
+        .leaves(searcher.getTopReaderContext())[0];
+    DocsAndPositionsEnum docsAndPos = new BulkPostingsEnumWrapper(
+        leaf.reader.bulkTermPostingsEnum(fieldName, new BytesRef("1"), true,
+            true), null, 1);
+    assertNotNull(docsAndPos);
+    assertEquals(0, docsAndPos.nextDoc());
+    for (int i = 0; i < num; i++) {
+      assertEquals(num, docsAndPos.freq());
+      assertEquals(i * 10, docsAndPos.nextPosition());
+    }
+    assertEquals(docsAndPos.nextDoc(), Scorer.NO_MORE_DOCS);
   }
 
   /**

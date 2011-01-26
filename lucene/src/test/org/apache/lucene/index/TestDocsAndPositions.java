@@ -92,17 +92,36 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
   public DocsAndPositionsEnum getDocsAndPositions(IndexReader reader,
       BytesRef bytes, Bits skipDocs) throws IOException {
+    if (random.nextInt(10) == 0) { // once in a while throw in a non-bulk reader
       return reader.termPositionsEnum(null, fieldName, bytes);
+    } else {
+      BulkPostingsEnum bulkTermPostingsEnum = reader.bulkTermPostingsEnum(
+          fieldName, bytes, true, true);
+      if (bulkTermPostingsEnum == null){
+        return null;
+      }
+      return new BulkPostingsEnumWrapper(bulkTermPostingsEnum, null,
+          reader.docFreq(new Term(fieldName, bytes)));
+    }
   }
 
   public DocsEnum getDocsEnum(IndexReader reader, BytesRef bytes,
       boolean freqs, Bits skipDocs) throws IOException {
     int randInt = random.nextInt(10);
-    if (randInt == 0) { // once in a while throw in a positions enum
+    if (randInt == 0) { // once in a while throw in a non-bulk reader
+      return reader.termDocsEnum(skipDocs, fieldName, bytes);
+    } else if (randInt == 5) {
+
       return getDocsAndPositions(reader, bytes, skipDocs);
     } else {
-      return reader.termDocsEnum(skipDocs, fieldName, bytes);
-    } 
+      BulkPostingsEnum bulkTermPostingsEnum = reader.bulkTermPostingsEnum(
+          fieldName, bytes, freqs, false);
+      if (bulkTermPostingsEnum == null) {
+        return null;
+      }
+      return new BulkPostingsEnumWrapper(bulkTermPostingsEnum, skipDocs,
+          reader.docFreq(new Term(fieldName, bytes)));
+    }
   }
 
   /**
