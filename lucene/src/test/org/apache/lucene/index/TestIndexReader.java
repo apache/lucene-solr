@@ -996,15 +996,6 @@ public class TestIndexReader extends LuceneTestCase
             }
           }
 
-          // Whether we succeeded or failed, check that all
-          // un-referenced files were in fact deleted (ie,
-          // we did not create garbage).  Just create a
-          // new IndexFileDeleter, have it delete
-          // unreferenced files, then verify that in fact
-          // no files were deleted:
-          IndexWriter.unlock(dir);
-          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
-
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if
           // we failed, we see either all docs or no docs
