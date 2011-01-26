@@ -84,8 +84,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
  * parameter as well as how numeric fields work under the hood.</p>
  *
- * @lucene.experimental
- *
  * @since 2.9
  */
 public final class NumericTokenStream extends TokenStream {
