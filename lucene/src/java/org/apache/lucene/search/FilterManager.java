@@ -27,8 +27,7 @@ import java.util.TreeSet;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
- * Filter caching singleton.  It can be used 
- * to save filters locally for reuse.
+ * Filter caching singleton. It can be used to save filters locally for reuse.
  * This class makes it possible to cache Filters even when using RMI, as it
  * keeps the cache on the searcher side of the RMI connection.
  * 
@@ -37,6 +36,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * 
  * The cache is periodically cleaned up from a separate thread to ensure the
  * cache doesn't exceed the maximum size.
+ * 
+ * @deprecated used by remote package which is deprecated as well. You should
+ *             use {@link CachingWrapperFilter} if you wish to cache
+ *             {@link Filter}s.
  */
 public class FilterManager {
 
