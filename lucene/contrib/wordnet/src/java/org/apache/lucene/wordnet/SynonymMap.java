@@ -161,7 +161,7 @@ public class SynonymMap {
     return word.toLowerCase();
   }
 
-  private static boolean isValid(String str) {
+  protected boolean isValid(String str) {
     for (int i=str.length(); --i >= 0; ) {
       if (!Character.isLetter(str.charAt(i))) return false;
     }
