@@ -1,0 +1,24 @@
+core.test.files=\
+	org/apache/lucene/util/_TestUtil.java,\
+	org/apache/lucene/util/LineFileDocs.java,\
+	org/apache/lucene/util/LuceneJUnitDividingSelector.java,\
+	org/apache/lucene/util/LuceneJUnitResultFormatter.java,\
+	org/apache/lucene/util/LuceneTestCase.java,\
+	org/apache/lucene/util/automaton/AutomatonTestUtil.java,\
+	org/apache/lucene/search/QueryUtils.java,\
+	org/apache/lucene/analysis/BaseTokenStreamTestCase.java,\
+	org/apache/lucene/analysis/MockAnalyzer.java,\
+	org/apache/lucene/analysis/MockPayloadAnalyzer.java,\
+	org/apache/lucene/analysis/MockTokenFilter.java,\
+	org/apache/lucene/analysis/MockTokenizer.java,\
+	org/apache/lucene/index/MockIndexInput.java,\
+	org/apache/lucene/index/RandomIndexWriter.java,\
+	org/apache/lucene/index/DocHelper.java,\
+	org/apache/lucene/codecs/preflexrw/PreFlexFieldsWriter.java,\
+	org/apache/lucene/codecs/preflexrw/PreFlexRWCodec.java,\
+	org/apache/lucene/codecs/preflexrw/TermInfosWriter.java,\
+	org/apache/lucene/codecs/mockrandom/MockRandomCodec.java,\
+	org/apache/lucene/store/_TestHelper.java,\
+	org/apache/lucene/store/MockDirectoryWrapper.java,\
+	org/apache/lucene/store/MockIndexInputWrapper.java,\
+	org/apache/lucene/store/MockIndexOutputWrapper.java,\
