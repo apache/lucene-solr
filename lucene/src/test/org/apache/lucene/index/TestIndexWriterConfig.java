@@ -230,6 +230,23 @@ public class TestIndexWriterConfig extends LuceneTestCase {
       // this is expected
     }
 
+    // Test setReaderTermsIndexDivisor
+    try {
+      conf.setReaderTermsIndexDivisor(0);
+      fail("should not have succeeded to set termsIndexDivisor to 0");
+    } catch (IllegalArgumentException e) {
+      // this is expected
+    }
+    
+    // Setting to -1 is ok
+    conf.setReaderTermsIndexDivisor(-1);
+    try {
+      conf.setReaderTermsIndexDivisor(-2);
+      fail("should not have succeeded to set termsIndexDivisor to < -1");
+    } catch (IllegalArgumentException e) {
+      // this is expected
+    }
+    
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     conf.setMaxThreadStates(5);
     assertEquals(5, conf.getMaxThreadStates());

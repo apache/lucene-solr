@@ -405,7 +405,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  memory.  By setting this to a value > 1 you can reduce
    *  memory usage, at the expense of higher latency when
    *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
+   *  to -1 to skip loading the terms index entirely. This is only useful in 
+   *  advanced situations when you will only .next() through all terms; 
+   *  attempts to seek will hit an exception.
+   *  
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */

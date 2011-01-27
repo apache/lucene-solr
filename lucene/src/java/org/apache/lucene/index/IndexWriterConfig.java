@@ -539,10 +539,13 @@ public final class IndexWriterConfig implements Cloneable {
   /** Sets the term index divisor passed to any readers that
    *  IndexWriter opens, for example when apply deletes or
    *  creating a near-real-time reader in {@link
-   *  IndexWriter#getReader}. */
+   *  IndexWriter#getReader}. If you pass -1, the terms index 
+   *  won't be loaded by the readers. This is only useful in 
+   *  advanced situations when you will only .next() through 
+   *  all terms; attempts to seek will hit an exception. */
   public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
-    if (divisor <= 0) {
-      throw new IllegalArgumentException("divisor must be >= 1 (got " + divisor + ")");
+    if (divisor <= 0 && divisor != -1) {
+      throw new IllegalArgumentException("divisor must be >= 1, or -1 (got " + divisor + ")");
     }
     readerTermsIndexDivisor = divisor;
     return this;

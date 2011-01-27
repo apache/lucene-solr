@@ -970,4 +970,26 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir.close();
     assertTrue(didWarm.get());
   }
+  
+  public void testNoTermsIndex() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setReaderTermsIndexDivisor(-1));
+    Document doc = new Document();
+    doc.add(new Field("f", "val", Store.NO, Index.ANALYZED));
+    w.addDocument(doc);
+    IndexReader r = IndexReader.open(w);
+    try {
+      r.termDocs(new Term("f", "val"));
+      fail("should have failed to seek since terms index was not loaded");
+    } catch (IllegalStateException e) {
+      // expected - we didn't load the term index
+    } finally {
+      r.close();
+      w.close();
+      dir.close();
+    }
+  }
+  
 }

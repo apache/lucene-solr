@@ -371,6 +371,9 @@ Bug fixes
 * LUCENE-1846: DateTools now uses the US locale everywhere, so DateTools.round()
   is safe also in strange locales.  (Uwe Schindler)
 
+* LUCENE-2891: IndexWriterConfig did not accept -1 in setReaderTermIndexDivisor,
+  which can be used to prevent loading the terms index into memory. (Shai Erera)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
