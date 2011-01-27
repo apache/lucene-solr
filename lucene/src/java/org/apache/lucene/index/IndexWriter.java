@@ -2895,10 +2895,6 @@ public class IndexWriter implements Closeable {
   final synchronized void mergeInit(MergePolicy.OneMerge merge) throws IOException {
     boolean success = false;
     try {
-      // Lock order: IW -> BD
-      if (bufferedDeletes.applyDeletes(readerPool, segmentInfos, merge.segments)) {
-        checkpoint();
-      }
       _mergeInit(merge);
       success = true;
     } finally {
@@ -2928,6 +2924,11 @@ public class IndexWriter implements Closeable {
 
     if (merge.isAborted())
       return;
+
+    // Lock order: IW -> BD
+    if (bufferedDeletes.applyDeletes(readerPool, segmentInfos, merge.segments)) {
+      checkpoint();
+    }
 
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
