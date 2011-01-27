@@ -18,6 +18,7 @@
 package org.apache.solr.response;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 
@@ -44,7 +45,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * @version $Id$
  * @since solr 1.3
  */
-public class RawResponseWriter implements QueryResponseWriter 
+public class RawResponseWriter implements BinaryQueryResponseWriter 
 {
   /** 
    * The key that should be used to add a ContentStream to the 
@@ -93,4 +94,24 @@ public class RawResponseWriter implements QueryResponseWriter
       getBaseWriter( request ).write( writer, request, response );
     }
   }
+
+public void write(OutputStream out, SolrQueryRequest request,
+		SolrQueryResponse response) throws IOException {
+    Object obj = response.getValues().get( CONTENT );
+    if( obj != null && (obj instanceof ContentStream ) ) {
+      // copy the contents to the writer...
+      ContentStream content = (ContentStream)obj;
+      java.io.InputStream in = content.getStream();
+      try {
+        IOUtils.copy( in, out );
+      } finally {
+        in.close();
+      }
+    }
+    else {
+      //getBaseWriter( request ).write( writer, request, response );
+    	throw new IOException("did not find a CONTENT object");
+    }
+	
+}
 }
