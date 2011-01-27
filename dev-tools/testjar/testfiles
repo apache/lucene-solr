@@ -1,0 +1,16 @@
+core.test.files=\
+	org/apache/lucene/util/_TestUtil.java,\
+	org/apache/lucene/util/LineFileDocs.java,\
+	org/apache/lucene/util/LuceneJUnitDividingSelector.java,\
+	org/apache/lucene/util/LuceneJUnitResultFormatter.java,\
+	org/apache/lucene/util/LuceneTestCase.java,\
+	org/apache/lucene/search/QueryUtils.java,\
+	org/apache/lucene/analysis/BaseTokenStreamTestCase.java,\
+	org/apache/lucene/analysis/MockAnalyzer.java,\
+	org/apache/lucene/index/MockIndexInput.java,\
+	org/apache/lucene/index/RandomIndexWriter.java,\
+	org/apache/lucene/index/DocHelper.java,\
+	org/apache/lucene/store/_TestHelper.java,\
+	org/apache/lucene/store/MockDirectoryWrapper.java,\
+	org/apache/lucene/store/MockIndexInputWrapper.java,\
+	org/apache/lucene/store/MockIndexOutputWrapper.java,\
