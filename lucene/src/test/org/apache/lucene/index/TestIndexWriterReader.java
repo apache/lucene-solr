@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -990,4 +992,37 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir.close();
     assertTrue(didWarm.get());
   }
+  
+  public void testNoTermsIndex() throws Exception {
+    // Some Codecs don't honor the ReaderTermsIndexDiviso, so skip the test if
+    // they're picked.
+    HashSet<String> illegalCodecs = new HashSet<String>();
+    illegalCodecs.add("PreFlex");
+    illegalCodecs.add("MockRandom");
+    illegalCodecs.add("SimpleText");
+
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer()).setReaderTermsIndexDivisor(-1);
+    
+    // Don't proceed if picked Codec is in the list of illegal ones.
+    if (illegalCodecs.contains(conf.getCodecProvider().getFieldCodec("f"))) return;
+
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new Field("f", "val", Store.NO, Index.ANALYZED));
+    w.addDocument(doc);
+    IndexReader r = IndexReader.open(w).getSequentialSubReaders()[0];
+    try {
+      r.termDocsEnum(null, "f", new BytesRef("val"));
+      fail("should have failed to seek since terms index was not loaded. Codec used " + conf.getCodecProvider().getFieldCodec("f"));
+    } catch (IllegalStateException e) {
+      // expected - we didn't load the term index
+    } finally {
+      r.close();
+      w.close();
+      dir.close();
+    }
+  }
+  
 }
