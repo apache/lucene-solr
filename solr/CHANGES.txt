@@ -490,6 +490,9 @@ Bug Fixes
 * SOLR-1283: HTMLStripCharFilter sometimes threw a "Mark Invalid" exception. 
   (Julien Coloos, hossman, yonik)
 
+* SOLR-2085: Improve SolrJ behavior when FacetComponent comes before
+  QueryComponent (Tomas Salfischberger via hossman)
+
 
 Other Changes
 ----------------------

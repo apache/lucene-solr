@@ -104,7 +104,8 @@ public class QueryResponse extends SolrResponseBase
       }
       else if( "facet_counts".equals( n ) ) {
         _facetInfo = (NamedList<Object>) res.getVal( i );
-        extractFacetInfo( _facetInfo );
+        // extractFacetInfo inspects _results, so defer calling it
+        // in case it hasn't been populated yet.
       }
       else if( "debug".equals( n ) ) {
         _debugInfo = (NamedList<Object>) res.getVal( i );
@@ -127,6 +128,7 @@ public class QueryResponse extends SolrResponseBase
         extractTermsInfo( _termsInfo );
       }
     }
+    if(_facetInfo != null) extractFacetInfo( _facetInfo );
   }
 
   private void extractSpellCheckInfo(NamedList<Object> spellInfo) {
