@@ -23,8 +23,12 @@ import java.net.URL;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.MoreLikeThisHandler;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -50,18 +54,59 @@ public class MoreLikeThisComponent extends SearchComponent
     if( p.getBool( MoreLikeThisParams.MLT, false ) ) {
       SolrIndexSearcher searcher = rb.req.getSearcher();
       
-      MoreLikeThisHandler.MoreLikeThisHelper mlt 
-        = new MoreLikeThisHandler.MoreLikeThisHelper( p, searcher );
-      
-      int mltcount = p.getInt( MoreLikeThisParams.DOC_COUNT, 5 );
-      NamedList<DocList> sim = mlt.getMoreLikeThese(
-          rb.getResults().docList, mltcount, rb.getFieldFlags() );
+      NamedList<DocList> sim = getMoreLikeThese( rb, searcher,
+          rb.getResults().docList, rb.getFieldFlags() );
 
       // TODO ???? add this directly to the response?
       rb.rsp.add( "moreLikeThis", sim );
     }
   }
 
+  NamedList<DocList> getMoreLikeThese( ResponseBuilder rb, SolrIndexSearcher searcher,
+      DocList docs, int flags ) throws IOException {
+    SolrParams p = rb.req.getParams();
+    IndexSchema schema = searcher.getSchema();
+    MoreLikeThisHandler.MoreLikeThisHelper mltHelper 
+      = new MoreLikeThisHandler.MoreLikeThisHelper( p, searcher );
+    NamedList<DocList> mlt = new SimpleOrderedMap<DocList>();
+    DocIterator iterator = docs.iterator();
+
+    SimpleOrderedMap<Object> dbg = null;
+    if( rb.isDebug() ){
+      dbg = new SimpleOrderedMap<Object>();
+    }
+
+    while( iterator.hasNext() ) {
+      int id = iterator.nextDoc();
+      int rows = p.getInt( MoreLikeThisParams.DOC_COUNT, 5 );
+      DocListAndSet sim = mltHelper.getMoreLikeThis( id, 0, rows, null, null, flags );
+      String name = schema.printableUniqueKey( searcher.doc( id ) );
+      mlt.add(name, sim.docList);
+      
+      if( dbg != null ){
+        SimpleOrderedMap<Object> docDbg = new SimpleOrderedMap<Object>();
+        docDbg.add( "rawMLTQuery", mltHelper.getRawMLTQuery().toString() );
+        docDbg.add( "boostedMLTQuery", mltHelper.getBoostedMLTQuery().toString() );
+        docDbg.add( "realMLTQuery", mltHelper.getRealMLTQuery().toString() );
+        SimpleOrderedMap<Object> explains = new SimpleOrderedMap<Object>();
+        DocIterator mltIte = sim.docList.iterator();
+        while( mltIte.hasNext() ){
+          int mltid = mltIte.nextDoc();
+          String key = schema.printableUniqueKey( searcher.doc( mltid ) );
+          explains.add( key, searcher.explain( mltHelper.getRealMLTQuery(), mltid ) );
+        }
+        docDbg.add( "explain", explains );
+        dbg.add( name, docDbg );
+      }
+    }
+
+    // add debug information
+    if( dbg != null ){
+      rb.addDebugInfo( "moreLikeThis", dbg );
+    }
+    return mlt;
+  }
+  
   /////////////////////////////////////////////
   ///  SolrInfoMBean
   ////////////////////////////////////////////

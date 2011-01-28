@@ -102,8 +102,23 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     params.put(CommonParams.Q, new String[]{"id:44"});
     assertQ("morelike this - harrison ford",mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
-    
-    params.put(CommonParams.Q, new String[]{"id:42"}); 
+
+    // test MoreLikeThis debug
+    params.put(CommonParams.DEBUG_QUERY, new String[]{"true"});
+    assertQ("morelike this - harrison ford",mltreq
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='realMLTQuery']"
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/lst[@name='explain']/str[@name='45']"
+        );
+
+    // test that qparser plugins work
+    params.remove(CommonParams.DEBUG_QUERY);
+    params.put(CommonParams.Q, new String[]{"{!field f=id}44"});
+    assertQ(mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']");
+
+    params.put(CommonParams.Q, new String[]{"id:42"});
     params.put(MoreLikeThisParams.QF,new String[]{"name^5.0 subword^0.1"});
     assertQ("morelikethis with weights",mltreq
         ,"//result/doc[1]/int[@name='id'][.='43']"
