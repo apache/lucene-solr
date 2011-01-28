@@ -166,6 +166,10 @@ Bug Fixes
 * SOLR-2320: Fixed ReplicationHandler detail reporting for masters
   (hossman)
 
+* SOLR-2085: Improve SolrJ behavior when FacetComponent comes before
+  QueryComponent (Tomas Salfischberger via hossman)
+
+
 Other Changes
 ----------------------
 
