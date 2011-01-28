@@ -31,7 +31,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -994,16 +993,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
   }
   
   public void testNoTermsIndex() throws Exception {
-    // Some Codecs don't honor the ReaderTermsIndexDiviso, so skip the test if
+    // Some Codecs don't honor the ReaderTermsIndexDivisor, so skip the test if
     // they're picked.
     HashSet<String> illegalCodecs = new HashSet<String>();
     illegalCodecs.add("PreFlex");
-    illegalCodecs.add("MockRandom");
     illegalCodecs.add("SimpleText");
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer()).setReaderTermsIndexDivisor(-1);
-    
     // Don't proceed if picked Codec is in the list of illegal ones.
     if (illegalCodecs.contains(conf.getCodecProvider().getFieldCodec("f"))) return;
 
