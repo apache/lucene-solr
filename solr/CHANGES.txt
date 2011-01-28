@@ -419,7 +419,7 @@ New Features
 * SOLR-2129: Added a Solr module for dynamic metadata extraction/indexing with Apache UIMA.
   See contrib/uima/README.txt for more information.  (Tommaso Teofili via rmuir)
 
-* SOLR-1283: Add ability for RawResponseWriter to stream binary files as well as
+* SOLR-2263: Add ability for RawResponseWriter to stream binary files as well as
   text files.  (Eric Pugh via yonik)
 
 Optimizations
