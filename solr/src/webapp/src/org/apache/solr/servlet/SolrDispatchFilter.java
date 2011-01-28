@@ -318,7 +318,9 @@ public class SolrDispatchFilter implements Filter
       sendError((HttpServletResponse) response, solrRsp.getException());
     } else {
       // Now write it out
-      response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
+      final String ct = responseWriter.getContentType(solrReq, solrRsp);
+      // don't call setContentType on null
+      if (null != ct) response.setContentType(ct); 
       if (Method.HEAD != reqMethod) {
         if (responseWriter instanceof BinaryQueryResponseWriter) {
           BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;

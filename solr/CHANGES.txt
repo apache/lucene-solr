@@ -493,6 +493,9 @@ Bug Fixes
 * SOLR-2085: Improve SolrJ behavior when FacetComponent comes before
   QueryComponent (Tomas Salfischberger via hossman)
 
+* SOLR-1940: Fix SolrDispatchFilter behavior when Content-Type is
+  unknown (Lance Norskog and hossman)
+
 
 Other Changes
 ----------------------
