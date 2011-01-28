@@ -111,7 +111,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
    * random. All positions for that number are saved up front and compared to
    * the enums positions.
    */
-  public void testRandomPositons() throws IOException {
+  public void testRandomPositions() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
