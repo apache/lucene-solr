@@ -963,6 +963,8 @@
       </fileset>
       <fileset dir="contrib/dataimporthandler/src/main/java"/>
       <fileset dir="contrib/dataimporthandler/src/test/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/main/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/test/java"/>
       <fileset dir="contrib/clustering/src/main/java"/>
       <fileset dir="contrib/clustering/src/test/java"/>
       <fileset dir="contrib/extraction/src/main/java"/>
