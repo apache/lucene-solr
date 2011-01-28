@@ -648,22 +648,6 @@
     <patch patchfile="${patch.file}" strip="0"/>
   </target>
 
-  <target name="rat-sources-typedef">
-    <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">
-      <classpath>
-        <fileset dir="." includes="rat*.jar"/>
-      </classpath>
-    </typedef>
-  </target>
-
-  <target name="rat-sources" depends="rat-sources-typedef"
-	  description="runs the tasks over src/java">
-    <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
-      <fileset dir="src/java">
-      </fileset>
-    </rat:report>
-  </target>
-
   <target name="jar-core-test" depends="compile-test">
     <!-- load the list of test files into a property named core.test.files -->
   	<property file="../dev-tools/testjar/testfiles" />
