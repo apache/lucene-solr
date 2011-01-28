@@ -429,6 +429,8 @@ New Features
 * SOLR-2263: Add ability for RawResponseWriter to stream binary files as well as
   text files.  (Eric Pugh via yonik)
 
+* SOLR-860: Add debug output for MoreLikeThis. (koji)
+
 Optimizations
 ----------------------
 
