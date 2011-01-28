@@ -106,8 +106,6 @@ New Features
   Adding a parameter NOW=<time_in_ms> to the request will override the
   current time.  (Peter Sturge, yonik)
 
-* SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
-
 Optimizations
 ----------------------
 
@@ -425,6 +423,8 @@ New Features
 
 * SOLR-2129: Added a Solr module for dynamic metadata extraction/indexing with Apache UIMA.
   See contrib/uima/README.txt for more information.  (Tommaso Teofili via rmuir)
+
+* SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
 
 * SOLR-2263: Add ability for RawResponseWriter to stream binary files as well as
   text files.  (Eric Pugh via yonik)
