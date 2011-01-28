@@ -260,7 +260,9 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: variable-gap terms index (divisor=" + state.termsIndexDivisor + ")");
         }
-        state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+        if (state.termsIndexDivisor != -1) {
+          state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+        }
         indexReader = new VariableGapTermsIndexReader(state.dir,
                                                       state.fieldInfos,
                                                       state.segmentInfo.name,

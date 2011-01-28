@@ -31,6 +31,7 @@ public class TestSegmentInfo extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
     IndexWriter writer = new IndexWriter(dir, conf);
+    writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(new Field("a", "value", Store.YES, Index.ANALYZED));
     writer.addDocument(doc);
