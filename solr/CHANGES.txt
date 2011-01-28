@@ -249,7 +249,7 @@ New Features
 
 * SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
 
-* SOLR-1283: Add ability for RawResponseWriter to stream binary files as well as
+* SOLR-2263: Add ability for RawResponseWriter to stream binary files as well as
   text files.  (Eric Pugh via yonik)
 
 
