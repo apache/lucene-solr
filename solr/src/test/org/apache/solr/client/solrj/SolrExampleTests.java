@@ -642,12 +642,12 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     pivot = pivots.getVal( 2 );
     assertEquals( "features,cat,inStock", pivots.getName( 2 ) );
     assertEquals( 2, pivot.size() );
-    PivotField p = pivot.get( 1 ).getPivot().get(0);
+    PivotField p = pivot.get( 1 ).getPivot().get(0);     // get(1) should be features=AAAA, then get(0) should be cat=a
     assertEquals( "cat", p.getField() );
     assertEquals( "a", p.getValue() );
     counts = p.getPivot();
   //  p.write(System.out, 5 );
-    assertEquals( 1, counts.size() );
+    assertEquals( 2, counts.size() );  // 2 trues and 1 false under features=AAAA,cat=a
     assertEquals( "inStock",    counts.get(0).getField() );
     assertEquals( Boolean.TRUE, counts.get(0).getValue() );
     assertEquals(  2,           counts.get(0).getCount() );
