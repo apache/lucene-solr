@@ -497,6 +497,12 @@ Bug Fixes
 * SOLR-1940: Fix SolrDispatchFilter behavior when Content-Type is
   unknown (Lance Norskog and hossman)
 
+* SOLR-1983: snappuller fails when modifiedConfFiles is not empty and
+  full copy of index is needed. (Alexander Kanarsky via yonik)
+
+* SOLR-2156: SnapPuller fails to clean Old Index Directories on Full Copy
+  (Jayendra Patil via yonik)
+
 
 Other Changes
 ----------------------
