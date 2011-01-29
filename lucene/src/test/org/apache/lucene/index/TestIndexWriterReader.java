@@ -366,7 +366,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     int numDirs = 3;
     
     Directory mainDir = newDirectory();
-    IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
     _TestUtil.reduceOpenFiles(mainWriter);
 
     mainWriter.setInfoStream(infoStream);
@@ -900,7 +900,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   public void testExpungeDeletes() throws Throwable {
     Directory dir = newDirectory();
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     Field id = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);

@@ -91,8 +91,8 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new MyMergeScheduler())
-        .setMaxBufferedDocs(2).setRAMBufferSizeMB(
-            IndexWriterConfig.DISABLE_AUTO_FLUSH));
+        .setMaxBufferedDocs(2).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+        .setMergePolicy(newLogMergePolicy()));
     LogMergePolicy logMP = (LogMergePolicy) writer.getConfig().getMergePolicy();
     logMP.setMergeFactor(10);
     for(int i=0;i<20;i++)

@@ -99,7 +99,7 @@ public class FunctionTestSetup extends LuceneTestCase {
     // prepare a small index with just a few documents.  
     dir = newDirectory();
     anlzr = new MockAnalyzer();
-    IndexWriterConfig iwc = newIndexWriterConfig( TEST_VERSION_CURRENT, anlzr);
+    IndexWriterConfig iwc = newIndexWriterConfig( TEST_VERSION_CURRENT, anlzr).setMergePolicy(newInOrderLogMergePolicy());
     if (doMultiSegment) {
       iwc.setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 7));
     }

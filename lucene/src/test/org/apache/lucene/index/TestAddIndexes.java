@@ -452,6 +452,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMaxBufferedDocs(100).
             setMergePolicy(newLogMergePolicy(10))
     );
+    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(aux);
     assertEquals(30, writer.maxDoc());
     assertEquals(3, writer.getSegmentCount());

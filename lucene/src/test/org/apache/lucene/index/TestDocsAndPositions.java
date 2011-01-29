@@ -115,7 +115,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
-            MockTokenizer.WHITESPACE, true, usePayload)));
+            MockTokenizer.WHITESPACE, true, usePayload)).setMergePolicy(newInOrderLogMergePolicy()));
     int numDocs = 131;
     int max = 1051;
     int term = random.nextInt(max);
@@ -130,6 +130,10 @@ public class TestDocsAndPositions extends LuceneTestCase {
         if (nextInt == term) {
           positions.add(Integer.valueOf(j));
         }
+      }
+      if (positions.size() == 0) {
+        builder.append(term);
+        positions.add(3049);
       }
       doc.add(newField(fieldName, builder.toString(), Field.Store.YES,
           Field.Index.ANALYZED));
@@ -192,7 +196,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
-            MockTokenizer.WHITESPACE, true, usePayload)));
+                                                                    MockTokenizer.WHITESPACE, true, usePayload)).setMergePolicy(newInOrderLogMergePolicy()));
     int numDocs = 499;
     int max = 15678;
     int term = random.nextInt(max);

@@ -134,7 +134,7 @@ final class DocumentsWriter {
   private final int maxThreadStates;
 
   // Deletes for our still-in-RAM (to be flushed next) segment
-  private SegmentDeletes pendingDeletes = new SegmentDeletes();
+  private BufferedDeletes pendingDeletes = new BufferedDeletes();
   
   static class DocState {
     DocumentsWriter docWriter;
@@ -278,16 +278,16 @@ final class DocumentsWriter {
   private boolean closed;
   private final FieldInfos fieldInfos;
 
-  private final BufferedDeletes bufferedDeletes;
+  private final BufferedDeletesStream bufferedDeletesStream;
   private final IndexWriter.FlushControl flushControl;
 
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos, BufferedDeletes bufferedDeletes) throws IOException {
+  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.writer = writer;
     this.similarityProvider = writer.getConfig().getSimilarityProvider();
     this.maxThreadStates = maxThreadStates;
     this.fieldInfos = fieldInfos;
-    this.bufferedDeletes = bufferedDeletes;
+    this.bufferedDeletesStream = bufferedDeletesStream;
     flushControl = writer.flushControl;
 
     consumer = indexingChain.getChain(this);
@@ -501,23 +501,24 @@ final class DocumentsWriter {
   }
 
   // for testing
-  public SegmentDeletes getPendingDeletes() {
+  public BufferedDeletes getPendingDeletes() {
     return pendingDeletes;
   }
 
   private void pushDeletes(SegmentInfo newSegment, SegmentInfos segmentInfos) {
     // Lock order: DW -> BD
     if (pendingDeletes.any()) {
-      if (newSegment != null) {
+      if (segmentInfos.size() > 0 || newSegment != null) {
         if (infoStream != null) {
-          message("flush: push buffered deletes to newSegment");
+          message("flush: push buffered deletes");
         }
-        bufferedDeletes.pushDeletes(pendingDeletes, newSegment);
-      } else if (segmentInfos.size() > 0) {
+        bufferedDeletesStream.push(pendingDeletes);
         if (infoStream != null) {
-          message("flush: push buffered deletes to previously flushed segment " + segmentInfos.lastElement());
+          message("flush: delGen=" + pendingDeletes.gen);
         }
-        bufferedDeletes.pushDeletes(pendingDeletes, segmentInfos.lastElement(), true);
+        if (newSegment != null) {
+          newSegment.setBufferedDeletesGen(pendingDeletes.gen);
+        }
       } else {
         if (infoStream != null) {
           message("flush: drop buffered deletes: no segments");
@@ -526,7 +527,9 @@ final class DocumentsWriter {
         // there are no segments, the deletions cannot
         // affect anything.
       }
-      pendingDeletes = new SegmentDeletes();
+      pendingDeletes = new BufferedDeletes();
+    } else if (newSegment != null) {
+      newSegment.setBufferedDeletesGen(bufferedDeletesStream.getNextGen());
     }
   }
 
@@ -639,7 +642,6 @@ final class DocumentsWriter {
 
     // Lock order: IW -> DW -> BD
     pushDeletes(newSegment, segmentInfos);
-
     if (infoStream != null) {
       message("flush time " + (System.currentTimeMillis()-startTime) + " msec");
     }
@@ -964,7 +966,7 @@ final class DocumentsWriter {
     final boolean doBalance;
     final long deletesRAMUsed;
 
-    deletesRAMUsed = bufferedDeletes.bytesUsed();
+    deletesRAMUsed = bufferedDeletesStream.bytesUsed();
 
     synchronized(this) {
       if (ramBufferSize == IndexWriterConfig.DISABLE_AUTO_FLUSH || bufferIsFull) {

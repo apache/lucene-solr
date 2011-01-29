@@ -79,7 +79,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     int terms = (int) Math.pow(2, bits);
     
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false)).setMergePolicy(newInOrderLogMergePolicy()));
     
     Document doc = new Document();
     Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);

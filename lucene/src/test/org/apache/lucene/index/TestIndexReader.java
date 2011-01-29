@@ -371,7 +371,7 @@ public class TestIndexReader extends LuceneTestCase
         Directory dir = newDirectory();
         byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
         
         for (int i = 0; i < 10; i++) {
           addDoc(writer, "document number " + (i + 1));
@@ -380,7 +380,7 @@ public class TestIndexReader extends LuceneTestCase
           addDocumentWithTermVectorFields(writer);
         }
         writer.close();
-        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setMergePolicy(newInOrderLogMergePolicy()));
         Document doc = new Document();
         doc.add(new Field("bin1", bin));
         doc.add(new Field("junk", "junk text", Field.Store.NO, Field.Index.ANALYZED));
@@ -417,7 +417,7 @@ public class TestIndexReader extends LuceneTestCase
         // force optimize
 
 
-        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setMergePolicy(newInOrderLogMergePolicy()));
         writer.optimize();
         writer.close();
         reader = IndexReader.open(dir, false);
@@ -1162,7 +1162,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testMultiReaderDeletes() throws Exception {
       Directory dir = newDirectory();
-      RandomIndexWriter w = new RandomIndexWriter(random, dir);
+      RandomIndexWriter w= new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
       Document doc = new Document();
       doc.add(newField("f", "doctor", Field.Store.NO, Field.Index.NOT_ANALYZED));
       w.addDocument(doc);
@@ -1900,7 +1900,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-2474
   public void testReaderFinishedListener() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
     writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addDocument(new Document());

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Executors;
@@ -94,7 +95,7 @@ public class TestNRTThreads extends LuceneTestCase {
         }
       }
       });
-
+    
     final IndexWriter writer = new IndexWriter(dir, conf);
     if (VERBOSE) {
       writer.setInfoStream(System.out);
@@ -105,10 +106,12 @@ public class TestNRTThreads extends LuceneTestCase {
       ((ConcurrentMergeScheduler) ms).setMaxThreadCount(1);
       ((ConcurrentMergeScheduler) ms).setMaxMergeCount(1);
     }
+    /*
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     if (lmp.getMergeFactor() > 5) {
       lmp.setMergeFactor(5);
     }
+    */
 
     final int NUM_INDEX_THREADS = 2;
     final int NUM_SEARCH_THREADS = 3;
@@ -118,7 +121,7 @@ public class TestNRTThreads extends LuceneTestCase {
     final AtomicInteger addCount = new AtomicInteger();
     final AtomicInteger delCount = new AtomicInteger();
 
-    final List<String> delIDs = Collections.synchronizedList(new ArrayList<String>());
+    final Set<String> delIDs = Collections.synchronizedSet(new HashSet<String>());
 
     final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC*1000;
     Thread[] threads = new Thread[NUM_INDEX_THREADS];
@@ -142,20 +145,20 @@ public class TestNRTThreads extends LuceneTestCase {
                 }
                 if (random.nextBoolean()) {
                   if (VERBOSE) {
-                    //System.out.println(Thread.currentThread().getName() + ": add doc id:" + doc.get("id"));
+                    System.out.println(Thread.currentThread().getName() + ": add doc id:" + doc.get("id"));
                   }
                   writer.addDocument(doc);
                 } else {
                   // we use update but it never replaces a
                   // prior doc
                   if (VERBOSE) {
-                    //System.out.println(Thread.currentThread().getName() + ": update doc id:" + doc.get("id"));
+                    System.out.println(Thread.currentThread().getName() + ": update doc id:" + doc.get("id"));
                   }
                   writer.updateDocument(new Term("id", doc.get("id")), doc);
                 }
                 if (random.nextInt(5) == 3) {
                   if (VERBOSE) {
-                    //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("id"));
+                    System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("id"));
                   }
                   toDeleteIDs.add(doc.get("id"));
                 }
@@ -164,6 +167,9 @@ public class TestNRTThreads extends LuceneTestCase {
                     System.out.println(Thread.currentThread().getName() + ": apply " + toDeleteIDs.size() + " deletes");
                   }
                   for(String id : toDeleteIDs) {
+                    if (VERBOSE) {
+                      System.out.println(Thread.currentThread().getName() + ": del term=id:" + id);
+                    }
                     writer.deleteDocuments(new Term("id", id));
                   }
                   final int count = delCount.addAndGet(toDeleteIDs.size());
@@ -347,12 +353,28 @@ public class TestNRTThreads extends LuceneTestCase {
     
     final IndexReader r2 = writer.getReader();
     final IndexSearcher s = new IndexSearcher(r2);
+    boolean doFail = false;
     for(String id : delIDs) {
       final TopDocs hits = s.search(new TermQuery(new Term("id", id)), 1);
       if (hits.totalHits != 0) {
-        fail("doc id=" + id + " is supposed to be deleted, but got docID=" + hits.scoreDocs[0].doc);
+        System.out.println("doc id=" + id + " is supposed to be deleted, but got docID=" + hits.scoreDocs[0].doc);
+        doFail = true;
       }
     }
+    
+    final int endID = Integer.parseInt(docs.nextDoc().get("id"));
+    for(int id=0;id<endID;id++) {
+      String stringID = ""+id;
+      if (!delIDs.contains(stringID)) {
+        final TopDocs hits = s.search(new TermQuery(new Term("id", stringID)), 1);
+        if (hits.totalHits != 1) {
+          System.out.println("doc id=" + stringID + " is not supposed to be deleted, but got hitCount=" + hits.totalHits);
+          doFail = true;
+        }
+      }
+    }
+    assertFalse(doFail);
+    
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), r2.numDocs());
     r2.close();
 

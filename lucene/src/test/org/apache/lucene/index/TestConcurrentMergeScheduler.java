@@ -132,11 +132,15 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(mp));
+    writer.setInfoStream(VERBOSE ? System.out : null);
 
     Document doc = new Document();
     Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     for(int i=0;i<10;i++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: cycle");
+      }
       for(int j=0;j<100;j++) {
         idField.setValue(Integer.toString(i*100+j));
         writer.addDocument(doc);
@@ -144,6 +148,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       int delID = i;
       while(delID < 100*(1+i)) {
+        if (VERBOSE) {
+          System.out.println("TEST: del " + delID);
+        }
         writer.deleteDocuments(new Term("id", ""+delID));
         delID += 10;
       }

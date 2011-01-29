@@ -232,7 +232,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         // Make a new dir that will enforce disk usage:
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
-        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
         IOException err = null;
         writer.setInfoStream(VERBOSE ? System.out : null);
 
@@ -401,10 +401,10 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           // required is at most 2X total input size of
           // indices so let's make sure:
           assertTrue("max free Directory space required exceeded 1X the total input index sizes during " + methodName +
-              ": max temp usage = " + (dir.getMaxUsedSizeInBytes()-startDiskUsage) + " bytes; " +
-              "starting disk usage = " + startDiskUsage + " bytes; " +
-              "input index disk usage = " + inputDiskUsage + " bytes",
-              (dir.getMaxUsedSizeInBytes()-startDiskUsage) < 2*(startDiskUsage + inputDiskUsage));
+                     ": max temp usage = " + (dir.getMaxUsedSizeInBytes()-startDiskUsage) + " bytes vs limit=" + (2*(startDiskUsage + inputDiskUsage)) +
+                     "; starting disk usage = " + startDiskUsage + " bytes; " +
+                     "input index disk usage = " + inputDiskUsage + " bytes",
+                     (dir.getMaxUsedSizeInBytes()-startDiskUsage) < 2*(startDiskUsage + inputDiskUsage));
         }
         
         // Make sure we don't hit disk full during close below:

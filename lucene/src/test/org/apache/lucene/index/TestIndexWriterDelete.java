@@ -684,7 +684,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     MockDirectoryWrapper dir = newDirectory();
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
-                                                                     TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false));
+                                                                     TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false).setMergePolicy(newLogMergePolicy()));
     modifier.setInfoStream(VERBOSE ? System.out : null);
 
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();

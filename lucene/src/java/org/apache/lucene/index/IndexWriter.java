@@ -251,7 +251,7 @@ public class IndexWriter implements Closeable {
   private final AtomicInteger flushDeletesCount = new AtomicInteger();
 
   final ReaderPool readerPool = new ReaderPool();
-  final BufferedDeletes bufferedDeletes;
+  final BufferedDeletesStream bufferedDeletesStream;
   
   // This is a "write once" variable (like the organic dye
   // on a DVD-R that may or may not be heated by a laser and
@@ -707,8 +707,8 @@ public class IndexWriter implements Closeable {
     mergedSegmentWarmer = conf.getMergedSegmentWarmer();
     codecs = conf.getCodecProvider();
     
-    bufferedDeletes = new BufferedDeletes(messageID);
-    bufferedDeletes.setInfoStream(infoStream);
+    bufferedDeletesStream = new BufferedDeletesStream(messageID);
+    bufferedDeletesStream.setInfoStream(infoStream);
     poolReaders = conf.getReaderPooling();
 
     OpenMode mode = conf.getOpenMode();
@@ -773,7 +773,7 @@ public class IndexWriter implements Closeable {
 
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates(), getCurrentFieldInfos(), bufferedDeletes);
+      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates(), getCurrentFieldInfos(), bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
 
       // Default deleter (for backwards compatibility) is
@@ -921,7 +921,7 @@ public class IndexWriter implements Closeable {
     this.infoStream = infoStream;
     docWriter.setInfoStream(infoStream);
     deleter.setInfoStream(infoStream);
-    bufferedDeletes.setInfoStream(infoStream);
+    bufferedDeletesStream.setInfoStream(infoStream);
     if (infoStream != null)
       messageState();
   }
@@ -1167,7 +1167,7 @@ public class IndexWriter implements Closeable {
 
   public synchronized boolean hasDeletions() throws IOException {
     ensureOpen();
-    if (bufferedDeletes.any()) {
+    if (bufferedDeletesStream.any()) {
       return true;
     }
     if (docWriter.anyDeletions()) {
@@ -1882,7 +1882,7 @@ public class IndexWriter implements Closeable {
       mergePolicy.close();
       mergeScheduler.close();
 
-      bufferedDeletes.clear();
+      bufferedDeletesStream.clear();
 
       synchronized(this) {
 
@@ -2525,10 +2525,10 @@ public class IndexWriter implements Closeable {
         // tiny segments:
         if (flushControl.getFlushDeletes() ||
             (config.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
-             bufferedDeletes.bytesUsed() > (1024*1024*config.getRAMBufferSizeMB()/2))) {
+             bufferedDeletesStream.bytesUsed() > (1024*1024*config.getRAMBufferSizeMB()/2))) {
           applyAllDeletes = true;
           if (infoStream != null) {
-            message("force apply deletes bytesUsed=" + bufferedDeletes.bytesUsed() + " vs ramBuffer=" + (1024*1024*config.getRAMBufferSizeMB()));
+            message("force apply deletes bytesUsed=" + bufferedDeletesStream.bytesUsed() + " vs ramBuffer=" + (1024*1024*config.getRAMBufferSizeMB()));
           }
         }
       }
@@ -2538,12 +2538,15 @@ public class IndexWriter implements Closeable {
           message("apply all deletes during flush");
         }
         flushDeletesCount.incrementAndGet();
-        if (bufferedDeletes.applyDeletes(readerPool, segmentInfos, segmentInfos)) {
+        final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, segmentInfos);
+        if (result.anyDeletes) {
           checkpoint();
         }
+        bufferedDeletesStream.prune(segmentInfos);
+        assert !bufferedDeletesStream.any();
         flushControl.clearDeletes();
       } else if (infoStream != null) {
-        message("don't apply deletes now delTermCount=" + bufferedDeletes.numTerms() + " bytesUsed=" + bufferedDeletes.bytesUsed());
+        message("don't apply deletes now delTermCount=" + bufferedDeletesStream.numTerms() + " bytesUsed=" + bufferedDeletesStream.bytesUsed());
       }
 
       doAfterFlush();
@@ -2569,7 +2572,7 @@ public class IndexWriter implements Closeable {
    */
   public final long ramSizeInBytes() {
     ensureOpen();
-    return docWriter.bytesUsed() + bufferedDeletes.bytesUsed();
+    return docWriter.bytesUsed() + bufferedDeletesStream.bytesUsed();
   }
 
   /** Expert:  Return the number of documents currently
@@ -2579,28 +2582,12 @@ public class IndexWriter implements Closeable {
     return docWriter.getNumDocs();
   }
 
-  private int ensureContiguousMerge(MergePolicy.OneMerge merge) {
-
-    int first = segmentInfos.indexOf(merge.segments.info(0));
-    if (first == -1)
-      throw new MergePolicy.MergeException("could not find segment " + merge.segments.info(0).name + " in current index " + segString(), directory);
-
-    final int numSegments = segmentInfos.size();
-    
-    final int numSegmentsToMerge = merge.segments.size();
-    for(int i=0;i<numSegmentsToMerge;i++) {
-      final SegmentInfo info = merge.segments.info(i);
-
-      if (first + i >= numSegments || !segmentInfos.info(first+i).equals(info)) {
-        if (segmentInfos.indexOf(info) == -1)
-          throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.name + ") that is not in the current index " + segString(), directory);
-        else
-          throw new MergePolicy.MergeException("MergePolicy selected non-contiguous segments to merge (" + merge.segString(directory) + " vs " + segString() + "), which IndexWriter (currently) cannot handle",
-                                               directory);
+  private void ensureValidMerge(MergePolicy.OneMerge merge) {
+    for(SegmentInfo info : merge.segments) {
+      if (segmentInfos.indexOf(info) == -1) {
+        throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.name + ") that is not in the current index " + segString(), directory);
       }
     }
-
-    return first;
   }
 
   /** Carefully merges deletes for the segments we just
@@ -2625,9 +2612,11 @@ public class IndexWriter implements Closeable {
     // started merging:
     int docUpto = 0;
     int delCount = 0;
+    long minGen = Long.MAX_VALUE;
 
     for(int i=0; i < sourceSegments.size(); i++) {
       SegmentInfo info = sourceSegments.info(i);
+      minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       int docCount = info.docCount;
       SegmentReader previousReader = merge.readersClone[i];
       final Bits prevDelDocs = previousReader.getDeletedDocs();
@@ -2678,9 +2667,17 @@ public class IndexWriter implements Closeable {
     assert mergedReader.numDeletedDocs() == delCount;
 
     mergedReader.hasChanges = delCount > 0;
+
+    // If new deletes were applied while we were merging
+    // (which happens if eg commit() or getReader() is
+    // called during our merge), then it better be the case
+    // that the delGen has increased for all our merged
+    // segments:
+    assert !mergedReader.hasChanges || minGen > mergedReader.getSegmentInfo().getBufferedDeletesGen();
+
+    mergedReader.getSegmentInfo().setBufferedDeletesGen(minGen);
   }
 
-  /* FIXME if we want to support non-contiguous segment merges */
   synchronized private boolean commitMerge(MergePolicy.OneMerge merge, SegmentReader mergedReader) throws IOException {
 
     assert testPoint("startCommitMerge");
@@ -2706,7 +2703,7 @@ public class IndexWriter implements Closeable {
       return false;
     }
 
-    final int start = ensureContiguousMerge(merge);
+    ensureValidMerge(merge);
 
     commitMergedDeletes(merge, mergedReader);
       
@@ -2716,10 +2713,32 @@ public class IndexWriter implements Closeable {
     // format as well:
     setMergeDocStoreIsCompoundFile(merge);
 
-    segmentInfos.subList(start, start + merge.segments.size()).clear();
     assert !segmentInfos.contains(merge.info);
-    segmentInfos.add(start, merge.info);
-    
+
+    final Set mergedAway = new HashSet<SegmentInfo>(merge.segments);
+    int segIdx = 0;
+    int newSegIdx = 0;
+    boolean inserted = false;
+    final int curSegCount = segmentInfos.size();
+    while(segIdx < curSegCount) {
+      final SegmentInfo info = segmentInfos.info(segIdx++);
+      if (mergedAway.contains(info)) {
+        if (!inserted) {
+          segmentInfos.set(segIdx-1, merge.info);
+          inserted = true;
+          newSegIdx++;
+        }
+      } else {
+        segmentInfos.set(newSegIdx++, info);
+      }
+    }
+    assert newSegIdx == curSegCount - merge.segments.size() + 1;
+    segmentInfos.subList(newSegIdx, segmentInfos.size()).clear();
+
+    if (infoStream != null) {
+      message("after commit: " + segString());
+    }
+
     closeMergeReaders(merge, false);
 
     // Must note the change to segmentInfos so any commits
@@ -2731,16 +2750,12 @@ public class IndexWriter implements Closeable {
     // disk, updating SegmentInfo, etc.:
     readerPool.clear(merge.segments);
     
-    // remove pending deletes of the segments 
-    // that were merged, moving them onto the segment just
-    // before the merged segment
-    // Lock order: IW -> BD
-    bufferedDeletes.commitMerge(merge);
-
     if (merge.optimize) {
       // cascade the optimize:
       segmentsToOptimize.add(merge.info);
     }
+
+    
     return true;
   }
   
@@ -2868,7 +2883,7 @@ public class IndexWriter implements Closeable {
       }
     }
 
-    ensureContiguousMerge(merge);
+    ensureValidMerge(merge);
 
     pendingMerges.add(merge);
 
@@ -2918,6 +2933,9 @@ public class IndexWriter implements Closeable {
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot merge");
     }
 
+    // TODO: is there any perf benefit to sorting
+    // merged segments?  eg biggest to smallest?
+
     if (merge.info != null)
       // mergeInit already done
       return;
@@ -2925,15 +2943,21 @@ public class IndexWriter implements Closeable {
     if (merge.isAborted())
       return;
 
-    // Lock order: IW -> BD
-    if (bufferedDeletes.applyDeletes(readerPool, segmentInfos, merge.segments)) {
-      checkpoint();
-    }
-
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false);
+
+    // Lock order: IW -> BD
+    final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
+    if (result.anyDeletes) {
+      checkpoint();
+    }
+
+    merge.info.setBufferedDeletesGen(result.gen);
+
+    // Lock order: IW -> BD
+    bufferedDeletesStream.prune(segmentInfos);
 
     Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", Boolean.toString(merge.optimize));
@@ -3498,7 +3522,7 @@ public class IndexWriter implements Closeable {
   }
 
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {
-    return infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletes.any();
+    return infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any();
   }
 
   synchronized boolean isClosed() {
@@ -3665,7 +3689,7 @@ public class IndexWriter implements Closeable {
       final double ramBufferSizeMB = config.getRAMBufferSizeMB();
       if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH) {
         final long limit = (long) (ramBufferSizeMB*1024*1024);
-        long used = bufferedDeletes.bytesUsed() + docWriter.bytesUsed();
+        long used = bufferedDeletesStream.bytesUsed() + docWriter.bytesUsed();
         if (used >= limit) {
           
           // DocumentsWriter may be able to free up some
@@ -3673,7 +3697,7 @@ public class IndexWriter implements Closeable {
           // Lock order: FC -> DW
           docWriter.balanceRAM();
 
-          used = bufferedDeletes.bytesUsed() + docWriter.bytesUsed();
+          used = bufferedDeletesStream.bytesUsed() + docWriter.bytesUsed();
           if (used >= limit) {
             return setFlushPending("ram full: " + reason, false);
           }

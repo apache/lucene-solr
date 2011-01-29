@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.util.Random;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -58,7 +59,7 @@ public class TestMultiMMap extends LuceneTestCase {
     // we will map a lot, try to turn on the unmap hack
     if (MMapDirectory.UNMAP_SUPPORTED)
       dir.setUseUnmap(true);
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     Document doc = new Document();
     Field docid = newField("docid", "0", Field.Store.YES, Field.Index.NOT_ANALYZED);
     Field junk = newField("junk", "", Field.Store.YES, Field.Index.NOT_ANALYZED);

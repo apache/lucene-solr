@@ -751,7 +751,11 @@ public abstract class LuceneTestCase extends Assert {
       c.setMaxThreadStates(_TestUtil.nextInt(r, 1, 20));
     }
 
-    c.setMergePolicy(newLogMergePolicy(r));
+    if (r.nextBoolean()) {
+      c.setMergePolicy(new MockRandomMergePolicy(r));
+    } else {
+      c.setMergePolicy(newLogMergePolicy());
+    }
 
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
@@ -771,6 +775,19 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
     }
+    return logmp;
+  }
+
+  public static LogMergePolicy newInOrderLogMergePolicy() {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setRequireContiguousMerge(true);
+    return logmp;
+  }
+
+  public static LogMergePolicy newInOrderLogMergePolicy(int mergeFactor) {
+    LogMergePolicy logmp = newLogMergePolicy();
+    logmp.setMergeFactor(mergeFactor);
+    logmp.setRequireContiguousMerge(true);
     return logmp;
   }
 

@@ -65,7 +65,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
@@ -91,7 +91,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+                                                                        TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     indexWriter.setInfoStream(VERBOSE ? System.out : null);
     if (VERBOSE) {
       System.out.println("TEST: make test index");
