@@ -150,6 +150,12 @@ Changes in Runtime Behavior
 * LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
   than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
 
+* LUCENE-1076: The default merge policy is now able to merge
+  non-contiguous segments, which means docIDs no longer necessarily
+  say "in order".  If this is a problem then you can use either of the
+  LogMergePolicy impls, and call setRequireContiguousMerge(true).
+  (Mike McCandless)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
