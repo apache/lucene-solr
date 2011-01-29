@@ -130,7 +130,7 @@ class BufferedDeletesStream {
 
   // Sorts SegmentInfos from smallest to biggest bufferedDelGen:
   private static final Comparator<SegmentInfo> sortByDelGen = new Comparator<SegmentInfo>() {
-    @Override
+    // @Override -- not until Java 1.6
     public int compare(SegmentInfo si1, SegmentInfo si2) {
       final long cmp = si1.getBufferedDeletesGen() - si2.getBufferedDeletesGen();
       if (cmp > 0) {
