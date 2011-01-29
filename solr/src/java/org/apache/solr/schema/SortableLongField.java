@@ -37,6 +37,8 @@ import java.util.Map;
 import java.io.IOException;
 /**
  * @version $Id$
+ * 
+ * @deprecated use {@link LongField} or {@link TrieLongtField} - will be removed in 5.x
  */
 public class SortableLongField extends FieldType {
   protected void init(IndexSchema schema, Map<String,String> args) {

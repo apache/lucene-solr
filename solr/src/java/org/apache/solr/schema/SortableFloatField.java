@@ -37,6 +37,8 @@ import java.util.Map;
 import java.io.IOException;
 /**
  * @version $Id$
+ * 
+ * @deprecated use {@link FloatField} or {@link TrieFloatField} - will be removed in 5.x
  */
 public class SortableFloatField extends FieldType {
   protected void init(IndexSchema schema, Map<String,String> args) {

@@ -37,6 +37,8 @@ import java.util.Map;
 import java.io.IOException;
 /**
  * @version $Id$
+ * 
+ * @deprecated use {@link IntField} or {@link TrieIntField} - will be removed in 5.x
  */
 public class SortableIntField extends FieldType {
   protected void init(IndexSchema schema, Map<String,String> args) {
