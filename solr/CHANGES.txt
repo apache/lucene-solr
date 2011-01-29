@@ -653,6 +653,11 @@ Bug Fixes
 * SOLR-2261: fix velocity template layout.vm that referred to an older
   version of jquery.  (Eric Pugh via rmuir)
 
+* SOLR-1983: snappuller fails when modifiedConfFiles is not empty and
+  full copy of index is needed. (Alexander Kanarsky via yonik)
+
+* SOLR-2156: SnapPuller fails to clean Old Index Directories on Full Copy
+  (Jayendra Patil via yonik)
 
 Other Changes
 ----------------------
