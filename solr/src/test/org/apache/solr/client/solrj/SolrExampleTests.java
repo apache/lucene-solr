@@ -576,17 +576,17 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     
     int id = 1;
     ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "a", "inStock", true  ) );
-    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "a", "inStock", false ) );
-    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "a", "inStock", true ) );
-    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "b", "inStock", false ) );
-    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "b", "inStock", true ) );
-    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "a", "inStock", false ) );
-    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "a", "inStock", true ) );
-    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", false ) );
-    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", true ) );
-    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", false ) );
-    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "a", "inStock", true  ) );
+    docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "a", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "a", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "b", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "b", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "a", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "a", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", true ) );
     docs.add( makeTestDoc( "id", id++ ) ); // something not matching
     server.add( docs );
     server.commit();
@@ -610,7 +610,14 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
 //      System.out.println();
 //    }
     
-    // Now make sure they have reasonable stuff
+    //  PIVOT: features,cat
+    //  features=bbb (6)
+    //    cat=b (4)
+    //    cat=a (2)
+    //  features=aaa (5)
+    //    cat=a (3)
+    //    cat=b (2)
+    
     List<PivotField> pivot = pivots.getVal( 0 );
     assertEquals( "features,cat", pivots.getName( 0 ) );
     assertEquals( 2, pivot.size() );
@@ -627,6 +634,15 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( "a", counts.get(1).getValue() );
     assertEquals(   2, counts.get(1).getCount() );
     
+
+    //  PIVOT: cat,features
+    //  cat=b (6)
+    //    features=bbb (4)
+    //    features=aaa (2)
+    //  cat=a (5)
+    //    features=aaa (3)
+    //    features=bbb (2)
+    
     ff = pivot.get( 1 );
     assertEquals( "features", ff.getField() );
     assertEquals( "aaa", ff.getValue() );
@@ -638,7 +654,23 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( "b", counts.get(1).getValue() );
     assertEquals(   2, counts.get(1).getCount() );
     
-    // 3 deep 
+    // Three deep:
+    //  PIVOT: features,cat,inStock
+    //  features=bbb (6)
+    //    cat=b (4)
+    //      inStock=false (2)
+    //      inStock=true (2)
+    //    cat=a (2)
+    //      inStock=false (1)
+    //      inStock=true (1)
+    //  features=aaa (5)
+    //    cat=a (3)
+    //      inStock=true (2)
+    //      inStock=false (1)
+    //    cat=b (2)
+    //      inStock=false (1)
+    //      inStock=true (1)
+    
     pivot = pivots.getVal( 2 );
     assertEquals( "features,cat,inStock", pivots.getName( 2 ) );
     assertEquals( 2, pivot.size() );
