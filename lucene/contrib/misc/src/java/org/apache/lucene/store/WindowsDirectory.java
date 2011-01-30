@@ -64,6 +64,7 @@ public class WindowsDirectory extends FSDirectory {
     super(path, null);
   }
 
+  @Override
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     return new WindowsIndexInput(new File(getDirectory(), name), Math.max(bufferSize, DEFAULT_BUFFERSIZE));
@@ -82,14 +83,17 @@ public class WindowsDirectory extends FSDirectory {
       isOpen = true;
     }
     
+    @Override
     protected void readInternal(byte[] b, int offset, int length) throws IOException {
       if (WindowsDirectory.read(fd, b, offset, length, getFilePointer()) != length)
         throw new IOException("Read past EOF");
     }
 
+    @Override
     protected void seekInternal(long pos) throws IOException {
     }
 
+    @Override
     public synchronized void close() throws IOException {
       // NOTE: we synchronize and track "isOpen" because Lucene sometimes closes IIs twice!
       if (!isClone && isOpen) {
@@ -98,6 +102,7 @@ public class WindowsDirectory extends FSDirectory {
       }
     }
 
+    @Override
     public long length() {
       return length;
     }

@@ -37,6 +37,7 @@ class RunExecutableListener extends AbstractSolrEventListener {
   protected String[] envp;
   protected boolean wait=true;
 
+  @Override
   public void init(NamedList args) {
     super.init(args);
 
@@ -102,6 +103,7 @@ class RunExecutableListener extends AbstractSolrEventListener {
   }
 
 
+  @Override
   public void postCommit() {
     // anything generic need to be passed to the external program?
     // the directory of the index?  the command that caused it to be
@@ -109,6 +111,7 @@ class RunExecutableListener extends AbstractSolrEventListener {
     exec("postCommit");
   }
 
+  @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     exec("newSearcher");
   }

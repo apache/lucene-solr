@@ -86,6 +86,7 @@ public class DebugComponent extends SearchComponent
   }
 
 
+  @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.isDebug()) return;
 

@@ -50,12 +50,14 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   private String characterEncoding;
   public static final String WORD_FIELD_NAME = "word";
 
+  @Override
   public String init(NamedList config, SolrCore core) {
     super.init(config, core);
     characterEncoding = (String) config.get(SOURCE_FILE_CHAR_ENCODING);
     return name;
   }
 
+  @Override
   public void build(SolrCore core, SolrIndexSearcher searcher) {
     try {
       loadExternalFileDictionary(core);

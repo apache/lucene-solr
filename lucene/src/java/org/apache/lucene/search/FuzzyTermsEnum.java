@@ -261,6 +261,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return actualEnum.docsAndPositions(skipDocs, reuse);
   }
   
+  @Override
   public void seek(BytesRef term, TermState state) throws IOException {
     actualEnum.seek(term, state);
   }

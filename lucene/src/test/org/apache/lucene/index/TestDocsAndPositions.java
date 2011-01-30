@@ -36,6 +36,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   private String fieldName;
   private boolean usePayload;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     fieldName = "field" + random.nextInt();

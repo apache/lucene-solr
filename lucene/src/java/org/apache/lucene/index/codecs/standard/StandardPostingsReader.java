@@ -99,12 +99,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
     ByteArrayDataInput bytesReader;
     byte[] bytes;
 
+    @Override
     public Object clone() {
       StandardTermState other = new StandardTermState();
       other.copyFrom(this);
       return other;
     }
 
+    @Override
     public void copyFrom(TermState _other) {
       super.copyFrom(_other);
       StandardTermState other = (StandardTermState) _other;
@@ -118,6 +120,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       // (rare!), they will be re-read from disk.
     }
 
+    @Override
     public String toString() {
       return super.toString() + " freqFP=" + freqOffset + " proxFP=" + proxOffset + " skipOffset=" + skipOffset;
     }
@@ -569,6 +572,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return doc;
     }
 
+    @Override
     public int nextPosition() throws IOException {
 
       if (lazyProxPointer != -1) {
@@ -597,10 +601,12 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     /** Returns the payload at this position, or null if no
      *  payload was indexed. */
+    @Override
     public BytesRef getPayload() throws IOException {
       throw new IOException("No payloads exist for this field!");
     }
 
+    @Override
     public boolean hasPayload() {
       return false;
     }
@@ -765,6 +771,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return doc;
     }
 
+    @Override
     public int nextPosition() throws IOException {
 
       if (lazyProxPointer != -1) {
@@ -825,6 +832,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     /** Returns the payload at this position, or null if no
      *  payload was indexed. */
+    @Override
     public BytesRef getPayload() throws IOException {
       assert lazyProxPointer == -1;
       assert posPendingCount < freq;
@@ -842,6 +850,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return payload;
     }
 
+    @Override
     public boolean hasPayload() {
       return payloadPending && payloadLength > 0;
     }

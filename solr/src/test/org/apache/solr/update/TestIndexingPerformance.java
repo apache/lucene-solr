@@ -41,7 +41,9 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
   public static final Logger log 
     = LoggerFactory.getLogger(TestIndexingPerformance.class);
 
+  @Override
   public String getSchemaFile() { return "schema12.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solrconfig_perf.xml"; }
 
   public void testIndexingPerf() throws IOException {

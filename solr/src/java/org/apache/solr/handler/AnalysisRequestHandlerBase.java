@@ -56,6 +56,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
   public static final Set<BytesRef> EMPTY_BYTES_SET = Collections.emptySet();
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.add("analysis", doAnalysis(req));
   }

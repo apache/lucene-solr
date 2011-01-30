@@ -37,10 +37,12 @@ public abstract class FieldCacheSource extends ValueSource {
     return cache;
   }
 
+  @Override
   public String description() {
     return field;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof FieldCacheSource)) return false;
     FieldCacheSource other = (FieldCacheSource)o;
@@ -48,6 +50,7 @@ public abstract class FieldCacheSource extends ValueSource {
            && this.cache == other.cache;
   }
 
+  @Override
   public int hashCode() {
     return cache.hashCode() + field.hashCode();
   };

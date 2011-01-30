@@ -30,10 +30,12 @@ import java.io.Reader;
  * @since solr 1.3
  */
 public class BinaryResponseParser extends ResponseParser {
+  @Override
   public String getWriterType() {
     return "javabin";
   }
 
+  @Override
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
       return (NamedList<Object>) new JavaBinCodec().unmarshal(body);
@@ -44,10 +46,12 @@ public class BinaryResponseParser extends ResponseParser {
   }
 
 
+  @Override
   public String getVersion() {
     return "2";
   }
 
+  @Override
   public NamedList<Object> processResponse(Reader reader) {
     throw new RuntimeException("Cannot handle character stream");
   }

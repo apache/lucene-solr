@@ -383,6 +383,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     return subReaders;
   }
   
+  @Override
   public ReaderContext getTopReaderContext() {
     return topLevelContext;
   }

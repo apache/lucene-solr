@@ -59,6 +59,7 @@ public class FileDataSource extends DataSource<Reader> {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileDataSource.class);
 
+  @Override
   public void init(Context context, Properties initProps) {
     basePath = initProps.getProperty(BASE_PATH);
     if (initProps.get(URLDataSource.ENCODING) != null)
@@ -79,6 +80,7 @@ public class FileDataSource extends DataSource<Reader> {
    * returned Reader</b>
    * </p>
    */
+  @Override
   public Reader getData(String query) {
     File f = getFile(basePath,query);
     try {
@@ -130,6 +132,7 @@ public class FileDataSource extends DataSource<Reader> {
     }
   }
 
+  @Override
   public void close() {
 
   }

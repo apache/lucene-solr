@@ -55,6 +55,7 @@ public class ExtendedDismaxQParserPlugin extends QParserPlugin {
   public void init(NamedList args) {
   }
 
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new ExtendedDismaxQParser(qstr, localParams, params, req);
   }
@@ -96,6 +97,7 @@ class ExtendedDismaxQParser extends QParser {
   private QParser altQParser;
 
 
+  @Override
   public Query parse() throws ParseException {
     SolrParams localParams = getLocalParams();
     SolrParams params = getParams();
@@ -483,6 +485,7 @@ class ExtendedDismaxQParser extends QParser {
     return parsedUserQuery == null ? altUserQuery : parsedUserQuery;
   }
 
+  @Override
   public void addDebugInfo(NamedList<Object> debugInfo) {
     super.addDebugInfo(debugInfo);
     debugInfo.add("altquerystring", altUserQuery);
@@ -820,6 +823,7 @@ class ExtendedDismaxQParser extends QParser {
       analyzer.removeStopFilter = remove;
     }
 
+    @Override
     protected Query getBooleanQuery(List clauses, boolean disableCoord) throws ParseException {
       Query q = super.getBooleanQuery(clauses, disableCoord);
       if (q != null) {
@@ -834,6 +838,7 @@ class ExtendedDismaxQParser extends QParser {
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
 
+    @Override
     protected void addClause(List clauses, int conj, int mods, Query q) {
 //System.out.println("addClause:clauses="+clauses+" conj="+conj+" mods="+mods+" q="+q);
       super.addClause(clauses, conj, mods, q);
@@ -1075,6 +1080,7 @@ final class ExtendedAnalyzer extends Analyzer {
     this.queryAnalyzer = parser.getReq().getSchema().getQueryAnalyzer();
   }
 
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     if (!removeStopFilter) {
       return queryAnalyzer.tokenStream(fieldName, reader);
@@ -1138,10 +1144,12 @@ final class ExtendedAnalyzer extends Analyzer {
     return newa.tokenStream(fieldName, reader);        
   }
 
+  @Override
   public int getPositionIncrementGap(String fieldName) {
     return queryAnalyzer.getPositionIncrementGap(fieldName);
   }
 
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     if (!removeStopFilter) {
       return queryAnalyzer.reusableTokenStream(fieldName, reader);

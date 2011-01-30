@@ -26,10 +26,12 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 public class TestPropInject extends AbstractSolrTestCase {
+  @Override
   public String getSchemaFile() {
     return "schema.xml";
   }
 
+  @Override
   public String getSolrConfigFile() {
     return "solrconfig-propinject.xml";
   }

@@ -127,6 +127,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     return origParams.toString();
   }
 
+  @Override
   public String toString() {
     return this.getClass().getSimpleName() + '{' + params + '}';
   }

@@ -55,6 +55,7 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
       }
     }
 
+    @Override
     public int hashCode() {
       return output1.hashCode() + output2.hashCode();
     }

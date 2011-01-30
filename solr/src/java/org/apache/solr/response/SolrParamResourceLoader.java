@@ -49,18 +49,22 @@ public class SolrParamResourceLoader extends ResourceLoader {
     }
   }
 
+  @Override
   public void init(ExtendedProperties extendedProperties) {
   }
 
+  @Override
   public InputStream getResourceStream(String s) throws ResourceNotFoundException {
     String template = templates.get(s);
     return template == null ? null : new ByteArrayInputStream(template.getBytes());
   }
 
+  @Override
   public boolean isSourceModified(Resource resource) {
     return false;
   }
 
+  @Override
   public long getLastModified(Resource resource) {
     return 0;
   }

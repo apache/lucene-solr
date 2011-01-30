@@ -53,18 +53,22 @@ public class StringDistanceFunction extends ValueSource {
     final DocValues str2DV = str2.getValues(context, readerContext);
     return new DocValues() {
 
+      @Override
       public float floatVal(int doc) {
         return dist.getDistance(str1DV.strVal(doc), str2DV.strVal(doc));
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) doubleVal(doc);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) doubleVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double) floatVal(doc);
       }
@@ -81,6 +85,7 @@ public class StringDistanceFunction extends ValueSource {
     };
   }
 
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append("strdist").append('(');

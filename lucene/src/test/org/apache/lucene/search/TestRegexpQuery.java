@@ -42,6 +42,7 @@ public class TestRegexpQuery extends LuceneTestCase {
   private Directory directory;
   private final String FN = "field";
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
@@ -56,6 +57,7 @@ public class TestRegexpQuery extends LuceneTestCase {
     searcher = new IndexSearcher(reader);
   }
   
+  @Override
   public void tearDown() throws Exception {
     searcher.close();
     reader.close();

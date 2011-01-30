@@ -587,6 +587,7 @@ public class SortedIntDocSet extends DocSetBase {
 
 
         return new DocIdSet() {
+          @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int idx = startIdx;

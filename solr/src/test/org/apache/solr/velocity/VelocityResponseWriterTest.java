@@ -26,7 +26,9 @@ import java.io.StringWriter;
 import java.io.IOException;
 
 public class VelocityResponseWriterTest extends AbstractSolrTestCase {
+  @Override
   public String getSchemaFile() { return "schema.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solrconfig.xml"; }
 
 

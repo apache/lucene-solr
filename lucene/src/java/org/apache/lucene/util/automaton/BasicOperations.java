@@ -483,10 +483,12 @@ final public class BasicOperations {
       starts.count = 0;
     }
 
+    @Override
     public boolean equals(Object other) {
       return ((PointTransitions) other).point == point;
     }
 
+    @Override
     public int hashCode() {
       return point;
     }
@@ -563,6 +565,7 @@ final public class BasicOperations {
       find(1+t.max).ends.add(t);
     }
 
+    @Override
     public String toString() {
       StringBuilder s = new StringBuilder();
       for(int i=0;i<count;i++) {

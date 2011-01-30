@@ -135,19 +135,23 @@ public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
   private static DataSource<Iterator<Map<String, Object>>> getDs(
           final List<Map<String, Object>> rows) {
     return new DataSource<Iterator<Map<String, Object>>>() {
+      @Override
       public Iterator<Map<String, Object>> getData(String query) {
         return rows.iterator();
       }
 
+      @Override
       public void init(Context context, Properties initProps) {
       }
 
+      @Override
       public void close() {
       }
     };
   }
 
   public static class T extends Transformer {
+    @Override
     public Object transformRow(Map<String, Object> aRow, Context context) {
       aRow.put("T", "Class T");
       return aRow;
@@ -162,6 +166,7 @@ public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
   }
 
   public static class T2 extends Transformer {
+    @Override
     public Object transformRow(Map<String, Object> aRow, Context context) {
       Integer count = local.get();
       local.set(count + 1);

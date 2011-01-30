@@ -31,6 +31,7 @@ public class FunctionQParserPlugin extends QParserPlugin {
   public void init(NamedList args) {
   }
 
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new FunctionQParser(qstr, localParams, params, req);
   }

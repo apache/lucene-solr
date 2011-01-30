@@ -69,7 +69,8 @@ public class LuceneLanguageModelFactory extends DefaultLanguageModelFactory {
 	/**
 	 * Provide an {@link IStemmer} implementation for a given language.
 	 */
-	protected IStemmer createStemmer(LanguageCode language) {
+	@Override
+  protected IStemmer createStemmer(LanguageCode language) {
 		switch (language) {
 		case ARABIC:
 			return ArabicStemmerFactory.createStemmer();

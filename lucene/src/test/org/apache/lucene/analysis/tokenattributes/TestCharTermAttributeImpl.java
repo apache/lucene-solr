@@ -227,6 +227,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
       public char charAt(int i) { return longTestString.charAt(i); }
       public int length() { return longTestString.length(); }
       public CharSequence subSequence(int start, int end) { return longTestString.subSequence(start, end); }
+      @Override
       public String toString() { return longTestString; }
     });
     assertEquals("4567890123456"+longTestString, t.toString());

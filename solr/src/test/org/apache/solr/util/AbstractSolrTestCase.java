@@ -111,6 +111,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
   public static Logger log = LoggerFactory.getLogger(AbstractSolrTestCase.class);
 
   private String factoryProp;
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     log.info("####SETUP_START " + getName());
@@ -170,6 +171,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
    * to delete dataDir, unless the system property "solr.test.leavedatadir"
    * is set.
    */
+  @Override
   public void tearDown() throws Exception {
     log.info("####TEARDOWN_START " + getName());
     if (factoryProp == null) {
@@ -403,6 +405,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
   /** Neccessary to make method signatures un-ambiguous */
   public static class Doc {
     public String xml;
+    @Override
     public String toString() { return xml; }
   }
 

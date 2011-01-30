@@ -828,6 +828,7 @@ public class QueryParsing {
       return pos < end ? val.charAt(pos) : 0;
     }
 
+    @Override
     public String toString() {
       return "'" + val + "'" + ", pos=" + pos;
     }

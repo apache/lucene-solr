@@ -602,6 +602,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Neccessary to make method signatures un-ambiguous */
   public static class XmlDoc {
     public String xml;
+    @Override
     public String toString() { return xml; }
   }
 
@@ -727,6 +728,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public int order; // the order this document was added to the index
 
 
+    @Override
     public String toString() {
       return "Doc("+order+"):"+fields.toString();
     }
@@ -780,6 +782,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static class Fld {
     public FldType ftype;
     public List<Comparable> vals;
+    @Override
     public String toString() {
       return ftype.fname + "=" + (vals.size()==1 ? vals.get(0).toString() : vals.toString());
     }

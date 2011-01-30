@@ -54,6 +54,7 @@ public class TestEntryCreators extends LuceneTestCase {
       this.parser = parser;
       values = new Number[NUM_DOCS];
     }
+    @Override
     public String toString()
     {
       return field;

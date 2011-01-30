@@ -159,10 +159,12 @@ final class SortedIntSet {
     return new FrozenIntSet(c, hashCode, state);
   }
 
+  @Override
   public int hashCode() {
     return hashCode;
   }
 
+  @Override
   public boolean equals(Object _other) {
     if (_other == null) {
       return false;
@@ -186,6 +188,7 @@ final class SortedIntSet {
     return true;
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder().append('[');
     for(int i=0;i<upto;i++) {
@@ -215,10 +218,12 @@ final class SortedIntSet {
       this.hashCode = 683+num;
     }
 
+    @Override
     public int hashCode() {
       return hashCode;
     }
 
+    @Override
     public boolean equals(Object _other) {
       if (_other == null) {
         return false;
@@ -256,6 +261,7 @@ final class SortedIntSet {
       return false;
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder().append('[');
       for(int i=0;i<values.length;i++) {

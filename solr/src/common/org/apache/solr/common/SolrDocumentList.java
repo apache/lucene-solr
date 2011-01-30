@@ -57,6 +57,7 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
     this.start = start;
   }
 
+  @Override
   public String toString() {
     return "{numFound="+numFound
             +",start="+start

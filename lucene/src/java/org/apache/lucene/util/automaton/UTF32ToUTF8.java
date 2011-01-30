@@ -105,6 +105,7 @@ final class UTF32ToUTF8 {
       }
     }
 
+    @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
       for(int i=0;i<len;i++) {

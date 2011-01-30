@@ -121,6 +121,7 @@ public class TrieField extends FieldType {
     }
   }
 
+  @Override
   public SortField getSortField(SchemaField field, boolean top) {
     int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
     Object missingValue = null;
@@ -194,6 +195,7 @@ public class TrieField extends FieldType {
   }
 
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     byte[] arr = f.getBinaryValue();
     if (arr==null) {
@@ -586,6 +588,7 @@ class TrieDateFieldSource extends LongFieldSource {
     super(creator);
   }
 
+  @Override
   public String description() {
     return "date(" + field + ')';
   }

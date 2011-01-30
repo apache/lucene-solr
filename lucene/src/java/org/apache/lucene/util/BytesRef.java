@@ -209,6 +209,7 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
   }
 
   /** Returns hex encoded bytes, eg [0x6c 0x75 0x63 0x65 0x6e 0x65] */
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append('[');

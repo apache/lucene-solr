@@ -971,6 +971,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             setMaxBufferedDocs(2).
             setReaderPooling(true).
             setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
+              @Override
               public void warm(IndexReader r) throws IOException {
                 IndexSearcher s = new IndexSearcher(r);
                 TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);

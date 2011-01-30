@@ -80,6 +80,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
     }
   }
 
+  @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     return new XMLLoader(processor, inputFactory);
   }

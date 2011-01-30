@@ -182,72 +182,88 @@ abstract class Converter {
 }
 
 class Int2Int extends Converter {
+  @Override
   public String toInternal(String val) {
     return Integer.toString(Integer.parseInt(val));
   }
+  @Override
   public String toExternal(String val) {
     return Integer.toString(Integer.parseInt(val));
   }
 }
 
 class SortInt extends Converter {
+  @Override
   public String toInternal(String val) {
     return NumberUtils.int2sortableStr(val);
   }
+  @Override
   public String toExternal(String val) {
     return NumberUtils.SortableStr2int(val);
   }
 }
 
 class SortLong extends Converter {
+  @Override
   public String toInternal(String val) {
     return NumberUtils.long2sortableStr(val);
   }
+  @Override
   public String toExternal(String val) {
     return NumberUtils.SortableStr2long(val);
   }
 }
 
 class Float2Float extends Converter {
+  @Override
   public String toInternal(String val) {
     return Float.toString(Float.parseFloat(val));
   }
+  @Override
   public String toExternal(String val) {
     return Float.toString(Float.parseFloat(val));
   }
 }
 
 class SortFloat extends Converter {
+  @Override
   public String toInternal(String val) {
     return NumberUtils.float2sortableStr(val);
   }
+  @Override
   public String toExternal(String val) {
     return NumberUtils.SortableStr2floatStr(val);
   }
 }
 
 class SortDouble extends Converter {
+  @Override
   public String toInternal(String val) {
     return NumberUtils.double2sortableStr(val);
   }
+  @Override
   public String toExternal(String val) {
     return NumberUtils.SortableStr2doubleStr(val);
   }
 }
 
 class Base100S extends Converter {
+  @Override
   public String toInternal(String val) {
     return BCDUtils.base10toBase100SortableInt(val);
   }
+  @Override
   public String toExternal(String val) {
     return BCDUtils.base100SortableIntToBase10(val);
   }
 }
 
 class Base10kS extends Converter {
+  @Override
   public String toInternal(String val) {
     return BCDUtils.base10toBase10kSortableInt(val);
   }
+  @Override
   public String toExternal(String val) {
     return BCDUtils.base10kSortableIntToBase10(val);
   }

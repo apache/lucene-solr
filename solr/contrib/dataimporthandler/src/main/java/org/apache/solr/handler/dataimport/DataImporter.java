@@ -423,6 +423,7 @@ public class DataImporter {
   }
 
   static final ThreadLocal<AtomicLong> QUERY_COUNT = new ThreadLocal<AtomicLong>() {
+    @Override
     protected AtomicLong initialValue() {
       return new AtomicLong();
     }

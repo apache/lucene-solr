@@ -622,6 +622,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    
     class BackupThread extends Thread {
       volatile String fail = null;
+      @Override
       public void run() {
         String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_BACKUP;
         URL url;
@@ -646,6 +647,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       volatile String fail = null;
       volatile String response = null;
       volatile boolean success = false;
+      @Override
       public void run() {
         String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_DETAILS;
         URL url;

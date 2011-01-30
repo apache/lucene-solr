@@ -204,6 +204,7 @@ final class PerFieldCodecWrapper extends Codec {
     }
   }
 
+  @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new FieldsReader(state.dir, state.fieldInfos, state.segmentInfo,

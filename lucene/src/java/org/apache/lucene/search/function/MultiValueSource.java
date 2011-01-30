@@ -52,6 +52,7 @@ public final class MultiValueSource extends ValueSource {
       return other.getValues(context);
   }
   
+  @Override
   public DocValues getValues(ReaderContext context) throws IOException {
     if (context.isAtomic) {
       return getValues((AtomicReaderContext) context);

@@ -51,6 +51,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     System.setProperty("solr.test.sys.prop2", "proptwo");
   }
   
+  @Override
   protected void createServers(int numShards) throws Exception {
     System.setProperty("collection", "control_collection");
     controlJetty = createJetty(testDir, testDir + "/control/data", "control_shard");

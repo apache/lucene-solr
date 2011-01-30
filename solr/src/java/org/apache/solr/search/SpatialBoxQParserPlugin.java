@@ -31,6 +31,7 @@ public class SpatialBoxQParserPlugin extends SpatialFilterQParserPlugin {
     return new SpatialFilterQParser(qstr, localParams, params, req, true);
   }
 
+  @Override
   public void init(NamedList args) {
 
   }

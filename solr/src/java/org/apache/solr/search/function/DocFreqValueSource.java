@@ -45,21 +45,27 @@ class ConstIntDocValues extends DocValues {
     this.parent = parent;
   }
 
+  @Override
   public float floatVal(int doc) {
     return fval;
   }
+  @Override
   public int intVal(int doc) {
     return ival;
   }
+  @Override
   public long longVal(int doc) {
     return lval;
   }
+  @Override
   public double doubleVal(int doc) {
     return dval;
   }
+  @Override
   public String strVal(int doc) {
     return sval;
   }
+  @Override
   public String toString(int doc) {
     return parent.description() + '=' + sval;
   }
@@ -82,21 +88,27 @@ class ConstDoubleDocValues extends DocValues {
     this.parent = parent;
   }
 
+  @Override
   public float floatVal(int doc) {
     return fval;
   }
+  @Override
   public int intVal(int doc) {
     return ival;
   }
+  @Override
   public long longVal(int doc) {
     return lval;
   }
+  @Override
   public double doubleVal(int doc) {
     return dval;
   }
+  @Override
   public String strVal(int doc) {
     return sval;
   }
+  @Override
   public String toString(int doc) {
     return parent.description() + '=' + sval;
   }
@@ -250,10 +262,12 @@ public class DocFreqValueSource extends ValueSource {
     context.put("searcher",searcher);
   }
 
+  @Override
   public int hashCode() {
     return getClass().hashCode() + indexedField.hashCode()*29 + indexedBytes.hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     DocFreqValueSource other = (DocFreqValueSource)o;

@@ -53,6 +53,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       super(random, delegate);
     }
 
+    @Override
     public IndexInput openInput(String fileName) throws IOException {
       IndexInput in = super.openInput(fileName);
       if (fileName.endsWith(".frq"))
@@ -61,6 +62,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     }
   }
   
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

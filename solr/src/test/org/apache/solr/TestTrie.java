@@ -41,6 +41,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema-trie.xml");
   }
   
+  @Override
   @After
   public void tearDown() throws Exception {
     clearIndex();

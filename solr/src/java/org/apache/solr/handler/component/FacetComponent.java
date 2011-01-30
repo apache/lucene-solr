@@ -726,6 +726,7 @@ public class FacetComponent extends SearchComponent
     public long count;
     public int termNum;  // term number starting at 0 (used in bit arrays)
 
+    @Override
     public String toString() {
       return "{term="+name+",termNum="+termNum+",count="+count+"}";
     }

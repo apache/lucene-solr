@@ -77,6 +77,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
   private String idFieldName;
 
+  @Override
   @Deprecated
   public Object cluster(Query query, DocList docList, SolrQueryRequest sreq) {
     SolrIndexSearcher searcher = sreq.getSearcher();
@@ -90,6 +91,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
   }
 
+  @Override
   public Object cluster(Query query, SolrDocumentList solrDocList,
       Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
     try {

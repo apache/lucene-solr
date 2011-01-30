@@ -44,6 +44,7 @@ public class VectorValueSource extends MultiValueSource {
     return sources;
   }
 
+  @Override
   public int dimension() {
     return sources.size();
   }
@@ -97,6 +98,7 @@ public class VectorValueSource extends MultiValueSource {
           vals[0] = x.strVal(doc);
           vals[1] = y.strVal(doc);
         }
+        @Override
         public String toString(int doc) {
           return name() + "(" + x.toString(doc) + "," + y.toString(doc) + ")";
         }
@@ -178,12 +180,14 @@ public class VectorValueSource extends MultiValueSource {
     };
   }
 
+  @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     for (ValueSource source : sources)
       source.createWeight(context, searcher);
   }
 
 
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');

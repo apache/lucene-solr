@@ -199,6 +199,7 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
                            | ((value << shifts[base + 2]) & writeMasks[base+2]);
   }
 
+  @Override
   public String toString() {
     return "Packed64(bitsPerValue=" + bitsPerValue + ", size="
             + size() + ", maxPos=" + maxPos

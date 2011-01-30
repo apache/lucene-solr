@@ -59,11 +59,13 @@ public class TestFSTs extends LuceneTestCase {
 
   private MockDirectoryWrapper dir;
 
+  @Override
   public void setUp() throws IOException {
     dir = newDirectory();
     dir.setPreventDoubleWrite(false);
   }
 
+  @Override
   public void tearDown() throws IOException {
     dir.close();
   }

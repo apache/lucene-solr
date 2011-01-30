@@ -169,6 +169,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
   }
 
   public static class E extends Evaluator{
+      @Override
       public String evaluate(String expression, Context context) {
         return "Hello World";
       }

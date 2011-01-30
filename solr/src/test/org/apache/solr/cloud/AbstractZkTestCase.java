@@ -99,6 +99,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
         + File.separator + "conf" + File.separator + name));
   }
 
+  @Override
   public void tearDown() throws Exception {
     if (DEBUG) {
       printLayout(zkServer.getZkHost());

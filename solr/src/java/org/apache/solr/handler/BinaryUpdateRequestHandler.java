@@ -46,8 +46,10 @@ import java.util.List;
 public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
 
 
+  @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, final UpdateRequestProcessor processor) {
     return new ContentStreamLoader() {
+      @Override
       public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws Exception {
         InputStream is = null;
         try {
@@ -111,18 +113,22 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
     }
   }
 
+  @Override
   public String getDescription() {
     return "Add/Update multiple documents with javabin format";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }

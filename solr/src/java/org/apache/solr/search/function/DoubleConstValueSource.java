@@ -33,43 +33,53 @@ public class DoubleConstValueSource extends ConstNumberSource {
     this.lv = (long)constant;
   }
 
+  @Override
   public String description() {
     return "const(" + constant + ")";
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return fv;
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) lv;
       }
 
+      @Override
       public long longVal(int doc) {
         return lv;
       }
 
+      @Override
       public double doubleVal(int doc) {
         return constant;
       }
 
+      @Override
       public String strVal(int doc) {
         return Double.toString(constant);
       }
 
+      @Override
       public String toString(int doc) {
         return description();
       }
     };
   }
 
+  @Override
   public int hashCode() {
     long bits = Double.doubleToRawLongBits(constant);
     return (int)(bits ^ (bits >>> 32));
   }
 
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof DoubleConstValueSource)) return false;
     DoubleConstValueSource other = (DoubleConstValueSource) o;

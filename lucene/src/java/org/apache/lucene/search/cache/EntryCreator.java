@@ -58,6 +58,7 @@ public abstract class EntryCreator<T> implements Serializable
   // This can be removed
   //------------------------------------------------------------------------
 
+  @Override
   public boolean equals(Object obj) {
     if( obj instanceof EntryCreator ) {
       return getCacheKey().equals( ((EntryCreator)obj).getCacheKey() );

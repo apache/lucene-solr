@@ -120,6 +120,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
    * @param stream
    * @throws java.io.IOException
    */
+  @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws IOException {
     errHeader = "ExtractingDocumentLoader: " + stream.getSourceInfo();
     Parser parser = null;

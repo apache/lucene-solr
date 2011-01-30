@@ -152,6 +152,7 @@ public interface DocSet /* extends Collection<Integer> */ {
 abstract class DocSetBase implements DocSet {
 
   // Not implemented efficiently... for testing purposes only
+  @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof DocSet)) return false;
     DocSet other = (DocSet)obj;
@@ -260,6 +261,7 @@ abstract class DocSetBase implements DocSet {
         final int max = base + maxDoc;   // one past the max doc in this segment.
 
         return new DocIdSet() {
+          @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int pos=base-1;

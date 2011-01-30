@@ -63,6 +63,7 @@ public class TestExternalCodecs extends LuceneTestCase {
         return t2.length-t1.length;
       }
 
+      @Override
       public boolean equals(Object other) {
         return this == other;
       }
@@ -344,6 +345,7 @@ public class TestExternalCodecs extends LuceneTestCase {
         return ramField.termToDocs.get(current).totalTermFreq;
       }
 
+      @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
         return new RAMDocsEnum(ramField.termToDocs.get(current), skipDocs);
       }

@@ -35,12 +35,16 @@ import java.io.IOException;
  */
 public class TestSearchPerf extends AbstractSolrTestCase {
 
+  @Override
   public String getSchemaFile() { return "schema11.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solrconfig.xml"; }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
   }
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
   }

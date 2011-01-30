@@ -48,12 +48,14 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
     try {
       JavaBinCodec codec = new JavaBinCodec() {
 
+        @Override
         public SolrDocument readSolrDocument(FastInputStream dis) throws IOException {
           SolrDocument doc = super.readSolrDocument(dis);
           callback.streamSolrDocument( doc );
           return null;
         }
 
+        @Override
         public SolrDocumentList readSolrDocumentList(FastInputStream dis) throws IOException {
           SolrDocumentList solrDocs = new SolrDocumentList();
           List list = (List) readVal(dis);

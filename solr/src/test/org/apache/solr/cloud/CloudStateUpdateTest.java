@@ -229,6 +229,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     
   }
 
+  @Override
   public void tearDown() throws Exception {
     if (VERBOSE) {
       printLayout(zkServer.getZkHost());

@@ -160,6 +160,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       return other;
     }
 
+    @Override
     public void copyFrom(TermState _other) {
       super.copyFrom(_other);
       SepTermState other = (SepTermState) _other;

@@ -646,6 +646,7 @@ public class BlockTermsReader extends FieldsProducer {
         return SeekStatus.FOUND;
       }
 
+      @Override
       public long ord() {
         if (!doOrd) {
           throw new UnsupportedOperationException();

@@ -68,6 +68,7 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
+  @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(TermsParams.TERMS, false)) return;
@@ -463,18 +464,22 @@ public class TermsComponent extends SearchComponent {
     }
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public String getDescription() {
     return "A Component for working with Term Enumerators";
   }

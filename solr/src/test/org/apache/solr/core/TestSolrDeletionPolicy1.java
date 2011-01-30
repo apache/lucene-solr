@@ -34,6 +34,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     initCore("solrconfig-delpolicy1.xml","schema.xml");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

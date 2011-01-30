@@ -27,6 +27,7 @@ public final class ShardResponse {
   private Throwable exception;
   private SolrResponse rsp;
 
+  @Override
   public String toString() {
     return "ShardResponse:{shard="+shard+",shardAddress="+shardAddress
             +"\n\trequest=" + req

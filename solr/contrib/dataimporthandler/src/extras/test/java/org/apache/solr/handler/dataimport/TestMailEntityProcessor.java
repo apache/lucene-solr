@@ -191,18 +191,22 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
       super(null, ".", null);
     }
 
+    @Override
     public boolean upload(SolrInputDocument doc) {
       return docs.add(doc);
     }
 
+    @Override
     public void log(int event, String name, Object row) {
       // Do nothing
     }
 
+    @Override
     public void doDeleteAll() {
       deleteAllCalled = Boolean.TRUE;
     }
 
+    @Override
     public void commit(boolean b) {
       commitCalled = Boolean.TRUE;
     }

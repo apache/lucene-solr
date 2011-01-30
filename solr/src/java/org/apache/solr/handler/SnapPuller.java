@@ -508,6 +508,7 @@ public class SnapPuller {
 
   private void reloadCore() {
     new Thread() {
+      @Override
       public void run() {
         try {
           solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());

@@ -319,6 +319,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
    * @throws java.io.IOException
    * @throws ConfigException
    */
+  @Override
   public void parseProperties(Properties zkProp)
       throws IOException, ConfigException {
     for (Entry<Object, Object> entry : zkProp.entrySet()) {

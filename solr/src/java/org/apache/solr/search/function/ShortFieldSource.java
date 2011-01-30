@@ -35,10 +35,12 @@ public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
   }
 
 
+  @Override
   public String description() {
     return "short(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final ShortValues vals = cache.getShorts(readerContext.reader, field, creator);
     final short[] arr = vals.values;
@@ -54,26 +56,32 @@ public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
         return arr[doc];
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float) arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double) arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Short.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + shortVal(doc);
       }
