@@ -87,7 +87,7 @@
   <property environment="env"/>
   <target name="idea" depends="copy-idea-files,finish-idea-setup-windows,
                                finish-idea-setup-mac,
-                               finish-idea-setup-unix"/>
+                               finish-idea-setup-unix" description="Setup IntelliJ IDEA configuration"/>
   <target name="copy-idea-files" 
           description="Setup IntelliJ IDEA configuration files">
     <copy todir=".">
