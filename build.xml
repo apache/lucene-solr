@@ -86,10 +86,9 @@
   <condition property="isWindows"><os family="windows"/></condition>
   <property environment="env"/>
   <target name="idea" depends="copy-idea-files,finish-idea-setup-windows,
-                               finish-idea-setup-mac,
-                               finish-idea-setup-unix" description="Setup IntelliJ IDEA configuration"/>
-  <target name="copy-idea-files" 
-          description="Setup IntelliJ IDEA configuration files">
+                               finish-idea-setup-mac, finish-idea-setup-unix" 
+          description="Setup IntelliJ IDEA configuration"/>
+  <target name="copy-idea-files">
     <copy todir=".">
       <fileset dir="dev-tools/idea">
         <exclude name="Intellij-Lucene-Codestyle.xml"/>
