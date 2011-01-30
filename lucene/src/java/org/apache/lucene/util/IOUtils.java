@@ -34,7 +34,7 @@ public final class IOUtils {
    * Closeable resource1 = null, resource2 = null, resource3 = null;
    * ExpectedException priorE = null;
    * try {
-   *   resource1 = ...; resource2 = ...; resource3 = ...; // Aquisition may throw ExpectedException
+   *   resource1 = ...; resource2 = ...; resource3 = ...; // Acquisition may throw ExpectedException
    *   ..do..stuff.. // May throw ExpectedException
    * } catch (ExpectedException e) {
    *   priorE = e;

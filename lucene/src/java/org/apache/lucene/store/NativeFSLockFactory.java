@@ -60,7 +60,7 @@ public class NativeFSLockFactory extends FSLockFactory {
    * Create a NativeFSLockFactory instance, with null (unset)
    * lock directory. When you pass this factory to a {@link FSDirectory}
    * subclass, the lock directory is automatically set to the
-   * directory itsself. Be sure to create one instance for each directory
+   * directory itself. Be sure to create one instance for each directory
    * your create!
    */
   public NativeFSLockFactory() throws IOException {

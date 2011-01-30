@@ -135,7 +135,7 @@ public final class NumericTokenStream extends TokenStream {
     }
   }
 
-  /** Implementatation of {@link NumericTermAttribute}.
+  /** Implementation of {@link NumericTermAttribute}.
    * @lucene.internal
    * @since 4.0
    */

@@ -538,7 +538,7 @@ public class PreFlexFields extends FieldsProducer {
       // We can easily detect S in UTF8: if a byte has
       // prefix 11110 (0xf0), then that byte and the
       // following 3 bytes encode a single unicode codepoint
-      // in S.  Similary,we can detect E: if a byte has
+      // in S.  Similarly, we can detect E: if a byte has
       // prefix 1110111 (0xee), then that byte and the
       // following 2 bytes encode a single unicode codepoint
       // in E.

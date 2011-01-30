@@ -787,7 +787,7 @@ public class IndexSearcher {
     }
 
     public Iterator<T> iterator() {
-      // use the shortcut here - this is only used in a privat context
+      // use the shortcut here - this is only used in a private context
       return this;
     }
   }

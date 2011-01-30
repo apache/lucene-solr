@@ -103,7 +103,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
    * @param mode
    *          specifies whether a new index should be created, deleting all
    *          existing snapshots information (immediately), or open an existing
-   *          index, initializing the class with the snapsthots information.
+   *          index, initializing the class with the snapshots information.
    * @param matchVersion
    *          specifies the {@link Version} that should be used when opening the
    *          IndexWriter.

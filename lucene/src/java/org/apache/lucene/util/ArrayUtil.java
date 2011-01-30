@@ -634,7 +634,7 @@ public final class ArrayUtil {
   
   /**
    * Sorts the given array slice using the {@link Comparator}. This method uses the insertion sort
-   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * algorithm. It is only recommended to use this algorithm for partially sorted small arrays!
    * @param fromIndex start index (inclusive)
    * @param toIndex end index (exclusive)
    */
@@ -644,7 +644,7 @@ public final class ArrayUtil {
   
   /**
    * Sorts the given array using the {@link Comparator}. This method uses the insertion sort
-   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * algorithm. It is only recommended to use this algorithm for partially sorted small arrays!
    */
   public static <T> void insertionSort(T[] a, Comparator<? super T> comp) {
     insertionSort(a, 0, a.length, comp);
@@ -652,7 +652,7 @@ public final class ArrayUtil {
   
   /**
    * Sorts the given array slice in natural order. This method uses the insertion sort
-   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * algorithm. It is only recommended to use this algorithm for partially sorted small arrays!
    * @param fromIndex start index (inclusive)
    * @param toIndex end index (exclusive)
    */
@@ -662,7 +662,7 @@ public final class ArrayUtil {
   
   /**
    * Sorts the given array in natural order. This method uses the insertion sort
-   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * algorithm. It is only recommended to use this algorithm for partially sorted small arrays!
    */
   public static <T extends Comparable<? super T>> void insertionSort(T[] a) {
     insertionSort(a, 0, a.length);

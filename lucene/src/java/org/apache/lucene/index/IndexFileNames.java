@@ -204,7 +204,7 @@ public final class IndexFileNames {
   
   /**
    * Returns true if the given filename ends with the given extension. One
-   * should provide a <i>pure</i> extension, withouth '.'.
+   * should provide a <i>pure</i> extension, without '.'.
    */
   public static boolean matchesExtension(String filename, String ext) {
     // It doesn't make a difference whether we allocate a StringBuilder ourself

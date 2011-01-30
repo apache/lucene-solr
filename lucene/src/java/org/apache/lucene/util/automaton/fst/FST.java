@@ -490,7 +490,7 @@ public class FST<T> {
     }
   }
 
-  // Not private beacaus NodeHash needs access:
+  // Not private because NodeHash needs access:
   Arc<T> readFirstRealArc(int address, Arc<T> arc) throws IOException {
 
     final BytesReader in = getBytesReader(address);

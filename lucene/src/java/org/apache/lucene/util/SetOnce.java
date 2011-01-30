@@ -49,7 +49,7 @@ public final class SetOnce<T> {
   }
 
   /**
-   * Creates a new instnace with the internal object set to the given object.
+   * Creates a new instance with the internal object set to the given object.
    * Note that any calls to {@link #set(Object)} afterwards will result in
    * {@link AlreadySetException}
    *
