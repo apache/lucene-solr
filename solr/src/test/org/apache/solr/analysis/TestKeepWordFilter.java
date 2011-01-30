@@ -40,19 +40,21 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     words.add( "aaa" );
     words.add( "bbb" );
     
-    String input = "aaa BBB ccc ddd EEE";
+    String input = "xxx yyy aaa zzz BBB ccc ddd EEE";
     Map<String,String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);
     
     // Test Stopwords
     KeepWordFilterFactory factory = new KeepWordFilterFactory();
     args.put( "ignoreCase", "true" );
+    args.put( "enablePositionIncrements", "true" );
     factory.init( args );
     factory.inform( loader );
     factory.setWords( words );
     assertTrue(factory.isIgnoreCase());
+    assertTrue(factory.isEnablePositionIncrements());
     TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
-    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
+    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 3, 2 });
     
     // Test Stopwords (ignoreCase via the setter instead)
     factory = new KeepWordFilterFactory();
@@ -62,18 +64,21 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     factory.setIgnoreCase(true);
     factory.setWords( words );
     assertTrue(factory.isIgnoreCase());
+    assertFalse(factory.isEnablePositionIncrements());
     stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
-    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
+    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 1, 1 });
     
-    // Now force case
+    // Now force case and posIncr
     factory = new KeepWordFilterFactory();
     args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put( "ignoreCase", "false" );
+    args.put( "enablePositionIncrements", "true" );
     factory.init( args );
     factory.inform( loader );
     factory.setWords( words );    
     assertFalse(factory.isIgnoreCase());
+    assertTrue(factory.isEnablePositionIncrements());
     stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
-    assertTokenStreamContents(stream, new String[] { "aaa" });
+    assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 3 });
   }
 }

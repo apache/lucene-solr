@@ -27,6 +27,7 @@ import java.util.Map;
  */
 public class LengthFilterFactory extends BaseTokenFilterFactory {
   int min,max;
+  boolean enablePositionIncrements;
   public static final String MIN_KEY = "min";
   public static final String MAX_KEY = "max";
 
@@ -35,8 +36,10 @@ public class LengthFilterFactory extends BaseTokenFilterFactory {
     super.init(args);
     min=Integer.parseInt(args.get(MIN_KEY));
     max=Integer.parseInt(args.get(MAX_KEY));
+    enablePositionIncrements = getBoolean("enablePositionIncrements",false);
   }
+  
   public LengthFilter create(TokenStream input) {
-    return new LengthFilter(input,min,max);
+    return new LengthFilter(enablePositionIncrements, input,min,max);
   }
 }

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.List;
 
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queryParser.QueryParser; // for javadoc
 import org.apache.lucene.util.Version;
@@ -39,13 +38,10 @@ import org.apache.lucene.util.Version;
  *         increments are preserved
  * </ul>
  */
-public final class StopFilter extends TokenFilter {
+public final class StopFilter extends FilteringTokenFilter {
 
   private final CharArraySet stopWords;
-  private boolean enablePositionIncrements = false;
-
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
    * Construct a token stream filtering the given input.
@@ -101,9 +97,8 @@ public final class StopFilter extends TokenFilter {
    * convenience ctor to enable deprecated ctors to set posInc explicitly
    */
   private StopFilter(Version matchVersion, boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase){
-    super(input);
+    super(enablePositionIncrements, input);
     this.stopWords = stopWords instanceof CharArraySet ? (CharArraySet)stopWords : new CharArraySet(matchVersion, stopWords, ignoreCase);  
-    this.enablePositionIncrements = enablePositionIncrements;
   }
 
   /**
@@ -251,20 +246,8 @@ public final class StopFilter extends TokenFilter {
    * Returns the next input Token whose term() is not a stop word.
    */
   @Override
-  public final boolean incrementToken() throws IOException {
-    // return the first non-stop word found
-    int skippedPositions = 0;
-    while (input.incrementToken()) {
-      if (!stopWords.contains(termAtt.buffer(), 0, termAtt.length())) {
-        if (enablePositionIncrements) {
-          posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
-        }
-        return true;
-      }
-      skippedPositions += posIncrAtt.getPositionIncrement();
-    }
-    // reached EOS -- return false
-    return false;
+  protected boolean accept() throws IOException {
+    return !stopWords.contains(termAtt.buffer(), 0, termAtt.length());
   }
 
   /**
@@ -278,32 +261,5 @@ public final class StopFilter extends TokenFilter {
   @Deprecated
   public static boolean getEnablePositionIncrementsVersionDefault(Version matchVersion) {
     return matchVersion.onOrAfter(Version.LUCENE_29);
-  }
-
-  /**
-   * @see #setEnablePositionIncrements(boolean)
-   */
-  public boolean getEnablePositionIncrements() {
-    return enablePositionIncrements;
-  }
-
-  /**
-   * If <code>true</code>, this StopFilter will preserve
-   * positions of the incoming tokens (ie, accumulate and
-   * set position increments of the removed stop tokens).
-   * Generally, <code>true</code> is best as it does not
-   * lose information (positions of the original tokens)
-   * during indexing.
-   * 
-   * <p> When set, when a token is stopped
-   * (omitted), the position increment of the following
-   * token is incremented.
-   *
-   * <p> <b>NOTE</b>: be sure to also
-   * set {@link QueryParser#setEnablePositionIncrements} if
-   * you use QueryParser to create queries.
-   */
-  public void setEnablePositionIncrements(boolean enable) {
-    this.enablePositionIncrements = enable;
   }
 }

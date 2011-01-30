@@ -300,6 +300,12 @@ API Changes
   Scorer.visitSubScorers (LUCENE-2590) will work correctly.
   (Robert Muir, Doron Cohen)
   
+* LUCENE-1253: LengthFilter (and Solr's KeepWordTokenFilter) now
+  require up front specification of enablePositionIncrement. Together with
+  StopFilter they have a common base class (FilteringTokenFilter) that handles
+  the position increments automatically. Implementors only need to override an
+  accept() method that filters tokens.  (Uwe Schindler, Robert Muir)
+
 Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
