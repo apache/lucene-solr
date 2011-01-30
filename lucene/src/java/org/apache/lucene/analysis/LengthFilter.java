@@ -47,7 +47,7 @@ public final class LengthFilter extends FilteringTokenFilter {
   /**
    * Build a filter that removes words that are too long or too
    * short from the text.
-   * @deprecated Use {@link #LengthFilter(boolean, TokenStream, int, int) instead.
+   * @deprecated Use {@link #LengthFilter(boolean, TokenStream, int, int)} instead.
    */
   public LengthFilter(TokenStream in, int min, int max) {
     this(false, in, min, max);

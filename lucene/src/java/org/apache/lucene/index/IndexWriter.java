@@ -393,7 +393,7 @@ public class IndexWriter implements Closeable {
    * changes made so far by this IndexWriter instance
    *
    * @deprecated Please use {@link
-   * IndexReader#open(IndexWriter)} instead.
+   * IndexReader#open(IndexWriter,boolean)} instead.
    *
    * @throws IOException
    */
@@ -1055,9 +1055,6 @@ public class IndexWriter implements Closeable {
    * IndexWriter. Additionally, calling {@link #getConfig()} and changing the
    * parameters does not affect that IndexWriter instance.
    * <p>
-   * <b>NOTE:</b> by default, {@link IndexWriterConfig#getMaxFieldLength()}
-   * returns {@link IndexWriterConfig#UNLIMITED_FIELD_LENGTH}. Pay attention to
-   * whether this setting fits your application.
    * 
    * @param d
    *          the index directory. The index is either created or appended
@@ -4314,9 +4311,7 @@ public class IndexWriter implements Closeable {
    * {@link IndexWriter} constructors. {@link #setMaxFieldLength(int)} overrides
    * the value set by the constructor.
    * 
-   * @deprecated use {@link IndexWriterConfig} and pass
-   *             {@link IndexWriterConfig#UNLIMITED_FIELD_LENGTH} or your own
-   *             value.
+   * @deprecated use {@link LimitTokenCountAnalyzer} instead.
    */
   @Deprecated
   public static final class MaxFieldLength {
