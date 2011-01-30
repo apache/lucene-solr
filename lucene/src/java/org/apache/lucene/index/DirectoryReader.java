@@ -70,6 +70,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
   // opened on a past IndexCommit:
   private long maxIndexVersion;
 
+  private final boolean applyAllDeletes;
+
 //  static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly,
 //      final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
 //    return open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor, null);
@@ -107,6 +109,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       this.codecs = codecs;
     }
     readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
+    applyAllDeletes = false;
 
     // To reduce the chance of hitting FileNotFound
     // (and having to retry), we open segments in
@@ -138,9 +141,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   // Used by near real-time search
-  DirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor, CodecProvider codecs) throws IOException {
+  DirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor, CodecProvider codecs, boolean applyAllDeletes) throws IOException {
     this.directory = writer.getDirectory();
     this.readOnly = true;
+    this.applyAllDeletes = applyAllDeletes;       // saved for reopen
+
     segmentInfos = (SegmentInfos) infos.clone();// make sure we clone otherwise we share mutable state with IW
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     if (codecs == null) {
@@ -193,6 +198,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.segmentInfos = infos;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     this.readerFinishedListeners = readerFinishedListeners;
+    applyAllDeletes = false;
 
     if (codecs == null) {
       this.codecs = CodecProvider.getDefault();
@@ -401,7 +407,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     // TODO: right now we *always* make a new reader; in
     // the future we could have write make some effort to
     // detect that no changes have occurred
-    IndexReader reader = writer.getReader();
+    IndexReader reader = writer.getReader(applyAllDeletes);
     reader.readerFinishedListeners = readerFinishedListeners;
     return reader;
   }

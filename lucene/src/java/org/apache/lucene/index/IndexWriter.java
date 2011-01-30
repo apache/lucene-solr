@@ -274,6 +274,10 @@ public class IndexWriter implements Closeable {
   // for testing
   boolean anyNonBulkMerges;
 
+  IndexReader getReader() throws IOException {
+    return getReader(true);
+  }
+
   /**
    * Expert: returns a readonly reader, covering all
    * committed as well as un-committed changes to the index.
@@ -333,7 +337,7 @@ public class IndexWriter implements Closeable {
    *
    * @throws IOException
    */
-  IndexReader getReader() throws IOException {
+  IndexReader getReader(boolean applyAllDeletes) throws IOException {
     ensureOpen();
 
     final long tStart = System.currentTimeMillis();
@@ -352,8 +356,8 @@ public class IndexWriter implements Closeable {
     // just like we do when loading segments_N
     IndexReader r;
     synchronized(this) {
-      flush(false, true);
-      r = new DirectoryReader(this, segmentInfos, config.getReaderTermsIndexDivisor(), codecs);
+      flush(false, applyAllDeletes);
+      r = new DirectoryReader(this, segmentInfos, config.getReaderTermsIndexDivisor(), codecs, applyAllDeletes);
       if (infoStream != null) {
         message("return reader version=" + r.getVersion() + " reader=" + r);
       }
@@ -2463,9 +2467,9 @@ public class IndexWriter implements Closeable {
    * to the Directory.
    * @param triggerMerge if true, we may merge segments (if
    *  deletes or docs were flushed) if necessary
-   * @param flushDeletes whether pending deletes should also
+   * @param applyAllDeletes whether pending deletes should also
    */
-  protected final void flush(boolean triggerMerge, boolean flushDeletes) throws CorruptIndexException, IOException {
+  protected final void flush(boolean triggerMerge, boolean applyAllDeletes) throws CorruptIndexException, IOException {
 
     // NOTE: this method cannot be sync'd because
     // maybeMerge() in turn calls mergeScheduler.merge which
@@ -2476,7 +2480,7 @@ public class IndexWriter implements Closeable {
 
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
-    if (doFlush(flushDeletes) && triggerMerge) {
+    if (doFlush(applyAllDeletes) && triggerMerge) {
       maybeMerge();
     }
   }

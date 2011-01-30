@@ -214,7 +214,7 @@ public class TestFieldCache extends LuceneTestCase {
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
-    IndexReader r = IndexReader.open(writer);
+    IndexReader r = IndexReader.open(writer, true);
     FieldCache.DocTerms terms = FieldCache.DEFAULT.getTerms(r, "foobar");
     FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(r, "foobar");
     r.close();

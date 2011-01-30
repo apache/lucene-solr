@@ -1059,7 +1059,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(doc);
 
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     w.close();
     IndexSearcher s = new IndexSearcher(r);
     TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.STRING)));

@@ -1010,7 +1010,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("f", "val", Store.NO, Index.ANALYZED));
     w.addDocument(doc);
-    IndexReader r = IndexReader.open(w).getSequentialSubReaders()[0];
+    IndexReader r = IndexReader.open(w, true).getSequentialSubReaders()[0];
     try {
       r.termDocsEnum(null, "f", new BytesRef("val"));
       fail("should have failed to seek since terms index was not loaded. Codec used " + conf.getCodecProvider().getFieldCodec("f"));

@@ -126,7 +126,7 @@ public class PayloadHelper {
       doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = IndexReader.open(writer);
+    reader = IndexReader.open(writer, true);
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(reader);

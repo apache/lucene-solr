@@ -960,7 +960,7 @@ public class TestFSTs extends LuceneTestCase {
       writer.addDocument(doc);
       docCount++;
     }
-    IndexReader r = IndexReader.open(writer);
+    IndexReader r = IndexReader.open(writer, true);
     writer.close();
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(random.nextBoolean());
     Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);

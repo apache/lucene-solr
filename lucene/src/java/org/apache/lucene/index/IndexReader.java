@@ -295,23 +295,25 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /**
    * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
    *
-   *
    * @param writer The IndexWriter to open from
+   * @param applyAllDeletes If true, all buffered deletes will
+   * be applied (made visible) in the returned reader.  If
+   * false, the deletes are not applied but remain buffered
+   * (in IndexWriter) so that they will be applied in the
+   * future.  Applying deletes can be costly, so if your app
+   * can tolerate deleted documents being returned you might
+   * gain some performance by passing false.
    * @return The new IndexReader
    * @throws CorruptIndexException
    * @throws IOException if there is a low-level IO error
    *
-   * @see #reopen(IndexWriter)
+   * @see #reopen(IndexWriter,boolean)
    *
    * @lucene.experimental
    */
-  public static IndexReader open(final IndexWriter writer) throws CorruptIndexException, IOException {
-    return writer.getReader();
+  public static IndexReader open(final IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    return writer.getReader(applyAllDeletes);
   }
-
-  
-
-
 
   /** Expert: returns an IndexReader reading the index in the given
    *  {@link IndexCommit}.  You should pass readOnly=true, since it
@@ -617,17 +619,25 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * if you attempt to reopen any of those readers, you'll
    * hit an {@link AlreadyClosedException}.</p>
    *
-   * @lucene.experimental
-   *
    * @return IndexReader that covers entire index plus all
    * changes made so far by this IndexWriter instance
    *
+   * @param writer The IndexWriter to open from
+   * @param applyAllDeletes If true, all buffered deletes will
+   * be applied (made visible) in the returned reader.  If
+   * false, the deletes are not applied but remain buffered
+   * (in IndexWriter) so that they will be applied in the
+   * future.  Applying deletes can be costly, so if your app
+   * can tolerate deleted documents being returned you might
+   * gain some performance by passing false.
+   *
    * @throws IOException
+   *
+   * @lucene.experimental
    */
-  public IndexReader reopen(IndexWriter writer) throws CorruptIndexException, IOException {
-    return writer.getReader();
+  public IndexReader reopen(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    return writer.getReader(applyAllDeletes);
   }
-
 
   /**
    * Efficiently clones the IndexReader (sharing most

@@ -206,7 +206,7 @@ public class TestNRTThreads extends LuceneTestCase {
     // let index build up a bit
     Thread.sleep(100);
 
-    IndexReader r = IndexReader.open(writer);
+    IndexReader r = IndexReader.open(writer, true);
     boolean any = false;
 
     // silly starting guess:
@@ -239,7 +239,7 @@ public class TestNRTThreads extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: now open");
         }
-        r = IndexReader.open(writer);
+        r = IndexReader.open(writer, true);
       }
       if (VERBOSE) {
         System.out.println("TEST: got new reader=" + r);

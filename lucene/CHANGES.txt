@@ -635,6 +635,13 @@ API Changes
   it should keep it itself. Fixed Scorers to pass their parent Weight, so that
   Scorer.visitSubScorers (LUCENE-2590) will work correctly.
   (Robert Muir, Doron Cohen)
+
+* LUCENE-2900: When opening a near-real-time (NRT) reader
+  (IndexReader.re/open(IndexWriter)) you can now specify whether
+  deletes should be applied.  Applying deletes can be costly, and some
+  expert use cases can handle seeing deleted documents returned.  The
+  deletes remain buffered so that the next time you open an NRT reader
+  and pass true, all deletes will be a applied.  (Mike McCandless)
   
 Bug fixes
 
