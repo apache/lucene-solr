@@ -43,36 +43,44 @@ public class IntFieldSource extends FieldCacheSource {
     this.parser = parser;
   }
 
+  @Override
   public String description() {
     return "int(" + field + ')';
   }
 
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final int[] arr = (parser==null) ?
             cache.getInts(reader, field) :
             cache.getInts(reader, field, parser);
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return (float)arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Float.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }
@@ -113,6 +121,7 @@ public class IntFieldSource extends FieldCacheSource {
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  IntFieldSource.class) return false;
     IntFieldSource other = (IntFieldSource)o;
@@ -121,6 +130,7 @@ public class IntFieldSource extends FieldCacheSource {
               this.parser.getClass() == other.parser.getClass();
   }
 
+  @Override
   public int hashCode() {
     int h = parser==null ? Integer.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

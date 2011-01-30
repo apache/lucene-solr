@@ -92,6 +92,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
     done = false;
   }
 
+  @Override
   public Map<String, Object> nextRow() {
     if(done) return null;
     Map<String, Object> row = new HashMap<String, Object>();

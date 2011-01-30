@@ -31,12 +31,16 @@ import java.util.List;
  */
 public class TestQueryUtils extends AbstractSolrTestCase {
 
+  @Override
   public String getSchemaFile() { return "schema.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solrconfig.xml"; }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
   }
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
   }

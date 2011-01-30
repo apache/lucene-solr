@@ -39,6 +39,7 @@ import java.util.Map;
 public class HaversineConstFunction extends ValueSource {
 
   public static ValueSourceParser parser = new ValueSourceParser() {
+    @Override
     public ValueSource parse(FunctionQParser fp) throws ParseException
     {
       // TODO: dispatch through SpatialQueriable in the future?
@@ -198,18 +199,22 @@ public class HaversineConstFunction extends ValueSource {
     final double latCenterRad_cos = this.latCenterRad_cos;
 
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) doubleVal(doc);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) doubleVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         double latRad = latVals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
         double lonRad = lonVals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
@@ -222,6 +227,7 @@ public class HaversineConstFunction extends ValueSource {
         return (EARTH_MEAN_DIAMETER * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
       }
 
+      @Override
       public String strVal(int doc) {
         return Double.toString(doubleVal(doc));
       }
@@ -260,6 +266,7 @@ public class HaversineConstFunction extends ValueSource {
     return result;
   }
 
+  @Override
   public String description() {
     return name() + '(' + p2 + ',' + latCenter + ',' + lonCenter + ')';
   }

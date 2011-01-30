@@ -42,10 +42,12 @@ public class ByteFieldSource extends FieldCacheSource {
     this.parser = parser;
   }
 
+  @Override
   public String description() {
     return "byte(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final byte[] arr = (parser == null) ?
             cache.getBytes(reader, field) :
@@ -61,26 +63,32 @@ public class ByteFieldSource extends FieldCacheSource {
         return (short) arr[doc];
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float) arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double) arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Byte.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + byteVal(doc);
       }
@@ -88,6 +96,7 @@ public class ByteFieldSource extends FieldCacheSource {
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() != ByteFieldSource.class) return false;
     ByteFieldSource
@@ -97,6 +106,7 @@ public class ByteFieldSource extends FieldCacheSource {
             this.parser.getClass() == other.parser.getClass();
   }
 
+  @Override
   public int hashCode() {
     int h = parser == null ? Byte.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

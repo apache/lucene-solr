@@ -46,6 +46,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     return "solrconfig.xml";
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     // Make sure that at least one MBeanServer is available
@@ -53,6 +54,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     super.setUp();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

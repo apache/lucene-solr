@@ -49,10 +49,12 @@ public class FunctionQuery extends Query {
     return func;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
 
+  @Override
   public void extractTerms(Set terms) {}
 
   protected class FunctionWeight extends Weight {
@@ -67,10 +69,12 @@ public class FunctionQuery extends Query {
       func.createWeight(context, searcher);
     }
 
+    @Override
     public Query getQuery() {
       return FunctionQuery.this;
     }
 
+    @Override
     public float getValue() {
       return queryWeight;
     }
@@ -173,6 +177,7 @@ public class FunctionQuery extends Query {
       return doc;
     }
 
+    @Override
     public float score() throws IOException {
       float score = qWeight * vals.floatVal(doc);
 
@@ -201,12 +206,14 @@ public class FunctionQuery extends Query {
   }
 
 
+  @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field)
   {
     float boost = getBoost();
@@ -216,6 +223,7 @@ public class FunctionQuery extends Query {
 
 
   /** Returns true if <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (FunctionQuery.class != o.getClass()) return false;
     FunctionQuery other = (FunctionQuery)o;
@@ -224,6 +232,7 @@ public class FunctionQuery extends Query {
   }
 
   /** Returns a hash code value for this object. */
+  @Override
   public int hashCode() {
     return func.hashCode()*31 + Float.floatToIntBits(getBoost());
   }

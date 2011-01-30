@@ -236,12 +236,15 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   private DataSource<Reader> getDataSource(final String xml) {
     return new DataSource<Reader>() {
 
+      @Override
       public void init(Context context, Properties initProps) {
       }
 
+      @Override
       public void close() {
       }
 
+      @Override
       public Reader getData(String query) {
         return new StringReader(xml);
       }

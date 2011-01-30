@@ -42,6 +42,7 @@ import java.io.*;
 
 public class CSVRequestHandler extends ContentStreamHandlerBase {
 
+  @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     return new SingleThreadedCSVLoader(req, processor);
   }
@@ -118,6 +119,7 @@ abstract class CSVLoader extends ContentStreamLoader {
 
   /** add zero length fields */
   private class FieldAdderEmpty extends CSVLoader.FieldAdder {
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       doc.addField(fields[column].getName(),val,1.0f);
     }
@@ -127,6 +129,7 @@ abstract class CSVLoader extends ContentStreamLoader {
   private class FieldTrimmer extends CSVLoader.FieldAdder {
     private final CSVLoader.FieldAdder base;
     FieldTrimmer(CSVLoader.FieldAdder base) { this.base=base; }
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       base.add(doc, line, column, val.trim());
     }
@@ -145,6 +148,7 @@ abstract class CSVLoader extends ContentStreamLoader {
      this.to=to;
      this.base=base;
    }
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       if (from.equals(val)) val=to;
       base.add(doc,line,column,val);
@@ -162,6 +166,7 @@ abstract class CSVLoader extends ContentStreamLoader {
       this.base = base;
     }
 
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       CSVParser parser = new CSVParser(new StringReader(val), strategy);
       try {
@@ -339,6 +344,7 @@ abstract class CSVLoader extends ContentStreamLoader {
   }
 
   /** load the CSV input */
+  @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws IOException {
     errHeader = "CSVLoader: input=" + stream.getSourceInfo();
     Reader reader = null;
@@ -415,6 +421,7 @@ class SingleThreadedCSVLoader extends CSVLoader {
     super(req, processor);
   }
 
+  @Override
   void addDoc(int line, String[] vals) throws IOException {
     templateAdd.indexedId = null;
     SolrInputDocument doc = new SolrInputDocument();

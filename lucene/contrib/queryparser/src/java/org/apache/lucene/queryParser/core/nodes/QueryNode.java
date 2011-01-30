@@ -135,6 +135,7 @@ public interface QueryNode extends Serializable {
    * 
    * @deprecated use {@link #getTagMap()}
    */
+  @Deprecated
   public Map<CharSequence, Object> getTags();
   
   /**

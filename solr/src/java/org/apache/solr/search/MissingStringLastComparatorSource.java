@@ -42,6 +42,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
     this.missingValueProxy=missingValueProxy;
   }
 
+  @Override
   public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
     return new MissingLastOrdComparator(numHits, fieldname, sortPos, reversed, missingValueProxy);
   }
@@ -80,6 +81,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
       this.nullVal = nullVal;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       if (readerGen[slot1] == readerGen[slot2]) {
         int cmp = ords[slot1] - ords[slot2];
@@ -102,6 +104,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
       return val1.compareTo(val2);
     }
 
+    @Override
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
       int order = this.order[doc];
@@ -149,6 +152,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
       ords[slot] = index;
     }
 
+    @Override
     public void copy(int slot, int doc) {
       final int ord = order[doc];
       ords[slot] = ord == 0 ? NULL_ORD : ord;
@@ -157,6 +161,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
       readerGen[slot] = currentReaderGen;
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       FieldCache.StringIndex currentReaderValues = FieldCache.DEFAULT.getStringIndex(reader, field);
       currentReaderGen++;
@@ -169,6 +174,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
       }
     }
 
+    @Override
     public void setBottom(final int bottom) {
       bottomSlot = bottom;
       if (readerGen[bottom] != currentReaderGen) {
@@ -180,6 +186,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
       bottomValue = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       Comparable v = values[slot];
       return v==null ? nullVal : v;

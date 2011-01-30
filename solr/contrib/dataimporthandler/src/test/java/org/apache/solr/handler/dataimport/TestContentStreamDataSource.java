@@ -43,6 +43,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
   SolrInstance instance = null;
   JettySolrRunner jetty;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -51,6 +52,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     jetty = createJetty(instance);
   }
   
+  @Override
   @After
   public void tearDown() throws Exception {
     jetty.stop();

@@ -47,6 +47,7 @@ public class TestIndexSorter extends LuceneTestCase {
   Directory outputDir = null;
   
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     // create test index

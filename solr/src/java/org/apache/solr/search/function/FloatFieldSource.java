@@ -44,41 +44,50 @@ public class FloatFieldSource extends FieldCacheSource {
     this.parser = parser;
   }
 
+  @Override
   public String description() {
     return "float(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final float[] arr = (parser==null) ?
             cache.getFloats(reader, field) :
             cache.getFloats(reader, field, parser);
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int)arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Float.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + floatVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  FloatFieldSource.class) return false;
     FloatFieldSource other = (FloatFieldSource)o;
@@ -87,6 +96,7 @@ public class FloatFieldSource extends FieldCacheSource {
               this.parser.getClass() == other.parser.getClass();
   }
 
+  @Override
   public int hashCode() {
     int h = parser==null ? Float.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

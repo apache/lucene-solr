@@ -978,9 +978,11 @@ public class SimpleFacets {
     }
     public K key;
     public V val;
+    @Override
     public int hashCode() {
       return key.hashCode() ^ val.hashCode();
     }
+    @Override
     public boolean equals(Object o) {
       return (o instanceof CountPair)
         && (0 == this.compareTo((CountPair<K,V>) o));
@@ -1090,9 +1092,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Float> {
 
     public FloatRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Float parseVal(String rawval) {
       return Float.valueOf(rawval);
     }
+    @Override
     public Float parseAndAddGap(Float value, String gap) {
       return new Float(value.floatValue() + Float.valueOf(gap).floatValue());
     }
@@ -1101,9 +1105,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Double> {
 
     public DoubleRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Double parseVal(String rawval) {
       return Double.valueOf(rawval);
     }
+    @Override
     public Double parseAndAddGap(Double value, String gap) {
       return new Double(value.floatValue() + Double.valueOf(gap).floatValue());
     }
@@ -1112,9 +1118,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Integer> {
 
     public IntegerRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Integer parseVal(String rawval) {
       return Integer.valueOf(rawval);
     }
+    @Override
     public Integer parseAndAddGap(Integer value, String gap) {
       return new Integer(value.intValue() + Integer.valueOf(gap).intValue());
     }
@@ -1123,9 +1131,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Long> {
 
     public LongRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Long parseVal(String rawval) {
       return Long.valueOf(rawval);
     }
+    @Override
     public Long parseAndAddGap(Long value, String gap) {
       return new Long(value.intValue() + Long.valueOf(gap).intValue());
     }
@@ -1142,15 +1152,19 @@ public class SimpleFacets {
           ("SchemaField must use filed type extending DateField");
       }
     }
+    @Override
     public String formatValue(Date val) {
       return ((DateField)field.getType()).toExternal(val);
     }
+    @Override
     protected Date parseVal(String rawval) {
       return ((DateField)field.getType()).parseMath(now, rawval);
     }
+    @Override
     protected Object parseGap(final String rawval) {
       return rawval;
     }
+    @Override
     public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
       final DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
       dmp.setNow(value);

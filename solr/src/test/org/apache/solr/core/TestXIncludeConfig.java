@@ -33,11 +33,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 public class TestXIncludeConfig extends AbstractSolrTestCase {
   protected boolean supports;
 
+  @Override
   public String getSchemaFile() {
     return "schema.xml";
   }
 
   //public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @Override
   public String getSolrConfigFile() {
     return "solrconfig-xinclude.xml";
   }

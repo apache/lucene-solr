@@ -243,6 +243,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     @Override
     public void close() {}
     
+    @Override
     public MergeSpecification findMerges(SegmentInfos segmentInfos)
         throws CorruptIndexException, IOException {
       MergeSpecification ms = new MergeSpecification();

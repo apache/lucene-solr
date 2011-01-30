@@ -415,22 +415,27 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase implements So
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
 
+  @Override
   public String getDescription() {
     return "The SpellChecker Solr request handler for SpellChecker index: " + dirDescription;
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }

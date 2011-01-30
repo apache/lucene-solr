@@ -103,6 +103,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
    * </p>
    * @deprecated use SolrParams.toSolrParams
    */
+  @Override
   @Deprecated
   public void setValues(NamedList args) {
 

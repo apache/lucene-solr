@@ -73,6 +73,7 @@ public class PageTool {
     return current_page_number;
   }
 
+  @Override
   public String toString() {
     return "Found " + results_found +
            " Page " + current_page_number + " of " + page_count +

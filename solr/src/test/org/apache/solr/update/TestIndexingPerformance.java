@@ -34,7 +34,9 @@ import java.util.Arrays;
  */
 public class TestIndexingPerformance extends AbstractSolrTestCase {
 
+  @Override
   public String getSchemaFile() { return "schema12.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solrconfig_perf.xml"; }
 
   public void testIndexingPerf() throws IOException {

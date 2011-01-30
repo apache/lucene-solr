@@ -45,6 +45,7 @@ import java.util.Map;
 final public class DoubleBarrelLRUCache<K extends DoubleBarrelLRUCache.CloneableKey,V> {
 
   public static abstract class CloneableKey {
+    @Override
     abstract public Object clone();
   }
 

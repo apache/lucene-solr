@@ -29,6 +29,7 @@ package org.apache.solr.update;
       this.commandName = commandName;
     }
 
+    @Override
     public String toString() {
       return commandName;
     }

@@ -84,24 +84,28 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public static Logger log = LoggerFactory.getLogger(BaseDistributedSearchTestCase.class);
   
   public static RandVal rint = new RandVal() {
+    @Override
     public Object val() {
       return r.nextInt();
     }
   };
 
   public static RandVal rlong = new RandVal() {
+    @Override
     public Object val() {
       return r.nextLong();
     }
   };
 
   public static RandVal rfloat = new RandVal() {
+    @Override
     public Object val() {
       return r.nextFloat();
     }
   };
 
   public static RandVal rdouble = new RandVal() {
+    @Override
     public Object val() {
       return r.nextDouble();
     }
@@ -278,6 +282,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       Thread[] threads = new Thread[nThreads];
       for (int i = 0; i < threads.length; i++) {
         threads[i] = new Thread() {
+          @Override
           public void run() {
             for (int j = 0; j < stress; j++) {
               int which = r.nextInt(clients.size());
@@ -564,6 +569,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public static class RandDate extends RandVal {
     public static TrieDateField df = new TrieDateField();
 
+    @Override
     public Object val() {
       long v = r.nextLong();
       Date d = new Date(v);

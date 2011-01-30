@@ -51,6 +51,7 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
 
   private JmxMonitoredMap<String, SolrInfoMBean> monitoredMap;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -84,6 +85,7 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
     }
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     try {

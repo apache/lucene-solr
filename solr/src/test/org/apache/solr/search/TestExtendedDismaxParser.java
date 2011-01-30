@@ -20,15 +20,19 @@ package org.apache.solr.search;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 public class TestExtendedDismaxParser extends AbstractSolrTestCase {
+  @Override
   public String getSchemaFile() { return "schema12.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solrconfig.xml"; }
   // public String getCoreName() { return "collection1"; }
 
+  @Override
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
   }
+  @Override
   public void tearDown() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version

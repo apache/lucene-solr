@@ -58,6 +58,7 @@ public final class LegacyDateField extends DateField {
    * Overrides the super class to short circut and do no enforcing of
    * the canonical format
    */
+  @Override
   public String toInternal(String val) {
     final int len=val.length();
     if (val.charAt(len-1) == Z) {
@@ -73,10 +74,12 @@ public final class LegacyDateField extends DateField {
    * ISO 8601 canonical format with regards to trailing zeros in milliseconds,
    * instead if always formats milliseconds to 3 decimal points.
    */
+  @Override
   protected DateFormat getThreadLocalDateFormat() {
     return fmtThreadLocal.get();
   }
 
+  @Override
   protected String formatDate(Date d) {
     return getThreadLocalDateFormat().format(d);
   }
@@ -94,6 +97,7 @@ public final class LegacyDateField extends DateField {
       proto = tmp;
     }
 
+    @Override
     protected DateFormat initialValue() {
       return (DateFormat) proto.clone();
     }

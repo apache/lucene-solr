@@ -48,6 +48,7 @@ public class SolrServlet extends HttpServlet {
   final Logger log = LoggerFactory.getLogger(SolrServlet.class);
   private boolean hasMulticore = false;
     
+  @Override
   public void init() throws ServletException {
     log.info("SolrServlet.init()");
     
@@ -62,10 +63,12 @@ public class SolrServlet extends HttpServlet {
     log.info("SolrServlet.init() done");
   }
 
+  @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     doGet(request,response);
   }
 
+  @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     if( hasMulticore ) {
       response.sendError( 400, "Missing solr core name in path" );

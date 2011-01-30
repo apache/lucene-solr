@@ -595,6 +595,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Neccessary to make method signatures un-ambiguous */
   public static class Doc {
     public String xml;
+    @Override
     public String toString() { return xml; }
   }
 

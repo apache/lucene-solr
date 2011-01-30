@@ -82,6 +82,7 @@ public abstract class StringIndexDocValues extends DocValues {
       };
     }
 
+    @Override
     public String toString(int doc) {
       return vs.description() + '=' + strVal(doc);
     }

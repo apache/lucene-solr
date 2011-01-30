@@ -41,6 +41,7 @@ import org.xml.sax.SAXException;
  */
 public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
 
@@ -57,6 +58,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     ("standard",0,20,"version","2.2");
   }
   
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
 

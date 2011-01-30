@@ -112,6 +112,7 @@ public class TrieField extends FieldType {
     }
   }
 
+  @Override
   public SortField getSortField(SchemaField field, boolean top) {
     switch (type) {
       case INTEGER:
@@ -128,6 +129,7 @@ public class TrieField extends FieldType {
     }
   }
 
+  @Override
   public ValueSource getValueSource(SchemaField field) {
     switch (type) {
       case INTEGER:
@@ -145,6 +147,7 @@ public class TrieField extends FieldType {
     }
   }
 
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     byte[] arr = f.getBinaryValue();
     if (arr==null) {
@@ -173,6 +176,7 @@ public class TrieField extends FieldType {
     }
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     byte[] arr = f.getBinaryValue();
     if (arr==null) {
@@ -509,6 +513,7 @@ class TrieDateFieldSource extends LongFieldSource {
     super(field);
   }
 
+  @Override
   public String description() {
     return "date(" + field + ')';
   }

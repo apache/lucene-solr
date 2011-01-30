@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.snowball.SnowballFilter;
 @Deprecated
 public class RussianStemFilterFactory extends BaseTokenFilterFactory {
 
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     warnDeprecated("use SnowballPorterFilterFactory with 'Russian' instead");

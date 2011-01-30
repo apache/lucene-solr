@@ -165,6 +165,7 @@ public class SortedIntDocSet extends DocSetBase {
     return icount;
   }
 
+  @Override
   public int intersectionSize(DocSet other) {
     if (!(other instanceof SortedIntDocSet)) {
       // assume other implementations are better at random access than we are,
@@ -589,6 +590,7 @@ public class SortedIntDocSet extends DocSetBase {
 
 
         return new DocIdSet() {
+          @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int idx = startIdx;

@@ -170,6 +170,7 @@ public class DirectUpdateHandler extends UpdateHandler {
   ****************************************************************/
 
   // could return the number of docs deleted, but is that always possible to know???
+  @Override
   public void delete(DeleteUpdateCommand cmd) throws IOException {
     if (!cmd.fromPending && !cmd.fromCommitted)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
@@ -184,6 +185,7 @@ public class DirectUpdateHandler extends UpdateHandler {
 
   // TODO - return number of docs deleted?
   // Depending on implementation, we may not be able to immediately determine num...
+  @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     if (!cmd.fromPending && !cmd.fromCommitted)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
@@ -226,12 +228,14 @@ public class DirectUpdateHandler extends UpdateHandler {
   }
   ***************************/
 
+  @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "DirectUpdateHandler doesn't support mergeIndexes. Use DirectUpdateHandler2 instead.");
   }
 
+  @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
     Future[] waitSearcher = null;
     if (cmd.waitSearcher) {
@@ -272,6 +276,7 @@ public class DirectUpdateHandler extends UpdateHandler {
   /**
    * @since Solr 1.4
    */
+  @Override
   public void rollback(RollbackUpdateCommand cmd) throws IOException {
     throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
         "DirectUpdateHandler doesn't support rollback. Use DirectUpdateHandler2 instead.");
@@ -322,6 +327,7 @@ public class DirectUpdateHandler extends UpdateHandler {
   }
 
 
+  @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
 
     // if there is no ID field, use allowDups
@@ -354,6 +360,7 @@ public class DirectUpdateHandler extends UpdateHandler {
     throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
   }
 
+  @Override
   public void close() throws IOException {
     synchronized(this) {
       closeSearcher();

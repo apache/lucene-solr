@@ -188,23 +188,28 @@ public class IndexSorter {
       return null;
     }
 
+    @Override
     public Document document(int n) throws IOException {
       return document(n, null);
     }
 
+    @Override
     public Document document(int n, FieldSelector fieldSelector)
         throws CorruptIndexException, IOException {
       return super.document(newToOld[n], fieldSelector);
     }
 
+    @Override
     public boolean isDeleted(int n) {
       return false;
     }
 
+    @Override
     public byte[] norms(String f) throws IOException {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void norms(String f, byte[] norms, int offset) throws IOException {
       byte[] oldNorms = super.norms(f);
       int oldDoc = 0;
@@ -217,23 +222,28 @@ public class IndexSorter {
       }
     }
 
+    @Override
     protected void doSetNorm(int d, String f, byte b) throws IOException {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public TermDocs termDocs() throws IOException {
       throw new UnsupportedOperationException();
     }
     
+    @Override
     public TermPositions termPositions() throws IOException {
       return new SortedTermPositions(super.termPositions(), oldToNew);
     }
 
+    @Override
     public TermFreqVector[] getTermFreqVectors(int docNumber)
             throws IOException {
       return super.getTermFreqVectors(newToOld[docNumber]);
     }
 
+    @Override
     protected void doDelete(int n) throws IOException { 
       throw new UnsupportedOperationException();
     }
@@ -252,6 +262,7 @@ public class IndexSorter {
       }
     }
     
+    @Override
     public String toString() {
       return "oldDoc=" + oldDoc + ",score=" + score;
     }

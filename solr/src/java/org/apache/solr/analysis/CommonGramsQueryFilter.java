@@ -62,6 +62,7 @@ public final class CommonGramsQueryFilter extends TokenFilter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void reset() throws IOException {
     super.reset();
     previous = null;
@@ -76,6 +77,7 @@ public final class CommonGramsQueryFilter extends TokenFilter {
    * <li>output:"the-rain", "rain-in" ,"in-spain", "falls", "mainly"
    * </ul>
    */
+  @Override
   public boolean incrementToken() throws IOException {
     while (input.incrementToken()) {
       State current = captureState();

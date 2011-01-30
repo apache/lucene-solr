@@ -46,6 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml", "solr-extraction");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

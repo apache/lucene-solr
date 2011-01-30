@@ -187,6 +187,7 @@ final class DocumentsWriter {
     /**
      * Allocate bytes used from shared pool.
      */
+    @Override
     protected byte[] newBuffer(int size) {
       assert size == PER_DOC_BLOCK_SIZE;
       return perDocAllocator.getByteBlock();

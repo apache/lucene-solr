@@ -126,6 +126,7 @@ public class SolrQueryParser extends QueryParser {
     }
   }
 
+  @Override
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
     checkNullField(field);
     // intercept magic field name of "_" to use as a hook for our
@@ -157,6 +158,7 @@ public class SolrQueryParser extends QueryParser {
     return super.getFieldQuery(field, queryText, quoted);
   }
 
+  @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
     checkNullField(field);
     SchemaField sf = schema.getField(field);
@@ -166,6 +168,7 @@ public class SolrQueryParser extends QueryParser {
             inclusive, inclusive);
   }
 
+  @Override
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {
     checkNullField(field);
     if (getLowercaseExpandedTerms()) {
@@ -187,6 +190,7 @@ public class SolrQueryParser extends QueryParser {
     return prefixQuery;
   }
 
+  @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     // *:* -> MatchAllDocsQuery
     if ("*".equals(field) && "*".equals(termStr)) {

@@ -37,6 +37,7 @@ public class ConstantScorePrefixQuery extends Query {
   /** Returns the prefix  for this query */
   public Term getPrefix() { return prefix; }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     // TODO: if number of terms are low enough, rewrite to a BooleanQuery
     // for potentially faster execution.
@@ -47,6 +48,7 @@ public class ConstantScorePrefixQuery extends Query {
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field)
   {
     StringBuilder buffer = new StringBuilder();
@@ -64,6 +66,7 @@ public class ConstantScorePrefixQuery extends Query {
   }
 
     /** Returns true if <code>o</code> is equal to this. */
+    @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (!(o instanceof ConstantScorePrefixQuery)) return false;
@@ -72,6 +75,7 @@ public class ConstantScorePrefixQuery extends Query {
     }
 
     /** Returns a hash code value for this object.*/
+    @Override
     public int hashCode() {
       int h = prefix.hashCode() ^ Float.floatToIntBits(getBoost());
       h ^= (h << 14) | (h >>> 19);  // reversible (1 to 1) transformation unique to ConstantScorePrefixQuery

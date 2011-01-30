@@ -33,6 +33,7 @@ import java.util.Map;
 public class PositionFilterFactory extends BaseTokenFilterFactory {
   private int positionIncrement;
 
+  @Override
   public void init(Map<String, String> args) {
     super.init(args);
     positionIncrement = getInt("positionIncrement", 0);

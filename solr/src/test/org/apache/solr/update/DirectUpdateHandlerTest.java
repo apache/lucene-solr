@@ -49,6 +49,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema12.xml");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -33,6 +33,7 @@ public class LegacyDateFieldTest extends LuceneTestCase {
   protected DateField f = null;
   protected DateMathParser p = null;
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     p = new DateMathParser(UTC, Locale.US);

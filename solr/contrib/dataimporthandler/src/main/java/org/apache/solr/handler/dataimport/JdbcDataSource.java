@@ -54,6 +54,7 @@ public class JdbcDataSource extends
 
   private int maxRows = 0;
 
+  @Override
   public void init(Context context, Properties initProps) {
     Object o = initProps.get(CONVERT_TYPE);
     if (o != null)
@@ -204,6 +205,7 @@ public class JdbcDataSource extends
     }
   }
 
+  @Override
   public Iterator<Map<String, Object>> getData(String query) {
     ResultSetIterator r = new ResultSetIterator(query);
     return r.getIterator();
@@ -370,6 +372,7 @@ public class JdbcDataSource extends
     }
   }
 
+  @Override
   protected void finalize() throws Throwable {
     try {
       if(!isClosed){
@@ -383,6 +386,7 @@ public class JdbcDataSource extends
 
   private boolean isClosed = false;
 
+  @Override
   public void close() {
     try {
       closeConnection();

@@ -33,6 +33,7 @@ public class SquaredEuclideanFunction extends VectorDistanceFunction {
   }
 
 
+  @Override
   protected String name() {
 
     return name;
@@ -41,6 +42,7 @@ public class SquaredEuclideanFunction extends VectorDistanceFunction {
   /**
    * @param doc The doc to score
    */
+  @Override
   protected double distance(int doc, DocValues dv1, DocValues dv2) {
 
     double[] vals1 = new double[source1.dimension()];

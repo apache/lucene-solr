@@ -205,11 +205,13 @@ public class IndexSearcher extends Searcher {
    * 
    * @see org.apache.lucene.index.IndexReader#maxDoc()
    */
+  @Override
   public int maxDoc() {
     return reader.maxDoc();
   }
 
   /** Returns total docFreq for this term. */
+  @Override
   public int docFreq(final Term term) throws IOException {
     if (executor == null) {
       return reader.docFreq(term);
@@ -232,11 +234,13 @@ public class IndexSearcher extends Searcher {
   }
 
   /* Sugar for .getIndexReader().document(docID) */
+  @Override
   public Document doc(int docID) throws CorruptIndexException, IOException {
     return reader.document(docID);
   }
   
   /* Sugar for .getIndexReader().document(docID, fieldSelector) */
+  @Override
   public Document doc(int docID, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     return reader.document(docID, fieldSelector);
   }
@@ -245,10 +249,12 @@ public class IndexSearcher extends Searcher {
    *
    * @see Similarity#setDefault(Similarity)
    */
+  @Override
   public void setSimilarity(Similarity similarity) {
     this.similarity = similarity;
   }
 
+  @Override
   public Similarity getSimilarity() {
     return similarity;
   }
@@ -259,6 +265,7 @@ public class IndexSearcher extends Searcher {
    * If the IndexReader was supplied implicitly by specifying a directory, then
    * the IndexReader is closed.
    */
+  @Override
   public void close() throws IOException {
     if (closeReader) {
       reader.close();
@@ -270,6 +277,7 @@ public class IndexSearcher extends Searcher {
    *
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public TopDocs search(Query query, int n)
     throws IOException {
     return search(query, null, n);
@@ -281,6 +289,7 @@ public class IndexSearcher extends Searcher {
    *
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public TopDocs search(Query query, Filter filter, int n)
     throws IOException {
     return search(createWeight(query), filter, n);
@@ -302,6 +311,7 @@ public class IndexSearcher extends Searcher {
    * @param results to receive hits
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public void search(Query query, Filter filter, Collector results)
     throws IOException {
     search(createWeight(query), filter, results);
@@ -320,6 +330,7 @@ public class IndexSearcher extends Searcher {
   * between 0 and 1.
   * @throws BooleanQuery.TooManyClauses
   */
+  @Override
   public void search(Query query, Collector results)
     throws IOException {
     search(createWeight(query), null, results);
@@ -336,6 +347,7 @@ public class IndexSearcher extends Searcher {
    *
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort) throws IOException {
     return search(createWeight(query), filter, n, sort);
@@ -349,6 +361,7 @@ public class IndexSearcher extends Searcher {
    * @return The top docs, sorted according to the supplied {@link org.apache.lucene.search.Sort} instance
    * @throws IOException
    */
+  @Override
   public TopFieldDocs search(Query query, int n,
                              Sort sort) throws IOException {
     return search(createWeight(query), null, n, sort);
@@ -361,6 +374,7 @@ public class IndexSearcher extends Searcher {
    * {@link Searcher#search(Query,Filter,int)} instead.
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public TopDocs search(Weight weight, Filter filter, int nDocs) throws IOException {
 
     if (executor == null) {
@@ -408,6 +422,7 @@ public class IndexSearcher extends Searcher {
    * 
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public TopFieldDocs search(Weight weight, Filter filter,
       final int nDocs, Sort sort) throws IOException {
     return search(weight, filter, nDocs, sort, true);
@@ -485,6 +500,7 @@ public class IndexSearcher extends Searcher {
    *          to receive hits
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public void search(Weight weight, Filter filter, Collector collector)
       throws IOException {
 
@@ -557,6 +573,7 @@ public class IndexSearcher extends Searcher {
   /** Expert: called to re-write queries into primitive queries.
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public Query rewrite(Query original) throws IOException {
     Query query = original;
     for (Query rewrittenQuery = query.rewrite(reader); rewrittenQuery != query;
@@ -574,6 +591,7 @@ public class IndexSearcher extends Searcher {
    * Computing an explanation is as expensive as executing the query over the
    * entire index.
    */
+  @Override
   public Explanation explain(Query query, int doc) throws IOException {
     return explain(createWeight(query), doc);
   }
@@ -589,6 +607,7 @@ public class IndexSearcher extends Searcher {
    * <p>Applications should call {@link Searcher#explain(Query, int)}.
    * @throws BooleanQuery.TooManyClauses
    */
+  @Override
   public Explanation explain(Weight weight, int doc) throws IOException {
     int n = ReaderUtil.subIndex(doc, docStarts);
     int deBasedDoc = doc - docStarts[n];
@@ -620,6 +639,7 @@ public class IndexSearcher extends Searcher {
    * creates a weight for <code>query</code>
    * @return new weight
    */
+  @Override
   protected Weight createWeight(Query query) throws IOException {
     return query.weight(this);
   }

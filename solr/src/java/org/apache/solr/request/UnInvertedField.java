@@ -839,6 +839,7 @@ public class UnInvertedField {
     return te.term().text();
   }
 
+  @Override
   public String toString() {
     return "{field=" + field
             + ",memSize="+memSize()
@@ -933,6 +934,7 @@ class NumberedTermEnum extends TermEnum {
   }
 
 
+  @Override
   public boolean next() throws IOException {
     pos++;
     boolean b = tenum.next();
@@ -943,14 +945,17 @@ class NumberedTermEnum extends TermEnum {
     return setTerm();  // this is extra work if we know we are in bounds...
   }
 
+  @Override
   public Term term() {
     return t;
   }
 
+  @Override
   public int docFreq() {
     return tenum.docFreq();
   }
 
+  @Override
   public void close() throws IOException {
     if (tenum!=null) tenum.close();
   }
@@ -1082,6 +1087,7 @@ class TermIndex {
     if (index==null) return new NumberedTermEnum(reader,this, prefix==null?"":prefix, 0) {
       ArrayList<String> lst;
 
+      @Override
       protected boolean setTerm() {
         boolean b = super.setTerm();
         if (b && (pos & intervalMask)==0) {
@@ -1095,14 +1101,17 @@ class TermIndex {
         return b;
       }
 
+      @Override
       public boolean skipTo(Term target) throws IOException {
         throw new UnsupportedOperationException();
       }
 
+      @Override
       public boolean skipTo(int termNumber) throws IOException {
         throw new UnsupportedOperationException();
       }
 
+      @Override
       public void close() throws IOException {
         nTerms=pos;
         super.close();

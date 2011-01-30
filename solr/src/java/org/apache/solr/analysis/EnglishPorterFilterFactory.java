@@ -37,6 +37,7 @@ import java.util.Map;
 public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
 
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     warnDeprecated("use PorterStemFilterFactory (Porter1) or SnowballPorterFilterFactory with 'English' (Porter2) instead");

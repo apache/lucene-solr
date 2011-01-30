@@ -54,6 +54,7 @@ import java.math.BigInteger;
  */
 public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.add("analysis", doAnalysis(req));
   }

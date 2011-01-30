@@ -182,6 +182,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
    * 
    * @deprecated use {@link #containsTag(String)} instead
    */
+  @Deprecated
   public boolean containsTag(CharSequence tagName) {
     return this.tags.containsKey(tagName.toString().toLowerCase());
   }

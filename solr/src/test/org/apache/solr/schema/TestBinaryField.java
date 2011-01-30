@@ -174,6 +174,7 @@ public class TestBinaryField extends LuceneTestCase {
   }
 
 
+  @Override
   public void tearDown() throws Exception {
     jetty.stop();
     super.tearDown();

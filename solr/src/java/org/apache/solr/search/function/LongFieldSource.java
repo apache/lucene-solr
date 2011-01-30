@@ -44,6 +44,7 @@ public class LongFieldSource extends FieldCacheSource {
     this.parser = parser;
   }
 
+  @Override
   public String description() {
     return "long(" + field + ')';
   }
@@ -53,31 +54,38 @@ public class LongFieldSource extends FieldCacheSource {
     return Long.parseLong(extVal);
   }
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final long[] arr = (parser == null) ?
             cache.getLongs(reader, field) :
             cache.getLongs(reader, field, parser);
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return (float) arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Long.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + longVal(doc);
       }
@@ -120,6 +128,7 @@ public class LongFieldSource extends FieldCacheSource {
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() != this.getClass()) return false;
     LongFieldSource other = (LongFieldSource) o;
@@ -128,6 +137,7 @@ public class LongFieldSource extends FieldCacheSource {
             this.parser.getClass() == other.parser.getClass();
   }
 
+  @Override
   public int hashCode() {
     int h = parser == null ? this.getClass().hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

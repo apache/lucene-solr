@@ -90,6 +90,7 @@ public class LBHttpSolrServer extends SolrServer {
       this.solrServer = solrServer;
     }
 
+    @Override
     public String toString() {
       return solrServer.getBaseURL();
     }
@@ -184,6 +185,7 @@ public class LBHttpSolrServer extends SolrServer {
    * @throws SolrServerException
    * @throws IOException
    */
+  @Override
   public NamedList<Object> request(final SolrRequest request)
           throws SolrServerException, IOException {
     int count = counter.incrementAndGet();
@@ -308,6 +310,7 @@ public class LBHttpSolrServer extends SolrServer {
     return httpClient;
   }
 
+  @Override
   protected void finalize() throws Throwable {
     try {
       if(this.aliveCheckExecutor!=null)

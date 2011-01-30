@@ -34,22 +34,27 @@ import java.io.IOException;
  * @version $Id$
  */
 public class StrField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);    
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
   }
 
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeStr(name, f.stringValue());
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
 
+  @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return new StrFieldSource(field.getName());
   }
@@ -62,50 +67,61 @@ class StrFieldSource extends FieldCacheSource {
     super(field);
   }
 
+  @Override
   public String description() {
     return "str(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new StringIndexDocValues(this, reader, field) {
+      @Override
       protected String toTerm(String readableValue) {
         return readableValue;
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float)intVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         int ord=order[doc];
         return ord;
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)intVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)intVal(doc);
       }
 
+      @Override
       public String strVal(int doc) {
         int ord=order[doc];
         return lookup[ord];
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + strVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     return o instanceof StrFieldSource
             && super.equals(o);
   }
 
   private static int hcode = SortableFloatFieldSource.class.hashCode();
+  @Override
   public int hashCode() {
     return hcode + super.hashCode();
   };

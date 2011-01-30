@@ -377,6 +377,7 @@ public final class IndexSchema {
       return analyzer!=null ? analyzer : getDynamicFieldType(fieldName).getAnalyzer();
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
       return getAnalyzer(fieldName).tokenStream(fieldName,reader);
@@ -558,6 +559,7 @@ public final class IndexSchema {
     Node node = (Node) xpath.evaluate("/schema/similarity", document, XPathConstants.NODE);
     if (node==null) {
       similarityFactory = new SimilarityFactory() {
+        @Override
         public Similarity getSimilarity() {
           return Similarity.getDefault();
         }
@@ -573,6 +575,7 @@ public final class IndexSchema {
       } else {
         // just like always, assume it's a Similarlity and get a ClassCastException - reasonable error handling
         similarityFactory = new SimilarityFactory() {
+          @Override
           public Similarity getSimilarity() {
             return (Similarity) obj;
           }
@@ -1006,6 +1009,7 @@ public final class IndexSchema {
       return new SchemaField(prototype, name);
     }
 
+    @Override
     public String toString() {
       return prototype.toString();
     }

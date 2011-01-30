@@ -28,10 +28,12 @@ public class DivFloatFunction extends DualFloatFunction {
     super(a,b);
   }
 
+  @Override
   protected String name() {
     return "div";
   }
 
+  @Override
   protected float func(int doc, DocValues aVals, DocValues bVals) {
     return aVals.floatVal(doc) / bVals.floatVal(doc);
   }

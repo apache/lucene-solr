@@ -54,6 +54,7 @@ class XMLLoader extends ContentStreamLoader {
     this.inputFactory = inputFactory;
   }
 
+  @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws Exception {
     errHeader = "XMLLoader: " + stream.getSourceInfo();
     Reader reader = null;

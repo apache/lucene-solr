@@ -50,6 +50,7 @@ public final class MockAnalyzer extends Analyzer {
     this.payloads = payloads;
   }
 
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result;
     if (tokenizer == KEYWORD)

@@ -223,10 +223,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler = new RequestHandlerBase() {
+        @Override
         public String getDescription() { return tmp; }
+        @Override
         public String getSourceId() { return tmp; }
+        @Override
         public String getSource() { return tmp; }
+        @Override
         public String getVersion() { return tmp; }
+        @Override
         public void handleRequestBody
           ( SolrQueryRequest req, SolrQueryResponse rsp ) {
           throw new RuntimeException(tmp);

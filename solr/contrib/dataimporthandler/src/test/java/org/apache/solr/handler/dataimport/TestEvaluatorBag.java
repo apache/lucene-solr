@@ -39,6 +39,7 @@ public class TestEvaluatorBag extends AbstractDataImportHandlerTestCase {
 
   Map<String, String> urlTests;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -150,6 +150,7 @@ public class SolrIndexReader extends FilterIndexReader {
     return o.getClass().getSimpleName()+ "@" + Integer.toHexString(o.hashCode());
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("SolrIndexReader{this=").append(Integer.toHexString(this.hashCode()));

@@ -30,6 +30,7 @@ public class SumFloatFunction extends MultiFloatFunction {
     return "sum";
   }
 
+  @Override
   protected float func(int doc, DocValues[] valsArr) {
     float val = 0.0f;
     for (DocValues vals : valsArr) {

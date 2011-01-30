@@ -84,6 +84,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
 
+  @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     int dimension = 2;
 

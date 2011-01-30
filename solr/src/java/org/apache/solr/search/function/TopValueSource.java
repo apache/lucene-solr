@@ -38,10 +38,12 @@ public class TopValueSource extends ValueSource {
     return vs;
   }
 
+  @Override
   public String description() {
     return "top(" + vs.description() + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     int offset = 0;
     IndexReader topReader = reader;
@@ -58,43 +60,52 @@ public class TopValueSource extends ValueSource {
     if (topReader == reader) return vals;
 
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return vals.floatVal(doc + off);
       }
 
+      @Override
       public int intVal(int doc) {
         return vals.intVal(doc + off);
       }
 
+      @Override
       public long longVal(int doc) {
         return vals.longVal(doc + off);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return vals.doubleVal(doc + off);
       }
 
+      @Override
       public String strVal(int doc) {
         return vals.strVal(doc + off);
       }
 
+      @Override
       public String toString(int doc) {
         return vals.strVal(doc + off);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  TopValueSource.class) return false;
     TopValueSource other = (TopValueSource)o;
     return vs.equals(other.vs);
   }
 
+  @Override
   public int hashCode() {
     int h = vs.hashCode();
     return (h<<1) | (h>>>31);
   }
 
+  @Override
   public String toString() {
     return "top("+vs.toString()+')';
   }

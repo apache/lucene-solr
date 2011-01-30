@@ -48,6 +48,7 @@ public class ICUNormalizer2FilterFactory extends BaseTokenFilterFactory {
   private Normalizer2 normalizer;
 
   // TODO: support custom normalization
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     String name = args.get("name");

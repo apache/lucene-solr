@@ -25,6 +25,7 @@ import org.apache.lucene.document.Fieldable;
  * @version $Id$
  */
 public class BCDStrField extends BCDIntField {
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeStr(name,toExternal(f));
   }

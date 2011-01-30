@@ -249,6 +249,7 @@ public interface FacetParams {
    */
   public enum FacetRangeOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
+    @Override
     public String toString() { return super.toString().toLowerCase(); }
     public static FacetRangeOther get(String label) {
       try {
@@ -267,6 +268,7 @@ public interface FacetParams {
   @Deprecated
   public enum FacetDateOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
+    @Override
     public String toString() { return super.toString().toLowerCase(); }
     public static FacetDateOther get(String label) {
       try {
@@ -300,6 +302,7 @@ public interface FacetParams {
    */
   public enum FacetRangeInclude {
     ALL, LOWER, UPPER, EDGE, OUTER;
+    @Override
     public String toString() { return super.toString().toLowerCase(); }
     public static FacetRangeInclude get(String label) {
       try {

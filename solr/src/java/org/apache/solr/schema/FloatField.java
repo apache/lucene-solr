@@ -30,22 +30,27 @@ import java.io.IOException;
  * @version $Id$
  */
 public class FloatField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return new SortField(field.name,SortField.FLOAT, reverse);
   }
 
+  @Override
   public ValueSource getValueSource(SchemaField field) {
     return new FloatFieldSource(field.name);
   }
 
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeFloat(name, f.stringValue());
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     String s = f.stringValue();
 

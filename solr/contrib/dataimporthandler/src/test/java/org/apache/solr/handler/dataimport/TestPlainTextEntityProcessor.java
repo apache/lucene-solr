@@ -42,15 +42,18 @@ public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestC
   public static class DS extends DataSource {
     static String s = "hello world";
 
+    @Override
     public void init(Context context, Properties initProps) {
 
     }
 
+    @Override
     public Object getData(String query) {
 
       return new StringReader(s);
     }
 
+    @Override
     public void close() {
 
     }

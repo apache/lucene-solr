@@ -106,6 +106,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     DocumentAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     return handleAnalysisRequest(analysisRequest, req.getSchema());

@@ -30,6 +30,7 @@ public class LuceneJUnitDividingSelector extends BaseExtendSelector {
   /** Current part to accept. */
   private int part;
 
+  @Override
   public void setParameters(Parameter[] pParameters) {
     super.setParameters(pParameters);
     for (int j = 0; j < pParameters.length; j++) {
@@ -46,6 +47,7 @@ public class LuceneJUnitDividingSelector extends BaseExtendSelector {
     }
   }
 
+  @Override
   public void verifySettings() {
     super.verifySettings();
     if (divisor <= 0 || part <= 0) {
@@ -56,6 +58,7 @@ public class LuceneJUnitDividingSelector extends BaseExtendSelector {
     }
   }
 
+  @Override
   public boolean isSelected(File dir, String name, File path) {
     counter = counter % divisor + 1;
     return counter == part;

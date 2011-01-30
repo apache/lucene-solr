@@ -41,6 +41,7 @@ public class ICUTransformFilterFactory extends BaseTokenFilterFactory {
   private Transliterator transliterator;
   
   // TODO: add support for custom rules
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     String id = args.get("id");

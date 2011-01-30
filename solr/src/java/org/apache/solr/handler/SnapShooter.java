@@ -64,6 +64,7 @@ public class SnapShooter {
     replicationHandler.core.getDeletionPolicy().saveCommitPoint(indexCommit.getVersion());
 
     new Thread() {
+      @Override
       public void run() {
         createSnapshot(indexCommit, replicationHandler);
       }

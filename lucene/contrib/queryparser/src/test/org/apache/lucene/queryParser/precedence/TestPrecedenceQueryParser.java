@@ -88,6 +88,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
@@ -112,6 +113,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   public static final class QPTestAnalyzer extends Analyzer {
 
     /** Filters LowerCaseTokenizer with StopFilter. */
+    @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
       return new QPTestFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
     }
@@ -119,6 +121,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   private int originalMaxClauses;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
@@ -643,6 +646,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     
   }
 
+  @Override
   public void tearDown() {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
   }

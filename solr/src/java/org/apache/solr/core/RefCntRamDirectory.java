@@ -56,6 +56,7 @@ public class RefCntRamDirectory extends RAMDirectory {
     }
   }
 
+  @Override
   public final synchronized void close() {
     decRef();
   }

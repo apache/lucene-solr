@@ -952,6 +952,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
                                     .setMaxBufferedDocs(2).setReaderPooling(true));
     ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(10);
     w.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
+        @Override
         public void warm(IndexReader r) throws IOException {
           final IndexSearcher s = new IndexSearcher(r);
           final TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);

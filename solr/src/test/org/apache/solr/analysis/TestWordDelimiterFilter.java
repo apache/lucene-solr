@@ -424,6 +424,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
     
     /* analyzer that uses whitespace + wdf */
     Analyzer a = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
             new WhitespaceTokenizer(DEFAULT_VERSION, reader),
@@ -450,6 +451,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
     
     /* analyzer that will consume tokens with large position increments */
     Analyzer a2 = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
             new LargePosIncTokenFilter(
@@ -482,6 +484,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
         new int[] { 1, 11, 1 });
 
     Analyzer a3 = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String field, Reader reader) {
         StopFilter filter = new StopFilter(DEFAULT_VERSION,
             new WhitespaceTokenizer(DEFAULT_VERSION, reader), StandardAnalyzer.STOP_WORDS_SET);

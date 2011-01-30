@@ -220,6 +220,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
       public Collection<Collection<Object>> values() {throw new UnsupportedOperationException();}
       public Collection<Object> put(String key, Collection<Object> value) {throw new UnsupportedOperationException();}
       public Collection<Object> remove(Object key) {throw new UnsupportedOperationException();}
+      @Override
       public String toString() {return _fields.toString();}
     };
   }
@@ -248,6 +249,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
       public Collection<Object> values() {throw new UnsupportedOperationException();}
       public Collection<Object> put(String key, Object value) {throw new UnsupportedOperationException();}
       public Collection<Object> remove(Object key) {throw new UnsupportedOperationException();}      
+      @Override
       public String toString() {return _fields.toString();}
    };
   }

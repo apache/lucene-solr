@@ -131,6 +131,7 @@ public class ConcurrentLRUCache<K,V> {
     if (currentSize > upperWaterMark && !isCleaning) {
       if (newThreadForCleanup) {
         new Thread() {
+          @Override
           public void run() {
             markAndSweep();
           }
@@ -358,6 +359,7 @@ public class ConcurrentLRUCache<K,V> {
 
     Object[] getValues() { return heap; }
 
+    @Override
     protected boolean lessThan(Object a, Object b) {
       // reverse the parameter order so that the queue keeps the oldest items
       return ((CacheEntry)b).lastAccessedCopy < ((CacheEntry)a).lastAccessedCopy;
@@ -487,14 +489,17 @@ public class ConcurrentLRUCache<K,V> {
       return this.lastAccessedCopy < that.lastAccessedCopy ? 1 : -1;
     }
 
+    @Override
     public int hashCode() {
       return value.hashCode();
     }
 
+    @Override
     public boolean equals(Object obj) {
       return value.equals(obj);
     }
 
+    @Override
     public String toString() {
       return "key: " + key + " value: " + value + " lastAccessed:" + lastAccessed;
     }
@@ -575,6 +580,7 @@ public class ConcurrentLRUCache<K,V> {
       cache = new WeakReference<ConcurrentLRUCache>(c);
     }
 
+    @Override
     public void run() {
       while (true) {
         synchronized (this) {
@@ -604,6 +610,7 @@ public class ConcurrentLRUCache<K,V> {
     }
   }
 
+  @Override
   protected void finalize() throws Throwable {
     try {
       if(!isDestroyed){

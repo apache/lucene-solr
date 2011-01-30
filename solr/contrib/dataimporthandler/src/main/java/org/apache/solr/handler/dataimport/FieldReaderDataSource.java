@@ -52,6 +52,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
   private String encoding;
   private EntityProcessorWrapper entityProcessor;
 
+  @Override
   public void init(Context context, Properties initProps) {
     dataField = context.getEntityAttribute("dataField");
     encoding = context.getEntityAttribute("encoding");
@@ -59,6 +60,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
     /*no op*/
   }
 
+  @Override
   public Reader getData(String query) {
     Object o = entityProcessor.getVariableResolver().resolve(dataField);
     if (o == null) {
@@ -111,6 +113,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
     }
   }
 
+  @Override
   public void close() {
 
   }

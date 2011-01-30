@@ -94,6 +94,7 @@ public abstract class BufferedTokenStream extends TokenFilter {
    */
   protected abstract Token process(Token t) throws IOException;
 
+  @Override
   public final boolean incrementToken() throws IOException {
     while (true) {
       if (!outQueue.isEmpty()) return writeToken(outQueue.removeFirst());

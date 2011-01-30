@@ -106,6 +106,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
     return new SolrContentHandlerFactory(dateFormats);
   }
 
+  @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     return new ExtractingDocumentLoader(req, processor, config, factory);
   }

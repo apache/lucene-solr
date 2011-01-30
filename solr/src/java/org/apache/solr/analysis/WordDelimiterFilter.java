@@ -330,6 +330,7 @@ final class WordDelimiterFilter extends TokenFilter {
     this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0, 1, null);
   }
   
+  @Override
   public boolean incrementToken() throws IOException {
     while (true) {
       if (!hasSavedState) {

@@ -50,8 +50,10 @@ public abstract class ValueSource implements Serializable {
     return getValues(reader);
   }
 
+  @Override
   public abstract boolean equals(Object o);
 
+  @Override
   public abstract int hashCode();
 
   /**
@@ -59,6 +61,7 @@ public abstract class ValueSource implements Serializable {
    */
   public abstract String description();
 
+  @Override
   public String toString() {
     return description();
   }
@@ -123,6 +126,7 @@ public abstract class ValueSource implements Serializable {
       this.context = context;
     }
 
+    @Override
     public FieldComparator newComparator(String fieldname, int numHits,
                                          int sortPos, boolean reversed) throws IOException {
       return new ValueSourceComparator(context, numHits);
@@ -145,6 +149,7 @@ public abstract class ValueSource implements Serializable {
       values = new double[numHits];
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       final double v1 = values[slot1];
       final double v2 = values[slot2];
@@ -158,6 +163,7 @@ public abstract class ValueSource implements Serializable {
 
     }
 
+    @Override
     public int compareBottom(int doc) {
       final double v2 = docVals.doubleVal(doc);
       if (bottom > v2) {
@@ -169,6 +175,7 @@ public abstract class ValueSource implements Serializable {
       }
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = docVals.doubleVal(doc);
     }
@@ -178,10 +185,12 @@ public abstract class ValueSource implements Serializable {
       docVals = getValues(fcontext, reader);
     }
 
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return values[slot];
     }
@@ -259,6 +268,7 @@ class ValueSourceScorer extends Scorer {
   }
 
 
+  @Override
   public float score() throws IOException {
     return values.floatVal(doc);
   }

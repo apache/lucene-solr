@@ -48,6 +48,7 @@ import java.io.StringReader;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries = true;
 
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED;
     if (schema.getVersion()> 1.1f) properties &= ~OMIT_TF_POSITIONS;
@@ -61,14 +62,17 @@ public class TextField extends FieldType {
     return autoGeneratePhraseQueries;
   }
 
+  @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     return getStringSort(field, reverse);
   }
 
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeStr(name, f.stringValue());
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }

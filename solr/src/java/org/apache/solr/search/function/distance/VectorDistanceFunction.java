@@ -96,22 +96,27 @@ public class VectorDistanceFunction extends ValueSource {
         return (short) doubleVal(doc);
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) doubleVal(doc);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) doubleVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return distance(doc, vals1, vals2);
       }
 
+      @Override
       public String strVal(int doc) {
         return Double.toString(doubleVal(doc));
       }

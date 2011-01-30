@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.cn.ChineseTokenizer;
  */
 @Deprecated
 public class ChineseTokenizerFactory extends BaseTokenizerFactory {
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     warnDeprecated("Use StandardTokenizerFactory instead.");

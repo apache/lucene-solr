@@ -48,6 +48,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
   HttpClient httpClient;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     httpClient = new HttpClient(new MultiThreadedHttpConnectionManager());

@@ -31,24 +31,29 @@ import java.util.Map;
  * @version $Id$
  */
 public class DoubleField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
   }
 
   /////////////////////////////////////////////////////////////
+  @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     return new SortField(field.name, SortField.DOUBLE, reverse);
   }
 
+  @Override
   public ValueSource getValueSource(SchemaField field) {
     // fieldCache doesn't support double
     return new DoubleFieldSource(field.name);
   }
 
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeDouble(name, f.stringValue());
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     String s = f.stringValue();
 

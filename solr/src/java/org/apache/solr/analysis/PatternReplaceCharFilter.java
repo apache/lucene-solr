@@ -114,6 +114,7 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
     }
   }
 
+  @Override
   public int read() throws IOException {
     while( prepareReplaceBlock() ){
       return replaceBlockBuffer.charAt( replaceBlockBufferOffset++ );
@@ -121,6 +122,7 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
     return -1;
   }
 
+  @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
     char[] tmp = new char[len];
     int l = input.read(tmp, 0, len);

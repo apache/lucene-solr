@@ -41,6 +41,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *             use {@link CachingWrapperFilter} if you wish to cache
  *             {@link Filter}s.
  */
+@Deprecated
 public class FilterManager {
 
   protected static FilterManager manager;

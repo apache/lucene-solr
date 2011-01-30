@@ -40,14 +40,17 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
   }
 
   /** Returns the encapsulated filter */
+  @Override
   public Filter getFilter() {
     return filter;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
 
+  @Override
   public void extractTerms(Set terms) {
     // OK to not add any terms when used for MultiSearcher,
     // but may not be OK for highlighting
@@ -66,28 +69,34 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
         ((SolrFilter)filter).createWeight(context, searcher);
     }
 
+    @Override
     public Query getQuery() {
       return SolrConstantScoreQuery.this;
     }
 
+    @Override
     public float getValue() {
       return queryWeight;
     }
 
+    @Override
     public float sumOfSquaredWeights() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
 
+    @Override
     public void normalize(float norm) {
       this.queryNorm = norm;
       queryWeight *= this.queryNorm;
     }
 
+    @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new ConstantScorer(similarity, reader, this);
     }
 
+    @Override
     public Explanation explain(IndexReader reader, int doc) throws IOException {
 
       ConstantScorer cs = new ConstantScorer(similarity, reader, this);
@@ -133,18 +142,22 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
       }
     }
 
+    @Override
     public int nextDoc() throws IOException {
       return docIdSetIterator.nextDoc();
     }
 
+    @Override
     public int docID() {
       return docIdSetIterator.docID();
     }
 
+    @Override
     public float score() throws IOException {
       return theScore;
     }
 
+    @Override
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
@@ -154,6 +167,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     }
   }
 
+  @Override
   public Weight createWeight(Searcher searcher) {
     try {
       return new SolrConstantScoreQuery.ConstantWeight(searcher);
@@ -164,12 +178,14 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field) {
     return "ConstantScore(" + filter.toString()
       + (getBoost()==1.0 ? ")" : "^" + getBoost());
   }
 
   /** Returns true if <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof SolrConstantScoreQuery)) return false;
@@ -178,6 +194,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
   }
 
   /** Returns a hash code value for this object. */
+  @Override
   public int hashCode() {
     // Simple add is OK since no existing filter hashcode has a float component.
     return filter.hashCode() + Float.floatToIntBits(getBoost());

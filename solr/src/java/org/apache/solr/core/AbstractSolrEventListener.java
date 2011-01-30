@@ -42,6 +42,7 @@ class AbstractSolrEventListener implements SolrEventListener {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public String toString() {
     return getClass().getName() + args;
   }

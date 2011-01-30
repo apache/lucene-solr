@@ -21,9 +21,12 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 public class TestBadConfig extends AbstractSolrTestCase {
 
+  @Override
   public String getSchemaFile() { return "schema.xml"; }
+  @Override
   public String getSolrConfigFile() { return "bad_solrconfig.xml"; }
 
+  @Override
   public void setUp() throws Exception {
     ignoreException("unset.sys.property");
     try {

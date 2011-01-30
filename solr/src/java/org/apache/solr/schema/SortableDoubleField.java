@@ -34,21 +34,26 @@ import java.io.IOException;
  * @version $Id$
  */
 public class SortableDoubleField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
   }
 
+  @Override
   public ValueSource getValueSource(SchemaField field) {
     return new SortableDoubleFieldSource(field.name);
   }
 
+  @Override
   public String toInternal(String val) {
     return NumberUtils.double2sortableStr(val);
   }
 
+  @Override
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
@@ -58,15 +63,18 @@ public class SortableDoubleField extends FieldType {
     return NumberUtils.SortableStr2double(f.stringValue());
   }
   
+  @Override
   public String indexedToReadable(String indexedForm) {
     return NumberUtils.SortableStr2doubleStr(indexedForm);
   }
 
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     String sval = f.stringValue();
     xmlWriter.writeDouble(name, NumberUtils.SortableStr2double(sval));
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     String sval = f.stringValue();
     writer.writeDouble(name, NumberUtils.SortableStr2double(sval));
@@ -88,45 +96,55 @@ class SortableDoubleFieldSource extends FieldCacheSource {
     this.defVal = defVal;
   }
 
+  @Override
   public String description() {
     return "sdouble(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final double def = defVal;
 
     return new StringIndexDocValues(this, reader, field) {
+      @Override
       protected String toTerm(String readableValue) {
         return NumberUtils.double2sortableStr(readableValue);
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float)doubleVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         return (int)doubleVal(doc);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)doubleVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         int ord=order[doc];
         return ord==0 ? def  : NumberUtils.SortableStr2double(lookup[ord]);
       }
 
+      @Override
       public String strVal(int doc) {
         return Double.toString(doubleVal(doc));
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + doubleVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     return o instanceof SortableDoubleFieldSource
             && super.equals(o)
@@ -134,6 +152,7 @@ class SortableDoubleFieldSource extends FieldCacheSource {
   }
 
   private static int hcode = SortableDoubleFieldSource.class.hashCode();
+  @Override
   public int hashCode() {
     long bits = Double.doubleToLongBits(defVal);
     int ibits = (int)(bits ^ (bits>>>32));  // mix upper bits into lower.

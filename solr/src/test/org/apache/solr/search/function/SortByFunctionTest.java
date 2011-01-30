@@ -24,10 +24,12 @@ import org.apache.solr.util.AbstractSolrTestCase;
  *
  **/
 public class SortByFunctionTest extends AbstractSolrTestCase {
+  @Override
   public String getSchemaFile() {
     return "schema.xml";
   }
 
+  @Override
   public String getSolrConfigFile() {
     return "solrconfig.xml";
   }

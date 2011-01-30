@@ -68,6 +68,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   public static final String TERM_VECTORS = "termVectors";
 
 
+  @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
@@ -285,6 +286,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       this.reader = reader;
     }
 
+    @Override
     public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
       NamedList termInfo = new NamedList();
         fieldNL.add(term, termInfo);
@@ -330,6 +332,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       return result;
     }
 
+    @Override
     public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
 
       if (fieldOptions.docFreq == true && reader != null) {
@@ -352,6 +355,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
+  @Override
   public void prepare(ResponseBuilder rb) throws IOException {
 
   }
@@ -368,18 +372,22 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id:$";
   }
 
+  @Override
   public String getSource() {
     return "$Revision:$";
   }
 
+  @Override
   public String getDescription() {
     return "A Component for working with Term Vectors";
   }

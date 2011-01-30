@@ -73,6 +73,7 @@ public final class TokenizerChain extends SolrAnalyzer {
     return new TokenStreamInfo(tk,ts);
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("TokenizerChain(");
     for (CharFilterFactory filter: charFilters) {

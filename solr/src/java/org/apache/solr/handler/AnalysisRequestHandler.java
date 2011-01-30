@@ -83,6 +83,7 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
     }
   }
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     Iterable<ContentStream> streams = req.getContentStreams();

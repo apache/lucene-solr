@@ -45,7 +45,9 @@ public class PythonResponseWriter implements QueryResponseWriter {
 }
 
 class PythonWriter extends NaNFloatWriter {
+  @Override
   protected String getNaN() { return "float('NaN')"; }
+  @Override
   protected String getInf() { return "float('Inf')"; }
 
   public PythonWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {

@@ -49,49 +49,60 @@ public class OrdFieldSource extends ValueSource {
     this.field = field;
   }
 
+  @Override
   public String description() {
     return "ord(" + field + ')';
   }
 
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new StringIndexDocValues(this, reader, field) {
+      @Override
       protected String toTerm(String readableValue) {
         return readableValue;
       }
       
+      @Override
       public float floatVal(int doc) {
         return (float)order[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return order[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)order[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)order[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
         return Integer.toString(order[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     return o.getClass() == OrdFieldSource.class && this.field.equals(((OrdFieldSource)o).field);
   }
 
   private static final int hcode = OrdFieldSource.class.hashCode();
+  @Override
   public int hashCode() {
     return hcode + field.hashCode();
   };

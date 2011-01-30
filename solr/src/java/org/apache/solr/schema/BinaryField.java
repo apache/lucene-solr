@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 
 public class BinaryField extends FieldType  {
 
+  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeStr( name, toBase64String(toObject(f)) );
   }
@@ -38,19 +39,23 @@ public class BinaryField extends FieldType  {
     return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeStr(name, toBase64String(toObject(f)), false);
   }
 
+  @Override
   public SortField getSortField(SchemaField field, boolean top) {
     throw new RuntimeException("Cannot sort on a Binary field");
   }
 
 
+  @Override
   public String toExternal(Fieldable f) {
     return toBase64String(toObject(f));
   }
   
+  @Override
   public ByteBuffer toObject(Fieldable f) {
     return  ByteBuffer.wrap(f.getBinaryValue(), f.getBinaryOffset(), f.getBinaryLength() ) ;
   }

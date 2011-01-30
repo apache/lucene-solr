@@ -39,10 +39,12 @@ public class ShortFieldSource extends FieldCacheSource{
     this.parser = parser;
   }
 
+  @Override
   public String description() {
     return "short(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final short[] arr = (parser == null) ?
             cache.getShorts(reader, field) :
@@ -58,26 +60,32 @@ public class ShortFieldSource extends FieldCacheSource{
         return arr[doc];
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float) arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double) arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Short.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + shortVal(doc);
       }
@@ -85,6 +93,7 @@ public class ShortFieldSource extends FieldCacheSource{
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() != ShortFieldSource.class) return false;
     ShortFieldSource
@@ -94,6 +103,7 @@ public class ShortFieldSource extends FieldCacheSource{
             this.parser.getClass() == other.parser.getClass();
   }
 
+  @Override
   public int hashCode() {
     int h = parser == null ? Short.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

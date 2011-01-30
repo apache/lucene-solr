@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
  */
 @Deprecated
 public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory {
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     warnDeprecated("use ASCIIFoldingFilterFactory instead");

@@ -66,6 +66,7 @@ public class EvaluatorBag {
    */
   public static Evaluator getSqlEscapingEvaluator() {
     return new Evaluator() {
+      @Override
       public String evaluate(String expression, Context context) {
         List l = parseParams(expression, context.getVariableResolver());
         if (l.size() != 1) {
@@ -90,6 +91,7 @@ public class EvaluatorBag {
    */
   public static Evaluator getSolrQueryEscapingEvaluator() {
     return new Evaluator() {
+      @Override
       public String evaluate(String expression, Context context) {
         List l = parseParams(expression, context.getVariableResolver());
         if (l.size() != 1) {
@@ -109,6 +111,7 @@ public class EvaluatorBag {
    */
   public static Evaluator getUrlEvaluator() {
     return new Evaluator() {
+      @Override
       public String evaluate(String expression, Context context) {
         List l = parseParams(expression, context.getVariableResolver());
         if (l.size() != 1) {
@@ -138,6 +141,7 @@ public class EvaluatorBag {
    */
   public static Evaluator getDateFormatEvaluator() {
     return new Evaluator() {
+      @Override
       public String evaluate(String expression, Context context) {
         List l = parseParams(expression, context.getVariableResolver());
         if (l.size() != 2) {
@@ -288,6 +292,7 @@ public class EvaluatorBag {
 
     }
 
+    @Override
     public String toString() {
       Object o = vr.resolve(varName);
       return o == null ? null : o.toString();

@@ -22,11 +22,13 @@ import java.util.Date;
 
 public class DateFieldTest extends LegacyDateFieldTest {
   
+  @Override
   public void setUp()  throws Exception {
     super.setUp();
     f = new DateField();
   }
   
+  @Override
   public void testToInternal() throws Exception {
     assertToI("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999666Z");
     assertToI("1995-12-31T23:59:59.999", "1995-12-31T23:59:59.999Z");
@@ -51,6 +53,7 @@ public class DateFieldTest extends LegacyDateFieldTest {
     assertToI("1995-12-31T00:00:00", "1995-12-31T23:59:59.123999Z/DAY");
   }
   
+  @Override
   public void testToInternalObj() throws Exception {
     assertToI("1995-12-31T23:59:59.999", 820454399999l);
     assertToI("1995-12-31T23:59:59.99",  820454399990l);
@@ -90,6 +93,7 @@ public class DateFieldTest extends LegacyDateFieldTest {
     assertToObject(820454399000l, "1995-12-31T23:59:59Z");
   }
   
+  @Override
   public void testFormatter() {
     assertEquals("1970-01-01T00:00:00.005", f.formatDate(new Date(5)));
     assertEquals("1970-01-01T00:00:00",     f.formatDate(new Date(0)));
