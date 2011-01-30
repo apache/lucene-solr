@@ -35,7 +35,7 @@ import org.apache.lucene.util.StringHelper;
 public class SortField
 implements Serializable {
 
-  /** Sort by document score (relevancy).  Sort values are Float and higher
+  /** Sort by document score (relevance).  Sort values are Float and higher
    * values are at the front. */
   public static final int SCORE = 0;
 
@@ -87,7 +87,7 @@ implements Serializable {
   // as the above static int values.  Any new values must not have the same value
   // as FieldCache.STRING_INDEX.
 
-  /** Represents sorting by document score (relevancy). */
+  /** Represents sorting by document score (relevance). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
 
   /** Represents sorting by document number (index order). */

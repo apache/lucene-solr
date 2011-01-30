@@ -1064,7 +1064,7 @@ public class IndexWriter implements Closeable {
    *          according <code>conf.getOpenMode()</code>.
    * @param conf
    *          the configuration settings according to which IndexWriter should
-   *          be initalized.
+   *          be initialized.
    * @throws CorruptIndexException
    *           if the index is corrupt
    * @throws LockObtainFailedException
@@ -3310,7 +3310,7 @@ public class IndexWriter implements Closeable {
   }
 
   /**
-   * Flush all in-memory buffered udpates (adds and deletes)
+   * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory.
    * @param triggerMerge if true, we may merge segments (if
    *  deletes or docs were flushed) if necessary

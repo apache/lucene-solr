@@ -57,7 +57,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
     collectTerms(reader, query, new TermCollector() {
       public boolean collect(Term t, float boost) {
-        // ignore uncompetetive hits
+        // ignore uncompetitive hits
         if (stQueue.size() >= maxSize && boost <= stQueue.peek().boost)
           return true;
         // add new entry in PQ

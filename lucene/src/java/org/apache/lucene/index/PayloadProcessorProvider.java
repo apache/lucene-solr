@@ -23,7 +23,7 @@ import org.apache.lucene.store.Directory;
 
 /**
  * Provides a {@link DirPayloadProcessor} to be used for a {@link Directory}.
- * This allows using differnt {@link DirPayloadProcessor}s for different
+ * This allows using different {@link DirPayloadProcessor}s for different
  * directories, for e.g. to perform different processing of payloads of
  * different directories.
  * <p>

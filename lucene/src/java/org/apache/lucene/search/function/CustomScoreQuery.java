@@ -52,7 +52,7 @@ public class CustomScoreQuery extends Query {
   
   /**
    * Create a CustomScoreQuery over input subQuery.
-   * @param subQuery the sub query whose scored is being customed. Must not be null. 
+   * @param subQuery the sub query whose scored is being customized. Must not be null. 
    */
   public CustomScoreQuery(Query subQuery) {
     this(subQuery, new ValueSourceQuery[0]);
