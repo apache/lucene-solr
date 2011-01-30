@@ -375,13 +375,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
 
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
-
-      if (limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipInterval) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and it isn't too close.
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
@@ -528,13 +525,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       //System.out.println("StandardR.D&PE advance target=" + target);
 
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
-
-      if (limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipInterval) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and it isn't too close
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
@@ -724,13 +718,11 @@ public class StandardPostingsReader extends PostingsReaderBase {
     public int advance(int target) throws IOException {
 
       //System.out.println("StandardR.D&PE advance seg=" + segment + " target=" + target + " this=" + this);
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
 
-      if (limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipInterval) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and it isn't too close
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
