@@ -955,6 +955,8 @@
     description="runs the tasks over src/java excluding the license directory">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="src/java"/>
+      <fileset dir="src/test"/>
+      <fileset dir="src/webapp"/>
       <fileset dir="src/common"/>
       <fileset dir="src/solrj"/>
       <fileset dir="client">
