@@ -49,6 +49,7 @@ public final class LengthFilter extends FilteringTokenFilter {
    * short from the text.
    * @deprecated Use {@link #LengthFilter(boolean, TokenStream, int, int)} instead.
    */
+  @Deprecated
   public LengthFilter(TokenStream in, int min, int max) {
     this(false, in, min, max);
   }
