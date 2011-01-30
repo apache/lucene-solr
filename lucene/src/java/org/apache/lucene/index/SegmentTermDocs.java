@@ -183,7 +183,7 @@ class SegmentTermDocs implements TermDocs {
 
   /** Optimized implementation. */
   public boolean skipTo(int target) throws IOException {
-    if (df >= skipInterval) {                      // optimized case
+    if ((target - skipInterval) >= doc && df >= skipInterval) {                      // optimized case
       if (skipListReader == null)
         skipListReader = new DefaultSkipListReader((IndexInput) freqStream.clone(), maxSkipLevels, skipInterval); // lazily clone
 
