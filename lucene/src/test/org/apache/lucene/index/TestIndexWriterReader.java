@@ -980,7 +980,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("f", "val", Store.NO, Index.ANALYZED));
     w.addDocument(doc);
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     try {
       r.termDocs(new Term("f", "val"));
       fail("should have failed to seek since terms index was not loaded");

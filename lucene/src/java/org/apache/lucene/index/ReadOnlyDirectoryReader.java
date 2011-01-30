@@ -34,8 +34,8 @@ class ReadOnlyDirectoryReader extends DirectoryReader {
     super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone, termInfosIndexDivisor, readerFinishedListeners);
   }
   
-  ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor) throws IOException {
-    super(writer, infos, termInfosIndexDivisor);
+  ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor, boolean applyAllDeletes) throws IOException {
+    super(writer, infos, termInfosIndexDivisor, applyAllDeletes);
   }
   
   @Override

@@ -1242,7 +1242,7 @@ public class TestQPHelper extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newField("field", "", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     IndexSearcher s = new IndexSearcher(r);
     
     Query q = new StandardQueryParser(new CannedAnalyzer()).parse("\"a\"", "field");

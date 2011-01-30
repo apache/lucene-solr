@@ -399,8 +399,13 @@ public class IndexWriter implements Closeable {
    */
   @Deprecated
   public IndexReader getReader() throws IOException {
-    return getReader(config.getReaderTermsIndexDivisor());
+    return getReader(config.getReaderTermsIndexDivisor(), true);
   }
+
+  IndexReader getReader(boolean applyAllDeletes) throws IOException {
+    return getReader(config.getReaderTermsIndexDivisor(), applyAllDeletes);
+  }
+
   /** Expert: like {@link #getReader}, except you can
    *  specify which termInfosIndexDivisor should be used for
    *  any newly opened readers.
@@ -416,7 +421,7 @@ public class IndexWriter implements Closeable {
    *  to -1 to skip loading the terms index entirely.
    *  
    *  @deprecated Please use {@link
-   *  IndexReader#open(IndexWriter)} instead.  Furthermore,
+   *  IndexReader#open(IndexWriter,boolean)} instead.  Furthermore,
    *  this method cannot guarantee the reader (and its
    *  sub-readers) will be opened with the
    *  termInfosIndexDivisor setting because some of them may
@@ -427,7 +432,10 @@ public class IndexWriter implements Closeable {
    *  {@link #getReader()}. */
   @Deprecated
   public IndexReader getReader(int termInfosIndexDivisor) throws IOException {
+    return getReader(termInfosIndexDivisor, true);
+  }
 
+  IndexReader getReader(int termInfosIndexDivisor, boolean applyAllDeletes) throws IOException {
     ensureOpen();
 
     final long tStart = System.currentTimeMillis();
@@ -446,8 +454,8 @@ public class IndexWriter implements Closeable {
     // just like we do when loading segments_N
     IndexReader r;
     synchronized(this) {
-      flush(false, true);
-      r = new ReadOnlyDirectoryReader(this, segmentInfos, termInfosIndexDivisor);
+      flush(false, applyAllDeletes);
+      r = new ReadOnlyDirectoryReader(this, segmentInfos, termInfosIndexDivisor, applyAllDeletes);
       if (infoStream != null) {
         message("return reader version=" + r.getVersion() + " reader=" + r);
       }
@@ -3306,9 +3314,9 @@ public class IndexWriter implements Closeable {
    * to the Directory.
    * @param triggerMerge if true, we may merge segments (if
    *  deletes or docs were flushed) if necessary
-   * @param flushDeletes whether pending deletes should also
+   * @param applyAllDeletes whether pending deletes should also
    */
-  protected final void flush(boolean triggerMerge, boolean flushDeletes) throws CorruptIndexException, IOException {
+  protected final void flush(boolean triggerMerge, boolean applyAllDeletes) throws CorruptIndexException, IOException {
 
     // NOTE: this method cannot be sync'd because
     // maybeMerge() in turn calls mergeScheduler.merge which
@@ -3319,7 +3327,7 @@ public class IndexWriter implements Closeable {
 
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
-    if (doFlush(flushDeletes) && triggerMerge) {
+    if (doFlush(applyAllDeletes) && triggerMerge) {
       maybeMerge();
     }
   }

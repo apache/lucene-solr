@@ -160,7 +160,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // flipping a coin) may give us a newly opened reader,
     // but we use .reopen on this reader below and expect to
     // (must) get an NRT reader:
-    IndexReader reader = IndexReader.open(writer.w);
+    IndexReader reader = IndexReader.open(writer.w, true);
     IndexSearcher searcher = new IndexSearcher(reader);
 
     // add a doc, refresh the reader, and check that its there

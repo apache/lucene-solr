@@ -68,6 +68,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
   // opened on a past IndexCommit:
   private long maxIndexVersion;
 
+  private final boolean applyAllDeletes;
+
   static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly,
                           final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
@@ -97,6 +99,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     } else {
       this.readerFinishedListeners = readerFinishedListeners;
     }
+    applyAllDeletes = false;
 
     // To reduce the chance of hitting FileNotFound
     // (and having to retry), we open segments in
@@ -128,9 +131,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   // Used by near real-time search
-  DirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor) throws IOException {
+  DirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor, boolean applyAllDeletes) throws IOException {
     this.directory = writer.getDirectory();
     this.readOnly = true;
+    this.applyAllDeletes = applyAllDeletes;       // saved for reopen
+
     segmentInfos = (SegmentInfos) infos.clone();// make sure we clone otherwise we share mutable state with IW
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     readerFinishedListeners = writer.getReaderFinishedListeners();
@@ -179,6 +184,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     assert readerFinishedListeners != null;
     this.readerFinishedListeners = readerFinishedListeners;
+    applyAllDeletes = false;
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -396,7 +402,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     // TODO: right now we *always* make a new reader; in
     // the future we could have write make some effort to
     // detect that no changes have occurred
-    IndexReader reader = writer.getReader();
+    IndexReader reader = writer.getReader(applyAllDeletes);
     reader.readerFinishedListeners = readerFinishedListeners;
     return reader;
   }
