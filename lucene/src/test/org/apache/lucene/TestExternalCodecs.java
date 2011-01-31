@@ -631,7 +631,8 @@ public class TestExternalCodecs extends LuceneTestCase {
     
     
     final int NUM_DOCS = 173;
-    Directory dir = newDirectory();
+    MockDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).

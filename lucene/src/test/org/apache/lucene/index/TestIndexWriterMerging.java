@@ -66,7 +66,6 @@ public class TestIndexWriterMerging extends LuceneTestCase
     writer.close();
 
     fail = verifyIndex(merged, 0);
-    merged.close();
 
     assertFalse("The merged index is invalid", fail);
     indexA.close();
