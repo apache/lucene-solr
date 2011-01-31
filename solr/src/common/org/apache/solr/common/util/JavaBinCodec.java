@@ -96,7 +96,8 @@ public class JavaBinCodec {
     FastInputStream dis = FastInputStream.wrap(is);
     version = dis.readByte();
     if (version != VERSION) {
-      throw new RuntimeException("Invalid version or the data in not in 'javabin' format");
+      throw new RuntimeException("Invalid version (expected " + VERSION +
+          ", but " + version + ") or the data in not in 'javabin' format");
     }
     return readVal(dis);
   }
