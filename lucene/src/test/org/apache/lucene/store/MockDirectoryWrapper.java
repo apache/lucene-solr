@@ -31,7 +31,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * This is a Directory Wrapper that adds methods
@@ -48,6 +50,7 @@ public class MockDirectoryWrapper extends Directory {
   Random randomState;
   boolean noDeleteOpenFile = true;
   boolean preventDoubleWrite = true;
+  boolean checkIndexOnClose = true;
   boolean trackDiskUsage = false;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
@@ -216,6 +219,17 @@ public class MockDirectoryWrapper extends Directory {
     return noDeleteOpenFile;
   }
 
+  /**
+   * Set whether or not checkindex should be run
+   * on close
+   */
+  public void setCheckIndexOnClose(boolean value) {
+    this.checkIndexOnClose = value;
+  }
+  
+  public boolean getCheckIndexOnClose() {
+    return checkIndexOnClose;
+  }
   /**
    * If 0.0, no exceptions will be thrown.  Else this should
    * be a double 0.0 - 1.0.  We will randomly throw an
@@ -404,6 +418,9 @@ public class MockDirectoryWrapper extends Directory {
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
     }
     open = false;
+    if (checkIndexOnClose && IndexReader.indexExists(this)) {
+      _TestUtil.checkIndex(this);
+    }
     delegate.close();
   }
 

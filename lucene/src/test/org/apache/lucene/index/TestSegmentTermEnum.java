@@ -85,7 +85,6 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     assertFalse(termEnum.next());
     assertEquals("bbb", termEnum.prev().text());
     reader.close();
-    dir.close();
   }
 
   private void verifyDocFreq()

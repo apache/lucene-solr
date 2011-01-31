@@ -110,8 +110,6 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     // So it's using term: a1 b1 to search on the second IndexSearcher
     // As a result, it won't match the document in the second IndexSearcher
     assertEquals(2, numHits);
-    indexStoreA.close();
-    indexStoreB.close();
   }
   
   /** remove in lucene 4.0 */
@@ -171,8 +169,6 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     // So it's using term: a1 b1 to search on the second IndexSearcher
     // As a result, it won't match the document in the second IndexSearcher
     assertEquals(2, numHits);
-    indexStoreA.close();
-    indexStoreB.close();
   }
 
   private void createRAMDirectories() throws CorruptIndexException,

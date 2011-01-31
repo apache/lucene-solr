@@ -40,8 +40,10 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     fileExtensions.add(IndexFileNames.FIELDS_EXTENSION);
     fileExtensions.add(IndexFileNames.FIELDS_INDEX_EXTENSION);
     
-    Directory primaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
-    Directory secondaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    primaryDir.setCheckIndexOnClose(false); // only part of an index
+    MockDirectoryWrapper secondaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    secondaryDir.setCheckIndexOnClose(false); // only part of an index
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
     IndexWriter writer = new IndexWriter(fsd, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));

@@ -972,7 +972,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // latest segments file and make sure we get an
   // IOException trying to open the index:
   public void testSimulatedCorruptIndex1() throws IOException {
-      Directory dir = newDirectory();
+      MockDirectoryWrapper dir = newDirectory();
+      dir.setCheckIndexOnClose(false); // we are corrupting it!
 
       IndexWriter writer = null;
 
@@ -1019,8 +1020,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // files and make sure we get an IOException trying to
   // open the index:
   public void testSimulatedCorruptIndex2() throws IOException {
-      Directory dir = newDirectory();
-
+      MockDirectoryWrapper dir = newDirectory();
+      dir.setCheckIndexOnClose(false); // we are corrupting it!
       IndexWriter writer = null;
 
       writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
