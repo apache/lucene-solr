@@ -99,7 +99,7 @@ public final class IndexSchema {
    * If the is stream is null, the resource loader will load the schema resource by name.
    * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
-   * @see Config#openResource
+   * @see SolrResourceLoader#openResource
    */
   public IndexSchema(SolrConfig solrConfig, String name, InputStream is) {
     this.solrConfig = solrConfig;

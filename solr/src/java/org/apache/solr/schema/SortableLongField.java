@@ -38,7 +38,7 @@ import java.io.IOException;
 /**
  * @version $Id$
  * 
- * @deprecated use {@link LongField} or {@link TrieLongtField} - will be removed in 5.x
+ * @deprecated use {@link LongField} or {@link TrieLongField} - will be removed in 5.x
  */
 @Deprecated
 public class SortableLongField extends FieldType {

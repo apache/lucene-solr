@@ -138,11 +138,6 @@ you don't need to worry about dealing with those.
       config.setAnalyzer(new WhitespaceAnalyzer());
       Query query = qpHelper.parse("apache AND lucene", "defaultField");
 </pre>
-<p>
-To make it easy for people who are using current Lucene's query parser to switch to
-the new one, there is a {@link org.apache.lucene.queryParser.standard.QueryParserWrapper} under org.apache.lucene.queryParser.standard
-that keeps the old query parser interface, but uses the new query parser infrastructure.
-</p>
 
 </body>
 </html>

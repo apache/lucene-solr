@@ -28,7 +28,7 @@ import org.apache.lucene.search.TopDocs;
 /**
  * Create a log ready for submission.
  * Extend this class and override
- * {@link #report(QualityQuery, TopDocs, String, Searcher)}
+ * {@link #report(QualityQuery, TopDocs, String, IndexSearcher)}
  * to create different reports. 
  */
 public class SubmissionReport {

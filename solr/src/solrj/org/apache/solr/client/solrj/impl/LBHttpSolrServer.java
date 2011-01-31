@@ -150,7 +150,7 @@ public class LBHttpSolrServer extends SolrServer {
       return numDeadServersToTry;
     }
 
-    /** @return The number of dead servers to try if there are no live servers left.
+    /** @param numDeadServersToTry The number of dead servers to try if there are no live servers left.
      * Defaults to the number of servers in this request. */
     public void setNumDeadServersToTry(int numDeadServersToTry) {
       this.numDeadServersToTry = numDeadServersToTry;

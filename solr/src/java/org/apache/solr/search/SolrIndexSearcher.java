@@ -357,7 +357,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   /**
    * @return the indexDir on which this searcher is opened
-   * @see org.apache.solr.search.SolrIndexSearcher#SolrIndexSearcher(org.apache.solr.core.SolrCore, org.apache.solr.schema.IndexSchema, String, String, boolean)
+   * @see #SolrIndexSearcher(SolrCore, IndexSchema, String, Directory, boolean)
    */
   public String getIndexDir() {
     return indexDir;

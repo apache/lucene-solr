@@ -115,7 +115,7 @@ public class SpellCheckResponse {
    * <p>
    *  Return the first collated query string.  For convenience and backwards-compatibility.  Use getCollatedResults() for full data.
    * </p>
-   * @return
+   * @return first collated query string
    */
   public String getCollatedResult() {
     return collations==null || collations.size()==0 ? null : collations.get(0).collationQueryString;
@@ -126,7 +126,7 @@ public class SpellCheckResponse {
    *  Return all collations.  
    *  Will include # of hits and misspelling-to-correction details if "spellcheck.collateExtendedResults was true.
    * </p>
-   * @return
+   * @return all collations
    */
   public List<Collation> getCollatedResults() {
   	return collations;
