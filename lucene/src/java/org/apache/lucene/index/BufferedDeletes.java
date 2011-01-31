@@ -18,21 +18,23 @@ package org.apache.lucene.index;
  */
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 
-/** Holds buffered deletes, by docID, term or query for a
- *  single segment. This is used to hold buffered pending
- *  deletes against the to-be-flushed segment as well as
- *  per-segment deletes for each segment in the index. */
+/* Holds buffered deletes, by docID, term or query for a
+ * single segment. This is used to hold buffered pending
+ * deletes against the to-be-flushed segment.  Once the
+ * deletes are pushed (on flush in DocumentsWriter), these
+ * deletes are converted to a FrozenDeletes instance. */
 
 // NOTE: we are sync'd by BufferedDeletes, ie, all access to
 // instances of this class is via sync'd methods on
@@ -63,13 +65,8 @@ class BufferedDeletes {
      undercount (say 24 bytes).  Integer is OBJ_HEADER + INT. */
   final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*RamUsageEstimator.NUM_BYTES_INT + 24;
 
-  // TODO: many of the deletes stored here will map to
-  // Integer.MAX_VALUE; we could be more efficient for this
-  // case ie use a SortedSet not a SortedMap.  But: Java's
-  // SortedSet impls are simply backed by a Map so we won't
-  // save anything unless we do something custom...
   final AtomicInteger numTermDeletes = new AtomicInteger();
-  final SortedMap<Term,Integer> terms = new TreeMap<Term,Integer>();
+  final Map<Term,Integer> terms;
   final Map<Query,Integer> queries = new HashMap<Query,Integer>();
   final List<Integer> docIDs = new ArrayList<Integer>();
 
@@ -80,6 +77,14 @@ class BufferedDeletes {
   private final static boolean VERBOSE_DELETES = false;
 
   long gen;
+
+  public BufferedDeletes(boolean sortTerms) {
+    if (sortTerms) {
+      terms = new TreeMap<Term,Integer>();
+    } else {
+      terms = new HashMap<Term,Integer>();
+    }
+  }
 
   @Override
   public String toString() {
@@ -130,6 +135,26 @@ class BufferedDeletes {
     // should already be cleared
   }
 
+  void update(FrozenBufferedDeletes in) {
+    numTermDeletes.addAndGet(in.numTermDeletes);
+    for(Term term : in.terms) {
+      if (!terms.containsKey(term)) {
+        // only incr bytesUsed if this term wasn't already buffered:
+        bytesUsed.addAndGet(BYTES_PER_DEL_TERM);
+      }
+      terms.put(term, MAX_INT);
+    }
+
+    for(int queryIdx=0;queryIdx<in.queries.length;queryIdx++) {
+      final Query query = in.queries[queryIdx];
+      if (!queries.containsKey(query)) {
+        // only incr bytesUsed if this query wasn't already buffered:
+        bytesUsed.addAndGet(BYTES_PER_DEL_QUERY);
+      }
+      queries.put(query, MAX_INT);
+    }
+  }
+
   public void addQuery(Query query, int docIDUpto) {
     Integer current = queries.put(query, docIDUpto);
     // increment bytes used only if the query wasn't added so far.
@@ -162,6 +187,43 @@ class BufferedDeletes {
       bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length);
     }
   }
+
+  public Iterable<Term> termsIterable() {
+    return new Iterable<Term>() {
+      // @Override -- not until Java 1.6
+      public Iterator<Term> iterator() {
+        return terms.keySet().iterator();
+      }
+    };
+  }
+
+  public Iterable<QueryAndLimit> queriesIterable() {
+    return new Iterable<QueryAndLimit>() {
+      
+      // @Override -- not until Java 1.6
+      public Iterator<QueryAndLimit> iterator() {
+        return new Iterator<QueryAndLimit>() {
+          private final Iterator<Map.Entry<Query,Integer>> iter = queries.entrySet().iterator();
+
+          // @Override -- not until Java 1.6
+          public boolean hasNext() {
+            return iter.hasNext();
+          }
+
+          // @Override -- not until Java 1.6
+          public QueryAndLimit next() {
+            final Map.Entry<Query,Integer> ent = iter.next();
+            return new QueryAndLimit(ent.getKey(), ent.getValue());
+          }
+
+          // @Override -- not until Java 1.6
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    };
+  }    
     
   void clear() {
     terms.clear();

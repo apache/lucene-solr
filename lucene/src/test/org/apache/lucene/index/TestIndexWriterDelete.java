@@ -157,8 +157,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       assertEquals(0, modifier.getSegmentCount());
       modifier.commit();
 
-      modifier.commit();
-
       IndexReader reader = IndexReader.open(dir, true);
       assertEquals(1, reader.numDocs());
 

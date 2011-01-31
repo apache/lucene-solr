@@ -26,8 +26,9 @@ import java.util.Map;
 
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
-import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
+import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 
@@ -108,7 +109,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
       // If this field has postings then add them to the
       // segment
-      appendPostings(fields, consumer);
+      appendPostings(fieldName, state, fields, consumer);
 
       for(int i=0;i<fields.length;i++) {
         TermsHashPerField perField = fields[i].termsHashPerField;
@@ -133,7 +134,8 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   /* Walk through all unique text tokens (Posting
    * instances) found in this field and serialize them
    * into a single RAM segment. */
-  void appendPostings(FreqProxTermsWriterPerField[] fields,
+  void appendPostings(String fieldName, SegmentWriteState state,
+                      FreqProxTermsWriterPerField[] fields,
                       FieldsConsumer consumer)
     throws CorruptIndexException, IOException {
 
@@ -156,10 +158,19 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       assert result;
     }
 
+    final Term protoTerm = new Term(fieldName);
+
     FreqProxFieldMergeState[] termStates = new FreqProxFieldMergeState[numFields];
 
     final boolean currentFieldOmitTermFreqAndPositions = fields[0].fieldInfo.omitTermFreqAndPositions;
     //System.out.println("flush terms field=" + fields[0].fieldInfo.name);
+
+    final Map<Term,Integer> segDeletes;
+    if (state.segDeletes != null && state.segDeletes.terms.size() > 0) {
+      segDeletes = state.segDeletes.terms;
+    } else {
+      segDeletes = null;
+    }
 
     // TODO: really TermsHashPerField should take over most
     // of this loop, including merge sort of terms from
@@ -195,6 +206,18 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
       final PostingsConsumer postingsConsumer = termsConsumer.startTerm(text);
 
+      final int delDocLimit;
+      if (segDeletes != null) {
+        final Integer docIDUpto = segDeletes.get(protoTerm.createTerm(text));
+        if (docIDUpto != null) {
+          delDocLimit = docIDUpto;
+        } else {
+          delDocLimit = 0;
+        }
+      } else {
+        delDocLimit = 0;
+      }
+
       // Now termStates has numToMerge FieldMergeStates
       // which all share the same term.  Now we must
       // interleave the docID streams.
@@ -214,7 +237,28 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
         assert minState.docID < flushedDocCount: "doc=" + minState.docID + " maxDoc=" + flushedDocCount;
 
+        // NOTE: we could check here if the docID was
+        // deleted, and skip it.  However, this is somewhat
+        // dangerous because it can yield non-deterministic
+        // behavior since we may see the docID before we see
+        // the term that caused it to be deleted.  This
+        // would mean some (but not all) of its postings may
+        // make it into the index, which'd alter the docFreq
+        // for those terms.  We could fix this by doing two
+        // passes, ie first sweep marks all del docs, and
+        // 2nd sweep does the real flush, but I suspect
+        // that'd add too much time to flush.
+
         postingsConsumer.startDoc(minState.docID, termDocFreq);
+        if (minState.docID < delDocLimit) {
+          // Mark it deleted.  TODO: we could also skip
+          // writing its postings; this would be
+          // deterministic (just for this Term's docs).
+          if (state.deletedDocs == null) {
+            state.deletedDocs = new BitVector(state.numDocs);
+          }
+          state.deletedDocs.set(minState.docID);
+        }
 
         final ByteSliceReader prox = minState.prox;
 

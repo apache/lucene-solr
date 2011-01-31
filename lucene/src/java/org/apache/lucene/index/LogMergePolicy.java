@@ -661,7 +661,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     sb.append("maxMergeSizeForOptimize=").append(maxMergeSizeForOptimize).append(", ");
     sb.append("calibrateSizeByDeletes=").append(calibrateSizeByDeletes).append(", ");
     sb.append("maxMergeDocs=").append(maxMergeDocs).append(", ");
-    sb.append("useCompoundFile=").append(useCompoundFile);
+    sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
     sb.append("requireContiguousMerge=").append(requireContiguousMerge);
     sb.append("]");
     return sb.toString();

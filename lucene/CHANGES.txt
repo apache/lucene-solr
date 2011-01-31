@@ -330,6 +330,9 @@ Optimizations
   seek the term dictionary in TermQuery / TermWeight.
   (Simon Willnauer, Mike McCandless, Robert Muir)
   
+* LUCENE-2897: Apply deleted terms while flushing a segment.  We still
+  buffer deleted terms to later apply to past segments.  (Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal

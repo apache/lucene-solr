@@ -108,7 +108,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
   
-  private String segment;
+  //private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
                           Comparator<BytesRef> termComp, int termsCacheSize, String codecId)
@@ -118,7 +118,7 @@ public class BlockTermsReader extends FieldsProducer {
     termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     this.termComp = termComp;
-    this.segment = segment;
+    //this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
                        readBufferSize);
 

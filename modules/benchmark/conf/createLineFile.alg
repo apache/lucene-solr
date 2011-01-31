@@ -29,10 +29,14 @@
 #
 
 # Where to get documents from:
-content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
+content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
 
 # Where to write the line file output:
-line.file.out=work/reuters.lines.txt
+line.file.out=/x/tmp/enwiki.out.txt
+
+docs.file=/x/lucene/data/enwiki/enwiki-20110115-pages-articles.xml
+
+keep.image.only.docs = false
 
 # Stop after processing the document feed once:
 content.source.forever=false
