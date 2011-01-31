@@ -86,8 +86,8 @@
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-compress-1.0.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-logging-1.0.4.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/xercesImpl-2.10.0.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/xml-apis-2.10.0.jar"/>
+	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
+	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/xml-apis-2.9.0.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/db/bdb/lib/db-4.7.25.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/db/bdb-je/lib/je-3.3.93.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/icu/lib/icu4j-4_6.jar"/>
