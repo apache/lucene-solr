@@ -242,7 +242,7 @@ public class StrUtils {
    * {@link NullPointerException} and {@link SolrException} free version of {@link #parseBool(String)}
    * @param s
    * @param def
-   * @return
+   * @return parsed boolean value (or def, if s is null or invalid)
    */
   public static boolean parseBool(String s, boolean def) {
     if( s != null ) {

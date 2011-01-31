@@ -116,14 +116,14 @@ public class InstantiatedIndexWriter implements Closeable {
    *  MAddDocs_20000 -   7 4000 100 false -  -   1 -  -   20000 -  -   535,8 -  -  37,33 - 309 680 640 -  501 968 896
    * </pre>
    *
-   * @see org.apache.lucene.index.IndexWriter#setMergeFactor(int)
+   * @see org.apache.lucene.index.LogMergePolicy#setMergeFactor(int)
    */
   public void setMergeFactor(int mergeFactor) {
     this.mergeFactor = mergeFactor;
   }
 
   /**
-   * @see org.apache.lucene.index.IndexWriter#getMergeFactor()
+   * @see org.apache.lucene.index.LogMergePolicy#getMergeFactor()
    */
   public int getMergeFactor() {
     return mergeFactor;
