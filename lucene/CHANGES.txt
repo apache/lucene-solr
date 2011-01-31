@@ -411,8 +411,8 @@ New features
   stopwords, and implement many analyzers in contrib with it.  
   (Simon Willnauer via Robert Muir)
   
-* LUCENE-2198: Support protected words in stemming TokenFilters using a
-  new KeywordAttribute.  (Simon Willnauer via Uwe Schindler)
+* LUCENE-2198, LUCENE-2901: Support protected words in stemming TokenFilters using a
+  new KeywordAttribute.  (Simon Willnauer, Drew Farris via Uwe Schindler)
   
 * LUCENE-2183, LUCENE-2240, LUCENE-2241: Added Unicode 4 support
   to CharTokenizer and its subclasses. CharTokenizer now has new
