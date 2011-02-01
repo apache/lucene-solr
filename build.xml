@@ -52,12 +52,13 @@
   </target>
 
   <target name="generate-maven-artifacts" description="Generate Maven Artifacts for Lucene and Solr">
+    <property name="maven.dist.dir"  location="dist/maven" />
+    <mkdir dir="${maven.dist.dir}" />
+
     <sequential>
       <subant target="generate-maven-artifacts" inheritall="false" failonerror="true">
+        <property name="maven.dist.dir"  location="${maven.dist.dir}" />
         <fileset dir="lucene" includes="build.xml" />
-      </subant>
-
-      <subant target="generate-maven-artifacts" inheritall="false" failonerror="true">
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
