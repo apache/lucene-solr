@@ -248,9 +248,8 @@ abstract class DocSetBase implements DocSet {
 
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext ctx) throws IOException {
-        IndexReader.AtomicReaderContext context = (IndexReader.AtomicReaderContext)ctx;  // TODO: remove after lucene migration
-        IndexReader reader = ctx.reader;
+      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+        IndexReader reader = context.reader;
 
         if (context.isTopLevel) {
           return bs;
