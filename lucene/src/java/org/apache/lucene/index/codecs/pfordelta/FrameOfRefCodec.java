@@ -37,8 +37,8 @@ import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
+import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
+import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
 
 public class FrameOfRefCodec extends Codec {
 
@@ -53,7 +53,7 @@ public class FrameOfRefCodec extends Codec {
     boolean success = false;
     TermsIndexWriterBase indexWriter;
     try {
-      indexWriter = new FixedGapTermsIndexWriter(state);
+      indexWriter = new VariableGapTermsIndexWriter(state, new VariableGapTermsIndexWriter.EveryNTermSelector(state.termIndexInterval));
       success = true;
     } finally {
       if (!success) {
@@ -88,12 +88,11 @@ public class FrameOfRefCodec extends Codec {
     TermsIndexReaderBase indexReader;
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.dir,
-                                                 state.fieldInfos,
-                                                 state.segmentInfo.name,
-                                                 state.termsIndexDivisor,
-                                                 BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                 state.codecId);
+      indexReader = new VariableGapTermsIndexReader(state.dir,
+                                                    state.fieldInfos,
+                                                    state.segmentInfo.name,
+                                                    state.termsIndexDivisor,
+                                                    state.codecId);
       success = true;
     } finally {
       if (!success) {
@@ -129,13 +128,13 @@ public class FrameOfRefCodec extends Codec {
   public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) {
     SepPostingsReaderImpl.files(segmentInfo, id, files);
     BlockTermsReader.files(dir, segmentInfo, id, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
+    VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     SepPostingsWriterImpl.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
-    FixedGapTermsIndexReader.getIndexExtensions(extensions);
+    VariableGapTermsIndexReader.getIndexExtensions(extensions);
   }
 }
