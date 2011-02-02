@@ -100,11 +100,11 @@ class QueryDocValues extends DocValues {
     if (w == null) {
       IndexSearcher weightSearcher;
       if(fcontext == null) {
-        weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext), readerContext);
+        weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
       } else {
         weightSearcher = (IndexSearcher)fcontext.get("searcher");
         if (weightSearcher == null) {
-          weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext), readerContext);
+          weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
         }
       }
       w = q.weight(weightSearcher);
