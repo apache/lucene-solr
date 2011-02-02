@@ -104,7 +104,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     writer.commit();
     IndexReader ir = writer.getReader();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir);
     Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher);
     Scorer s = new SimpleScorer(fake);
     ScoreCachingCollector scc = new ScoreCachingCollector(scores.length);

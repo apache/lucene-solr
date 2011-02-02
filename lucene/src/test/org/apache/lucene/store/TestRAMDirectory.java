@@ -82,7 +82,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(docsToAdd, reader.numDocs());
     
     // open search zo check if all doc's are there
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // search for all documents
     for (int i = 0; i < docsToAdd; i++) {

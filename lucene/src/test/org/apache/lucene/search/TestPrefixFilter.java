@@ -48,7 +48,7 @@ public class TestPrefixFilter extends LuceneTestCase {
     // PrefixFilter combined with ConstantScoreQuery
     PrefixFilter filter = new PrefixFilter(new Term("category", "/Computers"));
     Query query = new ConstantScoreQuery(filter);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(4, hits.length);
 

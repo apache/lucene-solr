@@ -565,7 +565,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                + e);
         }
 
-        IndexSearcher searcher = new IndexSearcher(newReader);
+        IndexSearcher searcher = newSearcher(newReader);
         ScoreDoc[] hits = null;
         try {
           hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;

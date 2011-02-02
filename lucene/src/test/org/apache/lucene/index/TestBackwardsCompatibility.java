@@ -409,7 +409,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     // make sure we can do delete & setNorm against this segment:
     IndexReader reader = IndexReader.open(dir, false);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("wrong delete count", 1, delCount);

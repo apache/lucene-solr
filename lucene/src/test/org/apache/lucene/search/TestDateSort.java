@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -78,7 +77,7 @@ public class TestDateSort extends LuceneTestCase {
   }
 
   public void testReverseDateSort() throws Exception {
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.STRING, true));
 

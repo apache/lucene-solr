@@ -362,7 +362,7 @@ public class TestCodecs extends LuceneTestCase {
 
   private ScoreDoc[] search(final IndexWriter writer, final Query q, final int n) throws IOException {
     final IndexReader reader = writer.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader);
     try {
       return searcher.search(q, null, n).scoreDocs;
     }

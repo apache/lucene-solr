@@ -92,7 +92,7 @@ public class TestBoolean2 extends LuceneTestCase {
       w.addDocument(doc);
     }
     reader = w.getReader();
-    bigSearcher = new IndexSearcher(reader);
+    bigSearcher = newSearcher(reader);
     w.close();
   }
 

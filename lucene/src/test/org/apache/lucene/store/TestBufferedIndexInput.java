@@ -271,7 +271,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         assertEquals(reader.docFreq(bbb), 37);
         dir.tweakBufferSizes();
 
-        IndexSearcher searcher = new IndexSearcher(reader);
+        IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(new TermQuery(bbb), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);

@@ -73,7 +73,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     BooleanQuery q = new BooleanQuery();
     q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
 
@@ -120,6 +120,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     dmq.add(pq);
     assertEquals(1, s.search(dmq, 10).totalHits);
     
+    s.close();
     r.close();
     w.close();
     dir.close();

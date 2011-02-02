@@ -2817,7 +2817,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       for(int x=0;x<2;x++) {
         IndexReader r = w.getReader();
-        IndexSearcher s = new IndexSearcher(r);
+        IndexSearcher s = newSearcher(r);
 
         if (VERBOSE) {
           System.out.println("TEST: cycle x=" + x + " r=" + r);
@@ -2833,6 +2833,7 @@ public class TestIndexWriter extends LuceneTestCase {
             assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));
           }
         }
+        s.close();
         r.close();
         w.optimize();
       }

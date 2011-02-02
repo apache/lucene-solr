@@ -652,7 +652,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3*i+1);
         reader.setNorm(4*i+1, "content", conf.getSimilarityProvider().get("content").encodeNormValue(2.0F));
-        IndexSearcher searcher = new IndexSearcher(reader);
+        IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16*(1+i), hits.length);
         // this is a commit
@@ -696,7 +696,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
           // Work backwards in commits on what the expected
           // count should be.
-          searcher = new IndexSearcher(reader);
+          searcher = newSearcher(reader);
           hits = searcher.search(query, null, 1000).scoreDocs;
           if (i > 1) {
             if (i % 2 == 0) {
@@ -772,7 +772,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3);
         reader.setNorm(5, "content", conf.getSimilarityProvider().get("content").encodeNormValue(2.0F));
-        IndexSearcher searcher = new IndexSearcher(reader);
+        IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16, hits.length);
         // this is a commit
@@ -807,7 +807,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
           // Work backwards in commits on what the expected
           // count should be.
-          searcher = new IndexSearcher(reader);
+          searcher = newSearcher(reader);
           hits = searcher.search(query, null, 1000).scoreDocs;
           assertEquals(expectedCount, hits.length);
           searcher.close();

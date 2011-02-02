@@ -77,7 +77,7 @@ public class TestBasics extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
 

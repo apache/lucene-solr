@@ -109,7 +109,7 @@ public class TestDocIdSet extends LuceneTestCase {
     writer.close();
     
     // First verify the document is searchable.
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits);
     
     // Now search w/ a Filter which returns a null DocIdSet

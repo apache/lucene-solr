@@ -227,7 +227,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     }
     IndexReader reader = IndexReader.open(dir, null, true,
         IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, codecs);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
     searcher.close();

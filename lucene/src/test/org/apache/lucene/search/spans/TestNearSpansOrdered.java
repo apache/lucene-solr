@@ -65,7 +65,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     }
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
 
   protected String[] docFields = {

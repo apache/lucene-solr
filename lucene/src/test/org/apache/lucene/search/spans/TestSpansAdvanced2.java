@@ -57,7 +57,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     writer.close();
     
     // re-open the searcher since we added more docs
-    searcher2 = new IndexSearcher(reader2);
+    searcher2 = newSearcher(reader2);
   }
   
   @Override

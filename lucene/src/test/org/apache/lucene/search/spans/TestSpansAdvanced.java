@@ -66,7 +66,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     addDocument(writer, "4", "I think it should work.");
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
   
   @Override

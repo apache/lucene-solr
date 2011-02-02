@@ -47,7 +47,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     iw.close();
 
     IndexReader ir = IndexReader.open(dir, false);
-    IndexSearcher is = new IndexSearcher(ir);
+    IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
 
     // assert with norms scoring turned off
@@ -93,7 +93,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(1, hits.length);
 
     // delete a document:
-    is.getIndexReader().deleteDocument(0);
+    ir.deleteDocument(0);
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
     assertEquals(2, hits.length);
     

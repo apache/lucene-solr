@@ -773,14 +773,14 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 // not synchronized
                 IndexReader refreshed = r.reopen();
                 
-                IndexSearcher searcher = new IndexSearcher(refreshed);
+                IndexSearcher searcher = newSearcher(refreshed);
                 ScoreDoc[] hits = searcher.search(
                     new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))),
                     null, 1000).scoreDocs;
                 if (hits.length > 0) {
                   searcher.doc(hits[0].doc);
                 }
-                
+                searcher.close();
                 if (refreshed != r) {
                   refreshed.close();
                 }

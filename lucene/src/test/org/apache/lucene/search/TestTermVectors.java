@@ -71,7 +71,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
   
   @Override
@@ -246,7 +246,7 @@ public class TestTermVectors extends LuceneTestCase {
     writer.addDocument(testDoc4);
     IndexReader reader = writer.getReader();
     writer.close();
-    IndexSearcher knownSearcher = new IndexSearcher(reader);
+    IndexSearcher knownSearcher = newSearcher(reader);
     FieldsEnum fields = MultiFields.getFields(knownSearcher.reader).iterator();
     
     DocsEnum docs = null;
@@ -378,7 +378,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
     IndexReader reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
 
     Query query = new TermQuery(new Term("field", "hundred"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -414,7 +414,7 @@ public class TestTermVectors extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
 
     Query query = new TermQuery(new Term("field", "one"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

@@ -144,7 +144,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
     IndexReader reader = writer.getReader();
     writer.close ();
-    IndexSearcher s = new IndexSearcher (reader);
+    IndexSearcher s = newSearcher(reader);
     s.setDefaultFieldSortScoring(true, true);
     return s;
   }
@@ -1061,12 +1061,13 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
     IndexReader r = IndexReader.open(w, true);
     w.close();
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.STRING)));
     assertEquals(2, hits.totalHits);
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
     assertEquals(0, hits.scoreDocs[1].doc);
+    s.close();
     r.close();
     dir.close();
   }
@@ -1105,10 +1106,11 @@ public class TestSort extends LuceneTestCase implements Serializable {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TotalHitCountCollector c = new TotalHitCountCollector();
     searcher.search(new MatchAllDocsQuery(), null, c);
     assertEquals(5, c.getTotalHits());
+    searcher.close();
     reader.close();
     indexStore.close();
   }

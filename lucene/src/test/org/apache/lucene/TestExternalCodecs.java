@@ -671,7 +671,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     testTermsOrder(r);
     
     assertEquals(NUM_DOCS-1, r.numDocs());
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     r.close();
@@ -682,7 +682,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     r = IndexReader.open(w, true);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
-    s = new IndexSearcher(r);
+    s = newSearcher(r);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     assertEquals(1, s.search(new TermQuery(new Term("id", "76")), 1).totalHits);

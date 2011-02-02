@@ -89,7 +89,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher=new IndexSearcher(reader);
+    searcher=newSearcher(reader);
     writer.close();
   }
   

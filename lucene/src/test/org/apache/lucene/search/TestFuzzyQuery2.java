@@ -91,7 +91,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     }   
     
     IndexReader r = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(r);
+    IndexSearcher searcher = newSearcher(r);
     writer.close();
     String line;
     while ((line = reader.readLine()) != null) {

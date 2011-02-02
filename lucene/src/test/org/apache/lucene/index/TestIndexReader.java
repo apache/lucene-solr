@@ -900,7 +900,7 @@ public class TestIndexReader extends LuceneTestCase
 
       {
         IndexReader r = IndexReader.open(startDir);
-        IndexSearcher searcher = new IndexSearcher(r);
+        IndexSearcher searcher = newSearcher(r);
         ScoreDoc[] hits = null;
         try {
           hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
@@ -908,6 +908,7 @@ public class TestIndexReader extends LuceneTestCase
           e.printStackTrace();
           fail("exception when init searching: " + e);
         }
+        searcher.close();
         r.close();
       }
 
@@ -1023,7 +1024,7 @@ public class TestIndexReader extends LuceneTestCase
           }
           */
 
-          IndexSearcher searcher = new IndexSearcher(newReader);
+          IndexSearcher searcher = newSearcher(newReader);
           ScoreDoc[] hits = null;
           try {
             hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;

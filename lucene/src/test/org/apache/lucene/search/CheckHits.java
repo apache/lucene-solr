@@ -100,11 +100,13 @@ public class CheckHits {
 
     for (int i = -1; i < 2; i++) {
       actual.clear();
-      QueryUtils.wrapUnderlyingReader
-        (random, searcher, i).search(query, c);
+      IndexSearcher s = QueryUtils.wrapUnderlyingReader
+        (random, searcher, i);
+      s.search(query, c);
       Assert.assertEquals("Wrap Reader " + i + ": " +
                           query.toString(defaultFieldName),
                           correct, actual);
+      s.close();
     }
   }
 

@@ -62,7 +62,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
         + " with numbers 1234 5678.9 and letter b");
     writer.addDocument(doc);
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
   

@@ -1278,11 +1278,12 @@ public class TestQPHelper extends LuceneTestCase {
     doc.add(newField("field", "", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
     IndexReader r = IndexReader.open(w, true);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     
     Query q = new StandardQueryParser(new CannedAnalyzer()).parse("\"a\"", "field");
     assertTrue(q instanceof MultiPhraseQuery);
     assertEquals(1, s.search(q, 10).totalHits);
+    s.close();
     r.close();
     w.close();
     dir.close();

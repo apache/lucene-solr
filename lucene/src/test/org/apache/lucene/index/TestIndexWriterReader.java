@@ -718,8 +718,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // reader should remain usable even after IndexWriter is closed:
     assertEquals(100, r.numDocs());
     Query q = new TermQuery(new Term("indexname", "test"));
-    assertEquals(100, new IndexSearcher(r).search(q, 10).totalHits);
-
+    IndexSearcher searcher = newSearcher(r);
+    assertEquals(100, searcher.search(q, 10).totalHits);
+    searcher.close();
     try {
       r.reopen();
       fail("failed to hit AlreadyClosedException");
@@ -785,7 +786,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
         r = r2;
       }
       Query q = new TermQuery(new Term("indexname", "test"));
-      final int count = new IndexSearcher(r).search(q, 10).totalHits;
+      IndexSearcher searcher = newSearcher(r);
+      final int count = searcher.search(q, 10).totalHits;
+      searcher.close();
       assertTrue(count >= lastCount);
       lastCount = count;
     }
@@ -800,7 +803,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
       r = r2;
     }
     Query q = new TermQuery(new Term("indexname", "test"));
-    final int count = new IndexSearcher(r).search(q, 10).totalHits;
+    IndexSearcher searcher = newSearcher(r);
+    final int count = searcher.search(q, 10).totalHits;
+    searcher.close();
     assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());
@@ -873,7 +878,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
         r = r2;
       }
       Query q = new TermQuery(new Term("indexname", "test"));
-      sum += new IndexSearcher(r).search(q, 10).totalHits;
+      IndexSearcher searcher = newSearcher(r);
+      sum += searcher.search(q, 10).totalHits;
+      searcher.close();
     }
 
     for(int i=0;i<NUM_THREAD;i++) {
@@ -886,8 +893,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
       r = r2;
     }
     Query q = new TermQuery(new Term("indexname", "test"));
-    sum += new IndexSearcher(r).search(q, 10).totalHits;
-
+    IndexSearcher searcher = newSearcher(r);
+    sum += searcher.search(q, 10).totalHits;
+    searcher.close();
     assertTrue("no documents found at all", sum > 0);
 
     assertEquals(0, excs.size());
@@ -973,10 +981,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
             setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
               @Override
               public void warm(IndexReader r) throws IOException {
-                IndexSearcher s = new IndexSearcher(r);
+                IndexSearcher s = newSearcher(r);
                 TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);
                 assertEquals(20, hits.totalHits);
                 didWarm.set(true);
+                s.close();
               }
             }).
             setMergePolicy(newLogMergePolicy(10))

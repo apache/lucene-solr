@@ -82,7 +82,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     field.setValue("\uFFFD\uFFFD");
     writer.addDocument(doc);
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
 
