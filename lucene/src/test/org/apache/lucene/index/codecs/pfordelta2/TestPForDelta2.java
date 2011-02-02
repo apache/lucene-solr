@@ -63,14 +63,14 @@ public class TestPForDelta2 extends LuceneTestCase {
       assertTrue(pointerMax > 0);
 
       for(int i=0;i<testDataSize;i++) {
-        final int expected = testData[i];
-        final int actual = buffer[pointer++];
-        assertEquals(actual + " != " + expected, expected, actual);
         if (pointer == pointerMax) {
           pointerMax = r.fill();
           assertTrue(pointerMax > 0);
           pointer = 0;
         }
+        final int expected = testData[i];
+        final int actual = buffer[pointer++];
+        assertEquals(actual + " != " + expected, expected, actual);
       }
       in.close();
       dir.close();
