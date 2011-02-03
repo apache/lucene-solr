@@ -22,6 +22,7 @@ package org.apache.solr;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONUtil;
+import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -837,17 +838,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     // commit an average of 10 times for large sets, or 10% of the time for small sets
     int commitOneOutOf = Math.max(nDocs/10, 10);
 
-
-    // find the max order (docid) and start from there
-    int order = -1;
-    for (Doc doc : model.values()) {
-      order = Math.max(order, doc.order);
-    }
-    order++;
-
     for (int i=0; i<nDocs; i++) {
       Doc doc = createDoc(descriptor);
-      doc.order = order++;
+      // doc.order = order++;
       updateJ(toJSON(doc), null);
       model.put(doc.id, doc);
 
@@ -869,6 +862,25 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     } else {
       assertU(commit());
     }
+
+    // merging segments no longer selects just adjacent segments hence ids (doc.order) can be shuffled.
+    // we need to look at the index to determine the order.
+    String responseStr = h.query(req("q","*:*", "fl","id", "sort","_docid_ asc", "rows",Integer.toString(model.size()*2), "wt","json", "indent","true"));
+    Object response = ObjectBuilder.fromJSON(responseStr);
+
+    response = ((Map)response).get("response");
+    response = ((Map)response).get("docs");
+    List<Map> docList = (List<Map>)response;
+    int order = 0;
+    for (Map doc : docList) {
+      Object id = doc.get("id");
+      Doc modelDoc = model.get(id);
+      if (modelDoc == null) continue;  // may be some docs in the index that aren't modeled
+      modelDoc.order = order++;
+    }
+
+    // make sure we updated the order of all docs in the model
+    assertEquals(order, model.size());
 
     return model;
   }

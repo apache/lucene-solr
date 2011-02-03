@@ -135,14 +135,16 @@ class CollectionTester {
     if (!expected.equals(val)) {
 
       // make an exception for some numerics
-      if (expected instanceof Integer && val instanceof Long || expected instanceof Long && val instanceof Integer
+      if ((expected instanceof Integer && val instanceof Long || expected instanceof Long && val instanceof Integer)
           && ((Number)expected).longValue() == ((Number)val).longValue())
       {
-        // OK
-      } else if (expected instanceof Float && val instanceof Double || expected instanceof Double && val instanceof Float
-          && ((Number)expected).doubleValue() == ((Number)val).doubleValue())
-      {
-        // OK
+        return true;
+      } else if ((expected instanceof Float && val instanceof Double || expected instanceof Double && val instanceof Float)) {
+        double a = ((Number)expected).doubleValue();
+        double b = ((Number)val).doubleValue();
+        if (Double.compare(a,b) == 0) return true;
+        if (Math.abs(a-b) < 1e-5) return true;
+        return false;
       } else {
         setErr("mismatch: '" + expected + "'!='" + val + "'");
         return false;
