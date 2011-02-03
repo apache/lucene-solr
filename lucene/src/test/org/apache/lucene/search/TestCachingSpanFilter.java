@@ -45,7 +45,7 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     // but we use .reopen on this reader below and expect to
     // (must) get an NRT reader:
     IndexReader reader = IndexReader.open(writer.w, true);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     // add a doc, refresh the reader, and check that its there
     Document doc = new Document();
@@ -53,7 +53,8 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     writer.addDocument(doc);
 
     reader = refreshReader(reader);
-    searcher = new IndexSearcher(reader);
+    searcher.close();
+    searcher = newSearcher(reader);
 
     TopDocs docs = searcher.search(new MatchAllDocsQuery(), 1);
     assertEquals("Should find a hit...", 1, docs.totalHits);
@@ -73,7 +74,8 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     writer.deleteDocuments(new Term("id", "1"));
 
     reader = refreshReader(reader);
-    searcher = new IndexSearcher(reader);
+    searcher.close();
+    searcher = newSearcher(reader);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
@@ -87,7 +89,8 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
     writer.addDocument(doc);
     reader = refreshReader(reader);
-    searcher = new IndexSearcher(reader);
+    searcher.close();
+    searcher = newSearcher(reader);
         
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
@@ -105,7 +108,8 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     // that had no new deletions
     reader = refreshReader(reader);
     assertTrue(reader != oldReader);
-    searcher = new IndexSearcher(reader);
+    searcher.close();
+    searcher = newSearcher(reader);
     int missCount = filter.missCount;
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
@@ -115,7 +119,8 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     writer.deleteDocuments(new Term("id", "1"));
 
     reader = refreshReader(reader);
-    searcher = new IndexSearcher(reader);
+    searcher.close();
+    searcher = newSearcher(reader);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
@@ -129,6 +134,7 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     // entry:
     assertTrue(oldReader != null);
 
+    searcher.close();
     writer.close();
     reader.close();
     dir.close();

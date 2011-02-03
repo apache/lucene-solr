@@ -94,7 +94,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     writer.close();
     
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     TermPositions pos = searcher.getIndexReader().termPositions(new Term("field", "1"));
     pos.next();
@@ -262,7 +262,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     // only one doc has "a"
     assertFalse(tp.next());
 
-    IndexSearcher is = new IndexSearcher(r);
+    IndexSearcher is = newSearcher(r);
   
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));

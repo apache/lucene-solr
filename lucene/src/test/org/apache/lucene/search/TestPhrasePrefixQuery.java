@@ -64,7 +64,7 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // PhrasePrefixQuery query1 = new PhrasePrefixQuery();
     MultiPhraseQuery query1 = new MultiPhraseQuery();

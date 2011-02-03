@@ -63,7 +63,7 @@ public class TestDocBoost extends LuceneTestCase {
 
     final float[] scores = new float[4];
 
-    new IndexSearcher(reader).search
+    newSearcher(reader).search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
          private int base = 0;

@@ -52,7 +52,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 		addDoc(writer, "johnathon smythe","6");
 		reader = writer.getReader();
 		writer.close();
-		searcher=new IndexSearcher(reader);			
+		searcher=newSearcher(reader);			
 	}
 	
 	@Override

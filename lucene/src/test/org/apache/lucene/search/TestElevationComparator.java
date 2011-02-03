@@ -47,7 +47,7 @@ public class TestElevationComparator extends LuceneTestCase {
     IndexReader r = IndexReader.open(writer, true);
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(r);
+    IndexSearcher searcher = newSearcher(r);
 
     runTest(searcher, true);
     runTest(searcher, false);

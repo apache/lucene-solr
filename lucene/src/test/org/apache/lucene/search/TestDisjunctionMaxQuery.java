@@ -147,7 +147,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     writer.optimize();
     r = writer.getReader();
     writer.close();
-    s = new IndexSearcher(r);
+    s = newSearcher(r);
     s.setSimilarity(sim);
   }
   

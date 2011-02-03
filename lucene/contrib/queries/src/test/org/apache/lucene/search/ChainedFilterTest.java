@@ -73,7 +73,7 @@ public class ChainedFilterTest extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
 
     // query for everything to make life easier
     BooleanQuery bq = new BooleanQuery();
@@ -195,7 +195,7 @@ public class ChainedFilterTest extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
   
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
   
     Query query = new TermQuery(new Term("none", "none"));
   

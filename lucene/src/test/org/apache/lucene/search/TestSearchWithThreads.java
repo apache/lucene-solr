@@ -63,7 +63,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
     final long endTime = System.currentTimeMillis();
     if (VERBOSE) System.out.println("BUILD took " + (endTime-startTime));
 
-    final IndexSearcher s = new IndexSearcher(r);
+    final IndexSearcher s = newSearcher(r);
 
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicLong netSearch = new AtomicLong();

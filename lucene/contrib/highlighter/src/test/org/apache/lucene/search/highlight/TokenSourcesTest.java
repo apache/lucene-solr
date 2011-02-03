@@ -113,7 +113,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
         query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
@@ -159,7 +159,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
         query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));

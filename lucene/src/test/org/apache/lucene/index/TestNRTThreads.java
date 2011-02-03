@@ -77,7 +77,9 @@ public class TestNRTThreads extends LuceneTestCase {
           }
         }
 
-        sum += new IndexSearcher(reader).search(new TermQuery(new Term("body", "united")), 10).totalHits;
+        IndexSearcher searcher = newSearcher(reader);
+        sum += searcher.search(new TermQuery(new Term("body", "united")), 10).totalHits;
+        searcher.close();
 
         if (VERBOSE) {
           System.out.println("TEST: warm visited " + sum + " fields");
@@ -336,7 +338,7 @@ public class TestNRTThreads extends LuceneTestCase {
     }
     
     final IndexReader r2 = writer.getReader();
-    final IndexSearcher s = new IndexSearcher(r2);
+    final IndexSearcher s = newSearcher(r2);
     for(String id : delIDs) {
       final TopDocs hits = s.search(new TermQuery(new Term("id", id)), 1);
       if (hits.totalHits != 0) {
@@ -352,6 +354,7 @@ public class TestNRTThreads extends LuceneTestCase {
     assertFalse(writer.anyNonBulkMerges);
     writer.close(false);
     _TestUtil.checkIndex(dir);
+    s.close();
     dir.close();
     _TestUtil.rmDir(tempDir);
     docs.close();
@@ -366,7 +369,7 @@ public class TestNRTThreads extends LuceneTestCase {
   }
 
   private void smokeTestReader(IndexReader r) throws Exception {
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     runQuery(s, new TermQuery(new Term("body", "united")));
     runQuery(s, new TermQuery(new Term("titleTokenized", "states")));
     PhraseQuery pq = new PhraseQuery();

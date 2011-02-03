@@ -44,7 +44,7 @@ public class TestNot extends LuceneTestCase {
     writer.addDocument(d1);
     IndexReader reader = writer.getReader();
 
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
       QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "field", new SimpleAnalyzer(TEST_VERSION_CURRENT));
     Query query = parser.parse("a NOT b");
     //System.out.println(query);

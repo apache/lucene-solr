@@ -178,11 +178,7 @@ public class IndexSearcher extends Searcher {
     } else {
       subSearchers = new IndexSearcher[subReaders.length];
       for (int i = 0; i < subReaders.length; i++) {
-        if (subReaders[i] == r) {
-          subSearchers[i] = this;
-        } else {
-          subSearchers[i] = new IndexSearcher(subReaders[i]);
-        }
+        subSearchers[i] = new IndexSearcher(subReaders[i]);
       }
     }
   }

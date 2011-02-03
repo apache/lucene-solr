@@ -72,7 +72,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     BooleanQuery q = new BooleanQuery();
     q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
 
@@ -109,6 +109,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     dmq.add(pq);
     assertEquals(1, s.search(dmq, 10).totalHits);
     
+    s.close();
     r.close();
     w.close();
     dir.close();
@@ -135,8 +136,9 @@ public class TestBooleanQuery extends LuceneTestCase {
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     
     MultiReader multireader = new MultiReader(reader1, reader2);
-    IndexSearcher searcher = new IndexSearcher(multireader);
+    IndexSearcher searcher = newSearcher(multireader);
     assertEquals(0, searcher.search(qp.parse("+foo -ba*"), 10).totalHits);
+    searcher.close();
     
     final ExecutorService es = Executors.newCachedThreadPool();
     searcher = new IndexSearcher(multireader, es);

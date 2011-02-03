@@ -86,7 +86,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     query = new PhraseQuery();
   }
 
@@ -221,7 +221,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     // valid exact phrase query
     PhraseQuery query = new PhraseQuery();
@@ -262,7 +262,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     PhraseQuery phraseQuery = new PhraseQuery();
     phraseQuery.add(new Term("source", "marketing"));
@@ -301,7 +301,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
     
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     
     termQuery = new TermQuery(new Term("contents","woo"));
     phraseQuery = new PhraseQuery();
@@ -352,7 +352,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    Searcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "firstname"));
     query.add(new Term("field", "lastname"));
@@ -649,7 +649,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     }
 
     IndexReader reader = w.getReader();
-    IndexSearcher s = new IndexSearcher(reader);
+    IndexSearcher s = newSearcher(reader);
     w.close();
 
     // now search

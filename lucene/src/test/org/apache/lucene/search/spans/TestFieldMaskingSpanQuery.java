@@ -111,7 +111,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("last",   "jones")     }));
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
 
   @Override

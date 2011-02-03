@@ -47,7 +47,7 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
     // the clause instead of BQ.
     bq.setMinimumNumberShouldMatch(1);
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     for (int i = 0; i < inOrder.length; i++) {
       TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(3, inOrder[i]);
       assertEquals("org.apache.lucene.search.TopScoreDocCollector$" + actualTSDCClass[i], tdc.getClass().getName());

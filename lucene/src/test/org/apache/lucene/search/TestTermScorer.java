@@ -54,7 +54,7 @@ public class TestTermScorer extends LuceneTestCase {
     writer.optimize();
     indexReader = writer.getReader();
     writer.close();
-    indexSearcher = new IndexSearcher(indexReader);
+    indexSearcher = newSearcher(indexReader);
   }
   
   @Override

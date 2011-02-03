@@ -36,7 +36,7 @@ public class TestRealTime extends LuceneTestCase {
 
     InstantiatedIndex index = new InstantiatedIndex();
     InstantiatedIndexReader reader = new InstantiatedIndexReader(index);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     InstantiatedIndexWriter writer = new InstantiatedIndexWriter(index);
 
     Document doc;

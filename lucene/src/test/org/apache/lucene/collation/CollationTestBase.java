@@ -141,7 +141,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = IndexReader.open(farsiIndex, true);
-    IndexSearcher search = new IndexSearcher(reader);
+    IndexSearcher search = newSearcher(reader);
         
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
     // orders the U+0698 character before the U+0633 character, so the single

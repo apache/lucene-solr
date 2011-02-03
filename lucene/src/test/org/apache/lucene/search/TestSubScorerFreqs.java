@@ -53,7 +53,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       w.addDocument(doc);
     }
 
-    s = new IndexSearcher(w.getReader());
+    s = newSearcher(w.getReader());
     w.close();
   }
 

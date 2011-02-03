@@ -27,22 +27,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.TimeZone;
-
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
@@ -51,6 +47,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockFactory;
@@ -442,14 +439,21 @@ public abstract class LuceneTestCase extends Assert {
             !rogueThreads.containsKey(t) && 
             t != Thread.currentThread() &&
             // TODO: TimeLimitingCollector starts a thread statically.... WTF?!
-            !t.getName().equals("TimeLimitedCollector timer thread")) {
+            !t.getName().equals("TimeLimitedCollector timer thread") &&
+            /* its ok to keep your searcher across test cases */
+            (t.getName().startsWith("LuceneTestCase") && context.startsWith("test method")) == false) {
           System.err.println("WARNING: " + context  + " left thread running: " + t);
           rogueThreads.put(t, true);
           rogueCount++;
-          // wait on the thread to die of natural causes
-          try {
-            t.join(THREAD_STOP_GRACE_MSEC);
-          } catch (InterruptedException e) { e.printStackTrace(); }
+          if (t.getName().startsWith("LuceneTestCase")) {
+            System.err.println("PLEASE CLOSE YOUR INDEXSEARCHERS IN YOUR TEST!!!!");
+            continue;
+          } else {
+            // wait on the thread to die of natural causes
+            try {
+              t.join(THREAD_STOP_GRACE_MSEC);
+            } catch (InterruptedException e) { e.printStackTrace(); }
+          }
           // try to stop the thread:
           t.setUncaughtExceptionHandler(null);
           Thread.setDefaultUncaughtExceptionHandler(null);
@@ -888,6 +892,34 @@ public abstract class LuceneTestCase extends Assert {
     } 
   }
   
+  /** create a new searcher over the reader */
+  public static IndexSearcher newSearcher(IndexReader r) throws IOException {
+    if (random.nextBoolean()) {
+      return new IndexSearcher(r);
+    } else {
+      int threads = 0;
+      final ExecutorService ex = (random.nextBoolean()) ? null 
+          : Executors.newFixedThreadPool(threads = _TestUtil.nextInt(random, 1, 8), 
+                      new NamedThreadFactory("LuceneTestCase"));
+      if (ex != null && VERBOSE) {
+        System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
+      }
+      return new IndexSearcher(r, ex) {
+        @Override
+        public void close() throws IOException {
+          super.close();
+          if (ex != null) {
+            ex.shutdown();
+            try {
+              ex.awaitTermination(1000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+          }
+        }
+      };
+    }
+  }
 
   public String getName() {
     return this.name;
