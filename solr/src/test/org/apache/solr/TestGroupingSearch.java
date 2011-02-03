@@ -526,8 +526,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       Map<String,Object> resultSet = new LinkedHashMap<String,Object>();
       group.put("doclist", resultSet);
       resultSet.put("numFound", grp.docs.size());
-      resultSet.put("start", start);
-
+      resultSet.put("start", group_offset);
       List docs = new ArrayList();
       resultSet.put("docs", docs);
       for (int j=group_offset; j<grp.docs.size(); j++) {
