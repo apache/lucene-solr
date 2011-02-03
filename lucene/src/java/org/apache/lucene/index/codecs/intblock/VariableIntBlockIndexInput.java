@@ -70,7 +70,8 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
   public interface BlockReader {
     public int readBlock() throws IOException;
-    public void seek(long pos) throws IOException;
+    // nocommit -- do we really need?
+    //public void seek(long pos) throws IOException;
   }
 
   public static class Reader extends BulkPostingsEnum.BlockReader {
@@ -80,7 +81,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
     private int offset;
     private long lastBlockFP;
-    private int blockSize;
+    //private int blockSize;                        // nocommit redundant w/ limit?
     private final BlockReader blockReader;
     private int limit;
 
@@ -99,9 +100,10 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
       if (fp != lastBlockFP) {
         // Seek to new block
         in.seek(fp);
-        blockReader.seek(fp);
+        // nocommit -- why?
+        //blockReader.seek(fp);
         lastBlockFP = fp;
-        limit = blockSize = blockReader.readBlock();
+        limit = blockReader.readBlock();
       } else {
         // Seek w/in current block
       }
@@ -115,6 +117,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
       // non-causal, ie must see future int values to
       // encode the current ones.
       while(offset >= limit) {
+        //System.out.println("NON CAUSAL! offset=" + offset + " limit=" + limit);
         offset -= limit;
         fill();
       }
@@ -147,8 +150,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
       // fill -- but we need it to detect seek w/in block
       // case:
       lastBlockFP = in.getFilePointer();
-      blockSize = blockReader.readBlock();
-      return limit = blockSize;
+      return limit = blockReader.readBlock();
     }
   }
 

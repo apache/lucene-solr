@@ -26,6 +26,8 @@ import java.util.Set;
 import org.apache.lucene.index.codecs.bulkvint.BulkVIntCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
+import org.apache.lucene.index.codecs.simple64.Simple64Codec;
+import org.apache.lucene.index.codecs.simple64.Simple64VarIntCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.index.codecs.pfordelta.PatchedFrameOfRefCodec;
@@ -51,7 +53,7 @@ public class CodecProvider {
 
   private final Set<String> knownExtensions = new HashSet<String>();
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "PatchedFrameOfRef", "FrameOfRef", "PatchedFrameOfRef2", "BulkVInt"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "PatchedFrameOfRef", "FrameOfRef", "PatchedFrameOfRef2", "BulkVInt", "Simple64", "Simple64VarInt"};
 
   public synchronized void register(Codec codec) {
     if (codec.name == null) {
@@ -178,5 +180,7 @@ class DefaultCodecProvider extends CodecProvider {
     register(new FrameOfRefCodec());
     register(new PForDeltaFixedIntBlockCodec(128));
     register(new BulkVIntCodec(128));
+    register(new Simple64Codec(128));
+    register(new Simple64VarIntCodec());
   }
 }

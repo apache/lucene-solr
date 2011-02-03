@@ -123,6 +123,11 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
       lastUpto = upto;
       lastFP = fp;
     }
+
+    @Override
+    public String toString() {
+      return "VarIntBlock.Output fp=" + fp + " upto=" + upto;
+    }
   }
 
   private boolean abort;

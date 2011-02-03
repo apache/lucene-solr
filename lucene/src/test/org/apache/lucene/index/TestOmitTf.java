@@ -257,6 +257,7 @@ public class TestOmitTf extends LuceneTestCase {
             setSimilarityProvider(new SimpleSimilarity()).
             setMergePolicy(newLogMergePolicy(2))
     );
+    writer.setInfoStream(VERBOSE ? System.out : null);
         
     StringBuilder sb = new StringBuilder(265);
     String term = "term";
