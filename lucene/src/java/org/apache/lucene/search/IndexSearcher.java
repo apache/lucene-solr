@@ -373,8 +373,10 @@ public class IndexSearcher {
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
       for (final TopDocs topDocs : runner) {
-        totalHits += topDocs.totalHits;
-        maxScore = Math.max(maxScore, topDocs.getMaxScore());
+        if(topDocs.totalHits != 0) {
+          totalHits += topDocs.totalHits;
+          maxScore = Math.max(maxScore, topDocs.getMaxScore());
+        }
       }
 
       final ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
@@ -451,8 +453,10 @@ public class IndexSearcher {
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
       for (final TopFieldDocs topFieldDocs : runner) {
-        totalHits += topFieldDocs.totalHits;
-        maxScore = Math.max(maxScore, topFieldDocs.getMaxScore());
+        if (topFieldDocs.totalHits != 0) {
+          totalHits += topFieldDocs.totalHits;
+          maxScore = Math.max(maxScore, topFieldDocs.getMaxScore());
+        }
       }
       final ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
       for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
