@@ -658,6 +658,10 @@ Bug Fixes
 * SOLR-2156: SnapPuller fails to clean Old Index Directories on Full Copy
   (Jayendra Patil via yonik)
 
+* SOLR-96: Fix XML parsing in XMLUpdateRequestHandler and
+  DocumentAnalysisRequestHandler to respect charset from XML file and only
+  use HTTP header's "Content-Type" as a "hint". (Uwe Schindler)
+
 Other Changes
 ----------------------
 
