@@ -108,11 +108,13 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
    * success or failure from an XML formated Update (from the Reader)
    *
    * @since solr 1.2
-   * @deprecated Direct updates fro ma Reader, as well as the response 
+   * @deprecated Direct updates from a Reader, as well as the response 
    *             format produced by this method, have been deprecated 
    *             and will be removed in future versions.  Any code using
    *             this method should be changed to use {@link #handleRequest} 
    *             method with a ContentStream. 
+   *             This metrhod is also broken regarding XML charset detection,
+   *             as XML files need to be parsed as InputStream and not as Reader.
    */
   @Deprecated
   public void doLegacyUpdate(Reader input, Writer output) {

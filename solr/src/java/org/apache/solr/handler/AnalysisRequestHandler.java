@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -44,6 +45,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collection;
@@ -89,14 +91,19 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams != null) {
       for (ContentStream stream : req.getContentStreams()) {
-        Reader reader = stream.getReader();
+        InputStream is = null;
+        XMLStreamReader parser = null;
         try {
-          XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
+          is = stream.getStream();
+          final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+          parser = (charset == null) ?
+            inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
+
           NamedList<Object> result = processContent(parser, req.getSchema());
           rsp.add("response", result);
-        }
-        finally {
-          IOUtils.closeQuietly(reader);
+        } finally {
+          if (parser != null) parser.close();
+          IOUtils.closeQuietly(is);
         }
       }
     }
