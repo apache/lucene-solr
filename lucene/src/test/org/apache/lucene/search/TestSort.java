@@ -48,7 +48,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Ignore;
 
 /**
  * Unit tests for sorting code.
@@ -652,7 +651,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   // test that the relevancy scores are the same even if
   // hits are sorted
-  @Ignore("Fix me! Fails if one of the subs is a threaded indexsearcher")
   public void testNormalizedScores() throws Exception {
 
     // capture relevancy scores
