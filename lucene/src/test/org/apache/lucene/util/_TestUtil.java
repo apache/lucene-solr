@@ -17,13 +17,20 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Enumeration;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.junit.Assert;
 
@@ -59,6 +66,49 @@ public class _TestUtil {
     }
   }
 
+  /** 
+   * Convenience method: Unzip zipName + ".zip" under destDir, removing destDir first 
+   */
+  public static void unzip(File zipName, File destDir) throws IOException {
+    
+    ZipFile zipFile = new ZipFile(zipName);
+    
+    Enumeration<? extends ZipEntry> entries = zipFile.entries();
+    
+    rmDir(destDir);
+    
+    destDir.mkdir();
+    
+    while (entries.hasMoreElements()) {
+      ZipEntry entry = entries.nextElement();
+      
+      InputStream in = zipFile.getInputStream(entry);
+      File targetFile = new File(destDir, entry.getName());
+      if (entry.isDirectory()) {
+        // allow unzipping with directory structure
+        targetFile.mkdirs();
+      } else {
+        if (targetFile.getParentFile()!=null) {
+          // be on the safe side: do not rely on that directories are always extracted
+          // before their children (although this makes sense, but is it guaranteed?)
+          targetFile.getParentFile().mkdirs();   
+        }
+        OutputStream out = new BufferedOutputStream(new FileOutputStream(targetFile));
+        
+        byte[] buffer = new byte[8192];
+        int len;
+        while((len = in.read(buffer)) >= 0) {
+          out.write(buffer, 0, len);
+        }
+        
+        in.close();
+        out.close();
+      }
+    }
+    
+    zipFile.close();
+  }
+  
   public static void syncConcurrentMerges(IndexWriter writer) {
     syncConcurrentMerges(writer.getConfig().getMergeScheduler());
   }
