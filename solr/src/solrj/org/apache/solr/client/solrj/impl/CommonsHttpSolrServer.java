@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -335,11 +334,11 @@ public class CommonsHttpSolrServer extends SolrServer
                     @Override
                     protected void sendData(OutputStream out)
                         throws IOException {
-                      Reader reader = c.getReader();
+                      InputStream in = c.getStream();
                       try {
-                        IOUtils.copy(reader, out);
+                        IOUtils.copy(in, out);
                       } finally {
-                        reader.close();
+                        in.close();
                       }
                     }
                   });
