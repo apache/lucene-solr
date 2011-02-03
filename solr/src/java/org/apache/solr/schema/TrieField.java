@@ -123,6 +123,8 @@ public class TrieField extends FieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
+    field.checkSortability();
+
     int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
     Object missingValue = null;
     boolean sortMissingLast  = on( SORT_MISSING_LAST,  properties );
