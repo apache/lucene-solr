@@ -129,8 +129,22 @@ class CollectionTester {
 
     // generic fallback
     if (!expected.equals(val)) {
-      setErr("mismatch: '" + expected + "'!='" + val + "'");
-      return false;
+
+      // make an exception for some numerics
+      if ((expected instanceof Integer && val instanceof Long || expected instanceof Long && val instanceof Integer)
+          && ((Number)expected).longValue() == ((Number)val).longValue())
+      {
+        return true;
+      } else if ((expected instanceof Float && val instanceof Double || expected instanceof Double && val instanceof Float)) {
+        double a = ((Number)expected).doubleValue();
+        double b = ((Number)val).doubleValue();
+        if (Double.compare(a,b) == 0) return true;
+        if (Math.abs(a-b) < 1e-5) return true;
+        return false;
+      } else {
+        setErr("mismatch: '" + expected + "'!='" + val + "'");
+        return false;
+      }
     }
 
     // setErr("unknown expected type " + expected.getClass().getName());
