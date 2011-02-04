@@ -185,6 +185,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     try {
       Process process = Runtime.getRuntime().exec(cmd);
       in = new DataInputStream( process.getInputStream() );
+      // use default charset from locale here, because the command invoked also uses the default locale:
       return IOUtils.toString( in );
     }
     catch( Exception ex ) {

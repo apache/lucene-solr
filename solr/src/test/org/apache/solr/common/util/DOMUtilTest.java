@@ -17,7 +17,7 @@
 
 package org.apache.solr.common.util;
 
-import java.io.ByteArrayInputStream;
+import java.io.StringReader;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -27,6 +27,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -85,6 +86,6 @@ public class DOMUtilTest extends LuceneTestCase {
   }
   
   public Document getDocument( String xml ) throws Exception {
-    return builder.parse( new ByteArrayInputStream( xml.getBytes() ) );
+    return builder.parse(new InputSource(new StringReader(xml)));
   }
 }

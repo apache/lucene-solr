@@ -210,7 +210,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
     try {
       InputStream input = core.getResourceLoader().openResource(path);
-      return IOUtils.toString( input );
+      return IOUtils.toString( input, "UTF-8" );
     }
     catch( Exception ex ) {} // ignore it
     return "";

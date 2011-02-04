@@ -86,23 +86,23 @@ public class JettyWebappTest extends LuceneTestCase
     // sure they compile ok
     
     String adminPath = "http://localhost:"+port+context+"/";
-    String html = IOUtils.toString( new URL(adminPath).openStream() );
-    assertNotNull( html ); // real error will be an exception
+    byte[] bytes = IOUtils.toByteArray( new URL(adminPath).openStream() );
+    assertNotNull( bytes ); // real error will be an exception
 
     adminPath += "admin/";
-    html = IOUtils.toString( new URL(adminPath).openStream() );
-    assertNotNull( html ); // real error will be an exception
+    bytes = IOUtils.toByteArray( new URL(adminPath).openStream() );
+    assertNotNull( bytes ); // real error will be an exception
 
     // analysis
-    html = IOUtils.toString( new URL(adminPath+"analysis.jsp").openStream() );
-    assertNotNull( html ); // real error will be an exception
+    bytes = IOUtils.toByteArray( new URL(adminPath+"analysis.jsp").openStream() );
+    assertNotNull( bytes ); // real error will be an exception
 
     // schema browser
-    html = IOUtils.toString( new URL(adminPath+"schema.jsp").openStream() );
-    assertNotNull( html ); // real error will be an exception
+    bytes = IOUtils.toByteArray( new URL(adminPath+"schema.jsp").openStream() );
+    assertNotNull( bytes ); // real error will be an exception
 
     // schema browser
-    html = IOUtils.toString( new URL(adminPath+"threaddump.jsp").openStream() );
-    assertNotNull( html ); // real error will be an exception
+    bytes = IOUtils.toByteArray( new URL(adminPath+"threaddump.jsp").openStream() );
+    assertNotNull( bytes ); // real error will be an exception
   }
 }

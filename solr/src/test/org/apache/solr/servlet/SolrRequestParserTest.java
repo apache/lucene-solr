@@ -74,7 +74,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     List<ContentStream> streams = new ArrayList<ContentStream>();
     SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
-    assertEquals( body1, IOUtils.toString( streams.get(0).getStream() ) );
+    assertEquals( body1, IOUtils.toString( streams.get(0).getReader() ) );
     req.close();
 
     // Now add three and make sure they come out ok
@@ -87,9 +87,9 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     input.add( body1 );
     input.add( body2 );
     input.add( body3 );
-    output.add( IOUtils.toString( streams.get(0).getStream() ) );
-    output.add( IOUtils.toString( streams.get(1).getStream() ) );
-    output.add( IOUtils.toString( streams.get(2).getStream() ) );
+    output.add( IOUtils.toString( streams.get(0).getReader() ) );
+    output.add( IOUtils.toString( streams.get(1).getReader() ) );
+    output.add( IOUtils.toString( streams.get(2).getReader() ) );
     // sort them so the output is consistent
     Collections.sort( input );
     Collections.sort( output );
@@ -112,13 +112,13 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   {
     boolean ok = false;
     String url = "http://www.apache.org/dist/lucene/solr/";
-    String txt = null;
+    byte[] bytes = null;
     try {
       URLConnection connection = new URL(url).openConnection();
       connection.setConnectTimeout(5000);
       connection.setReadTimeout(5000);
       connection.connect();
-      txt = IOUtils.toString( connection.getInputStream());
+      bytes = IOUtils.toByteArray( connection.getInputStream());
     }
     catch( Exception ex ) {
       assumeNoException("Unable to connect to " + url + " to run the test.", ex);
@@ -134,7 +134,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     List<ContentStream> streams = new ArrayList<ContentStream>();
     SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
-    assertEquals( txt, IOUtils.toString( streams.get(0).getStream() ) );
+    assertArrayEquals( bytes, IOUtils.toByteArray( streams.get(0).getStream() ) );
     req.close();
   }
   
