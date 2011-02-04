@@ -873,7 +873,7 @@ public class Simple64 {
       decompressed[outOffset+17] = (int) ((s9 >>> 38) & BITS_2_MASK);
       decompressed[outOffset+18] = (int) ((s9 >>> 40) & BITS_2_MASK);
       decompressed[outOffset+19] = (int) ((s9 >>> 42) & BITS_2_MASK);
-      decompressed[outOffset+20] = (int) ((s9 >> 44) & BITS_2_MASK);
+      decompressed[outOffset+20] = (int) ((s9 >>> 44) & BITS_2_MASK);
       decompressed[outOffset+21] = (int) ((s9 >>> 46) & BITS_2_MASK);
       decompressed[outOffset+22] = (int) ((s9 >>> 48) & BITS_2_MASK);
       decompressed[outOffset+23] = (int) ((s9 >>> 50) & BITS_2_MASK);
@@ -905,7 +905,7 @@ public class Simple64 {
       decompressed[outOffset+17] = (int) ((s9 >>> 21) & BITS_1_MASK);
       decompressed[outOffset+18] = (int) ((s9 >>> 22) & BITS_1_MASK);
       decompressed[outOffset+19] = (int) ((s9 >>> 23) & BITS_1_MASK);
-      decompressed[outOffset+20] = (int) ((s9 >> 24) & BITS_1_MASK);
+      decompressed[outOffset+20] = (int) ((s9 >>> 24) & BITS_1_MASK);
       decompressed[outOffset+21] = (int) ((s9 >>> 25) & BITS_1_MASK);
       decompressed[outOffset+22] = (int) ((s9 >>> 26) & BITS_1_MASK);
       decompressed[outOffset+23] = (int) ((s9 >>> 27) & BITS_1_MASK);
@@ -915,7 +915,7 @@ public class Simple64 {
       decompressed[outOffset+27] = (int) ((s9 >>> 31) & BITS_1_MASK);
       decompressed[outOffset+28] = (int) ((s9 >>> 32) & BITS_1_MASK);
       decompressed[outOffset+29] = (int) ((s9 >>> 33) & BITS_1_MASK);
-      decompressed[outOffset+30] = (int) ((s9 >> 34) & BITS_1_MASK);
+      decompressed[outOffset+30] = (int) ((s9 >>> 34) & BITS_1_MASK);
       decompressed[outOffset+31] = (int) ((s9 >>> 35) & BITS_1_MASK);
       decompressed[outOffset+32] = (int) ((s9 >>> 36) & BITS_1_MASK);
       decompressed[outOffset+33] = (int) ((s9 >>> 37) & BITS_1_MASK);
@@ -935,7 +935,7 @@ public class Simple64 {
       decompressed[outOffset+47] = (int) ((s9 >>> 51) & BITS_1_MASK);
       decompressed[outOffset+48] = (int) ((s9 >>> 52) & BITS_1_MASK);
       decompressed[outOffset+49] = (int) ((s9 >>> 53) & BITS_1_MASK);
-      decompressed[outOffset+50] = (int) ((s9 >> 54) & BITS_1_MASK);
+      decompressed[outOffset+50] = (int) ((s9 >>> 54) & BITS_1_MASK);
       decompressed[outOffset+51] = (int) ((s9 >>> 55) & BITS_1_MASK);
       decompressed[outOffset+52] = (int) ((s9 >>> 56) & BITS_1_MASK);
       decompressed[outOffset+53] = (int) ((s9 >>> 57) & BITS_1_MASK);
