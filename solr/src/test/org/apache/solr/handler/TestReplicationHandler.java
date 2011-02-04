@@ -656,7 +656,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         try {
           url = new URL(masterUrl);
           stream = url.openStream();
-          response = IOUtils.toString(stream);
+          response = IOUtils.toString(stream, "UTF-8");
           if(response.contains("<str name=\"status\">success</str>")) {
             success = true;
           }

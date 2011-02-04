@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URL;
+import java.net.URLConnection;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -41,7 +42,7 @@ public class ContentStreamTest extends LuceneTestCase
     String input = "aads ghaskdgasgldj asl sadg ajdsg &jag # @ hjsakg hsakdg hjkas s";
     ContentStreamBase stream = new ContentStreamBase.StringStream( input );
     assertEquals( input.length(), stream.getSize().intValue() );
-    assertEquals( input, IOUtils.toString( stream.getStream() ) );
+    assertEquals( input, IOUtils.toString( stream.getStream(), "UTF-8" ) );
     assertEquals( input, IOUtils.toString( stream.getReader() ) );
   }
 
@@ -63,33 +64,40 @@ public class ContentStreamTest extends LuceneTestCase
 
   public void testURLStream() throws IOException 
   {
-    String content = null;
+    byte[] content = null;
+    String contentType = null;
     URL url = new URL( "http://svn.apache.org/repos/asf/lucene/dev/trunk/" );
     InputStream in = url.openStream();
     try {
-      content = IOUtils.toString( in );
+      URLConnection conn = url.openConnection();
+      in = conn.getInputStream();
+      contentType = conn.getContentType();
+      content = IOUtils.toByteArray(in);
     } 
     finally {
       IOUtils.closeQuietly(in);
     }
     
-    assertTrue( content.length() > 10 ); // found something...
+    assertTrue( content.length > 10 ); // found something...
     
     ContentStreamBase stream = new ContentStreamBase.URLStream( url );
-    assertEquals( content.length(), stream.getSize().intValue() );
+    assertEquals( content.length, stream.getSize().intValue() );
     
     // Test the stream
     in = stream.getStream();
     try {
       assertTrue( IOUtils.contentEquals( 
-          new ByteArrayInputStream( content.getBytes() ), in ) );
+          new ByteArrayInputStream(content), in ) );
     } 
     finally {
       IOUtils.closeQuietly(in);
     }
 
+    String charset = ContentStreamBase.getCharsetFromContentType(contentType);
+    if (charset == null)
+      charset = ContentStreamBase.DEFAULT_CHARSET;
     // Re-open the stream and this time use a reader
     stream = new ContentStreamBase.URLStream( url );
-    assertTrue( IOUtils.contentEquals( new StringReader( content ), stream.getReader() ) );
+    assertTrue( IOUtils.contentEquals( new StringReader(new String(content, charset)), stream.getReader() ) );
   }
 }

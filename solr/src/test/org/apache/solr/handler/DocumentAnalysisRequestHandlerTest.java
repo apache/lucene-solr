@@ -177,7 +177,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       "</docs>"
     ).getBytes("ISO-8859-1");
     
-    // we declare a content stream without charset:
+    // we declare a content stream with charset:
     final ContentStream cs = new ByteStream(xmlBytes, "application/xml; charset=ISO-8859-1");
     
     ModifiableSolrParams params = new ModifiableSolrParams();

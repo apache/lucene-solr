@@ -25,6 +25,7 @@ import org.apache.commons.collections.ExtendedProperties;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -56,7 +57,11 @@ public class SolrParamResourceLoader extends ResourceLoader {
   @Override
   public InputStream getResourceStream(String s) throws ResourceNotFoundException {
     String template = templates.get(s);
-    return template == null ? null : new ByteArrayInputStream(template.getBytes());
+    try {
+      return template == null ? null : new ByteArrayInputStream(template.getBytes("UTF-8"));
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e); // may not happen
+    }
   }
 
   @Override

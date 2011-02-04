@@ -129,7 +129,7 @@ public class CoreContainer
         cores.load(solrHome, fconf);
       } else {
         cores.defaultAbortOnConfigError = abortOnConfigurationError;
-        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes()));
+        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes("UTF-8")));
         cores.configFile = fconf;
       }
       setAbortOnConfigurationError(0 < cores.numCoresAbortOnConfigError);
