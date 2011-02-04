@@ -43,7 +43,7 @@ public class ContentStreamTest extends LuceneTestCase
     String input = "aads ghaskdgasgldj asl sadg ajdsg &jag # @ hjsakg hsakdg hjkas s";
     ContentStreamBase stream = new ContentStreamBase.StringStream( input );
     assertEquals( input.length(), stream.getSize().intValue() );
-    assertEquals( input, IOUtils.toString( stream.getStream() ) );
+    assertEquals( input, IOUtils.toString( stream.getStream(), "UTF-8" ) );
     assertEquals( input, IOUtils.toString( stream.getReader() ) );
   }
 
