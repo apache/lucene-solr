@@ -580,8 +580,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     String cmp;
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      //log.info("Mismatched responses:\n" + a + "\n" + b);
-      System.err.println("Mismatched responses:\n" + a + "\n" + b); // :nocommit:
+      log.info("Mismatched responses:\n" + a + "\n" + b);
       TestCase.fail(cmp);
     }
   }
