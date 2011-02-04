@@ -378,7 +378,7 @@
 
     <fieldType name="text_path" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
-        <tokenizer class="solr.PathTokenizerFactory"/>
+        <tokenizer class="solr.PathHierarchyTokenizerFactory"/>
       </analyzer>
     </fieldType>
 
