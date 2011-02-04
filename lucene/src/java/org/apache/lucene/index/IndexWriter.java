@@ -1829,6 +1829,18 @@ public class IndexWriter implements Closeable {
     }
   }
 
+  /** Expert: to be used by a {@link MergePolicy} to avoid
+   *  selecting merges for segments already being merged.
+   *  The returned collection is not cloned, and thus is
+   *  only safe to access if you hold IndexWriter's lock
+   *  (which you do when IndexWriter invokes the
+   *  MergePolicy).
+   *
+   *  <p>Do not alter the returned collection! */
+  public synchronized Collection<SegmentInfo> getMergingSegments() {
+    return mergingSegments;
+  }
+
   /** Expert: the {@link MergeScheduler} calls this method
    *  to retrieve the next merge requested by the
    *  MergePolicy */
