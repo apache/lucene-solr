@@ -41,6 +41,7 @@ public class BoolField extends FieldType {
 
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
+    field.checkSortability();
     return getStringSort(field,reverse);
   }
 

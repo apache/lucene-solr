@@ -70,6 +70,7 @@ public class TrieDateField extends DateField {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
+    field.checkSortability();
     return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top);
   }
 

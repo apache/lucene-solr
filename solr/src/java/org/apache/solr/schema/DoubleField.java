@@ -39,6 +39,7 @@ public class DoubleField extends FieldType {
   /////////////////////////////////////////////////////////////
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
+    field.checkSortability();
     return new SortField(field.name, SortField.DOUBLE, reverse);
   }
 

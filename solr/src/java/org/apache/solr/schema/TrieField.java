@@ -114,6 +114,8 @@ public class TrieField extends FieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
+    field.checkSortability();
+
     switch (type) {
       case INTEGER:
         return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top);

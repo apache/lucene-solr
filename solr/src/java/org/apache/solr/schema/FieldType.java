@@ -462,13 +462,17 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Returns the SortField instance that should be used to sort fields
    * of this type.
+   * @see SchemaField#checkSortability
    */
   public abstract SortField getSortField(SchemaField field, boolean top);
 
   /**
-   * Utility usable by subclasses when they want to get basic String sorting.
+   * Utility usable by subclasses when they want to get basic String sorting 
+   * using common checks.
+   * @see SchemaField#checkSortability
    */
   protected SortField getStringSort(SchemaField field, boolean reverse) {
+    field.checkSortability();
     return Sorting.getStringSortField(field.name, reverse, field.sortMissingLast(),field.sortMissingFirst());
   }
 

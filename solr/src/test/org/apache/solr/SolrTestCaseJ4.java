@@ -649,4 +649,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return new File(base, "solr/").getAbsolutePath();
   }
+
+  public static Throwable getRootCause(Throwable t) {
+    Throwable result = t;
+    for (Throwable cause = t; null != cause; cause = cause.getCause()) {
+      result = cause;
+    }
+    return result;
+  }
 }

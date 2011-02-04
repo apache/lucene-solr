@@ -120,7 +120,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    */
   public abstract void doTest() throws Exception;
 
-  public static String[] fieldNames = new String[]{"n_ti", "n_f", "n_tf", "n_d", "n_td", "n_l", "n_tl", "n_dt", "n_tdt"};
+  public static String[] fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
   public static RandVal[] randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
 
   protected String[] getFieldNames() {
@@ -521,7 +521,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     String cmp;
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      log.info("Mismatched responses:\n" + a + "\n" + b);
+      //log.info("Mismatched responses:\n" + a + "\n" + b);
+      System.err.println("Mismatched responses:\n" + a + "\n" + b); // :nocommit:
       TestCase.fail(cmp);
     }
   }

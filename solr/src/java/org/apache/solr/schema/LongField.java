@@ -39,7 +39,7 @@ public class LongField extends FieldType {
 
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
-
+    field.checkSortability();
     return new SortField(field.name,SortField.LONG, reverse);
   }
 
