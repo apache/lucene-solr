@@ -29,6 +29,15 @@ import java.util.Set;
 import java.io.IOException;
 
 /**
+ * Factory for {@link StopFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_stop" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.StopFilterFactory" ignoreCase="true"
+ *             words="stopwords.txt" enablePositionIncrements="true"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  * @version $Id$
  */
 public class StopFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {

@@ -61,6 +61,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * The {@link CommonsHttpSolrServer} uses the Apache Commons HTTP Client to connect to solr. 
+ * <pre class="prettyprint" >SolrServer server = new CommonsHttpSolrServer( url );</pre>
  * 
  * @version $Id$
  * @since solr 1.3
