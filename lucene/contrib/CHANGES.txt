@@ -255,6 +255,9 @@ New features
  * LUCENE-2842: Add analyzer for Galician. Also adds the RSLP (Orengo) stemmer
    for Portuguese.  (Robert Muir)
 
+ * SOLR-1057: Add PathHierarchyTokenizer that represents file path hierarchies as synonyms of
+   /something, /something/something, /something/something/else. (Ryan McKinley, Koji Sekiguchi)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

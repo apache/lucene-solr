@@ -262,6 +262,8 @@ New Features
 
 * SOLR-860: Add debug output for MoreLikeThis. (koji)
 
+* SOLR-1057: Add PathHierarchyTokenizerFactory. (ryan, koji)
+
 Optimizations
 ----------------------
 
