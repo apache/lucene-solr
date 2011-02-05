@@ -18,6 +18,8 @@
 -->
 
 <project name="solr" default="usage" basedir="." xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+  <property name="solr-path" value="." />
 	
   <import file="common-build.xml"/>
   

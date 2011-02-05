@@ -46,6 +46,13 @@ import java.util.Set;
  * <p/>
  * This engine is experimental.  Output from this engine is subject to change in future releases.
  *
+ * <pre class="prettyprint" >
+ * &lt;searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering"&gt;
+ *   &lt;lst name="engine"&gt;
+ *     &lt;str name="name"&gt;default&lt;/str&gt;
+ *     &lt;str name="carrot.algorithm"&gt;org.carrot2.clustering.lingo.LingoClusteringAlgorithm&lt;/str&gt;
+ *   &lt;/lst&gt;
+ * &lt;/searchComponent&gt;</pre>
  */
 public class ClusteringComponent extends SearchComponent implements SolrCoreAware {
   private transient static Logger log = LoggerFactory.getLogger(ClusteringComponent.class);

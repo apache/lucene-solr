@@ -1027,6 +1027,9 @@ Documentation
 * LUCENE-2625: Add a note to IndexReader.termDocs() with additional verbiage
   that the TermEnum must be seeked since it is unpositioned.
   (Adriano Crestani via Robert Muir)
+
+* LUCENE-2894: Use google-code-prettify for syntax highlighting in javadoc.
+  (Koji Sekiguchi)
   
 ================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
 

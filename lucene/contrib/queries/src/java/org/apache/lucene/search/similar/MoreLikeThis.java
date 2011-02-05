@@ -92,20 +92,20 @@ import org.apache.lucene.util.PriorityQueue;
  * if you want pseudo code, the simplest possible usage is as follows. The bold
  * fragment is specific to this class.
  *
- * <code><pre>
+ * <pre class="prettyprint">
  *
  * IndexReader ir = ...
  * IndexSearcher is = ...
- * <b>
+ * 
  * MoreLikeThis mlt = new MoreLikeThis(ir);
- * Reader target = ... </b><em>// orig source of doc you want to find similarities to</em><b>
+ * Reader target = ... // orig source of doc you want to find similarities to
  * Query query = mlt.like( target);
- * </b>
+ * 
  * Hits hits = is.search(query);
- * <em>// now the usual iteration thru 'hits' - the only thing to watch for is to make sure
- * you ignore the doc if it matches your 'target' document, as it should be similar to itself </em>
+ * // now the usual iteration thru 'hits' - the only thing to watch for is to make sure
+ * //you ignore the doc if it matches your 'target' document, as it should be similar to itself
  *
- * </pre></code>
+ * </pre>
  *
  * Thus you:
  * <ol>

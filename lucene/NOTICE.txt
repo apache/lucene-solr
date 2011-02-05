@@ -27,3 +27,6 @@ The class org.apache.lucene.SorterTemplate was inspired by CGLIB's class with
 the same name. The implementation part is mainly done using pre-existing
 Lucene sorting code. In-place stable mergesort was borrowed from CGLIB,
 which is Apache-licensed.
+
+The Google Code Prettify is Apache License 2.0.
+See http://code.google.com/p/google-code-prettify/

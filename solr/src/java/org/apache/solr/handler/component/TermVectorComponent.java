@@ -61,6 +61,20 @@ import java.util.Map;
  * term, frequency, position, offset, IDF.
  * <p/>
  * <b>Note</b> Returning IDF can be expensive.
+ * 
+ * <pre class="prettyprint">
+ * &lt;searchComponent name="tvComponent" class="solr.TermVectorComponent"/&gt;
+ * 
+ * &lt;requestHandler name="/terms" class="solr.SearchHandler"&gt;
+ *   &lt;lst name="defaults"&gt;
+ *     &lt;bool name="tv"&gt;true&lt;/bool&gt;
+ *   &lt;/lst&gt;
+ *   &lt;arr name="last-component"&gt;
+ *     &lt;str&gt;tvComponent&lt;/str&gt;
+ *   &lt;/arr&gt;
+ * &lt;/requestHandler&gt;</pre>
+ *
+ * @version $Id$
  */
 public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
 

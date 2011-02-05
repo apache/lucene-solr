@@ -41,9 +41,22 @@ import java.util.regex.Pattern;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
+ * 
+ * <pre class="prettyprint">
+ * &lt;searchComponent name="termsComponent" class="solr.TermsComponent"/&gt;
+ * 
+ * &lt;requestHandler name="/terms" class="solr.SearchHandler"&gt;
+ *   &lt;lst name="defaults"&gt;
+ *     &lt;bool name="terms"&gt;true&lt;/bool&gt;
+ *   &lt;/lst&gt;
+ *   &lt;arr name="components"&gt;
+ *     &lt;str&gt;termsComponent&lt;/str&gt;
+ *   &lt;/arr&gt;
+ * &lt;/requestHandler&gt;</pre>
  *
  * @see org.apache.solr.common.params.TermsParams
  *      See Lucene's TermEnum class
+ * @version $Id$
  */
 public class TermsComponent extends SearchComponent {
   public static final int UNLIMITED_MAX_COUNT = -1;
