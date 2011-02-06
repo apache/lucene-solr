@@ -27,6 +27,7 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.lucene.util.automaton.Transition;
+import org.apache.lucene.util.automaton.UTF32ToUTF8;
 
 /**
  * A FilteredTermsEnum that enumerates terms based upon what is accepted by a
@@ -46,8 +47,6 @@ import org.apache.lucene.util.automaton.Transition;
  * @lucene.experimental
  */
 public class AutomatonTermsEnum extends FilteredTermsEnum {
-  // the object-oriented form of the DFA
-  private final Automaton automaton;
   // a tableized array-based form of the DFA
   private final ByteRunAutomaton runAutomaton;
   // common suffix of the automaton
@@ -71,54 +70,26 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   private final Comparator<BytesRef> termComp;
 
   /**
-   * Expert ctor:
    * Construct an enumerator based upon an automaton, enumerating the specified
    * field, working on a supplied TermsEnum
    * <p>
    * @lucene.experimental 
    * <p>
-   * @param runAutomaton pre-compiled ByteRunAutomaton
-   * @param finite true if the automaton accepts a finite language
+   * @param compiled CompiledAutomaton
    */
-  public AutomatonTermsEnum(ByteRunAutomaton runAutomaton,
-                     TermsEnum tenum,
-                     boolean finite, BytesRef commonSuffixRef)
-      throws IOException {
+  public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) throws IOException {
     super(tenum);
-    this.automaton = runAutomaton.getAutomaton();
-    this.finite = finite;
+    this.finite = compiled.finite;
+    this.runAutomaton = compiled.runAutomaton;
+    this.commonSuffixRef = compiled.commonSuffixRef;
+    this.allTransitions = compiled.sortedTransitions;
 
-    this.runAutomaton = runAutomaton;
-    if (finite) {
-      // don't use suffix w/ finite DFAs
-      this.commonSuffixRef = null;
-    } else if (commonSuffixRef == null) {
-      // compute now
-      this.commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(automaton);
-    } else {
-      // precomputed
-      this.commonSuffixRef = commonSuffixRef;
-    }
-
-    // build a cache of sorted transitions for every state
-    allTransitions = this.automaton.getSortedTransitions();
     // used for path tracking, where each bit is a numbered state.
     visited = new long[runAutomaton.getSize()];
 
     termComp = getComparator();
   }
   
-  /**
-   * Construct an enumerator based upon an automaton, enumerating the specified
-   * field, working on a supplied TermsEnum
-   * <p>
-   * It will automatically calculate whether or not the automaton is finite
-   */
-  public AutomatonTermsEnum(Automaton automaton, TermsEnum tenum)
-    throws IOException {
-    this(new ByteRunAutomaton(automaton), tenum, SpecialOperations.isFinite(automaton), null);
-  }
- 
   /**
    * Returns true if the term matches the automaton. Also stashes away the term
    * to assist with smart enumeration.
@@ -349,5 +320,27 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       }
     }
     return -1; /* all solutions exhausted */
+  }
+  
+  /**
+   * immutable class with everything this enum needs.
+   */
+  public static class CompiledAutomaton {
+    public final ByteRunAutomaton runAutomaton;
+    public final Transition[][] sortedTransitions;
+    public final BytesRef commonSuffixRef;
+    public final boolean finite;
+    
+    public CompiledAutomaton(Automaton automaton, boolean finite) {
+      Automaton utf8 = new UTF32ToUTF8().convert(automaton);
+      runAutomaton = new ByteRunAutomaton(utf8, true);
+      sortedTransitions = utf8.getSortedTransitions();
+      this.finite = finite;
+      if (finite) {
+        commonSuffixRef = null;
+      } else {
+        commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(utf8);
+      }
+    }
   }
 }
