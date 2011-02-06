@@ -25,7 +25,7 @@
 
   <dirname file="${ant.file.common}" property="common.dir"/>
 
-  <property name="dev-tools.dir" value="../dev-tools"/>
+  <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
   <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
 
   <!-- Give user a chance to override without editing this file
