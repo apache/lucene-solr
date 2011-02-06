@@ -39,13 +39,6 @@
 
   <import file="../../contrib-build.xml" />
 
-  <path id="test.classpath">
-    <path refid="classpath"/>
-    <pathelement location="../../../build/classes/test/"/>
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/java"/>
-  </path>
-
   <target name="get-db-jar" unless="db.jar.exists">
     <mkdir dir="lib" />
     <get src="http://downloads.osafoundation.org/db/db-${db.version}.jar"

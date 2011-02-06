@@ -17,7 +17,8 @@
     limitations under the License.
  -->
 
-<project name="core" default="default" basedir=".">
+<project name="core" default="default" basedir="."
+         xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <property name="junit.includes" value="**/Test*.java"/>
 
@@ -32,12 +33,13 @@
   	<path refid="classpath"/>
     <path refid="junit-path"/>
     <path refid="ant-path"/>
+    <pathelement location="${build.dir}/classes/test-framework"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>
 
-
   <path id="junit.classpath">
     <path refid="junit-path"/>
+    <pathelement location="${build.dir}/classes/test-framework"/>
     <pathelement location="${build.dir}/classes/test"/>
     <pathelement location="${build.dir}/classes/java"/>
     <pathelement path="${java.class.path}"/>
@@ -153,7 +155,7 @@
   </target>
 
   <target name="javadocs" description="Generate javadoc" 
-          depends="javadocs-all, javadocs-core, javadocs-contrib">
+          depends="javadocs-all, javadocs-core, javadocs-contrib, javadocs-test-framework">
     <echo file="${javadoc.dir}/index.html" append="false">
 <![CDATA[<html><head><title>${Name} ${version} Javadoc Index</title></head>
 <body>
@@ -259,7 +261,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, jar-core-test, javadocs, build-contrib, init-dist, changes-to-html"/>
+  <target name="package" depends="jar-core, jar-test-framework, javadocs, build-contrib, init-dist, changes-to-html"/>
 
   <target name="nightly" depends="test, package-tgz">
   </target>
@@ -389,7 +391,7 @@
 
   <target name="dist-all" depends="dist, dist-src"/>
 
-  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package, jar-src, javadocs">
+  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package, jar-src, jar-test-framework-src, javadocs">
     <sequential>
 	  <ant target="get-maven-poms" dir=".."/>
  
@@ -405,6 +407,22 @@
                   classifier="tests"/>
         </artifact-attachments>
       </m2-deploy>
+
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="test-framework-pom" file="src/test-framework/pom.xml"/>
+      <artifact:deploy>
+        <attach file="${build.dir}/${final.name}-tests.jar" 
+                classifier="tests" />
+        <attach file="${build.dir}/${final.name}-tests-src.jar"
+                classifier="test-sources"/>
+        <attach file="${build.dir}/${final.name}-tests-javadoc.jar"
+                classifier="test-javadoc"/>
+        <remoteRepository url="${m2.repository.url}">
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+        </remoteRepository>
+        <pom refid="test-framework-pom"/>
+      </artifact:deploy>
+
       <contrib-crawl target="dist-maven"/>
     </sequential>
   </target>
@@ -602,16 +620,30 @@
     <patch patchfile="${patch.file}" strip="0"/>
   </target>
 
-  <target name="jar-core-test" depends="compile-test">
-    <!-- load the list of test files into a property named core.test.files -->
-  	<property file="../dev-tools/testjar/testfiles" />
-    <!-- copy the files so that we can compile and include both .java and .class in the jar --> 
-    <copy todir="${build.dir}/testjar" >
-        <fileset dir="src/test" includes="${core.test.files}" />
-    </copy>
-  	<compile-test-macro srcdir="${build.dir}/testjar" destdir="${build.dir}/testjar"
-						test.classpath="test.classpath"/>
-    <jarify basedir="${build.dir}/testjar" destfile="${build.dir}/${final.name}-tests.jar"/>
+  <target name="jar-test-framework" depends="compile-test-framework">
+    <jarify basedir="${build.dir}/classes/test-framework" destfile="${build.dir}/${final.name}-tests.jar"
+            title="Lucene Search Engine: Test Framework" />
+  </target>
+
+  <target name="javadocs-test-framework">
+	<sequential>
+      <mkdir dir="${javadoc.dir}/test-framework"/>
+      <invoke-javadoc
+          destdir="${javadoc.dir}/test-framework"
+          title="${Name} ${version} Test Framework API">
+        <sources>
+          <packageset dir="src/test-framework"/>
+          <link href=""/>
+        </sources>
+      </invoke-javadoc>
+      <jarify basedir="${javadoc.dir}/test-framework" destfile="${build.dir}/${final.name}-tests-javadoc.jar"
+	          title="Lucene Search Engine: Test Framework" />
+    </sequential>
+  </target>
+
+  <target name="jar-test-framework-src" depends="init">
+    <jarify basedir="${tests-framework.src.dir}" destfile="${build.dir}/${final.name}-tests-src.jar"
+            title="Lucene Search Engine: Test Framework" />
   </target>
 
 </project>

@@ -978,6 +978,10 @@ Build
 * LUCENE-2657: Switch from using Maven POM templates to full POMs when
   generating Maven artifacts (Steven Rowe)
 
+* LUCENE-2609: Added jar-test-framework Ant target which packages Lucene's
+  tests' framework classes. (Drew Farris, Grant Ingersoll, Shai Erera, Steven 
+  Rowe)
+
 Test Cases
 
 * LUCENE-2037 Allow Junit4 tests in our environment (Erick Erickson

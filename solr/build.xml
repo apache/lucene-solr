@@ -342,7 +342,7 @@
     <path refid="compile.classpath.solrj" />
     <pathelement location="${dest}/solr"/>
     <pathelement location="${dest}/solrj"/> <!-- include solrj -->
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
   </path>
 
   <path id="test.run.classpath">
@@ -350,7 +350,7 @@
     <pathelement location="${dest}/tests"/>
     <!-- include the solrj classpath and jetty files included in example -->
     <path refid="compile.classpath.solrj" />
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 
