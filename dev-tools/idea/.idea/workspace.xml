@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="RunManager">
+  <component name="RunManager" selected="JUnit.lucene">
     <configuration default="false" name="analysis-extras contrib" type="JUnit" factoryName="JUnit">
       <module name="analysis-extras" />
       <option name="TEST_OBJECT" value="package" />
@@ -92,7 +92,7 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="true" name="lucene" type="JUnit" factoryName="JUnit">
+    <configuration default="false" name="lucene" type="JUnit" factoryName="JUnit">
       <module name="lucene" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build" />
