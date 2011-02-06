@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /** 
@@ -29,12 +30,7 @@ import java.util.Map;
 public abstract class TrecDocParser {
 
   /** Types of trec parse paths, */
-  public enum ParsePathType { GOV2("gov2"), FBIS("fbis"), FT("ft"), FR94("fr94"), LATIMES("latimes"); 
-    public final String dirName;
-    private ParsePathType(String dirName) {
-      this.dirName = dirName;
-    }
-  }
+  public enum ParsePathType { GOV2, FBIS, FT, FR94, LATIMES }
   
   /** trec parser type used for unknown extensions */
   public static final ParsePathType DEFAULT_PATH_TYPE  = ParsePathType.GOV2;
@@ -51,7 +47,7 @@ public abstract class TrecDocParser {
   static final Map<String,ParsePathType> pathName2Type = new HashMap<String,ParsePathType>();
   static {
     for (ParsePathType ppt : ParsePathType.values()) {
-      pathName2Type.put(ppt.dirName,ppt);
+      pathName2Type.put(ppt.name().toUpperCase(Locale.ENGLISH),ppt);
     }
   }
   
@@ -64,7 +60,7 @@ public abstract class TrecDocParser {
   public static ParsePathType pathType(File f) {
     int pathLength = 0;
     while (f != null && ++pathLength < MAX_PATH_LENGTH) {
-      ParsePathType ppt = pathName2Type.get(f.getName());
+      ParsePathType ppt = pathName2Type.get(f.getName().toUpperCase(Locale.ENGLISH));
       if (ppt!=null) {
         return ppt;
       }
