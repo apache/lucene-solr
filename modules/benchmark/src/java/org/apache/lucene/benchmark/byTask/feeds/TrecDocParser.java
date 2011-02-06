@@ -29,7 +29,12 @@ import java.util.Map;
 public abstract class TrecDocParser {
 
   /** Types of trec parse paths, */
-  public enum ParsePathType { GOV2, FBIS, FT, FR94, LATIMES }
+  public enum ParsePathType { GOV2("gov2"), FBIS("fbis"), FT("ft"), FR94("fr94"), LATIMES("latimes"); 
+    public final String dirName;
+    private ParsePathType(String dirName) {
+      this.dirName = dirName;
+    }
+  }
   
   /** trec parser type used for unknown extensions */
   public static final ParsePathType DEFAULT_PATH_TYPE  = ParsePathType.GOV2;
@@ -46,7 +51,7 @@ public abstract class TrecDocParser {
   static final Map<String,ParsePathType> pathName2Type = new HashMap<String,ParsePathType>();
   static {
     for (ParsePathType ppt : ParsePathType.values()) {
-      pathName2Type.put(ppt.name(),ppt);
+      pathName2Type.put(ppt.dirName,ppt);
     }
   }
   
@@ -59,7 +64,7 @@ public abstract class TrecDocParser {
   public static ParsePathType pathType(File f) {
     int pathLength = 0;
     while (f != null && ++pathLength < MAX_PATH_LENGTH) {
-      ParsePathType ppt = pathName2Type.get(f.getName().toUpperCase());
+      ParsePathType ppt = pathName2Type.get(f.getName());
       if (ppt!=null) {
         return ppt;
       }
