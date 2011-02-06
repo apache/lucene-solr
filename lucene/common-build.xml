@@ -112,6 +112,7 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
+  <property name="tests-framework.src.dir" location="${common.dir}/src/test-framework"/>
   <property name="build.dir" location="build"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
@@ -357,6 +358,8 @@
   <macrodef name="jarify" description="Builds a JAR file">
   	<attribute name="basedir" default="${build.dir}/classes/java"/>
   	<attribute name="destfile" default="${build.dir}/${final.name}.jar"/>
+  	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}"/>
+    <attribute name="excludes" default="**/pom.xml"/>
     <element name="manifest-attributes" optional="yes"/>
   	<element name="metainf-includes" optional="yes"/>
     <sequential>
@@ -366,12 +369,13 @@
         <arg line="."/>
       </exec>
       
-      <build-manifest/>
+      <build-manifest title="@{title}"/>
     	
       <jar
         destfile="@{destfile}"
         basedir="@{basedir}"
-      	manifest="${manifest.file}">
+      	manifest="${manifest.file}"
+        excludes="@{excludes}">
         <manifest>
         	<manifest-attributes/>
         </manifest>
@@ -384,7 +388,12 @@
     </sequential>
   </macrodef>
 
-  <target name="compile-test" depends="compile-core">
+  <target name="compile-test-framework" depends="compile-core">
+  	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
+  						test.classpath="test.classpath"/>
+  </target>
+
+  <target name="compile-test" depends="compile-test-framework">
   	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
   						test.classpath="test.classpath"/>
   </target>
@@ -545,6 +554,9 @@
       <fileset dir="${src.dir}">
         <include name="org/apache/**/*.java" />
       </fileset>
+      <testsources dir="${tests-framework.src.dir}">
+        <include name="org/apache/**/*.java" />
+      </testsources>
       <testsources dir="${tests.src.dir}">
         <include name="org/apache/**/*.java" />
       </testsources>
@@ -574,6 +586,9 @@
     <!-- This extra path is needed, because from a top-level ant run, the contrib tests would be not visible (report generation is only done on top-level not via subants) -->
     <fileset dir="contrib" id="clover.contrib.test.src.files">
       <include name="**/test/**/*.java"/>
+    </fileset>
+    <fileset dir="${tests-framework.src.dir}" id="clover.test.src.files">
+      <include name="**/*.java" />
     </fileset>
     <fileset dir="${tests.src.dir}" id="clover.test.src.files">
       <include name="**/*.java" />
@@ -645,6 +660,7 @@
 	  description="runs the tasks over source and test files">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="${src.dir}"/>
+      <fileset dir="${tests-framework.src.dir}"/>
       <fileset dir="${tests.src.dir}"/>
     </rat:report>
   </target>

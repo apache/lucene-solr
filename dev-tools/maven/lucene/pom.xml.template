@@ -33,6 +33,7 @@
   <description>Lucene parent POM</description>
   <modules>
     <module>src</module>
+    <module>src/test-framework</module>
     <module>contrib</module>
   </modules>
   <build>
