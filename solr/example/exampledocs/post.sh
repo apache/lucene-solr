@@ -19,10 +19,10 @@ URL=http://localhost:8983/solr/update
 
 for f in $FILES; do
   echo Posting file $f to $URL
-  curl $URL --data-binary @$f -H 'Content-type:text/xml; charset=utf-8' 
+  curl $URL --data-binary @$f -H 'Content-type:application/xml' 
   echo
 done
 
 #send the commit command to make sure all the changes are flushed and visible
-curl $URL --data-binary '<commit/>' -H 'Content-type:text/xml; charset=utf-8'
+curl $URL --data-binary '<commit/>' -H 'Content-type:application/xml'
 echo
