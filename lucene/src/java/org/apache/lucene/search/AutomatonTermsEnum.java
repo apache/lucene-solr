@@ -111,9 +111,9 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   @Override
   protected BytesRef nextSeekTerm(final BytesRef term) throws IOException {
     if (term == null) {
-      seekBytesRef.copy("");
+      assert seekBytesRef.length == 0;
       // return the empty term, as its valid
-      if (runAutomaton.run(seekBytesRef.bytes, seekBytesRef.offset, seekBytesRef.length)) {   
+      if (runAutomaton.isAccept(runAutomaton.getInitialState())) {   
         return seekBytesRef;
       }
     } else {
@@ -122,25 +122,20 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
 
     // seek to the next possible string;
     if (nextString()) {
-      // reposition
-           
-      if (linear)
-        setLinear(infinitePosition);
-      return seekBytesRef;
+      return seekBytesRef;  // reposition
+    } else {
+      return null;          // no more possible strings can match
     }
-    // no more possible strings can match
-    return null;
   }
-
-  // this instance prevents unicode conversion during backtracking,
-  // we can just call setLinear once at the end.
-  int infinitePosition;
 
   /**
    * Sets the enum to operate in linear fashion, as we have found
-   * a looping transition at position
+   * a looping transition at position: we set an upper bound and 
+   * act like a TermRangeQuery for this portion of the term space.
    */
   private void setLinear(int position) {
+    assert linear == false;
+    
     int state = runAutomaton.getInitialState();
     int maxInterval = 0xff;
     for (int i = 0; i < position; i++) {
@@ -164,6 +159,8 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     System.arraycopy(seekBytesRef.bytes, 0, linearUpperBound.bytes, 0, position);
     linearUpperBound.bytes[position] = (byte) maxInterval;
     linearUpperBound.length = length;
+    
+    linear = true;
   }
 
   private final IntsRef savedStates = new IntsRef(10);
@@ -197,8 +194,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
         states[pos+1] = nextState;
         // we found a loop, record it for faster enumeration
         if (!finite && !linear && visited[nextState] == curGen) {
-          linear = true;
-          infinitePosition = pos;
+          setLinear(pos);
         }
         state = nextState;
       }
@@ -284,15 +280,16 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
            */
           transition = allTransitions[state][0];
           state = transition.getDest().getNumber();
-          // we found a loop, record it for faster enumeration
-          if (!finite && !linear && visited[state] == curGen) {
-            linear = true;
-            infinitePosition = seekBytesRef.length;
-          }
+          
           // append the minimum transition
           seekBytesRef.grow(seekBytesRef.length + 1);
           seekBytesRef.length++;
           seekBytesRef.bytes[seekBytesRef.length - 1] = (byte) transition.getMin();
+          
+          // we found a loop, record it for faster enumeration
+          if (!finite && !linear && visited[state] == curGen) {
+            setLinear(seekBytesRef.length-1);
+          }
         }
         return true;
       }
