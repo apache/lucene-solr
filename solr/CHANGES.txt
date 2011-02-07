@@ -205,7 +205,7 @@ Other Changes
 
 * SOLR-2350: Since Solr no longer requires XML files to be in UTF-8
   (see SOLR-96) SimplePostTool (aka: post.jar) has been improved to
-  work with files of any mime-type or charset.
+  work with files of any mime-type or charset. (hossman)
 
 Documentation
 ----------------------
