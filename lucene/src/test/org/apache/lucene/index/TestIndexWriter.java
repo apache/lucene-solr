@@ -2874,4 +2874,36 @@ public class TestIndexWriter extends LuceneTestCase {
 
     dir.close();
   }
+
+  public void testDeleteAllSlowly() throws Exception {
+    final Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
+    final List<Integer> ids = new ArrayList<Integer>(NUM_DOCS);
+    for(int id=0;id<NUM_DOCS;id++) {
+      ids.add(id);
+    }
+    Collections.shuffle(ids, random);
+    for(int id : ids) {
+      Document doc = new Document();
+      doc.add(newField("id", ""+id, Field.Index.NOT_ANALYZED));
+      w.addDocument(doc);
+    }
+    Collections.shuffle(ids, random);
+    int upto = 0;
+    while(upto < ids.size()) {
+      final int left = ids.size() - upto;
+      final int inc = Math.min(left, _TestUtil.nextInt(random, 1, 20));
+      final int limit = upto + inc;
+      while(upto < limit) {
+        w.deleteDocuments(new Term("id", ""+ids.get(upto++)));
+      }
+      final IndexReader r = w.getReader();
+      assertEquals(NUM_DOCS - upto, r.numDocs());
+      r.close();
+    }
+
+    w.close();
+    dir.close();
+  }
 }
