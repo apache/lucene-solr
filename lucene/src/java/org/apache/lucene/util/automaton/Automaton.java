@@ -29,7 +29,6 @@
 
 package org.apache.lucene.util.automaton;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
@@ -75,7 +74,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * </p>
  * @lucene.experimental
  */
-public class Automaton implements Serializable, Cloneable {
+public class Automaton implements Cloneable {
   
   /**
    * Minimize using Hopcroft's O(n log n) algorithm. This is regarded as one of

@@ -28,8 +28,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax.Type;
 public class FieldQueryNode extends QueryNodeImpl implements TextableQueryNode,
     FieldableNode {
 
-  private static final long serialVersionUID = 3634521145130758265L;
-
   /**
    * The term's field
    */

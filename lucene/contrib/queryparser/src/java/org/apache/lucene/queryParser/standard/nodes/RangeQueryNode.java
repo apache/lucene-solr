@@ -34,8 +34,6 @@ import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNod
  */
 public class RangeQueryNode extends ParametricRangeQueryNode {
 
-  private static final long serialVersionUID = 7400866652044314657L;
-
   private Collator collator;
 
   /**

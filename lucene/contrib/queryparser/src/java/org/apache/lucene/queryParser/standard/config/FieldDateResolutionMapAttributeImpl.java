@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class FieldDateResolutionMapAttributeImpl extends AttributeImpl 
 				implements FieldDateResolutionMapAttribute {
 
-  private static final long serialVersionUID = -2104763012523049527L;
-
   private Map<CharSequence, DateTools.Resolution> dateRes = new HashMap<CharSequence, DateTools.Resolution>();
   
 

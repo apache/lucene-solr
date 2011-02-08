@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.io.PrintStream;
 
 import java.text.DecimalFormat;
@@ -61,7 +60,7 @@ public interface FieldCache {
    * is used to specify a custom parser to {@link
    * SortField#SortField(String, FieldCache.Parser)}.
    */
-  public interface Parser extends Serializable {
+  public interface Parser {
   }
 
   /** Interface to parse bytes from document fields.

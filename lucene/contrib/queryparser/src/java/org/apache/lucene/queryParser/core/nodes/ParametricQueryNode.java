@@ -25,8 +25,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class ParametricQueryNode extends FieldQueryNode {
 
-  private static final long serialVersionUID = -5770038129741218116L;
-
   private CompareOperator operator;
 
   public enum CompareOperator {

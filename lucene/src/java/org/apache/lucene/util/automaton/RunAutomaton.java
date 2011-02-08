@@ -29,14 +29,12 @@
 
 package org.apache.lucene.util.automaton;
 
-import java.io.Serializable;
-
 /**
  * Finite-state automaton with fast run operation.
  * 
  * @lucene.experimental
  */
-public abstract class RunAutomaton implements Serializable {
+public abstract class RunAutomaton {
   final int maxInterval;
   final int size;
   final boolean[] accept;

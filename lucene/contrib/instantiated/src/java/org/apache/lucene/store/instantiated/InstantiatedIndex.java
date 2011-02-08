@@ -18,7 +18,6 @@ package org.apache.lucene.store.instantiated;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -60,9 +59,7 @@ import org.apache.lucene.util.BytesRef;
  * Consider using InstantiatedIndex as if it was immutable.
  */
 public class InstantiatedIndex
-    implements Serializable,Closeable {
-
-  private static final long serialVersionUID = 1l;
+    implements Closeable {
 
   private long version = System.currentTimeMillis();
 

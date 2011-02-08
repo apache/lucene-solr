@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class MultiFieldAttributeImpl extends AttributeImpl
 				implements MultiFieldAttribute {
 
-  private static final long serialVersionUID = -6809760312720049526L;
-
   private CharSequence[] fields;
 
   public MultiFieldAttributeImpl() {

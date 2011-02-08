@@ -17,7 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,10 +27,7 @@ import java.util.Map;
  * 
  * @lucene.internal
  */
-public final class MapBackedSet<E> extends AbstractSet<E> implements Serializable {
-
-  private static final long serialVersionUID = -6761513279741915432L;
-
+public final class MapBackedSet<E> extends AbstractSet<E> {
   private final Map<E, Boolean> map;
 
   /**

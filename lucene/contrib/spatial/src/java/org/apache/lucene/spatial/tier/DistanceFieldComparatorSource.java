@@ -31,8 +31,6 @@ import org.apache.lucene.search.FieldComparatorSource;
  */
 public class DistanceFieldComparatorSource extends FieldComparatorSource {
 
-	private static final long serialVersionUID = 1L;
-
 	private DistanceFilter distanceFilter;
 	private DistanceScoreDocLookupComparator dsdlc;
 

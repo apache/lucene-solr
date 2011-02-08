@@ -26,8 +26,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  * nodes.
  */
 public class AnyQueryNode extends AndQueryNode {
-  private static final long serialVersionUID = 1000791433562954187L;
-
   private CharSequence field = null;
   private int minimumMatchingmElements = 0;
 

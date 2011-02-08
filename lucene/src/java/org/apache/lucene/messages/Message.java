@@ -17,14 +17,13 @@ package org.apache.lucene.messages;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.util.Locale;
 
 /**
  * Message Interface for a lazy loading.
  * For Native Language Support (NLS), system of software internationalization.
  */
-public interface Message extends Serializable {
+public interface Message {
 
   public String getKey();
 

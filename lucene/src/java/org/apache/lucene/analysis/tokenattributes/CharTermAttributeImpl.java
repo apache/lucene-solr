@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.nio.CharBuffer;
 
 import org.apache.lucene.util.ArrayUtil;
@@ -30,7 +29,7 @@ import org.apache.lucene.util.UnicodeUtil;
 /**
  * The term text of a Token.
  */
-public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttribute, TermToBytesRefAttribute, Cloneable, Serializable {
+public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttribute, TermToBytesRefAttribute, Cloneable {
   private static int MIN_BUFFER_SIZE = 10;
   
   private char[] termBuffer = new char[ArrayUtil.oversize(MIN_BUFFER_SIZE, RamUsageEstimator.NUM_BYTES_CHAR)];

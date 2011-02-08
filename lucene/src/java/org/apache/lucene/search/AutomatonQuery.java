@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -61,7 +60,7 @@ public class AutomatonQuery extends MultiTermQuery {
    * in the ctor the query computes one of these, the actual
    * implementation depends upon the automaton's structure.
    */
-  private abstract class TermsEnumFactory implements Serializable {
+  private abstract class TermsEnumFactory {
     protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
   }
   

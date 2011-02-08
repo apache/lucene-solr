@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-
 import org.apache.lucene.util.AttributeImpl;
 
 /**
@@ -26,7 +24,7 @@ import org.apache.lucene.util.AttributeImpl;
  * eg from one TokenFilter to another one. 
  * @lucene.experimental While we think this is here to stay, we may want to change it to be a long.
  */
-public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable, Serializable {
+public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable {
   private int flags = 0;
   
   /**

@@ -41,8 +41,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax.Type;
  */
 public class PathQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = -8325921322405804789L;
-
   public static class QueryText implements Cloneable {
     CharSequence value = null;
     /**

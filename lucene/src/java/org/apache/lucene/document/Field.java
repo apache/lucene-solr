@@ -18,7 +18,6 @@ package org.apache.lucene.document;
  */
 
 import java.io.Reader;
-import java.io.Serializable;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexWriter;
@@ -32,7 +31,7 @@ import org.apache.lucene.util.StringHelper;
   index, so that they may be returned with hits on the document.
   */
 
-public final class Field extends AbstractField implements Fieldable, Serializable {
+public final class Field extends AbstractField implements Fieldable {
   
   /** Specifies whether and how a field should be stored. */
   public static enum Store {

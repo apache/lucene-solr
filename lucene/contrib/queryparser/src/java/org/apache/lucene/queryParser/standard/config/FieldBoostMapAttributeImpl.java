@@ -36,8 +36,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class FieldBoostMapAttributeImpl extends AttributeImpl 
 				implements FieldBoostMapAttribute {
 
-  private static final long serialVersionUID = -2104763012523049527L;
-
   private Map<String, Float> boosts = new LinkedHashMap<String, Float>();
   
 

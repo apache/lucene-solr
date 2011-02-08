@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.compound.hyphenation;
 
 import java.io.File;
-import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,10 +30,7 @@ import org.xml.sax.InputSource;
  * 
  * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
  */
-public class HyphenationTree extends TernaryTree implements PatternConsumer,
-    Serializable {
-
-  private static final long serialVersionUID = -7842107987915665573L;
+public class HyphenationTree extends TernaryTree implements PatternConsumer {
 
   /**
    * value space: stores the interletter values

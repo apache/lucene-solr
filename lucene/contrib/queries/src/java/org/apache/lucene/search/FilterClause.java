@@ -26,7 +26,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
  * of queries.)
  */
 
-public class FilterClause implements java.io.Serializable
+public class FilterClause
 {
 	Occur occur = null;
 	Filter filter = null;

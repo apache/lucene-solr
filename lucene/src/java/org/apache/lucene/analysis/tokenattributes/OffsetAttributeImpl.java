@@ -17,14 +17,12 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-
 import org.apache.lucene.util.AttributeImpl;
 
 /**
  * The start and end character offset of a Token. 
  */
-public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribute, Cloneable, Serializable {
+public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribute, Cloneable {
   private int startOffset;
   private int endOffset;
 

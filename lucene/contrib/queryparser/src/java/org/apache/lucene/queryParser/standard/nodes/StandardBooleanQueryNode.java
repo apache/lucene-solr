@@ -34,8 +34,6 @@ import org.apache.lucene.search.SimilarityProvider;
  */
 public class StandardBooleanQueryNode extends BooleanQueryNode {
 
-  private static final long serialVersionUID = 1938287817191138787L;
-
   private boolean disableCoord;
 
   /**

@@ -18,7 +18,6 @@
 package org.apache.lucene.util;
 
 import java.util.Arrays;
-import java.io.Serializable;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -75,7 +74,7 @@ Test system: AMD Opteron, 64 bit linux, Sun Java 1.5_06 -server -Xbatch -Xmx64M
 </table>
  */
 
-public class OpenBitSet extends DocIdSet implements Bits, Cloneable, Serializable {
+public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   protected long[] bits;
   protected int wlen;   // number of words (elements) used in the array
 

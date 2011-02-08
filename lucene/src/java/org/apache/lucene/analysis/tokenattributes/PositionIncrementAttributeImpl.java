@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -46,7 +44,7 @@ import org.apache.lucene.util.AttributeImpl;
  *
  * </ul>
  */
-public class PositionIncrementAttributeImpl extends AttributeImpl implements PositionIncrementAttribute, Cloneable, Serializable {
+public class PositionIncrementAttributeImpl extends AttributeImpl implements PositionIncrementAttribute, Cloneable {
   private int positionIncrement = 1;
   
   /** Set the position increment. The default value is one.

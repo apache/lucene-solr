@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 /** Represents hits returned by {@link
  * IndexSearcher#search(Query,Filter,int)} and {@link
  * IndexSearcher#search(Query,int)}. */
-public class TopDocs implements java.io.Serializable {
+public class TopDocs {
   /** The total number of hits for the query.
   */
   public int totalHits;

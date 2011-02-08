@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class AnalyzerAttributeImpl extends AttributeImpl 
 				implements AnalyzerAttribute {
 
-  private static final long serialVersionUID = -6804760312723049526L;
-
   private Analyzer analyzer;
 
   public AnalyzerAttributeImpl() {

@@ -3,7 +3,6 @@ package org.apache.lucene.store.instantiated;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,9 +28,7 @@ import java.util.List;
  * @see org.apache.lucene.index.TermFreqVector
  */
 public class InstantiatedTermFreqVector
-    implements TermFreqVector, Serializable {
-
-  private static final long serialVersionUID = 1l;
+    implements TermFreqVector {
 
   private final List<InstantiatedTermDocumentInformation> termDocumentInformations;
   private final String field;

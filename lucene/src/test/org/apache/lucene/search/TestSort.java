@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -65,7 +64,7 @@ import org.apache.lucene.util._TestUtil;
  * @since   lucene 1.4
  */
 
-public class TestSort extends LuceneTestCase implements Serializable {
+public class TestSort extends LuceneTestCase {
 
   private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
   private IndexSearcher full;
