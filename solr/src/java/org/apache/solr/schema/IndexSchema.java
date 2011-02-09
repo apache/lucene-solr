@@ -20,7 +20,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
@@ -98,7 +99,7 @@ public final class IndexSchema {
    * If the is stream is null, the resource loader will load the schema resource by name.
    * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
-   * @see Config#openResource
+   * @see SolrResourceLoader#openResource
    */
   public IndexSchema(SolrConfig solrConfig, String name, InputStream is) {
     this.solrConfig = solrConfig;
@@ -192,7 +193,7 @@ public final class IndexSchema {
   /**
    * Returns the Similarity used for this index
    */
-  public Similarity getSimilarity() { return similarityFactory.getSimilarity(); }
+  public SimilarityProvider getSimilarityProvider() { return similarityFactory.getSimilarityProvider(); }
 
   /**
    * Returns the SimilarityFactory used for this index
@@ -315,6 +316,7 @@ public final class IndexSchema {
       return analyzer!=null ? analyzer : getDynamicFieldType(fieldName).getAnalyzer();
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
       return getAnalyzer(fieldName).tokenStream(fieldName,reader);
@@ -496,8 +498,9 @@ public final class IndexSchema {
     Node node = (Node) xpath.evaluate("/schema/similarity", document, XPathConstants.NODE);
     if (node==null) {
       similarityFactory = new SimilarityFactory() {
-        public Similarity getSimilarity() {
-          return Similarity.getDefault();
+        @Override
+        public SimilarityProvider getSimilarityProvider() {
+          return IndexSearcher.getDefaultSimilarityProvider();
         }
       };
       log.debug("using default similarity");
@@ -509,10 +512,11 @@ public final class IndexSchema {
         similarityFactory = (SimilarityFactory)obj;
         similarityFactory.init(params);
       } else {
-        // just like always, assume it's a Similarlity and get a ClassCastException - reasonable error handling
+        // just like always, assume it's a SimilarityProvider and get a ClassCastException - reasonable error handling
         similarityFactory = new SimilarityFactory() {
-          public Similarity getSimilarity() {
-            return (Similarity) obj;
+          @Override
+          public SimilarityProvider getSimilarityProvider() {
+            return (SimilarityProvider) obj;
           }
         };
       }
@@ -945,6 +949,7 @@ public final class IndexSchema {
       return new SchemaField(prototype, name);
     }
 
+    @Override
     public String toString() {
       return prototype.toString();
     }

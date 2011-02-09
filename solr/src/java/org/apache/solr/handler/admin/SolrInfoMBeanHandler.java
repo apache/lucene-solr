@@ -1,5 +1,22 @@
 package org.apache.solr.handler.admin;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.core.SolrInfoMBean;
@@ -32,20 +49,21 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   }
   
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrCore core = req.getCore();
     
-    NamedList cats = new NamedList();
+    NamedList<NamedList<NamedList<Object>>> cats = new NamedList<NamedList<NamedList<Object>>>();
     rsp.add("solr-mbeans", cats);
     
     String[] requestedCats = req.getParams().getParams("cat");
     if (null == requestedCats || 0 == requestedCats.length) {
       for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
-        cats.add(cat.name(), new SimpleOrderedMap());
+        cats.add(cat.name(), new SimpleOrderedMap<NamedList<Object>>());
       }
     } else {
       for (String catName : requestedCats) {
-        cats.add(catName,new SimpleOrderedMap());
+        cats.add(catName,new SimpleOrderedMap<NamedList<Object>>());
       }
     }
          
@@ -58,10 +76,10 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
 
       if ( ! ( requestedKeys.isEmpty() || requestedKeys.contains(key) ) ) continue;
 
-      NamedList catInfo = (NamedList) cats.get(m.getCategory().name());
+      NamedList<NamedList<Object>> catInfo = cats.get(m.getCategory().name());
       if ( null == catInfo ) continue;
 
-      NamedList mBeanInfo = new SimpleOrderedMap();
+      NamedList<Object> mBeanInfo = new SimpleOrderedMap<Object>();
       mBeanInfo.add("class", m.getName());
       mBeanInfo.add("version", m.getVersion());
       mBeanInfo.add("description", m.getDescription());
@@ -77,18 +95,22 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     rsp.setHttpCaching(false); // never cache, no matter what init config looks like
   }
 
+  @Override
   public String getDescription() {
     return "Get Info (and statistics) about all registered SolrInfoMBeans";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }

@@ -44,7 +44,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // number of places to multiply out the actual ord, and we
   // will overflow int during those multiplies.  So to avoid
   // having to upgrade each multiple to long in multiple
-  // places (error proned), we use long here:
+  // places (error prone), we use long here:
   private long totalIndexInterval;
 
   private int indexDivisor;
@@ -94,6 +94,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
       // Read directory
       final int numFields = in.readVInt();      
+      //System.out.println("FGR: init seg=" + segment + " div=" + indexDivisor + " nF=" + numFields);
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final int numIndexTerms = in.readVInt();
@@ -132,7 +133,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   private class IndexEnum extends FieldIndexEnum {
     private final FieldIndexData.CoreFieldIndex fieldIndex;
     private final BytesRef term = new BytesRef();
-    private final BytesRef nextTerm = new BytesRef();
     private long ord;
 
     public IndexEnum(FieldIndexData.CoreFieldIndex fieldIndex) {
@@ -192,7 +192,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
       final long offset = fieldIndex.termOffsets.get(idx);
       final int length = (int) (fieldIndex.termOffsets.get(1+idx) - offset);
-      termBytesReader.fillSlice(nextTerm, fieldIndex.termBytesStart + offset, length);
+      termBytesReader.fillSlice(term, fieldIndex.termBytesStart + offset, length);
       return fieldIndex.termsStart + fieldIndex.termsDictOffsets.get(idx);
     }
 
@@ -242,9 +242,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       this.packedOffsetsStart = packedOffsetsStart;
       this.numIndexTerms = numIndexTerms;
 
-      // We still create the indexReader when indexDivisor
-      // is -1, so that PrefixCodedTermsReader can call
-      // isIndexTerm for each field:
       if (indexDivisor > 0) {
         loadTermsIndex();
       }

@@ -57,6 +57,18 @@ public abstract class Terms {
     }
   }
 
+  /** Returns the number of documents containing the
+   *  specified term text.  Returns 0 if the term does not
+   *  exist. */
+  public long totalTermFreq(BytesRef text) throws IOException {
+    final TermsEnum termsEnum = getThreadTermsEnum();
+    if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+      return termsEnum.totalTermFreq();
+    } else {
+      return 0;
+    }
+  }
+
   /** Get {@link DocsEnum} for the specified term.  This
    *  method may return null if the term does not exist. */
   public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
@@ -80,11 +92,59 @@ public abstract class Terms {
     }
   }
 
+  /**
+   * Expert: Get {@link DocsEnum} for the specified {@link TermState}.
+   * This method may return <code>null</code> if the term does not exist.
+   * 
+   * @see TermsEnum#termState()
+   * @see TermsEnum#seek(BytesRef, TermState) */
+  public DocsEnum docs(Bits skipDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
+    final TermsEnum termsEnum = getThreadTermsEnum();
+    termsEnum.seek(term, termState);
+    return termsEnum.docs(skipDocs, reuse);
+  }
+
+  /**
+   * Get {@link DocsEnum} for the specified {@link TermState}. This
+   * method will may return <code>null</code> if the term does not exists, or positions were
+   * not indexed.
+   * 
+   * @see TermsEnum#termState()
+   * @see TermsEnum#seek(BytesRef, TermState) */
+  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
+    final TermsEnum termsEnum = getThreadTermsEnum();
+    termsEnum.seek(term, termState);
+    return termsEnum.docsAndPositions(skipDocs, reuse);
+  }
+
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
   }
 
-  protected TermsEnum getThreadTermsEnum() throws IOException {
+  /** Returns the sum of {@link TermsEnum#totalTermFreq} for
+   *  all terms in this field, or -1 if this measure isn't
+   *  stored by the codec (or if this fields omits term freq
+   *  and positions).  Note that, just like other term
+   *  measures, this measure does not take deleted documents
+   *  into account. */
+  public abstract long getSumTotalTermFreq() throws IOException;
+
+  /**
+   * Returns a thread-private {@link TermsEnum} instance. Obtaining
+   * {@link TermsEnum} from this method might be more efficient than using
+   * {@link #iterator()} directly since this method doesn't necessarily create a
+   * new {@link TermsEnum} instance.
+   * <p>
+   * NOTE: {@link TermsEnum} instances obtained from this method must not be
+   * shared across threads. The enum should only be used within a local context
+   * where other threads can't access it.
+   * 
+   * @return a thread-private {@link TermsEnum} instance
+   * @throws IOException
+   *           if an IOException occurs
+   * @lucene.internal
+   */
+  public TermsEnum getThreadTermsEnum() throws IOException {
     TermsEnum termsEnum = threadEnums.get();
     if (termsEnum == null) {
       termsEnum = iterator();

@@ -37,6 +37,7 @@ import java.util.Map;
  * @since solr 1.4
  */
 public class ClobTransformer extends Transformer {
+  @Override
   public Object transformRow(Map<String, Object> aRow, Context context) {
     for (Map<String, String> map : context.getAllEntityFields()) {
       if (!TRUE.equals(map.get(CLOB))) continue;

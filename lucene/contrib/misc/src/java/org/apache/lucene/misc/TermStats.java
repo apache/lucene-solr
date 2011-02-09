@@ -41,4 +41,9 @@ public final class TermStats {
   String getTermText() {
     return termtext.utf8ToString();
   }
+
+  @Override
+  public String toString() {
+    return("TermStats: term=" + termtext.utf8ToString() + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq);
+  }
 }

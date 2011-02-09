@@ -19,12 +19,13 @@ package org.apache.lucene.search.function;
 
 import java.util.HashMap;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.ReaderUtil;
 import org.junit.Test;
 
 /**
@@ -185,12 +186,12 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       FieldScoreQuery q = new FieldScoreQuery(field,tp);
       ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
       assertEquals("All docs should be matched!",N_DOCS,h.length);
-      IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
-      for (int j = 0; j < readers.length; j++) {
-        IndexReader reader = readers[j];
+      AtomicReaderContext[] leaves = ReaderUtil.leaves(s.getTopReaderContext());
+      for (int j = 0; j < leaves.length; j++) {
+        AtomicReaderContext leaf = leaves[j];
         try {
           if (i == 0) {
-            innerArray[j] = q.valSrc.getValues(reader).getInnerArray();
+            innerArray[j] = q.valSrc.getValues(leaf).getInnerArray();
             log(i + ".  compare: " + innerArray[j].getClass() + " to "
                 + expectedArrayTypes.get(tp).getClass());
             assertEquals(
@@ -198,9 +199,9 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
                 innerArray[j].getClass(), expectedArrayTypes.get(tp).getClass());
           } else {
             log(i + ".  compare: " + innerArray[j] + " to "
-                + q.valSrc.getValues(reader).getInnerArray());
+                + q.valSrc.getValues(leaf).getInnerArray());
             assertSame("field values should be cached and reused!", innerArray[j],
-                q.valSrc.getValues(reader).getInnerArray());
+                q.valSrc.getValues(leaf).getInnerArray());
           }
         } catch (UnsupportedOperationException e) {
           if (!warned) {
@@ -217,15 +218,15 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     FieldScoreQuery q = new FieldScoreQuery(field,tp);
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!",N_DOCS,h.length);
-    IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
-    for (int j = 0; j < readers.length; j++) {
-      IndexReader reader = readers[j];
+    AtomicReaderContext[] leaves = ReaderUtil.leaves(s.getTopReaderContext());
+    for (int j = 0; j < leaves.length; j++) {
+      AtomicReaderContext leaf = leaves[j];
       try {
         log("compare: " + innerArray + " to "
-            + q.valSrc.getValues(reader).getInnerArray());
+            + q.valSrc.getValues(leaf).getInnerArray());
         assertNotSame(
             "cached field values should not be reused if reader as changed!",
-            innerArray, q.valSrc.getValues(reader).getInnerArray());
+            innerArray, q.valSrc.getValues(leaf).getInnerArray());
       } catch (UnsupportedOperationException e) {
         if (!warned) {
           System.err.println("WARNING: " + testName()

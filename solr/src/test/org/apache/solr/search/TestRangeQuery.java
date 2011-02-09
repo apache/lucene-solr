@@ -33,6 +33,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema11.xml");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call

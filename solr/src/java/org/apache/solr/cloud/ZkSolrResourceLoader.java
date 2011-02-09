@@ -68,6 +68,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    * 
    * @return the stream for the named resource
    */
+  @Override
   public InputStream openResource(String resource) {
     InputStream is = null;
     String file = collectionZkPath + "/" + resource;
@@ -93,12 +94,14 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     return is;
   }
 
+  @Override
   public String getConfigDir() {
     throw new ZooKeeperException(
         ErrorCode.SERVER_ERROR,
         "ZkSolrResourceLoader does not support getConfigDir() - likely, what you are trying to do is not supported in ZooKeeper mode");
   }
   
+  @Override
   public String[] listConfigDir() {
     List<String> list;
     try {

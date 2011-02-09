@@ -73,7 +73,34 @@ public abstract class TermsEnum {
    *  may be before or after the current ord.  See {@link
    *  #seek(BytesRef)}. */
   public abstract SeekStatus seek(long ord) throws IOException;
-  
+
+  /**
+   * Expert: Seeks a specific position by {@link TermState} previously obtained
+   * from {@link #termState()}. Callers should maintain the {@link TermState} to
+   * use this method. Low-level implementations may position the TermsEnum
+   * without re-seeking the term dictionary.
+   * <p>
+   * Seeking by {@link TermState} should only be used iff the enum the state was
+   * obtained from and the enum the state is used for seeking are obtained from
+   * the same {@link IndexReader}, otherwise a {@link #seek(BytesRef, TermState)} call can
+   * leave the enum in undefined state.
+   * <p>
+   * NOTE: Using this method with an incompatible {@link TermState} might leave
+   * this {@link TermsEnum} in undefined state. On a segment level
+   * {@link TermState} instances are compatible only iff the source and the
+   * target {@link TermsEnum} operate on the same field. If operating on segment
+   * level, TermState instances must not be used across segments.
+   * <p>
+   * NOTE: A seek by {@link TermState} might not restore the
+   * {@link AttributeSource}'s state. {@link AttributeSource} states must be
+   * maintained separately if this method is used.
+   * @param term the term the TermState corresponds to
+   * @param state the {@link TermState}
+   * */
+  public void seek(BytesRef term, TermState state) throws IOException {
+    seek(term);
+  }
+
   /** Increments the enumeration to the next element.
    *  Returns the resulting term, or null if the end was
    *  hit.  The returned BytesRef may be re-used across calls
@@ -97,7 +124,15 @@ public abstract class TermsEnum {
    *  term.  Do not call this before calling next() for the
    *  first time, after next() returns null or seek returns
    *  {@link SeekStatus#END}.*/
-  public abstract int docFreq();
+  public abstract int docFreq() throws IOException;
+
+  /** Returns the total number of occurrences of this term
+   *  across all documents (the sum of the freq() for each
+   *  doc that has this term).  This will be -1 if the
+   *  codec doesn't support this measure.  Note that, like
+   *  other term measures, this measure does not take
+   *  deleted documents into account. */
+  public abstract long totalTermFreq() throws IOException;
 
   /** Get {@link DocsEnum} for the current term.  Do not
    *  call this before calling {@link #next} or {@link
@@ -116,16 +151,31 @@ public abstract class TermsEnum {
    *  the postings by this codec. */
   public abstract DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
 
+  /**
+   * Expert: Returns the TermsEnums internal state to position the TermsEnum
+   * without re-seeking the term dictionary.
+   * <p>
+   * NOTE: A seek by {@link TermState} might not capture the
+   * {@link AttributeSource}'s state. Callers must maintain the
+   * {@link AttributeSource} states separately
+   * 
+   * @see TermState
+   * @see #seek(BytesRef, TermState)
+   */
+  public TermState termState() throws IOException {
+    return new TermState() {
+      @Override
+      public void copyFrom(TermState other) {
+      }
+    };
+  }
+  
   /** Return the {@link BytesRef} Comparator used to sort
    *  terms provided by the iterator.  This may return
    *  null if there are no terms.  Callers may invoke this
    *  method many times, so it's best to cache a single
    *  instance & reuse it. */
   public abstract Comparator<BytesRef> getComparator() throws IOException;
-
-  /** Optional optimization hint: informs the codec that the
-   *  current term is likely to be re-seek'd-to soon.  */
-  public abstract void cacheCurrentTerm() throws IOException;
 
   /** An empty TermsEnum for quickly returning an empty instance e.g.
    * in {@link org.apache.lucene.search.MultiTermQuery}
@@ -142,9 +192,6 @@ public abstract class TermsEnum {
     public SeekStatus seek(long ord) { return SeekStatus.END; }
     
     @Override
-    public void cacheCurrentTerm() {}
-    
-    @Override
     public BytesRef term() {
       throw new IllegalStateException("this method should never be called");
     }
@@ -156,6 +203,11 @@ public abstract class TermsEnum {
       
     @Override
     public int docFreq() {
+      throw new IllegalStateException("this method should never be called");
+    }
+
+    @Override
+    public long totalTermFreq() {
       throw new IllegalStateException("this method should never be called");
     }
       
@@ -182,6 +234,16 @@ public abstract class TermsEnum {
     @Override // make it synchronized here, to prevent double lazy init
     public synchronized AttributeSource attributes() {
       return super.attributes();
+    }
+
+    @Override
+    public TermState termState() throws IOException {
+      throw new IllegalStateException("this method should never be called");
+    }
+
+    @Override
+    public void seek(BytesRef term, TermState state) throws IOException {
+      throw new IllegalStateException("this method should never be called");
     }
   };
 }

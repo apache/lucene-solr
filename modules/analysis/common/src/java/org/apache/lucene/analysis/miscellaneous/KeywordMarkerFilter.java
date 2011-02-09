@@ -74,10 +74,12 @@ public final class KeywordMarkerFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      keywordAttr.setKeyword(keywordSet.contains(termAtt.buffer(), 0,
-          termAtt.length()));
+      if (keywordSet.contains(termAtt.buffer(), 0, termAtt.length())) { 
+        keywordAttr.setKeyword(true);
+      }
       return true;
-    } else
+    } else {
       return false;
+    }
   }
 }

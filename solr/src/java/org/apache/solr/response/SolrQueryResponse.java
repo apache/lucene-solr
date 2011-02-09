@@ -66,12 +66,12 @@ public class SolrQueryResponse {
    * @see #setAllValues
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
-  protected NamedList values = new SimpleOrderedMap();
+  protected NamedList<Object> values = new SimpleOrderedMap<Object>();
 
   /**
    * Container for storing information that should be logged by Solr before returning.
    */
-  protected NamedList toLog = new SimpleOrderedMap();
+  protected NamedList<Object> toLog = new SimpleOrderedMap<Object>();
 
   protected Set<String> defaultReturnFields;
 
@@ -103,7 +103,7 @@ public class SolrQueryResponse {
    * Sets data to be returned in this response
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
-  public void setAllValues(NamedList nameValuePairs) {
+  public void setAllValues(NamedList<Object> nameValuePairs) {
     values=nameValuePairs;
   }
 
@@ -189,7 +189,8 @@ public class SolrQueryResponse {
   }
   
   /** Repsonse header to be logged */ 
-  public NamedList getResponseHeader() {
+  public NamedList<Object> getResponseHeader() {
+    @SuppressWarnings("unchecked")
 	  SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get("responseHeader");
 	  return header;
   }
@@ -207,7 +208,7 @@ public class SolrQueryResponse {
    * 
    * @return things to log
    */
-  public NamedList getToLog() {
+  public NamedList<Object> getToLog() {
 	  return toLog;
   }
   

@@ -79,6 +79,7 @@ public class DisMaxQParser extends QParser {
   protected QParser altQParser;
 
 
+  @Override
   public Query parse() throws ParseException {
     SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
     queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
@@ -244,6 +245,7 @@ public class DisMaxQParser extends QParser {
     return parsedUserQuery == null ? altUserQuery : parsedUserQuery;
   }
 
+  @Override
   public void addDebugInfo(NamedList<Object> debugInfo) {
     super.addDebugInfo(debugInfo);
     debugInfo.add("altquerystring", altUserQuery);

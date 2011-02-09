@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
@@ -160,9 +161,9 @@ public class SearchFiles {
       }
 
       @Override
-      public void setNextReader(IndexReader reader, int docBase)
+      public void setNextReader(AtomicReaderContext context)
           throws IOException {
-        this.docBase = docBase;
+        this.docBase = context.docBase;
       }
 
       @Override

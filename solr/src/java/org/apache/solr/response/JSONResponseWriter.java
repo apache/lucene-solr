@@ -286,6 +286,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
 
+  @Override
   public void writeNamedList(String name, NamedList val) throws IOException {
     if (val instanceof SimpleOrderedMap) {
       writeNamedListAsMapWithDups(name,val);
@@ -391,6 +392,7 @@ class JSONWriter extends TextResponseWriter {
     writeMapCloser();
   }
 
+  @Override
   public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
     writeMapOpener(-1); // no trivial way to determine map size
     // TODO: could easily figure out size for SolrDocument if needed...
@@ -437,6 +439,7 @@ class JSONWriter extends TextResponseWriter {
   // if a Doc can ever contain another doc, this optimization would have to go.
   private final HashMap scoreMap = new HashMap(1);
 
+  @Override
   public void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException {
     Map other = null;
     if (includeScore) {
@@ -446,6 +449,7 @@ class JSONWriter extends TextResponseWriter {
     writeDoc(name, doc.getFields(), returnFields, other);
   }
 
+  @Override
   public void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException {
     boolean includeScore=false;
     if (fields!=null) {
@@ -595,6 +599,7 @@ class JSONWriter extends TextResponseWriter {
     writer.write(']');
   }
 
+  @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.
@@ -647,6 +652,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
 
+  @Override
   public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
     if (!excludeOuter) {
       writeMapOpener(val.size());
@@ -678,6 +684,7 @@ class JSONWriter extends TextResponseWriter {
     }
   }
 
+  @Override
   public void writeArray(String name, Iterator val) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
     incLevel();
@@ -697,30 +704,37 @@ class JSONWriter extends TextResponseWriter {
   //
   // Primitive types
   //
+  @Override
   public void writeNull(String name) throws IOException {
     writer.write("null");
   }
 
+  @Override
   public void writeInt(String name, String val) throws IOException {
     writer.write(val);
   }
 
+  @Override
   public void writeLong(String name, String val) throws IOException {
     writer.write(val);
   }
 
+  @Override
   public void writeBool(String name, String val) throws IOException {
     writer.write(val);
   }
 
+  @Override
   public void writeFloat(String name, String val) throws IOException {
     writer.write(val);
   }
 
+  @Override
   public void writeDouble(String name, String val) throws IOException {
     writer.write(val);
   }
 
+  @Override
   public void writeDate(String name, String val) throws IOException {
     writeStr(name, val, false);
   }

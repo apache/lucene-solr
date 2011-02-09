@@ -28,7 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
  * 
  * @lucene.experimental
  * @since 2.9
- * @see Searcher#search(Query,Filter,int,Sort)
+ * @see IndexSearcher#search(Query,Filter,int,Sort)
  * @see FieldCache
  */
 public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueue.Entry> {
@@ -57,9 +57,6 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
     public OneComparatorFieldValueHitQueue(SortField[] fields, int size)
         throws IOException {
       super(fields);
-      if (fields.length == 0) {
-        throw new IllegalArgumentException("Sort must contain at least one field");
-      }
 
       SortField field = fields[0];
       setComparator(0,field.getComparator(size, 0));

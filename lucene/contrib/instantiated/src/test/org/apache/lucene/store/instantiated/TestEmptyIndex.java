@@ -37,7 +37,7 @@ public class TestEmptyIndex extends LuceneTestCase {
     InstantiatedIndex ii = new InstantiatedIndex();
 
     IndexReader r = new InstantiatedIndexReader(ii);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
 
     TopDocs td = s.search(new TermQuery(new Term("foo", "bar")), 1);
 
@@ -71,12 +71,6 @@ public class TestEmptyIndex extends LuceneTestCase {
     byte[] norms = MultiNorms.norms(r, "foo");
     if (norms != null) {
       assertEquals(0, norms.length);
-      norms = new byte[10];
-      Arrays.fill(norms, (byte)10);
-      r.norms("foo", norms, 10);
-      for (byte b : norms) {
-        assertEquals((byte)10, b);
-      }
     }
   }
 

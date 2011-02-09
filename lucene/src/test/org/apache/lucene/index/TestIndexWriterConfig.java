@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -26,10 +25,9 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
-import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -49,25 +47,16 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     
   }
 
-  private static final class MyWarmer extends IndexReaderWarmer {
-    // Does not implement anything - used only for type checking on IndexWriterConfig.
-
-    @Override
-    public void warm(IndexReader reader) throws IOException {
-    }
-    
-  }
-  
   @Test
   public void testDefaults() throws Exception {
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
     assertEquals(MockAnalyzer.class, conf.getAnalyzer().getClass());
     assertNull(conf.getIndexCommit());
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
-    assertEquals(IndexWriterConfig.UNLIMITED_FIELD_LENGTH, conf.getMaxFieldLength());
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
     assertEquals(OpenMode.CREATE_OR_APPEND, conf.getOpenMode());
-    assertTrue(Similarity.getDefault() == conf.getSimilarity());
+    // we don't need to assert this, it should be unspecified
+    assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
     assertEquals(IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, conf.getTermIndexInterval());
     assertEquals(IndexWriterConfig.getDefaultWriteLockTimeout(), conf.getWriteLockTimeout());
     assertEquals(IndexWriterConfig.WRITE_LOCK_TIMEOUT, IndexWriterConfig.getDefaultWriteLockTimeout());
@@ -89,7 +78,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMaxFieldLength");
     getters.add("getMergeScheduler");
     getters.add("getOpenMode");
-    getters.add("getSimilarity");
+    getters.add("getSimilarityProvider");
     getters.add("getTermIndexInterval");
     getters.add("getWriteLockTimeout");
     getters.add("getDefaultWriteLockTimeout");
@@ -129,7 +118,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     // Tests that the values of the constants does not change
     assertEquals(1000, IndexWriterConfig.WRITE_LOCK_TIMEOUT);
     assertEquals(32, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL);
-    assertEquals(Integer.MAX_VALUE, IndexWriterConfig.UNLIMITED_FIELD_LENGTH);
     assertEquals(-1, IndexWriterConfig.DISABLE_AUTO_FLUSH);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
@@ -186,12 +174,13 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     conf.setMergeScheduler(null);
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
 
-    // Test Similarity
-    assertTrue(Similarity.getDefault() == conf.getSimilarity());
-    conf.setSimilarity(new MySimilarity());
-    assertEquals(MySimilarity.class, conf.getSimilarity().getClass());
-    conf.setSimilarity(null);
-    assertTrue(Similarity.getDefault() == conf.getSimilarity());
+    // Test Similarity: 
+    // we shouldnt assert what the default is, just that its not null.
+    assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
+    conf.setSimilarityProvider(new MySimilarity());
+    assertEquals(MySimilarity.class, conf.getSimilarityProvider().getClass());
+    conf.setSimilarityProvider(null);
+    assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
 
     // Test IndexingChain
     assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());
@@ -233,6 +222,23 @@ public class TestIndexWriterConfig extends LuceneTestCase {
       // this is expected
     }
 
+    // Test setReaderTermsIndexDivisor
+    try {
+      conf.setReaderTermsIndexDivisor(0);
+      fail("should not have succeeded to set termsIndexDivisor to 0");
+    } catch (IllegalArgumentException e) {
+      // this is expected
+    }
+    
+    // Setting to -1 is ok
+    conf.setReaderTermsIndexDivisor(-1);
+    try {
+      conf.setReaderTermsIndexDivisor(-2);
+      fail("should not have succeeded to set termsIndexDivisor to < -1");
+    } catch (IllegalArgumentException e) {
+      // this is expected
+    }
+    
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     conf.setMaxThreadStates(5);
     assertEquals(5, conf.getMaxThreadStates());

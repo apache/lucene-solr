@@ -18,6 +18,7 @@
 package org.apache.solr.servlet.cache;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -75,11 +76,15 @@ public final class HttpCacheHeaderUtil {
       if (currentIndexVersion != indexVersionCache) {
         indexVersionCache=currentIndexVersion;
         
-        etagCache = "\""
-          + new String(Base64.encodeBase64((Long.toHexString
-                                            (Long.reverse(indexVersionCache))
-                                            + etagSeed).getBytes()))
-          + "\"";
+        try {
+          etagCache = "\""
+           + new String(Base64.encodeBase64((Long.toHexString
+                                             (Long.reverse(indexVersionCache))
+                                             + etagSeed).getBytes()), "US-ASCII")
+           + "\"";
+        } catch (UnsupportedEncodingException e) {
+          throw new RuntimeException(e); // may not happen
+        }
       }
       
       return etagCache;
@@ -95,7 +100,7 @@ public final class HttpCacheHeaderUtil {
   public static String calcEtag(final SolrQueryRequest solrReq) {
     final SolrCore core = solrReq.getCore();
     final long currentIndexVersion
-      = solrReq.getSearcher().getReader().getVersion();
+      = solrReq.getSearcher().getIndexReader().getVersion();
 
     EtagCacheVal etagCache = etagCoreCache.get(core);
     if (null == etagCache) {
@@ -152,7 +157,7 @@ public final class HttpCacheHeaderUtil {
       // assume default, change if needed (getOpenTime() should be fast)
       lastMod =
         LastModFrom.DIRLASTMOD == lastModFrom
-        ? IndexReader.lastModified(searcher.getReader().directory())
+        ? IndexReader.lastModified(searcher.getIndexReader().directory())
         : searcher.getOpenTime();
     } catch (IOException e) {
       // we're pretty freaking screwed if this happens

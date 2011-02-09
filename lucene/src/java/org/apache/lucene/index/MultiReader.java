@@ -19,22 +19,22 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.MapBackedSet;
 
 /** An IndexReader which reads multiple indexes, appending
  *  their content. */
 public class MultiReader extends IndexReader implements Cloneable {
   protected IndexReader[] subReaders;
+  private final ReaderContext topLevelContext;
   private int[] starts;                           // 1st docno for each segment
-  private final Map<IndexReader,ReaderUtil.Slice> subReaderToSlice = new HashMap<IndexReader,ReaderUtil.Slice>();
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
   private int maxDoc = 0;
   private int numDocs = -1;
@@ -48,7 +48,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   * @param subReaders set of (sub)readers
   */
   public MultiReader(IndexReader... subReaders) throws IOException {
-    initialize(subReaders, true);
+    topLevelContext = initialize(subReaders, true);
   }
 
   /**
@@ -60,14 +60,13 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @param subReaders set of (sub)readers
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
-    initialize(subReaders, closeSubReaders);
+    topLevelContext = initialize(subReaders, closeSubReaders);
   }
   
-  private void initialize(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
+  private ReaderContext initialize(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     this.subReaders =  subReaders.clone();
     starts = new int[subReaders.length + 1];    // build starts array
     decrefOnClose = new boolean[subReaders.length];
-
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
@@ -82,24 +81,15 @@ public class MultiReader extends IndexReader implements Cloneable {
       if (subReaders[i].hasDeletions()) {
         hasDeletions = true;
       }
-
-      final ReaderUtil.Slice slice = new ReaderUtil.Slice(starts[i],
-                                                          subReaders[i].maxDoc(),
-                                                          i);
-      subReaderToSlice.put(subReaders[i], slice);
     }
-
     starts[subReaders.length] = maxDoc;
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
+    return ReaderUtil.buildReaderContext(this);
   }
 
   @Override
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("");
-  }
-
-  @Override
-  public int getSubReaderDocBase(IndexReader subReader) {
-    return subReaderToSlice.get(subReader).start;
   }
 
   @Override
@@ -317,12 +307,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public synchronized void norms(String field, byte[] result, int offset)
-    throws IOException {
-    throw new UnsupportedOperationException("please use MultiNorms.norms, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level norms");
-  }
-
-  @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     int i = readerIndex(n);                           // find segment num
@@ -363,11 +347,6 @@ public class MultiReader extends IndexReader implements Cloneable {
         subReaders[i].close();
       }
     }
-
-    // NOTE: only needed in case someone had asked for
-    // FieldCache for top-level reader (which is generally
-    // not a good idea):
-    FieldCache.DEFAULT.purge(this);
   }
   
   @Override
@@ -402,5 +381,26 @@ public class MultiReader extends IndexReader implements Cloneable {
   @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return topLevelContext;
+  }
+
+  @Override
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    super.addReaderFinishedListener(listener);
+    for(IndexReader sub : subReaders) {
+      sub.addReaderFinishedListener(listener);
+    }
+  }
+
+  @Override
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    super.removeReaderFinishedListener(listener);
+    for(IndexReader sub : subReaders) {
+      sub.removeReaderFinishedListener(listener);
+    }
   }
 }

@@ -31,6 +31,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -98,9 +99,11 @@ public class TestCodecs extends LuceneTestCase {
     public void write(final FieldsConsumer consumer) throws Throwable {
       Arrays.sort(terms);
       final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
-      for (final TermData term : terms)
-        term.write(termsConsumer);
-      termsConsumer.finish();
+      long sumTotalTermCount = 0;
+      for (final TermData term : terms) {
+        sumTotalTermCount += term.write(termsConsumer);
+      }
+      termsConsumer.finish(sumTotalTermCount);
     }
   }
 
@@ -132,8 +135,9 @@ public class TestCodecs extends LuceneTestCase {
       return text.compareTo(((TermData) o).text);
     }
 
-    public void write(final TermsConsumer termsConsumer) throws Throwable {
+    public long write(final TermsConsumer termsConsumer) throws Throwable {
       final PostingsConsumer postingsConsumer = termsConsumer.startTerm(text);
+      long totTF = 0;
       for(int i=0;i<docs.length;i++) {
         final int termDocFreq;
         if (field.omitTF) {
@@ -143,6 +147,7 @@ public class TestCodecs extends LuceneTestCase {
         }
         postingsConsumer.startDoc(docs[i], termDocFreq);
         if (!field.omitTF) {
+          totTF += positions[i].length;
           for(int j=0;j<positions[i].length;j++) {
             final PositionData pos = positions[i][j];
             postingsConsumer.addPosition(pos.pos, pos.payload);
@@ -150,7 +155,8 @@ public class TestCodecs extends LuceneTestCase {
           postingsConsumer.finishDoc();
         }
       }
-      termsConsumer.finishTerm(text, docs.length);
+      termsConsumer.finishTerm(text, new TermStats(docs.length, totTF));
+      return totTF;
     }
   }
 
@@ -357,7 +363,7 @@ public class TestCodecs extends LuceneTestCase {
 
   private ScoreDoc[] search(final IndexWriter writer, final Query q, final int n) throws IOException {
     final IndexReader reader = writer.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader);
     try {
       return searcher.search(q, null, n).scoreDocs;
     }
@@ -584,7 +590,8 @@ public class TestCodecs extends LuceneTestCase {
 
     final int termIndexInterval = _TestUtil.nextInt(random, 13, 27);
     final SegmentCodecs codecInfo = SegmentCodecs.build(fieldInfos, CodecProvider.getDefault());
-    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo, new AtomicLong());
+    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo, null, new AtomicLong(0));
+
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
     Arrays.sort(fields);
     for (final FieldData field : fields) {

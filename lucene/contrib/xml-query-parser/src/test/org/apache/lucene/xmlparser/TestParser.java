@@ -73,7 +73,7 @@ public class TestParser extends LuceneTestCase {
 			d.close();
       writer.close();
 		reader=IndexReader.open(dir, true);
-		searcher=new IndexSearcher(reader);
+		searcher=newSearcher(reader);
 		
 	}
 	
@@ -215,7 +215,10 @@ public class TestParser extends LuceneTestCase {
 	}
 	private void dumpResults(String qType,Query q, int numDocs) throws IOException
 	{
-		TopDocs hits = searcher.search(q, null, numDocs);
+                if (VERBOSE) {
+                  System.out.println("TEST: query=" + q);
+                }
+                TopDocs hits = searcher.search(q, null, numDocs);
 		assertTrue(qType +" should produce results ", hits.totalHits>0);
 		if(VERBOSE)
 		{

@@ -48,12 +48,12 @@
     |start Search
     +-->
 <div class="searchbox">
-<form action="http://search.lucidimagination.com/p:solr" method="get" class="roundtopsmall">
+<form id="searchform" action="http://search.lucidimagination.com/p:solr" method="get" class="roundtopsmall">
 <input onFocus="getBlank (this, 'Search the site with Solr');" size="25" name="q" id="query" type="text" value="Search the site with Solr">&nbsp; 
-                    <input name="Search" value="Search" type="submit">
+                      <input onclick="selectProvider(this.form)" name="Search" value="Search" type="submit">
+                      @
+                      <select id="searchProvider" name="searchProvider"><option value="any">select provider</option><option value="lucid">Lucid Find</option><option value="sl">Search-Lucene</option></select>
 </form>
-<div style="position: relative; top: -5px; left: -10px">Powered by <a href="http://www.lucidimagination.com" style="color: #033268">Lucid Imagination</a>
-</div>
 </div>
 <!--+
     |end search
@@ -155,6 +155,43 @@ document.write("Last Published: " + document.lastModified);
 <a href="http://lucene.apache.org/nutch/">Nutch</a>
 </div>
 </div>
+<script type="text/javascript">
+              function selectProvider(form) {
+                provider = form.elements['searchProvider'].value;
+                if (provider == "any") {
+                  if (Math.random() > 0.5) {
+                    provider = "lucid";
+                  } else {
+                    provider = "sl";
+                  }
+                }
+
+                if (provider == "lucid") {
+                  form.action = "http://search.lucidimagination.com/p:solr";
+                } else if (provider == "sl") {
+                  form.action = "http://search-lucene.com/solr";
+                }
+
+                days = 365; // cookie will be valid for a year
+                date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toGMTString();
+                document.cookie = "searchProvider=" + provider + expires + "; path=/";
+              }
+
+              if (document.cookie.length>0) {
+                cStart=document.cookie.indexOf("searchProvider=");
+                if (cStart!=-1) {
+                  cStart=cStart + "searchProvider=".length;
+                  cEnd=document.cookie.indexOf(";", cStart);
+                  if (cEnd==-1) {
+                    cEnd=document.cookie.length;
+                  }
+                  provider = unescape(document.cookie.substring(cStart,cEnd));
+                  document.forms['searchform'].elements['searchProvider'].value = provider;
+                }
+              }
+            </script>
 <div id="credit">
 <hr>
 <a href="http://forrest.apache.org/"><img border="0" title="Built with Apache Forrest" alt="Built with Apache Forrest - logo" src="images/built-with-forrest-button.png" style="width: 88px;height: 31px;"></a>

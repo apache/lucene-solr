@@ -26,19 +26,19 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -110,7 +110,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
-        .setSimilarity(similarity));
+                                                     .setSimilarityProvider(similarity).setMergePolicy(newInOrderLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -121,11 +121,11 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = new SlowMultiReaderWrapper(writer.getReader());
+    reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(similarity);
+    searcher = newSearcher(reader);
+    searcher.setSimilarityProvider(similarity);
   }
 
   @Override
@@ -152,9 +152,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
     CheckHits.checkExplanations(query, PayloadHelper.FIELD, searcher, true);
-    Spans spans = query.getSpans(searcher.getIndexReader());
+    Spans spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), query);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);
     /*float score = hits.score(0);
     for (int i =1; i < hits.length(); i++)
     {
@@ -204,9 +203,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
     assertTrue(numTens + " does not equal: " + 10, numTens == 10);
     CheckHits.checkExplanations(query, "field", searcher, true);
-    Spans spans = query.getSpans(searcher.getIndexReader());
+    Spans spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), query);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);
     //should be two matches per document
     int count = 0;
     //100 hits times 2 matches per hit, we should have 200 in count
@@ -222,7 +220,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction(), false);
 
     IndexSearcher theSearcher = new IndexSearcher(directory, true);
-    theSearcher.setSimilarity(new FullSimilarity());
+    theSearcher.setSimilarityProvider(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -246,9 +244,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
     assertTrue(numTens + " does not equal: " + 10, numTens == 10);
     CheckHits.checkExplanations(query, "field", searcher, true);
-    Spans spans = query.getSpans(searcher.getIndexReader());
+    Spans spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), query);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);
     //should be two matches per document
     int count = 0;
     //100 hits times 2 matches per hit, we should have 200 in count
@@ -292,15 +289,15 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     @Override
     public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
-      return payload[0];
+      return payload[offset];
     }
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      return state.getBoost();
     }
 
     @Override
@@ -332,7 +329,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   static class FullSimilarity extends DefaultSimilarity{
     public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
-      return payload[0];
+      return payload[offset];
     }
   }
 

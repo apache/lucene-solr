@@ -48,6 +48,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     public static volatile boolean openCalled = false;
     public static volatile Directory dir;
     
+    @Override
     public Directory open(String path) throws IOException {
       openCalled = true;
       // need to close the directory, or otherwise the test fails.
@@ -63,6 +64,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   static public class TestIndexReaderFactory extends IndexReaderFactory {
     static volatile boolean newReaderCalled = false;
 
+    @Override
     public IndexReader newReader(Directory indexDir, boolean readOnly)
         throws IOException {
       TestIndexReaderFactory.newReaderCalled = true;

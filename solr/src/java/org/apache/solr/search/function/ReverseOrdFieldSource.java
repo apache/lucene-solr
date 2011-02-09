@@ -18,7 +18,9 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -51,51 +53,64 @@ public class ReverseOrdFieldSource extends ValueSource {
     this.field = field;
   }
 
+  @Override
   public String description() {
     return "rord("+field+')';
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(reader, field);
+  @Override
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader;
+    final int off = readerContext.docBase;
 
+    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(topReader, field);
     final int end = sindex.numOrd();
 
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
-        return (float)(end - sindex.getOrd(doc));
+        return (float)(end - sindex.getOrd(doc+off));
       }
 
+      @Override
       public int intVal(int doc) {
-        return (end - sindex.getOrd(doc));
+        return (end - sindex.getOrd(doc+off));
       }
 
+      @Override
       public long longVal(int doc) {
-        return (long)(end - sindex.getOrd(doc));
+        return (long)(end - sindex.getOrd(doc+off));
       }
 
+      @Override
       public int ordVal(int doc) {
-        return (end - sindex.getOrd(doc));
+        return (end - sindex.getOrd(doc+off));
       }
 
+      @Override
       public int numOrd() {
         return end;
       }
 
+      @Override
       public double doubleVal(int doc) {
-        return (double)(end - sindex.getOrd(doc));
+        return (double)(end - sindex.getOrd(doc+off));
       }
 
+      @Override
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
-        return Integer.toString((end - sindex.getOrd(doc)));
+        return Integer.toString((end - sindex.getOrd(doc+off)));
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + strVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  ReverseOrdFieldSource.class) return false;
     ReverseOrdFieldSource other = (ReverseOrdFieldSource)o;
@@ -103,6 +118,7 @@ public class ReverseOrdFieldSource extends ValueSource {
   }
 
   private static final int hcode = ReverseOrdFieldSource.class.hashCode();
+  @Override
   public int hashCode() {
     return hcode + field.hashCode();
   };

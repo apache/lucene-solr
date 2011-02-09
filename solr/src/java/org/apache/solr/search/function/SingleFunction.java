@@ -33,14 +33,17 @@ import java.util.Map;
 
   protected abstract String name();
 
+  @Override
   public String description() {
     return name() + '(' + source.description() + ')';
   }
 
+  @Override
   public int hashCode() {
     return source.hashCode() + name().hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     SingleFunction other = (SingleFunction)o;

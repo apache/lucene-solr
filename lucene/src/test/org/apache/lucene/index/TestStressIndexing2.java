@@ -149,7 +149,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Map<String,Document> docs = new HashMap<String,Document>();
     IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
-        0.1).setMaxBufferedDocs(maxBufferedDocs));
+                                                                                                  0.1).setMaxBufferedDocs(maxBufferedDocs).setMergePolicy(newLogMergePolicy()));
     w.setInfoStream(VERBOSE ? System.out : null);
     w.commit();
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
@@ -206,7 +206,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE)
                .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
-               .setReaderPooling(doReaderPooling));
+               .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()));
       w.setInfoStream(VERBOSE ? System.out : null);
       LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
@@ -248,7 +248,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   
   public static void indexSerial(Random random, Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();

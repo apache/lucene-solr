@@ -38,7 +38,7 @@ class ReqOptSumScorer extends Scorer {
       Scorer reqScorer,
       Scorer optScorer)
   {
-    super(null); // No similarity used.
+    super(reqScorer.weight);
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
   }

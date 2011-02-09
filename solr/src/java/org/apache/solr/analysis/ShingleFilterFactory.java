@@ -34,6 +34,7 @@ public class ShingleFilterFactory extends BaseTokenFilterFactory {
   private boolean outputUnigramsIfNoShingles;
   private String tokenSeparator;
 
+  @Override
   public void init(Map<String, String> args) {
     super.init(args);
     maxShingleSize = getInt("maxShingleSize", 

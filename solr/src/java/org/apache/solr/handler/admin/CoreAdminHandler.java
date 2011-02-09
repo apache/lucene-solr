@@ -470,7 +470,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
         RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
         try {
-          info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getReader(), false));
+          info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader(), false));
         } finally {
           searcher.decref();
         }

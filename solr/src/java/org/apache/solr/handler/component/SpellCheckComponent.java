@@ -143,7 +143,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         boolean extendedResults = params.getBool(SPELLCHECK_EXTENDED_RESULTS,
             false);
         NamedList response = new SimpleOrderedMap();
-        IndexReader reader = rb.req.getSearcher().getReader();
+        IndexReader reader = rb.req.getSearcher().getIndexReader();
         boolean collate = params.getBool(SPELLCHECK_COLLATE, false);
         float accuracy = params.getFloat(SPELLCHECK_ACCURACY, Float.MIN_VALUE);
         SolrParams customParams = getCustomParams(getDictionaryName(params), params, shardRequest);
@@ -678,7 +678,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         if (buildOnCommit)  {
           buildSpellIndex(newSearcher);
         } else if (buildOnOptimize) {
-          if (newSearcher.getReader().isOptimized())  {
+          if (newSearcher.getIndexReader().isOptimized())  {
             buildSpellIndex(newSearcher);
           } else  {
             LOG.info("Index is not optimized therefore skipping building spell check index for: " + checker.getDictionaryName());

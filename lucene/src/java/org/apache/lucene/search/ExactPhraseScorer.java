@@ -60,9 +60,12 @@ final class ExactPhraseScorer extends Scorer {
   private int docID = -1;
   private int freq;
 
+  private final Similarity similarity;
+  
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
                     Similarity similarity, byte[] norms) throws IOException {
-    super(similarity, weight);
+    super(weight);
+    this.similarity = similarity;
     this.norms = norms;
     this.value = weight.getValue();
 
@@ -87,7 +90,7 @@ final class ExactPhraseScorer extends Scorer {
     }
 
     for (int i = 0; i < SCORE_CACHE_SIZE; i++) {
-      scoreCache[i] = getSimilarity().tf((float) i) * value;
+      scoreCache[i] = similarity.tf((float) i) * value;
     }
   }
 
@@ -207,9 +210,9 @@ final class ExactPhraseScorer extends Scorer {
     if (freq < SCORE_CACHE_SIZE) {
       raw = scoreCache[freq];
     } else {
-      raw = getSimilarity().tf((float) freq) * value;
+      raw = similarity.tf((float) freq) * value;
     }
-    return norms == null ? raw : raw * getSimilarity().decodeNormValue(norms[docID]); // normalize
+    return norms == null ? raw : raw * similarity.decodeNormValue(norms[docID]); // normalize
   }
 
   private int phraseFreq() throws IOException {

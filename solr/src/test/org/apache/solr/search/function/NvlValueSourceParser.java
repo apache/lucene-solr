@@ -42,16 +42,19 @@ public class NvlValueSourceParser extends ValueSourceParser {
      */
     private float nvlFloatValue = 0.0f;
 
+    @Override
     public ValueSource parse(FunctionQParser fp) throws ParseException {
 	ValueSource source = fp.parseValueSource();
 	final float nvl = fp.parseFloat();
 
 	return new SimpleFloatFunction(source) {
-	    protected String name() {
+	    @Override
+      protected String name() {
 		return "nvl";
 	    }
 
-	    protected float func(int doc, DocValues vals) {
+	    @Override
+      protected float func(int doc, DocValues vals) {
 		float v = vals.floatVal(doc);
 		if (v == nvlFloatValue) {
 		    return nvl;
@@ -62,6 +65,7 @@ public class NvlValueSourceParser extends ValueSourceParser {
 	};
     }
 
+    @Override
     public void init(NamedList args) {
 	/* initialize the value to consider as null */
 	Float nvlFloatValueArg = (Float) args.get("nvlFloatValue");

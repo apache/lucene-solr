@@ -22,14 +22,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.util.Set;
 import java.util.HashSet;
 import java.net.HttpURLConnection;
@@ -44,12 +39,14 @@ import java.net.URL;
  */
 public class SimplePostTool {
   public static final String DEFAULT_POST_URL = "http://localhost:8983/solr/update";
-  public static final String POST_ENCODING = "UTF-8";
-  public static final String VERSION_OF_THIS_TOOL = "1.2";
+  public static final String VERSION_OF_THIS_TOOL = "1.3";
   private static final String SOLR_OK_RESPONSE_EXCERPT = "<int name=\"status\">0</int>";
 
   private static final String DEFAULT_COMMIT = "yes";
-  
+  private static final String DEFAULT_OUT = "no";
+
+  private static final String DEFAULT_DATA_TYPE = "application/xml";
+
   private static final String DATA_MODE_FILES = "files";
   private static final String DATA_MODE_ARGS = "args";
   private static final String DATA_MODE_STDIN = "stdin";
@@ -61,37 +58,35 @@ public class SimplePostTool {
     DATA_MODES.add(DATA_MODE_ARGS);
     DATA_MODES.add(DATA_MODE_STDIN);
   }
-  
+
   protected URL solrUrl;
 
-  private class PostException extends RuntimeException {
-    PostException(String reason,Throwable cause) {
-      super(reason + " (POST URL=" + solrUrl + ")",cause);
-    }
-  }
-  
   public static void main(String[] args) {
     info("version " + VERSION_OF_THIS_TOOL);
 
     if (0 < args.length && "-help".equals(args[0])) {
       System.out.println
-        ("This is a simple command line tool for POSTing raw XML to a Solr\n"+
-         "port.  XML data can be read from files specified as commandline\n"+
-         "args; as raw commandline arg strings; or via STDIN.\n"+
+        ("This is a simple command line tool for POSTing raw data to a Solr\n"+
+         "port.  Data can be read from files specified as commandline args,\n"+
+         "as raw commandline arg strings, or via STDIN.\n"+
          "Examples:\n"+
          "  java -Ddata=files -jar post.jar *.xml\n"+
          "  java -Ddata=args  -jar post.jar '<delete><id>42</id></delete>'\n"+
          "  java -Ddata=stdin -jar post.jar < hd.xml\n"+
          "Other options controlled by System Properties include the Solr\n"+
-         "URL to POST to, and whether a commit should be executed.  These\n"+
-         "are the defaults for all System Properties...\n"+
+         "URL to POST to, the Content-Type of the data, whether a commit\n"+
+         "should be executed, and whether the response should be written\n"+
+         "to STDOUT. These are the defaults for all System Properties...\n"+
          "  -Ddata=" + DEFAULT_DATA_MODE + "\n"+
+         "  -Dtype=" + DEFAULT_DATA_TYPE + "\n"+
          "  -Durl=" + DEFAULT_POST_URL + "\n"+
-         "  -Dcommit=" + DEFAULT_COMMIT + "\n");
+         "  -Dcommit=" + DEFAULT_COMMIT + "\n"+
+         "  -Dout=" + DEFAULT_OUT + "\n");
       return;
     }
 
-    
+    OutputStream out = null;
+
     URL u = null;
     try {
       u = new URL(System.getProperty("url", DEFAULT_POST_URL));
@@ -105,67 +100,54 @@ public class SimplePostTool {
       fatal("System Property 'data' is not valid for this tool: " + mode);
     }
 
+    final String doOut = System.getProperty("out", DEFAULT_OUT);
+    if ("yes".equals(System.getProperty("out", DEFAULT_OUT))) {
+      out = System.out;
+    }
+
     try {
       if (DATA_MODE_FILES.equals(mode)) {
         if (0 < args.length) {
           info("POSTing files to " + u + "..");
-          final int posted = t.postFiles(args,0);
+          final int posted = t.postFiles(args, 0, out);
         }
         
       } else if (DATA_MODE_ARGS.equals(mode)) {
         if (0 < args.length) {
           info("POSTing args to " + u + "..");
           for (String a : args) {
-            final StringWriter sw = new StringWriter();
-            t.postData(new StringReader(a), sw);
-            warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
+            t.postData(t.stringToStream(a), null, out);
           }
         }
         
       } else if (DATA_MODE_STDIN.equals(mode)) {
         info("POSTing stdin to " + u + "..");
-        final StringWriter sw = new StringWriter();
-        t.postData(new InputStreamReader(System.in,POST_ENCODING), sw);
-        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
+        t.postData(System.in, null, out);
       }
       if ("yes".equals(System.getProperty("commit",DEFAULT_COMMIT))) {
         info("COMMITting Solr index changes..");
-        final StringWriter sw = new StringWriter();
-        t.commit(sw);
-        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
+        t.commit(out);
       }
     
-    } catch(IOException ioe) {
-      fatal("Unexpected IOException " + ioe);
+    } catch(RuntimeException e) {
+      fatal("RuntimeException " + e);
     }
   }
  
   /** Post all filenames provided in args, return the number of files posted*/
-  int postFiles(String [] args,int startIndexInArgs) throws IOException {
+  int postFiles(String [] args,int startIndexInArgs, OutputStream out) {
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
-      final StringWriter sw = new StringWriter();
-      
       if (srcFile.canRead()) {
         info("POSTing file " + srcFile.getName());
-        postFile(srcFile, sw);
+        postFile(srcFile, out);
         filesPosted++;
-        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
       } else {
         warn("Cannot read input file: " + srcFile);
       }
     }
     return filesPosted;
-  }
-  
-  /** Check what Solr replied to a POST, and complain if it's not what we expected.
-   *  TODO: parse the response and check it XMLwise, here we just check it as an unparsed String  
-   */
-  static void warnIfNotExpectedResponse(String actual,String expected) {
-    if(actual.indexOf(expected) < 0) {
-      warn("Unexpected response from Solr: '" + actual + "' does not contain '" + expected + "'");
-    }
   }
   
   static void warn(String msg) {
@@ -187,15 +169,13 @@ public class SimplePostTool {
    */
   public SimplePostTool(URL solrUrl) {
     this.solrUrl = solrUrl;
-    warn("Make sure your XML documents are encoded in " + POST_ENCODING
-        + ", other encodings are not currently supported");
   }
 
   /**
    * Does a simple commit operation 
    */
-  public void commit(Writer output) throws IOException {
-    postData(new StringReader("<commit/>"), output);
+  public void commit(OutputStream output) {
+    postData(stringToStream("<commit/>"), null, output);
   }
 
   /**
@@ -203,85 +183,103 @@ public class SimplePostTool {
    * writes to response to output.
    * @throws UnsupportedEncodingException 
    */
-  public void postFile(File file, Writer output) 
-    throws FileNotFoundException, UnsupportedEncodingException {
+  public void postFile(File file, OutputStream output) {
 
-    // FIXME; use a real XML parser to read files, so as to support various encodings
-    // (and we can only post well-formed XML anyway)
-    Reader reader = new InputStreamReader(new FileInputStream(file),POST_ENCODING);
+    InputStream is = null;
     try {
-      postData(reader, output);
+      is = new FileInputStream(file);
+      postData(is, (int)file.length(), output);
+    } catch (IOException e) {
+      fatal("Can't open/read file: " + file);
     } finally {
       try {
-        if(reader!=null) reader.close();
+        if(is!=null) is.close();
       } catch (IOException e) {
-        throw new PostException("IOException while closing file", e);
+        fatal("IOException while closing file: "+ e);
       }
     }
   }
 
   /**
-   * Reads data from the data reader and posts it to solr,
+   * Reads data from the data stream and posts it to solr,
    * writes to the response to output
    */
-  public void postData(Reader data, Writer output) {
+  public void postData(InputStream data, Integer length, OutputStream output) {
+
+    final String type = System.getProperty("type", DEFAULT_DATA_TYPE);
 
     HttpURLConnection urlc = null;
     try {
-      urlc = (HttpURLConnection) solrUrl.openConnection();
       try {
-        urlc.setRequestMethod("POST");
-      } catch (ProtocolException e) {
-        throw new PostException("Shouldn't happen: HttpURLConnection doesn't support POST??", e);
-      }
-      urlc.setDoOutput(true);
-      urlc.setDoInput(true);
-      urlc.setUseCaches(false);
-      urlc.setAllowUserInteraction(false);
-      urlc.setRequestProperty("Content-type", "text/xml; charset=" + POST_ENCODING);
-      
-      OutputStream out = urlc.getOutputStream();
-      
-      try {
-        Writer writer = new OutputStreamWriter(out, POST_ENCODING);
-        pipe(data, writer);
-        writer.close();
+        urlc = (HttpURLConnection) solrUrl.openConnection();
+        try {
+          urlc.setRequestMethod("POST");
+        } catch (ProtocolException e) {
+          fatal("Shouldn't happen: HttpURLConnection doesn't support POST??"+e);
+                
+        }
+        urlc.setDoOutput(true);
+        urlc.setDoInput(true);
+        urlc.setUseCaches(false);
+        urlc.setAllowUserInteraction(false);
+        urlc.setRequestProperty("Content-type", type);
+
+        if (null != length) urlc.setFixedLengthStreamingMode(length);
+
       } catch (IOException e) {
-        throw new PostException("IOException while posting data", e);
-      } finally {
-        if(out!=null) out.close();
+        fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
       }
       
-      InputStream in = urlc.getInputStream();
+      OutputStream out = null;
       try {
-        Reader reader = new InputStreamReader(in);
-        pipe(reader, output);
-        reader.close();
+        out = urlc.getOutputStream();
+        pipe(data, out);
       } catch (IOException e) {
-        throw new PostException("IOException while reading response", e);
+        fatal("IOException while posting data: " + e);
       } finally {
-        if(in!=null) in.close();
+        try { if(out!=null) out.close(); } catch (IOException x) { /*NOOP*/ }
       }
       
-    } catch (IOException e) {
+      InputStream in = null;
       try {
-        fatal("Solr returned an error: " + urlc.getResponseMessage());
-      } catch (IOException f) { }
-      fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
+        if (HttpURLConnection.HTTP_OK != urlc.getResponseCode()) {
+          fatal("Solr returned an error #" + urlc.getResponseCode() + 
+                " " + urlc.getResponseMessage());
+        }
+
+        in = urlc.getInputStream();
+        pipe(in, output);
+      } catch (IOException e) {
+        fatal("IOException while reading response: " + e);
+      } finally {
+        try { if(in!=null) in.close(); } catch (IOException x) { /*NOOP*/ }
+      }
+      
     } finally {
       if(urlc!=null) urlc.disconnect();
     }
   }
 
-  /**
-   * Pipes everything from the reader to the writer via a buffer
-   */
-  private static void pipe(Reader reader, Writer writer) throws IOException {
-    char[] buf = new char[1024];
-    int read = 0;
-    while ( (read = reader.read(buf) ) >= 0) {
-      writer.write(buf, 0, read);
+  private static InputStream stringToStream(String s) {
+    InputStream is = null;
+    try {
+      is = new ByteArrayInputStream(s.getBytes("UTF-8"));
+    } catch (UnsupportedEncodingException e) {
+      fatal("Shouldn't happen: UTF-8 not supported?!?!?!");
     }
-    writer.flush();
+    return is;
+  }
+
+  /**
+   * Pipes everything from the source to the dest.  If dest is null, 
+   * then everything is read fro msource and thrown away.
+   */
+  private static void pipe(InputStream source, OutputStream dest) throws IOException {
+    byte[] buf = new byte[1024];
+    int read = 0;
+    while ( (read = source.read(buf) ) >= 0) {
+      if (null != dest) dest.write(buf, 0, read);
+    }
+    if (null != dest) dest.flush();
   }
 }

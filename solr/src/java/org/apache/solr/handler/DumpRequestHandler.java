@@ -18,7 +18,7 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 import java.util.ArrayList;
 
 import org.apache.commons.io.IOUtils;
@@ -38,7 +38,7 @@ public class DumpRequestHandler extends RequestHandlerBase
         
     // Write the streams...
     if( req.getContentStreams() != null ) {
-      ArrayList streams = new ArrayList();
+      ArrayList<NamedList<Object>> streams = new ArrayList<NamedList<Object>>();
       // Cycle through each stream
       for( ContentStream content : req.getContentStreams() ) {
         NamedList<Object> stream = new SimpleOrderedMap<Object>();
@@ -46,11 +46,11 @@ public class DumpRequestHandler extends RequestHandlerBase
         stream.add( "sourceInfo", content.getSourceInfo() );
         stream.add( "size", content.getSize() );
         stream.add( "contentType", content.getContentType() );
-        InputStream is = content.getStream();
+        Reader reader = content.getReader();
         try {
-          stream.add( "stream", IOUtils.toString(is) );
+          stream.add( "stream", IOUtils.toString(reader) );
         } finally {
-          is.close();
+          reader.close();
         }
         streams.add( stream );
       }

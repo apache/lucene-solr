@@ -146,23 +146,28 @@ class BufferingRequestProcessor extends UpdateRequestProcessor
     super(next);
   }
   
+  @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     addCommands.add( cmd );
   }
 
+  @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     deleteCommands.add( cmd );
   }
 
+  @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     commitCommands.add( cmd );
   }
   
+  @Override
   public void processRollback(RollbackUpdateCommand cmd) throws IOException
   {
     rollbackCommands.add( cmd );
   }
 
+  @Override
   public void finish() throws IOException {
     // nothing?    
   }

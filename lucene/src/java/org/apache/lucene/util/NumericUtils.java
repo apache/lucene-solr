@@ -22,8 +22,6 @@ import org.apache.lucene.document.NumericField;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 
-// TODO: Remove the commented out methods before release!
-
 /**
  * This is a helper class to generate prefix-encoded representations for numerical values
  * and supplies converters to represent float/double values as sortable integers/longs.

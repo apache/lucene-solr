@@ -91,13 +91,6 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public void cacheCurrentTerm() throws IOException {
-    for(int i=0;i<numTop;i++) {
-      top[i].terms.cacheCurrentTerm();
-    }
-  }
-
-  @Override
   public Comparator<BytesRef> getComparator() {
     return termComp;
   }
@@ -264,10 +257,23 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public int docFreq() {
+  public int docFreq() throws IOException {
     int sum = 0;
     for(int i=0;i<numTop;i++) {
       sum += top[i].terms.docFreq();
+    }
+    return sum;
+  }
+
+  @Override
+  public long totalTermFreq() throws IOException {
+    long sum = 0;
+    for(int i=0;i<numTop;i++) {
+      final long v = top[i].terms.totalTermFreq();
+      if (v == -1) {
+        return v;
+      }
+      sum += v;
     }
     return sum;
   }

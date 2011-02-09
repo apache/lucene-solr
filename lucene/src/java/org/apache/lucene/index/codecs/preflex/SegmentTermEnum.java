@@ -45,7 +45,7 @@ public final class SegmentTermEnum implements Cloneable {
   // whenever you add a new format, make it 1 smaller (negative version logic)!
   public static final int FORMAT_CURRENT = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
   
-  // when removing support for old versions, levae the last supported version here
+  // when removing support for old versions, leave the last supported version here
   public static final int FORMAT_MINIMUM = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
 
   private TermBuffer termBuffer = new TermBuffer();

@@ -21,7 +21,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.util.Version;
 
 /**
@@ -41,8 +42,6 @@ import org.apache.lucene.util.Version;
  */
 public final class IndexWriterConfig implements Cloneable {
 
-  public static final int UNLIMITED_FIELD_LENGTH = Integer.MAX_VALUE;
-
   /**
    * Specifies the open mode for {@link IndexWriter}:
    * <ul>
@@ -55,7 +54,7 @@ public final class IndexWriterConfig implements Cloneable {
   public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
   
   /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;                   // TODO: this should be private to the codec, not settable here
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32; // TODO: this should be private to the codec, not settable here
 
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;
@@ -113,8 +112,7 @@ public final class IndexWriterConfig implements Cloneable {
   private IndexDeletionPolicy delPolicy;
   private IndexCommit commit;
   private OpenMode openMode;
-  private int maxFieldLength;
-  private Similarity similarity;
+  private SimilarityProvider similarityProvider;
   private int termIndexInterval; // TODO: this should be private to the codec, not settable here
   private MergeScheduler mergeScheduler;
   private long writeLockTimeout;
@@ -145,8 +143,7 @@ public final class IndexWriterConfig implements Cloneable {
     delPolicy = new KeepOnlyLastCommitDeletionPolicy();
     commit = null;
     openMode = OpenMode.CREATE_OR_APPEND;
-    maxFieldLength = UNLIMITED_FIELD_LENGTH;
-    similarity = Similarity.getDefault();
+    similarityProvider = IndexSearcher.getDefaultSimilarityProvider();
     termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL; // TODO: this should be private to the codec, not settable here
     mergeScheduler = new ConcurrentMergeScheduler();
     writeLockTimeout = WRITE_LOCK_TIMEOUT;
@@ -220,37 +217,6 @@ public final class IndexWriterConfig implements Cloneable {
   }
 
   /**
-   * The maximum number of terms that will be indexed for a single field in a
-   * document. This limits the amount of memory required for indexing, so that
-   * collections with very large files will not crash the indexing process by
-   * running out of memory. This setting refers to the number of running terms,
-   * not to the number of different terms.
-   * <p>
-   * <b>NOTE:</b> this silently truncates large documents, excluding from the
-   * index all terms that occur further in the document. If you know your source
-   * documents are large, be sure to set this value high enough to accomodate
-   * the expected size. If you set it to {@link #UNLIMITED_FIELD_LENGTH}, then
-   * the only limit is your memory, but you should anticipate an
-   * OutOfMemoryError.
-   * <p>
-   * By default it is set to {@link #UNLIMITED_FIELD_LENGTH}.
-   */
-  public IndexWriterConfig setMaxFieldLength(int maxFieldLength) {
-    this.maxFieldLength = maxFieldLength;
-    return this;
-  }
-
-  /**
-   * Returns the maximum number of terms that will be indexed for a single field
-   * in a document.
-   * 
-   * @see #setMaxFieldLength(int)
-   */
-  public int getMaxFieldLength() {
-    return maxFieldLength;
-  }
-
-  /**
    * Expert: allows to open a certain commit point. The default is null which
    * opens the latest commit point.
    */
@@ -269,25 +235,22 @@ public final class IndexWriterConfig implements Cloneable {
   }
 
   /**
-   * Expert: set the {@link Similarity} implementation used by this IndexWriter.
+   * Expert: set the {@link SimilarityProvider} implementation used by this IndexWriter.
    * <p>
-   * <b>NOTE:</b> the similarity cannot be null. If <code>null</code> is passed,
-   * the similarity will be set to the default.
-   * 
-   * @see Similarity#setDefault(Similarity)
+   * <b>NOTE:</b> the similarity provider cannot be null. If <code>null</code> is passed,
+   * the similarity provider will be set to the default implementation (unspecified).
    */
-  public IndexWriterConfig setSimilarity(Similarity similarity) {
-    this.similarity = similarity == null ? Similarity.getDefault() : similarity;
+  public IndexWriterConfig setSimilarityProvider(SimilarityProvider similarityProvider) {
+    this.similarityProvider = similarityProvider == null ? IndexSearcher.getDefaultSimilarityProvider() : similarityProvider;
     return this;
   }
 
   /**
-   * Expert: returns the {@link Similarity} implementation used by this
-   * IndexWriter. This defaults to the current value of
-   * {@link Similarity#getDefault()}.
+   * Expert: returns the {@link SimilarityProvider} implementation used by this
+   * IndexWriter.
    */
-  public Similarity getSimilarity() {
-    return similarity;
+  public SimilarityProvider getSimilarityProvider() {
+    return similarityProvider;
   }
   
   /**
@@ -589,10 +552,13 @@ public final class IndexWriterConfig implements Cloneable {
   /** Sets the termsIndexDivisor passed to any readers that
    *  IndexWriter opens, for example when applying deletes
    *  or creating a near-real-time reader in {@link
-   *  IndexWriter#getReader}. */
+   *  IndexWriter#getReader}. If you pass -1, the terms index 
+   *  won't be loaded by the readers. This is only useful in 
+   *  advanced situations when you will only .next() through 
+   *  all terms; attempts to seek will hit an exception. */
   public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
-    if (divisor <= 0) {
-      throw new IllegalArgumentException("divisor must be >= 1 (got " + divisor + ")");
+    if (divisor <= 0 && divisor != -1) {
+      throw new IllegalArgumentException("divisor must be >= 1, or -1 (got " + divisor + ")");
     }
     readerTermsIndexDivisor = divisor;
     return this;
@@ -611,8 +577,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
     sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
     sb.append("openMode=").append(openMode).append("\n");
-    sb.append("maxFieldLength=").append(maxFieldLength).append("\n");
-    sb.append("similarity=").append(similarity.getClass().getName()).append("\n");
+    sb.append("similarityProvider=").append(similarityProvider.getClass().getName()).append("\n");
     sb.append("termIndexInterval=").append(termIndexInterval).append("\n"); // TODO: this should be private to the codec, not settable here
     sb.append("mergeScheduler=").append(mergeScheduler.getClass().getName()).append("\n");
     sb.append("default WRITE_LOCK_TIMEOUT=").append(WRITE_LOCK_TIMEOUT).append("\n");

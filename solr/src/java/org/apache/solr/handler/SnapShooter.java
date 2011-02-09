@@ -64,6 +64,7 @@ public class SnapShooter {
     replicationHandler.core.getDeletionPolicy().saveCommitPoint(indexCommit.getVersion());
 
     new Thread() {
+      @Override
       public void run() {
         createSnapshot(indexCommit, replicationHandler);
       }
@@ -71,7 +72,8 @@ public class SnapShooter {
   }
 
   void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
-    NamedList details = new NamedList();
+
+    NamedList<Object> details = new NamedList<Object>();
     details.add("startTime", new Date().toString());
     File snapShotDir = null;
     String directoryName = null;

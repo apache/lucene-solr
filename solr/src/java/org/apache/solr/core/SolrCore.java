@@ -696,6 +696,7 @@ public final class SolrCore implements SolrInfoMBean {
       return refCount.get() <= 0;
   }
   
+  @Override
   protected void finalize() throws Throwable {
     try {
       if (getOpenCount() != 0) {
@@ -1005,7 +1006,7 @@ public final class SolrCore implements SolrInfoMBean {
       
       if (newestSearcher != null && solrConfig.reopenReaders
           && indexDirFile.equals(newIndexDirFile)) {
-        IndexReader currentReader = newestSearcher.get().getReader();
+        IndexReader currentReader = newestSearcher.get().getIndexReader();
         IndexReader newReader = currentReader.reopen();
 
         if (newReader == currentReader) {
@@ -1192,6 +1193,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   private RefCounted<SolrIndexSearcher> newHolder(SolrIndexSearcher newSearcher) {
     RefCounted<SolrIndexSearcher> holder = new RefCounted<SolrIndexSearcher>(newSearcher) {
+      @Override
       public void close() {
         try {
           synchronized(searcherLock) {
@@ -1286,7 +1288,7 @@ public final class SolrCore implements SolrInfoMBean {
     rsp.add("responseHeader", responseHeader);
 
     // toLog is a local ref to the same NamedList used by the request
-    NamedList toLog = rsp.getToLog();
+    NamedList<Object> toLog = rsp.getToLog();
     // for back compat, we set these now just in case other code
     // are expecting them during handleRequest
     toLog.add("webapp", req.getContext().get("webapp"));
@@ -1312,7 +1314,7 @@ public final class SolrCore implements SolrInfoMBean {
   
   public static void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
-	NamedList responseHeader = rsp.getResponseHeader();
+    NamedList<Object> responseHeader = rsp.getResponseHeader();
     final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
     int status = 0;
     Exception exception = rsp.getException();
@@ -1586,7 +1588,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   public NamedList getStatistics() {
-    NamedList lst = new SimpleOrderedMap();
+    NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());

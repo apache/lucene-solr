@@ -294,10 +294,11 @@
 	<field name="link" type="string" indexed="true" stored="true" />
 	<field name="description" type="html" indexed="true" stored="true" />
 	<field name="creator" type="string" indexed="false" stored="true" />
-	<field name="item-subject" type="string" indexed="true" stored="true" />
-	<field name="date" type="date" indexed="true" stored="true" />
-	<field name="slash-department" type="string" indexed="true" stored="true" />
-	<field name="slash-section" type="string" indexed="true" stored="true" />
+	<field name="item-subject" type="string" indexed="true" stored="false" />
+	<field name="date" type="date" indexed="true" stored="false" />
+	<field name="slash-department" type="string" indexed="true" stored="false" />
+	<field name="slash-section" type="string" indexed="true" stored="false" />
+	<field name="slash-comments" type="sint" indexed="true" stored="true" />
 	
 	<field name="all_text" type="text" indexed="true" stored="false" multiValued="true" />
 	<copyField source="source" dest="all_text" />

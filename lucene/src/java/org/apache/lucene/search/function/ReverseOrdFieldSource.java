@@ -17,7 +17,7 @@
 
 package org.apache.lucene.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
@@ -69,8 +69,8 @@ public class ReverseOrdFieldSource extends ValueSource {
 
   /*(non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
   @Override
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
+  public DocValues getValues(AtomicReaderContext context) throws IOException {
+    final FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, field);
 
     final int end = termsIndex.numOrd();
 
@@ -107,7 +107,9 @@ public class ReverseOrdFieldSource extends ValueSource {
   /*(non-Javadoc) @see java.lang.Object#equals(java.lang.Object) */
   @Override
   public boolean equals(Object o) {
-    if (o.getClass() !=  ReverseOrdFieldSource.class) return false;
+    if (o == this) return true;
+    if (o == null) return false;
+    if (o.getClass() != ReverseOrdFieldSource.class) return false;
     ReverseOrdFieldSource other = (ReverseOrdFieldSource)o;
     return this.field.equals(other.field); 
   }

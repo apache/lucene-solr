@@ -144,6 +144,68 @@ public abstract class BufferedIndexInput extends IndexInput {
     }
   }
 
+  @Override
+  public short readShort() throws IOException {
+    if (2 <= (bufferLength-bufferPosition)) {
+      return (short) (((buffer[bufferPosition++] & 0xFF) <<  8) |  (buffer[bufferPosition++] & 0xFF));
+    } else {
+      return super.readShort();
+    }
+  }
+  
+  @Override
+  public int readInt() throws IOException {
+    if (4 <= (bufferLength-bufferPosition)) {
+      return ((buffer[bufferPosition++] & 0xFF) << 24) | ((buffer[bufferPosition++] & 0xFF) << 16)
+        | ((buffer[bufferPosition++] & 0xFF) <<  8) |  (buffer[bufferPosition++] & 0xFF);
+    } else {
+      return super.readInt();
+    }
+  }
+  
+  @Override
+  public long readLong() throws IOException {
+    if (8 <= (bufferLength-bufferPosition)) {
+      final int i1 = ((buffer[bufferPosition++] & 0xff) << 24) | ((buffer[bufferPosition++] & 0xff) << 16) |
+        ((buffer[bufferPosition++] & 0xff) << 8) | (buffer[bufferPosition++] & 0xff);
+      final int i2 = ((buffer[bufferPosition++] & 0xff) << 24) | ((buffer[bufferPosition++] & 0xff) << 16) |
+        ((buffer[bufferPosition++] & 0xff) << 8) | (buffer[bufferPosition++] & 0xff);
+      return (((long)i1) << 32) | (i2 & 0xFFFFFFFFL);
+    } else {
+      return super.readLong();
+    }
+  }
+
+  @Override
+  public int readVInt() throws IOException {
+    if (5 <= (bufferLength-bufferPosition)) {
+      byte b = buffer[bufferPosition++];
+      int i = b & 0x7F;
+      for (int shift = 7; (b & 0x80) != 0; shift += 7) {
+        b = buffer[bufferPosition++];
+        i |= (b & 0x7F) << shift;
+      }
+      return i;
+    } else {
+      return super.readVInt();
+    }
+  }
+  
+  @Override
+  public long readVLong() throws IOException {
+    if (9 <= bufferLength-bufferPosition) {
+      byte b = buffer[bufferPosition++];
+      long i = b & 0x7F;
+      for (int shift = 7; (b & 0x80) != 0; shift += 7) {
+        b = buffer[bufferPosition++];
+        i |= (b & 0x7FL) << shift;
+      }
+      return i;
+    } else {
+      return super.readVLong();
+    }
+  }
+  
   private void refill() throws IOException {
     long start = bufferStart + bufferPosition;
     long end = start + bufferSize;

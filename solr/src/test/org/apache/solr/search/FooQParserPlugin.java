@@ -27,6 +27,7 @@ import org.apache.lucene.index.Term;
 
 
 public class FooQParserPlugin extends QParserPlugin {
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new FooQParser(qstr, localParams, params, req);
   }
@@ -40,6 +41,7 @@ class FooQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
+  @Override
   public Query parse() throws ParseException {
     return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
   }

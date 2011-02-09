@@ -9,12 +9,14 @@ API Changes
 
  * LUCENE-2413: Removed the AnalyzerUtil in common/miscellaneous.  (Robert Muir)
 
- * LUCENE-2167,LUCENE-2699,LUCENE-2763: StandardTokenizer/Analyzer in 
-   common/standard/ now implement the Word Break rules from the Unicode 6.0.0
-   Text Segmentation algorithm (UAX#29).  
+ * LUCENE-2167,LUCENE-2699,LUCENE-2763,LUCENE-2847: StandardTokenizer/Analyzer
+   in common/standard/ now implement the Word Break rules from the Unicode 6.0.0
+   Text Segmentation algorithm (UAX#29), covering the full range of Unicode code
+   points, including values from U+FFFF to U+10FFFF
    
-   ClassicTokenizer/Analyzer retains the old StandardTokenizer/Analyzer
-   implementation and behavior.
+   ClassicTokenizer/Analyzer retains the old (pre-Lucene 3.1) StandardTokenizer/
+   Analyzer implementation and behavior.  Only the Unicode Basic Multilingual
+   Plane (code points from U+0000 to U+FFFF) is covered.
 
    UAX29URLEmailTokenizer tokenizes URLs and E-mail addresses according to the
    relevant RFCs, in addition to implementing the UAX#29 Word Break rules.
@@ -77,6 +79,9 @@ New Features
     - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
+
+ * SOLR-1057: Add PathHierarchyTokenizer that represents file path hierarchies as synonyms of
+   /something, /something/something, /something/something/else. (Ryan McKinley, Koji Sekiguchi)
 
 Build
 

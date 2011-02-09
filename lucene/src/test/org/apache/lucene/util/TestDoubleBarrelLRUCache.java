@@ -145,14 +145,17 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
       this.value = value;
     }
 
+    @Override
     public boolean equals(Object other) {
       return this.value.equals(((CloneableObject) other).value);
     }
 
+    @Override
     public int hashCode() {
       return value.hashCode();
     }
 
+    @Override
     public Object clone() {
       return new CloneableObject(value);
     }
@@ -165,14 +168,17 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
       this.value = value;
     }
 
+    @Override
     public boolean equals(Object other) {
       return this.value.equals(((CloneableInteger) other).value);
     }
 
+    @Override
     public int hashCode() {
       return value.hashCode();
     }
 
+    @Override
     public Object clone() {
       return new CloneableInteger(value);
     }

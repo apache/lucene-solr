@@ -2,6 +2,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -57,6 +58,19 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
             "The quIck browN LuceneFox Jumps")), set2)), output);
   }
 
+  // LUCENE-2901
+  public void testComposition() throws Exception {   
+    TokenStream ts = new LowerCaseFilterMock(
+                     new KeywordMarkerFilter(
+                     new KeywordMarkerFilter(
+                     new WhitespaceTokenizer(TEST_VERSION_CURRENT,
+                     new StringReader("Dogs Trees Birds Houses")),
+                     new HashSet<String>(Arrays.asList(new String[] { "Birds", "Houses" }))), 
+                     new HashSet<String>(Arrays.asList(new String[] { "Dogs", "Trees" }))));
+    
+    assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
+  }
+  
   public static final class LowerCaseFilterMock extends TokenFilter {
 
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);

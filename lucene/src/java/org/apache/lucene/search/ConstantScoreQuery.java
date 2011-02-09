@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -96,12 +97,10 @@ public class ConstantScoreQuery extends Query {
 
   protected class ConstantWeight extends Weight {
     private final Weight innerWeight;
-    private final Similarity similarity;
     private float queryNorm;
     private float queryWeight;
     
     public ConstantWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = getSimilarity(searcher);
       this.innerWeight = (query == null) ? null : query.createWeight(searcher);
     }
 
@@ -132,22 +131,22 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context,  ScorerContext scorerContext) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
-        final DocIdSet dis = filter.getDocIdSet(reader);
+        final DocIdSet dis = filter.getDocIdSet(context);
         if (dis == null)
           return null;
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
         disi =
-          innerWeight.scorer(reader, scoreDocsInOrder, topScorer);
+          innerWeight.scorer(context, scorerContext);
       }
       if (disi == null)
         return null;
-      return new ConstantScorer(similarity, disi, this);
+      return new ConstantScorer(disi, this);
     }
     
     @Override
@@ -156,8 +155,8 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      final Scorer cs = scorer(reader, true, false);
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      final Scorer cs = scorer(context, ScorerContext.def());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -180,8 +179,8 @@ public class ConstantScoreQuery extends Query {
     final DocIdSetIterator docIdSetIterator;
     final float theScore;
 
-    public ConstantScorer(Similarity similarity, DocIdSetIterator docIdSetIterator, Weight w) throws IOException {
-      super(similarity,w);
+    public ConstantScorer(DocIdSetIterator docIdSetIterator, Weight w) throws IOException {
+      super(w);
       theScore = w.getValue();
       this.docIdSetIterator = docIdSetIterator;
     }
@@ -211,8 +210,7 @@ public class ConstantScoreQuery extends Query {
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           // we must wrap again here, but using the scorer passed in as parameter:
-          collector.setScorer(new ConstantScorer(ConstantScorer.this.getSimilarity(),
-            scorer, ConstantScorer.this.weight));
+          collector.setScorer(new ConstantScorer(scorer, ConstantScorer.this.weight));
         }
         
         @Override
@@ -221,8 +219,8 @@ public class ConstantScoreQuery extends Query {
         }
         
         @Override
-        public void setNextReader(IndexReader reader, int docBase) throws IOException {
-          collector.setNextReader(reader, docBase);
+        public void setNextReader(AtomicReaderContext context) throws IOException {
+          collector.setNextReader(context);
         }
         
         @Override
@@ -243,10 +241,8 @@ public class ConstantScoreQuery extends Query {
     }
 
     // this optimization allows out of order scoring as top scorer,
-    // TODO: theoretically this method should not be called because its protected and
-    // this class does not use it, it should be public in Scorer!
     @Override
-    protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+    public boolean score(Collector collector, int max, int firstDocID) throws IOException {
       if (docIdSetIterator instanceof Scorer) {
         return ((Scorer) docIdSetIterator).score(wrapCollector(collector), max, firstDocID);
       } else {

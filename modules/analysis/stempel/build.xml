@@ -25,7 +25,6 @@
 	
   <property name="build.dir" location="../build/stempel" />
   <property name="dist.dir" location="../dist/stempel" />
-  <property name="maven.dist.dir" location="../dist/maven" />
 
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 
@@ -39,6 +38,7 @@
 	
   <path id="test.classpath">
     <path refid="classpath"/>
+    <pathelement location="../../../lucene/build/classes/test-framework"/>
     <pathelement location="../../../lucene/build/classes/test/"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>

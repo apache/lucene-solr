@@ -22,6 +22,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.document.Document;
@@ -30,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedList;
 
 /**
@@ -51,7 +53,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     add("piccadilly circus", writer);
     
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // search for "blueberry pi*":
     MultiPhraseQuery query1 = new MultiPhraseQuery();
@@ -140,12 +142,13 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     IndexReader r = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(r);
+    IndexSearcher searcher = newSearcher(r);
     MultiPhraseQuery q = new MultiPhraseQuery();
     q.add(new Term("body", "blueberry"));
     q.add(new Term("body", "chocolate"));
     q.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
     assertEquals(2, searcher.search(q, 1).totalHits);
+    searcher.close();
     r.close();
     indexStore.close();
   }
@@ -169,7 +172,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     add("blue raspberry pie", writer);
     
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     // This query will be equivalent to +body:pie +body:"blue*"
     BooleanQuery q = new BooleanQuery();
     q.add(new TermQuery(new Term("body", "pie")), BooleanClause.Occur.MUST);
@@ -200,7 +203,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     add("a note", "note", writer);
     
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // This query will be equivalent to +type:note +body:"a t*"
     BooleanQuery q = new BooleanQuery();
@@ -227,7 +230,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     add("a note", "note", writer);
     
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     MultiPhraseQuery q = new MultiPhraseQuery();
     q.add(new Term("body", "a"));
@@ -285,4 +288,44 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     new MultiPhraseQuery().toString();
   }
   
+  public void testCustomIDF() throws Exception {
+    Directory indexStore = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    add("This is a test", "object", writer);
+    add("a note", "note", writer);
+    
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.setSimilarityProvider(new DefaultSimilarity() {
+      
+      @Override
+      public IDFExplanation idfExplain(Collection<Term> terms,
+          IndexSearcher searcher) throws IOException {
+        return new IDFExplanation() {
+
+          @Override
+          public float getIdf() {
+            return 10f;
+          }
+
+          @Override
+          public String explain() {
+            return "just a test";
+          }
+          
+        };
+      }   
+    });
+    
+    MultiPhraseQuery query = new MultiPhraseQuery();
+    query.add(new Term[] { new Term("body", "this"), new Term("body", "that") });
+    query.add(new Term("body", "is"));
+    Weight weight = query.createWeight(searcher);
+    assertEquals(10f * 10f, weight.sumOfSquaredWeights(), 0.001f);
+
+    writer.close();
+    searcher.close();
+    reader.close();
+    indexStore.close();
+  }
 }

@@ -18,8 +18,9 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.ReaderUtil;
 import org.junit.Test;
 
 /**
@@ -168,14 +169,14 @@ public class TestOrdValues extends FunctionTestSetup {
       ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
       try {
         assertEquals("All docs should be matched!", N_DOCS, h.length);
-        IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+        AtomicReaderContext[] leaves = ReaderUtil.leaves(s.getTopReaderContext());
 
-        for (IndexReader reader : readers) {
+        for (AtomicReaderContext leaf : leaves) {
           if (i == 0) {
-            innerArray = q.valSrc.getValues(reader).getInnerArray();
+            innerArray = q.valSrc.getValues(leaf).getInnerArray();
           } else {
-            log(i + ".  compare: " + innerArray + " to " + q.valSrc.getValues(reader).getInnerArray());
-            assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(reader).getInnerArray());
+            log(i + ".  compare: " + innerArray + " to " + q.valSrc.getValues(leaf).getInnerArray());
+            assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(leaf).getInnerArray());
           }
         }
       } catch (UnsupportedOperationException e) {
@@ -201,15 +202,15 @@ public class TestOrdValues extends FunctionTestSetup {
     q = new ValueSourceQuery(vs);
     h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!", N_DOCS, h.length);
-    IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+    AtomicReaderContext[] leaves = ReaderUtil.leaves(s.getTopReaderContext());
 
-    for (IndexReader reader : readers) {
+    for (AtomicReaderContext leaf : leaves) {
       try {
         log("compare (should differ): " + innerArray + " to "
-                + q.valSrc.getValues(reader).getInnerArray());
+                + q.valSrc.getValues(leaf).getInnerArray());
         assertNotSame(
                 "different values should be loaded for a different field!",
-                innerArray, q.valSrc.getValues(reader).getInnerArray());
+                innerArray, q.valSrc.getValues(leaf).getInnerArray());
       } catch (UnsupportedOperationException e) {
         if (!warned) {
           System.err.println("WARNING: " + testName()
@@ -229,15 +230,15 @@ public class TestOrdValues extends FunctionTestSetup {
     q = new ValueSourceQuery(vs);
     h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!", N_DOCS, h.length);
-    readers = s.getIndexReader().getSequentialSubReaders();
+    leaves = ReaderUtil.leaves(s.getTopReaderContext());
 
-    for (IndexReader reader : readers) {
+    for (AtomicReaderContext leaf : leaves) {
       try {
         log("compare (should differ): " + innerArray + " to "
-                + q.valSrc.getValues(reader).getInnerArray());
+                + q.valSrc.getValues(leaf).getInnerArray());
         assertNotSame(
                 "cached field values should not be reused if reader as changed!",
-                innerArray, q.valSrc.getValues(reader).getInnerArray());
+                innerArray, q.valSrc.getValues(leaf).getInnerArray());
       } catch (UnsupportedOperationException e) {
         if (!warned) {
           System.err.println("WARNING: " + testName()
@@ -251,6 +252,15 @@ public class TestOrdValues extends FunctionTestSetup {
 
   private String testName() {
     return getClass().getName() + "." + getName();
+  }
+  
+  // LUCENE-1250
+  public void testEqualsNull() throws Exception {
+    OrdFieldSource ofs = new OrdFieldSource("f");
+    assertFalse(ofs.equals(null));
+    
+    ReverseOrdFieldSource rofs = new ReverseOrdFieldSource("f");
+    assertFalse(rofs.equals(null));
   }
 
 }

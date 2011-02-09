@@ -30,8 +30,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.Reader;
 
 /**
  * A test for {@link DocumentAnalysisRequestHandler}.
@@ -71,15 +75,14 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
                     "</doc>" +
                     "</docs>";
 
-    final List<ContentStream> contentStreams = new ArrayList<ContentStream>(1);
-    contentStreams.add(new ContentStreamBase.StringStream(docsInput));
+    final ContentStream cs = new ContentStreamBase.StringStream(docsInput);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("analysis.query", "The Query String");
     params.add("analysis.showmatch", "true");
     SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params) {
       @Override
       public Iterable<ContentStream> getContentStreams() {
-        return contentStreams;
+        return Collections.singleton(cs);
       }
     };
 
@@ -104,6 +107,94 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertEquals("The Text", field.getFirstValue());
 
     req.close();
+  }
+
+  /** A binary-only ContentStream */
+  static class ByteStream extends ContentStreamBase {
+    private final byte[] bytes;
+    
+    public ByteStream(byte[] bytes, String contentType) {
+      this.bytes = bytes; 
+      this.contentType = contentType;
+      name = null;
+      size = Long.valueOf(bytes.length);
+      sourceInfo = "rawBytes";
+    }
+
+    public InputStream getStream() throws IOException {
+      return new ByteArrayInputStream(bytes);
+    }
+
+    @Override
+    public Reader getReader() throws IOException {
+      throw new IOException("This is a byte stream, Readers are not supported.");
+    }
+  }
+
+  
+  // This test should also test charset detection in UpdateRequestHandler,
+  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  @Test
+  public void testCharsetInDocument() throws Exception {
+    final byte[] xmlBytes = (
+      "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n" +
+      "<docs>\r\n" +
+      " <doc>\r\n" +
+      "  <field name=\"id\">Müller</field>\r\n" +
+      " </doc>" +
+      "</docs>"
+    ).getBytes("ISO-8859-1");
+    
+    // we declare a content stream without charset:
+    final ContentStream cs = new ByteStream(xmlBytes, "application/xml");
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params) {
+      @Override
+      public Iterable<ContentStream> getContentStreams() {
+        return Collections.singleton(cs);
+      }
+    };
+
+    DocumentAnalysisRequest request = handler.resolveAnalysisRequest(req);
+    assertNotNull(request);
+    final List<SolrInputDocument> documents = request.getDocuments();
+    assertNotNull(documents);
+    assertEquals(1, documents.size());
+    SolrInputDocument doc = documents.get(0);
+    assertEquals("Müller", doc.getField("id").getValue());
+  }
+
+  // This test should also test charset detection in UpdateRequestHandler,
+  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  @Test
+  public void testCharsetOutsideDocument() throws Exception {
+    final byte[] xmlBytes = (
+      "<docs>\r\n" +
+      " <doc>\r\n" +
+      "  <field name=\"id\">Müller</field>\r\n" +
+      " </doc>" +
+      "</docs>"
+    ).getBytes("ISO-8859-1");
+    
+    // we declare a content stream with charset:
+    final ContentStream cs = new ByteStream(xmlBytes, "application/xml; charset=ISO-8859-1");
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params) {
+      @Override
+      public Iterable<ContentStream> getContentStreams() {
+        return Collections.singleton(cs);
+      }
+    };
+
+    DocumentAnalysisRequest request = handler.resolveAnalysisRequest(req);
+    assertNotNull(request);
+    final List<SolrInputDocument> documents = request.getDocuments();
+    assertNotNull(documents);
+    assertEquals(1, documents.size());
+    SolrInputDocument doc = documents.get(0);
+    assertEquals("Müller", doc.getField("id").getValue());
   }
 
   /**

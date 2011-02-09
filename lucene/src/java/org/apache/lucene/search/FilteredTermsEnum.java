@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -121,8 +122,13 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
     
   @Override
-  public int docFreq() {
+  public int docFreq() throws IOException {
     return tenum.docFreq();
+  }
+
+  @Override
+  public long totalTermFreq() throws IOException {
+    return tenum.totalTermFreq();
   }
 
   /** This enum does not support seeking!
@@ -155,12 +161,24 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   public DocsAndPositionsEnum docsAndPositions(Bits bits, DocsAndPositionsEnum reuse) throws IOException {
     return tenum.docsAndPositions(bits, reuse);
   }
-
+  
+  /** This enum does not support seeking!
+   * @throws UnsupportedOperationException
+   */
   @Override
-  public void cacheCurrentTerm() throws IOException {
-    tenum.cacheCurrentTerm();
+  public void seek(BytesRef term, TermState state) throws IOException {
+    throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
   }
-    
+  
+  /**
+   * Returns the filtered enums term state 
+   */
+  @Override
+  public TermState termState() throws IOException {
+    assert tenum != null;
+    return tenum.termState();
+  }
+
   @SuppressWarnings("fallthrough")
   @Override
   public BytesRef next() throws IOException {

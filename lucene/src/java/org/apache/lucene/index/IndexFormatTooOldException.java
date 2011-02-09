@@ -23,10 +23,15 @@ package org.apache.lucene.index;
  */
 public class IndexFormatTooOldException extends CorruptIndexException {
 
+  public IndexFormatTooOldException(String filename, String version) {
+    super("Format version is not supported" + (filename!=null ? (" in file '" + filename + "'") : "") +
+        ": " + version + ". This version of Lucene only supports indexes created with release 3.0 and later.");
+  }
+  
   public IndexFormatTooOldException(String filename, int version, int minVersion, int maxVersion) {
     super("Format version is not supported" + (filename!=null ? (" in file '" + filename + "'") : "") +
-      ": " + version + " (needs to be between " + minVersion + " and " + maxVersion +
-      "). This version of Lucene only supports indexes created with release 3.0 and later.");
+        ": " + version + " (needs to be between " + minVersion + " and " + maxVersion +
+    "). This version of Lucene only supports indexes created with release 3.0 and later.");
   }
 
 }

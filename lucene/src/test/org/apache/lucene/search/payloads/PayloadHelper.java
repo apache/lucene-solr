@@ -25,10 +25,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -112,13 +112,13 @@ public class PayloadHelper {
    * @throws IOException
    */
   // TODO: randomize
-  public IndexSearcher setUp(Random random, Similarity similarity, int numDocs) throws IOException {
+  public IndexSearcher setUp(Random random, SimilarityProvider similarity, int numDocs) throws IOException {
     Directory directory = new MockDirectoryWrapper(random, new RAMDirectory());
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
 
     // TODO randomize this
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
+        TEST_VERSION_CURRENT, analyzer).setSimilarityProvider(similarity));
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -127,11 +127,11 @@ public class PayloadHelper {
       doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    reader = new SlowMultiReaderWrapper(IndexReader.open(writer));
+    reader = IndexReader.open(writer, true);
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(similarity);
+    IndexSearcher searcher = LuceneTestCase.newSearcher(reader);
+    searcher.setSimilarityProvider(similarity);
     return searcher;
   }
 

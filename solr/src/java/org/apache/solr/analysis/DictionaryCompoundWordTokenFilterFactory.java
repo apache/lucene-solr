@@ -36,6 +36,7 @@ public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFac
   private int minSubwordSize;
   private int maxSubwordSize;
   private boolean onlyLongestMatch;
+  @Override
   public void init(Map<String, String> args) {
     super.init(args);
     assureMatchVersion();

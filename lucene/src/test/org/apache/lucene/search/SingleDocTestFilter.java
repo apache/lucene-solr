@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.DocIdBitSet;
 
 import java.util.BitSet;
@@ -31,8 +31,8 @@ public class SingleDocTestFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    BitSet bits = new BitSet(reader.maxDoc());
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    BitSet bits = new BitSet(context.reader.maxDoc());
     bits.set(doc);
     return new DocIdBitSet(bits);
   }

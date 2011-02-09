@@ -71,7 +71,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server = new ZkTestServer(zkDir);
       server.run();
-
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
@@ -217,6 +217,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         .create(shardsPath + "/" + zkNodeName, bytes, CreateMode.PERSISTENT);
   }
   
+  @Override
   public void tearDown() throws Exception {
     SolrConfig.severeErrors.clear();
     super.tearDown();

@@ -19,7 +19,7 @@ package org.apache.solr.handler;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -27,6 +27,7 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -41,7 +42,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -105,6 +106,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     DocumentAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     return handleAnalysisRequest(analysisRequest, req.getSchema());
@@ -156,10 +158,14 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     request.setShowMatch(showMatch);
 
     ContentStream stream = extractSingleContentStream(req);
-    Reader reader = stream.getReader();
-    XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
-
+    InputStream is = null;
+    XMLStreamReader parser = null;
+    
     try {
+      is = stream.getStream();
+      final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+      parser = (charset == null) ?
+        inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
 
       while (true) {
         int event = parser.next();
@@ -181,8 +187,8 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       }
 
     } finally {
-      parser.close();
-      IOUtils.closeQuietly(reader);
+      if (parser != null) parser.close();
+      IOUtils.closeQuietly(is);
     }
   }
 
@@ -216,23 +222,21 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
         FieldType fieldType = schema.getFieldType(name);
 
-        Set<String> termsToMatch = new HashSet<String>();
-        if (request.getQuery() != null && request.isShowMatch()) {
-          try {
-            List<Token> tokens = analyzeValue(request.getQuery(), fieldType.getQueryAnalyzer());
-            for (Token token : tokens) {
-              termsToMatch.add(token.toString());
-            }
-          } catch (Exception e) {
-            // ignore analysis exceptions since we are applying arbitrary text to all fields
-          }
+        final String queryValue = request.getQuery();
+        Set<BytesRef> termsToMatch;
+        try {
+          termsToMatch = (queryValue != null && request.isShowMatch())
+            ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
+            : EMPTY_BYTES_SET;
+        } catch (Exception e) {
+          // ignore analysis exceptions since we are applying arbitrary text to all fields
+          termsToMatch = EMPTY_BYTES_SET;
         }
 
         if (request.getQuery() != null) {
           try {
-            AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), Collections.EMPTY_SET);
-            NamedList<List<NamedList>> tokens = analyzeValue(request.getQuery(), analysisContext);
-            fieldTokens.add("query", tokens);
+            AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), EMPTY_BYTES_SET);
+            fieldTokens.add("query", analyzeValue(request.getQuery(), analysisContext));
           } catch (Exception e) {
             // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
@@ -241,10 +245,11 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
         Analyzer analyzer = fieldType.getAnalyzer();
         AnalysisContext analysisContext = new AnalysisContext(fieldType, analyzer, termsToMatch);
         Collection<Object> fieldValues = document.getFieldValues(name);
-        NamedList<NamedList<List<NamedList>>> indexTokens = new SimpleOrderedMap<NamedList<List<NamedList>>>();
+        NamedList<NamedList<? extends Object>> indexTokens 
+          = new SimpleOrderedMap<NamedList<? extends Object>>();
         for (Object fieldValue : fieldValues) {
-          NamedList<List<NamedList>> tokens = analyzeValue(fieldValue.toString(), analysisContext);
-          indexTokens.add(String.valueOf(fieldValue), tokens);
+          indexTokens.add(String.valueOf(fieldValue), 
+                          analyzeValue(fieldValue.toString(), analysisContext));
         }
         fieldTokens.add("index", indexTokens);
       }

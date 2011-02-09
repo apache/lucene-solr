@@ -82,7 +82,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	private Set<?> excltable = Collections.emptySet();
 	
 	/**
-	 * Builds an analyzer with the default stop words ({@link #BRAZILIAN_STOP_WORDS}).
+	 * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
 	 */
 	public BrazilianAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);

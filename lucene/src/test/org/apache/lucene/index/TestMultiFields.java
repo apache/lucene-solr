@@ -97,6 +97,9 @@ public class TestMultiFields extends LuceneTestCase {
 
       for(int i=0;i<100;i++) {
         BytesRef term = terms.get(random.nextInt(terms.size()));
+        if (VERBOSE) {
+          System.out.println("TEST: seek to term= "+ UnicodeUtil.toHexString(term.utf8ToString()));
+        }
         
         DocsEnum docsEnum = terms2.docs(delDocs, term, null);
         assertNotNull(docsEnum);

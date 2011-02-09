@@ -55,6 +55,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     clearIndex();
     assertU(commit());
     assertU(optimize());
+    // make sure this component is initialized correctly for each test
+    QueryElevationComponent comp = (QueryElevationComponent)h.getCore().getSearchComponent("elevate");
+    NamedList<String> args = new NamedList<String>();
+    args.add( QueryElevationComponent.CONFIG_FILE, "elevate.xml" );
+    args.add( QueryElevationComponent.FIELD_TYPE, "string" );
+    comp.init( args );
+    comp.inform( h.getCore() );
+    comp.forceElevation = false; 
   }
   
   @Test
@@ -71,7 +79,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     comp.inform( core );
 
     SolrQueryRequest req = req();
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     Map<String, ElevationObj> map = comp.getElevationMap( reader, core );
     req.close();
 
@@ -112,13 +120,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testSorting() throws IOException
   {
-    assertU(adoc("id", "a", "title", "ipod",           "str_s", "a" ));
-    assertU(adoc("id", "b", "title", "ipod ipod",      "str_s", "b" ));
-    assertU(adoc("id", "c", "title", "ipod ipod ipod", "str_s", "c" ));
+    assertU(adoc("id", "a", "title", "ipod",           "str_s1", "a" ));
+    assertU(adoc("id", "b", "title", "ipod ipod",      "str_s1", "b" ));
+    assertU(adoc("id", "c", "title", "ipod ipod ipod", "str_s1", "c" ));
 
-    assertU(adoc("id", "x", "title", "boosted",                 "str_s", "x" ));
-    assertU(adoc("id", "y", "title", "boosted boosted",         "str_s", "y" ));
-    assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s", "z" ));
+    assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "x" ));
+    assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "y" ));
+    assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "z" ));
     assertU(commit());
     
     String query = "title:ipod";
@@ -130,7 +138,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     args.put( "indent", "true" );
     //args.put( CommonParams.FL, "id,title,score" );
     SolrQueryRequest req = new LocalSolrQueryRequest( h.getCore(), new MapSolrParams( args) );
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     QueryElevationComponent booster = (QueryElevationComponent)req.getCore().getSearchComponent( "elevate" );
 
     assertQ("Make sure standard sort works as expected", req
@@ -180,7 +188,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     // Try normal sort by 'id'
     // default 'forceBoost' should be false
     assertEquals( false, booster.forceElevation );
-    args.put( CommonParams.SORT, "str_s asc" );
+    args.put( CommonParams.SORT, "str_s1 asc" );
     assertQ( null, req
         ,"//*[@numFound='4']"
         ,"//result/doc[1]/str[@name='id'][.='a']"
@@ -255,7 +263,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     comp.inform( h.getCore() );
 
     SolrQueryRequest req = req();
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     Map<String, ElevationObj> map = comp.getElevationMap(reader, h.getCore());
     assertTrue( map.get( "aaa" ).priority.containsKey( new BytesRef("A") ) );
     assertNull( map.get( "bbb" ) );
@@ -267,7 +275,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     req = req();
-    reader = req.getSearcher().getReader();
+    reader = req.getSearcher().getIndexReader();
     map = comp.getElevationMap(reader, h.getCore());
     assertNull( map.get( "aaa" ) );
     assertTrue( map.get( "bbb" ).priority.containsKey( new BytesRef("B") ) );

@@ -55,6 +55,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     // add 100 documents
     addDocs(writer, 100);
     assertEquals(100, writer.maxDoc());
@@ -156,6 +157,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(aux);
 
     // Adds 10 docs, then replaces them with another 10
@@ -427,7 +429,7 @@ public class TestAddIndexes extends LuceneTestCase {
     );
 
     writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
-    assertEquals(1060, writer.maxDoc());
+    assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
     dir.close();
@@ -451,6 +453,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMaxBufferedDocs(100).
             setMergePolicy(newLogMergePolicy(10))
     );
+    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(aux);
     assertEquals(30, writer.maxDoc());
     assertEquals(3, writer.getSegmentCount());
@@ -479,7 +482,7 @@ public class TestAddIndexes extends LuceneTestCase {
     );
 
     writer.addIndexes(aux, aux2);
-    assertEquals(1060, writer.maxDoc());
+    assertEquals(1040, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
     dir.close();

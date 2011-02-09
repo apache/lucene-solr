@@ -109,7 +109,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
   private final Version matchVersion;
 
   /**
-   * Builds an analyzer with the default stop words ({@link #DUTCH_STOP_WORDS}) 
+   * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}) 
    * and a few default entries for the stem exclusion table.
    * 
    */

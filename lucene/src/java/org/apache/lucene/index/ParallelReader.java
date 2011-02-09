@@ -24,12 +24,12 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Pair;
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MapBackedSet;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /** An IndexReader which reads multiple, parallel indexes.  Each index added
@@ -57,7 +57,7 @@ public class ParallelReader extends IndexReader {
   private Map<IndexReader,Collection<String>> readerToFields = new HashMap<IndexReader,Collection<String>>();
   private List<IndexReader> storedFieldReaders = new ArrayList<IndexReader>();
   private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
-  
+  private final ReaderContext topLevelReaderContext = new AtomicReaderContext(this);
   private int maxDoc;
   private int numDocs;
   private boolean hasDeletions;
@@ -76,6 +76,7 @@ public class ParallelReader extends IndexReader {
   public ParallelReader(boolean closeSubReaders) throws IOException {
     super();
     this.incRefReaders = !closeSubReaders;
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
 
   /** {@inheritDoc} */
@@ -92,7 +93,7 @@ public class ParallelReader extends IndexReader {
     buffer.append(')');
     return buffer.toString();
   }
-
+  
  /** Add an IndexReader.
   * @throws IOException if there is a low-level IO error
   */
@@ -452,27 +453,12 @@ public class ParallelReader extends IndexReader {
       return bytes;
     if (!hasNorms(field))
       return null;
+    if (normsCache.containsKey(field)) // cached omitNorms, not missing key
+      return null;
 
     bytes = MultiNorms.norms(reader, field);
     normsCache.put(field, bytes);
     return bytes;
-  }
-
-  @Override
-  public synchronized void norms(String field, byte[] result, int offset)
-    throws IOException {
-    // TODO: maybe optimize
-    ensureOpen();
-    IndexReader reader = fieldToReader.get(field);
-    if (reader==null)
-      return;
-    
-    byte[] norms = norms(field);
-    if (norms == null) {
-      Arrays.fill(result, offset, result.length, Similarity.getDefault().encodeNormValue(1.0f));
-    } else {
-      System.arraycopy(norms, 0, result, offset, maxDoc());
-    }
   }
 
   @Override
@@ -560,8 +546,6 @@ public class ParallelReader extends IndexReader {
         readers.get(i).close();
       }
     }
-
-    FieldCache.DEFAULT.purge(this);
   }
 
   @Override
@@ -573,6 +557,26 @@ public class ParallelReader extends IndexReader {
       fieldSet.addAll(names);
     }
     return fieldSet;
+  }
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return topLevelReaderContext;
+  }
+
+  @Override
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    super.addReaderFinishedListener(listener);
+    for (IndexReader reader : readers) {
+      reader.addReaderFinishedListener(listener);
+    }
+  }
+
+  @Override
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    super.removeReaderFinishedListener(listener);
+    for (IndexReader reader : readers) {
+      reader.removeReaderFinishedListener(listener);
+    }
   }
 }
 

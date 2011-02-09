@@ -20,6 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestScoreCachingWrappingScorer extends LuceneTestCase {
@@ -28,8 +32,8 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     private int idx = 0;
     private int doc = -1;
     
-    public SimpleScorer() {
-      super(null);
+    public SimpleScorer(Weight weight) {
+      super(weight);
     }
     
     @Override public float score() throws IOException {
@@ -76,7 +80,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       ++idx;
     }
 
-    @Override public void setNextReader(IndexReader reader, int docBase)
+    @Override public void setNextReader(AtomicReaderContext context)
         throws IOException {
     }
 
@@ -95,8 +99,14 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       8.108544f, 4.961808f, 2.2423935f, 7.285586f, 4.6699767f };
   
   public void testGetScores() throws Exception {
-    
-    Scorer s = new SimpleScorer();
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    writer.commit();
+    IndexReader ir = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(ir);
+    Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher);
+    Scorer s = new SimpleScorer(fake);
     ScoreCachingCollector scc = new ScoreCachingCollector(scores.length);
     scc.setScorer(s);
     
@@ -109,7 +119,9 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     for (int i = 0; i < scores.length; i++) {
       assertEquals(scores[i], scc.mscores[i], 0f);
     }
-    
+    searcher.close();
+    ir.close();
+    directory.close();
   }
   
 }

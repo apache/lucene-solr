@@ -269,6 +269,11 @@ public class PreFlexFields extends FieldsProducer {
         return BytesRef.getUTF8SortedAsUTF16Comparator();
       }
     }
+
+    @Override
+    public long getSumTotalTermFreq() {
+      return -1;
+    }
   }
 
   private class PreTermsEnum extends TermsEnum {
@@ -540,7 +545,7 @@ public class PreFlexFields extends FieldsProducer {
       // We can easily detect S in UTF8: if a byte has
       // prefix 11110 (0xf0), then that byte and the
       // following 3 bytes encode a single unicode codepoint
-      // in S.  Similary,we can detect E: if a byte has
+      // in S.  Similarly, we can detect E: if a byte has
       // prefix 1110111 (0xee), then that byte and the
       // following 2 bytes encode a single unicode codepoint
       // in E.
@@ -749,11 +754,6 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public void cacheCurrentTerm() throws IOException {
-      getTermsDict().cacheCurrentTerm(termEnum);
-    }
-
-    @Override
     public SeekStatus seek(long ord) throws IOException {
       throw new UnsupportedOperationException();
     }
@@ -950,6 +950,11 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
+    public long totalTermFreq() {
+      return -1;
+    }
+
+    @Override
     public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
       PreDocsEnum docsEnum;
       if (reuse == null || !(reuse instanceof PreDocsEnum)) {
@@ -982,7 +987,7 @@ public class PreFlexFields extends FieldsProducer {
 
   private final class PreDocsEnum extends DocsEnum {
     final private SegmentTermDocs docs;
-
+    private int docID = -1;
     PreDocsEnum() throws IOException {
       docs = new SegmentTermDocs(freqStream, getTermsDict(), fieldInfos);
     }
@@ -1000,18 +1005,18 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public int nextDoc() throws IOException {
       if (docs.next()) {
-        return docs.doc();
+        return docID = docs.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
     @Override
     public int advance(int target) throws IOException {
       if (docs.skipTo(target)) {
-        return docs.doc();
+        return docID = docs.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
@@ -1022,7 +1027,7 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public int docID() {
-      return docs.doc();
+      return docID;
     }
 
     @Override
@@ -1038,7 +1043,7 @@ public class PreFlexFields extends FieldsProducer {
 
   private final class PreDocsAndPositionsEnum extends DocsAndPositionsEnum {
     final private SegmentTermPositions pos;
-
+    private int docID = -1;
     PreDocsAndPositionsEnum() throws IOException {
       pos = new SegmentTermPositions(freqStream, proxStream, getTermsDict(), fieldInfos);
     }
@@ -1056,18 +1061,18 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public int nextDoc() throws IOException {
       if (pos.next()) {
-        return pos.doc();
+        return docID = pos.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
     @Override
     public int advance(int target) throws IOException {
       if (pos.skipTo(target)) {
-        return pos.doc();
+        return docID = pos.doc();
       } else {
-        return NO_MORE_DOCS;
+        return docID = NO_MORE_DOCS;
       }
     }
 
@@ -1078,16 +1083,18 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public int docID() {
-      return pos.doc();
+      return docID;
     }
 
     @Override
     public int nextPosition() throws IOException {
+      assert docID != NO_MORE_DOCS;
       return pos.nextPosition();
     }
 
     @Override
     public boolean hasPayload() {
+      assert docID != NO_MORE_DOCS;
       return pos.isPayloadAvailable();
     }
 

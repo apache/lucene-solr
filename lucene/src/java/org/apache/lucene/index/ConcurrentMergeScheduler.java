@@ -142,8 +142,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   };
 
-  /** Called whenever the running merges have changed, to
-   *  pause & unpause threads. */
+  /**
+   * Called whenever the running merges have changed, to pause & unpause
+   * threads. This method sorts the merge threads by their merge size in
+   * descending order and then pauses/unpauses threads from first to last --
+   * that way, smaller merges are guaranteed to run before larger ones.
+   */
   protected synchronized void updateMergeThreads() {
 
     // Only look at threads that are alive & not in the
@@ -164,6 +168,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       threadIdx++;
     }
 
+    // Sort the merge threads in descending order.
     CollectionUtil.mergeSort(activeMerges, compareByMergeDocCount);
     
     int pri = mergeThreadPriority;
@@ -175,12 +180,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         continue;
       }
 
-      final boolean doPause;
-      if (threadIdx < activeMergeCount-maxThreadCount) {
-        doPause = true;
-      } else {
-        doPause = false;
-      }
+      // pause the thread if maxThreadCount is smaller than the number of merge threads.
+      final boolean doPause = threadIdx < activeMergeCount - maxThreadCount;
 
       if (verbose()) {
         if (doPause != merge.getPause()) {
@@ -205,13 +206,26 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
-  private boolean verbose() {
+  /**
+   * Returns true if verbosing is enabled. This method is usually used in
+   * conjunction with {@link #message(String)}, like that:
+   * 
+   * <pre>
+   * if (verbose()) {
+   *   message(&quot;your message&quot;);
+   * }
+   * </pre>
+   */
+  protected boolean verbose() {
     return writer != null && writer.verbose();
   }
   
-  private void message(String message) {
-    if (verbose())
-      writer.message("CMS: " + message);
+  /**
+   * Outputs the given message - this method assumes {@link #verbose()} was
+   * called and returned true.
+   */
+  protected void message(String message) {
+    writer.message("CMS: " + message);
   }
 
   private synchronized void initMergeThreadPriority() {
@@ -231,10 +245,10 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Wait for any running merge threads to finish */
   public void sync() {
-    while(true) {
+    while (true) {
       MergeThread toSync = null;
-      synchronized(this) {
-        for(MergeThread t : mergeThreads) {
+      synchronized (this) {
+        for (MergeThread t : mergeThreads) {
           if (t.isAlive()) {
             toSync = t;
             break;
@@ -253,12 +267,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
-  private synchronized int mergeThreadCount() {
+  /**
+   * Returns the number of merge threads that are alive. Note that this number
+   * is &le; {@link #mergeThreads} size.
+   */
+  protected synchronized int mergeThreadCount() {
     int count = 0;
-    final int numThreads = mergeThreads.size();
-    for(int i=0;i<numThreads;i++) {
-      final MergeThread t = mergeThreads.get(i);
-      if (t.isAlive() && t.getCurrentMerge() != null) {
+    for (MergeThread mt : mergeThreads) {
+      if (mt.isAlive() && mt.getCurrentMerge() != null) {
         count++;
       }
     }
@@ -266,8 +282,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   @Override
-  public void merge(IndexWriter writer)
-    throws CorruptIndexException, IOException {
+  public void merge(IndexWriter writer) throws IOException {
 
     assert !Thread.holdsLock(writer);
 
@@ -291,12 +306,33 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     
     // Iterate, pulling from the IndexWriter's queue of
     // pending merges, until it's empty:
-    while(true) {
+    while (true) {
+
+      synchronized(this) {
+        long startStallTime = 0;
+        while (mergeThreadCount() >= 1+maxMergeCount) {
+          startStallTime = System.currentTimeMillis();
+          if (verbose()) {
+            message("    too many merges; stalling...");
+          }
+          try {
+            wait();
+          } catch (InterruptedException ie) {
+            throw new ThreadInterruptedException(ie);
+          }
+        }
+
+        if (verbose()) {
+          if (startStallTime != 0) {
+            message("  stalled for " + (System.currentTimeMillis()-startStallTime) + " msec");
+          }
+        }
+      }
+
 
       // TODO: we could be careful about which merges to do in
       // the BG (eg maybe the "biggest" ones) vs FG, which
       // merges to do first (the easiest ones?), etc.
-
       MergePolicy.OneMerge merge = writer.getNextMerge();
       if (merge == null) {
         if (verbose())
@@ -311,32 +347,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       boolean success = false;
       try {
         synchronized(this) {
-          final MergeThread merger;
-          long startStallTime = 0;
-          while (mergeThreadCount() >= maxMergeCount) {
-            startStallTime = System.currentTimeMillis();
-            if (verbose()) {
-              message("    too many merges; stalling...");
-            }
-            try {
-              wait();
-            } catch (InterruptedException ie) {
-              throw new ThreadInterruptedException(ie);
-            }
-          }
-
-          if (verbose()) {
-            if (startStallTime != 0) {
-              message("  stalled for " + (System.currentTimeMillis()-startStallTime) + " msec");
-            }
-            message("  consider merge " + merge.segString(dir));
-          }
-
-          assert mergeThreadCount() < maxMergeCount;
+          message("  consider merge " + merge.segString(dir));
 
           // OK to spawn a new merge thread to handle this
           // merge:
-          merger = getMergeThread(writer, merge);
+          final MergeThread merger = getMergeThread(writer, merge);
           mergeThreads.add(merger);
           if (verbose()) {
             message("    launch new thread [" + merger.getName() + "]");
@@ -360,8 +375,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   /** Does the actual merge, by calling {@link IndexWriter#merge} */
-  protected void doMerge(MergePolicy.OneMerge merge)
-    throws IOException {
+  protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
     writer.merge(merge);
   }
 

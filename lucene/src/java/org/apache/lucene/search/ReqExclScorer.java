@@ -36,7 +36,7 @@ class ReqExclScorer extends Scorer {
    * @param exclDisi indicates exclusion.
    */
   public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi) {
-    super(null); // No similarity used.
+    super(reqScorer.weight);
     this.reqScorer = reqScorer;
     this.exclDisi = exclDisi;
   }

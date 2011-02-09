@@ -22,12 +22,13 @@ import java.util.Map;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.SolrIndexReader;
 
 /**
  * Utility Field used for random sorting.  It should not be passed a value.
@@ -77,19 +78,13 @@ public class RandomSortField extends FieldType {
    * Given a field name and an IndexReader, get a random hash seed.  
    * Using dynamic fields, you can force the random order to change 
    */
-  private static int getSeed(String fieldName, IndexReader r) {
-    SolrIndexReader top = (SolrIndexReader)r;
-    int base=0;
-    while (top.getParent() != null) {
-      base += top.getBase();
-      top = top.getParent();
-    }
-
+  private static int getSeed(String fieldName, AtomicReaderContext context) {
+    final IndexReader top = ReaderUtil.getTopLevelContext(context).reader;
     // calling getVersion() on a segment will currently give you a null pointer exception, so
     // we use the top-level reader.
-    return fieldName.hashCode() + base + (int)top.getVersion();
+    return fieldName.hashCode() + context.docBase + (int)top.getVersion();
   }
-
+  
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     return new SortField(field.getName(), randomComparatorSource, reverse);
@@ -105,33 +100,40 @@ public class RandomSortField extends FieldType {
 
 
   private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {
+    @Override
     public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
       return new FieldComparator() {
         int seed;
         private final int[] values = new int[numHits];
         int bottomVal;
 
+        @Override
         public int compare(int slot1, int slot2) {
           return values[slot1] - values[slot2];  // values will be positive... no overflow possible.
         }
 
+        @Override
         public void setBottom(int slot) {
           bottomVal = values[slot];
         }
 
+        @Override
         public int compareBottom(int doc) throws IOException {
           return bottomVal - hash(doc+seed);
         }
 
+        @Override
         public void copy(int slot, int doc) throws IOException {
           values[slot] = hash(doc+seed);
         }
 
-        public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-          seed = getSeed(fieldname, reader);
+        @Override
+        public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+          seed = getSeed(fieldname, context);
           return this;
         }
 
+        @Override
         public Comparable value(int slot) {
           return values[slot];
         }
@@ -154,9 +156,9 @@ public class RandomSortField extends FieldType {
     }
 
     @Override
-    public DocValues getValues(Map context, final IndexReader reader) throws IOException {
+    public DocValues getValues(Map context, final AtomicReaderContext readerContext) throws IOException {
       return new DocValues() {
-          private final int seed = getSeed(field, reader);
+          private final int seed = getSeed(field, readerContext);
           @Override
           public float floatVal(int doc) {
             return (float)hash(doc+seed);

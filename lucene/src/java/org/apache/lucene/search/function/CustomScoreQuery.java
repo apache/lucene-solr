@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
@@ -29,7 +30,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -52,7 +52,7 @@ public class CustomScoreQuery extends Query {
   
   /**
    * Create a CustomScoreQuery over input subQuery.
-   * @param subQuery the sub query whose scored is being customed. Must not be null. 
+   * @param subQuery the sub query whose scored is being customized. Must not be null. 
    */
   public CustomScoreQuery(Query subQuery) {
     this(subQuery, new ValueSourceQuery[0]);
@@ -182,13 +182,11 @@ public class CustomScoreQuery extends Query {
   //=========================== W E I G H T ============================
   
   private class CustomWeight extends Weight {
-    Similarity similarity;
     Weight subQueryWeight;
     Weight[] valSrcWeights;
     boolean qStrict;
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
-      this.similarity = getSimilarity(searcher);
       this.subQueryWeight = subQuery.weight(searcher);
       this.valSrcWeights = new Weight[valSrcQueries.length];
       for(int i = 0; i < valSrcQueries.length; i++) {
@@ -239,40 +237,40 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       // Pass true for "scoresDocsInOrder", because we
       // require in-order scoring, even if caller does not,
       // since we call advance on the valSrcScorers.  Pass
       // false for "topScorer" because we will not invoke
       // score(Collector) on these scorers:
-      Scorer subQueryScorer = subQueryWeight.scorer(reader, true, false);
+      Scorer subQueryScorer = subQueryWeight.scorer(context, ScorerContext.def());
       if (subQueryScorer == null) {
         return null;
       }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(reader, true, topScorer);
+         valSrcScorers[i] = valSrcWeights[i].scorer(context, scorerContext.scoreDocsInOrder(true));
       }
-      return new CustomScorer(similarity, reader, this, subQueryScorer, valSrcScorers);
+      return new CustomScorer(context.reader, this, subQueryScorer, valSrcScorers);
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      Explanation explain = doExplain(reader, doc);
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      Explanation explain = doExplain(context, doc);
       return explain == null ? new Explanation(0.0f, "no matching docs") : explain;
     }
     
-    private Explanation doExplain(IndexReader reader, int doc) throws IOException {
-      Explanation subQueryExpl = subQueryWeight.explain(reader, doc);
+    private Explanation doExplain(AtomicReaderContext info, int doc) throws IOException {
+      Explanation subQueryExpl = subQueryWeight.explain(info, doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
       // match
       Explanation[] valSrcExpls = new Explanation[valSrcWeights.length];
       for(int i = 0; i < valSrcWeights.length; i++) {
-        valSrcExpls[i] = valSrcWeights[i].explain(reader, doc);
+        valSrcExpls[i] = valSrcWeights[i].explain(info, doc);
       }
-      Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(reader).customExplain(doc,subQueryExpl,valSrcExpls);
+      Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(info.reader).customExplain(doc,subQueryExpl,valSrcExpls);
       float sc = getValue() * customExp.getValue();
       Explanation res = new ComplexExplanation(
         true, sc, CustomScoreQuery.this.toString() + ", product of:");
@@ -302,9 +300,9 @@ public class CustomScoreQuery extends Query {
     private float vScores[]; // reused in score() to avoid allocating this array for each doc 
 
     // constructor
-    private CustomScorer(Similarity similarity, IndexReader reader, CustomWeight w,
+    private CustomScorer(IndexReader reader, CustomWeight w,
         Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
-      super(similarity,w);
+      super(w);
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;

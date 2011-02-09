@@ -40,11 +40,13 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
   private static final Logger LOG = LoggerFactory.getLogger(PlainTextEntityProcessor.class);
   private boolean ended = false;
 
+  @Override
   public void init(Context context) {
     super.init(context);
     ended = false;
   }
 
+  @Override
   public Map<String, Object> nextRow() {
     if (ended) return null;
     DataSource<Reader> ds = context.getDataSource();

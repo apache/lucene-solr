@@ -56,6 +56,7 @@
 
   <target name="generate-maven-artifacts" description="Generate Maven Artifacts for Modules">
     <sequential>
+      <ant target="get-maven-poms" dir=".."/>
       <subant target="dist-maven" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
@@ -65,6 +66,7 @@
 
   <target name="clean" description="Clean all modules">
     <sequential>
+      <delete dir="dist"/>
       <subant target="clean" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />

@@ -274,6 +274,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return lst;
   }
 
+  @Override
   public String toString() {
     return name + getStatistics().toString();
   }

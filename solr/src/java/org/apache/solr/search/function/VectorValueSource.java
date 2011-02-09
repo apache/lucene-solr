@@ -16,7 +16,7 @@ package org.apache.solr.search.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.search.function.MultiValueSource;
 import org.apache.solr.search.function.DocValues;
@@ -44,6 +44,7 @@ public class VectorValueSource extends MultiValueSource {
     return sources;
   }
 
+  @Override
   public int dimension() {
     return sources.size();
   }
@@ -53,13 +54,13 @@ public class VectorValueSource extends MultiValueSource {
   }
 
   @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     int size = sources.size();
 
     // special-case x,y and lat,lon since it's so common
     if (size==2) {
-      final DocValues x = sources.get(0).getValues(context, reader);
-      final DocValues y = sources.get(1).getValues(context, reader);
+      final DocValues x = sources.get(0).getValues(context, readerContext);
+      final DocValues y = sources.get(1).getValues(context, readerContext);
       return new DocValues() {
         @Override
         public void byteVal(int doc, byte[] vals) {
@@ -97,6 +98,7 @@ public class VectorValueSource extends MultiValueSource {
           vals[0] = x.strVal(doc);
           vals[1] = y.strVal(doc);
         }
+        @Override
         public String toString(int doc) {
           return name() + "(" + x.toString(doc) + "," + y.toString(doc) + ")";
         }
@@ -106,7 +108,7 @@ public class VectorValueSource extends MultiValueSource {
 
     final DocValues[] valsArr = new DocValues[size];
     for (int i = 0; i < size; i++) {
-      valsArr[i] = sources.get(i).getValues(context, reader);
+      valsArr[i] = sources.get(i).getValues(context, readerContext);
     }
 
     return new DocValues() {
@@ -178,12 +180,14 @@ public class VectorValueSource extends MultiValueSource {
     };
   }
 
+  @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     for (ValueSource source : sources)
       source.createWeight(context, searcher);
   }
 
 
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');

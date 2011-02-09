@@ -103,7 +103,7 @@ implements Serializable {
   /**
    * Represents sorting by computed relevance. Using this sort criteria returns
    * the same results as calling
-   * {@link Searcher#search(Query,int) Searcher#search()}without a sort criteria,
+   * {@link IndexSearcher#search(Query,int) IndexSearcher#search()}without a sort criteria,
    * only with slightly more overhead.
    */
   public static final Sort RELEVANCE = new Sort();
@@ -116,7 +116,7 @@ implements Serializable {
 
   /**
    * Sorts by computed relevance. This is the same sort criteria as calling
-   * {@link Searcher#search(Query,int) Searcher#search()}without a sort criteria,
+   * {@link IndexSearcher#search(Query,int) IndexSearcher#search()}without a sort criteria,
    * only with slightly more overhead.
    */
   public Sort() {

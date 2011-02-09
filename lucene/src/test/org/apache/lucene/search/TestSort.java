@@ -34,6 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -120,7 +121,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   throws IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
 
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
@@ -143,7 +144,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
     IndexReader reader = writer.getReader();
     writer.close ();
-    IndexSearcher s = new IndexSearcher (reader);
+    IndexSearcher s = newSearcher(reader);
     s.setDefaultFieldSortScoring(true, true);
     return s;
   }
@@ -505,8 +506,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      docValues = FieldCache.DEFAULT.getInts(context.reader, "parser", new FieldCache.IntParser() {
           public final int parseInt(final BytesRef term) {
             return (term.bytes[term.offset]-'A') * 123456;
           }
@@ -687,9 +688,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
     // a filter that only allows through the first hit
     Filter filt = new Filter() {
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-        BitSet bs = new BitSet(reader.maxDoc());
-        bs.set(0, reader.maxDoc());
+      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+        BitSet bs = new BitSet(context.reader.maxDoc());
+        bs.set(0, context.reader.maxDoc());
         bs.set(docs1.scoreDocs[0].doc);
         return new DocIdBitSet(bs);
       }
@@ -1058,14 +1059,15 @@ public class TestSort extends LuceneTestCase implements Serializable {
     doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(doc);
 
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     w.close();
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.STRING)));
     assertEquals(2, hits.totalHits);
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
     assertEquals(0, hits.scoreDocs[1].doc);
+    s.close();
     r.close();
     dir.close();
   }
@@ -1104,10 +1106,11 @@ public class TestSort extends LuceneTestCase implements Serializable {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TotalHitCountCollector c = new TotalHitCountCollector();
     searcher.search(new MatchAllDocsQuery(), null, c);
     assertEquals(5, c.getTotalHits());
+    searcher.close();
     reader.close();
     indexStore.close();
   }

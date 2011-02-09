@@ -57,7 +57,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
    * Create a SimpleFSLockFactory instance, with null (unset)
    * lock directory. When you pass this factory to a {@link FSDirectory}
    * subclass, the lock directory is automatically set to the
-   * directory itsself. Be sure to create one instance for each directory
+   * directory itself. Be sure to create one instance for each directory
    * your create!
    */
   public SimpleFSLockFactory() throws IOException {

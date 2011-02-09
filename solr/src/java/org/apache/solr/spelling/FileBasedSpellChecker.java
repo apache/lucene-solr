@@ -50,12 +50,14 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   private String characterEncoding;
   public static final String WORD_FIELD_NAME = "word";
 
+  @Override
   public String init(NamedList config, SolrCore core) {
     super.init(config, core);
     characterEncoding = (String) config.get(SOURCE_FILE_CHAR_ENCODING);
     return name;
   }
 
+  @Override
   public void build(SolrCore core, SolrIndexSearcher searcher) {
     try {
       loadExternalFileDictionary(core);
@@ -74,7 +76,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     return null;
   }
 
-  @SuppressWarnings("unchecked")
   private void loadExternalFileDictionary(SolrCore core) {
     try {
 
@@ -92,7 +93,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
             new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getAnalyzer()).
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
-                setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH).
                 setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         );
 

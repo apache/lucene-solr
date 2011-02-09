@@ -33,17 +33,21 @@ public class SolrVelocityResourceLoader extends ResourceLoader {
     this.loader = loader;
   }
 
+  @Override
   public void init(ExtendedProperties extendedProperties) {
   }
 
+  @Override
   public InputStream getResourceStream(String template_name) throws ResourceNotFoundException {
     return loader.openResource(template_name);
   }
 
+  @Override
   public boolean isSourceModified(Resource resource) {
     return false;
   }
 
+  @Override
   public long getLastModified(Resource resource) {
     return 0;
   }

@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -42,7 +42,7 @@ public class SpanWeight extends Weight {
 
   public SpanWeight(SpanQuery query, IndexSearcher searcher)
     throws IOException {
-    this.similarity = query.getSimilarity(searcher);
+    this.similarity = searcher.getSimilarityProvider().get(query.getField());
     this.query = query;
     
     terms=new HashSet<Term>();
@@ -72,13 +72,13 @@ public class SpanWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-    return new SpanScorer(query.getSpans(reader), this, similarity, reader
+  public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+    return new SpanScorer(query.getSpans(context), this, similarity, context.reader
         .norms(query.getField()));
   }
 
   @Override
-  public Explanation explain(IndexReader reader, int doc)
+  public Explanation explain(AtomicReaderContext context, int doc)
     throws IOException {
 
     ComplexExplanation result = new ComplexExplanation();
@@ -111,12 +111,12 @@ public class SpanWeight extends Weight {
     fieldExpl.setDescription("fieldWeight("+field+":"+query.toString(field)+
                              " in "+doc+"), product of:");
 
-    Explanation tfExpl = ((SpanScorer)scorer(reader, true, false)).explain(doc);
+    Explanation tfExpl = ((SpanScorer)scorer(context, ScorerContext.def())).explain(doc);
     fieldExpl.addDetail(tfExpl);
     fieldExpl.addDetail(idfExpl);
 
     Explanation fieldNormExpl = new Explanation();
-    byte[] fieldNorms = reader.norms(field);
+    byte[] fieldNorms = context.reader.norms(field);
     float fieldNorm =
       fieldNorms!=null ? similarity.decodeNormValue(fieldNorms[doc]) : 1.0f;
     fieldNormExpl.setValue(fieldNorm);

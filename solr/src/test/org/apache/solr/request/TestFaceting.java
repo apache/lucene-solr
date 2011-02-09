@@ -67,14 +67,14 @@ public class TestFaceting extends SolrTestCaseJ4 {
     req = lrf.makeRequest("q","*:*");
 
     TermIndex ti = new TermIndex(proto.field());
-    NumberedTermsEnum te = ti.getEnumerator(req.getSearcher().getReader());
+    NumberedTermsEnum te = ti.getEnumerator(req.getSearcher().getIndexReader());
 
     // iterate through first
     while(te.term() != null) te.next();
     assertEquals(size, te.getTermNumber());
     te.close();
 
-    te = ti.getEnumerator(req.getSearcher().getReader());
+    te = ti.getEnumerator(req.getSearcher().getIndexReader());
 
     Random r = new Random(size);
     // test seeking by term string

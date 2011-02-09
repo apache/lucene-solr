@@ -26,6 +26,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.PerReaderTermState;
 
 /**
  * An abstract {@link Query} that matches documents
@@ -33,7 +34,7 @@ import org.apache.lucene.util.AttributeSource;
  * FilteredTermsEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getTermsEnum(IndexReader,AttributeSource)} to provide a {@link
+ * it and define {@link #getTermsEnum(Terms,AttributeSource)} to provide a {@link
  * FilteredTermsEnum} that iterates through the terms to be
  * matched.
  *
@@ -159,8 +160,8 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docCount, float boost) {
-      final TermQuery tq = new TermQuery(term, docCount);
+    protected void addClause(BooleanQuery topLevel, Term term, int docCount, float boost, PerReaderTermState states) {
+      final TermQuery tq = new TermQuery(term, states);
       tq.setBoost(boost);
       topLevel.add(tq, BooleanClause.Occur.SHOULD);
     }
@@ -200,8 +201,8 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost) {
-      final Query q = new ConstantScoreQuery(new TermQuery(term, docFreq));
+    protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost, PerReaderTermState states) {
+      final Query q = new ConstantScoreQuery(new TermQuery(term, states));
       q.setBoost(boost);
       topLevel.add(q, BooleanClause.Occur.SHOULD);
     }

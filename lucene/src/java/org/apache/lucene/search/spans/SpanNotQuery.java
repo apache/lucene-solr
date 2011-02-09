@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ToStringUtils;
@@ -74,12 +75,12 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public Spans getSpans(final IndexReader reader) throws IOException {
+  public Spans getSpans(final AtomicReaderContext context) throws IOException {
     return new Spans() {
-        private Spans includeSpans = include.getSpans(reader);
+        private Spans includeSpans = include.getSpans(context);
         private boolean moreInclude = true;
 
-        private Spans excludeSpans = exclude.getSpans(reader);
+        private Spans excludeSpans = exclude.getSpans(context);
         private boolean moreExclude = excludeSpans.next();
 
         @Override

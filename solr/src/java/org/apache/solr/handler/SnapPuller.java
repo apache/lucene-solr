@@ -63,6 +63,9 @@ import java.util.zip.InflaterInputStream;
 public class SnapPuller {
   private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
 
+  private static final List<Map<String,Object>> EMPTY_LIST_OF_MAPS 
+    = Collections.emptyList();
+
   private final String masterUrl;
 
   private final ReplicationHandler replicationHandler;
@@ -192,14 +195,14 @@ public class SnapPuller {
     return getNamedListResponse(post);
   }
 
-  private NamedList getNamedListResponse(PostMethod method) throws IOException {
+  private NamedList<?> getNamedListResponse(PostMethod method) throws IOException {
     try {
       int status = myHttpClient.executeMethod(method);
       if (status != HttpStatus.SC_OK) {
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
                 "Request failed for the url " + method);
       }
-      return (NamedList) new JavaBinCodec().unmarshal(method.getResponseBodyAsStream());
+      return (NamedList<?>) new JavaBinCodec().unmarshal(method.getResponseBodyAsStream());
     } finally {
       try {
         method.releaseConnection();
@@ -216,8 +219,12 @@ public class SnapPuller {
     post.addParameter(COMMAND, CMD_GET_FILE_LIST);
     post.addParameter(CMD_INDEX_VERSION, String.valueOf(version));
     post.addParameter("wt", "javabin");
-    NamedList nl = getNamedListResponse(post);
-    List<Map<String, Object>> f = (List<Map<String, Object>>) nl.get(CMD_GET_FILE_LIST);
+
+    @SuppressWarnings("unchecked")
+    NamedList<List<Map<String, Object>>> nl 
+      = (NamedList<List<Map<String, Object>>>) getNamedListResponse(post);
+
+    List<Map<String, Object>> f = nl.get(CMD_GET_FILE_LIST);
     if (f != null)
       filesToDownload = Collections.synchronizedList(f);
     else {
@@ -225,7 +232,7 @@ public class SnapPuller {
       LOG.error("No files to download for indexversion: "+ version);
     }
 
-    f = (List<Map<String, Object>>) nl.get(CONF_FILES);
+    f = nl.get(CONF_FILES);
     if (f != null)
       confFilesToDownload = Collections.synchronizedList(f);
   }
@@ -262,7 +269,7 @@ public class SnapPuller {
       RefCounted<SolrIndexSearcher> searcherRefCounted = null;
       try {
         searcherRefCounted = core.getNewestSearcher(false);
-        commit = searcherRefCounted.get().getReader().getIndexCommit();
+        commit = searcherRefCounted.get().getIndexReader().getIndexCommit();
       } finally {
         if (searcherRefCounted != null)
           searcherRefCounted.decref();
@@ -293,15 +300,17 @@ public class SnapPuller {
         isFullCopyNeeded = true;
       successfulInstall = false;
       boolean deleteTmpIdxDir = true;
+      File indexDir = null ;
       try {
-        File indexDir = new File(core.getIndexDir());
+        indexDir = new File(core.getIndexDir());
         downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestVersion);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
         if (!modifiedConfFiles.isEmpty()) {
           downloadConfFiles(confFilesToDownload, latestVersion);
           if (isFullCopyNeeded) {
-            modifyIndexProps(tmpIndexDir.getName());
+            successfulInstall = modifyIndexProps(tmpIndexDir.getName());
+            deleteTmpIdxDir =  false;
           } else {
             successfulInstall = copyIndexFiles(tmpIndexDir, indexDir);
           }
@@ -332,7 +341,8 @@ public class SnapPuller {
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       } finally {
-        if(deleteTmpIdxDir) delTree(tmpIndexDir);
+        if (deleteTmpIdxDir) delTree(tmpIndexDir);
+        else delTree(indexDir);
       }
       return successfulInstall;
     } finally {
@@ -498,6 +508,7 @@ public class SnapPuller {
 
   private void reloadCore() {
     new Thread() {
+      @Override
       public void run() {
         try {
           solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
@@ -704,10 +715,11 @@ public class SnapPuller {
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
-      return Collections.EMPTY_LIST;
+      return EMPTY_LIST_OF_MAPS;
+
     //build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<String, Map<String, Object>>();
-    NamedList names = new NamedList();
+    NamedList<String> names = new NamedList<String>();
     for (Map<String, Object> map : confFilesToDownload) {
       //if alias is present that is the name the file may have in the slave
       String name = (String) (map.get(ALIAS) == null ? map.get(NAME) : map.get(ALIAS));
@@ -725,7 +737,7 @@ public class SnapPuller {
         nameVsFile.remove(name); //checksums are same so the file need not be downloaded
       }
     }
-    return nameVsFile.isEmpty() ? Collections.EMPTY_LIST : nameVsFile.values();
+    return nameVsFile.isEmpty() ? EMPTY_LIST_OF_MAPS : nameVsFile.values();
   }
 
   /**
@@ -788,25 +800,25 @@ public class SnapPuller {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     //create a new instance. or else iterator may fail
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
   }
 
   List<Map<String, Object>> getFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
   }
 
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
   }
 
   Map<String, Object> getCurrentFile() {

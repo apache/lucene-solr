@@ -32,17 +32,21 @@ import org.apache.solr.search.function.ValueSource;
 public class DummyValueSourceParser extends ValueSourceParser {
   private NamedList args;
 
+  @Override
   public void init(NamedList args) {
     this.args = args;
   }
 
+  @Override
   public ValueSource parse(FunctionQParser fp) throws ParseException {
     ValueSource source = fp.parseValueSource();
     ValueSource result = new SimpleFloatFunction(source) {
+      @Override
       protected String name() {
         return "foo";
       }
 
+      @Override
       protected float func(int doc, DocValues vals) {
         float result = 0;
         return result;

@@ -2,6 +2,21 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+02/05/2011
+  LUCENE-1540: Improvements to contrib.benchmark for TREC collections. 
+  ContentSource can now process plain text files, gzip files, and bzip2 files.
+  TREC doc parsing now handles the TREC gov2 collection and TREC disks 4&5-CR 
+  collection (both used by many TREC tasks). (Shai Erera, Doron Cohen)
+  
+01/26/2011
+  LUCENE-929: ExtractReuters first extracts to a tmp dir and then renames. That 
+  way, if a previous extract attempt failed, "ant extract-reuters" will still 
+  extract the files. (Shai Erera, Doron Cohen, Grant Ingersoll)
+
+01/24/2011
+  LUCENE-2885: Add WaitForMerges task (calls IndexWriter.waitForMerges()).
+  (Mike McCandless)
+
 10/10/2010
   The locally built patched version of the Xerces-J jar introduced
   as part of LUCENE-1591 is no longer required, because Xerces

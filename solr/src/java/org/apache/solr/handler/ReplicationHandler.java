@@ -94,10 +94,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile IndexCommit indexCommitPoint;
 
-  volatile NamedList snapShootDetails;
+  volatile NamedList<Object> snapShootDetails;
 
   private AtomicBoolean replicationEnabled = new AtomicBoolean(true);
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
     final SolrParams solrParams = req.getParams();
@@ -143,6 +144,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
       new Thread() {
+        @Override
         public void run() {
           doFetch(paramsCopy);
         }
@@ -189,13 +191,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    }
   }
 
-  private List<NamedList> getCommits() {
+  private List<NamedList<Object>> getCommits() {
     Map<Long, IndexCommit> commits = core.getDeletionPolicy().getCommits();
-    List<NamedList> l = new ArrayList<NamedList>();
+    List<NamedList<Object>> l = new ArrayList<NamedList<Object>>();
 
     for (IndexCommit c : commits.values()) {
       try {
-        NamedList nl = new NamedList();
+        NamedList<Object> nl = new NamedList<Object>();
         nl.add("indexVersion", c.getVersion());
         nl.add(GENERATION, c.getGeneration());
         nl.add(CMD_GET_FILE_LIST, c.getFileNames());
@@ -281,7 +283,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       IndexCommit indexCommit = delPolicy.getLatestCommit();
 
       if(indexCommit == null) {
-        indexCommit = req.getSearcher().getReader().getIndexCommit();
+        indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
       }
 
       // small race here before the commit point is saved
@@ -447,18 +449,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return fileMeta;
   }
 
+  @Override
   public String getDescription() {
     return "ReplicationHandler provides replication of index and configuration files from Master to Slaves";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
@@ -481,8 +487,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     long version[] = new long[2];
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
-      version[0] = searcher.get().getReader().getIndexCommit().getVersion();
-      version[1] = searcher.get().getReader().getIndexCommit().getGeneration();
+      version[0] = searcher.get().getIndexReader().getIndexCommit().getVersion();
+      version[1] = searcher.get().getIndexReader().getIndexCommit().getGeneration();
     } catch (IOException e) {
       LOG.warn("Unable to get index version : ", e);
     } finally {
@@ -687,12 +693,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           LOG.error("Exception while writing replication details: ", e);
         }
       }
-      if (isMaster)
-        details.add("master", master);
-      if (isSlave && showSlaveDetails)
-        details.add("slave", slave);
-
     }
+
+    if (isMaster)
+      details.add("master", master);
+    if (isSlave && showSlaveDetails)
+      details.add("slave", slave);
     
     NamedList snapshotStats = snapShootDetails;
     if (snapshotStats != null)
@@ -701,7 +707,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return details;
   }
 
-  private void addVal(NamedList nl, String key, Properties props, Class clzz) {
+  private void addVal(NamedList<Object> nl, String key, Properties props, Class clzz) {
     String s = props.getProperty(key);
     if (s == null || s.trim().length() == 0) return;
     if (clzz == Date.class) {
@@ -823,7 +829,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         replicateOnStart = true;
         RefCounted<SolrIndexSearcher> s = core.getNewestSearcher(false);
         try {
-          IndexReader reader = s==null ? null : s.get().getReader();
+          IndexReader reader = s==null ? null : s.get().getIndexReader();
           if (reader!=null && reader.getIndexCommit() != null && reader.getIndexCommit().getGeneration() != 1L) {
             try {
               if(replicateOnOptimize){

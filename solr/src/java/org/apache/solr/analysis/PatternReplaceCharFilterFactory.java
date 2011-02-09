@@ -36,6 +36,7 @@ public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {
   private int maxBlockChars;
   private String blockDelimiters;
 
+  @Override
   public void init(Map<String, String> args) {
     super.init( args );
     try {

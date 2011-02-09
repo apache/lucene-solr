@@ -45,6 +45,7 @@ public class RAMDirectoryFactory extends StandardDirectoryFactory {
     }
   }
   
+  @Override
   public boolean exists(String path) {
     synchronized (RAMDirectoryFactory.class) {
       RefCntRamDirectory directory = directories.get(path);

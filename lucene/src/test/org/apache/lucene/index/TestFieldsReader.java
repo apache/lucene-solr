@@ -51,7 +51,7 @@ public class TestFieldsReader extends LuceneTestCase {
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
     dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
@@ -291,7 +291,7 @@ public class TestFieldsReader extends LuceneTestCase {
     Directory tmpDir = newFSDirectory(file);
     assertTrue(tmpDir != null);
 
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE);
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(tmpDir, conf);
     writer.addDocument(testDoc);

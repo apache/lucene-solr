@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.StringHelper;
@@ -199,7 +200,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           RefCounted<SolrIndexSearcher> searchHolder = null;
           try {
             searchHolder = core.getNewestSearcher(false);
-            IndexReader reader = searchHolder.get().getReader();
+            IndexReader reader = searchHolder.get().getIndexReader();
             getElevationMap( reader, core );
           } finally {
             if (searchHolder != null) searchHolder.decref();
@@ -343,7 +344,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     qstr = getAnalyzedQuery(qstr);
-    IndexReader reader = req.getSearcher().getReader();
+    IndexReader reader = req.getSearcher().getIndexReader();
     ElevationObj booster = null;
     try {
       booster = getElevationMap( reader, req.getCore() ).get( qstr );
@@ -473,6 +474,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
     this.priority = boosts;
   }
 
+  @Override
   public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
     return new FieldComparator() {
       
@@ -481,10 +483,12 @@ class ElevationComparatorSource extends FieldComparatorSource {
       int bottomVal;
       private final BytesRef tempBR = new BytesRef();
 
+      @Override
       public int compare(int slot1, int slot2) {
         return values[slot2] - values[slot1];  // values will be small enough that there is no overflow concern
       }
 
+      @Override
       public void setBottom(int slot) {
         bottomVal = values[slot];
       }
@@ -495,19 +499,23 @@ class ElevationComparatorSource extends FieldComparatorSource {
         return prio == null ? 0 : prio.intValue();
       }
 
+      @Override
       public int compareBottom(int doc) throws IOException {
         return docVal(doc) - bottomVal;
       }
 
+      @Override
       public void copy(int slot, int doc) throws IOException {
         values[slot] = docVal(doc);
       }
 
-      public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-        idIndex = FieldCache.DEFAULT.getTermsIndex(reader, fieldname);
+      @Override
+      public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+        idIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, fieldname);
         return this;
       }
 
+      @Override
       public Comparable value(int slot) {
         return values[slot];
       }

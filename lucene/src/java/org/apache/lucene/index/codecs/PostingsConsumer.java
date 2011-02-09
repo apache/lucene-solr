@@ -30,9 +30,9 @@ import org.apache.lucene.util.BytesRef;
 
 public abstract class PostingsConsumer {
 
-  /** Adds a new doc in this term.  Return null if this
-   *  consumer doesn't need to see the positions for this
-   *  doc. */
+  /** Adds a new doc in this term.  If this field omits term
+   *  freqs & positions then termDocFreq should be ignored,
+   *  and, finishDoc will not be called. */
   public abstract void startDoc(int docID, int termDocFreq) throws IOException;
 
   public static class PostingsMergeState {
@@ -49,14 +49,16 @@ public abstract class PostingsConsumer {
   public abstract void addPosition(int position, BytesRef payload) throws IOException;
 
   /** Called when we are done adding positions & payloads
-   * for each doc */
+   *  for each doc.  Not called  when the field omits term
+   *  freq and positions. */
   public abstract void finishDoc() throws IOException;
 
   /** Default merge impl: append documents, mapping around
    *  deletes */
-  public int merge(final MergeState mergeState, final DocsEnum postings) throws IOException {
+  public TermStats merge(final MergeState mergeState, final DocsEnum postings) throws IOException {
 
     int df = 0;
+    long totTF = 0;
 
     if (mergeState.fieldInfo.omitTermFreqAndPositions) {
       while(true) {
@@ -67,6 +69,7 @@ public abstract class PostingsConsumer {
         this.startDoc(doc, postings.freq());
         this.finishDoc();
         df++;
+        totTF++;
       }
     } else {
       final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
@@ -77,6 +80,7 @@ public abstract class PostingsConsumer {
         }
         final int freq = postingsEnum.freq();
         this.startDoc(doc, freq);
+        totTF += freq;
         for(int i=0;i<freq;i++) {
           final int position = postingsEnum.nextPosition();
           final BytesRef payload;
@@ -91,6 +95,6 @@ public abstract class PostingsConsumer {
         df++;
       }
     }
-    return df;
+    return new TermStats(df, totTF);
   }
 }

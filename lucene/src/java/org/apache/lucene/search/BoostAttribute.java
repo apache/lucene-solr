@@ -21,13 +21,13 @@ import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource; // javadocs only
 import org.apache.lucene.index.TermsEnum; // javadocs only
 
-/** Add this {@link Attribute} to a {@link TermsEnum} returned by {@link MultiTermQuery#getTermsEnum(IndexReader,AttributeSource)}
+/** Add this {@link Attribute} to a {@link TermsEnum} returned by {@link MultiTermQuery#getTermsEnum(Terms,AttributeSource)}
  * and update the boost on each returned term. This enables to control the boost factor
  * for each matching term in {@link MultiTermQuery#SCORING_BOOLEAN_QUERY_REWRITE} or
  * {@link TopTermsRewrite} mode.
  * {@link FuzzyQuery} is using this to take the edit distance into account.
  * <p><b>Please note:</b> This attribute is intended to be added only by the TermsEnum
- * to itsself in its constructor and consumed by the {@link MultiTermQuery.RewriteMethod}.
+ * to itself in its constructor and consumed by the {@link MultiTermQuery.RewriteMethod}.
  * @lucene.internal
  */
 public interface BoostAttribute extends Attribute {

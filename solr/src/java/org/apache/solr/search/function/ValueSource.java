@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Scorer;
@@ -25,12 +26,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.MultiFields;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.search.SolrSortField;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Collections;
 
 /**
  * Instantiates {@link org.apache.solr.search.function.DocValues} for a particular reader.
@@ -45,10 +47,12 @@ public abstract class ValueSource implements Serializable {
    * Gets the values for this reader and the context that was previously
    * passed to createWeight()
    */
-  public abstract DocValues getValues(Map context, IndexReader reader) throws IOException;
+  public abstract DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException;
 
+  @Override
   public abstract boolean equals(Object o);
 
+  @Override
   public abstract int hashCode();
 
   /**
@@ -56,26 +60,9 @@ public abstract class ValueSource implements Serializable {
    */
   public abstract String description();
 
+  @Override
   public String toString() {
     return description();
-  }
-
-  /**
-   * EXPERIMENTAL: This method is subject to change.
-   * <br>WARNING: Sorted function queries are not currently weighted.
-   * <p>
-   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, org.apache.lucene.index.IndexReader)}
-   * to populate the SortField.
-   * 
-   * @param reverse true if this is a reverse sort.
-   * @return The {@link org.apache.lucene.search.SortField} for the ValueSource
-   * @throws IOException if there was a problem reading the values.
-   */
-  public SortField getSortField(boolean reverse) throws IOException {
-    //should we pass in the description for the field name?
-    //Hmm, Lucene is going to intern whatever we pass in, not sure I like that
-    //and we can't pass in null, either, as that throws an illegal arg. exception
-    return new SortField(description(), new ValueSourceComparatorSource(), reverse);
   }
 
 
@@ -90,20 +77,63 @@ public abstract class ValueSource implements Serializable {
   /**
    * Returns a new non-threadsafe context map.
    */
-  public static Map newContext() {
-    return new IdentityHashMap();
+  public static Map newContext(IndexSearcher searcher) {
+    Map context = new IdentityHashMap();
+    context.put("searcher", searcher);
+    return context;
+  }
+
+
+  //
+  // Sorting by function
+  //
+
+  /**
+   * EXPERIMENTAL: This method is subject to change.
+   * <br>WARNING: Sorted function queries are not currently weighted.
+   * <p>
+   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, IndexReader.AtomicReaderContext)}
+   * to populate the SortField.
+   *
+   * @param reverse true if this is a reverse sort.
+   * @return The {@link org.apache.lucene.search.SortField} for the ValueSource
+   * @throws IOException if there was a problem reading the values.
+   */
+  public SortField getSortField(boolean reverse) throws IOException {
+    return new ValueSourceSortField(reverse);
+  }
+
+  private static FieldComparatorSource dummyComparator = new FieldComparatorSource() {
+    @Override
+    public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unweighted use of sort " + fieldname);
+    }
+  };
+
+  class ValueSourceSortField extends SortField implements SolrSortField {
+    public ValueSourceSortField(boolean reverse) {
+      super(description(), dummyComparator, reverse);
+    }
+
+    @Override
+    public SortField weight(IndexSearcher searcher) throws IOException {
+      Map context = newContext(searcher);
+      createWeight(context, searcher);
+      return new SortField(getField(), new ValueSourceComparatorSource(context), getReverse());
+    }
   }
 
   class ValueSourceComparatorSource extends FieldComparatorSource {
+    private final Map context;
 
-
-    public ValueSourceComparatorSource() {
-
+    public ValueSourceComparatorSource(Map context) {
+      this.context = context;
     }
 
+    @Override
     public FieldComparator newComparator(String fieldname, int numHits,
                                          int sortPos, boolean reversed) throws IOException {
-      return new ValueSourceComparator(numHits);
+      return new ValueSourceComparator(context, numHits);
     }
   }
 
@@ -116,11 +146,14 @@ public abstract class ValueSource implements Serializable {
     private final double[] values;
     private DocValues docVals;
     private double bottom;
+    private Map fcontext;
 
-    ValueSourceComparator(int numHits) {
+    ValueSourceComparator(Map fcontext, int numHits) {
+      this.fcontext = fcontext;
       values = new double[numHits];
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       final double v1 = values[slot1];
       final double v2 = values[slot2];
@@ -134,6 +167,7 @@ public abstract class ValueSource implements Serializable {
 
     }
 
+    @Override
     public int compareBottom(int doc) {
       final double v2 = docVals.doubleVal(doc);
       if (bottom > v2) {
@@ -145,21 +179,25 @@ public abstract class ValueSource implements Serializable {
       }
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = docVals.doubleVal(doc);
     }
 
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      docVals = getValues(Collections.emptyMap(), reader);
+    @Override
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      docVals = getValues(fcontext, context);
       return this;
     }
 
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
-      return Double.valueOf(values[slot]);
+      return values[slot];
     }
   }
 }

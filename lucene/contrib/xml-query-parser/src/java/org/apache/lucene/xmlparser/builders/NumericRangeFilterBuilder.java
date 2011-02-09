@@ -19,7 +19,7 @@ package org.apache.lucene.xmlparser.builders;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
@@ -157,7 +157,7 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+		public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
 			return null;
 		}
 

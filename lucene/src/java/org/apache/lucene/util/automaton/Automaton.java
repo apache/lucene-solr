@@ -66,6 +66,13 @@ import org.apache.lucene.util.RamUsageEstimator;
  * assumed by the built-in automata operations.
  * 
  * <p>
+ * <p>
+ * Note: This class has internal mutable state and is not thread safe. It is 
+ * the caller's responsibility to ensure any necessary synchronization if you
+ * wish to use the same Automaton from multiple threads. In general it is instead
+ * recommended to use a {@link RunAutomaton} for multithreaded matching: it is immutable, 
+ * thread safe, and much faster.  
+ * </p>
  * @lucene.experimental
  */
 public class Automaton implements Serializable, Cloneable {

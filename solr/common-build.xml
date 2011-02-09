@@ -33,6 +33,9 @@
 
   <property name="name" value="${ant.project.name}"/>
 
+  <property name="dev-tools.dir" value="${solr-path}/../dev-tools"/>
+  <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
+
   <tstamp>
     <format property="year" pattern="yyyy"/>
     <format property="DSTAMP" pattern="yyyy-MM-dd"/>
@@ -138,8 +141,8 @@
   <property name="junit.output.dir" location="${common-solr.dir}/${dest}/test-results"/>
   <property name="junit.reports" location="${common-solr.dir}/${dest}/test-results/reports"/>
   <property name="junit.formatter" value="plain"/>
-  <condition property="junit.details.formatter"
-      value="org.apache.tools.ant.taskdefs.optional.junit.PlainJUnitResultFormatter"
+  <condition property="junit.details.formatter" 
+      value="org.apache.tools.ant.taskdefs.optional.junit.BriefJUnitResultFormatter"
       else="org.apache.lucene.util.LuceneJUnitResultFormatter">
     <isset property="tests.sequential"/>
   </condition>
@@ -270,6 +273,7 @@
              includeAntRuntime="${javac.includeAntRuntime}"
              sourcepath=""
              classpathref="@{classpathref}">
+         <compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
          <nested />
       </javac>
     </sequential>
@@ -343,6 +347,9 @@
     <attribute name="destdir"/>
   	<attribute name="title" default="${Name} ${version} API (${specversion})"/>
     <sequential>
+      <copy todir="@{destdir}/../prettify" overwrite="false">
+        <fileset dir="${prettify.dir}"/>
+      </copy>
       <javadoc
           packagenames="org.apache.solr.*"
           failonerror="true"
@@ -356,6 +363,7 @@
           link="${javadoc.link.java}"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
+          stylesheetfile="@{destdir}/../prettify/stylesheet+prettify.css"
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="todo" description="To Do:"/>
         <tag name="uml.property" description="UML Property:"/>
@@ -367,6 +375,10 @@
         <link href="${javadoc.link.java}"/>
         <link href="${javadoc.link.junit}"/>
         <link href="${javadoc.link.lucene}"/>
+      	<header><![CDATA[
+      		 <script src="{@docRoot}/../prettify/prettify.js" type="text/javascript"></script>
+      		 <script language="JavaScript">window.onload=function(){windowTitle();prettyPrint();}</script>
+      	]]></header>
 
         <sources />
 
@@ -377,19 +389,34 @@
 
   <!-- NOTE, the pom.xml MUST be a relative path.  An absolute path may break the build on windows -->
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
-        <element name="artifact-attachments" optional="yes"/>
-    <attribute name="pom.xml" default="${pom.xml}"/>
+    <element name="artifact-attachments" optional="yes"/>
+    <attribute name="pom.xml" default="pom.xml"/>
     <attribute name="jar.file" default="${jar.file}"/>
+    <sequential>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:deploy file="@{jar.file}">
+        <artifact-attachments/>
+        <remoteRepository url="${m2.repository.url}">
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+        </remoteRepository>
+        <pom refid="maven.project"/>
+      </artifact:deploy>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="m2-deploy-with-pom-template" description="Builds a Maven artifact given a POM template">
+    <attribute name="pom.xml"/>
+    <attribute name="jar.file"/>
     <sequential>
       <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
         <filterset begintoken="@" endtoken="@">
           <filter token="version" value="${version}"/>
         </filterset>
       </copy>
-      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />
-      <artifact:deploy file="@{jar.file}" uniqueVersion="false">
-        <artifact-attachments/>
+      <artifact:deploy file="@{jar.file}">
         <remoteRepository url="${m2.repository.url}">
           <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
         </remoteRepository>
@@ -433,6 +460,17 @@
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar" gpg.passphrase="@{gpg.passphrase}"/>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-javadoc.jar" gpg.passphrase="@{gpg.passphrase}"/>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-sources.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="sign-maven-war-artifacts" description="Signs maven artifacts">
+    <attribute name="artifact.id"/>
+    <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
+    <attribute name="maven.version" default="${version}"/>
+    <attribute name="gpg.passphrase"/>
+    <sequential>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.war" gpg.passphrase="@{gpg.passphrase}"/>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>

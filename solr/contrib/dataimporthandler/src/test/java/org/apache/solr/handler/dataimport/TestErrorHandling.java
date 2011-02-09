@@ -78,19 +78,23 @@ public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
   public static class StringDataSource extends DataSource<Reader> {
     public static String xml = "";
 
+    @Override
     public void init(Context context, Properties initProps) {
     }
 
+    @Override
     public Reader getData(String query) {
       return new StringReader(xml);
     }
 
+    @Override
     public void close() {
 
     }
   }
 
   public static class ExceptionTransformer extends Transformer {
+    @Override
     public Object transformRow(Map<String, Object> row, Context context) {
       throw new RuntimeException("Test exception");
     }

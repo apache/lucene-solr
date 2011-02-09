@@ -61,6 +61,20 @@ import java.util.Map;
  * term, frequency, position, offset, IDF.
  * <p/>
  * <b>Note</b> Returning IDF can be expensive.
+ * 
+ * <pre class="prettyprint">
+ * &lt;searchComponent name="tvComponent" class="solr.TermVectorComponent"/&gt;
+ * 
+ * &lt;requestHandler name="/terms" class="solr.SearchHandler"&gt;
+ *   &lt;lst name="defaults"&gt;
+ *     &lt;bool name="tv"&gt;true&lt;/bool&gt;
+ *   &lt;/lst&gt;
+ *   &lt;arr name="last-component"&gt;
+ *     &lt;str&gt;tvComponent&lt;/str&gt;
+ *   &lt;/arr&gt;
+ * &lt;/requestHandler&gt;</pre>
+ *
+ * @version $Id$
  */
 public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
 
@@ -71,13 +85,14 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   public static final String TERM_VECTORS = "termVectors";
 
 
+  @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
     }
 
-    NamedList termVectors = new NamedList();
+    NamedList<Object> termVectors = new NamedList<Object>();
     rb.rsp.add(TERM_VECTORS, termVectors);
     FieldOptions allFields = new FieldOptions();
     //figure out what options we have, and try to get the appropriate vector
@@ -106,7 +121,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     IndexSchema schema = rb.req.getSchema();
     //Build up our per field mapping
     Map<String, FieldOptions> fieldOptions = new HashMap<String, FieldOptions>();
-    NamedList warnings = new NamedList();
+    NamedList<List<String>> warnings = new NamedList<List<String>>();
     List<String>  noTV = new ArrayList<String>();
     List<String>  noPos = new ArrayList<String>();
     List<String>  noOff = new ArrayList<String>();
@@ -174,7 +189,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
     SolrIndexSearcher searcher = rb.req.getSearcher();
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     //the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
     SchemaField keyField = schema.getUniqueKeyField();
     String uniqFieldName = null;
@@ -187,7 +202,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     mapper.fieldOptions = allFields; //this will only stay set if fieldOptions.isEmpty() (in other words, only if the user didn't set any fields)
     while (iter.hasNext()) {
       Integer docId = iter.next();
-      NamedList docNL = new NamedList();
+      NamedList<Object> docNL = new NamedList<Object>();
       mapper.docNL = docNL;
       termVectors.add("doc-" + docId, docNL);
 
@@ -272,7 +287,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   private static class TVMapper extends TermVectorMapper {
     private IndexReader reader;
-    private NamedList docNL;
+    private NamedList<Object> docNL;
 
     //needs to be set for each new field
     FieldOptions fieldOptions;
@@ -280,7 +295,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     //internal vars not passed in by construction
     private boolean useOffsets, usePositions;
     //private Map<String, Integer> idfCache;
-    private NamedList fieldNL;
+    private NamedList<Object> fieldNL;
     private Term currentTerm;
 
 
@@ -288,35 +303,36 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       this.reader = reader;
     }
 
+    @Override
     public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
-      NamedList termInfo = new NamedList();
-        fieldNL.add(term.utf8ToString(), termInfo);
-        if (fieldOptions.termFreq == true) {
-          termInfo.add("tf", frequency);
+      NamedList<Object> termInfo = new NamedList<Object>();
+      fieldNL.add(term.utf8ToString(), termInfo);
+      if (fieldOptions.termFreq == true) {
+        termInfo.add("tf", frequency);
+      }
+      if (useOffsets == true) {
+        NamedList<Number> theOffsets = new NamedList<Number>();
+        termInfo.add("offsets", theOffsets);
+        for (int i = 0; i < offsets.length; i++) {
+          TermVectorOffsetInfo offset = offsets[i];
+          theOffsets.add("start", offset.getStartOffset());
+          theOffsets.add("end", offset.getEndOffset());
         }
-        if (useOffsets == true) {
-          NamedList theOffsets = new NamedList();
-          termInfo.add("offsets", theOffsets);
-          for (int i = 0; i < offsets.length; i++) {
-            TermVectorOffsetInfo offset = offsets[i];
-            theOffsets.add("start", offset.getStartOffset());
-            theOffsets.add("end", offset.getEndOffset());
-          }
+      }
+      if (usePositions == true) {
+        NamedList<Integer> positionsNL = new NamedList<Integer>();
+        for (int i = 0; i < positions.length; i++) {
+          positionsNL.add("position", positions[i]);
         }
-        if (usePositions == true) {
-          NamedList positionsNL = new NamedList();
-          for (int i = 0; i < positions.length; i++) {
-            positionsNL.add("position", positions[i]);
-          }
-          termInfo.add("positions", positionsNL);
-        }
-        if (fieldOptions.docFreq == true) {
-          termInfo.add("df", getDocFreq(term));
-        }
-        if (fieldOptions.tfIdf == true) {
-          double tfIdfVal = ((double) frequency) / getDocFreq(term);
-          termInfo.add("tf-idf", tfIdfVal);
-        }
+        termInfo.add("positions", positionsNL);
+      }
+      if (fieldOptions.docFreq == true) {
+        termInfo.add("df", getDocFreq(term));
+      }
+      if (fieldOptions.tfIdf == true) {
+        double tfIdfVal = ((double) frequency) / getDocFreq(term);
+        termInfo.add("tf-idf", tfIdfVal);
+      }
     }
 
     private int getDocFreq(BytesRef term) {
@@ -336,6 +352,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       return result;
     }
 
+    @Override
     public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
 
       if (fieldOptions.docFreq == true && reader != null) {
@@ -343,7 +360,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       }
       useOffsets = storeOffsets && fieldOptions.offsets;
       usePositions = storePositions && fieldOptions.positions;
-      fieldNL = new NamedList();
+      fieldNL = new NamedList<Object>();
       docNL.add(field, fieldNL);
     }
 
@@ -358,6 +375,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
+  @Override
   public void prepare(ResponseBuilder rb) throws IOException {
 
   }
@@ -374,18 +392,22 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public String getDescription() {
     return "A Component for working with Term Vectors";
   }

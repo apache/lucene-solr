@@ -50,7 +50,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("ddddd", writer);
 
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     writer.close();
 
     FuzzyQuery query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 0);   
@@ -198,7 +198,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("segment", writer);
 
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     writer.close();
 
     FuzzyQuery query;
@@ -309,7 +309,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexReader ir2 = writer2.getReader();
     
     MultiReader mr = new MultiReader(ir1, ir2);
-    IndexSearcher searcher = new IndexSearcher(mr);
+    IndexSearcher searcher = newSearcher(mr);
     FuzzyQuery fq = new FuzzyQuery(new Term("field", "z123456"), 1f, 0, 2);
     TopDocs docs = searcher.search(fq, 2);
     assertEquals(5, docs.totalHits); // 5 docs, from the a and b's
@@ -330,7 +330,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("segment", writer);
 
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     writer.close();
 
     Query query;
@@ -368,7 +368,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("Lucenne", writer);
 
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     writer.close();
     
     FuzzyQuery query = new FuzzyQuery(new Term("field", "lucene"));
@@ -413,7 +413,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     Query q = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer).parse( "giga~0.9" );
 
     // 3. search
-    IndexSearcher searcher = new IndexSearcher(r);
+    IndexSearcher searcher = newSearcher(r);
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals("Giga byte", searcher.doc(hits[0].doc).get("field"));
@@ -435,7 +435,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("test", w);
     addDoc("working", w);
     IndexReader reader = w.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     w.close();
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer());
     

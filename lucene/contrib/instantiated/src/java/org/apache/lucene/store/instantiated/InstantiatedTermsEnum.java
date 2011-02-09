@@ -18,10 +18,14 @@ package org.apache.lucene.store.instantiated;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -91,10 +95,6 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
-  public void cacheCurrentTerm() {
-  }
-
-  @Override
   public BytesRef term() {
     return br;
   }
@@ -107,6 +107,12 @@ public class InstantiatedTermsEnum extends TermsEnum {
   @Override
   public int docFreq() {
     return terms[upto].getAssociatedDocuments().length;
+  }
+
+  @Override
+  public long totalTermFreq() {
+    final long v = terms[upto].getTotalTermFreq();
+    return v == 0 ? -1 : v;
   }
 
   @Override
@@ -128,6 +134,19 @@ public class InstantiatedTermsEnum extends TermsEnum {
   @Override
   public Comparator<BytesRef> getComparator() {
     return BytesRef.getUTF8SortedAsUnicodeComparator();
+  }
+
+  @Override
+  public TermState termState() throws IOException {
+    final OrdTermState state = new OrdTermState();
+    state.ord = upto - start;
+    return state;
+  }
+
+  @Override
+  public void seek(BytesRef term, TermState state) throws IOException {
+    assert state != null && state instanceof OrdTermState;
+    seek(((OrdTermState)state).ord); // just use the ord for simplicity
   }
 }
 

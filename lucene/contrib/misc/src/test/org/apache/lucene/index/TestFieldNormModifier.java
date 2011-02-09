@@ -23,11 +23,12 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -41,10 +42,10 @@ public class TestFieldNormModifier extends LuceneTestCase {
   public Directory store;
   
   /** inverts the normal notion of lengthNorm */
-  public static Similarity s = new DefaultSimilarity() {
+  public static SimilarityProvider s = new DefaultSimilarity() {
     @Override
-    public float lengthNorm(String fieldName, int numTokens) {
-      return numTokens;
+    public float computeNorm(String fieldName, FieldInvertState state) {
+      return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
     }
   };
   
@@ -53,7 +54,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
     super.setUp();
     store = newDirectory();
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+                                                                     TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();
@@ -122,8 +123,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
         scores[doc + docBase] = scorer.score();
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        this.docBase = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {
@@ -157,8 +158,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
         scores[doc + docBase] = scorer.score();
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        this.docBase = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {
@@ -209,8 +210,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
         scores[doc + docBase] = scorer.score();
       }
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
-        this.docBase = docBase;
+      public void setNextReader(AtomicReaderContext context) {
+        docBase = context.docBase;
       }
       @Override
       public void setScorer(Scorer scorer) throws IOException {

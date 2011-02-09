@@ -176,15 +176,34 @@ public class HighFreqTerms {
     return ts;
   }
   
-  public static long getTotalTermFreq(IndexReader reader, String field, BytesRef termtext) throws Exception {
-    BytesRef br = termtext;
+  public static long getTotalTermFreq(IndexReader reader, String field, BytesRef termText) throws Exception {
+
     long totalTF = 0;
-    Bits skipDocs = MultiFields.getDeletedDocs(reader);
-    DocsEnum de = MultiFields.getTermDocsEnum(reader, skipDocs, field, br);
-    // if term is not in index return totalTF of 0
-    if (de == null) {
+    
+    Terms terms = MultiFields.getTerms(reader, field);
+    if (terms == null) {
       return 0;
     }
+
+    TermsEnum termsEnum = terms.iterator();
+    if (termsEnum.seek(termText) != TermsEnum.SeekStatus.FOUND) {
+      return 0;
+    }
+
+    Bits skipDocs = MultiFields.getDeletedDocs(reader);
+    if (skipDocs == null) {
+      // TODO: we could do this up front, during the scan
+      // (next()), instead of after-the-fact here w/ seek,
+      // if the codec supports it and there are no del
+      // docs...
+      final long totTF = termsEnum.totalTermFreq();
+      if (totTF != -1) {
+        return totTF;
+      }
+    }
+    
+    DocsEnum de = termsEnum.docs(skipDocs, null);
+
     // use DocsEnum.read() and BulkResult api
     final DocsEnum.BulkReadResult bulkresult = de.getBulkResult();
     int count;

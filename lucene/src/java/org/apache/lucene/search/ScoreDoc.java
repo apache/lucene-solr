@@ -24,7 +24,7 @@ public class ScoreDoc implements java.io.Serializable {
   public float score;
 
   /** Expert: A hit document's number.
-   * @see Searcher#doc(int)
+   * @see IndexSearcher#doc(int)
    */
   public int doc;
 

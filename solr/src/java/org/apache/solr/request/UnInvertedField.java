@@ -192,7 +192,7 @@ public class UnInvertedField {
   private void uninvert(SolrIndexSearcher searcher) throws IOException {
     long startTime = System.currentTimeMillis();
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     int maxDoc = reader.maxDoc();
 
     int[] index = new int[maxDoc];       // immediate term numbers, or the index into the byte[] representing the last number
@@ -457,12 +457,12 @@ public class UnInvertedField {
 
 
 
-  public NamedList getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
+  public NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
     use.incrementAndGet();
 
     FieldType ft = searcher.getSchema().getFieldType(field);
 
-    NamedList res = new NamedList();  // order is important
+    NamedList<Integer> res = new NamedList<Integer>();  // order is important
 
     DocSet docs = baseDocs;
     int baseSize = docs.size();
@@ -481,7 +481,7 @@ public class UnInvertedField {
       int startTerm = 0;
       int endTerm = numTermsInField;  // one past the end
 
-      NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
+      NumberedTermsEnum te = ti.getEnumerator(searcher.getIndexReader());
       if (prefix != null && prefix.length() > 0) {
         BytesRef prefixBr = new BytesRef(prefix);
         te.skipTo(prefixBr);
@@ -719,7 +719,7 @@ public class UnInvertedField {
     for (String f : facet) {
       FieldType facet_ft = searcher.getSchema().getFieldType(f);
       try {
-        si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), f);
+        si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), f);
       }
       catch (IOException e) {
         throw new RuntimeException("failed to open field cache for: " + f, e);
@@ -731,7 +731,7 @@ public class UnInvertedField {
     final int[] index = this.index;
     final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
-    NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
+    NumberedTermsEnum te = ti.getEnumerator(searcher.getIndexReader());
 
 
     boolean doNegative = false;
@@ -882,6 +882,7 @@ public class UnInvertedField {
     return te.skipTo(termNum);
   }
 
+  @Override
   public String toString() {
     return "{field=" + field
             + ",memSize="+memSize()
@@ -900,15 +901,15 @@ public class UnInvertedField {
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache cache = searcher.getFieldValueCache();
+    SolrCache<String,UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {
       return new UnInvertedField(field, searcher);
     }
 
-    UnInvertedField uif = (UnInvertedField)cache.get(field);
+    UnInvertedField uif = cache.get(field);
     if (uif == null) {
       synchronized (cache) {
-        uif = (UnInvertedField)cache.get(field);
+        uif = cache.get(field);
         if (uif == null) {
           uif = new UnInvertedField(field, searcher);
           cache.put(field, uif);
@@ -918,7 +919,6 @@ public class UnInvertedField {
 
     return uif;
   }
-
 }
 
 
@@ -997,13 +997,13 @@ class NumberedTermsEnum extends TermsEnum {
   }
 
   @Override
-  public int docFreq() {
+  public int docFreq() throws IOException {
     return tenum.docFreq();
   }
 
   @Override
-  public void cacheCurrentTerm() {
-    throw new UnsupportedOperationException();
+  public long totalTermFreq() throws IOException {
+    return tenum.totalTermFreq();
   }
 
   public BytesRef skipTo(BytesRef target) throws IOException {
@@ -1159,6 +1159,7 @@ class TermIndex {
       ArrayList<BytesRef> lst;
       PagedBytes bytes;
 
+      @Override
       protected BytesRef setTerm() throws IOException {
         BytesRef br = super.setTerm();
         if (br != null && (pos & intervalMask)==0) {
@@ -1174,10 +1175,12 @@ class TermIndex {
         return br;
       }
 
+      @Override
       public BytesRef skipTo(int termNumber) throws IOException {
         throw new UnsupportedOperationException();
       }
 
+      @Override
       public void close() throws IOException {
         nTerms=pos;
         super.close();

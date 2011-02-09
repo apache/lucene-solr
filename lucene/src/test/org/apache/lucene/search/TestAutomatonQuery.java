@@ -40,6 +40,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
 
   private final String FN = "field";
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
@@ -61,10 +62,11 @@ public class TestAutomatonQuery extends LuceneTestCase {
         + " with numbers 1234 5678.9 and letter b");
     writer.addDocument(doc);
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
   
+  @Override
   public void tearDown() throws Exception {
     searcher.close();
     reader.close();

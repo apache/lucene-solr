@@ -81,7 +81,7 @@ public abstract class AbstractField implements Fieldable {
    * used to compute the norm factor for the field.  By
    * default, in the {@link
    * org.apache.lucene.search.Similarity#computeNorm(String,
-   * FieldInvertState)} method, the boost value is multipled
+   * FieldInvertState)} method, the boost value is multiplied
    * by the {@link
    * org.apache.lucene.search.Similarity#lengthNorm(String,
    * int)} and then
@@ -103,7 +103,7 @@ public abstract class AbstractField implements Fieldable {
    *
    * <p>Note: this value is not stored directly with the document in the index.
    * Documents returned from {@link org.apache.lucene.index.IndexReader#document(int)} and
-   * {@link org.apache.lucene.search.Searcher#doc(int)} may thus not have the same value present as when
+   * {@link org.apache.lucene.search.IndexSearcher#doc(int)} may thus not have the same value present as when
    * this field was indexed.
    *
    * @see #setBoost(float)

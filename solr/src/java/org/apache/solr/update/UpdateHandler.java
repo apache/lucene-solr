@@ -18,7 +18,7 @@
 package org.apache.solr.update;
 
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -152,7 +152,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     @Override
     public void collect(int doc) {
       try {
-        searcher.getReader().deleteDocument(doc + docBase);
+        searcher.getIndexReader().deleteDocument(doc + docBase);
         deleted++;
       } catch (IOException e) {
         // don't try to close the searcher on failure for now...
@@ -167,8 +167,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
 
     @Override
-    public void setNextReader(IndexReader arg0, int docBase) throws IOException {
-      this.docBase = docBase;
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+      docBase = context.docBase;
     }
 
     @Override

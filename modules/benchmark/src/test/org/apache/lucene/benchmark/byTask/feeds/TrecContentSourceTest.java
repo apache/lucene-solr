@@ -18,14 +18,20 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Properties;
 
+import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TrecContentSourceTest extends LuceneTestCase {
 
@@ -328,6 +334,63 @@ public class TrecContentSourceTest extends LuceneTestCase {
 
     // Don't test that NoMoreDataException is thrown, since the forever flag is
     // turned on.
+  }
+  
+  /** 
+   * Open a trec content source over a directory with files of all trec path types and all
+   * supported formats - bzip, gzip, txt. 
+   */
+  public void testTrecFeedDirAllTypes() throws Exception {
+    File dataDir =  _TestUtil.getTempDir("trecFeedAllTypes");
+    _TestUtil.unzip(getDataFile("trecdocs.zip"), dataDir);
+    TrecContentSource tcs = new TrecContentSource();
+    Properties props = new Properties();
+    props.setProperty("print.props", "false");
+    props.setProperty("content.source.verbose", "false");
+    props.setProperty("content.source.excludeIteration", "true");
+    props.setProperty("doc.maker.forever", "false");
+    props.setProperty("docs.dir", dataDir.getCanonicalPath().replace('\\','/')); 
+    props.setProperty("trec.doc.parser", TrecParserByPath.class.getName());
+    props.setProperty("content.source.forever", "false");
+    tcs.setConfig(new Config(props));
+    tcs.resetInputs();
+    DocData dd = new DocData();
+    int n = 0;
+    boolean gotExpectedException = false;
+    HashSet<ParsePathType> unseenTypes = new HashSet<ParsePathType>(Arrays.asList(ParsePathType.values()));
+    try {
+      while (n<100) { // arbiterary limit to prevent looping forever in case of test failure
+        dd = tcs.getNextDocData(dd);
+        ++n;
+        assertNotNull("doc data "+n+" should not be null!", dd);
+        unseenTypes.remove(tcs.currPathType);
+        switch(tcs.currPathType) {
+          case GOV2:
+            assertDocData(dd, "TEST-000", "TEST-000 title", "TEST-000 text", tcs.parseDate("Sun, 11 Jan 2009 08:00:00 GMT"));
+            break;
+          case FBIS:
+            assertDocData(dd, "TEST-001", "TEST-001 Title", "TEST-001 text", tcs.parseDate("1 January 1991"));
+            break;
+          case FR94:
+            // no title extraction in this source for now
+            assertDocData(dd, "TEST-002", null, "DEPARTMENT OF SOMETHING", tcs.parseDate("February 3, 1994"));
+            break;
+          case FT:
+            assertDocData(dd, "TEST-003", "Test-003 title", "Some pub text", tcs.parseDate("980424"));
+            break;
+          case LATIMES:
+            assertDocData(dd, "TEST-004", "Test-004 Title", "Some paragraph", tcs.parseDate("January 17, 1997, Sunday"));
+            break;
+          default:
+            assertTrue("Should never get here!", false);
+        }
+      }
+    } catch (NoMoreDataException e) {
+      gotExpectedException = true;
+    }
+    assertTrue("Should have gotten NoMoreDataException!", gotExpectedException);
+    assertEquals("Wrong numbre of documents created by osurce!",5,n);
+    assertTrue("Did not see all types!",unseenTypes.isEmpty());
   }
 
 }

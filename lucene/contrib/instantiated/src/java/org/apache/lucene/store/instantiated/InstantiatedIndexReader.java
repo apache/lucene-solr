@@ -19,6 +19,7 @@ package org.apache.lucene.store.instantiated;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
@@ -46,10 +48,13 @@ import org.apache.lucene.util.Bits;
 public class InstantiatedIndexReader extends IndexReader {
 
   private final InstantiatedIndex index;
+  private ReaderContext context = new AtomicReaderContext(this);
+
 
   public InstantiatedIndexReader(InstantiatedIndex index) {
     super();
     this.index = index;
+    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
   }
 
   /**
@@ -332,15 +337,6 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  public void norms(String field, byte[] bytes, int offset) throws IOException {
-    byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
-    if (norms == null) {
-      return;
-    }
-    System.arraycopy(norms, 0, bytes, offset, norms.length);
-  }
-
-  @Override
   protected void doSetNorm(int doc, String field, byte value) throws IOException {
     if (uncommittedNormsByFieldNameAndDocumentNumber == null) {
       uncommittedNormsByFieldNameAndDocumentNumber = new HashMap<String,List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());
@@ -410,16 +406,31 @@ public class InstantiatedIndexReader extends IndexReader {
         if (i < 0) {
           i = -i - 1;
         }
-        if (i >= orderedTerms.length || !orderedTerms[i].field().equals(field)) {
+        if (i >= orderedTerms.length || orderedTerms[i].field() != field) {
           // field does not exist
           return null;
         }
         final int startLoc = i;
 
+        // TODO: heavy to do this here; would be better to
+        // do it up front & cache
+        long sum = 0;
+        int upto = i;
+        while(upto < orderedTerms.length && orderedTerms[i].field() == field) {
+          sum += orderedTerms[i].getTotalTermFreq();
+          upto++;
+        }
+        final long sumTotalTermFreq = sum;
+
         return new Terms() {
           @Override 
           public TermsEnum iterator() {
             return new InstantiatedTermsEnum(orderedTerms, startLoc, field);
+          }
+
+          @Override
+          public long getSumTotalTermFreq() {
+            return sumTotalTermFreq;
           }
 
           @Override
@@ -434,6 +445,11 @@ public class InstantiatedIndexReader extends IndexReader {
         return null;
       }
     };
+  }
+  
+  @Override
+  public ReaderContext getTopReaderContext() {
+    return context;
   }
 
   @Override

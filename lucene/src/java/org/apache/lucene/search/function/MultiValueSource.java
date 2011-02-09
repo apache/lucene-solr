@@ -20,6 +20,9 @@ package org.apache.lucene.search.function;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -44,16 +47,17 @@ public final class MultiValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(IndexReader reader) throws IOException {
-
-    IndexReader[] subReaders = reader.getSequentialSubReaders();
-    if (subReaders != null) {
-      // This is a composite reader
-      return new MultiDocValues(subReaders);
-    } else {
+  public DocValues getValues(AtomicReaderContext context) throws IOException {
       // Already an atomic reader -- just delegate
-      return other.getValues(reader);
+      return other.getValues(context);
+  }
+  
+  @Override
+  public DocValues getValues(ReaderContext context) throws IOException {
+    if (context.isAtomic) {
+      return getValues((AtomicReaderContext) context);
     }
+    return new MultiDocValues(ReaderUtil.leaves(context));
   }
 
   @Override
@@ -78,59 +82,56 @@ public final class MultiValueSource extends ValueSource {
   private final class MultiDocValues extends DocValues {
 
     final DocValues[] docValues;
-    final int[] docStarts;
+    final AtomicReaderContext[] leaves;
 
-    MultiDocValues(IndexReader[] subReaders) throws IOException {
-      docValues = new DocValues[subReaders.length];
-      docStarts = new int[subReaders.length];
-      int base = 0;
-      for(int i=0;i<subReaders.length;i++) {
-        docValues[i] = other.getValues(subReaders[i]);
-        docStarts[i] = base;
-        base += subReaders[i].maxDoc();
+    MultiDocValues(AtomicReaderContext[] leaves) throws IOException {
+      this.leaves = leaves;
+      docValues = new DocValues[leaves.length];
+      for(int i=0;i<leaves.length;i++) {
+        docValues[i] = other.getValues(leaves[i]);
       }
     }
     
     @Override
     public float floatVal(int doc) {
-      final int n = ReaderUtil.subIndex(doc, docStarts);
-      return docValues[n].floatVal(doc-docStarts[n]);
+      final int n = ReaderUtil.subIndex(doc, leaves);
+      return docValues[n].floatVal(doc-leaves[n].docBase);
     }
 
     @Override
     public int intVal(int doc) {
-      final int n = ReaderUtil.subIndex(doc, docStarts);
-      return docValues[n].intVal(doc-docStarts[n]);
+      final int n = ReaderUtil.subIndex(doc, leaves);
+      return docValues[n].intVal(doc-leaves[n].docBase);
     }
 
     @Override
     public long longVal(int doc) {
-      final int n = ReaderUtil.subIndex(doc, docStarts);
-      return docValues[n].longVal(doc-docStarts[n]);
+      final int n = ReaderUtil.subIndex(doc, leaves);
+      return docValues[n].longVal(doc-leaves[n].docBase);
     }
 
     @Override
     public double doubleVal(int doc) {
-      final int n = ReaderUtil.subIndex(doc, docStarts);
-      return docValues[n].doubleVal(doc-docStarts[n]);
+      final int n = ReaderUtil.subIndex(doc, leaves);
+      return docValues[n].doubleVal(doc-leaves[n].docBase);
     }
 
     @Override
     public String strVal(int doc) {
-      final int n = ReaderUtil.subIndex(doc, docStarts);
-      return docValues[n].strVal(doc-docStarts[n]);
+      final int n = ReaderUtil.subIndex(doc, leaves);
+      return docValues[n].strVal(doc-leaves[n].docBase);
     }
 
     @Override
     public String toString(int doc) {
-      final int n = ReaderUtil.subIndex(doc, docStarts);
-      return docValues[n].toString(doc-docStarts[n]);
+      final int n = ReaderUtil.subIndex(doc, leaves);
+      return docValues[n].toString(doc-leaves[n].docBase);
     }
 
     @Override
     public Explanation explain(int doc) {
-      final int n = ReaderUtil.subIndex(doc, docStarts);
-      return docValues[n].explain(doc-docStarts[n]);
+      final int n = ReaderUtil.subIndex(doc, leaves);
+      return docValues[n].explain(doc-leaves[n].docBase);
     }
   }
 }

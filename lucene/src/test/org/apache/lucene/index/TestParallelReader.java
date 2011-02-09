@@ -47,7 +47,9 @@ public class TestParallelReader extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     single.getIndexReader().close();
+    single.close();
     parallel.getIndexReader().close();
+    parallel.close();
     dir.close();
     dir1.close();
     dir2.close();
@@ -147,7 +149,8 @@ public class TestParallelReader extends LuceneTestCase {
     
     assertTrue(pr.isCurrent());
     IndexReader modifier = IndexReader.open(dir1, false);
-    modifier.setNorm(0, "f1", 100);
+    SimilarityProvider sim = new DefaultSimilarity();
+    modifier.setNorm(0, "f1", sim.get("f1").encodeNormValue(100f));
     modifier.close();
     
     // one of the two IndexReaders which ParallelReader is using
@@ -155,7 +158,7 @@ public class TestParallelReader extends LuceneTestCase {
     assertFalse(pr.isCurrent());
     
     modifier = IndexReader.open(dir2, false);
-    modifier.setNorm(0, "f3", 100);
+    modifier.setNorm(0, "f3", sim.get("f3").encodeNormValue(100f));
     modifier.close();
     
     // now both are not current anymore
@@ -266,7 +269,7 @@ public class TestParallelReader extends LuceneTestCase {
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
-    return new IndexSearcher(pr);
+    return newSearcher(pr);
   }
 
   private Directory getDir1(Random random) throws IOException {

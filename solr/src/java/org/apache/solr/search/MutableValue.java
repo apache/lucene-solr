@@ -50,6 +50,7 @@ public abstract class MutableValue implements Comparable {
     return (c1 == c2) && this.equalsSameType(other);
   }
 
+  @Override
   public abstract int hashCode();
 
   @Override

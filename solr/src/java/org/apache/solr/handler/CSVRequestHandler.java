@@ -42,6 +42,7 @@ import java.io.*;
 
 public class CSVRequestHandler extends ContentStreamHandlerBase {
 
+  @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     return new SingleThreadedCSVLoader(req, processor);
   }
@@ -118,6 +119,7 @@ abstract class CSVLoader extends ContentStreamLoader {
 
   /** add zero length fields */
   private class FieldAdderEmpty extends CSVLoader.FieldAdder {
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       doc.addField(fields[column].getName(),val,1.0f);
     }
@@ -127,6 +129,7 @@ abstract class CSVLoader extends ContentStreamLoader {
   private class FieldTrimmer extends CSVLoader.FieldAdder {
     private final CSVLoader.FieldAdder base;
     FieldTrimmer(CSVLoader.FieldAdder base) { this.base=base; }
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       base.add(doc, line, column, val.trim());
     }
@@ -145,6 +148,7 @@ abstract class CSVLoader extends ContentStreamLoader {
      this.to=to;
      this.base=base;
    }
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       if (from.equals(val)) val=to;
       base.add(doc,line,column,val);
@@ -162,6 +166,7 @@ abstract class CSVLoader extends ContentStreamLoader {
       this.base = base;
     }
 
+    @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
       CSVParser parser = new CSVParser(new StringReader(val), strategy);
       try {
@@ -305,13 +310,29 @@ abstract class CSVLoader extends ContentStreamLoader {
 
   private void input_err(String msg, String[] line, int lineno) {
     StringBuilder sb = new StringBuilder();
-    sb.append(errHeader+", line="+lineno + ","+msg+"\n\tvalues={");
-    for (String val: line) { sb.append("'"+val+"',"); }
+    sb.append(errHeader).append(", line=").append(lineno).append(",").append(msg).append("\n\tvalues={");
+    for (String val: line) {
+      sb.append("'").append(val).append("',"); }
     sb.append('}');
     throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,sb.toString());
   }
 
+  private void input_err(String msg, String[] lines, int lineNo, Throwable e) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(errHeader).append(", line=").append(lineNo).append(",").append(msg).append("\n\tvalues={");
+    if (lines != null) {
+      for (String val : lines) {
+        sb.append("'").append(val).append("',");
+      }
+    } else {
+      sb.append("NO LINES AVAILABLE");
+    }
+    sb.append('}');
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,sb.toString(), e);
+  }
+
   /** load the CSV input */
+  @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws IOException {
     errHeader = "CSVLoader: input=" + stream.getSourceInfo();
     Reader reader = null;
@@ -341,7 +362,13 @@ abstract class CSVLoader extends ContentStreamLoader {
       // read the rest of the CSV file
       for(;;) {
         int line = parser.getLineNumber();  // for error reporting in MT mode
-        String[] vals = parser.getLine();
+        String[] vals = null;
+        try {
+          vals = parser.getLine();
+        } catch (IOException e) {
+          //Catch the exception and rethrow it with more line information
+         input_err("can't read line: " + line, null, line, e);
+        }
         if (vals==null) break;
 
         if (vals.length != fields.length) {
@@ -382,6 +409,7 @@ class SingleThreadedCSVLoader extends CSVLoader {
     super(req, processor);
   }
 
+  @Override
   void addDoc(int line, String[] vals) throws IOException {
     templateAdd.indexedId = null;
     SolrInputDocument doc = new SolrInputDocument();

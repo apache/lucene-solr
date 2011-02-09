@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -83,7 +83,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       priority queue.  The {@link FieldValueHitQueue}
  *       calls this method when a new hit is competitive.
  *
- *  <li> {@link #setNextReader} Invoked
+ *  <li> {@link #setNextReader(IndexReader.AtomicReaderContext)} Invoked
  *       when the search is switching to the next segment.
  *       You may need to update internal state of the
  *       comparator, for example retrieving new values from
@@ -151,18 +151,17 @@ public abstract class FieldComparator {
   public abstract void copy(int slot, int doc) throws IOException;
 
   /**
-   * Set a new Reader. All subsequent docIDs are relative to
+   * Set a new {@link AtomicReaderContext}. All subsequent docIDs are relative to
    * the current reader (you must add docBase if you need to
    * map it to a top-level docID).
    * 
-   * @param reader current reader
-   * @param docBase docBase of this reader 
+   * @param context current reader context
    * @return the comparator to use for this segment; most
    *   comparators can just return "this" to reuse the same
    *   comparator across segments
    * @throws IOException
    */
-  public abstract FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException;
+  public abstract FieldComparator setNextReader(AtomicReaderContext context) throws IOException;
 
   /** Sets the Scorer to use in case a document's score is
    *  needed.
@@ -242,8 +241,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      setup(FieldCache.DEFAULT.getBytes(reader, creator.field, creator));
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      setup(FieldCache.DEFAULT.getBytes(context.reader, creator.field, creator));
       docValues = cached.values;
       return this;
     }
@@ -314,8 +313,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      setup(FieldCache.DEFAULT.getDoubles(reader, creator.field, creator));
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      setup(FieldCache.DEFAULT.getDoubles(context.reader, creator.field, creator));
       docValues = cached.values;
       return this;
     }
@@ -374,8 +373,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = reader.docValues(field).getSource();
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      currentReaderValues = context.reader.docValues(field).getSource();
       return this;
     }
     
@@ -447,8 +446,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      setup(FieldCache.DEFAULT.getFloats(reader, creator.field, creator));
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      setup(FieldCache.DEFAULT.getFloats(context.reader, creator.field, creator));
       docValues = cached.values;
       return this;
     }
@@ -503,8 +502,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      setup( FieldCache.DEFAULT.getShorts(reader, creator.field, creator));
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      setup( FieldCache.DEFAULT.getShorts(context.reader, creator.field, creator));
       docValues = cached.values;
       return this;
     }
@@ -581,8 +580,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      setup(FieldCache.DEFAULT.getInts(reader, creator.field, creator));
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      setup(FieldCache.DEFAULT.getInts(context.reader, creator.field, creator));
       docValues = cached.values;
       return this;
     }
@@ -645,8 +644,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = reader.docValues(field).getSource();
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      currentReaderValues = context.reader.docValues(field).getSource();
       return this;
     }
     
@@ -719,8 +718,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      setup(FieldCache.DEFAULT.getLongs(reader, creator.field, creator));
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      setup(FieldCache.DEFAULT.getLongs(context.reader, creator.field, creator));
       docValues = cached.values;
       return this;
     }
@@ -770,7 +769,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) {
+    public FieldComparator setNextReader(AtomicReaderContext context) {
       return this;
     }
     
@@ -822,11 +821,11 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) {
+    public FieldComparator setNextReader(AtomicReaderContext context) {
       // TODO: can we "map" our docIDs to the current
       // reader? saves having to then subtract on every
       // compare call
-      this.docBase = docBase;
+      this.docBase = context.docBase;
       return this;
     }
     
@@ -903,8 +902,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentDocTerms = FieldCache.DEFAULT.getTerms(reader, field);
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader, field);
       return this;
     }
     
@@ -998,8 +997,8 @@ public abstract class FieldComparator {
     abstract class PerSegmentComparator extends FieldComparator {
       
       @Override
-      public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-        return TermOrdValComparator.this.setNextReader(reader, docBase);
+      public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+        return TermOrdValComparator.this.setNextReader(context);
       }
 
       @Override
@@ -1264,8 +1263,9 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      final int docBase = context.docBase;
+      termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, field);
       final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
       FieldComparator perSegComp;
       if (docToOrd instanceof Direct8) {
@@ -1379,8 +1379,8 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      docTerms = FieldCache.DEFAULT.getTerms(reader, field);
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      docTerms = FieldCache.DEFAULT.getTerms(context.reader, field);
       return this;
     }
     

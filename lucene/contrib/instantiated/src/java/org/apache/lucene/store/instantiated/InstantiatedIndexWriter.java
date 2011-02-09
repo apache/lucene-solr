@@ -38,10 +38,12 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectorOffsetInfo;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CollectionUtil;
@@ -66,7 +68,7 @@ public class InstantiatedIndexWriter implements Closeable {
   private final InstantiatedIndex index;
   private final Analyzer analyzer;
 
-  private Similarity similarity = Similarity.getDefault(); // how to normalize;
+  private SimilarityProvider similarityProvider = IndexSearcher.getDefaultSimilarityProvider(); // how to normalize;
 
   private transient Set<String> fieldNameBuffer;
   /**
@@ -112,14 +114,14 @@ public class InstantiatedIndexWriter implements Closeable {
    *  MAddDocs_20000 -   7 4000 100 false -  -   1 -  -   20000 -  -   535,8 -  -  37,33 - 309 680 640 -  501 968 896
    * </pre>
    *
-   * @see org.apache.lucene.index.IndexWriter#setMergeFactor(int)
+   * @see org.apache.lucene.index.LogMergePolicy#setMergeFactor(int)
    */
   public void setMergeFactor(int mergeFactor) {
     this.mergeFactor = mergeFactor;
   }
 
   /**
-   * @see org.apache.lucene.index.IndexWriter#getMergeFactor()
+   * @see org.apache.lucene.index.LogMergePolicy#getMergeFactor()
    */
   public int getMergeFactor() {
     return mergeFactor;
@@ -200,9 +202,9 @@ public class InstantiatedIndexWriter implements Closeable {
       byte[] oldNorms = index.getNormsByFieldNameAndDocumentNumber().get(field);
       if (oldNorms != null) {
         System.arraycopy(oldNorms, 0, norms, 0, oldNorms.length);
-        Arrays.fill(norms, oldNorms.length, norms.length, similarity.encodeNormValue(1.0f));
+        Arrays.fill(norms, oldNorms.length, norms.length, (byte) 0);
       } else {
-        Arrays.fill(norms, 0, norms.length, similarity.encodeNormValue(1.0f));
+        Arrays.fill(norms, 0, norms.length, (byte) 0);
       }
       normsByFieldNameAndDocumentNumber.put(field, norms);
       fieldNames.remove(field);
@@ -210,7 +212,7 @@ public class InstantiatedIndexWriter implements Closeable {
     for (String field : fieldNames) {
       //System.out.println(field);
       byte[] norms = new byte[index.getDocumentsByNumber().length + termDocumentInformationFactoryByDocument.size()];
-      Arrays.fill(norms, 0, norms.length, similarity.encodeNormValue(1.0f));
+      Arrays.fill(norms, 0, norms.length, (byte) 0);
       normsByFieldNameAndDocumentNumber.put(field, norms);
     }
     fieldNames.clear();
@@ -235,10 +237,12 @@ public class InstantiatedIndexWriter implements Closeable {
         termsInDocument += eFieldTermDocInfoFactoriesByTermText.getValue().size();
 
         if (eFieldTermDocInfoFactoriesByTermText.getKey().indexed && !eFieldTermDocInfoFactoriesByTermText.getKey().omitNorms) {
-          float norm = eFieldTermDocInfoFactoriesByTermText.getKey().boost;
-          norm *= document.getDocument().getBoost();
-          norm *= similarity.lengthNorm(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName, eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
-          normsByFieldNameAndDocumentNumber.get(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName)[document.getDocumentNumber()] = similarity.encodeNormValue(norm);
+          final String fieldName = eFieldTermDocInfoFactoriesByTermText.getKey().fieldName;
+          final FieldInvertState invertState = new FieldInvertState();
+          invertState.setBoost(eFieldTermDocInfoFactoriesByTermText.getKey().boost * document.getDocument().getBoost());
+          invertState.setLength(eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
+          final float norm = similarityProvider.get(fieldName).computeNorm(fieldName, invertState);
+          normsByFieldNameAndDocumentNumber.get(fieldName)[document.getDocumentNumber()] = similarityProvider.get(fieldName).encodeNormValue(norm);
         } else {
           System.currentTimeMillis();
         }
@@ -313,6 +317,7 @@ public class InstantiatedIndexWriter implements Closeable {
           }
           associatedDocuments[associatedDocuments.length - 1] = info;          
           term.setAssociatedDocuments(associatedDocuments);
+          term.addPositionsCount(positions.length);
 
           // todo optimize, only if term vector?
           informationByTermOfCurrentDocument.put(term, info);
@@ -656,12 +661,12 @@ public class InstantiatedIndexWriter implements Closeable {
     addDocument(doc, analyzer);
   }
 
-  public Similarity getSimilarity() {
-    return similarity;
+  public SimilarityProvider getSimilarityProvider() {
+    return similarityProvider;
   }
 
-  public void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
+  public void setSimilarityProvider(SimilarityProvider similarityProvider) {
+    this.similarityProvider = similarityProvider;
   }
 
   public Analyzer getAnalyzer() {

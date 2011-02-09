@@ -45,48 +45,36 @@ to check if the results are what we expect):</p>
 <!-- = Java Sourcecode to HTML automatically converted code = -->
 <!-- =   Java2Html Converter 5.0 [2006-03-04] by Markus Gebhard  markus@jave.de   = -->
 <!-- =     Further information: http://www.java2html.de     = -->
-<div align="left" class="java">
-<table border="0" cellpadding="3" cellspacing="0" bgcolor="#ffffff">
-   <tr>
-  <!-- start source code -->
-   <td nowrap="nowrap" valign="top" align="left">
-    <code>
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Analyzer&nbsp;analyzer&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">StandardAnalyzer</font><font color="#000000">(</font><font color="#000000">Version.LUCENE_CURRENT</font><font color="#000000">)</font><font color="#000000">;</font><br />
-<font color="#ffffff"></font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Store&nbsp;the&nbsp;index&nbsp;in&nbsp;memory:</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Directory&nbsp;directory&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">RAMDirectory</font><font color="#000000">()</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;To&nbsp;store&nbsp;an&nbsp;index&nbsp;on&nbsp;disk,&nbsp;use&nbsp;this&nbsp;instead:</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//Directory&nbsp;directory&nbsp;=&nbsp;FSDirectory.open(&#34;/tmp/testindex&#34;);</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">IndexWriter&nbsp;iwriter&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">IndexWriter</font><font color="#000000">(</font><font color="#000000">directory,&nbsp;analyzer,&nbsp;true,</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">IndexWriter.MaxFieldLength</font><font color="#000000">(</font><font color="#990000">25000</font><font color="#000000">))</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Document&nbsp;doc&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Document</font><font color="#000000">()</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">String&nbsp;text&nbsp;=&nbsp;</font><font color="#2a00ff">&#34;This&nbsp;is&nbsp;the&nbsp;text&nbsp;to&nbsp;be&nbsp;indexed.&#34;</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">doc.add</font><font color="#000000">(</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Field</font><font color="#000000">(</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">,&nbsp;text,&nbsp;Field.Store.YES,</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Field.Index.ANALYZED</font><font color="#000000">))</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.addDocument</font><font color="#000000">(</font><font color="#000000">doc</font><font color="#000000">)</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.close</font><font color="#000000">()</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Now&nbsp;search&nbsp;the&nbsp;index:</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">IndexSearcher&nbsp;isearcher&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">IndexSearcher</font><font color="#000000">(</font><font color="#000000">directory,&nbsp;</font><font color="#7f0055"><b>true</b></font><font color="#000000">)</font><font color="#000000">;&nbsp;</font><font color="#3f7f5f">//&nbsp;read-only=true</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Parse&nbsp;a&nbsp;simple&nbsp;query&nbsp;that&nbsp;searches&nbsp;for&nbsp;&#34;text&#34;:</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">QueryParser&nbsp;parser&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">QueryParser</font><font color="#000000">(</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">,&nbsp;analyzer</font><font color="#000000">)</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Query&nbsp;query&nbsp;=&nbsp;parser.parse</font><font color="#000000">(</font><font color="#2a00ff">&#34;text&#34;</font><font color="#000000">)</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">ScoreDoc</font><font color="#000000">[]&nbsp;</font><font color="#000000">hits&nbsp;=&nbsp;isearcher.search</font><font color="#000000">(</font><font color="#000000">query,&nbsp;null,&nbsp;</font><font color="#990000">1000</font><font color="#000000">)</font><font color="#000000">.scoreDocs;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">assertEquals</font><font color="#000000">(</font><font color="#990000">1</font><font color="#000000">,&nbsp;hits.length</font><font color="#000000">)</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Iterate&nbsp;through&nbsp;the&nbsp;results:</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#7f0055"><b>for&nbsp;</b></font><font color="#000000">(</font><font color="#7f0055"><b>int&nbsp;</b></font><font color="#000000">i&nbsp;=&nbsp;</font><font color="#990000">0</font><font color="#000000">;&nbsp;i&nbsp;&lt;&nbsp;hits.length;&nbsp;i++</font><font color="#000000">)&nbsp;{</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Document&nbsp;hitDoc&nbsp;=&nbsp;isearcher.doc</font><font color="#000000">(</font><font color="#000000">hits</font><font color="#000000">[</font><font color="#000000">i</font><font color="#000000">]</font><font color="#000000">.doc</font><font color="#000000">)</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">assertEquals</font><font color="#000000">(</font><font color="#2a00ff">&#34;This&nbsp;is&nbsp;the&nbsp;text&nbsp;to&nbsp;be&nbsp;indexed.&#34;</font><font color="#000000">,&nbsp;hitDoc.get</font><font color="#000000">(</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">))</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">}</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">isearcher.close</font><font color="#000000">()</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">directory.close</font><font color="#000000">()</font><font color="#000000">;</font></code>
-    
-   </td>
-  <!-- end source code -->
-   </tr>
+<pre class="prettyprint">
+    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
-</table>
-</div>
+    // Store the index in memory:
+    Directory directory = new RAMDirectory();
+    // To store an index on disk, use this instead:
+    //Directory directory = FSDirectory.open("/tmp/testindex");
+    IndexWriter iwriter = new IndexWriter(directory, analyzer, true,
+                                          new IndexWriter.MaxFieldLength(25000));
+    Document doc = new Document();
+    String text = "This is the text to be indexed.";
+    doc.add(new Field("fieldname", text, Field.Store.YES,
+        Field.Index.ANALYZED));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexSearcher isearcher = new IndexSearcher(directory, true); // read-only=true
+    // Parse a simple query that searches for "text":
+    QueryParser parser = new QueryParser("fieldname", analyzer);
+    Query query = parser.parse("text");
+    ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+    // Iterate through the results:
+    for (int i = 0; i < hits.length; i++) {
+      Document hitDoc = isearcher.doc(hits[i].doc);
+      assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
+    }
+    isearcher.close();
+    directory.close();</pre>
 <!-- =       END of automatically generated HTML code       = -->
 <!-- ======================================================== -->
 

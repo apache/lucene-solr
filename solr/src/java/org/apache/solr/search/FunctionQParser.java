@@ -56,6 +56,7 @@ public class FunctionQParser extends QParser {
     return parseMultipleSources;
   }
 
+  @Override
   public Query parse() throws ParseException {
     sp = new QueryParsing.StrParser(getString());
 

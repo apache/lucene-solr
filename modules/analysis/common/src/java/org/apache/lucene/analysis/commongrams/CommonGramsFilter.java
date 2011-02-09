@@ -116,6 +116,7 @@ public final class CommonGramsFilter extends TokenFilter {
    * eliminate the middle bigram "of-the"and save a disk seek and a whole set of
    * position lookups.
    */
+  @Override
   public boolean incrementToken() throws IOException {
     // get the next piece of input
     if (savedState != null) {

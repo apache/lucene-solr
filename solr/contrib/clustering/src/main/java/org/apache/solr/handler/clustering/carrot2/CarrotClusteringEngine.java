@@ -77,6 +77,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
   private String idFieldName;
 
+  @Override
   @Deprecated
   public Object cluster(Query query, DocList docList, SolrQueryRequest sreq) {
     SolrIndexSearcher searcher = sreq.getSearcher();
@@ -90,6 +91,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
   }
 
+  @Override
   public Object cluster(Query query, SolrDocumentList solrDocList,
       Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
     try {
@@ -124,7 +126,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     // is included in the code base of Solr, so that it's possible to refactor
     // the Lucene APIs the factory relies on if needed.
     initAttributes.put("PreprocessingPipeline.languageModelFactory",
-      new LuceneLanguageModelFactory());
+      LuceneLanguageModelFactory.class);
     this.controller.init(initAttributes);
 
     this.idFieldName = core.getSchema().getUniqueKeyField().getName();

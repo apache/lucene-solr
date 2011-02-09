@@ -29,14 +29,14 @@ class ConjunctionScorer extends Scorer {
   private final float coord;
   private int lastDoc = -1;
 
-  public ConjunctionScorer(Similarity similarity, Collection<Scorer> scorers) throws IOException {
-    this(similarity, scorers.toArray(new Scorer[scorers.size()]));
+  public ConjunctionScorer(Weight weight, float coord, Collection<Scorer> scorers) throws IOException {
+    this(weight, coord, scorers.toArray(new Scorer[scorers.size()]));
   }
 
-  public ConjunctionScorer(Similarity similarity, Scorer... scorers) throws IOException {
-    super(similarity);
+  public ConjunctionScorer(Weight weight, float coord, Scorer... scorers) throws IOException {
+    super(weight);
     this.scorers = scorers;
-    coord = similarity.coord(scorers.length, scorers.length);
+    this.coord = coord;
     
     for (int i = 0; i < scorers.length; i++) {
       if (scorers[i].nextDoc() == NO_MORE_DOCS) {

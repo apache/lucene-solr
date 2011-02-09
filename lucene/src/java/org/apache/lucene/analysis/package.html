@@ -305,7 +305,7 @@ with the TokenStream.
 <li>
 Attribute instances are reused for all tokens of a document. Thus, a TokenStream/-Filter needs to update
 the appropriate Attribute(s) in incrementToken(). The consumer, commonly the Lucene indexer, consumes the data in the
-Attributes and then calls incrementToken() again until it retuns false, which indicates that the end of the stream
+Attributes and then calls incrementToken() again until it returns false, which indicates that the end of the stream
 was reached. This means that in each call of incrementToken() a TokenStream/-Filter can safely overwrite the data in
 the Attribute instances.
 </li>

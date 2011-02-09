@@ -19,8 +19,8 @@ package org.apache.lucene.benchmark.byTask.feeds;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.text.DateFormat;
@@ -29,8 +29,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import java.util.zip.GZIPInputStream;
 
+import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StringBuilderReader;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -46,8 +46,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * <li><b>docs.dir</b> - specifies the directory where the TREC files reside.
  * Can be set to a relative path if "work.dir" is also specified
  * (<b>default=trec</b>).
+ * <li><b>trec.doc.parser</b> - specifies the {@link TrecDocParser} class to use for
+ * parsing the TREC documents content (<b>default=TrecGov2Parser</b>).
  * <li><b>html.parser</b> - specifies the {@link HTMLParser} class to use for
- * parsing the TREC documents content (<b>default=DemoHTMLParser</b>).
+ * parsing the HTML parts of the TREC documents content (<b>default=DemoHTMLParser</b>).
  * <li><b>content.source.encoding</b> - if not specified, ISO-8859-1 is used.
  * <li><b>content.source.excludeIteration</b> - if true, do not append iteration number to docname
  * </ul>
@@ -59,22 +61,24 @@ public class TrecContentSource extends ContentSource {
     ParsePosition pos;
   }
 
-  private static final String DATE = "Date: ";
-  private static final String DOCHDR = "<DOCHDR>";
-  private static final String TERMINATING_DOCHDR = "</DOCHDR>";
-  private static final String DOCNO = "<DOCNO>";
-  private static final String TERMINATING_DOCNO = "</DOCNO>";
-  private static final String DOC = "<DOC>";
-  private static final String TERMINATING_DOC = "</DOC>";
+  public static final String DOCNO = "<DOCNO>";
+  public static final String TERMINATING_DOCNO = "</DOCNO>";
+  public static final String DOC = "<DOC>";
+  public static final String TERMINATING_DOC = "</DOC>";
 
-  private static final String NEW_LINE = System.getProperty("line.separator");
+  /** separator between lines in the byffer */ 
+  public static final String NEW_LINE = System.getProperty("line.separator");
 
   private static final String DATE_FORMATS [] = {
-       "EEE, dd MMM yyyy kk:mm:ss z",	  // Tue, 09 Dec 2003 22:39:08 GMT
-       "EEE MMM dd kk:mm:ss yyyy z",  	// Tue Dec 09 16:45:08 2003 EST
-       "EEE, dd-MMM-':'y kk:mm:ss z", 	// Tue, 09 Dec 2003 22:39:08 GMT
-       "EEE, dd-MMM-yyy kk:mm:ss z", 	  // Tue, 09 Dec 2003 22:39:08 GMT
-       "EEE MMM dd kk:mm:ss yyyy",  	  // Tue Dec 09 16:45:08 2003
+       "EEE, dd MMM yyyy kk:mm:ss z",   // Tue, 09 Dec 2003 22:39:08 GMT
+       "EEE MMM dd kk:mm:ss yyyy z",    // Tue Dec 09 16:45:08 2003 EST
+       "EEE, dd-MMM-':'y kk:mm:ss z",   // Tue, 09 Dec 2003 22:39:08 GMT
+       "EEE, dd-MMM-yyy kk:mm:ss z",    // Tue, 09 Dec 2003 22:39:08 GMT
+       "EEE MMM dd kk:mm:ss yyyy",      // Tue Dec 09 16:45:08 2003
+       "dd MMM yyyy",                   // 1 March 1994
+       "MMM dd, yyyy",                  // February 3, 1994
+       "yyMMdd",                        // 910513
+       "hhmm z.z.z. MMM dd, yyyy",       // 0901 u.t.c. April 28, 1994
   };
 
   private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<DateFormatInfo>();
@@ -83,7 +87,7 @@ public class TrecContentSource extends ContentSource {
   private File dataDir = null;
   private ArrayList<File> inputFiles = new ArrayList<File>();
   private int nextFile = 0;
-  private int rawDocSize;
+  private int rawDocSize = 0;
 
   // Use to synchronize threads on reading from the TREC documents.
   private Object lock = new Object();
@@ -92,7 +96,10 @@ public class TrecContentSource extends ContentSource {
   BufferedReader reader;
   int iteration = 0;
   HTMLParser htmlParser;
+  
   private boolean excludeDocnameIteration;
+  private TrecDocParser trecDocParser = new TrecGov2Parser(); // default
+  ParsePathType currPathType; // not private for tests
   
   private DateFormatInfo getDateFormatInfo() {
     DateFormatInfo dfi = dateFormats.get();
@@ -118,7 +125,7 @@ public class TrecContentSource extends ContentSource {
     return sb;
   }
   
-  private Reader getTrecDocReader(StringBuilder docBuffer) {
+  Reader getTrecDocReader(StringBuilder docBuffer) {
     StringBuilderReader r = trecDocReader.get();
     if (r == null) {
       r = new StringBuilderReader(docBuffer);
@@ -129,10 +136,21 @@ public class TrecContentSource extends ContentSource {
     return r;
   }
 
-  // read until finding a line that starts with the specified prefix, or a terminating tag has been found.
-  private void read(StringBuilder buf, String prefix, boolean collectMatchLine,
-                    boolean collectAll, String terminatingTag)
-      throws IOException, NoMoreDataException {
+  HTMLParser getHtmlParser() {
+    return htmlParser;
+  }
+  
+  /**
+   * Read until a line starting with the specified <code>lineStart</code>.
+   * @param buf buffer for collecting the data if so specified/ 
+   * @param lineStart line start to look for, must not be null.
+   * @param collectMatchLine whether to collect the matching line into <code>buffer</code>.
+   * @param collectAll whether to collect all lines into <code>buffer</code>.
+   * @throws IOException
+   * @throws NoMoreDataException
+   */
+   private void read(StringBuilder buf, String lineStart, 
+       boolean collectMatchLine, boolean collectAll) throws IOException, NoMoreDataException {
     String sep = "";
     while (true) {
       String line = reader.readLine();
@@ -144,20 +162,12 @@ public class TrecContentSource extends ContentSource {
 
       rawDocSize += line.length();
 
-      if (line.startsWith(prefix)) {
+      if (lineStart!=null && line.startsWith(lineStart)) {
         if (collectMatchLine) {
           buf.append(sep).append(line);
           sep = NEW_LINE;
         }
-        break;
-      }
-
-      if (terminatingTag != null && line.startsWith(terminatingTag)) {
-        // didn't find the prefix that was asked, but the terminating
-        // tag was found. set the length to 0 to signal no match was
-        // found.
-        buf.setLength(0);
-        break;
+        return;
       }
 
       if (collectAll) {
@@ -169,7 +179,7 @@ public class TrecContentSource extends ContentSource {
   
   void openNextFile() throws NoMoreDataException, IOException {
     close();
-    int retries = 0;
+    currPathType = null;
     while (true) {
       if (nextFile >= inputFiles.size()) { 
         // exhausted files, start a new round, unless forever set to false.
@@ -184,13 +194,13 @@ public class TrecContentSource extends ContentSource {
         System.out.println("opening: " + f + " length: " + f.length());
       }
       try {
-        GZIPInputStream zis = new GZIPInputStream(new FileInputStream(f), BUFFER_SIZE);
-        reader = new BufferedReader(new InputStreamReader(zis, encoding), BUFFER_SIZE);
+        InputStream inputStream = getInputStream(f); // support either gzip, bzip2, or regular text file, by extension  
+        reader = new BufferedReader(new InputStreamReader(inputStream, encoding), BUFFER_SIZE);
+        currPathType = TrecDocParser.pathType(f);
         return;
       } catch (Exception e) {
-        retries++;
-        if (retries < 20 && verbose) {
-          System.out.println("Skipping 'bad' file " + f.getAbsolutePath() + "  #retries=" + retries);
+        if (verbose) {
+          System.out.println("Skipping 'bad' file " + f.getAbsolutePath()+" due to "+e.getMessage());
           continue;
         }
         throw new NoMoreDataException();
@@ -198,7 +208,7 @@ public class TrecContentSource extends ContentSource {
     }
   }
 
-  Date parseDate(String dateStr) {
+  public Date parseDate(String dateStr) {
     dateStr = dateStr.trim();
     DateFormatInfo dfi = getDateFormatInfo();
     for (int i = 0; i < dfi.dfs.length; i++) {
@@ -237,70 +247,47 @@ public class TrecContentSource extends ContentSource {
 
   @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
-    String dateStr = null, name = null;
-    Reader r = null;
+    String name = null;
+    StringBuilder docBuf = getDocBuffer();
+    ParsePathType parsedPathType;
+    
     // protect reading from the TREC files by multiple threads. The rest of the
-    // method, i.e., parsing the content and returning the DocData can run
-    // unprotected.
+    // method, i.e., parsing the content and returning the DocData can run unprotected.
     synchronized (lock) {
       if (reader == null) {
         openNextFile();
       }
-
-      StringBuilder docBuf = getDocBuffer();
       
-      // 1. skip until doc start
+      // 1. skip until doc start - required for all TREC formats
       docBuf.setLength(0);
-      read(docBuf, DOC, false, false, null);
-
-      // 2. name
+      read(docBuf, DOC, false, false);
+      
+      // save parsedFile for passing trecDataParser after the sync block, in 
+      // case another thread will open another file in between.
+      parsedPathType = currPathType;
+      
+      // 2. name - required for all TREC formats
       docBuf.setLength(0);
-      read(docBuf, DOCNO, true, false, null);
+      read(docBuf, DOCNO, true, false);
       name = docBuf.substring(DOCNO.length(), docBuf.indexOf(TERMINATING_DOCNO,
-          DOCNO.length()));
-      if (!excludeDocnameIteration)
+          DOCNO.length())).trim();
+      
+      if (!excludeDocnameIteration) {
         name = name + "_" + iteration;
-
-      // 3. skip until doc header
-      docBuf.setLength(0);
-      read(docBuf, DOCHDR, false, false, null);
-
-      boolean findTerminatingDocHdr = false;
-
-      // 4. date - look for the date only until /DOCHDR
-      docBuf.setLength(0);
-      read(docBuf, DATE, true, false, TERMINATING_DOCHDR);
-      if (docBuf.length() != 0) {
-        // Date found.
-        dateStr = docBuf.substring(DATE.length());
-        findTerminatingDocHdr = true;
       }
 
-      // 5. skip until end of doc header
-      if (findTerminatingDocHdr) {
-        docBuf.setLength(0);
-        read(docBuf, TERMINATING_DOCHDR, false, false, null);
-      }
-
-      // 6. collect until end of doc
+      // 3. read all until end of doc
       docBuf.setLength(0);
-      read(docBuf, TERMINATING_DOC, false, true, null);
-      
-      // 7. Set up a Reader over the read content
-      r = getTrecDocReader(docBuf);
-      // Resetting the thread's reader means it will reuse the instance
-      // allocated as well as re-read from docBuf.
-      r.reset();
-      
-      // count char length of parsed html text (larger than the plain doc body text).
-      addBytes(docBuf.length()); 
+      read(docBuf, TERMINATING_DOC, false, true);
     }
+      
+    // count char length of text to be parsed (may be larger than the resulted plain doc body text).
+    addBytes(docBuf.length()); 
 
     // This code segment relies on HtmlParser being thread safe. When we get 
     // here, everything else is already private to that thread, so we're safe.
-    Date date = dateStr != null ? parseDate(dateStr) : null;
     try {
-      docData = htmlParser.parse(docData, name, date, r, null);
+      docData = trecDocParser.parse(docData, name, this, docBuf, parsedPathType);
       addDoc();
     } catch (InterruptedException ie) {
       throw new ThreadInterruptedException(ie);
@@ -322,27 +309,40 @@ public class TrecContentSource extends ContentSource {
   @Override
   public void setConfig(Config config) {
     super.setConfig(config);
+    // dirs
     File workDir = new File(config.get("work.dir", "work"));
     String d = config.get("docs.dir", "trec");
     dataDir = new File(d);
     if (!dataDir.isAbsolute()) {
       dataDir = new File(workDir, d);
     }
+    // files
     collectFiles(dataDir, inputFiles);
     if (inputFiles.size() == 0) {
       throw new IllegalArgumentException("No files in dataDir: " + dataDir);
     }
+    // trec doc parser
     try {
-      String parserClassName = config.get("html.parser",
-          "org.apache.lucene.benchmark.byTask.feeds.DemoHTMLParser");
-      htmlParser = Class.forName(parserClassName).asSubclass(HTMLParser.class).newInstance();
+      String trecDocParserClassName = config.get("trec.doc.parser", "org.apache.lucene.benchmark.byTask.feeds.TrecGov2Parser");
+      trecDocParser = Class.forName(trecDocParserClassName).asSubclass(TrecDocParser.class).newInstance();
     } catch (Exception e) {
       // Should not get here. Throw runtime exception.
       throw new RuntimeException(e);
     }
+    // html parser
+    try {
+      String htmlParserClassName = config.get("html.parser",
+          "org.apache.lucene.benchmark.byTask.feeds.DemoHTMLParser");
+      htmlParser = Class.forName(htmlParserClassName).asSubclass(HTMLParser.class).newInstance();
+    } catch (Exception e) {
+      // Should not get here. Throw runtime exception.
+      throw new RuntimeException(e);
+    }
+    // encoding
     if (encoding == null) {
       encoding = "ISO-8859-1";
     }
+    // iteration exclusion in doc name 
     excludeDocnameIteration = config.get("content.source.excludeIteration", false);
   }
 

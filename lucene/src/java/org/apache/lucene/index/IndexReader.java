@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -81,6 +82,62 @@ import java.util.concurrent.atomic.AtomicInteger;
  (non-Lucene) objects instead.
 */
 public abstract class IndexReader implements Cloneable,Closeable {
+
+  /**
+   * A custom listener that's invoked when the IndexReader
+   * is finished.
+   *
+   * <p>For a SegmentReader, this listener is called only
+   * once all SegmentReaders sharing the same core are
+   * closed.  At this point it is safe for apps to evict
+   * this reader from any caches keyed on {@link
+   * #getCoreCacheKey}.  This is the same interface that
+   * {@link FieldCache} uses, internally, to evict
+   * entries.</p>
+   *
+   * <p>For other readers, this listener is called when they
+   * are closed.</p>
+   *
+   * @lucene.experimental
+   */
+  public static interface ReaderFinishedListener {
+    public void finished(IndexReader reader);
+  }
+
+  // Impls must set this if they may call add/removeReaderFinishedListener:
+  protected volatile Collection<ReaderFinishedListener> readerFinishedListeners;
+
+  /** Expert: adds a {@link ReaderFinishedListener}.  The
+   * provided listener is also added to any sub-readers, if
+   * this is a composite reader.  Also, any reader reopened
+   * or cloned from this one will also copy the listeners at
+   * the time of reopen.
+   *
+   * @lucene.experimental */
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    readerFinishedListeners.add(listener);
+  }
+
+  /** Expert: remove a previously added {@link ReaderFinishedListener}.
+   *
+   * @lucene.experimental */
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    readerFinishedListeners.remove(listener);
+  }
+
+  protected void notifyReaderFinishedListeners() {
+    // Defensive (should never be null -- all impls must set
+    // this):
+    if (readerFinishedListeners != null) {
+      for(ReaderFinishedListener listener : readerFinishedListeners) {
+        listener.finished(this);
+      }
+    }
+  }
+
+  protected void readerFinished() {
+    notifyReaderFinishedListeners();
+  }
 
   /**
    * Constants describing field properties, for example used for
@@ -199,6 +256,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
           refCount.incrementAndGet();
         }
       }
+      readerFinished();
     }
   }
   
@@ -242,23 +300,25 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /**
    * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
    *
-   *
    * @param writer The IndexWriter to open from
+   * @param applyAllDeletes If true, all buffered deletes will
+   * be applied (made visible) in the returned reader.  If
+   * false, the deletes are not applied but remain buffered
+   * (in IndexWriter) so that they will be applied in the
+   * future.  Applying deletes can be costly, so if your app
+   * can tolerate deleted documents being returned you might
+   * gain some performance by passing false.
    * @return The new IndexReader
    * @throws CorruptIndexException
    * @throws IOException if there is a low-level IO error
    *
-   * @see #reopen(IndexWriter)
+   * @see #reopen(IndexWriter,boolean)
    *
    * @lucene.experimental
    */
-  public static IndexReader open(final IndexWriter writer) throws CorruptIndexException, IOException {
-    return writer.getReader();
+  public static IndexReader open(final IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    return writer.getReader(applyAllDeletes);
   }
-
-  
-
-
 
   /** Expert: returns an IndexReader reading the index in the given
    *  {@link IndexCommit}.  You should pass readOnly=true, since it
@@ -305,7 +365,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
@@ -355,14 +415,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
    *  memory.  By setting this to a value > 1 you can reduce
    *  memory usage, at the expense of higher latency when
    *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
+   *  to -1 to skip loading the terms index entirely. This is only useful in 
+   *  advanced situations when you will only .next() through all terms; 
+   *  attempts to seek will hit an exception.
+   *  
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -384,7 +447,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
@@ -417,7 +480,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
+   *  IndexWriterConfig#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
    *  set per reader.  When set to N, then one in every
    *  N*termIndexInterval terms in the index is loaded into
@@ -546,7 +609,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * file descriptors, CPU time) will be consumed.</p>
    *
    * <p>For lower latency on reopening a reader, you should
-   * call {@link #setMergedSegmentWarmer} to
+   * call {@link IndexWriterConfig#setMergedSegmentWarmer} to
    * pre-warm a newly merged segment before it's committed
    * to the index.  This is important for minimizing
    * index-to-search delay after a large merge.  </p>
@@ -561,17 +624,25 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * if you attempt to reopen any of those readers, you'll
    * hit an {@link AlreadyClosedException}.</p>
    *
-   * @lucene.experimental
-   *
    * @return IndexReader that covers entire index plus all
    * changes made so far by this IndexWriter instance
    *
+   * @param writer The IndexWriter to open from
+   * @param applyAllDeletes If true, all buffered deletes will
+   * be applied (made visible) in the returned reader.  If
+   * false, the deletes are not applied but remain buffered
+   * (in IndexWriter) so that they will be applied in the
+   * future.  Applying deletes can be costly, so if your app
+   * can tolerate deleted documents being returned you might
+   * gain some performance by passing false.
+   *
    * @throws IOException
+   *
+   * @lucene.experimental
    */
-  public IndexReader reopen(IndexWriter writer) throws CorruptIndexException, IOException {
-    return writer.getReader();
+  public IndexReader reopen(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    return writer.getReader(applyAllDeletes);
   }
-
 
   /**
    * Efficiently clones the IndexReader (sharing most
@@ -935,14 +1006,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public abstract byte[] norms(String field) throws IOException;
 
-  /** Reads the byte-encoded normalization factor for the named field of every
-   *  document.  This is used by the search code to score documents.
-   *
-   * @see org.apache.lucene.document.Field#setBoost(float)
-   */
-  public abstract void norms(String field, byte[] bytes, int offset)
-    throws IOException;
-
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
    * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
@@ -973,26 +1036,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Implements setNorm in subclass.*/
   protected abstract void doSetNorm(int doc, String field, byte value)
           throws CorruptIndexException, IOException;
-
-  /** Expert: Resets the normalization factor for the named field of the named
-   * document.
-   *
-   * @see #norms(String)
-   * @see Similarity#decodeNormValue(byte)
-   * 
-   * @throws StaleReaderException if the index has changed
-   *  since this reader was opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if there is a low-level IO error
-   */
-  public void setNorm(int doc, String field, float value)
-          throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    ensureOpen();
-    setNorm(doc, field, Similarity.getDefault().encodeNormValue(value));
-  }
 
   /** Flex API: returns {@link Fields} for this reader.
    *  This method may return null if the reader has no
@@ -1027,6 +1070,23 @@ public abstract class IndexReader implements Cloneable,Closeable {
       return 0;
     }
     return terms.docFreq(term);
+  }
+
+  /** Returns the number of documents containing the term
+   * <code>t</code>.  This method returns 0 if the term or
+   * field does not exists.  This method does not take into
+   * account deleted documents that have not yet been merged
+   * away. */
+  public long totalTermFreq(String field, BytesRef term) throws IOException {
+    final Fields fields = fields();
+    if (fields == null) {
+      return 0;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms == null) {
+      return 0;
+    }
+    return terms.totalTermFreq(term);
   }
 
   /** This may return null if the field does not exist.*/
@@ -1074,6 +1134,47 @@ public abstract class IndexReader implements Cloneable,Closeable {
       return null;
     }
   }
+  
+  /**
+   * Returns {@link DocsEnum} for the specified field and
+   * {@link TermState}. This may return null, if either the field or the term
+   * does not exists or the {@link TermState} is invalid for the underlying
+   * implementation.*/
+  public DocsEnum termDocsEnum(Bits skipDocs, String field, BytesRef term, TermState state) throws IOException {
+    assert state != null;
+    assert field != null;
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms != null) {
+      return terms.docs(skipDocs, term, state, null);
+    } else {
+      return null;
+    }
+  }
+  
+  /**
+   * Returns {@link DocsAndPositionsEnum} for the specified field and
+   * {@link TermState}. This may return null, if either the field or the term
+   * does not exists, the {@link TermState} is invalid for the underlying
+   * implementation, or positions were not stored for this term.*/
+  public DocsAndPositionsEnum termPositionsEnum(Bits skipDocs, String field, BytesRef term, TermState state) throws IOException {
+    assert state != null;
+    assert field != null;
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms != null) {
+      return terms.docsAndPositions(skipDocs, term, state, null);
+    } else {
+      return null;
+    }
+  }
+
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
    * deleted it will not appear in TermDocs or TermPositions enumerations.
@@ -1137,7 +1238,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return n;
   }
 
-  /** Undeletes all documents currently marked as deleted in this index.
+  /** Undeletes all documents currently marked as deleted in
+   * this index.
+   *
+   * <p>NOTE: this method can only recover documents marked
+   * for deletion but not yet removed from the index; when
+   * and how Lucene removes deleted documents is an
+   * implementation detail, subject to change from release
+   * to release.  However, you can use {@link
+   * #numDeletedDocs} on the current IndexReader instance to
+   * see how many documents will be un-deleted.
    *
    * @throws StaleReaderException if the index has changed
    *  since this reader was opened
@@ -1360,9 +1470,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Expert: returns the sequential sub readers that this
-   *  reader is logically composed of.  For example,
-   *  IndexSearcher uses this API to drive searching by one
-   *  sub reader at a time.  If this reader is not composed
+   *  reader is logically composed of. If this reader is not composed
    *  of sequential child readers, it should return null.
    *  If this method returns an empty array, that means this
    *  reader is a null reader (for example a MultiReader
@@ -1377,12 +1485,33 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public IndexReader[] getSequentialSubReaders() {
     return null;
   }
-
-
-  /** Expert: returns the docID base for this subReader. */
-  public int getSubReaderDocBase(IndexReader subReader) {
-    throw new UnsupportedOperationException();
-  }
+  
+  /**
+   * Expert: Returns a the root {@link ReaderContext} for this
+   * {@link IndexReader}'s sub-reader tree. Iff this reader is composed of sub
+   * readers ,ie. this reader being a composite reader, this method returns a
+   * {@link CompositeReaderContext} holding the reader's direct children as well as a
+   * view of the reader tree's atomic leaf contexts. All sub-
+   * {@link ReaderContext} instances referenced from this readers top-level
+   * context are private to this reader and are not shared with another context
+   * tree. For example, IndexSearcher uses this API to drive searching by one
+   * atomic leaf reader at a time. If this reader is not composed of child
+   * readers, this method returns an {@link AtomicReaderContext}.
+   * <p>
+   * Note: Any of the sub-{@link CompositeReaderContext} instances reference from this
+   * top-level context holds a <code>null</code> {@link CompositeReaderContext#leaves}
+   * reference. Only the top-level context maintains the convenience leaf-view
+   * for performance reasons.
+   * <p>
+   * NOTE: You should not try using sub-readers returned by this method to make
+   * any changes (setNorm, deleteDocument, etc.). While this might succeed for
+   * one composite reader (like MultiReader), it will most likely lead to index
+   * corruption for other readers (like DirectoryReader obtained through
+   * {@link #open}. Use the top-level context's reader directly.
+   * 
+   * @lucene.experimental
+   */
+  public abstract ReaderContext getTopReaderContext();
 
   /** Expert */
   public Object getCoreCacheKey() {
@@ -1441,5 +1570,133 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** @lucene.internal */
   Fields retrieveFields() {
     return fields;
+  }
+
+  /**
+   * A struct like class that represents a hierarchical relationship between
+   * {@link IndexReader} instances. 
+   * @lucene.experimental
+   */
+  public static abstract class ReaderContext {
+    /** The reader context for this reader's immediate parent, or null if none */
+    public final ReaderContext parent;
+    /** The actual reader */
+    public final IndexReader reader;
+    /** <code>true</code> iff the reader is an atomic reader */
+    public final boolean isAtomic;
+    /** <code>true</code> if this context struct represents the top level reader within the hierarchical context */
+    public final boolean isTopLevel;
+    /** the doc base for this reader in the parent, <tt>0</tt> if parent is null */
+    public final int docBaseInParent;
+    /** the ord for this reader in the parent, <tt>0</tt> if parent is null */
+    public final int ordInParent;
+    
+    ReaderContext(ReaderContext parent, IndexReader reader,
+        boolean isAtomic, int ordInParent, int docBaseInParent) {
+      this.parent = parent;
+      this.reader = reader;
+      this.isAtomic = isAtomic;
+      this.docBaseInParent = docBaseInParent;
+      this.ordInParent = ordInParent;
+      this.isTopLevel = parent==null;
+    }
+    
+    /**
+     * Returns the context's leaves if this context is a top-level context
+     * otherwise <code>null</code>.
+     * <p>
+     * Note: this is convenience method since leaves can always be obtained by
+     * walking the context tree.
+     */
+    public AtomicReaderContext[] leaves() {
+      return null;
+    }
+    
+    /**
+     * Returns the context's children iff this context is a composite context
+     * otherwise <code>null</code>.
+     * <p>
+     * Note: this method is a convenience method to prevent
+     * <code>instanceof</code> checks and type-casts to
+     * {@link CompositeReaderContext}.
+     */
+    public ReaderContext[] children() {
+      return null;
+    }
+  }
+  
+  /**
+   * {@link ReaderContext} for composite {@link IndexReader} instance.
+   * @lucene.experimental
+   */
+  public static final class CompositeReaderContext extends ReaderContext {
+    /** the composite readers immediate children */
+    public final ReaderContext[] children;
+    /** the composite readers leaf reader contexts if this is the top level reader in this context */
+    public final AtomicReaderContext[] leaves;
+
+    /**
+     * Creates a {@link CompositeReaderContext} for intermediate readers that aren't
+     * not top-level readers in the current context
+     */
+    public CompositeReaderContext(ReaderContext parent, IndexReader reader,
+        int ordInParent, int docbaseInParent, ReaderContext[] children) {
+      this(parent, reader, ordInParent, docbaseInParent, children, null);
+    }
+    
+    /**
+     * Creates a {@link CompositeReaderContext} for top-level readers with parent set to <code>null</code>
+     */
+    public CompositeReaderContext(IndexReader reader, ReaderContext[] children, AtomicReaderContext[] leaves) {
+      this(null, reader, 0, 0, children, leaves);
+    }
+    
+    private CompositeReaderContext(ReaderContext parent, IndexReader reader,
+        int ordInParent, int docbaseInParent, ReaderContext[] children,
+        AtomicReaderContext[] leaves) {
+      super(parent, reader, false, ordInParent, docbaseInParent);
+      this.children = children;
+      this.leaves = leaves;
+    }
+
+    @Override
+    public AtomicReaderContext[] leaves() {
+      return leaves;
+    }
+    
+    
+    @Override
+    public ReaderContext[] children() {
+      return children;
+    }
+  }
+  
+  /**
+   * {@link ReaderContext} for atomic {@link IndexReader} instances
+   * @lucene.experimental
+   */
+  public static final class AtomicReaderContext extends ReaderContext {
+    /** The readers ord in the top-level's leaves array */
+    public final int ord;
+    /** The readers absolute doc base */
+    public final int docBase;
+    /**
+     * Creates a new {@link AtomicReaderContext} 
+     */    
+    public AtomicReaderContext(ReaderContext parent, IndexReader reader,
+        int ord, int docBase, int leafOrd, int leafDocBase) {
+      super(parent, reader, true, ord, docBase);
+      assert reader.getSequentialSubReaders() == null : "Atomic readers must not have subreaders";
+      this.ord = leafOrd;
+      this.docBase = leafDocBase;
+    }
+    
+    /**
+     * Creates a new {@link AtomicReaderContext} for a atomic reader without an immediate
+     * parent.
+     */
+    public AtomicReaderContext(IndexReader atomicReader) {
+      this(null, atomicReader, 0, 0, 0, 0);
+    }
   }
 }

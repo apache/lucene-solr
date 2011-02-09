@@ -61,7 +61,7 @@ public class TestWildcardRandom extends LuceneTestCase {
     }
     
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
   

@@ -32,6 +32,7 @@ public abstract class SolrAnalyzer extends Analyzer {
     posIncGap=gap;
   }
 
+  @Override
   public int getPositionIncrementGap(String fieldName) {
     return posIncGap;
   }

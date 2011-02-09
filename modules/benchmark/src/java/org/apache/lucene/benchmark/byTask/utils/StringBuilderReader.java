@@ -158,8 +158,10 @@ public class StringBuilderReader extends Reader {
     synchronized (lock) {
       this.sb = sb;
       length = sb.length();
+      next = mark = 0;
     }
   }
+  
   @Override
   public long skip(long ns) throws IOException {
     synchronized (lock) {

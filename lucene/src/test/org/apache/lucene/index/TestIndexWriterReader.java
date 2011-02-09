@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -365,7 +366,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     int numDirs = 3;
     
     Directory mainDir = newDirectory();
-    IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter mainWriter = new IndexWriter(mainDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
     _TestUtil.reduceOpenFiles(mainWriter);
 
     mainWriter.setInfoStream(infoStream);
@@ -717,8 +718,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // reader should remain usable even after IndexWriter is closed:
     assertEquals(100, r.numDocs());
     Query q = new TermQuery(new Term("indexname", "test"));
-    assertEquals(100, new IndexSearcher(r).search(q, 10).totalHits);
-
+    IndexSearcher searcher = newSearcher(r);
+    assertEquals(100, searcher.search(q, 10).totalHits);
+    searcher.close();
     try {
       r.reopen();
       fail("failed to hit AlreadyClosedException");
@@ -784,7 +786,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
         r = r2;
       }
       Query q = new TermQuery(new Term("indexname", "test"));
-      final int count = new IndexSearcher(r).search(q, 10).totalHits;
+      IndexSearcher searcher = newSearcher(r);
+      final int count = searcher.search(q, 10).totalHits;
+      searcher.close();
       assertTrue(count >= lastCount);
       lastCount = count;
     }
@@ -799,7 +803,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
       r = r2;
     }
     Query q = new TermQuery(new Term("indexname", "test"));
-    final int count = new IndexSearcher(r).search(q, 10).totalHits;
+    IndexSearcher searcher = newSearcher(r);
+    final int count = searcher.search(q, 10).totalHits;
+    searcher.close();
     assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());
@@ -872,7 +878,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
         r = r2;
       }
       Query q = new TermQuery(new Term("indexname", "test"));
-      sum += new IndexSearcher(r).search(q, 10).totalHits;
+      IndexSearcher searcher = newSearcher(r);
+      sum += searcher.search(q, 10).totalHits;
+      searcher.close();
     }
 
     for(int i=0;i<NUM_THREAD;i++) {
@@ -885,8 +893,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
       r = r2;
     }
     Query q = new TermQuery(new Term("indexname", "test"));
-    sum += new IndexSearcher(r).search(q, 10).totalHits;
-
+    IndexSearcher searcher = newSearcher(r);
+    sum += searcher.search(q, 10).totalHits;
+    searcher.close();
     assertTrue("no documents found at all", sum > 0);
 
     assertEquals(0, excs.size());
@@ -899,7 +908,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   public void testExpungeDeletes() throws Throwable {
     Directory dir = newDirectory();
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     Field id = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
@@ -970,11 +979,13 @@ public class TestIndexWriterReader extends LuceneTestCase {
             setMaxBufferedDocs(2).
             setReaderPooling(true).
             setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
+              @Override
               public void warm(IndexReader r) throws IOException {
-                IndexSearcher s = new IndexSearcher(r);
+                IndexSearcher s = newSearcher(r);
                 TopDocs hits = s.search(new TermQuery(new Term("foo", "bar")), 10);
                 assertEquals(20, hits.totalHits);
                 didWarm.set(true);
+                s.close();
               }
             }).
             setMergePolicy(newLogMergePolicy(10))
@@ -990,4 +1001,35 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir.close();
     assertTrue(didWarm.get());
   }
+  
+  public void testNoTermsIndex() throws Exception {
+    // Some Codecs don't honor the ReaderTermsIndexDivisor, so skip the test if
+    // they're picked.
+    HashSet<String> illegalCodecs = new HashSet<String>();
+    illegalCodecs.add("PreFlex");
+    illegalCodecs.add("SimpleText");
+
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer()).setReaderTermsIndexDivisor(-1);
+    // Don't proceed if picked Codec is in the list of illegal ones.
+    if (illegalCodecs.contains(conf.getCodecProvider().getFieldCodec("f"))) return;
+
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new Field("f", "val", Store.NO, Index.ANALYZED));
+    w.addDocument(doc);
+    IndexReader r = IndexReader.open(w, true).getSequentialSubReaders()[0];
+    try {
+      r.termDocsEnum(null, "f", new BytesRef("val"));
+      fail("should have failed to seek since terms index was not loaded. Codec used " + conf.getCodecProvider().getFieldCodec("f"));
+    } catch (IllegalStateException e) {
+      // expected - we didn't load the term index
+    } finally {
+      r.close();
+      w.close();
+      dir.close();
+    }
+  }
+  
 }

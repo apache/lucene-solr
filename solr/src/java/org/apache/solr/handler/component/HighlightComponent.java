@@ -113,7 +113,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
       
       if(highlightQuery != null) {
         boolean rewrite = !(Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) && Boolean.valueOf(req.getParams().get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
-        highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getReader()) : highlightQuery;
+        highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getIndexReader()) : highlightQuery;
       }
       
       // No highlighting if there is no query -- consider q.alt="*:*
@@ -131,6 +131,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     }
   }
 
+  @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.doHighlights) return;
 

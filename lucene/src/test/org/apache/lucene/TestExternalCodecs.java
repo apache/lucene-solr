@@ -18,6 +18,7 @@ package org.apache.lucene;
  */
 
 import org.apache.lucene.util.*;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.search.*;
@@ -64,6 +65,7 @@ public class TestExternalCodecs extends LuceneTestCase {
         return t2.length-t1.length;
       }
 
+      @Override
       public boolean equals(Object other) {
         return this == other;
       }
@@ -103,6 +105,8 @@ public class TestExternalCodecs extends LuceneTestCase {
     static class RAMField extends Terms {
       final String field;
       final SortedMap<String,RAMTerm> termToDocs = new TreeMap<String,RAMTerm>();
+      long sumTotalTermFreq;
+
       RAMField(String field) {
         this.field = field;
       }
@@ -110,6 +114,11 @@ public class TestExternalCodecs extends LuceneTestCase {
       @Override
       public long getUniqueTermCount() {
         return termToDocs.size();
+      }
+
+      @Override
+      public long getSumTotalTermFreq() {
+        return sumTotalTermFreq;
       }
 
       @Override
@@ -125,6 +134,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     static class RAMTerm {
       final String term;
+      long totalTermFreq;
       final List<RAMDoc> docs = new ArrayList<RAMDoc>();
       public RAMTerm(String term) {
         this.term = term;
@@ -197,14 +207,16 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
 
       @Override
-      public void finishTerm(BytesRef text, int numDocs) {
-        assert numDocs > 0;
-        assert numDocs == current.docs.size();
+      public void finishTerm(BytesRef text, TermStats stats) {
+        assert stats.docFreq > 0;
+        assert stats.docFreq == current.docs.size();
+        current.totalTermFreq = stats.totalTermFreq;
         field.termToDocs.put(current.term, current);
       }
 
       @Override
-      public void finish() {
+      public void finish(long sumTotalTermFreq) {
+        field.sumTotalTermFreq = sumTotalTermFreq;
       }
     }
 
@@ -242,7 +254,6 @@ public class TestExternalCodecs extends LuceneTestCase {
         assert posUpto == current.positions.length;
       }
     }
-
 
     // Classes for reading from the postings state
     static class RAMFieldsEnum extends FieldsEnum {
@@ -344,7 +355,8 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
 
       @Override
-      public void cacheCurrentTerm() {
+      public long totalTermFreq() {
+        return ramField.termToDocs.get(current).totalTermFreq;
       }
 
       @Override
@@ -546,7 +558,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict
       success = false;
       try {
-        FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
+        FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
         success = true;
         return ret;
       } finally {
@@ -587,15 +599,15 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict reader
       success = false;
       try {
-        FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
-                                                         state.dir,
-                                                         state.fieldInfos,
-                                                         state.segmentInfo.name,
-                                                         pulsingReader,
-                                                         state.readBufferSize,
-                                                         reverseUnicodeComparator,
-                                                         StandardCodec.TERMS_CACHE_SIZE,
-                                                         state.codecId);
+        FieldsProducer ret = new BlockTermsReader(indexReader,
+                                                  state.dir,
+                                                  state.fieldInfos,
+                                                  state.segmentInfo.name,
+                                                  pulsingReader,
+                                                  state.readBufferSize,
+                                                  reverseUnicodeComparator,
+                                                  StandardCodec.TERMS_CACHE_SIZE,
+                                                  state.codecId);
         success = true;
         return ret;
       } finally {
@@ -612,7 +624,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     @Override
     public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
       StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-      PrefixCodedTermsReader.files(dir, segmentInfo, codecId, files);
+      BlockTermsReader.files(dir, segmentInfo, codecId, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     }
 
@@ -633,13 +645,15 @@ public class TestExternalCodecs extends LuceneTestCase {
     
     
     final int NUM_DOCS = 173;
-    Directory dir = newDirectory();
+    MockDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).
             setCodecProvider(provider).
             setMergePolicy(newLogMergePolicy(3))
     );
+    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     // uses default codec:
     doc.add(newField("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));
@@ -661,7 +675,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
     w.deleteDocuments(new Term("id", "77"));
 
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     IndexReader[] subs = r.getSequentialSubReaders();
     // test each segment
     for(int i=0;i<subs.length;i++) {
@@ -671,7 +685,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     testTermsOrder(r);
     
     assertEquals(NUM_DOCS-1, r.numDocs());
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     r.close();
@@ -679,10 +693,10 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     w.deleteDocuments(new Term("id", "44"));
     w.optimize();
-    r = IndexReader.open(w);
+    r = IndexReader.open(w, true);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
-    s = new IndexSearcher(r);
+    s = newSearcher(r);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     assertEquals(1, s.search(new TermQuery(new Term("id", "76")), 1).totalHits);

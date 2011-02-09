@@ -28,6 +28,7 @@ import org.apache.lucene.store.FSDirectory;
  */
 public class StandardDirectoryFactory extends DirectoryFactory {
 
+  @Override
   public Directory open(String path) throws IOException {
     return FSDirectory.open(new File(path));
   }

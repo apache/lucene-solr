@@ -56,7 +56,7 @@ public final class FieldInfo {
       this.storeOffsetWithTermVector = false;
       this.storePositionWithTermVector = false;
       this.storePayloads = false;
-      this.omitNorms = true;
+      this.omitNorms = false;
       this.omitTermFreqAndPositions = false;
     }
   }
@@ -86,7 +86,7 @@ public final class FieldInfo {
         this.storePayloads = true;
       }
       if (this.omitNorms != omitNorms) {
-        this.omitNorms = false;                // once norms are stored, always store
+        this.omitNorms = true;                // if one require omitNorms at least once, it remains off for life
       }
       if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
         this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life

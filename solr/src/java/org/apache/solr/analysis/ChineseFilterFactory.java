@@ -18,6 +18,8 @@
 
 
 package org.apache.solr.analysis;
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.ChineseFilter;
 
@@ -27,6 +29,12 @@ import org.apache.lucene.analysis.cn.ChineseFilter;
  */
 @Deprecated
 public class ChineseFilterFactory extends BaseTokenFilterFactory {
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
+    warnDeprecated("Use StopFilterFactory instead.");
+  }
+  
   public ChineseFilter create(TokenStream in) {
     return new ChineseFilter(in);
   }

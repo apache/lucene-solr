@@ -42,7 +42,7 @@ import org.apache.lucene.util.BytesRef;
 public class SortField
 implements Serializable {
 
-  /** Sort by document score (relevancy).  Sort values are Float and higher
+  /** Sort by document score (relevance).  Sort values are Float and higher
    * values are at the front. */
   public static final int SCORE = 0;
 
@@ -93,7 +93,7 @@ implements Serializable {
   /** Sort use byte[] index values. */
   public static final int BYTES = 12;
   
-  /** Represents sorting by document score (relevancy). */
+  /** Represents sorting by document score (relevance). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
 
   /** Represents sorting by document number (index order). */

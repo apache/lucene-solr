@@ -49,6 +49,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   protected float threshold;
   protected IndexReader reader;
 
+  @Override
   public String init(NamedList config, SolrCore core) {
     super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
@@ -68,12 +69,13 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     }
   }
 
+  @Override
   public void build(SolrCore core, SolrIndexSearcher searcher) {
     IndexReader reader = null;
     try {
       if (sourceLocation == null) {
         // Load from Solr's index
-        reader = searcher.getReader();
+        reader = searcher.getIndexReader();
       } else {
         // Load from Lucene index at given sourceLocation
         reader = this.reader;

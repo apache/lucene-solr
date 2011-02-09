@@ -44,9 +44,9 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _facetInfo = null;
   private NamedList<Object> _debugInfo = null;
   private NamedList<Object> _highlightingInfo = null;
-  private NamedList<Object> _spellInfo = null;
+  private NamedList<NamedList<Object>> _spellInfo = null;
   private NamedList<Object> _statsInfo = null;
-  private NamedList<Object> _termsInfo = null;
+  private NamedList<NamedList<Number>> _termsInfo = null;
 
   // Facet stuff
   private Map<String,Integer> _facetQuery = null;
@@ -105,7 +105,8 @@ public class QueryResponse extends SolrResponseBase
       }
       else if( "facet_counts".equals( n ) ) {
         _facetInfo = (NamedList<Object>) res.getVal( i );
-        extractFacetInfo( _facetInfo );
+        // extractFacetInfo inspects _results, so defer calling it
+        // in case it hasn't been populated yet.
       }
       else if( "debug".equals( n ) ) {
         _debugInfo = (NamedList<Object>) res.getVal( i );
@@ -116,7 +117,7 @@ public class QueryResponse extends SolrResponseBase
         extractHighlightingInfo( _highlightingInfo );
       }
       else if ( "spellcheck".equals( n ) )  {
-        _spellInfo = (NamedList<Object>) res.getVal( i );
+        _spellInfo = (NamedList<NamedList<Object>>) res.getVal( i );
         extractSpellCheckInfo( _spellInfo );
       }
       else if ( "stats".equals( n ) )  {
@@ -124,17 +125,18 @@ public class QueryResponse extends SolrResponseBase
         extractStatsInfo( _statsInfo );
       }
       else if ( "terms".equals( n ) ) {
-        _termsInfo = (NamedList<Object>) res.getVal( i );
+        _termsInfo = (NamedList<NamedList<Number>>) res.getVal( i );
         extractTermsInfo( _termsInfo );
       }
     }
+    if(_facetInfo != null) extractFacetInfo( _facetInfo );
   }
 
-  private void extractSpellCheckInfo(NamedList<Object> spellInfo) {
+  private void extractSpellCheckInfo(NamedList<NamedList<Object>> spellInfo) {
     _spellResponse = new SpellCheckResponse(spellInfo);
   }
 
-  private void extractTermsInfo(NamedList<Object> termsInfo) {
+  private void extractTermsInfo(NamedList<NamedList<Number>> termsInfo) {
     _termsResponse = new TermsResponse(termsInfo);
   }
   

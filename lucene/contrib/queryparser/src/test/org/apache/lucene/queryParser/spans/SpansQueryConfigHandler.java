@@ -33,7 +33,7 @@ public class SpansQueryConfigHandler extends QueryConfigHandler {
   }
 
   @Override
-  public FieldConfig getFieldConfig(CharSequence fieldName) {
+  public FieldConfig getFieldConfig(String fieldName) {
 
     // there is no field configuration, always return null
     return null;

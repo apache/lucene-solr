@@ -20,7 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
 
@@ -45,6 +45,7 @@ class DocSetCollector extends Collector {
     this.maxDoc = maxDoc;
     this.scratch = new int[smallSetSize];
   }
+  @Override
   public void collect(int doc) throws IOException {
     doc += base;
     // optimistically collect the first docs in an array
@@ -77,13 +78,16 @@ class DocSetCollector extends Collector {
     }
   }
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
   }
 
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.base = docBase;
+  @Override
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    this.base = context.docBase;
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return false;
   }
@@ -97,6 +101,7 @@ class DocSetDelegateCollector extends DocSetCollector {
     this.collector = collector;
   }
 
+  @Override
   public void collect(int doc) throws IOException {
     collector.collect(doc);
 
@@ -120,6 +125,7 @@ class DocSetDelegateCollector extends DocSetCollector {
     pos++;
   }
 
+  @Override
   public DocSet getDocSet() {
     if (pos<=scratch.length) {
       // assumes docs were collected in sorted order!
@@ -131,12 +137,14 @@ class DocSetDelegateCollector extends DocSetCollector {
     }
   }
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
     collector.setScorer(scorer);
   }
 
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    collector.setNextReader(reader, docBase);
-    this.base = docBase;
+  @Override
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    collector.setNextReader(context);
+    this.base = context.docBase;
   }
 }

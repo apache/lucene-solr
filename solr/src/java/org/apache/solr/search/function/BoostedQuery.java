@@ -19,8 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
@@ -41,6 +41,7 @@ public class BoostedQuery extends Query {
   public Query getQuery() { return q; }
   public ValueSource getValueSource() { return boostVal; }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query newQ = q.rewrite(reader);
     if (newQ == q) return this;
@@ -49,10 +50,12 @@ public class BoostedQuery extends Query {
     return bq;
   }
 
+  @Override
   public void extractTerms(Set terms) {
     q.extractTerms(terms);
   }
 
+  @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new BoostedQuery.BoostedWeight(searcher);
   }
@@ -60,19 +63,21 @@ public class BoostedQuery extends Query {
   private class BoostedWeight extends Weight {
     IndexSearcher searcher;
     Weight qWeight;
-    Map context;
+    Map fcontext;
 
     public BoostedWeight(IndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.qWeight = q.weight(searcher);
-      this.context = boostVal.newContext();
-      boostVal.createWeight(context,searcher);
+      this.fcontext = boostVal.newContext(searcher);
+      boostVal.createWeight(fcontext,searcher);
     }
 
+    @Override
     public Query getQuery() {
       return BoostedQuery.this;
     }
 
+    @Override
     public float getValue() {
       return getBoost();
     }
@@ -91,33 +96,26 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(reader, true, false);
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      Scorer subQueryScorer = qWeight.scorer(context, ScorerContext.def());
       if(subQueryScorer == null) {
         return null;
       }
-      return new BoostedQuery.CustomScorer(getSimilarity(searcher), searcher, reader, this, subQueryScorer, boostVal);
+      return new BoostedQuery.CustomScorer(context, this, subQueryScorer, boostVal);
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      SolrIndexReader topReader = (SolrIndexReader)reader;
-      SolrIndexReader[] subReaders = topReader.getLeafReaders();
-      int[] offsets = topReader.getLeafOffsets();
-      int readerPos = SolrIndexReader.readerIndex(doc, offsets);
-      int readerBase = offsets[readerPos];
-
-      Explanation subQueryExpl = qWeight.explain(reader,doc);
+    public Explanation explain(AtomicReaderContext readerContext, int doc) throws IOException {
+      Explanation subQueryExpl = qWeight.explain(readerContext,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
-
-      DocValues vals = boostVal.getValues(context, subReaders[readerPos]);
-      float sc = subQueryExpl.getValue() * vals.floatVal(doc-readerBase);
+      DocValues vals = boostVal.getValues(fcontext, readerContext);
+      float sc = subQueryExpl.getValue() * vals.floatVal(doc);
       Explanation res = new ComplexExplanation(
         true, sc, BoostedQuery.this.toString() + ", product of:");
       res.addDetail(subQueryExpl);
-      res.addDetail(vals.explain(doc-readerBase));
+      res.addDetail(vals.explain(doc));
       return res;
     }
   }
@@ -128,18 +126,16 @@ public class BoostedQuery extends Query {
     private final float qWeight;
     private final Scorer scorer;
     private final DocValues vals;
-    private final IndexReader reader;
-    private final IndexSearcher searcher;
+    private final AtomicReaderContext readerContext;
 
-    private CustomScorer(Similarity similarity, IndexSearcher searcher, IndexReader reader, BoostedQuery.BoostedWeight w,
+    private CustomScorer(AtomicReaderContext readerContext, BoostedQuery.BoostedWeight w,
         Scorer scorer, ValueSource vs) throws IOException {
-      super(similarity);
+      super(w);
       this.weight = w;
       this.qWeight = w.getValue();
       this.scorer = scorer;
-      this.reader = reader;
-      this.searcher = searcher; // for explain
-      this.vals = vs.getValues(weight.context, reader);
+      this.readerContext = readerContext;
+      this.vals = vs.getValues(weight.fcontext, readerContext);
     }
 
     @Override
@@ -168,7 +164,7 @@ public class BoostedQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(reader,doc);
+      Explanation subQueryExpl = weight.qWeight.explain(readerContext ,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
@@ -182,6 +178,7 @@ public class BoostedQuery extends Query {
   }
 
 
+  @Override
   public String toString(String field) {
     StringBuilder sb = new StringBuilder();
     sb.append("boost(").append(q.toString(field)).append(',').append(boostVal).append(')');
@@ -189,6 +186,7 @@ public class BoostedQuery extends Query {
     return sb.toString();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (getClass() != o.getClass()) return false;
     BoostedQuery other = (BoostedQuery)o;
@@ -197,6 +195,7 @@ public class BoostedQuery extends Query {
            && this.boostVal.equals(other.boostVal);
   }
 
+  @Override
   public int hashCode() {
     int h = q.hashCode();
     h ^= (h << 17) | (h >>> 16);

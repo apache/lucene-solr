@@ -40,6 +40,7 @@
   
   <path id="test.base.classpath">
     <path refid="classpath"/>
+    <pathelement location="${common.dir}/build/classes/test-framework"/>
     <pathelement location="${common.dir}/build/classes/test"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
@@ -50,7 +51,6 @@
   <path id="junit.classpath">
     <path refid="test.classpath"/>
     <pathelement location="${build.dir}/classes/test"/>
-    <pathelement location="${build.dir}/classes/java"/>
     <pathelement path="${java.class.path}"/>
   </path>
 
@@ -71,7 +71,7 @@
 	
   <available 
     type="file" 
-    file="${pom.xml}" 
+    file="pom.xml" 
     property="pom.xml.present">
   </available>
 			

@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.LongValues;
@@ -42,6 +43,7 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
     super(creator);
   }
 
+  @Override
   public String description() {
     return "long(" + field + ')';
   }
@@ -50,32 +52,39 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
     return Long.parseLong(extVal);
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final LongValues vals = cache.getLongs(reader, field, creator);
+  @Override
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final LongValues vals = cache.getLongs(readerContext.reader, field, creator);
     final long[] arr = vals.values;
 	final Bits valid = vals.valid;
     
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return (float) arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Long.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + longVal(doc);
       }

@@ -18,6 +18,8 @@
 -->
 
 <project name="solr" default="usage" basedir="." xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+  <property name="solr-path" value="." />
 	
   <import file="common-build.xml"/>
   
@@ -56,7 +58,7 @@
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
-    <echo message="Use 'ant package' to generate zip, tgz, and maven artifacts for distribution." />
+    <echo message="Use 'ant package' to generate zip, tgz for distribution." />
     <echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />
     <echo message="Use 'ant test' to run unit tests." />
   </target>
@@ -216,15 +218,17 @@
           <packageset dir="${src}/java" />
           <packageset dir="${src}/webapp/src" />
           <packageset dir="contrib/dataimporthandler/src/main/java" />
-          <!--<packageset dir="contrib/clustering/src/main/java" />-->
+          <packageset dir="contrib/clustering/src/main/java" />
           <packageset dir="contrib/extraction/src/main/java" />
+          <packageset dir="contrib/uima/src/main/java" />
           <packageset dir="contrib/analysis-extras/src/java" />
           <group title="Core" packages="org.apache.*" />
           <group title="Common" packages="org.apache.solr.common.*" />
           <group title="SolrJ" packages="org.apache.solr.client.solrj*" />
           <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
-          <!--<group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />-->
+          <group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />
           <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />
+          <group title="contrib: Solr UIMA" packages="org.apache.solr.uima*" />
         </sources>
       </invoke-javadoc>
     </sequential>
@@ -338,7 +342,7 @@
     <path refid="compile.classpath.solrj" />
     <pathelement location="${dest}/solr"/>
     <pathelement location="${dest}/solrj"/> <!-- include solrj -->
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
   </path>
 
   <path id="test.run.classpath">
@@ -346,7 +350,7 @@
     <pathelement location="${dest}/tests"/>
     <!-- include the solrj classpath and jetty files included in example -->
     <path refid="compile.classpath.solrj" />
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 
@@ -514,6 +518,7 @@
       <fileset dir="contrib/dataimporthandler/src/main/java" />
       <fileset dir="contrib/clustering/src/main/java" />
       <fileset dir="contrib/extraction/src/main/java" />
+      <fileset dir="contrib/uima/src/main/java" />
       <fileset dir="contrib/analysis-extras/src/java" />
     </clover-setup>
   </target>
@@ -613,10 +618,14 @@
 
     <solr-jar destfile="${dist}/apache-solr-cell-src-${version}.jar"
               basedir="contrib/extraction/src" />
-    <!--<solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
-              basedir="contrib/clustering/src" />-->
+    <solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
+              basedir="contrib/clustering/src" />
     <solr-jar destfile="${dist}/apache-solr-analysis-extras-src-${version}.jar"
               basedir="contrib/analysis-extras/src" />
+    <solr-jar destfile="${dist}/apache-solr-uima-src-${version}.jar"
+              basedir="contrib/uima/src/main/java" >
+       <fileset dir="contrib/uima/src/main/resources" />
+    </solr-jar>
   </target>
 
   <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
@@ -629,12 +638,14 @@
               basedir="${build.javadoc}/solrj" />
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-dataimporthandler" />
-    <!--<solr-jar destfile="${dist}/apache-solr-clustering-docs-${version}.jar"
-              basedir="${build.javadoc}/contrib-solr-clustering" />-->
+    <solr-jar destfile="${dist}/apache-solr-clustering-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-clustering" />
     <solr-jar destfile="${dist}/apache-solr-cell-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-cell" />
     <solr-jar destfile="${dist}/apache-solr-analysis-extras-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-analysis-extras" />
+    <solr-jar destfile="${dist}/apache-solr-uima-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-uima" />
   </target>
 
   <!-- Creates the solr jar. -->
@@ -714,7 +725,7 @@
   </target>
   
   <!-- make a distribution -->
-  <target name="package" depends="generate-maven-artifacts"/>
+  <target name="package" depends="create-package"/>
 
   <target name="create-package"
           description="Packages the Solr Distribution files and Documentation."
@@ -731,7 +742,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lucene-libs/** lib/** src/** example/** client/** contrib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/**" />
+        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/** contrib/uima/lib/**" />
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
@@ -811,28 +822,19 @@
 
     <!-- Maven artifacts -->
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-noggit" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-war-artifacts artifact.id="solr" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-analysis-extras" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-clustering" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-core" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
-    <!--<sign-maven-artifacts artifact.id="solr-clustering" gpg.passphrase="${gpg.passphrase}"/>-->
-
-    <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-analyzers" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-core" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-highlighter" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-queries" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-snowball" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-spellchecker" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-solrj" gpg.passphrase="${gpg.passphrase}"/>
 
-    <!-- Thes are special since there are no jars, just poms -->
+    <!-- These are special since there are no jars, just poms -->
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${version}/solr-lucene-contrib-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
-
   </target>
-
-
-
 
   <target name="prepare-release" depends="clean, svn-up, build-site, package, sign-artifacts" description="Prototype helper for Committers.  Assumes gpg is in the path">
 
@@ -846,6 +848,7 @@
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, create-package">
     <sequential>
+	  <ant target="get-maven-poms" dir=".."/>
 
       <!--
 
@@ -860,18 +863,18 @@
 
       <!-- ========== SOLR PARENT POM ========== -->
 
-      <m2-deploy pom.xml="src/maven/solr-parent-pom.xml.template"/>
+      <m2-deploy pom.xml="pom.xml"/>
 
       <!-- ========== SOLR SPECIFIC COMMONS CSV ========== -->
-      <m2-deploy  pom.xml="lib/solr-commons-csv-pom.xml.template"
-                  jar.file="lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
+      <m2-deploy-with-pom-template pom.xml="lib/solr-commons-csv-pom.xml.template"
+                                   jar.file="lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
 
       <!-- ========== SOLR ARTIFACTS ========== -->
 
-      <m2-deploy  pom.xml="lib/apache-solr-noggit-pom.xml.template"
-                 jar.file="lib/apache-solr-noggit-r944541.jar" />
+      <m2-deploy-with-pom-template pom.xml="lib/apache-solr-noggit-pom.xml.template"
+                                   jar.file="lib/apache-solr-noggit-r944541.jar" />
 
-      <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-pom.xml.template"
+      <m2-deploy pom.xml="contrib/dataimporthandler/src/pom.xml"
                  jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">
         <artifact-attachments>
           <attach file="${dist}/apache-solr-dataimporthandler-src-${version}.jar" classifier="sources"/>
@@ -879,63 +882,67 @@
         </artifact-attachments>
       </m2-deploy>
 
-      <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-extras-pom.xml.template"
+      <m2-deploy pom.xml="contrib/dataimporthandler/src/extras/pom.xml"
                  jar.file="${dist}/apache-solr-dataimporthandler-extras-${version}.jar">
-
         <artifact-attachments>
           <attach file="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
-      <m2-deploy pom.xml="contrib/extraction/solr-cell-pom.xml.template"
+      <m2-deploy pom.xml="contrib/extraction/pom.xml"
                  jar.file="${dist}/apache-solr-cell-${version}.jar">
         <artifact-attachments>
           <attach file="${dist}/apache-solr-cell-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-cell-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
-
-      <!--<m2-deploy pom.xml="contrib/clustering/solr-clustering-pom.xml.template"
-      jar.file="${dist}/apache-solr-clustering-${version}.jar">
-
+      
+      <m2-deploy pom.xml="contrib/clustering/pom.xml"
+                 jar.file="${dist}/apache-solr-clustering-${version}.jar">
         <artifact-attachments>
           <attach file="${dist}/apache-solr-clustering-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-clustering-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
-      </m2-deploy>-->
-      <!-- Clustring specific -->
-      <!-- TODO: MORE NEEDED HERE ONCE WE FINALIZE THE LIBS FOR CARROT -->
-      <!-- end clustering specific -->
+      </m2-deploy>
 
-      <m2-deploy pom.xml="src/maven/solr-core-pom.xml.template"
+      <m2-deploy pom.xml="contrib/analysis-extras/pom.xml"
+                 jar.file="${dist}/apache-solr-analysis-extras-${version}.jar">
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-analysis-extras-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-analysis-extras-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+
+      <m2-deploy pom.xml="contrib/uima/pom.xml"
+                 jar.file="${dist}/apache-solr-uima-${version}.jar">
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-uima-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-uima-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+
+      <m2-deploy pom.xml="src/pom.xml"
                  jar.file="${dist}/apache-solr-core-${version}.jar">
-
         <artifact-attachments>
           <attach file="${dist}/apache-solr-core-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-core-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
-
       </m2-deploy>
 
-      <m2-deploy pom.xml="src/maven/solr-solrj-pom.xml.template"
+      <m2-deploy pom.xml="src/solrj/pom.xml"
                  jar.file="${dist}/apache-solr-solrj-${version}.jar">
-
         <artifact-attachments>
           <attach file="${dist}/apache-solr-solrj-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-solrj-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
-
       </m2-deploy>
 
+      <m2-deploy pom.xml="src/webapp/pom.xml"
+                 jar.file="${dist}/apache-solr-${version}.war"/>
     </sequential>
   </target>
 
-  <target name="nightly"
-          depends="set-fsdir, test, create-package">
-     <!-- no description, don't advertise -->
-  </target>
-  
   <target name="set-fsdir">
      <property name="use.fsdir" value="true"/>
   </target>
@@ -951,6 +958,8 @@
     description="runs the tasks over src/java excluding the license directory">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="src/java"/>
+      <fileset dir="src/test"/>
+      <fileset dir="src/webapp"/>
       <fileset dir="src/common"/>
       <fileset dir="src/solrj"/>
       <fileset dir="client">
@@ -958,12 +967,16 @@
       </fileset>
       <fileset dir="contrib/dataimporthandler/src/main/java"/>
       <fileset dir="contrib/dataimporthandler/src/test/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/main/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/test/java"/>
       <fileset dir="contrib/clustering/src/main/java"/>
       <fileset dir="contrib/clustering/src/test/java"/>
       <fileset dir="contrib/extraction/src/main/java"/>
       <fileset dir="contrib/extraction/src/test/java"/>
       <fileset dir="contrib/analysis-extras/src/test"/>
       <fileset dir="contrib/analysis-extras/src/test"/>
+      <fileset dir="contrib/uima/src/main/java"/>
+      <fileset dir="contrib/uima/src/test/java"/>
     </rat:report>
   </target>
 

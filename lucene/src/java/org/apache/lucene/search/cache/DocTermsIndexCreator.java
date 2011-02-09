@@ -24,6 +24,8 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -304,11 +306,6 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public void cacheCurrentTerm() throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
       public BytesRef term() throws IOException {
         return term;
       }
@@ -324,6 +321,11 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
+      public long totalTermFreq() {
+        return -1;
+      }
+
+      @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
         throw new UnsupportedOperationException();
       }
@@ -336,6 +338,19 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       @Override
       public Comparator<BytesRef> getComparator() throws IOException {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
+      }
+
+      @Override
+      public void seek(BytesRef term, TermState state) throws IOException {
+        assert state != null && state instanceof OrdTermState;
+        this.seek(((OrdTermState)state).ord);
+      }
+
+      @Override
+      public TermState termState() throws IOException {
+        OrdTermState state = new OrdTermState();
+        state.ord = currentOrd;
+        return state;
       }
     }
   }

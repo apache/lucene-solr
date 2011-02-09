@@ -154,7 +154,7 @@ public class TestBooleanOr extends LuceneTestCase {
 
     reader = writer.getReader();
     //
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
 

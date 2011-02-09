@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="RunManager">
+  <component name="RunManager" selected="JUnit.lucene">
     <configuration default="false" name="analysis-extras contrib" type="JUnit" factoryName="JUnit">
       <module name="analysis-extras" />
       <option name="TEST_OBJECT" value="package" />
@@ -183,6 +183,13 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
+    <configuration default="false" name="uima contrib" type="JUnit" factoryName="JUnit">
+      <module name="uima" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/uima/build" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="wordnet contrib" type="JUnit" factoryName="JUnit">
       <module name="wordnet" />
       <option name="TEST_OBJECT" value="package" />
@@ -224,8 +231,9 @@
       <item index="23" class="java.lang.String" itemvalue="JUnit.spellchecker contrib" />
       <item index="24" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
       <item index="25" class="java.lang.String" itemvalue="JUnit.swing contrib" />
-      <item index="26" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
-      <item index="27" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
+      <item index="26" class="java.lang.String" itemvalue="JUnit.uima contrib" />
+      <item index="27" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
+      <item index="28" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
     </list>
   </component>
 </project>

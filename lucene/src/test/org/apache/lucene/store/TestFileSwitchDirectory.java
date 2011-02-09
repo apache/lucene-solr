@@ -39,8 +39,10 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     fileExtensions.add(IndexFileNames.FIELDS_EXTENSION);
     fileExtensions.add(IndexFileNames.FIELDS_INDEX_EXTENSION);
     
-    Directory primaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
-    Directory secondaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    primaryDir.setCheckIndexOnClose(false); // only part of an index
+    MockDirectoryWrapper secondaryDir = new MockDirectoryWrapper(random, new RAMDirectory());
+    secondaryDir.setCheckIndexOnClose(false); // only part of an index
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
     IndexWriter writer = new IndexWriter(
@@ -49,7 +51,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(false))
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
-    IndexReader reader = IndexReader.open(writer);
+    IndexReader reader = IndexReader.open(writer, true);
     assertEquals(100, reader.maxDoc());
     writer.commit();
     // we should see only fdx,fdt files here

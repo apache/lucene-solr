@@ -214,6 +214,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   }
 
   static class DateFormatValidatingEvaluator extends Evaluator {
+    @Override
     public String evaluate(String expression, Context context) {
       List l = EvaluatorBag.parseParams(expression, context.getVariableResolver());
       Object o = l.get(0);

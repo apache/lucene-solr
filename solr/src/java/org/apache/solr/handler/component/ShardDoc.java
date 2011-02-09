@@ -56,6 +56,7 @@ public class ShardDoc {
   int positionInResponse;
   // the ordinal position in the merged response arraylist  
 
+  @Override
   public String toString(){
     return "id="+id
             +" ,score="+score
@@ -226,6 +227,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
   // the negative sign on the final compareTo().
   Comparator comparatorNatural(String fieldName) {
     return new ShardComparator(fieldName) {
+      @Override
       public final int compare(final Object o1, final Object o2) {
         ShardDoc sd1 = (ShardDoc) o1;
         ShardDoc sd2 = (ShardDoc) o2;
@@ -247,6 +249,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
       Locale locale) {
     final Collator collator = Collator.getInstance(locale);
     return new ShardComparator(fieldName) {
+      @Override
       public final int compare(final Object o1, final Object o2) {
         ShardDoc sd1 = (ShardDoc) o1;
         ShardDoc sd2 = (ShardDoc) o2;
@@ -266,6 +269,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
 
   Comparator comparatorMissingStringLast(final String fieldName) {
      return new ShardComparator(fieldName) {
+      @Override
       public final int compare(final Object o1, final Object o2) {
         ShardDoc sd1 = (ShardDoc) o1;
         ShardDoc sd2 = (ShardDoc) o2;

@@ -17,8 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.ArrayUtil;
 
 /** Taps into DocInverter, as an InvertedDocEndConsumer,
  *  which is called at the end of inverting each field.  We
@@ -30,7 +30,8 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
   final NormsWriterPerThread perThread;
   final FieldInfo fieldInfo;
   final DocumentsWriter.DocState docState;
-
+  final Similarity similarity;
+  
   // Holds all docID/norm pairs we've seen
   int[] docIDs = new int[1];
   byte[] norms = new byte[1];
@@ -50,6 +51,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
     this.fieldInfo = fieldInfo;
     docState = perThread.docState;
     fieldState = docInverterPerField.fieldState;
+    similarity = docState.similarityProvider.get(fieldInfo.name);
   }
 
   @Override
@@ -72,8 +74,8 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
         assert norms.length == upto;
         norms = ArrayUtil.grow(norms, 1+upto);
       }
-      final float norm = docState.similarity.computeNorm(fieldInfo.name, fieldState);
-      norms[upto] = Similarity.getDefault().encodeNormValue(norm);
+      final float norm = similarity.computeNorm(fieldInfo.name, fieldState);
+      norms[upto] = similarity.encodeNormValue(norm);
       docIDs[upto] = docState.docID;
       upto++;
     }

@@ -30,14 +30,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.RamUsageEstimator;
+
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
@@ -127,22 +129,21 @@ final class DocumentsWriter {
   private boolean aborting;               // True if an abort is pending
 
   PrintStream infoStream;
-  int maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
-  Similarity similarity;
+  SimilarityProvider similarityProvider;
 
   // max # simultaneous threads; if there are more than
   // this, they wait for others to finish first
   private final int maxThreadStates;
 
+  // TODO: cutover to BytesRefHash
   // Deletes for our still-in-RAM (to be flushed next) segment
-  private SegmentDeletes pendingDeletes = new SegmentDeletes();
+  private BufferedDeletes pendingDeletes = new BufferedDeletes(false);
   
   static class DocState {
     DocumentsWriter docWriter;
     Analyzer analyzer;
-    int maxFieldLength;
     PrintStream infoStream;
-    Similarity similarity;
+    SimilarityProvider similarityProvider;
     int docID;
     Document doc;
     String maxTermPrefix;
@@ -191,6 +192,7 @@ final class DocumentsWriter {
     /**
      * Allocate bytes used from shared pool.
      */
+    @Override
     protected byte[] newBuffer(int size) {
       assert size == PER_DOC_BLOCK_SIZE;
       return perDocAllocator.getByteBlock();
@@ -279,16 +281,16 @@ final class DocumentsWriter {
   private boolean closed;
   private final FieldInfos fieldInfos;
 
-  private final BufferedDeletes bufferedDeletes;
+  private final BufferedDeletesStream bufferedDeletesStream;
   private final IndexWriter.FlushControl flushControl;
 
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos, BufferedDeletes bufferedDeletes) throws IOException {
+  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.writer = writer;
-    this.similarity = writer.getConfig().getSimilarity();
+    this.similarityProvider = writer.getConfig().getSimilarityProvider();
     this.maxThreadStates = maxThreadStates;
     this.fieldInfos = fieldInfos;
-    this.bufferedDeletes = bufferedDeletes;
+    this.bufferedDeletesStream = bufferedDeletesStream;
     flushControl = writer.flushControl;
 
     consumer = indexingChain.getChain(this);
@@ -337,6 +339,9 @@ final class DocumentsWriter {
     return doFlush;
   }
 
+  // TODO: we could check w/ FreqProxTermsWriter: if the
+  // term doesn't exist, don't bother buffering into the
+  // per-DWPT map (but still must go into the global map)
   boolean deleteTerm(Term term, boolean skipWait) {
     final boolean doFlush = flushControl.waitUpdate(0, 1, skipWait);
     synchronized(this) {
@@ -358,17 +363,10 @@ final class DocumentsWriter {
     }
   }
 
-  synchronized void setMaxFieldLength(int maxFieldLength) {
-    this.maxFieldLength = maxFieldLength;
+  synchronized void setSimilarityProvider(SimilarityProvider similarity) {
+    this.similarityProvider = similarity;
     for(int i=0;i<threadStates.length;i++) {
-      threadStates[i].docState.maxFieldLength = maxFieldLength;
-    }
-  }
-
-  synchronized void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
-    for(int i=0;i<threadStates.length;i++) {
-      threadStates[i].docState.similarity = similarity;
+      threadStates[i].docState.similarityProvider = similarity;
     }
   }
 
@@ -509,23 +507,26 @@ final class DocumentsWriter {
   }
 
   // for testing
-  public SegmentDeletes getPendingDeletes() {
+  public BufferedDeletes getPendingDeletes() {
     return pendingDeletes;
   }
 
   private void pushDeletes(SegmentInfo newSegment, SegmentInfos segmentInfos) {
     // Lock order: DW -> BD
+    final long delGen = bufferedDeletesStream.getNextGen();
     if (pendingDeletes.any()) {
-      if (newSegment != null) {
+      if (segmentInfos.size() > 0 || newSegment != null) {
+        final FrozenBufferedDeletes packet = new FrozenBufferedDeletes(pendingDeletes, delGen);
         if (infoStream != null) {
-          message("flush: push buffered deletes to newSegment");
+          message("flush: push buffered deletes");
         }
-        bufferedDeletes.pushDeletes(pendingDeletes, newSegment);
-      } else if (segmentInfos.size() > 0) {
+        bufferedDeletesStream.push(packet);
         if (infoStream != null) {
-          message("flush: push buffered deletes to previously flushed segment " + segmentInfos.lastElement());
+          message("flush: delGen=" + packet.gen);
         }
-        bufferedDeletes.pushDeletes(pendingDeletes, segmentInfos.lastElement(), true);
+        if (newSegment != null) {
+          newSegment.setBufferedDeletesGen(packet.gen);
+        }
       } else {
         if (infoStream != null) {
           message("flush: drop buffered deletes: no segments");
@@ -534,7 +535,9 @@ final class DocumentsWriter {
         // there are no segments, the deletions cannot
         // affect anything.
       }
-      pendingDeletes = new SegmentDeletes();
+      pendingDeletes.clear();
+    } else if (newSegment != null) {
+      newSegment.setBufferedDeletesGen(delGen);
     }
   }
 
@@ -545,6 +548,8 @@ final class DocumentsWriter {
   /** Flush all pending docs to a new segment */
   // Lock order: IW -> DW
   synchronized SegmentInfo flush(IndexWriter writer, IndexFileDeleter deleter, MergePolicy mergePolicy, SegmentInfos segmentInfos) throws IOException {
+
+    final long startTime = System.currentTimeMillis();
 
     // We change writer's segmentInfos:
     assert Thread.holdsLock(writer);
@@ -583,6 +588,18 @@ final class DocumentsWriter {
 
       final SegmentWriteState flushState = segWriteState();
 
+      // Apply delete-by-docID now (delete-byDocID only
+      // happens when an exception is hit processing that
+      // doc, eg if analyzer has some problem w/ the text):
+      if (pendingDeletes.docIDs.size() > 0) {
+        flushState.deletedDocs = new BitVector(numDocs);
+        for(int delDocID : pendingDeletes.docIDs) {
+          flushState.deletedDocs.set(delDocID);
+        }
+        pendingDeletes.bytesUsed.addAndGet(-pendingDeletes.docIDs.size() * BufferedDeletes.BYTES_PER_DEL_DOCID);
+        pendingDeletes.docIDs.clear();
+      }
+
       newSegment = new SegmentInfo(segment, numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false);
 
       Collection<DocConsumerPerThread> threads = new HashSet<DocConsumerPerThread>();
@@ -593,10 +610,14 @@ final class DocumentsWriter {
       double startMBUsed = bytesUsed()/1024./1024.;
 
       consumer.flush(threads, flushState);
+
       newSegment.setHasVectors(flushState.hasVectors);
 
       if (infoStream != null) {
         message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
+        if (flushState.deletedDocs != null) {
+          message("new segment has " + flushState.deletedDocs.count() + " deleted docs");
+        }
         message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());
       }
@@ -615,6 +636,30 @@ final class DocumentsWriter {
         cfsWriter.close();
         deleter.deleteNewFiles(newSegment.files());
         newSegment.setUseCompoundFile(true);
+      }
+
+      // Must write deleted docs after the CFS so we don't
+      // slurp the del file into CFS:
+      if (flushState.deletedDocs != null) {
+        final int delCount = flushState.deletedDocs.count();
+        assert delCount > 0;
+        newSegment.setDelCount(delCount);
+        newSegment.advanceDelGen();
+        final String delFileName = newSegment.getDelFileName();
+        boolean success2 = false;
+        try {
+          flushState.deletedDocs.write(directory, delFileName);
+          success2 = true;
+        } finally {
+          if (!success2) {
+            try {
+              directory.deleteFile(delFileName);
+            } catch (Throwable t) {
+              // suppress this so we keep throwing the
+              // original exception
+            }
+          }
+        }
       }
 
       if (infoStream != null) {
@@ -643,6 +688,9 @@ final class DocumentsWriter {
 
     // Lock order: IW -> DW -> BD
     pushDeletes(newSegment, segmentInfos);
+    if (infoStream != null) {
+      message("flush time " + (System.currentTimeMillis()-startTime) + " msec");
+    }
 
     return newSegment;
   }
@@ -650,7 +698,7 @@ final class DocumentsWriter {
   SegmentWriteState segWriteState() { 
     return new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocs, writer.getConfig().getTermIndexInterval(),
-        SegmentCodecs.build(fieldInfos, writer.codecs), bytesUsed);
+        SegmentCodecs.build(fieldInfos, writer.codecs), pendingDeletes, bytesUsed);
   }
 
   synchronized void close() {
@@ -909,8 +957,7 @@ final class DocumentsWriter {
   final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
   /* if you increase this, you must fix field cache impl for
-   * getTerms/getTermsIndex requires <= 32768.  Also fix
-   * DeltaBytesWriter's TERM_EOF if necessary. */
+   * getTerms/getTermsIndex requires <= 32768. */
   final static int MAX_TERM_LENGTH_UTF8 = BYTE_BLOCK_SIZE-2;
 
   /* Initial chunks size of the shared int[] blocks used to
@@ -971,7 +1018,7 @@ final class DocumentsWriter {
     final boolean doBalance;
     final long deletesRAMUsed;
 
-    deletesRAMUsed = bufferedDeletes.bytesUsed();
+    deletesRAMUsed = bufferedDeletesStream.bytesUsed();
 
     synchronized(this) {
       if (ramBufferSize == IndexWriterConfig.DISABLE_AUTO_FLUSH || bufferIsFull) {

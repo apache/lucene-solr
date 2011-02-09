@@ -56,6 +56,7 @@ public class ShardRequest {
   // this would work well if we ever transitioned to using internal ids and
   // didn't require a uniqueId
 
+  @Override
   public String toString() {
     return "ShardRequest:{params=" + params
             + ", purpose=" + Integer.toHexString(purpose)

@@ -78,7 +78,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
 
             int matchLength = end - start;
             if (matchLength <= slop)
-                freq += getSimilarity().sloppyFreq(matchLength); // score match
+                freq += similarity.sloppyFreq(matchLength); // score match
 
             if (pp.position > end)
                 end = pp.position;

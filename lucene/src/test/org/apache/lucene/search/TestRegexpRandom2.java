@@ -82,7 +82,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     }
     
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
 

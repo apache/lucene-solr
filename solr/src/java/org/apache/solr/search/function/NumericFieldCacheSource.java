@@ -32,6 +32,7 @@ public abstract class NumericFieldCacheSource<T extends CachedArray> extends Fie
     this.creator = creator;
   }
 
+  @Override
   public final boolean equals(Object o) {
     if (o.getClass() != this.getClass()) return false;
     NumericFieldCacheSource other = (NumericFieldCacheSource) o;
@@ -40,6 +41,7 @@ public abstract class NumericFieldCacheSource<T extends CachedArray> extends Fie
             this.creator.getClass() == other.creator.getClass();
   }
 
+  @Override
   public final int hashCode() {
     int h = creator == null ? this.getClass().hashCode() : creator.getClass().hashCode();
     h += super.hashCode();

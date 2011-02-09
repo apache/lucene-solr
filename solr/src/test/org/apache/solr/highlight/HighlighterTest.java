@@ -769,4 +769,30 @@ public class HighlighterTest extends SolrTestCaseJ4 {
             );
 
   }
+  
+  public void testSubwordWildcardHighlight() {
+    assertU(adoc("subword", "lorem PowerShot.com ipsum", "id", "1"));
+    assertU(commit());
+    assertQ("subword wildcard highlighting", 
+            req("q", "subword:pow*", "hl", "true", "hl.fl", "subword"),
+            "//lst[@name='highlighting']/lst[@name='1']" +
+            "/arr[@name='subword']/str='lorem <em>PowerShot.com</em> ipsum'");
+  }
+
+  public void testSubwordWildcardHighlightWithTermOffsets() {
+    assertU(adoc("subword_offsets", "lorem PowerShot.com ipsum", "id", "1"));
+    assertU(commit());
+    assertQ("subword wildcard highlighting", 
+            req("q", "subword_offsets:pow*", "hl", "true", "hl.fl", "subword_offsets"),
+            "//lst[@name='highlighting']/lst[@name='1']" +
+            "/arr[@name='subword_offsets']/str='lorem <em>PowerShot.com</em> ipsum'");
+  }
+  public void testSubwordWildcardHighlightWithTermOffsets2() {
+    assertU(adoc("subword_offsets", "lorem PowerShot ipsum", "id", "1"));
+    assertU(commit());
+    assertQ("subword wildcard highlighting",
+            req("q", "subword_offsets:pow*", "hl", "true", "hl.fl", "subword_offsets"),
+            "//lst[@name='highlighting']/lst[@name='1']" +
+            "/arr[@name='subword_offsets']/str='lorem <em>PowerShot</em> ipsum'");
+ }
 }

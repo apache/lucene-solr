@@ -25,6 +25,9 @@
 
   <dirname file="${ant.file.common}" property="common.dir"/>
 
+  <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
+  <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
+
   <!-- Give user a chance to override without editing this file
       (and without typing -D each time it compiles it -->
   <property file="${user.home}/lucene.build.properties"/>
@@ -110,6 +113,7 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
+  <property name="tests-framework.src.dir" location="${common.dir}/src/test-framework"/>
   <property name="build.dir" location="build"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
@@ -318,31 +322,21 @@
   	</fail>
   </target>
 
-  <property name="pom.xml" value="pom.xml.template"/>
-
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
   	<element name="artifact-attachments" optional="yes"/>
-    <attribute name="pom.xml" default="${pom.xml}"/>
+    <attribute name="pom.xml" default="pom.xml"/>
     <sequential>
-      <copy file="@{pom.xml}" tofile="${build.dir}/@{pom.xml}">
-        <filterset begintoken="@" endtoken="@"> 
-          <filter token="version" value="${version}"/>
-        </filterset>
-      </copy>
-	  <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
-    	
-      <artifact:pom id="maven.project" file="${build.dir}/@{pom.xml}" />
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="maven.project" file="@{pom.xml}"/>
       <artifact:deploy file="${build.dir}/${maven.project.build.finalName}.jar">
         <artifact-attachments/>
       	<remoteRepository url="${m2.repository.url}">
           <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
-		</remoteRepository>
+        </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
     </sequential>
   </macrodef>  	
-	
-	
 	
   <macrodef name="build-manifest" description="Builds a manifest file">
   	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}" />
@@ -370,6 +364,8 @@
   <macrodef name="jarify" description="Builds a JAR file">
   	<attribute name="basedir" default="${build.dir}/classes/java"/>
   	<attribute name="destfile" default="${build.dir}/${final.name}.jar"/>
+  	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}"/>
+    <attribute name="excludes" default="**/pom.xml"/>
     <element name="manifest-attributes" optional="yes"/>
   	<element name="metainf-includes" optional="yes"/>
     <sequential>
@@ -379,12 +375,13 @@
         <arg line="."/>
       </exec>
       
-      <build-manifest/>
+      <build-manifest title="@{title}"/>
     	
       <jar
         destfile="@{destfile}"
         basedir="@{basedir}"
-      	manifest="${manifest.file}">
+      	manifest="${manifest.file}"
+        excludes="@{excludes}">
         <manifest>
         	<manifest-attributes/>
         </manifest>
@@ -397,7 +394,12 @@
     </sequential>
   </macrodef>
 
-  <target name="compile-test" depends="compile-core">
+  <target name="compile-test-framework" depends="compile-core">
+  	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
+  						test.classpath="test.classpath"/>
+  </target>
+
+  <target name="compile-test" depends="compile-test-framework">
   	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
   						test.classpath="test.classpath"/>
   </target>
@@ -560,6 +562,9 @@
       <fileset dir="${src.dir}">
         <include name="org/apache/**/*.java" />
       </fileset>
+      <testsources dir="${tests-framework.src.dir}">
+        <include name="org/apache/**/*.java" />
+      </testsources>
       <testsources dir="${tests.src.dir}">
         <include name="org/apache/**/*.java" />
       </testsources>
@@ -589,6 +594,9 @@
     <!-- This extra path is needed, because from a top-level ant run, the contrib tests would be not visible (report generation is only done on top-level not via subants) -->
     <fileset dir="contrib" id="clover.contrib.test.src.files">
       <include name="**/test/**/*.java"/>
+    </fileset>
+    <fileset dir="${tests-framework.src.dir}" id="clover.test.src.files">
+      <include name="**/*.java" />
     </fileset>
     <fileset dir="${tests.src.dir}" id="clover.test.src.files">
       <include name="**/*.java" />
@@ -648,6 +656,23 @@
 
   <target name="default" depends="jar-core"/>
 
+  <target name="rat-sources-typedef">
+    <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">
+      <classpath>
+        <fileset dir="." includes="rat*.jar"/>
+      </classpath>
+    </typedef>
+  </target>
+
+  <target name="rat-sources" depends="rat-sources-typedef"
+	  description="runs the tasks over source and test files">
+    <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
+      <fileset dir="${src.dir}"/>
+      <fileset dir="${tests-framework.src.dir}"/>
+      <fileset dir="${tests.src.dir}"/>
+    </rat:report>
+  </target>
+
   <!--+
       | M A C R O S
       +-->
@@ -703,6 +728,9 @@
     <attribute name="destdir"/>
   	<attribute name="title" default="${Name} ${version} API"/>
     <sequential>
+      <copy todir="@{destdir}/../prettify" overwrite="false">
+        <fileset dir="${prettify.dir}"/>
+      </copy>
       <javadoc
           overview="${src.dir}/overview.html"
           packagenames="org.apache.lucene.*"
@@ -718,6 +746,7 @@
           link="${javadoc.link}"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
+          stylesheetfile="@{destdir}/../prettify/stylesheet+prettify.css"
           maxmemory="${javadoc.maxmemory}"
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="lucene.experimental" 
@@ -725,6 +754,10 @@
         <tag name="lucene.internal"
         description="NOTE: This API is for Lucene internal purposes only and might change in incompatible ways in the next release."/>
       	<link offline="true" packagelistLoc="${javadoc.dir}"/>
+        <header><![CDATA[
+           <script src="{@docRoot}/../prettify/prettify.js" type="text/javascript"></script>
+           <script language="JavaScript">window.onload=function(){windowTitle();prettyPrint();}</script>
+        ]]></header>
       	
       	<sources />
       	      	

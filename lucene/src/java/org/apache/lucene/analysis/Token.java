@@ -28,6 +28,7 @@ import org.apache.lucene.index.DocsAndPositionsEnum; // for javadoc
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeReflector;
 
 /** 
   A Token is an occurrence of a term from the text of a field.  It consists of
@@ -586,6 +587,17 @@ public class Token extends CharTermAttributeImpl
       ((FlagsAttribute) target).setFlags(flags);
       ((TypeAttribute) target).setType(type);
     }
+  }
+
+  @Override
+  public void reflectWith(AttributeReflector reflector) {
+    super.reflectWith(reflector);
+    reflector.reflect(OffsetAttribute.class, "startOffset", startOffset);
+    reflector.reflect(OffsetAttribute.class, "endOffset", endOffset);
+    reflector.reflect(PositionIncrementAttribute.class, "positionIncrement", positionIncrement);
+    reflector.reflect(PayloadAttribute.class, "payload", payload);
+    reflector.reflect(FlagsAttribute.class, "flags", flags);
+    reflector.reflect(TypeAttribute.class, "type", type);
   }
 
   /** Convenience factory that returns <code>Token</code> as implementation for the basic

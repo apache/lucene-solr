@@ -17,8 +17,9 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -45,28 +46,27 @@ public class ScaleFloatFunction extends ValueSource {
     this.max = max;
   }
 
+  @Override
   public String description() {
     return "scale(" + source.description() + "," + min + "," + max + ")";
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final DocValues vals =  source.getValues(context, reader);
-    int maxDoc = reader.maxDoc();
+  private static class ScaleInfo {
+    float minVal;
+    float maxVal;
+  }
 
-    // this doesn't take into account deleted docs!
-    float minVal=0.0f;
-    float maxVal=0.0f;
+  private ScaleInfo createScaleInfo(Map context, AtomicReaderContext readerContext) throws IOException {
+    final AtomicReaderContext[] leaves = ReaderUtil.leaves(ReaderUtil.getTopLevelContext(readerContext));
 
-    if (maxDoc>0) {
-      minVal = maxVal = vals.floatVal(0);      
-    }
+    float minVal = Float.POSITIVE_INFINITY;
+    float maxVal = Float.NEGATIVE_INFINITY;
 
-    // Traverse the complete set of values to get the min and the max.
-    // Future alternatives include being able to ask a DocValues for min/max
-    // Another memory-intensive option is to cache the values in
-    // a float[] on this first pass.
+    for (AtomicReaderContext leaf : leaves) {
+      int maxDoc = leaf.reader.maxDoc();
+      DocValues vals =  source.getValues(context, leaf);
+      for (int i=0; i<maxDoc; i++) {
 
-    for (int i=0; i<maxDoc; i++) {
       float val = vals.floatVal(i);
       if ((Float.floatToRawIntBits(val) & (0xff<<23)) == 0xff<<23) {
         // if the exponent in the float is all ones, then this is +Inf, -Inf or NaN
@@ -75,31 +75,61 @@ public class ScaleFloatFunction extends ValueSource {
       }
       if (val < minVal) {
         minVal = val;
-      } else if (val > maxVal) {
+      }
+      if (val > maxVal) {
         maxVal = val;
       }
     }
+    }
 
-    final float scale = (maxVal-minVal==0) ? 0 : (max-min)/(maxVal-minVal);
-    final float minSource = minVal;
-    final float maxSource = maxVal;
+    if (minVal == Float.POSITIVE_INFINITY) {
+    // must have been an empty index
+      minVal = maxVal = 0;
+    }
+
+    ScaleInfo scaleInfo = new ScaleInfo();
+    scaleInfo.minVal = minVal;
+    scaleInfo.maxVal = maxVal;
+    context.put(this.source, scaleInfo);
+    return scaleInfo;
+  }
+
+  @Override
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+
+    ScaleInfo scaleInfo = (ScaleInfo)context.get(source);
+    if (scaleInfo == null) {
+      scaleInfo = createScaleInfo(context, readerContext);
+    }
+
+    final float scale = (scaleInfo.maxVal-scaleInfo.minVal==0) ? 0 : (max-min)/(scaleInfo.maxVal-scaleInfo.minVal);
+    final float minSource = scaleInfo.minVal;
+    final float maxSource = scaleInfo.maxVal;
+
+    final DocValues vals =  source.getValues(context, readerContext);
 
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
 	return (vals.floatVal(doc) - minSource) * scale + min;
       }
+      @Override
       public int intVal(int doc) {
         return (int)floatVal(doc);
       }
+      @Override
       public long longVal(int doc) {
         return (long)floatVal(doc);
       }
+      @Override
       public double doubleVal(int doc) {
         return (double)floatVal(doc);
       }
+      @Override
       public String strVal(int doc) {
         return Float.toString(floatVal(doc));
       }
+      @Override
       public String toString(int doc) {
 	return "scale(" + vals.toString(doc) + ",toMin=" + min + ",toMax=" + max
                 + ",fromMin=" + minSource
@@ -114,6 +144,7 @@ public class ScaleFloatFunction extends ValueSource {
     source.createWeight(context, searcher);
   }
 
+  @Override
   public int hashCode() {
     int h = Float.floatToIntBits(min);
     h = h*29;
@@ -123,6 +154,7 @@ public class ScaleFloatFunction extends ValueSource {
     return h;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (ScaleFloatFunction.class != o.getClass()) return false;
     ScaleFloatFunction other = (ScaleFloatFunction)o;

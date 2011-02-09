@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -108,8 +109,8 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
      * results.
      */
     @Override
-    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-      final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(reader, query.field);
+    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader, query.field);
       final OpenBitSet termSet = new OpenBitSet(fcsi.numOrd());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
         
@@ -122,7 +123,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         public TermsEnum iterator() throws IOException {
           return fcsi.getTermsEnum();
         }
-        
+
+        @Override
+        public long getSumTotalTermFreq() {
+          return -1;
+        }
       });
       
       assert termsEnum != null;
@@ -142,7 +147,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         return DocIdSet.EMPTY_DOCIDSET;
       }
       
-      return new FieldCacheRangeFilter.FieldCacheDocIdSet(reader, true) {
+      return new FieldCacheRangeFilter.FieldCacheDocIdSet(context.reader, true) {
         @Override
         boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
           return termSet.fastGet(fcsi.getOrd(doc));

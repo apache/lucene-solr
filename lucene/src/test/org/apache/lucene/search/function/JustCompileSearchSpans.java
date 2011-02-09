@@ -18,6 +18,7 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
@@ -82,7 +83,7 @@ final class JustCompileSearchFunction {
     }
 
     @Override
-    public DocValues getValues(IndexReader reader) throws IOException {
+    public DocValues getValues(AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

@@ -20,7 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Similarity;
 
@@ -82,7 +82,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public Spans getSpans(IndexReader reader) throws IOException {
+    public Spans getSpans(AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

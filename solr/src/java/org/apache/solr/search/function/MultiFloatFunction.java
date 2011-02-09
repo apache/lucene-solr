@@ -16,7 +16,7 @@ package org.apache.solr.search.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.util.Map;
@@ -38,6 +38,7 @@ public abstract class MultiFloatFunction extends ValueSource {
   abstract protected String name();
   abstract protected float func(int doc, DocValues[] valsArr);
 
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');
@@ -54,28 +55,35 @@ public abstract class MultiFloatFunction extends ValueSource {
     return sb.toString();
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+  @Override
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final DocValues[] valsArr = new DocValues[sources.length];
     for (int i=0; i<sources.length; i++) {
-      valsArr[i] = sources[i].getValues(context, reader);
+      valsArr[i] = sources[i].getValues(context, readerContext);
     }
 
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return func(doc, valsArr);
       }
+      @Override
       public int intVal(int doc) {
         return (int)floatVal(doc);
       }
+      @Override
       public long longVal(int doc) {
         return (long)floatVal(doc);
       }
+      @Override
       public double doubleVal(int doc) {
         return (double)floatVal(doc);
       }
+      @Override
       public String strVal(int doc) {
         return Float.toString(floatVal(doc));
       }
+      @Override
       public String toString(int doc) {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
@@ -100,10 +108,12 @@ public abstract class MultiFloatFunction extends ValueSource {
       source.createWeight(context, searcher);
   }
 
+  @Override
   public int hashCode() {
     return Arrays.hashCode(sources) + name().hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     MultiFloatFunction other = (MultiFloatFunction)o;

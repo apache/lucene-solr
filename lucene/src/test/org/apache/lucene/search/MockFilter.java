@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.DocIdBitSet;
 import java.util.BitSet;
 
@@ -25,7 +25,7 @@ public class MockFilter extends Filter {
   private boolean wasCalled;
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) {
+  public DocIdSet getDocIdSet(AtomicReaderContext context) {
     wasCalled = true;
     return new DocIdBitSet(new BitSet());
   }

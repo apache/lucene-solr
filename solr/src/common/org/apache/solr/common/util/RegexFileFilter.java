@@ -37,6 +37,7 @@ public final class RegexFileFilter implements FileFilter {
   public boolean accept(File f) {
     return pattern.matcher(f.getName()).matches();
   }
+  @Override
   public String toString() {
     return "regex:" + pattern.toString();
   }

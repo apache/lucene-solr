@@ -82,14 +82,17 @@ public class InstantiatedDocsAndPositionsEnum extends DocsAndPositionsEnum {
     return currentDoc.getTermPositions().length;
   }
   
+  @Override
   public int nextPosition() {
     return currentDoc.getTermPositions()[++posUpto];
   }
 
+  @Override
   public boolean hasPayload() {
     return currentDoc.getPayloads()[posUpto] != null;
   }
 
+  @Override
   public BytesRef getPayload() {
     payload.bytes = currentDoc.getPayloads()[posUpto];
     payload.length = payload.bytes.length;

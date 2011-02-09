@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 /**
  * Just counts the total number of hits.
@@ -31,16 +31,20 @@ public class TotalHitCountCollector extends Collector {
     return totalHits;
   }
 
+  @Override
   public void setScorer(Scorer scorer) {
   }
 
+  @Override
   public void collect(int doc) {
     totalHits++;
   }
 
-  public void setNextReader(IndexReader reader, int docBase) {
+  @Override
+  public void setNextReader(AtomicReaderContext context) {
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }

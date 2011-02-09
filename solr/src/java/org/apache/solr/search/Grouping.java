@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
@@ -77,10 +77,11 @@ public class Grouping {
       int docsToCollect = getMax(off, len, max);
 
       // TODO: implement a DocList impl that doesn't need to start at offset=0
-      TopDocs topDocs = collector.topDocs(0, docsToCollect);
+      TopDocs topDocs = collector.topDocs(0, Math.max(docsToCollect,1));  // 0 isn't supported as a valid value
+      int docsCollected = Math.min(docsToCollect, topDocs.scoreDocs.length);
 
-      int ids[] = new int[topDocs.scoreDocs.length];
-      float[] scores = needScores ? new float[topDocs.scoreDocs.length] : null;
+      int ids[] = new int[docsCollected];
+      float[] scores = needScores ? new float[docsCollected] : null;
       for (int i=0; i<ids.length; i++) {
         ids[i] = topDocs.scoreDocs[i].doc;
         if (scores != null)
@@ -151,7 +152,7 @@ public class Grouping {
     
     @Override
     void prepare() throws IOException {
-        Map context = ValueSource.newContext();
+        Map context = ValueSource.newContext(searcher);
         groupBy.createWeight(context, searcher);
     }
 
@@ -162,7 +163,7 @@ public class Grouping {
       // if we aren't going to return any groups, disregard the offset 
       if (numGroups == 0) maxGroupToFind = 0;
 
-      collector = new TopGroupCollector(groupBy, context, normalizeSort(sort), maxGroupToFind);
+      collector = new TopGroupCollector(groupBy, context, searcher.weightSort(normalizeSort(sort)), maxGroupToFind);
 
       /*** if we need a different algorithm when sort != group.sort
       if (compareSorts(sort, groupSort)) {
@@ -185,9 +186,9 @@ public class Grouping {
       int collectorOffset = format==Format.Simple ? 0 : offset;
 
       if (groupBy instanceof StrFieldSource) {
-        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
+        collector2 = new Phase2StringGroupCollector(collector, groupBy, context, searcher.weightSort(groupSort), docsToCollect, needScores, collectorOffset);
       } else {
-        collector2 = new Phase2GroupCollector(collector, groupBy, context, groupSort, docsToCollect, needScores, collectorOffset);
+        collector2 = new Phase2GroupCollector(collector, groupBy, context, searcher.weightSort(groupSort), docsToCollect, needScores, collectorOffset);
       }
       return collector2;
     }
@@ -306,11 +307,11 @@ public class Grouping {
     return v;
   }
 
-  static TopDocsCollector newCollector(Sort sort, int numHits, boolean fillFields, boolean needScores) throws IOException {
+  TopDocsCollector newCollector(Sort sort, int numHits, boolean fillFields, boolean needScores) throws IOException {
     if (sort==null || sort==byScoreDesc) {
       return TopScoreDocCollector.create(numHits, true);
     } else {
-      return TopFieldCollector.create(sort, numHits, false, needScores, needScores, true);
+      return TopFieldCollector.create(searcher.weightSort(sort), numHits, false, needScores, needScores, true);
     }
   }
 
@@ -457,14 +458,15 @@ class FilterCollector extends GroupCollector {
   @Override
   public void collect(int doc) throws IOException {
     matches++;
-    if (filter.exists(doc + docBase))
+    if (filter.exists(doc + docBase)) {
       collector.collect(doc);
+    }
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.docBase = docBase;
-    collector.setNextReader(reader, docBase);
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    docBase = context.docBase;
+    collector.setNextReader(context);
   }
 
   @Override
@@ -504,12 +506,12 @@ class TopGroupCollector extends GroupCollector {
 
   int matches;
 
-  public TopGroupCollector(ValueSource groupByVS, Map vsContext, Sort sort, int nGroups) throws IOException {
+  public TopGroupCollector(ValueSource groupByVS, Map vsContext, Sort weightedSort, int nGroups) throws IOException {
     this.vs = groupByVS;
     this.context = vsContext;
     this.nGroups = nGroups = Math.max(1,nGroups);  // we need a minimum of 1 for this collector
 
-    SortField[] sortFields = sort.getSort();
+    SortField[] sortFields = weightedSort.getSort();
     this.comparators = new FieldComparator[sortFields.length];
     this.reversed = new int[sortFields.length];
     for (int i = 0; i < sortFields.length; i++) {
@@ -685,13 +687,13 @@ class TopGroupCollector extends GroupCollector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.docBase = docBase;
-    docValues = vs.getValues(context, reader);
+  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
+    this.docBase = readerContext.docBase;
+    docValues = vs.getValues(context, readerContext);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
     for (int i=0; i<comparators.length; i++)
-      comparators[i] = comparators[i].setNextReader(reader, docBase);
+      comparators[i] = comparators[i].setNextReader(readerContext);
   }
 
   @Override
@@ -718,7 +720,7 @@ class Phase2GroupCollector extends Collector {
   int docBase;
 
   // TODO: may want to decouple from the phase1 collector
-  public Phase2GroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores, int offset) throws IOException {
+  public Phase2GroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort weightedSort, int docsPerGroup, boolean getScores, int offset) throws IOException {
     boolean getSortFields = false;
 
     if (topGroups.orderedGroups == null)
@@ -732,10 +734,10 @@ class Phase2GroupCollector extends Collector {
       }
       SearchGroupDocs groupDocs = new SearchGroupDocs();
       groupDocs.groupValue = group.groupValue;
-      if (sort==null)
+      if (weightedSort==null)
         groupDocs.collector = TopScoreDocCollector.create(docsPerGroup, true);        
       else
-        groupDocs.collector = TopFieldCollector.create(sort, docsPerGroup, getSortFields, getScores, getScores, true);
+        groupDocs.collector = TopFieldCollector.create(weightedSort, docsPerGroup, getSortFields, getScores, getScores, true);
       groupMap.put(groupDocs.groupValue, groupDocs);
     }
 
@@ -759,13 +761,13 @@ class Phase2GroupCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    this.docBase = docBase;
-    docValues = vs.getValues(context, reader);
+  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
+    this.docBase = readerContext.docBase;
+    docValues = vs.getValues(context, readerContext);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
     for (SearchGroupDocs group : groupMap.values())
-      group.collector.setNextReader(reader, docBase);
+      group.collector.setNextReader(readerContext);
   }
 
   @Override
@@ -790,8 +792,8 @@ class Phase2StringGroupCollector extends Phase2GroupCollector {
   final SearchGroupDocs[] groups;
   final BytesRef spare = new BytesRef();
 
-  public Phase2StringGroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort sort, int docsPerGroup, boolean getScores, int offset) throws IOException {
-    super(topGroups, groupByVS, vsContext,sort,docsPerGroup,getScores,offset);
+  public Phase2StringGroupCollector(TopGroupCollector topGroups, ValueSource groupByVS, Map vsContext, Sort weightedSort, int docsPerGroup, boolean getScores, int offset) throws IOException {
+    super(topGroups, groupByVS, vsContext,weightedSort,docsPerGroup,getScores,offset);
     ordSet = new SentinelIntSet(groupMap.size(), -1);
     groups = new SearchGroupDocs[ordSet.keys.length];
   }
@@ -812,8 +814,8 @@ class Phase2StringGroupCollector extends Phase2GroupCollector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    super.setNextReader(reader, docBase);
+  public void setNextReader(AtomicReaderContext context) throws IOException {
+    super.setNextReader(context);
     index = ((StringIndexDocValues)docValues).getDocTermsIndex();
 
     ordSet.clear();

@@ -325,6 +325,15 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   global AttributeSource to each segments TermsEnum. The TermsEnum is consumer
   and gets the current minimum competitive boosts (MTQ.MaxNonCompetitiveBoostAttribute).
 
-* LUCENE-2761: DataInput.readVInt/readVLong and DataOutput.writeVInt/writeVLong
-  are final. If you subclassed this code before to encode variable-length
-  integers in some specialized way, use the Codec API instead.
+* LUCENE-2374: The backwards layer in AttributeImpl was removed. To support correct
+  reflection of AttributeImpl instances, where the reflection was done using deprecated
+  toString() parsing, you have to now override reflectWith() to customize output.
+  toString() is no longer implemented by AttributeImpl, so if you have overridden
+  toString(), port your customization over to reflectWith(). reflectAsString() would
+  then return what toString() did before.
+
+* LUCENE-2236: DefaultSimilarity can no longer be set statically (and dangerously) for the entire JVM.
+  Instead, IndexWriterConfig and IndexSearcher now take a SimilarityProvider.
+  Similarity can now be configured on a per-field basis.
+  Similarity retains only the field-specific relevance methods such as tf() and idf().
+  Methods that apply to the entire query such as coord() and queryNorm() exist in SimilarityProvider.

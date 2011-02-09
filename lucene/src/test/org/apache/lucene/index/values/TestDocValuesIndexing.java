@@ -53,6 +53,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
@@ -87,13 +88,19 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     provider = new DocValuesCodecProvider();
     provider.copyFrom(CodecProvider.getDefault());
   }
+  
+  private Directory newDirectory2() throws IOException {
+    MockDirectoryWrapper newDirectory = newDirectory();
+    newDirectory.setCheckIndexOnClose(false);
+    return newDirectory;
+  }
 
   /*
    * Simple test case to show how to use the API
    */
   public void testDocValuesSimple() throws CorruptIndexException, IOException,
       ParseException {
-    Directory dir = newDirectory();
+    Directory dir = newDirectory2();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
@@ -175,7 +182,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Type second = values.get(1);
     String msg = "[first=" + first.name() + ", second=" + second.name() + "]";
     // index first index
-    Directory d_1 = newDirectory();
+    Directory d_1 = newDirectory2();
     IndexWriter w_1 = new IndexWriter(d_1, writerConfig(random.nextBoolean()));
     indexValues(w_1, valuesPerIndex, first, values, false, 7);
     w_1.commit();
@@ -183,17 +190,17 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     _TestUtil.checkIndex(d_1, w_1.getConfig().getCodecProvider());
 
     // index second index
-    Directory d_2 = newDirectory();
+    Directory d_2 = newDirectory2();
     IndexWriter w_2 = new IndexWriter(d_2, writerConfig(random.nextBoolean()));
     indexValues(w_2, valuesPerIndex, second, values, false, 7);
     w_2.commit();
     assertEquals(valuesPerIndex, w_2.maxDoc());
     _TestUtil.checkIndex(d_2, w_2.getConfig().getCodecProvider());
 
-    Directory target = newDirectory();
+    Directory target = newDirectory2();
     IndexWriter w = new IndexWriter(target, writerConfig(random.nextBoolean()));
-    IndexReader r_1 = IndexReader.open(w_1);
-    IndexReader r_2 = IndexReader.open(w_2);
+    IndexReader r_1 = IndexReader.open(w_1, true);
+    IndexReader r_2 = IndexReader.open(w_2, true);
     if (random.nextBoolean()) {
       w.addIndexes(d_1, d_2);
     } else {
@@ -207,7 +214,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     // check values
 
-    IndexReader merged = IndexReader.open(w);
+    IndexReader merged = IndexReader.open(w, true);
     DocValuesEnum vE_1 = getValuesEnum(getDocValues(r_1, first.name()));
     DocValuesEnum vE_2 = getValuesEnum(getDocValues(r_2, second.name()));
     DocValuesEnum vE_1_merged = getValuesEnum(getDocValues(merged, first.name()));
@@ -243,12 +250,16 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   private IndexWriterConfig writerConfig(boolean useCompoundFile) {
     final IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer());
+    cfg.setMergePolicy(newLogMergePolicy(random));
     MergePolicy mergePolicy = cfg.getMergePolicy();
     if (mergePolicy instanceof LogMergePolicy) {
-      ((LogMergePolicy) mergePolicy).setUseCompoundFile(useCompoundFile);
+      LogMergePolicy policy = ((LogMergePolicy) mergePolicy);
+      policy.setUseCompoundFile(useCompoundFile);
+      policy.setRequireContiguousMerge(true);
     } else if (useCompoundFile) {
       LogMergePolicy policy = new LogDocMergePolicy();
       policy.setUseCompoundFile(useCompoundFile);
+      policy.setRequireContiguousMerge(true);
       cfg.setMergePolicy(policy);
     }
     cfg.setCodecProvider(provider);
@@ -257,7 +268,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void runTestNumerics(IndexWriterConfig cfg, boolean withDeletions)
       throws IOException {
-    Directory d = newDirectory();
+    Directory d = newDirectory2();
     IndexWriter w = new IndexWriter(d, cfg);
     final int numValues = 179 + random.nextInt(151);
     final List<Type> numVariantList = new ArrayList<Type>(NUMERICS);
@@ -268,7 +279,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       OpenBitSet deleted = indexValues(w, numValues, val, numVariantList,
           withDeletions, 7);
       List<Closeable> closeables = new ArrayList<Closeable>();
-      IndexReader r = IndexReader.open(w);
+      IndexReader r = IndexReader.open(w, true);
       final int numRemainingValues = (int) (numValues - deleted.cardinality());
       final int base = r.numDocs() - numRemainingValues;
       switch (val) {
@@ -349,7 +360,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void runTestIndexBytes(IndexWriterConfig cfg, boolean withDeletions)
       throws CorruptIndexException, LockObtainFailedException, IOException {
-    final Directory d = newDirectory();
+    final Directory d = newDirectory2();
     IndexWriter w = new IndexWriter(d, cfg);
     final List<Type> byteVariantList = new ArrayList<Type>(BYTES);
     // run in random order to test if fill works correctly during merges
@@ -361,7 +372,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       int bytesSize = 7 + random.nextInt(128);
       OpenBitSet deleted = indexValues(w, numValues, byteIndexValue,
           byteVariantList, withDeletions, bytesSize);
-      final IndexReader r = IndexReader.open(w);
+      final IndexReader r = IndexReader.open(w, withDeletions);
       assertEquals(0, r.numDeletedDocs());
       final int numRemainingValues = (int) (numValues - deleted.cardinality());
       final int base = r.numDocs() - numRemainingValues;
@@ -460,7 +471,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   private DocValues getDocValues(IndexReader reader, String field)
       throws IOException {
     boolean optimized = reader.isOptimized();
-    reader.isCurrent();
     Fields fields = optimized ? reader.getSequentialSubReaders()[0].fields()
         : MultiFields.getFields(reader);
     switch (random.nextInt(optimized ? 3 : 2)) { // case 2 only if optimized

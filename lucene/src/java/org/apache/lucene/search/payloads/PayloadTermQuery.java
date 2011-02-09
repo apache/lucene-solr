@@ -17,9 +17,9 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -74,10 +74,9 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
-        boolean topScorer) throws IOException {
-      return new PayloadTermSpanScorer((TermSpans) query.getSpans(reader),
-          this, similarity, reader.norms(query.getField()));
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
+      return new PayloadTermSpanScorer((TermSpans) query.getSpans(context),
+          this, similarity, context.reader.norms(query.getField()));
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
@@ -101,12 +100,11 @@ public class PayloadTermQuery extends SpanTermQuery {
         freq = 0.0f;
         payloadScore = 0;
         payloadsSeen = 0;
-        Similarity similarity1 = getSimilarity();
         while (more && doc == spans.doc()) {
           int matchLength = spans.end() - spans.start();
 
-          freq += similarity1.sloppyFreq(matchLength);
-          processPayload(similarity1);
+          freq += similarity.sloppyFreq(matchLength);
+          processPayload(similarity);
 
           more = spans.next();// this moves positions to the next match in this
                               // document

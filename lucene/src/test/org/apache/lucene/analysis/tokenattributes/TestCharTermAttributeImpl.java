@@ -19,7 +19,10 @@ package org.apache.lucene.analysis.tokenattributes;
 
 import org.apache.lucene.analysis.TestToken;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util._TestUtil;
 import java.nio.CharBuffer;
+import java.util.HashMap;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -126,6 +129,15 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertNotSame(buf, copy.buffer());
   }
   
+  public void testAttributeReflection() throws Exception {
+    CharTermAttributeImpl t = new CharTermAttributeImpl();
+    t.append("foobar");
+    _TestUtil.assertAttributeReflection(t, new HashMap<String,Object>() {{
+      put(CharTermAttribute.class.getName() + "#term", "foobar");
+      put(TermToBytesRefAttribute.class.getName() + "#bytes", new BytesRef("foobar"));
+    }});
+  }
+  
   public void testCharSequenceInterface() {
     final String s = "0123456789"; 
     final CharTermAttributeImpl t = new CharTermAttributeImpl();
@@ -215,6 +227,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
       public char charAt(int i) { return longTestString.charAt(i); }
       public int length() { return longTestString.length(); }
       public CharSequence subSequence(int start, int end) { return longTestString.subSequence(start, end); }
+      @Override
       public String toString() { return longTestString; }
     });
     assertEquals("4567890123456"+longTestString, t.toString());

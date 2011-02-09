@@ -124,8 +124,8 @@ public class StatsComponent extends SearchComponent {
 
     StatsInfo si = rb._statsInfo;
 
-    NamedList stats = new SimpleOrderedMap();
-    NamedList stats_fields = new SimpleOrderedMap();
+    NamedList<NamedList<Object>> stats = new SimpleOrderedMap<NamedList<Object>>();
+    NamedList<Object> stats_fields = new SimpleOrderedMap<Object>();
     stats.add("stats_fields", stats_fields);
     for (String field : si.statsFields.keySet()) {
       NamedList stv = si.statsFields.get(field).getStatsValues();
@@ -209,8 +209,8 @@ class SimpleStats {
     return res;
   }
 
-  public NamedList getStatsFields() throws IOException {
-    NamedList<NamedList<Number>> res = new SimpleOrderedMap<NamedList<Number>>();
+  public NamedList<Object> getStatsFields() throws IOException {
+    NamedList<Object> res = new SimpleOrderedMap<Object>();
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
     boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
     if (null != statsFs) {
@@ -221,7 +221,7 @@ class SimpleStats {
         }
         SchemaField sf = searcher.getSchema().getField(f);
         FieldType ft = sf.getType();
-        NamedList stv;
+        NamedList<?> stv;
 
         // Currently, only UnInvertedField can deal with multi-part trie fields
         String prefix = TrieField.getMainValuePrefix(ft);
@@ -243,12 +243,12 @@ class SimpleStats {
     return res;
   }
   
-  public NamedList getFieldCacheStats(String fieldName, String[] facet ) {
+  public NamedList<?> getFieldCacheStats(String fieldName, String[] facet ) {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
 
     FieldCache.DocTermsIndex si = null;
     try {
-      si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), fieldName);
+      si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), fieldName);
     } 
     catch (IOException e) {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
@@ -263,7 +263,7 @@ class SimpleStats {
     for( String f : facet ) {
       ft = searcher.getSchema().getFieldType(f);
       try {
-        si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), f);
+        si = FieldCache.DEFAULT.getTermsIndex(searcher.getIndexReader(), f);
       } 
       catch (IOException e) {
         throw new RuntimeException( "failed to open field cache for: "+f, e );

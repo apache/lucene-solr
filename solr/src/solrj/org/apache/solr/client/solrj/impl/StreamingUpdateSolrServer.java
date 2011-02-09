@@ -173,12 +173,20 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
       }
       catch (Throwable e) {
         handleError( e );
-      } 
+      }
       finally {
-        // remove it from the list of running things...
+
+        // remove it from the list of running things unless we are the last runner and the queue is full...
+        // in which case, the next queue.put() would block and there would be no runners to handle it.
         synchronized (runners) {
-          runners.remove( this );
+          if (runners.size() == 1 && queue.remainingCapacity() == 0) {
+           // keep this runner alive
+           scheduler.execute(this);
+          } else {
+            runners.remove( this );
+          }
         }
+
         log.info( "finished: {}" , this );
         runnerLock.unlock();
       }
@@ -208,7 +216,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
         return super.request( request );
       }
     }
-    
+
     try {
       CountDownLatch tmpLock = lock;
       if( tmpLock != null ) {
@@ -216,18 +224,18 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
       }
 
       queue.put( req );
-      
-        synchronized( runners ) {
-      if( runners.isEmpty() 
-        || (queue.remainingCapacity() < queue.size() 
-         && runners.size() < threadCount) ) 
-      {
+
+      synchronized( runners ) {
+        if( runners.isEmpty()
+                || (queue.remainingCapacity() < queue.size()
+                && runners.size() < threadCount) )
+        {
           Runner r = new Runner();
           scheduler.execute( r );
           runners.add( r );
         }
       }
-    } 
+    }
     catch (InterruptedException e) {
       log.error( "interrupted", e );
       throw new IOException( e.getLocalizedMessage() );

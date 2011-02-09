@@ -19,7 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.DocIdBitSet;
 
 /** 
@@ -38,10 +39,13 @@ public abstract class Filter implements java.io.Serializable {
    * must refer to document IDs for that segment, not for
    * the top-level reader.
    * 
-   * @param reader a {@link IndexReader} instance opened on the index currently
-   *         searched on. The provided reader is always an
-   *         atomic reader, so you can call reader.fields()
-   *         or reader.getDeletedDocs(), for example.
+   * @param context a {@link AtomicReaderContext} instance opened on the index currently
+   *         searched on. Note, it is likely that the provided reader info does not
+   *         represent the whole underlying index i.e. if the index has more than
+   *         one segment the given reader only represents a single segment.
+   *         The provided context is always an atomic context, so you can call 
+   *         {@link IndexReader#fields()} or  {@link IndexReader#getDeletedDocs()}
+   *         on the context's reader, for example.
    *          
    * @return a DocIdSet that provides the documents which should be permitted or
    *         prohibited in search results. <b>NOTE:</b> null can be returned if
@@ -49,5 +53,5 @@ public abstract class Filter implements java.io.Serializable {
    * 
    * @see DocIdBitSet
    */
-  public abstract DocIdSet getDocIdSet(IndexReader reader) throws IOException;
+  public abstract DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException;
 }

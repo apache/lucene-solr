@@ -19,14 +19,14 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
 /**
  * A {@link Collector} which allows running a search with several
  * {@link Collector}s. It offers a static {@link #wrap} method which accepts a
- * list of collectots and wraps them with {@link MultiCollector}, while
+ * list of collectors and wraps them with {@link MultiCollector}, while
  * filtering out the <code>null</code> null ones.
  */
 public class MultiCollector extends Collector {
@@ -108,9 +108,9 @@ public class MultiCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(IndexReader reader, int o) throws IOException {
+  public void setNextReader(AtomicReaderContext context) throws IOException {
     for (Collector c : collectors) {
-      c.setNextReader(reader, o);
+      c.setNextReader(context);
     }
   }
 

@@ -22,6 +22,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
@@ -84,11 +85,11 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
     }
 
     @Override
-    public void finishTerm(BytesRef term, int numDocs) throws IOException {
+    public void finishTerm(BytesRef term, TermStats stats) throws IOException {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void finish(long sumTotalTermFreq) throws IOException {
     }
 
     @Override

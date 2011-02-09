@@ -96,15 +96,16 @@ public class JavaBinCodec {
     FastInputStream dis = FastInputStream.wrap(is);
     version = dis.readByte();
     if (version != VERSION) {
-      throw new RuntimeException("Invalid version or the data in not in 'javabin' format");
+      throw new RuntimeException("Invalid version (expected " + VERSION +
+          ", but " + version + ") or the data in not in 'javabin' format");
     }
     return readVal(dis);
   }
 
 
-  public SimpleOrderedMap readOrderedMap(FastInputStream dis) throws IOException {
+  public SimpleOrderedMap<Object> readOrderedMap(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
-    SimpleOrderedMap nl = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -113,9 +114,9 @@ public class JavaBinCodec {
     return nl;
   }
 
-  public NamedList readNamedList(FastInputStream dis) throws IOException {
+  public NamedList<Object> readNamedList(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<Object>();
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -124,7 +125,7 @@ public class JavaBinCodec {
     return nl;
   }
 
-  public void writeNamedList(NamedList nl) throws IOException {
+  public void writeNamedList(NamedList<?> nl) throws IOException {
     writeTag(nl instanceof SimpleOrderedMap ? ORDERED_MAP : NAMED_LST, nl.size());
     for (int i = 0; i < nl.size(); i++) {
       String name = nl.getName(i);
@@ -218,7 +219,7 @@ public class JavaBinCodec {
   public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
-      writeNamedList((NamedList) val);
+      writeNamedList((NamedList<?>) val);
       return true;
     }
     if (val instanceof SolrDocumentList) { // SolrDocumentList is a List, so must come before List check
@@ -336,7 +337,8 @@ public class JavaBinCodec {
     solrDocs.setStart((Long) list.get(1));
     solrDocs.setMaxScore((Float) list.get(2));
 
-    List l = (List) readVal(dis);
+    @SuppressWarnings("unchecked")
+    List<SolrDocument> l = (List<SolrDocument>) readVal(dis);
     solrDocs.addAll(l);
     return solrDocs;
   }
@@ -344,7 +346,7 @@ public class JavaBinCodec {
   public void writeSolrDocumentList(SolrDocumentList docs)
           throws IOException {
     writeTag(SOLRDOCLST);
-    List l = new ArrayList(3);
+    List<Number> l = new ArrayList<Number>(3);
     l.add(docs.getNumFound());
     l.add(docs.getStart());
     l.add(docs.getMaxScore());
@@ -352,10 +354,10 @@ public class JavaBinCodec {
     writeArray(docs);
   }
 
-  public Map readMap(FastInputStream dis)
+  public Map<Object,Object> readMap(FastInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
-    Map m = new LinkedHashMap();
+    Map<Object,Object> m = new LinkedHashMap<Object,Object>();
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
       Object val = readVal(dis);
@@ -373,8 +375,8 @@ public class JavaBinCodec {
     writeVal(END_OBJ);
   }
 
-  public List readIterator(FastInputStream fis) throws IOException {
-    ArrayList l = new ArrayList();
+  public List<Object> readIterator(FastInputStream fis) throws IOException {
+    ArrayList<Object> l = new ArrayList<Object>();
     while (true) {
       Object o = readVal(fis);
       if (o == END_OBJ) break;
@@ -406,9 +408,9 @@ public class JavaBinCodec {
     }
   }
 
-  public List readArray(FastInputStream dis) throws IOException {
+  public List<Object> readArray(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
-    ArrayList l = new ArrayList(sz);
+    ArrayList<Object> l = new ArrayList<Object>(sz);
     for (int i = 0; i < sz; i++) {
       l.add(readVal(dis));
     }
@@ -603,10 +605,9 @@ public class JavaBinCodec {
   }
 
 
-  public void writeMap(Map val)
-          throws IOException {
+  public void writeMap(Map<?,?> val) throws IOException {
     writeTag(MAP, val.size());
-    for (Map.Entry entry : (Set<Map.Entry>) val.entrySet()) {
+    for (Map.Entry<?,?> entry : val.entrySet()) {
       Object key = entry.getKey();
       if (key instanceof String) {
         writeExternString((String) key);

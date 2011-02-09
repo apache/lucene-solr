@@ -17,14 +17,14 @@
 -->
 
 <config>
-  <!-- Set this to 'false' if you want solr to continue working after it has
-       encountered an severe configuration error.  In a production environment,
-       you may want solr to keep working even if one handler is mis-configured.
-
-       You may also set this to false using by setting the system property:
-         -Dsolr.abortOnConfigurationError=false
-     -->
-  <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
+  
+  <!--
+    Controls what version of Lucene various components of Solr adhere to. Generally, you want
+    to use the latest version to get all bug fixes and improvements. It is highly recommended 
+    that you fully re-index after changing this setting as it can affect both how text is indexed
+    and queried.
+  -->
+  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
 
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
   <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-extras-\d.*\.jar" />
@@ -655,12 +655,6 @@
 
   <requestHandler name="/update/javabin" class="solr.BinaryUpdateRequestHandler" />
 
-  <!--
-   Analysis request handler.  Since Solr 1.3.  Use to returnhow a document is analyzed.  Useful
-   for debugging and as a token server for other types of applications
-   -->
-  <requestHandler name="/analysis" class="solr.AnalysisRequestHandler" />
-
 
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
@@ -721,7 +715,7 @@
       <!-- allow 50% slop on fragment sizes -->
       <float name="hl.regex.slop">0.5</float>
       <!-- a basic sentence pattern -->
-      <str name="hl.regex.pattern">[-\w ,/\n\"']{20,200}</str>
+      <str name="hl.regex.pattern">[-\w ,/\n\&quot;&apos;]{20,200}</str>
     </lst>
    </fragmenter>
 

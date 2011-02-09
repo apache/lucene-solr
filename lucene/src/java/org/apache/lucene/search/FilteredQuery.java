@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -61,7 +62,6 @@ extends Query {
   @Override
   public Weight createWeight(final IndexSearcher searcher) throws IOException {
     final Weight weight = query.createWeight (searcher);
-    final Similarity similarity = query.getSimilarity(searcher);
     return new Weight() {
       private float value;
         
@@ -81,7 +81,7 @@ extends Query {
       }
 
       @Override
-      public Explanation explain (IndexReader ir, int i) throws IOException {
+      public Explanation explain (AtomicReaderContext ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         if (getBoost()!=1) {
           Explanation preBoost = inner;
@@ -111,13 +111,13 @@ extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
+      public Scorer scorer(AtomicReaderContext context, ScorerContext scoreContext)
           throws IOException {
-        final Scorer scorer = weight.scorer(indexReader, true, false);
+        final Scorer scorer = weight.scorer(context, ScorerContext.def());
         if (scorer == null) {
           return null;
         }
-        DocIdSet docIdSet = filter.getDocIdSet(indexReader);
+        DocIdSet docIdSet = filter.getDocIdSet(context);
         if (docIdSet == null) {
           return null;
         }
@@ -126,7 +126,7 @@ extends Query {
           return null;
         }
 
-        return new Scorer(similarity, this) {
+        return new Scorer(this) {
 
           private int doc = -1;
           

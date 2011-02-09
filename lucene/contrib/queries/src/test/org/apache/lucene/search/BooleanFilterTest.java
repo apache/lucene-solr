@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -83,7 +84,7 @@ public class BooleanFilterTest extends LuceneTestCase {
         private void tstFilterCard(String mes, int expected, Filter filt)
         throws Throwable
         {
-          DocIdSetIterator disi = filt.getDocIdSet(reader).iterator();
+          DocIdSetIterator disi = filt.getDocIdSet(new AtomicReaderContext(reader)).iterator();
           int actual = 0;
           while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             actual++;

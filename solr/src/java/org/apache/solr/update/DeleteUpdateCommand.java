@@ -30,6 +30,7 @@ public class DeleteUpdateCommand extends UpdateCommand {
     super("delete", req);
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(commandName);
     sb.append(':');

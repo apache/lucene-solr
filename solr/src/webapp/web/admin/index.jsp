@@ -39,10 +39,10 @@
   </td>
   <td>
     <% if (null != core.getSchemaResource()) { %>
-    [<a href="file/?file=<%=core.getSchemaResource()%>">Schema</a>]
+    [<a href="file/?contentType=text/xml;charset=utf-8&file=<%=core.getSchemaResource()%>">Schema</a>]
     <% }
        if (null != core.getConfigResource()) { %>
-    [<a href="file/?file=<%=core.getConfigResource()%>">Config</a>]
+    [<a href="file/?contentType=text/xml;charset=utf-8&file=<%=core.getConfigResource()%>">Config</a>]
     <% } %>
     [<a href="analysis.jsp?highlight=on">Analysis</a>]
     [<a href="schema.jsp">Schema Browser</a>] <%if(replicationhandler){%>[<a href="replication/index.jsp">Replication</a>]<%}%>

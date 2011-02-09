@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.StringHelper;
@@ -33,7 +34,7 @@ import org.apache.lucene.util.ReaderUtil;
 /**
  * Given a directory and a list of fields, updates the fieldNorms in place for every document.
  * 
- * If Similarity class is specified, uses its lengthNorm method to set norms.
+ * If Similarity class is specified, uses its computeNorm method to set norms.
  * If -n command line argument is used, removed field norms, as if 
  * {@link org.apache.lucene.document.Field.Index}.NO_NORMS was used.
  *
@@ -57,13 +58,13 @@ public class FieldNormModifier {
       System.exit(1);
     }
 
-    Similarity s = null;
+    SimilarityProvider s = null;
 
     if (args[1].equals("-d"))
       args[1] = DefaultSimilarity.class.getName();
 
     try {
-      s = Class.forName(args[1]).asSubclass(Similarity.class).newInstance();
+      s = Class.forName(args[1]).asSubclass(SimilarityProvider.class).newInstance();
     } catch (Exception e) {
       System.err.println("Couldn't instantiate similarity with empty constructor: " + args[1]);
       e.printStackTrace(System.err);
@@ -84,7 +85,7 @@ public class FieldNormModifier {
   
   
   private Directory dir;
-  private Similarity sim;
+  private SimilarityProvider sim;
   
   /**
    * Constructor for code that wishes to use this class programmatically
@@ -93,7 +94,7 @@ public class FieldNormModifier {
    * @param d the Directory to modify
    * @param s the Similarity to use (can be null)
    */
-  public FieldNormModifier(Directory d, Similarity s) {
+  public FieldNormModifier(Directory d, SimilarityProvider s) {
     dir = d;
     sim = s;
   }
@@ -111,7 +112,7 @@ public class FieldNormModifier {
    */
   public void reSetNorms(String field) throws IOException {
     String fieldName = StringHelper.intern(field);
-    
+    Similarity fieldSim = sim.get(field); 
     IndexReader reader = null;
     try {
       reader = IndexReader.open(dir, false);
@@ -119,6 +120,7 @@ public class FieldNormModifier {
       final List<IndexReader> subReaders = new ArrayList<IndexReader>();
       ReaderUtil.gatherSubReaders(subReaders, reader);
 
+      final FieldInvertState invertState = new FieldInvertState();
       for(IndexReader subReader : subReaders) {
         final Bits delDocs = subReader.getDeletedDocs();
 
@@ -143,9 +145,11 @@ public class FieldNormModifier {
           }
         }
 
+        invertState.setBoost(1.0f);
         for (int d = 0; d < termCounts.length; d++) {
           if (delDocs == null || !delDocs.get(d)) {
-            subReader.setNorm(d, fieldName, sim.encodeNormValue(sim.lengthNorm(fieldName, termCounts[d])));
+            invertState.setLength(termCounts[d]);
+            subReader.setNorm(d, fieldName, fieldSim.encodeNormValue(fieldSim.computeNorm(fieldName, invertState)));
           }
         }
       }

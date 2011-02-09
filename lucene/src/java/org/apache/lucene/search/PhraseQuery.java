@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.ArrayList;
 
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -145,7 +146,7 @@ public class PhraseQuery extends Query {
 
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
-      this.similarity = getSimilarity(searcher);
+      this.similarity = searcher.getSimilarityProvider().get(field);
 
       idfExp = similarity.idfExplain(terms, searcher);
       idf = idfExp.getIdf();
@@ -174,10 +175,10 @@ public class PhraseQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
-
+      final IndexReader reader = context.reader;
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
       final Bits delDocs = reader.getDeletedDocs();
       for (int i = 0; i < terms.size(); i++) {
@@ -206,7 +207,7 @@ public class PhraseQuery extends Query {
 
       if (slop == 0) {				  // optimize exact case
         ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
-                                                    reader.norms(field));
+            reader.norms(field));
         if (s.noDocs) {
           return null;
         } else {
@@ -215,12 +216,12 @@ public class PhraseQuery extends Query {
       } else {
         return
           new SloppyPhraseScorer(this, postingsFreqs, similarity, slop,
-                                 reader.norms(field));
+              reader.norms(field));
       }
     }
 
     @Override
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
 
       Explanation result = new Explanation();
@@ -267,7 +268,7 @@ public class PhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = scorer(reader, true, false);
+      Scorer scorer = scorer(context, ScorerContext.def());
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
@@ -287,7 +288,7 @@ public class PhraseQuery extends Query {
       fieldExpl.addDetail(idfExpl);
 
       Explanation fieldNormExpl = new Explanation();
-      byte[] fieldNorms = reader.norms(field);
+      byte[] fieldNorms = context.reader.norms(field);
       float fieldNorm =
         fieldNorms!=null ? similarity.decodeNormValue(fieldNorms[doc]) : 1.0f;
       fieldNormExpl.setValue(fieldNorm);

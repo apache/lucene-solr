@@ -54,7 +54,7 @@ public class TestBoolean2 extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
@@ -92,7 +92,7 @@ public class TestBoolean2 extends LuceneTestCase {
       w.addDocument(doc);
     }
     reader = w.getReader();
-    bigSearcher = new IndexSearcher(reader);
+    bigSearcher = newSearcher(reader);
     w.close();
   }
 
@@ -208,9 +208,9 @@ public class TestBoolean2 extends LuceneTestCase {
   public void testQueries10() throws Exception {
     String queryText = "+w3 +xx +w2 zz";
     int[] expDocNrs = {2, 3};
-    Similarity oldSimilarity = searcher.getSimilarity();
+    SimilarityProvider oldSimilarity = searcher.getSimilarityProvider();
     try {
-      searcher.setSimilarity(new DefaultSimilarity(){
+      searcher.setSimilarityProvider(new DefaultSimilarity(){
         @Override
         public float coord(int overlap, int maxOverlap) {
           return overlap / ((float)maxOverlap - 1);
@@ -218,7 +218,7 @@ public class TestBoolean2 extends LuceneTestCase {
       });
       queriesTest(queryText, expDocNrs);
     } finally {
-      searcher.setSimilarity(oldSimilarity);
+      searcher.setSimilarityProvider(oldSimilarity);
     }
   }
 

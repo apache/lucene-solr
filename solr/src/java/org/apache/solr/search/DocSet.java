@@ -23,6 +23,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 import java.io.IOException;
 
@@ -151,6 +152,7 @@ public interface DocSet /* extends Collection<Integer> */ {
 abstract class DocSetBase implements DocSet {
 
   // Not implemented efficiently... for testing purposes only
+  @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof DocSet)) return false;
     DocSet other = (DocSet)obj;
@@ -246,21 +248,19 @@ abstract class DocSetBase implements DocSet {
 
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-        int offset = 0;
-        SolrIndexReader r = (SolrIndexReader)reader;
-        while (r.getParent() != null) {
-          offset += r.getBase();
-          r = r.getParent();
+      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+        IndexReader reader = context.reader;
+
+        if (context.isTopLevel) {
+          return bs;
         }
 
-        if (r==reader) return bs;
-
-        final int base = offset;
+        final int base = context.docBase;
         final int maxDoc = reader.maxDoc();
         final int max = base + maxDoc;   // one past the max doc in this segment.
 
         return new DocIdSet() {
+          @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int pos=base-1;

@@ -58,6 +58,7 @@ extends SegmentTermDocs  {
     this.proxStreamOrig = proxStream;  // the proxStream will be cloned lazily when nextPosition() is called for the first time
   }
 
+  @Override
   final void seek(TermInfo ti, Term term) throws IOException {
     super.seek(ti, term);
     if (ti != null)
@@ -69,6 +70,7 @@ extends SegmentTermDocs  {
     needToLoadPayload = false;
   }
 
+  @Override
   public final void close() throws IOException {
     super.close();
     if (proxStream != null) proxStream.close();
@@ -100,11 +102,13 @@ extends SegmentTermDocs  {
     return delta;
   }
   
+  @Override
   protected final void skippingDoc() throws IOException {
     // we remember to skip a document lazily
     lazySkipProxCount += freq;
   }
 
+  @Override
   public final boolean next() throws IOException {
     // we remember to skip the remaining positions of the current
     // document lazily
@@ -118,12 +122,14 @@ extends SegmentTermDocs  {
     return false;
   }
 
+  @Override
   public final int read(final int[] docs, final int[] freqs) {
     throw new UnsupportedOperationException("TermPositions does not support processing multiple documents in one call. Use TermDocs instead.");
   }
 
 
   /** Called by super.skipTo(). */
+  @Override
   protected void skipProx(long proxPointer, int payloadLength) throws IOException {
     // we save the pointer, we might have to skip there lazily
     lazySkipPointer = proxPointer;

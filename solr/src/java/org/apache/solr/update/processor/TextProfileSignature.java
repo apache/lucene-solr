@@ -51,12 +51,14 @@ public class TextProfileSignature extends MD5Signature {
   private float quantRate;
   private float minTokenLen;
 
+  @Override
   public void init(SolrParams params) {
     quantRate = params.getFloat("quantRate", 0.01f);
     minTokenLen = params.getInt("minTokenLen", 2);
   }
 
   
+  @Override
   public byte[] getSignature() {
     return super.getSignature();
   }
@@ -144,6 +146,7 @@ public class TextProfileSignature extends MD5Signature {
       this.val = val;
     }
 
+    @Override
     public String toString() {
       return val + " " + cnt;
     }

@@ -30,6 +30,7 @@ public final class FieldInvertState {
   int length;
   int numOverlap;
   int offset;
+  int maxTermFrequency;
   float boost;
   AttributeSource attributeSource;
 
@@ -53,6 +54,7 @@ public final class FieldInvertState {
     length = 0;
     numOverlap = 0;
     offset = 0;
+    maxTermFrequency = 0;
     boost = docBoost;
     attributeSource = null;
   }
@@ -73,6 +75,10 @@ public final class FieldInvertState {
     return length;
   }
 
+  public void setLength(int length) {
+    this.length = length;
+  }
+  
   /**
    * Get the number of terms with <code>positionIncrement == 0</code>.
    * @return the numOverlap
@@ -81,6 +87,10 @@ public final class FieldInvertState {
     return numOverlap;
   }
 
+  public void setNumOverlap(int numOverlap) {
+    this.numOverlap = numOverlap;
+  }
+  
   /**
    * Get end offset of the last processed term.
    * @return the offset
@@ -97,6 +107,19 @@ public final class FieldInvertState {
    */
   public float getBoost() {
     return boost;
+  }
+  
+  public void setBoost(float boost) {
+    this.boost = boost;
+  }
+
+  /**
+   * Get the maximum term-frequency encountered for any term in the field.  A
+   * field containing "the quick brown fox jumps over the lazy dog" would have
+   * a value of 2, because "the" appears twice.
+   */
+  public int getMaxTermFrequency() {
+    return maxTermFrequency;
   }
   
   public AttributeSource getAttributeSource() {

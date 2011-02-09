@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 public class RegexTransformer extends Transformer {
   private static final Logger LOG = LoggerFactory.getLogger(RegexTransformer.class);
 
+  @Override
   @SuppressWarnings("unchecked")
   public Map<String, Object> transformRow(Map<String, Object> row,
                                           Context ctx) {

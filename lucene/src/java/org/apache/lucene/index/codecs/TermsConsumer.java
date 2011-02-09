@@ -38,10 +38,10 @@ public abstract class TermsConsumer {
   public abstract PostingsConsumer startTerm(BytesRef text) throws IOException;
 
   /** Finishes the current term; numDocs must be > 0. */
-  public abstract void finishTerm(BytesRef text, int numDocs) throws IOException;
+  public abstract void finishTerm(BytesRef text, TermStats stats) throws IOException;
 
   /** Called when we are done adding terms to this field */
-  public abstract void finish() throws IOException;
+  public abstract void finish(long sumTotalTermFreq) throws IOException;
 
   /** Return the BytesRef Comparator used to sort terms
    *  before feeding to this API. */
@@ -55,6 +55,8 @@ public abstract class TermsConsumer {
 
     BytesRef term;
     assert termsEnum != null;
+    long sumTotalTermFreq = 0;
+    long sumDF = 0;
 
     if (mergeState.fieldInfo.omitTermFreqAndPositions) {
       if (docsEnum == null) {
@@ -69,9 +71,14 @@ public abstract class TermsConsumer {
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
-          final int numDocs = postingsConsumer.merge(mergeState, docsEnum);
-          if (numDocs > 0) {
-            finishTerm(term, numDocs);
+          final TermStats stats = postingsConsumer.merge(mergeState, docsEnum);
+          if (stats.docFreq > 0) {
+            finishTerm(term, stats);
+            sumDF += stats.docFreq;
+            if (sumDF > 60000) {
+              mergeState.checkAbort.work(sumDF/5.0);
+              sumDF = 0;
+            }
           }
         }
       }
@@ -94,14 +101,20 @@ public abstract class TermsConsumer {
             }
           }
           final PostingsConsumer postingsConsumer = startTerm(term);
-          final int numDocs = postingsConsumer.merge(mergeState, postingsEnum);
-          if (numDocs > 0) {
-            finishTerm(term, numDocs);
+          final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum);
+          if (stats.docFreq > 0) {
+            finishTerm(term, stats);
+            sumTotalTermFreq += stats.totalTermFreq;
+            sumDF += stats.docFreq;
+            if (sumDF > 60000) {
+              mergeState.checkAbort.work(sumDF/5.0);
+              sumDF = 0;
+            }
           }
         }
       }
     }
 
-    finish();
+    finish(sumTotalTermFreq);
   }
 }

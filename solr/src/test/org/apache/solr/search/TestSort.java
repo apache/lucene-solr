@@ -20,7 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.*;
@@ -33,7 +33,9 @@ import java.io.IOException;
 import java.util.*;
 
 public class TestSort extends AbstractSolrTestCase {
+  @Override
   public String getSchemaFile() { return null; }
+  @Override
   public String getSolrConfigFile() { return null; }
 
   Random r = random;
@@ -49,6 +51,7 @@ public class TestSort extends AbstractSolrTestCase {
     String val;
     String val2;
 
+    @Override
     public String toString() {
       return "{id=" +doc + " val1="+val + " val2="+val2 + "}";
     }
@@ -63,8 +66,7 @@ public class TestSort extends AbstractSolrTestCase {
       IndexWriter iw = new IndexWriter(
           dir,
           new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).
-              setOpenMode(IndexWriterConfig.OpenMode.CREATE).
-              setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH)
+              setOpenMode(IndexWriterConfig.OpenMode.CREATE)
       );
       final MyDoc[] mydocs = new MyDoc[ndocs];
 
@@ -106,8 +108,8 @@ public class TestSort extends AbstractSolrTestCase {
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {
           @Override
-          public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-            return randSet(reader.maxDoc());
+          public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+            return randSet(context.reader.maxDoc());
           }
         };
 
@@ -159,9 +161,9 @@ public class TestSort extends AbstractSolrTestCase {
           }
 
           @Override
-          public void setNextReader(IndexReader reader, int docBase) throws IOException {
-            topCollector.setNextReader(reader,docBase);
-            this.docBase = docBase;
+          public void setNextReader(AtomicReaderContext context) throws IOException {
+            topCollector.setNextReader(context);
+            docBase = context.docBase;
           }
 
           @Override

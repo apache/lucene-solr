@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,7 +60,7 @@ final class SegmentMerger {
   
   private int mergedDocs;
 
-  private final CheckAbort checkAbort;
+  private final MergeState.CheckAbort checkAbort;
 
   /** Maximum number of contiguous documents to bulk-copy
       when merging stored fields */
@@ -78,9 +79,9 @@ final class SegmentMerger {
     this.fieldInfos = fieldInfos;
     segment = name;
     if (merge != null) {
-      checkAbort = new CheckAbort(merge, directory);
+      checkAbort = new MergeState.CheckAbort(merge, directory);
     } else {
-      checkAbort = new CheckAbort(null, null) {
+      checkAbort = new MergeState.CheckAbort(null, null) {
         @Override
         public void work(double units) throws MergeAbortedException {
           // do nothing
@@ -266,7 +267,7 @@ final class SegmentMerger {
       // details.
       throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
 
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, new AtomicLong(0));
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null, new AtomicLong(0));
     
     return docCount;
   }
@@ -508,6 +509,7 @@ final class SegmentMerger {
     mergeState.hasPayloadProcessorProvider = payloadProcessorProvider != null;
     mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[mergeState.readerCount];
     mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[mergeState.readerCount];
+    mergeState.checkAbort = checkAbort;
 
     docBase = 0;
     int inputDocBase = 0;
@@ -571,13 +573,6 @@ final class SegmentMerger {
   }
   
   private void mergeNorms() throws IOException {
-    // get needed buffer size by finding the largest segment
-    int bufferSize = 0;
-    for (IndexReader reader : readers) {
-      bufferSize = Math.max(bufferSize, reader.maxDoc());
-    }
-    
-    byte[] normBuffer = null;
     IndexOutput output = null;
     try {
       for (int i = 0, numFieldInfos = fieldInfos.size(); i < numFieldInfos; i++) {
@@ -587,12 +582,15 @@ final class SegmentMerger {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
             output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
           }
-          if (normBuffer == null) {
-            normBuffer = new byte[bufferSize];
-          }
           for (IndexReader reader : readers) {
             final int maxDoc = reader.maxDoc();
-            reader.norms(fi.name, normBuffer, 0);
+            byte normBuffer[] = reader.norms(fi.name);
+            if (normBuffer == null) {
+              // Can be null if this segment doesn't have
+              // any docs with this field
+              normBuffer = new byte[maxDoc];
+              Arrays.fill(normBuffer, (byte)0);
+            }
             if (!reader.hasDeletions()) {
               //optimized case for segments without deleted docs
               output.writeBytes(normBuffer, maxDoc);
@@ -616,31 +614,4 @@ final class SegmentMerger {
       }
     }
   }
-
-  static class CheckAbort {
-    private double workCount;
-    private MergePolicy.OneMerge merge;
-    private Directory dir;
-    public CheckAbort(MergePolicy.OneMerge merge, Directory dir) {
-      this.merge = merge;
-      this.dir = dir;
-    }
-
-    /**
-     * Records the fact that roughly units amount of work
-     * have been done since this method was last called.
-     * When adding time-consuming code into SegmentMerger,
-     * you should test different values for units to ensure
-     * that the time in between calls to merge.checkAborted
-     * is up to ~ 1 second.
-     */
-    public void work(double units) throws MergePolicy.MergeAbortedException {
-      workCount += units;
-      if (workCount >= 10000.0) {
-        merge.checkAborted(dir);
-        workCount = 0;
-      }
-    }
-  }
-  
 }

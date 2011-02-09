@@ -37,20 +37,6 @@ public final class BoostAttributeImpl extends AttributeImpl implements BoostAttr
   public void clear() {
     boost = 1.0f;
   }
-
-  @Override
-  public boolean equals(Object other) {
-    if (this == other)
-      return true;
-    if (other instanceof BoostAttributeImpl)
-      return ((BoostAttributeImpl) other).boost == boost;
-    return false;
-  }
-
-  @Override
-  public int hashCode() {
-    return Float.floatToIntBits(boost);
-  }
   
   @Override
   public void copyTo(AttributeImpl target) {

@@ -40,6 +40,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
+import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -95,7 +96,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     writer.close();
     
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
                                                                 MultiFields.getDeletedDocs(searcher.getIndexReader()),
@@ -243,14 +244,15 @@ public class TestPositionIncrement extends LuceneTestCase {
         "a a b c d e a f g h i j a b k k")));
     writer.addDocument(doc);
 
-    IndexReader r = new SlowMultiReaderWrapper(writer.getReader());
+    final IndexReader readerFromWriter = writer.getReader();
+    SlowMultiReaderWrapper r = new SlowMultiReaderWrapper(readerFromWriter);
 
     DocsAndPositionsEnum tp = r.termPositionsEnum(r.getDeletedDocs(),
                                                      "content",
                                                      new BytesRef("a"));
     
     int count = 0;
-    assertTrue(tp.nextDoc() != tp.NO_MORE_DOCS);
+    assertTrue(tp.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS);
     // "a" occurs 4 times
     assertEquals(4, tp.freq());
     int expected = 0;
@@ -260,9 +262,9 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(6, tp.nextPosition());
 
     // only one doc has "a"
-    assertEquals(tp.NO_MORE_DOCS, tp.nextDoc());
+    assertEquals(DocsAndPositionsEnum.NO_MORE_DOCS, tp.nextDoc());
 
-    IndexSearcher is = new IndexSearcher(r);
+    IndexSearcher is = newSearcher(readerFromWriter);
   
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -274,7 +276,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\ngetPayloadSpans test");
     }
-    Spans pspans = snq.getSpans(is.getIndexReader());
+    Spans pspans = MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
     while (pspans.next()) {
       if (VERBOSE) {
         System.out.println("doc " + pspans.doc() + ": span " + pspans.start()
@@ -289,11 +291,11 @@ public class TestPositionIncrement extends LuceneTestCase {
         }
       }
     }
-    assertEquals(5, count);
     assertTrue(sawZero);
+    assertEquals(5, count);
 
     // System.out.println("\ngetSpans test");
-    Spans spans = snq.getSpans(is.getIndexReader());
+    Spans spans = MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
     count = 0;
     sawZero = false;
     while (spans.next()) {
@@ -308,7 +310,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     // System.out.println("\nPayloadSpanUtil test");
 
     sawZero = false;
-    PayloadSpanUtil psu = new PayloadSpanUtil(is.getIndexReader());
+    PayloadSpanUtil psu = new PayloadSpanUtil(is.getTopReaderContext());
     Collection<byte[]> pls = psu.getPayloadsForQuery(snq);
     count = pls.size();
     for (byte[] bytes : pls) {

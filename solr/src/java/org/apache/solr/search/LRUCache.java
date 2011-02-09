@@ -77,6 +77,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     description += ')';
 
     map = new LinkedHashMap<K,V>(initialSize, 0.75f, true) {
+        @Override
         protected boolean removeEldestEntry(Map.Entry eldest) {
           if (size() > limit) {
             // increment evictions regardless of state.
@@ -277,6 +278,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return lst;
   }
 
+  @Override
   public String toString() {
     return name + getStatistics().toString();
   }

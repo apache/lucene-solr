@@ -121,7 +121,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     try {
     checker.build(core, searcher);
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     Collection<Token> tokens = queryConverter.convert("documemt");
     SpellingOptions spellOpts = new SpellingOptions(tokens, reader);
     SpellingResult result = checker.getSuggestions(spellOpts);
@@ -196,7 +196,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     try {
     checker.build(core, searcher);
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     Collection<Token> tokens = queryConverter.convert("documemt");
     SpellingOptions spellOpts = new SpellingOptions(tokens, reader, 1, false, true, 0.5f, null);
     SpellingResult result = checker.getSuggestions(spellOpts);
@@ -227,6 +227,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   private class TestSpellChecker extends IndexBasedSpellChecker{
+    @Override
     public SpellChecker getSpellChecker(){
       return spellChecker;
     }
@@ -284,8 +285,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     Directory dir = newFSDirectory(altIndexDir);
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).
-            setMaxFieldLength(IndexWriterConfig.UNLIMITED_FIELD_LENGTH)
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
     );
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();
@@ -309,7 +309,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     try {
     checker.build(core, searcher);
 
-    IndexReader reader = searcher.getReader();
+    IndexReader reader = searcher.getIndexReader();
     Collection<Token> tokens = queryConverter.convert("flesh");
     SpellingOptions spellOpts = new SpellingOptions(tokens, reader, 1, false, true, 0.5f, null);
     SpellingResult result = checker.getSuggestions(spellOpts);

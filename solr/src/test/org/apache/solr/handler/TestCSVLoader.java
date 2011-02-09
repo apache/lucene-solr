@@ -41,6 +41,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   String def_charset = "UTF-8";
   File file = new File(filename);
 
+  @Override
   @Before
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
@@ -49,6 +50,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     cleanup();
   }
   
+  @Override
   @After
   public void tearDown() throws Exception {
     // if you override setUp or tearDown, you better call
@@ -76,7 +78,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   void cleanup() {
-    assertU(delQ("id:[100 TO 110]"));
+    assertU(delQ("*:*"));
     assertU(commit());
   }
 

@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
@@ -81,7 +82,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     }
     reader = iw.getReader();
     iw.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
 
     String qtxt = "one";
     // start from 1, so that the 0th doc never matches
@@ -339,8 +340,8 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     }
     
     @Override
-    public void setNextReader(IndexReader reader, int base) {
-      docBase = base;
+    public void setNextReader(AtomicReaderContext context) {
+      docBase = context.docBase;
     }
     
     @Override

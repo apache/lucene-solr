@@ -17,7 +17,7 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
@@ -46,29 +46,37 @@ public class RangeMapFloatFunction extends ValueSource {
     this.defaultVal = def;
   }
 
+  @Override
   public String description() {
     return "map(" + source.description() + "," + min + "," + max + "," + target + ")";
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final DocValues vals =  source.getValues(context, reader);
+  @Override
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final DocValues vals =  source.getValues(context, readerContext);
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         float val = vals.floatVal(doc);
         return (val>=min && val<=max) ? target : (defaultVal == null ? val : defaultVal);
       }
+      @Override
       public int intVal(int doc) {
         return (int)floatVal(doc);
       }
+      @Override
       public long longVal(int doc) {
         return (long)floatVal(doc);
       }
+      @Override
       public double doubleVal(int doc) {
         return (double)floatVal(doc);
       }
+      @Override
       public String strVal(int doc) {
         return Float.toString(floatVal(doc));
       }
+      @Override
       public String toString(int doc) {
         return "map(" + vals.toString(doc) + ",min=" + min + ",max=" + max + ",target=" + target + ")";
       }
@@ -80,6 +88,7 @@ public class RangeMapFloatFunction extends ValueSource {
     source.createWeight(context, searcher);
   }
 
+  @Override
   public int hashCode() {
     int h = source.hashCode();
     h ^= (h << 10) | (h >>> 23);
@@ -93,6 +102,7 @@ public class RangeMapFloatFunction extends ValueSource {
     return h;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (RangeMapFloatFunction.class != o.getClass()) return false;
     RangeMapFloatFunction other = (RangeMapFloatFunction)o;

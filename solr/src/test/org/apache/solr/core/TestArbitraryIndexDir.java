@@ -42,6 +42,7 @@ import org.xml.sax.SAXException;
  */
 public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
 
@@ -58,6 +59,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     ("standard",0,20,"version","2.2");
   }
   
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
 
@@ -99,8 +101,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     Directory dir = newFSDirectory(newDir);
     IndexWriter iw = new IndexWriter(
         dir,
-        new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40)).
-            setMaxFieldLength(1000)
+        new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40))
     );
     Document doc = new Document();
     doc.add(new Field("id", "2", Field.Store.YES, Field.Index.ANALYZED));

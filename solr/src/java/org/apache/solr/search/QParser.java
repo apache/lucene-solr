@@ -63,10 +63,11 @@ public abstract class QParser {
     if (localParams != null) {
       String tagStr = localParams.get(CommonParams.TAG);
       if (tagStr != null) {
-        Map context = req.getContext();
-        Map<String,Collection<Object>> tagMap = (Map<String, Collection<Object>>)req.getContext().get("tags");
+        Map<Object,Object> context = req.getContext();
+        @SuppressWarnings("unchecked")
+        Map<Object,Collection<Object>> tagMap = (Map<Object, Collection<Object>>)req.getContext().get("tags");
         if (tagMap == null) {
-          tagMap = new HashMap<String,Collection<Object>>();
+          tagMap = new HashMap<Object,Collection<Object>>();
           context.put("tags", tagMap);          
         }
         if (tagStr.indexOf(',') >= 0) {
@@ -85,10 +86,10 @@ public abstract class QParser {
   }
 
 
-  private static void addTag(Map tagMap, Object key, Object val) {
-    Collection lst = (Collection)tagMap.get(key);
+  private static void addTag(Map<Object,Collection<Object>> tagMap, Object key, Object val) {
+    Collection<Object> lst = tagMap.get(key);
     if (lst == null) {
-      lst = new ArrayList(2);
+      lst = new ArrayList<Object>(2);
       tagMap.put(key, lst);
     }
     lst.add(val);

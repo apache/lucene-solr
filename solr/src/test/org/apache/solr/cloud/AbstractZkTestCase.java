@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -98,6 +99,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
         + File.separator + "conf" + File.separator + name));
   }
 
+  @Override
   public void tearDown() throws Exception {
     if (DEBUG) {
       printLayout(zkServer.getZkHost());
@@ -124,6 +126,22 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   static void makeSolrZkNode(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
     zkClient.makePath("/solr");
+    zkClient.close();
+  }
+  
+  static void tryCleanSolrZkNode(String zkHost) throws Exception {
+    tryCleanPath(zkHost, "/solr");
+  }
+  
+  static void tryCleanPath(String zkHost, String path) throws Exception {
+    SolrZkClient zkClient = new SolrZkClient(zkHost, TIMEOUT);
+    if (zkClient.exists(path)) {
+      List<String> children = zkClient.getChildren(path, null);
+      for (String string : children) {
+        tryCleanPath(zkHost, path+"/"+string);
+      }
+      zkClient.delete(path, -1);
+    }
     zkClient.close();
   }
 }

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -68,7 +69,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       }
       
       @Override
-      public void setNextReader(IndexReader reader, int docBase) {
+      public void setNextReader(AtomicReaderContext context) {
       }
       
       @Override
@@ -93,10 +94,10 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
       reader = writer.getReader();
       writer.close();
-      searcher = new IndexSearcher(reader);
+      searcher = newSearcher(reader);
       
       // set a similarity that does not normalize our boost away
-      searcher.setSimilarity(new DefaultSimilarity() {
+      searcher.setSimilarityProvider(new DefaultSimilarity() {
         @Override
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f;

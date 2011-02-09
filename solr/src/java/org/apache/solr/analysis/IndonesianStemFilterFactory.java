@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.id.IndonesianStemFilter;
 public class IndonesianStemFilterFactory extends BaseTokenFilterFactory {
   private boolean stemDerivational = true;
 
+  @Override
   public void init(Map<String, String> args) {
     super.init(args);
     stemDerivational = getBoolean("stemDerivational", true);

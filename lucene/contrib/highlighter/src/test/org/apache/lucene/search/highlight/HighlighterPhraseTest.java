@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -69,7 +70,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final PhraseQuery phraseQuery = new PhraseQuery();
         phraseQuery.add(new Term(FIELD, "fox"));
@@ -113,7 +114,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
             new SpanTermQuery(new Term(FIELD, "fox")),
@@ -133,9 +134,9 @@ public class HighlighterPhraseTest extends LuceneTestCase {
           }
 
           @Override
-          public void setNextReader(IndexReader indexreader, int i)
+          public void setNextReader(AtomicReaderContext context)
               throws IOException {
-            this.baseDoc = i;
+            this.baseDoc = context.docBase;
           }
 
           @Override
@@ -183,7 +184,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final PhraseQuery phraseQuery = new PhraseQuery();
         phraseQuery.add(new Term(FIELD, "did"));
@@ -226,7 +227,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final PhraseQuery phraseQuery = new PhraseQuery();
         phraseQuery.add(new Term(FIELD, "did"));
@@ -267,7 +268,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
             new SpanTermQuery(new Term(FIELD, "did")),

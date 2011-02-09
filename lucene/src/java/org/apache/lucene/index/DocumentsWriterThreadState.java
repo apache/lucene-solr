@@ -35,9 +35,8 @@ final class DocumentsWriterThreadState {
   public DocumentsWriterThreadState(DocumentsWriter docWriter) throws IOException {
     this.docWriter = docWriter;
     docState = new DocumentsWriter.DocState();
-    docState.maxFieldLength = docWriter.maxFieldLength;
     docState.infoStream = docWriter.infoStream;
-    docState.similarity = docWriter.similarity;
+    docState.similarityProvider = docWriter.similarityProvider;
     docState.docWriter = docWriter;
     consumer = docWriter.consumer.addThread(this);
   }

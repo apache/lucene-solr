@@ -123,6 +123,7 @@ public final class IntsRef implements Comparable<IntsRef> {
     }
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append('[');

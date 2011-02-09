@@ -82,7 +82,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(docsToAdd, reader.numDocs());
     
     // open search zo check if all doc's are there
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // search for all documents
     for (int i = 0; i < docsToAdd; i++) {
@@ -179,5 +179,23 @@ public class TestRAMDirectory extends LuceneTestCase {
       files[i].delete();
     }
     dir.delete();
+  }
+
+  // LUCENE-2852
+  public void testSeekToEOFThenBack() throws Exception {
+    RAMDirectory dir = new RAMDirectory();
+
+    IndexOutput o = dir.createOutput("out");
+    byte[] bytes = new byte[3*RAMInputStream.BUFFER_SIZE];
+    o.writeBytes(bytes, 0, bytes.length);
+    o.close();
+
+    IndexInput i = dir.openInput("out");
+    i.seek(2*RAMInputStream.BUFFER_SIZE-1);
+    i.seek(3*RAMInputStream.BUFFER_SIZE);
+    i.seek(RAMInputStream.BUFFER_SIZE);
+    i.readBytes(bytes, 0, 2*RAMInputStream.BUFFER_SIZE);
+    i.close();
+    dir.close();
   }
 }

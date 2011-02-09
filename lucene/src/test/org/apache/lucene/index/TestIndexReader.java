@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.SortedSet;
-
+import org.junit.Assume;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,8 +39,10 @@ import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -329,6 +331,7 @@ public class TestIndexReader extends LuceneTestCase
 
         //  add 100 documents with term : aaa
         writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        writer.setInfoStream(VERBOSE ? System.out : null);
         for (int i = 0; i < 100; i++) {
             addDoc(writer, searchTerm.text());
         }
@@ -357,7 +360,7 @@ public class TestIndexReader extends LuceneTestCase
 
         // CREATE A NEW READER and re-test
         reader = IndexReader.open(dir, false);
-        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
+        assertEquals("deleted docFreq", 0, reader.docFreq(searchTerm));
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
         reader.close();
         reader2.close();
@@ -368,7 +371,7 @@ public class TestIndexReader extends LuceneTestCase
         Directory dir = newDirectory();
         byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
         
         for (int i = 0; i < 10; i++) {
           addDoc(writer, "document number " + (i + 1));
@@ -377,7 +380,7 @@ public class TestIndexReader extends LuceneTestCase
           addDocumentWithTermVectorFields(writer);
         }
         writer.close();
-        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setMergePolicy(newInOrderLogMergePolicy()));
         Document doc = new Document();
         doc.add(new Field("bin1", bin));
         doc.add(new Field("junk", "junk text", Field.Store.NO, Field.Index.ANALYZED));
@@ -414,7 +417,7 @@ public class TestIndexReader extends LuceneTestCase
         // force optimize
 
 
-        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setMergePolicy(newInOrderLogMergePolicy()));
         writer.optimize();
         writer.close();
         reader = IndexReader.open(dir, false);
@@ -462,8 +465,9 @@ public class TestIndexReader extends LuceneTestCase
           // expected
         }
 
+        Similarity sim = new DefaultSimilarity().get("aaa");
         try {
-          reader.setNorm(5, "aaa", 2.0f);
+          reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
           fail("setNorm after close failed to throw IOException");
         } catch (AlreadyClosedException e) {
           // expected
@@ -502,8 +506,9 @@ public class TestIndexReader extends LuceneTestCase
           // expected
         }
 
+        Similarity sim = new DefaultSimilarity().get("aaa");
         try {
-          reader.setNorm(5, "aaa", 2.0f);
+          reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
           fail("setNorm should have hit LockObtainFailedException");
         } catch (LockObtainFailedException e) {
           // expected
@@ -533,7 +538,8 @@ public class TestIndexReader extends LuceneTestCase
 
         //  now open reader & set norm for doc 0
         IndexReader reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", (float) 2.0);
+        Similarity sim = new DefaultSimilarity().get("content");
+        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
 
         // we should be holding the write lock now:
         assertTrue("locked", IndexWriter.isLocked(dir));
@@ -547,7 +553,7 @@ public class TestIndexReader extends LuceneTestCase
         IndexReader reader2 = IndexReader.open(dir, false);
 
         // set norm again for doc 0
-        reader.setNorm(0, "content", (float) 3.0);
+        reader.setNorm(0, "content", sim.encodeNormValue(3.0f));
         assertTrue("locked", IndexWriter.isLocked(dir));
 
         reader.close();
@@ -577,15 +583,16 @@ public class TestIndexReader extends LuceneTestCase
         addDoc(writer, searchTerm.text());
         writer.close();
 
+        Similarity sim = new DefaultSimilarity().get("content");
         //  now open reader & set norm for doc 0 (writes to
         //  _0_1.s0)
         reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", (float) 2.0);
+        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
         reader.close();
         
         //  now open reader again & set norm for doc 0 (writes to _0_2.s0)
         reader = IndexReader.open(dir, false);
-        reader.setNorm(0, "content", (float) 2.0);
+        reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
         reader.close();
         assertFalse("failed to remove first generation norms file on writing second generation",
                     dir.fileExists("_0_1.s0"));
@@ -690,7 +697,6 @@ public class TestIndexReader extends LuceneTestCase
 
         // CREATE A NEW READER and re-test
         reader = IndexReader.open(dir, false);
-        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
         assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm2));
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
         assertTermDocsCount("deleted termDocs", reader, searchTerm2, 100);
@@ -831,7 +837,6 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
       IndexReader reader = IndexReader.open(dir, false);
       reader.deleteDocument(0);
-      reader.deleteDocument(1);
       reader.close();
       reader = IndexReader.open(dir, false);
       reader.undeleteAll();
@@ -848,7 +853,6 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
       IndexReader reader = IndexReader.open(dir, false);
       reader.deleteDocument(0);
-      reader.deleteDocument(1);
       reader.close();
       reader = IndexReader.open(dir, false);
       reader.undeleteAll();
@@ -880,6 +884,10 @@ public class TestIndexReader extends LuceneTestCase
       // First build up a starting index:
       MockDirectoryWrapper startDir = newDirectory();
       IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+      if (VERBOSE) {
+        System.out.println("TEST: create initial index");
+        writer.setInfoStream(System.out);
+      }
       for(int i=0;i<157;i++) {
         Document d = new Document();
         d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -889,6 +897,20 @@ public class TestIndexReader extends LuceneTestCase
           writer.commit();
       }
       writer.close();
+
+      {
+        IndexReader r = IndexReader.open(startDir);
+        IndexSearcher searcher = newSearcher(r);
+        ScoreDoc[] hits = null;
+        try {
+          hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+        } catch (IOException e) {
+          e.printStackTrace();
+          fail("exception when init searching: " + e);
+        }
+        searcher.close();
+        r.close();
+      }
 
       long diskUsage = startDir.getRecomputedActualSizeInBytes();
       long diskFree = diskUsage+100;
@@ -947,13 +969,13 @@ public class TestIndexReader extends LuceneTestCase
 
           dir.setMaxSizeInBytes(thisDiskFree);
           dir.setRandomIOExceptionRate(rate);
-
+          Similarity sim = new DefaultSimilarity().get("content");
           try {
             if (0 == x) {
               int docId = 12;
               for(int i=0;i<13;i++) {
                 reader.deleteDocument(docId);
-                reader.setNorm(docId, "content", (float) 2.0);
+                reader.setNorm(docId, "content", sim.encodeNormValue(2.0f));
                 docId += 12;
               }
             }
@@ -974,14 +996,6 @@ public class TestIndexReader extends LuceneTestCase
               fail(testName + " hit IOException after disk space was freed up");
             }
           }
-
-          // Whether we succeeded or failed, check that all
-          // un-referenced files were in fact deleted (ie,
-          // we did not create garbage).  Just create a
-          // new IndexFileDeleter, have it delete
-          // unreferenced files, then verify that in fact
-          // no files were deleted:
-          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
 
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if
@@ -1010,7 +1024,7 @@ public class TestIndexReader extends LuceneTestCase
           }
           */
 
-          IndexSearcher searcher = new IndexSearcher(newReader);
+          IndexSearcher searcher = newSearcher(newReader);
           ScoreDoc[] hits = null;
           try {
             hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
@@ -1110,8 +1124,9 @@ public class TestIndexReader extends LuceneTestCase
       }
 
       reader = IndexReader.open(dir, false);
+      Similarity sim = new DefaultSimilarity().get("content");
       try {
-        reader.setNorm(1, "content", (float) 2.0);
+        reader.setNorm(1, "content", sim.encodeNormValue(2.0f));
         fail("did not hit exception when calling setNorm on an invalid doc number");
       } catch (ArrayIndexOutOfBoundsException e) {
         // expected
@@ -1148,7 +1163,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testMultiReaderDeletes() throws Exception {
       Directory dir = newDirectory();
-      RandomIndexWriter w = new RandomIndexWriter(random, dir);
+      RandomIndexWriter w= new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
       Document doc = new Document();
       doc.add(newField("f", "doctor", Field.Store.NO, Field.Index.NOT_ANALYZED));
       w.addDocument(doc);
@@ -1264,9 +1279,6 @@ public class TestIndexReader extends LuceneTestCase
 
         // Open another reader to confirm that everything is deleted
         reader2 = IndexReader.open(dir, false);
-        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm1));
-        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm2));
-        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm3));
         assertTermDocsCount("reopened 2", reader2, searchTerm1, 0);
         assertTermDocsCount("reopened 2", reader2, searchTerm2, 0);
         assertTermDocsCount("reopened 2", reader2, searchTerm3, 100);
@@ -1860,6 +1872,67 @@ public class TestIndexReader extends LuceneTestCase
     assertFalse(IndexReader.indexExists(dir));
     writer.close();
     assertTrue(IndexReader.indexExists(dir));
+    dir.close();
+  }
+
+  // Make sure totalTermFreq works correctly in the terms
+  // dict cache
+  public void testTotalTermFreqCached() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Document d = new Document();
+    d.add(newField("f", "a a b", Field.Index.ANALYZED));
+    writer.addDocument(d);
+    IndexReader r = writer.getReader();
+    writer.close();
+    Terms terms = MultiFields.getTerms(r, "f");
+    try {
+      // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(terms.totalTermFreq(new BytesRef("b")) != -1);
+      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+      assertEquals(2, terms.totalTermFreq(new BytesRef("a")));
+      assertEquals(1, terms.totalTermFreq(new BytesRef("b")));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+
+  // LUCENE-2474
+  public void testReaderFinishedListener() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
+    writer.setInfoStream(VERBOSE ? System.out : null);
+    writer.addDocument(new Document());
+    writer.commit();
+    writer.addDocument(new Document());
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    final int[] closeCount = new int[1];
+    final IndexReader.ReaderFinishedListener listener = new IndexReader.ReaderFinishedListener() {
+      public void finished(IndexReader reader) {
+        closeCount[0]++;
+      }
+    };
+
+    reader.addReaderFinishedListener(listener);
+
+    reader.close();
+
+    // Just the top reader
+    assertEquals(1, closeCount[0]);
+    writer.close();
+
+    // Now also the subs
+    assertEquals(3, closeCount[0]);
+
+    IndexReader reader2 = IndexReader.open(dir);
+    reader2.addReaderFinishedListener(listener);
+
+    closeCount[0] = 0;
+    reader2.close();
+    assertEquals(3, closeCount[0]);
     dir.close();
   }
 }

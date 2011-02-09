@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 
 import java.io.Reader;
+import java.util.Map;
 
 
 /**
@@ -28,8 +29,14 @@ import java.io.Reader;
 @Deprecated
 public class ArabicLetterTokenizerFactory extends BaseTokenizerFactory{
 
-  public ArabicLetterTokenizer create(Reader input) {
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
     assureMatchVersion();
+    warnDeprecated("Use StandardTokenizerFactory instead.");
+  }
+
+  public ArabicLetterTokenizer create(Reader input) {
     return new ArabicLetterTokenizer(luceneMatchVersion, input);
   }
 }

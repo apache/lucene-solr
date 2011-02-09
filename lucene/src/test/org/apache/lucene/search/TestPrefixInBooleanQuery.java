@@ -75,7 +75,7 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     }
     
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
   
