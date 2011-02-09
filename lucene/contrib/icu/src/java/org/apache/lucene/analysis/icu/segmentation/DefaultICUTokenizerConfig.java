@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.icu.segmentation;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.text.BreakIterator;
 import com.ibm.icu.text.RuleBasedBreakIterator;
@@ -44,20 +46,24 @@ import com.ibm.icu.util.ULocale;
  */
 public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   /** Token type for words containing ideographic characters */
-  public static final String WORD_IDEO = "<IDEOGRAPHIC>";
-  /** Token type for words containing Japanese kana */
-  public static final String WORD_KANA = "<KANA>";
+  public static final String WORD_IDEO = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.IDEOGRAPHIC];
+  /** Token type for words containing Japanese hiragana */
+  public static final String WORD_HIRAGANA = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HIRAGANA];
+  /** Token type for words containing Japanese katakana */
+  public static final String WORD_KATAKANA = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.KATAKANA];
+  /** Token type for words containing Korean hangul  */
+  public static final String WORD_HANGUL = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HANGUL];
   /** Token type for words that contain letters */
-  public static final String WORD_LETTER = "<ALPHANUM>";
+  public static final String WORD_LETTER = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ALPHANUM];
   /** Token type for words that appear to be numbers */
-  public static final String WORD_NUMBER = "<NUM>";
+  public static final String WORD_NUMBER = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.NUM];
   
   /*
    * the default breakiterators in use. these can be expensive to
    * instantiate, cheap to clone.
    */  
   private static final BreakIterator rootBreakIterator = 
-    BreakIterator.getWordInstance(ULocale.ROOT);
+    readBreakIterator("Default.brk");
   private static final BreakIterator thaiBreakIterator = 
     BreakIterator.getWordInstance(new ULocale("th_TH"));
   private static final BreakIterator hebrewBreakIterator = 
@@ -87,9 +93,9 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
       case RuleBasedBreakIterator.WORD_IDEO:
         return WORD_IDEO;
       case RuleBasedBreakIterator.WORD_KANA:
-        return WORD_KANA;
+        return script == UScript.HIRAGANA ? WORD_HIRAGANA : WORD_KATAKANA;
       case RuleBasedBreakIterator.WORD_LETTER:
-        return WORD_LETTER;
+        return script == UScript.HANGUL ? WORD_HANGUL : WORD_LETTER;
       case RuleBasedBreakIterator.WORD_NUMBER:
         return WORD_NUMBER;
       default: /* some other custom code */
