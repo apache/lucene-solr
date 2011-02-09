@@ -194,6 +194,7 @@ class FixedSortedBytesImpl {
         this.size = size;
         this.numValue = numValues;
         index = PackedInts.getReader(idxIn);
+        closeIndexInput();
       }
 
       @Override

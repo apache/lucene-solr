@@ -111,11 +111,11 @@ public abstract class DocValuesProducerBase extends FieldsProducer {
   protected DocValues loadDocValues(int docCount, Directory dir, String id,
       Type type) throws IOException {
     switch (type) {
-    case PACKED_INTS:
+    case INTS:
       return Ints.getValues(dir, id, false);
-    case SIMPLE_FLOAT_4BYTE:
+    case FLOAT_32:
       return Floats.getValues(dir, id, docCount);
-    case SIMPLE_FLOAT_8BYTE:
+    case FLOAT_64:
       return Floats.getValues(dir, id, docCount);
     case BYTES_FIXED_STRAIGHT:
       return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, true, docCount);

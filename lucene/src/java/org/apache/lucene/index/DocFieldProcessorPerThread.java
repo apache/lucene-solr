@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.io.IOException;
 
-import org.apache.lucene.document.AbstractField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
@@ -253,11 +252,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
       final DocFieldProcessorPerField perField = fields[i];
       final Fieldable fieldable = perField.fields[0];
       perField.consumer.processFields(perField.fields, perField.fieldCount);
-     
-      if (!(fieldable instanceof AbstractField)) {
-        continue;
-      }
-      final PerDocFieldValues docValues = ((AbstractField)fieldable).getDocValues();
+      final PerDocFieldValues docValues = fieldable.getDocValues();
       if (docValues == null) {
         continue;
       }

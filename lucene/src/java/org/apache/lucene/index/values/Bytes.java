@@ -54,14 +54,16 @@ import org.apache.lucene.util.PagedBytes;
  * @lucene.experimental
  */
 public final class Bytes {
-  //TODO - add bulk copy where possible
-  private Bytes() {  /* don't instantiate! */ }
+  // TODO - add bulk copy where possible
+  private Bytes() { /* don't instantiate! */
+  }
 
   /**
    * Defines the {@link Writer}s store mode. The writer will either store the
    * bytes sequentially ({@link #STRAIGHT}, dereferenced ({@link #DEREF}) or
    * sorted ({@link #SORTED})
    * 
+   * @lucene.experimental
    */
   public static enum Mode {
     /**
@@ -180,10 +182,10 @@ public final class Bytes {
 
   // TODO open up this API?
   static abstract class BytesBaseSource extends Source {
+    private final PagedBytes pagedBytes;
     protected final IndexInput datIn;
     protected final IndexInput idxIn;
     protected final static int PAGED_BYTES_BITS = 15;
-    private final PagedBytes pagedBytes;
     protected final PagedBytes.Reader data;
     protected final long totalLengthInBytes;
 
@@ -204,11 +206,13 @@ public final class Bytes {
         data.close(); // close data
       } finally {
         try {
-          if (datIn != null)
+          if (datIn != null) {
             datIn.close();
+          }
         } finally {
-          if (idxIn != null) // if straight - no index needed
+          if (idxIn != null) {// if straight - no index needed
             idxIn.close();
+          }
         }
       }
     }
@@ -269,18 +273,27 @@ public final class Bytes {
       return ord == 0 ? null : deref(--ord, bytesRef);
     }
 
-    public void close() throws IOException {
+    protected void closeIndexInput() throws IOException {
       try {
-        if (datIn != null)
+        if (datIn != null) {
           datIn.close();
+        }
       } finally {
-        if (idxIn != null) // if straight
+        if (idxIn != null) {// if straight
           idxIn.close();
+        }
       }
     }
 
+    /**
+     * Returns the largest doc id + 1 in this doc values source
+     */
     protected abstract int maxDoc();
 
+    /**
+     * Copies the value for the given ord to the given {@link BytesRef} and
+     * returns it.
+     */
     protected abstract BytesRef deref(int ord, BytesRef bytesRef);
 
     protected LookupResult binarySearch(BytesRef b, BytesRef bytesRef, int low,
@@ -328,7 +341,6 @@ public final class Bytes {
 
   // TODO: open up this API?!
   static abstract class BytesWriterBase extends Writer {
-
     private final Directory dir;
     private final String id;
     protected IndexOutput idxOut;
@@ -347,10 +359,13 @@ public final class Bytes {
       this.codecName = codecName;
       this.version = version;
       this.pool = pool;
-      if (initData)
+      if (initData) {
         initDataOut();
-      if (initIndex)
+      }
+
+      if (initIndex) {
         initIndexOut();
+      }
     }
 
     private void initDataOut() throws IOException {
@@ -363,10 +378,6 @@ public final class Bytes {
       idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           INDEX_EXTENSION));
       CodecUtil.writeHeader(idxOut, codecName, version);
-    }
-
-    public long ramBytesUsed() {
-      return bytesUsed.get();
     }
 
     /**
@@ -448,14 +459,19 @@ public final class Bytes {
       } else {
         idxIn = null;
       }
-
     }
 
+    /**
+     * clones and returns the data {@link IndexInput}
+     */
     protected final IndexInput cloneData() {
       assert datIn != null;
       return (IndexInput) datIn.clone();
     }
 
+    /**
+     * clones and returns the indexing {@link IndexInput}
+     */
     protected final IndexInput cloneIndex() {
       assert idxIn != null;
       return (IndexInput) idxIn.clone();

@@ -1,4 +1,5 @@
 package org.apache.lucene.index.values;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,30 +17,38 @@ package org.apache.lucene.index.values;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 
 /**
  * {@link Type} specifies the type of the {@link DocValues} for a certain field.
- * A {@link Type} can specify the actual data type for a field, used compression
- * schemes and high-level data-structures.
+ * A {@link Type} only defines the data type for a field while the actual
+ * implemenation used to encode and decode the values depends on the field's
+ * {@link Codec}. It is up to the {@link Codec} implementing
+ * {@link FieldsConsumer#addValuesField(org.apache.lucene.index.FieldInfo)} and
+ * using a different low-level implemenations to write the stored values for a
+ * field.
  * 
  * @lucene.experimental
  */
 public enum Type {
-
-  /**
-   * Integral value is stored as packed ints. The bit precision is fixed across
-   * the segment, and determined by the min/max values in the field.
+  /*
+   * TODO: Add INT_32 INT_64 INT_16 & INT_8?!
    */
-  PACKED_INTS,
   /**
-   * 32 bit floating point value stored without modification or compression.
+   * Integer values.
    */
-  SIMPLE_FLOAT_4BYTE,
+  INTS,
+   
   /**
-   * 64 bit floating point value stored without modification or compression.
+   * 32 bit floating point values.
    */
-  SIMPLE_FLOAT_8BYTE,
+  FLOAT_32,
+  /**
+   * 64 bit floating point values.
+   */
+  FLOAT_64,
 
   // TODO(simonw): -- shouldn't lucene decide/detect straight vs
   // deref, as well fixed vs var?

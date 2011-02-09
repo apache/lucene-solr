@@ -54,7 +54,7 @@ final class DocFieldProcessor extends DocConsumer {
       fieldInfo.setDocValues(values.type());
 
       if(fieldsConsumer == null) {
-        /* nocommit -- this is a hack and only works since DocValuesCodec supports initializing the FieldsConsumer twice.
+        /* TODO (close to no commit) -- this is a hack and only works since DocValuesCodec supports initializing the FieldsConsumer twice.
          * we need to find a way that allows us to obtain a FieldsConsumer per DocumentsWriter. Currently some codecs rely on 
          * the SegmentsWriteState passed in right at the moment when the segment is flushed (doccount etc) but we need the consumer earlier 
          * to support docvalues and later on stored fields too.  
@@ -64,7 +64,6 @@ final class DocFieldProcessor extends DocConsumer {
       }
       valuesConsumer = fieldsConsumer.addValuesField(fieldInfo);
       docValues.put(name, valuesConsumer);
-      
     }
     return valuesConsumer;
 

@@ -197,11 +197,11 @@ public abstract class Writer extends DocValuesConsumer {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     }
     switch (type) {
-    case PACKED_INTS:
+    case INTS:
       return Ints.getWriter(directory, id, true, bytesUsed);
-    case SIMPLE_FLOAT_4BYTE:
+    case FLOAT_32:
       return Floats.getWriter(directory, id, 4, bytesUsed);
-    case SIMPLE_FLOAT_8BYTE:
+    case FLOAT_64:
       return Floats.getWriter(directory, id, 8, bytesUsed);
     case BYTES_FIXED_STRAIGHT:
       return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, true,

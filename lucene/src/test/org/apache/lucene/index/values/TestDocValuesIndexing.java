@@ -43,7 +43,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.docvalues.DocValuesCodec;
+import org.apache.lucene.index.codecs.docvalues.DocValuesCodecProvider;
 import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.queryParser.ParseException;
@@ -79,19 +79,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * 
    */
 
-  private DocValuesCodec docValuesCodec;
   private CodecProvider provider;
 
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    String defaultFieldCodec = CodecProvider.getDefault()
-        .getDefaultFieldCodec();
-    provider = new CodecProvider();
-    docValuesCodec = new DocValuesCodec(CodecProvider.getDefault().lookup(
-        defaultFieldCodec));
-    provider.register(docValuesCodec);
-    provider.setDefaultFieldCodec(docValuesCodec.name);
+    provider = new DocValuesCodecProvider();
+    provider.copyFrom(CodecProvider.getDefault());
   }
 
   /*
@@ -278,7 +272,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       final int numRemainingValues = (int) (numValues - deleted.cardinality());
       final int base = r.numDocs() - numRemainingValues;
       switch (val) {
-      case PACKED_INTS: {
+      case INTS: {
         DocValues intsReader = getDocValues(r, val.name());
         assertNotNull(intsReader);
 
@@ -309,8 +303,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         }
       }
         break;
-      case SIMPLE_FLOAT_4BYTE:
-      case SIMPLE_FLOAT_8BYTE: {
+      case FLOAT_32:
+      case FLOAT_64: {
         DocValues floatReader = getDocValues(r, val.name());
         assertNotNull(floatReader);
         Source floats = getSource(floatReader);
@@ -515,8 +509,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       Type.BYTES_FIXED_SORTED, Type.BYTES_FIXED_STRAIGHT, Type.BYTES_VAR_DEREF,
       Type.BYTES_VAR_SORTED, Type.BYTES_VAR_STRAIGHT);
 
-  private static EnumSet<Type> NUMERICS = EnumSet.of(Type.PACKED_INTS,
-      Type.SIMPLE_FLOAT_4BYTE, Type.SIMPLE_FLOAT_8BYTE);
+  private static EnumSet<Type> NUMERICS = EnumSet.of(Type.INTS,
+      Type.FLOAT_32, Type.FLOAT_64);
 
   private static Index[] IDX_VALUES = new Index[] { Index.ANALYZED,
       Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
@@ -547,11 +541,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     for (int i = 0; i < numValues; i++) {
       if (isNumeric) {
         switch (value) {
-        case PACKED_INTS:
+        case INTS:
           valField.setInt(i);
           break;
-        case SIMPLE_FLOAT_4BYTE:
-        case SIMPLE_FLOAT_8BYTE:
+        case FLOAT_32:
+        case FLOAT_64:
           valField.setFloat(2.0f * i);
           break;
         default:

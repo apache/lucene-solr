@@ -111,7 +111,7 @@ class PackedIntsImpl {
             PackedInts.bitsRequired(maxValue - minValue));
         final int firstDoc = defaultValues.nextSetBit(0);
         lastDocId++;
-        if(firstDoc != -1) { 
+        if (firstDoc != -1) { 
           for (int i = 0; i < firstDoc; i++) {
             w.add(defaultValue); // fill with defaults until first bit set
           }
@@ -223,7 +223,7 @@ class PackedIntsImpl {
 
       @Override
       public Type type() {
-        return Type.PACKED_INTS;
+        return Type.INTS;
       }
     }
 
@@ -240,7 +240,7 @@ class PackedIntsImpl {
 
     @Override
     public Type type() {
-      return Type.PACKED_INTS;
+      return Type.INTS;
     }
 
   }
@@ -255,7 +255,7 @@ class PackedIntsImpl {
 
     private IntsEnumImpl(AttributeSource source, IndexInput dataIn)
         throws IOException {
-      super(source, Type.PACKED_INTS);
+      super(source, Type.INTS);
       intsRef.offset = 0;
       this.dataIn = dataIn;
       dataIn.seek(CodecUtil.headerLength(CODEC_NAME));

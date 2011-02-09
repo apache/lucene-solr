@@ -297,7 +297,7 @@ public class Floats {
       public DocValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
         final MissingValue missing = getMissing();
-        return new SourceEnum(attrSource, Type.SIMPLE_FLOAT_4BYTE, this, maxDoc) {
+        return new SourceEnum(attrSource, Type.FLOAT_32, this, maxDoc) {
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
@@ -315,7 +315,7 @@ public class Floats {
 
       @Override
       public Type type() {
-        return Type.SIMPLE_FLOAT_4BYTE;
+        return Type.FLOAT_32;
       }
     }
 
@@ -355,7 +355,7 @@ public class Floats {
 
       @Override
       public Type type() {
-        return Type.SIMPLE_FLOAT_8BYTE;
+        return Type.FLOAT_64;
       }
     }
 
@@ -377,8 +377,8 @@ public class Floats {
 
     @Override
     public Type type() {
-      return precisionBytes == 4 ? Type.SIMPLE_FLOAT_4BYTE
-          : Type.SIMPLE_FLOAT_8BYTE;
+      return precisionBytes == 4 ? Type.FLOAT_32
+          : Type.FLOAT_64;
     }
   }
 
@@ -386,7 +386,7 @@ public class Floats {
 
     Floats4Enum(AttributeSource source, IndexInput dataIn, int maxDoc)
         throws IOException {
-      super(source, dataIn, 4, maxDoc, Type.SIMPLE_FLOAT_4BYTE);
+      super(source, dataIn, 4, maxDoc, Type.FLOAT_32);
     }
 
     @Override
@@ -422,7 +422,7 @@ public class Floats {
 
     Floats8EnumImpl(AttributeSource source, IndexInput dataIn, int maxDoc)
         throws IOException {
-      super(source, dataIn, 8, maxDoc, Type.SIMPLE_FLOAT_8BYTE);
+      super(source, dataIn, 8, maxDoc, Type.FLOAT_64);
     }
 
     @Override
@@ -464,8 +464,8 @@ public class Floats {
 
     FloatsEnumImpl(AttributeSource source, IndexInput dataIn, int precision,
         int maxDoc, Type type) throws IOException {
-      super(source, precision == 4 ? Type.SIMPLE_FLOAT_4BYTE
-          : Type.SIMPLE_FLOAT_8BYTE);
+      super(source, precision == 4 ? Type.FLOAT_32
+          : Type.FLOAT_64);
       this.dataIn = dataIn;
       this.precision = precision;
       this.maxDoc = maxDoc;

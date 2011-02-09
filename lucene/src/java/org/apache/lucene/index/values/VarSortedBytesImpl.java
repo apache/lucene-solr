@@ -186,6 +186,7 @@ class VarSortedBytesImpl {
         docToOrdIndex = PackedInts.getReader(idxIn);
         ordToOffsetIndex = PackedInts.getReader(idxIn);
         valueCount = ordToOffsetIndex.size();
+        closeIndexInput();
       }
 
       @Override

@@ -326,13 +326,13 @@ public final class FieldInfos {
         b = 0;
       } else {
         switch(fi.docValues) {
-        case PACKED_INTS:
+        case INTS:
           b = 1;
           break;
-        case SIMPLE_FLOAT_4BYTE:
+        case FLOAT_32:
           b = 2;
           break;
-        case SIMPLE_FLOAT_8BYTE:
+        case FLOAT_64:
           b = 3;
           break;
         case BYTES_FIXED_STRAIGHT:
@@ -393,13 +393,13 @@ public final class FieldInfos {
           docValuesType = null;
           break;
         case 1:
-          docValuesType = Type.PACKED_INTS;
+          docValuesType = Type.INTS;
           break;
         case 2:
-          docValuesType = Type.SIMPLE_FLOAT_4BYTE;
+          docValuesType = Type.FLOAT_32;
           break;
         case 3:
-          docValuesType = Type.SIMPLE_FLOAT_8BYTE;
+          docValuesType = Type.FLOAT_64;
           break;
         case 4:
           docValuesType = Type.BYTES_FIXED_STRAIGHT;

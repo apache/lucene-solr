@@ -99,36 +99,36 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
 
   /**
    * Sets the given <code>long</code> value and sets the field's {@link Type} to
-   * {@link Type#PACKED_INTS} unless already set. If you want to change the
+   * {@link Type#INTS} unless already set. If you want to change the
    * default type use {@link #setType(Type)}.
    */
   public void setInt(long value) {
     if (type == null) {
-      type = Type.PACKED_INTS;
+      type = Type.INTS;
     }
     longValue = value;
   }
 
   /**
    * Sets the given <code>float</code> value and sets the field's {@link Type}
-   * to {@link Type#SIMPLE_FLOAT_4BYTE} unless already set. If you want to
+   * to {@link Type#FLOAT_32} unless already set. If you want to
    * change the type use {@link #setType(Type)}.
    */
   public void setFloat(float value) {
     if (type == null) {
-      type = Type.SIMPLE_FLOAT_4BYTE;
+      type = Type.FLOAT_32;
     }
     doubleValue = value;
   }
 
   /**
    * Sets the given <code>double</code> value and sets the field's {@link Type}
-   * to {@link Type#SIMPLE_FLOAT_8BYTE} unless already set. If you want to
+   * to {@link Type#FLOAT_64} unless already set. If you want to
    * change the default type use {@link #setType(Type)}.
    */
   public void setFloat(double value) {
     if (type == null) {
-      type = Type.SIMPLE_FLOAT_8BYTE;
+      type = Type.FLOAT_64;
     }
     doubleValue = value;
   }
@@ -269,13 +269,13 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
           field.stringValue());
       valField.setBytes(ref, type);
       break;
-    case PACKED_INTS:
+    case INTS:
       valField.setInt(Long.parseLong(field.stringValue()));
       break;
-    case SIMPLE_FLOAT_4BYTE:
+    case FLOAT_32:
       valField.setFloat(Float.parseFloat(field.stringValue()));
       break;
-    case SIMPLE_FLOAT_8BYTE:
+    case FLOAT_64:
       valField.setFloat(Double.parseDouble(field.stringValue()));
       break;
     default:

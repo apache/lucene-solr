@@ -332,13 +332,13 @@ public abstract class FieldComparator {
   }
 
   /** Uses float index values to sort by ascending value */
-  public static final class FloatIndexValuesComparator extends FieldComparator {
+  public static final class FloatDocValuesComparator extends FieldComparator {
     private final double[] values;
     private Source currentReaderValues;
     private final String field;
     private double bottom;
 
-    FloatIndexValuesComparator(int numHits, String field) {
+    FloatDocValuesComparator(int numHits, String field) {
       values = new double[numHits];
       this.field = field;
     }
@@ -599,13 +599,13 @@ public abstract class FieldComparator {
   }
 
   /** Loads int index values and sorts by ascending value. */
-  public static final class IntIndexValuesComparator extends FieldComparator {
+  public static final class IntDocValuesComparator extends FieldComparator {
     private final long[] values;
     private Source currentReaderValues;
     private final String field;
     private long bottom;
 
-    IntIndexValuesComparator(int numHits, String field) {
+    IntDocValuesComparator(int numHits, String field) {
       values = new long[numHits];
       this.field = field;
     }

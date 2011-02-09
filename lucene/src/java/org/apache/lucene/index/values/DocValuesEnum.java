@@ -37,7 +37,7 @@ import org.apache.lucene.util.LongsRef;
  * <p>
  * Note: Only the reference for the enum's type are initialized to non
  * <code>null</code> ie. {@link #getInt()} will always return <code>null</code>
- * if the enum's Type is {@link Type#SIMPLE_FLOAT_4BYTE}.
+ * if the enum's Type is {@link Type#FLOAT_32}.
  * 
  * @lucene.experimental
  */
@@ -71,11 +71,11 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
     case BYTES_VAR_STRAIGHT:
       bytesRef = new BytesRef();
       break;
-    case PACKED_INTS:
+    case INTS:
       intsRef = new LongsRef(1);
       break;
-    case SIMPLE_FLOAT_4BYTE:
-    case SIMPLE_FLOAT_8BYTE:
+    case FLOAT_32:
+    case FLOAT_64:
       floatsRef = new FloatsRef(1);
       break;
     }

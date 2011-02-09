@@ -49,7 +49,7 @@ public class DocValuesCodec extends Codec {
   private final Comparator<BytesRef> comparator;
 
   public DocValuesCodec(Codec other, Comparator<BytesRef> comparator) {
-    this.name = "docvalues_" + other.name;
+    this.name = other.name;
     this.other = other;
     this.comparator = comparator;
   }

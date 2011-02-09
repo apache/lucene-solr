@@ -28,12 +28,19 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * TODO
+ * 
  * @see FieldsEnum#docValues()
  * @see Fields#docValues(String)
  * @lucene.experimental
  */
 public abstract class DocValues implements Closeable {
-
+  /*
+   * TODO: it might be useful to add another Random Access enum for some
+   * implementations like packed ints and only return such a random access enum
+   * if the impl supports random access. For super large segments it might be
+   * useful or even required in certain environements to have disc based random
+   * access
+   */
   public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
 
   private SourceCache cache = new SourceCache.DirectSourceCache();
@@ -141,7 +148,9 @@ public abstract class DocValues implements Closeable {
    * <p>
    * Note: All instances previously obtained from {@link #load()} or
    * {@link #loadSorted(Comparator)} will be closed.
-   * @throws IllegalArgumentException if the given cache is <code>null</code>
+   * 
+   * @throws IllegalArgumentException
+   *           if the given cache is <code>null</code>
    * 
    */
   public void setCache(SourceCache cache) {
@@ -162,6 +171,7 @@ public abstract class DocValues implements Closeable {
    * {@link Source} defines 3 {@link Type} //TODO finish this
    */
   public static abstract class Source {
+    // TODO we might need a close method here to null out the internal used arrays?!
     protected final MissingValue missingValue = new MissingValue();
 
     /**

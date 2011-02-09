@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
@@ -162,6 +163,26 @@ public class CodecProvider {
    */
   public synchronized void setDefaultFieldCodec(String codec) {
     defaultFieldCodec = codec;
+  }
+  
+  /**
+   * Registers all codecs from the given provider including the field to codec
+   * mapping and the default field codec.
+   * <p>
+   * NOTE: This method will pass any codec from the given codec to
+   * {@link #register(Codec)} and sets fiels codecs via
+   * {@link #setFieldCodec(String, String)}.
+   */
+  public void copyFrom(CodecProvider other) {
+    final Collection<Codec> values = other.codecs.values();
+    for (Codec codec : values) {
+      register(codec);
+    }
+    final Set<Entry<String, String>> entrySet = other.perFieldMap.entrySet();
+    for (Entry<String, String> entry : entrySet) {
+      setFieldCodec(entry.getKey(), entry.getValue());
+    }
+    setDefaultFieldCodec(other.getDefaultFieldCodec());
   }
 }
 
