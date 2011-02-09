@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class BoostAttributeImpl extends AttributeImpl 
 				implements BoostAttribute {
 
-  private static final long serialVersionUID = -2104763012523049527L;
-
   private float boost = 1.0f;
 
   public BoostAttributeImpl() {

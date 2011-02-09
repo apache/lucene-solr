@@ -30,6 +30,10 @@ import java.util.*;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
+  public static final String FOO_STRING_FIELD = "foo_s1";
+  public static final String SMALL_STRING_FIELD = "small_s1";
+  public static final String SMALL_INT_FIELD = "small_i";
+
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema12.xml");
@@ -376,9 +380,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
       types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));  // field used to score
       types.add(new FldType("foo_i",ZERO_ONE, new IRange(0,indexSize)));
-      types.add(new FldType("foo_s",ZERO_ONE, new SVal('a','z',1,2)));
-      types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
-      types.add(new FldType("small_i",ZERO_ONE, new IRange(0,5+indexSize/10)));
+      types.add(new FldType(FOO_STRING_FIELD,ZERO_ONE, new SVal('a','z',1,2)));
+      types.add(new FldType(SMALL_STRING_FIELD,ZERO_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
+      types.add(new FldType(SMALL_INT_FIELD,ZERO_ONE, new IRange(0,5+indexSize/10)));
 
       clearIndex();
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
@@ -389,36 +393,36 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         clearIndex();
         model.clear();
         Doc d1 = createDoc(types);
-        d1.getValues("small_s").set(0,"c");
-        d1.getValues("small_i").set(0,5);
+        d1.getValues(SMALL_STRING_FIELD).set(0,"c");
+        d1.getValues(SMALL_INT_FIELD).set(0,5);
         d1.order = 0;
         updateJ(toJSON(d1), params("commit","true"));
         model.put(d1.id, d1);
 
         d1 = createDoc(types);
-        d1.getValues("small_s").set(0,"b");
-        d1.getValues("small_i").set(0,5);
+        d1.getValues(SMALL_STRING_FIELD).set(0,"b");
+        d1.getValues(SMALL_INT_FIELD).set(0,5);
         d1.order = 1;
         updateJ(toJSON(d1), params("commit","false"));
         model.put(d1.id, d1);
 
         d1 = createDoc(types);
-        d1.getValues("small_s").set(0,"c");
-        d1.getValues("small_i").set(0,5);
+        d1.getValues(SMALL_STRING_FIELD).set(0,"c");
+        d1.getValues(SMALL_INT_FIELD).set(0,5);
         d1.order = 2;
         updateJ(toJSON(d1), params("commit","false"));
         model.put(d1.id, d1);
 
         d1 = createDoc(types);
-        d1.getValues("small_s").set(0,"c");
-        d1.getValues("small_i").set(0,5);
+        d1.getValues(SMALL_STRING_FIELD).set(0,"c");
+        d1.getValues(SMALL_INT_FIELD).set(0,5);
         d1.order = 3;
         updateJ(toJSON(d1), params("commit","false"));
         model.put(d1.id, d1);
 
         d1 = createDoc(types);
-        d1.getValues("small_s").set(0,"b");
-        d1.getValues("small_i").set(0,2);
+        d1.getValues(SMALL_STRING_FIELD).set(0,"b");
+        d1.getValues(SMALL_INT_FIELD).set(0,2);
         d1.order = 4;
         updateJ(toJSON(d1), params("commit","true"));
         model.put(d1.id, d1);
@@ -447,11 +451,11 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         
          // Test specific case
         if (false) {
-          groupField="small_i";
-          sortComparator=createComparator(Arrays.asList(createComparator("small_s", true, true, false, true)));
-          sortStr = "small_s asc";
-          groupComparator = createComparator(Arrays.asList(createComparator("small_s", true, true, false, false)));
-          groupSortStr = "small_s asc";
+          groupField=SMALL_INT_FIELD;
+          sortComparator=createComparator(Arrays.asList(createComparator(SMALL_STRING_FIELD, true, true, false, true)));
+          sortStr = SMALL_STRING_FIELD + " asc";
+          groupComparator = createComparator(Arrays.asList(createComparator(SMALL_STRING_FIELD, true, true, false, false)));
+          groupSortStr = SMALL_STRING_FIELD + " asc";
           rows=1; start=0; group_offset=1; group_limit=1;
         }
 
@@ -526,8 +530,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       Map<String,Object> resultSet = new LinkedHashMap<String,Object>();
       group.put("doclist", resultSet);
       resultSet.put("numFound", grp.docs.size());
-      resultSet.put("start", start);
-
+      resultSet.put("start", group_offset);
       List docs = new ArrayList();
       resultSet.put("docs", docs);
       for (int j=group_offset; j<grp.docs.size(); j++) {

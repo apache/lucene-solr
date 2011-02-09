@@ -239,7 +239,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
@@ -293,7 +293,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       throws IOException {
     IndexWriterConfig conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-            .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne);
+            .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newLogMergePolicy());
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);

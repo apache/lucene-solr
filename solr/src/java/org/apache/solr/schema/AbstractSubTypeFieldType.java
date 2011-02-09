@@ -103,6 +103,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
   /**
    * Throws UnsupportedOperationException()
    */
+  @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     throw new UnsupportedOperationException();
   }

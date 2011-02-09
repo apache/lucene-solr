@@ -91,6 +91,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
   protected StringDistance sd;
 
+  @Override
   public String init(NamedList config, SolrCore core) {
     super.init(config, core);
     indexDir = (String) config.get(INDEX_DIR);
@@ -213,6 +214,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     return reader;
   }
 
+  @Override
   public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     spellChecker.setSpellIndex(index);
 

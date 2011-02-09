@@ -100,33 +100,40 @@ public class RandomSortField extends FieldType {
 
 
   private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {
+    @Override
     public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
       return new FieldComparator() {
         int seed;
         private final int[] values = new int[numHits];
         int bottomVal;
 
+        @Override
         public int compare(int slot1, int slot2) {
           return values[slot1] - values[slot2];  // values will be positive... no overflow possible.
         }
 
+        @Override
         public void setBottom(int slot) {
           bottomVal = values[slot];
         }
 
+        @Override
         public int compareBottom(int doc) throws IOException {
           return bottomVal - hash(doc+seed);
         }
 
+        @Override
         public void copy(int slot, int doc) throws IOException {
           values[slot] = hash(doc+seed);
         }
 
+        @Override
         public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
           seed = getSeed(fieldname, context);
           return this;
         }
 
+        @Override
         public Comparable value(int slot) {
           return values[slot];
         }

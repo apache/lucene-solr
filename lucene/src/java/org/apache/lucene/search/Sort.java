@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.util.Arrays;
 
 
@@ -97,8 +96,7 @@ import java.util.Arrays;
  *
  * @since   lucene 1.4
  */
-public class Sort
-implements Serializable {
+public class Sort {
 
   /**
    * Represents sorting by computed relevance. Using this sort criteria returns

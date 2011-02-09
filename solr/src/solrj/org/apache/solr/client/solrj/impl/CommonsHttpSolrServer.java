@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -62,6 +61,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * The {@link CommonsHttpSolrServer} uses the Apache Commons HTTP Client to connect to solr. 
+ * <pre class="prettyprint" >SolrServer server = new CommonsHttpSolrServer( url );</pre>
  * 
  * @version $Id$
  * @since solr 1.3
@@ -335,11 +336,11 @@ public class CommonsHttpSolrServer extends SolrServer
                     @Override
                     protected void sendData(OutputStream out)
                         throws IOException {
-                      Reader reader = c.getReader();
+                      InputStream in = c.getStream();
                       try {
-                        IOUtils.copy(reader, out);
+                        IOUtils.copy(in, out);
                       } finally {
-                        reader.close();
+                        in.close();
                       }
                     }
                   });

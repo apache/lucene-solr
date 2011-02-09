@@ -48,7 +48,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     final RandomIndexWriter writer = new RandomIndexWriter(random, mDirectory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
             MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
-            .setOpenMode(OpenMode.APPEND));
+                                                           .setOpenMode(OpenMode.APPEND).setMergePolicy(newInOrderLogMergePolicy()));
     addDocument(writer, "A", "Should we, could we, would we?");
     addDocument(writer, "B", "It should.  Should it?");
     addDocument(writer, "C", "It shouldn't.");
@@ -57,7 +57,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     writer.close();
     
     // re-open the searcher since we added more docs
-    searcher2 = new IndexSearcher(reader2);
+    searcher2 = newSearcher(reader2);
   }
   
   @Override

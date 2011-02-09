@@ -42,6 +42,7 @@ public class QueryValueSource extends ValueSource {
   public Query getQuery() { return q; }
   public float getDefaultValue() { return defVal; }
 
+  @Override
   public String description() {
     return "query(" + q + ",def=" + defVal + ")";
   }
@@ -51,10 +52,12 @@ public class QueryValueSource extends ValueSource {
     return new QueryDocValues(readerContext, q, defVal, fcontext);
   }
 
+  @Override
   public int hashCode() {
     return q.hashCode() * 29;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (QueryValueSource.class != o.getClass()) return false;
     QueryValueSource other = (QueryValueSource)o;
@@ -97,11 +100,11 @@ class QueryDocValues extends DocValues {
     if (w == null) {
       IndexSearcher weightSearcher;
       if(fcontext == null) {
-        weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext), readerContext);
+        weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
       } else {
         weightSearcher = (IndexSearcher)fcontext.get("searcher");
         if (weightSearcher == null) {
-          weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext), readerContext);
+          weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
         }
       }
       w = q.weight(weightSearcher);
@@ -109,6 +112,7 @@ class QueryDocValues extends DocValues {
     weight = w;
   }
 
+  @Override
   public float floatVal(int doc) {
     try {
       if (doc < lastDocRequested) {
@@ -135,18 +139,23 @@ class QueryDocValues extends DocValues {
     }
   }  
 
+  @Override
   public int intVal(int doc) {
     return (int)floatVal(doc);
   }
+  @Override
   public long longVal(int doc) {
     return (long)floatVal(doc);
   }
+  @Override
   public double doubleVal(int doc) {
     return (double)floatVal(doc);
   }
+  @Override
   public String strVal(int doc) {
     return Float.toString(floatVal(doc));
   }
+  @Override
   public String toString(int doc) {
     return "query(" + q + ",def=" + defVal + ")=" + floatVal(doc);
   }

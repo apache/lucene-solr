@@ -41,6 +41,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
 
   private final String FN = "field";
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
@@ -81,10 +82,11 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     field.setValue("\uFFFD\uFFFD");
     writer.addDocument(doc);
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
 
+  @Override
   public void tearDown() throws Exception {
     searcher.close();
     reader.close();

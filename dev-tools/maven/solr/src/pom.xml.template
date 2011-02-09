@@ -48,7 +48,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
+      <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

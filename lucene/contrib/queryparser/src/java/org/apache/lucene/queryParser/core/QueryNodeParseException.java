@@ -33,8 +33,6 @@ import org.apache.lucene.queryParser.core.parser.SyntaxParser;
  */
 public class QueryNodeParseException extends QueryNodeException {
 
-  private static final long serialVersionUID = 8197535103538766773L;
-
   private CharSequence query;
 
   private int beginColumn = -1;

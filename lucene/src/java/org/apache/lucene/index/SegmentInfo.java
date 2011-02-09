@@ -66,11 +66,11 @@ public final class SegmentInfo {
 
   private boolean isCompoundFile;         
 
-  private List<String> files;                     // cached list of files that this segment uses
+  private volatile List<String> files;                     // cached list of files that this segment uses
                                                   // in the Directory
 
-  private long sizeInBytesNoStore = -1;           // total byte size of all but the store files (computed on demand)
-  private long sizeInBytesWithStore = -1;         // total byte size of all of our files (computed on demand)
+  private volatile long sizeInBytesNoStore = -1;           // total byte size of all but the store files (computed on demand)
+  private volatile long sizeInBytesWithStore = -1;         // total byte size of all of our files (computed on demand)
 
   private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
@@ -94,6 +94,10 @@ public final class SegmentInfo {
   // specific versions afterwards ("3.0", "3.1" etc.).
   // see Constants.LUCENE_MAIN_VERSION.
   private String version;
+
+  // NOTE: only used in-RAM by IW to track buffered deletes;
+  // this is never written to/read from the Directory
+  private long bufferedDeletesGen;
   
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
                      boolean hasProx, SegmentCodecs segmentCodecs, boolean hasVectors) {
@@ -241,24 +245,31 @@ public final class SegmentInfo {
    */
   public long sizeInBytes(boolean includeDocStores) throws IOException {
     if (includeDocStores) {
-      if (sizeInBytesWithStore != -1) return sizeInBytesWithStore;
-      sizeInBytesWithStore = 0;
+      if (sizeInBytesWithStore != -1) {
+        return sizeInBytesWithStore;
+      }
+      long sum = 0;
       for (final String fileName : files()) {
-        // We don't count bytes used by a shared doc store against this segment
+        // We don't count bytes used by a shared doc store
+        // against this segment
         if (docStoreOffset == -1 || !IndexFileNames.isDocStoreFile(fileName)) {
-          sizeInBytesWithStore += dir.fileLength(fileName);
+          sum += dir.fileLength(fileName);
         }
       }
+      sizeInBytesWithStore = sum;
       return sizeInBytesWithStore;
     } else {
-      if (sizeInBytesNoStore != -1) return sizeInBytesNoStore;
-      sizeInBytesNoStore = 0;
+      if (sizeInBytesNoStore != -1) {
+        return sizeInBytesNoStore;
+      }
+      long sum = 0;
       for (final String fileName : files()) {
         if (IndexFileNames.isDocStoreFile(fileName)) {
           continue;
         }
-        sizeInBytesNoStore += dir.fileLength(fileName);
+        sum += dir.fileLength(fileName);
       }
+      sizeInBytesNoStore = sum;
       return sizeInBytesNoStore;
     }
   }
@@ -672,5 +683,12 @@ public final class SegmentInfo {
   public String getVersion() {
     return version;
   }
-  
+
+  long getBufferedDeletesGen() {
+    return bufferedDeletesGen;
+  }
+
+  void setBufferedDeletesGen(long v) {
+    bufferedDeletesGen = v;
+  }
 }

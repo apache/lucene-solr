@@ -82,7 +82,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     }
     reader = iw.getReader();
     iw.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
 
     String qtxt = "one";
     // start from 1, so that the 0th doc never matches

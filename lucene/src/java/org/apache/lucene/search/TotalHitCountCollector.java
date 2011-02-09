@@ -31,16 +31,20 @@ public class TotalHitCountCollector extends Collector {
     return totalHits;
   }
 
+  @Override
   public void setScorer(Scorer scorer) {
   }
 
+  @Override
   public void collect(int doc) {
     totalHits++;
   }
 
+  @Override
   public void setNextReader(AtomicReaderContext context) {
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }

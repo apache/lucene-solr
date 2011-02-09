@@ -33,8 +33,6 @@ import org.apache.lucene.queryParser.core.util.StringUtils;
  */
 public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
-  private static final long serialVersionUID = 5569870883474845989L;
-
   /* index default field */
   // TODO remove PLAINTEXT_FIELD_NAME replacing it with configuration APIs
   public static final String PLAINTEXT_FIELD_NAME = "_plain";

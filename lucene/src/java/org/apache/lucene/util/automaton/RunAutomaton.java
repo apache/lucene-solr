@@ -29,14 +29,12 @@
 
 package org.apache.lucene.util.automaton;
 
-import java.io.Serializable;
-
 /**
  * Finite-state automaton with fast run operation.
  * 
  * @lucene.experimental
  */
-public abstract class RunAutomaton implements Serializable {
+public abstract class RunAutomaton {
   final int maxInterval;
   final int size;
   final boolean[] accept;
@@ -45,7 +43,6 @@ public abstract class RunAutomaton implements Serializable {
                      // getCharClass(c)]
   final int[] points; // char interval start points
   final int[] classmap; // map from char number to class class
-  final Automaton automaton;
   
   /**
    * Returns a string representation of this automaton.
@@ -113,13 +110,6 @@ public abstract class RunAutomaton implements Serializable {
   final int getCharClass(int c) {
     return SpecialOperations.findIndex(c, points);
   }
-  
-  /**
-   * @return the automaton
-   */
-  public Automaton getAutomaton() {
-    return automaton;
-  }
 
   /**
    * Constructs a new <code>RunAutomaton</code> from a deterministic
@@ -160,7 +150,6 @@ public abstract class RunAutomaton implements Serializable {
     } else {
       classmap = null;
     }
-    this.automaton = a;
   }
   
   /**

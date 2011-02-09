@@ -22,11 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.AutomatonTermsEnum.CompiledAutomaton;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.MinimizationOperations;
@@ -56,9 +55,16 @@ public class AutomatonQuery extends MultiTermQuery {
   /** term containing the field, and possibly some pattern structure */
   protected final Term term;
 
-  transient ByteRunAutomaton runAutomaton;
-  transient boolean isFinite;
-  transient BytesRef commonSuffixRef;
+  /** 
+   * abstraction for returning a termsenum:
+   * in the ctor the query computes one of these, the actual
+   * implementation depends upon the automaton's structure.
+   */
+  private abstract class TermsEnumFactory {
+    protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
+  }
+  
+  private final TermsEnumFactory factory;
 
   /**
    * Create a new AutomatonQuery from an {@link Automaton}.
@@ -68,60 +74,77 @@ public class AutomatonQuery extends MultiTermQuery {
    * @param automaton Automaton to run, terms that are accepted are considered a
    *        match.
    */
-  public AutomatonQuery(Term term, Automaton automaton) {
+  public AutomatonQuery(final Term term, Automaton automaton) {
     super(term.field());
     this.term = term;
     this.automaton = automaton;
     MinimizationOperations.minimize(automaton);
-  }
-
-  private synchronized void compileAutomaton() {
-    // this method must be synchronized, as setting the three transient fields is not atomic:
-    if (runAutomaton == null) {
-      runAutomaton = new ByteRunAutomaton(automaton);
-      isFinite = SpecialOperations.isFinite(automaton);
-      commonSuffixRef = isFinite ? null : SpecialOperations.getCommonSuffixBytesRef(runAutomaton.getAutomaton());
+    
+    if (BasicOperations.isEmpty(automaton)) {
+      // matches nothing
+      factory = new TermsEnumFactory() {
+        @Override
+        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+          return TermsEnum.EMPTY;
+        }
+      };
+    } else if (BasicOperations.isTotal(automaton)) {
+      // matches all possible strings
+      factory = new TermsEnumFactory() {
+        @Override
+        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+          return terms.iterator();
+        }
+      };
+    } else {
+      final String singleton;
+      final String commonPrefix;
+      
+      if (automaton.getSingleton() == null) {
+        commonPrefix = SpecialOperations.getCommonPrefix(automaton);
+        if (commonPrefix.length() > 0 && BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
+          singleton = commonPrefix;
+        } else {
+          singleton = null;
+        }
+      } else {
+        commonPrefix = null;
+        singleton = automaton.getSingleton();
+      }
+      
+      if (singleton != null) {
+        // matches a fixed string in singleton or expanded representation
+        factory = new TermsEnumFactory() {
+          @Override
+          protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+            return new SingleTermsEnum(terms.iterator(), term.createTerm(singleton));
+          }
+        };
+      } else if (BasicOperations.sameLanguage(automaton, BasicOperations.concatenate(
+          BasicAutomata.makeString(commonPrefix), BasicAutomata.makeAnyString()))) {
+        // matches a constant prefix
+        factory = new TermsEnumFactory() {
+          @Override
+          protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+            return new PrefixTermsEnum(terms.iterator(), term.createTerm(commonPrefix));
+          }
+        };
+      } else {
+        final AutomatonTermsEnum.CompiledAutomaton compiled = 
+          new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton));
+        factory = new TermsEnumFactory() {
+          @Override
+          protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+            return new AutomatonTermsEnum(terms.iterator(), compiled);
+          }
+        };
+      }
     }
   }
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    // matches nothing
-    if (BasicOperations.isEmpty(automaton)) {
-      return TermsEnum.EMPTY;
-    }
-    
-    TermsEnum tenum = terms.iterator();
-    
-    // matches all possible strings
-    if (BasicOperations.isTotal(automaton)) {
-      return tenum;
-    }
-    
-    // matches a fixed string in singleton representation
-    String singleton = automaton.getSingleton();
-    if (singleton != null)
-      return new SingleTermsEnum(tenum, term.createTerm(singleton));
-
-    // matches a fixed string in expanded representation
-    final String commonPrefix = SpecialOperations.getCommonPrefix(automaton);
-
-    if (commonPrefix.length() > 0) {
-      if (BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
-        return new SingleTermsEnum(tenum, term.createTerm(commonPrefix));
-      }
-    
-      // matches a constant prefix
-      Automaton prefixAutomaton = BasicOperations.concatenate(BasicAutomata
-                                                              .makeString(commonPrefix), BasicAutomata.makeAnyString());
-      if (BasicOperations.sameLanguage(automaton, prefixAutomaton)) {
-        return new PrefixTermsEnum(tenum, term.createTerm(commonPrefix));
-      }
-    }
-
-    compileAutomaton();
-    
-    return new AutomatonTermsEnum(runAutomaton, tenum, isFinite, commonSuffixRef);
+    return factory.getTermsEnum(terms, atts);
   }
 
   @Override

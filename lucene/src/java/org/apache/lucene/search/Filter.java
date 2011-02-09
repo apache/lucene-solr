@@ -27,7 +27,7 @@ import org.apache.lucene.util.DocIdBitSet;
  *  Abstract base class for restricting which documents may
  *  be returned during searching.
  */
-public abstract class Filter implements java.io.Serializable {
+public abstract class Filter {
   
   /**
    * Creates a {@link DocIdSet} enumerating the documents that should be

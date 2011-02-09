@@ -402,8 +402,8 @@
    <field name="text" type="text" indexed="true" stored="false"/>
    <field name="subject" type="text" indexed="true" stored="true"/>
    <field name="title" type="nametext" indexed="true" stored="true"/>
-   <field name="weight" type="float" indexed="true" stored="true"/>
-   <field name="bday" type="date" indexed="true" stored="true"/>
+   <field name="weight" type="float" indexed="true" stored="true" multiValued="false"/>
+   <field name="bday" type="date" indexed="true" stored="true" multiValued="false"/>
 
    <field name="title_stemmed" type="text" indexed="true" stored="false"/>
    <field name="title_lettertok" type="lettertok" indexed="true" stored="false"/>
@@ -480,9 +480,10 @@
 
    <field name="numberpartfail" type="failtype1" indexed="true" stored="true"/>
 
-   <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true"/>
+   <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true" multiValued="false"/>
 
    <field name="subword" type="subword" indexed="true" stored="true"/>
+   <field name="subword_offsets" type="subword" indexed="true" stored="true" termOffsets="true"/>
    <field name="numericsubword" type="numericsubword" indexed="true" stored="true"/>
    <field name="protectedsubword" type="protectedsubword" indexed="true" stored="true"/>
 
@@ -507,27 +508,40 @@
         both match, the first appearing in the schema will be used.
    -->
    <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
+   <dynamicField name="*_i1"  type="int"    indexed="true" stored="true" multiValued="false"/>
+                 
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_s1"  type="string"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
+   <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
    <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
+   <dynamicField name="*_f1"  type="float"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
+   <dynamicField name="*_d1"  type="double" indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+   <dynamicField name="*_dt1" type="date"    indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
 
       <!-- some trie-coded dynamic fields for faster range queries -->
    <dynamicField name="*_ti" type="tint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_ti1" type="tint"    indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_tl" type="tlong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tl1" type="tlong"   indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_tf" type="tfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_tf1" type="tfloat"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_td" type="tdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_td1" type="tdouble" indexed="true" stored="true" multiValued="false"/>
    <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
+   <dynamicField name="*_tdt1" type="tdate"  indexed="true"  stored="true" multiValued="false"/>
 
-   <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true"/>
+   <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_sl"  type="slong"  indexed="true"  stored="true"/>
    <dynamicField name="*_sf"  type="sfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_sf1"  type="sfloat"  indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_sd"  type="sdouble"  indexed="true"  stored="true"/>
+   <dynamicField name="*_sd1"  type="sdouble"  indexed="true"  stored="true" multiValued="false"/>
 
    <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
    <dynamicField name="*_pf"  type="pfloat"  indexed="true"  stored="true"/>

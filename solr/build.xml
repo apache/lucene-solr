@@ -18,6 +18,8 @@
 -->
 
 <project name="solr" default="usage" basedir="." xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+  <property name="solr-path" value="." />
 	
   <import file="common-build.xml"/>
   
@@ -340,7 +342,7 @@
     <path refid="compile.classpath.solrj" />
     <pathelement location="${dest}/solr"/>
     <pathelement location="${dest}/solrj"/> <!-- include solrj -->
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
   </path>
 
   <path id="test.run.classpath">
@@ -348,7 +350,7 @@
     <pathelement location="${dest}/tests"/>
     <!-- include the solrj classpath and jetty files included in example -->
     <path refid="compile.classpath.solrj" />
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 
@@ -956,6 +958,8 @@
     description="runs the tasks over src/java excluding the license directory">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="src/java"/>
+      <fileset dir="src/test"/>
+      <fileset dir="src/webapp"/>
       <fileset dir="src/common"/>
       <fileset dir="src/solrj"/>
       <fileset dir="client">
@@ -963,6 +967,8 @@
       </fileset>
       <fileset dir="contrib/dataimporthandler/src/main/java"/>
       <fileset dir="contrib/dataimporthandler/src/test/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/main/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/test/java"/>
       <fileset dir="contrib/clustering/src/main/java"/>
       <fileset dir="contrib/clustering/src/test/java"/>
       <fileset dir="contrib/extraction/src/main/java"/>

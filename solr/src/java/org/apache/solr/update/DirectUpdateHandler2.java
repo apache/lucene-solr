@@ -134,6 +134,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
+  @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
@@ -202,6 +203,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
   // could return the number of docs deleted, but is that always possible to know???
+  @Override
   public void delete(DeleteUpdateCommand cmd) throws IOException {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
@@ -221,6 +223,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // why not return number of docs deleted?
   // Depending on implementation, we may not be able to immediately determine the num...
+  @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     deleteByQueryCommands.incrementAndGet();
     deleteByQueryCommandsCumulative.incrementAndGet();
@@ -263,6 +266,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
+  @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
     mergeIndexesCommands.incrementAndGet();
     int rc = -1;
@@ -300,6 +304,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
+  @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
 
     if (cmd.optimize) {
@@ -369,6 +374,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   /**
    * @since Solr 1.4
    */
+  @Override
   public void rollback(RollbackUpdateCommand cmd) throws IOException {
 
     rollbackCommands.incrementAndGet();
@@ -402,6 +408,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   }
 
 
+  @Override
   public void close() throws IOException {
     log.info("closing " + this);
     iwCommit.lock();
@@ -547,6 +554,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     // to facilitate testing: blocks if called during commit
     public synchronized int getCommitCount() { return autoCommitCount; }
 
+    @Override
     public String toString() {
       if(timeUpperBound > 0 || docsUpperBound > 0) {
         return
@@ -619,6 +627,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     return lst;
   }
 
+  @Override
   public String toString() {
     return "DirectUpdateHandler2" + getStatistics();
   }

@@ -22,6 +22,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.AutomatonTermsEnum.CompiledAutomaton;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
@@ -140,18 +141,18 @@ public final class FuzzyTermsEnum extends TermsEnum {
    */
   private TermsEnum getAutomatonEnum(int editDistance, BytesRef lastTerm)
       throws IOException {
-    final List<ByteRunAutomaton> runAutomata = initAutomata(editDistance);
+    final List<CompiledAutomaton> runAutomata = initAutomata(editDistance);
     if (editDistance < runAutomata.size()) {
       return new AutomatonFuzzyTermsEnum(runAutomata.subList(0, editDistance + 1)
-          .toArray(new ByteRunAutomaton[editDistance + 1]), lastTerm);
+          .toArray(new CompiledAutomaton[editDistance + 1]), lastTerm);
     } else {
       return null;
     }
   }
 
   /** initialize levenshtein DFAs up to maxDistance, if possible */
-  private List<ByteRunAutomaton> initAutomata(int maxDistance) {
-    final List<ByteRunAutomaton> runAutomata = dfaAtt.automata();
+  private List<CompiledAutomaton> initAutomata(int maxDistance) {
+    final List<CompiledAutomaton> runAutomata = dfaAtt.automata();
     if (runAutomata.size() <= maxDistance && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       LevenshteinAutomata builder = 
@@ -165,7 +166,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
             UnicodeUtil.newString(termText, 0, realPrefixLength));
           a = BasicOperations.concatenate(prefix, a);
         }
-        runAutomata.add(new ByteRunAutomaton(a));
+        runAutomata.add(new CompiledAutomaton(a, true));
       }
     }
     return runAutomata;
@@ -261,6 +262,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return actualEnum.docsAndPositions(skipDocs, reuse);
   }
   
+  @Override
   public void seek(BytesRef term, TermState state) throws IOException {
     actualEnum.seek(term, state);
   }
@@ -311,10 +313,12 @@ public final class FuzzyTermsEnum extends TermsEnum {
     private final BoostAttribute boostAtt =
       attributes().addAttribute(BoostAttribute.class);
     
-    public AutomatonFuzzyTermsEnum(ByteRunAutomaton matchers[], 
+    public AutomatonFuzzyTermsEnum(CompiledAutomaton compiled[], 
         BytesRef lastTerm) throws IOException {
-      super(matchers[matchers.length - 1], tenum, true, null);
-      this.matchers = matchers;
+      super(tenum, compiled[compiled.length - 1]);
+      this.matchers = new ByteRunAutomaton[compiled.length];
+      for (int i = 0; i < compiled.length; i++)
+        this.matchers[i] = compiled[i].runAutomaton;
       this.lastTerm = lastTerm;
       termRef = new BytesRef(term.text());
     }
@@ -562,14 +566,14 @@ public final class FuzzyTermsEnum extends TermsEnum {
   
   /** @lucene.internal */
   public static interface LevenshteinAutomataAttribute extends Attribute {
-    public List<ByteRunAutomaton> automata();
+    public List<CompiledAutomaton> automata();
   }
     
   /** @lucene.internal */
   public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
-    private final List<ByteRunAutomaton> automata = new ArrayList<ByteRunAutomaton>();
+    private final List<CompiledAutomaton> automata = new ArrayList<CompiledAutomaton>();
       
-    public List<ByteRunAutomaton> automata() {
+    public List<CompiledAutomaton> automata() {
       return automata;
     }
 
@@ -594,7 +598,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
 
     @Override
     public void copyTo(AttributeImpl target) {
-      final List<ByteRunAutomaton> targetAutomata =
+      final List<CompiledAutomaton> targetAutomata =
         ((LevenshteinAutomataAttribute) target).automata();
       targetAutomata.clear();
       targetAutomata.addAll(automata);

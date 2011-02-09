@@ -56,7 +56,7 @@
 	  <pathelement path="target/classes" />
   	<pathelement path="target/test-classes" />
     <pathelement location="${solr-path}/build/tests"/> <!-- include solr test code -->
-    <pathelement location="${solr-path}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${solr-path}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 
@@ -68,7 +68,7 @@
   	<pathelement path="target/test-classes" />
   	<pathelement path="target/extras/test-classes" />
     <pathelement location="${solr-path}/build/tests"/> <!-- include solr test code -->
-    <pathelement location="${solr-path}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${solr-path}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 	

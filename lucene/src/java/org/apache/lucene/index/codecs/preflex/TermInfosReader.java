@@ -67,15 +67,18 @@ public final class TermInfosReader {
       this.term = t;
     }
 
+    @Override
     public boolean equals(Object other) {
       CloneableTerm t = (CloneableTerm) other;
       return this.term.equals(t.term);
     }
 
+    @Override
     public int hashCode() {
       return term.hashCode();
     }
 
+    @Override
     public Object clone() {
       return new CloneableTerm(term);
     }

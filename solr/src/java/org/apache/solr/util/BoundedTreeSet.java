@@ -55,11 +55,13 @@ public class BoundedTreeSet<E> extends TreeSet<E> {
       remove(last());
     }
   }
+  @Override
   public boolean add(E item) {
     boolean out = super.add(item);
     adjust();
     return out;
   }
+  @Override
   public boolean addAll(Collection<? extends E> c) {
     boolean out = super.addAll(c);
     adjust();

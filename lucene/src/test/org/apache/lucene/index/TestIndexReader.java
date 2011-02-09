@@ -371,7 +371,7 @@ public class TestIndexReader extends LuceneTestCase
         Directory dir = newDirectory();
         byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
         
         for (int i = 0; i < 10; i++) {
           addDoc(writer, "document number " + (i + 1));
@@ -380,7 +380,7 @@ public class TestIndexReader extends LuceneTestCase
           addDocumentWithTermVectorFields(writer);
         }
         writer.close();
-        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setMergePolicy(newInOrderLogMergePolicy()));
         Document doc = new Document();
         doc.add(new Field("bin1", bin));
         doc.add(new Field("junk", "junk text", Field.Store.NO, Field.Index.ANALYZED));
@@ -417,7 +417,7 @@ public class TestIndexReader extends LuceneTestCase
         // force optimize
 
 
-        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setMergePolicy(newInOrderLogMergePolicy()));
         writer.optimize();
         writer.close();
         reader = IndexReader.open(dir, false);
@@ -900,7 +900,7 @@ public class TestIndexReader extends LuceneTestCase
 
       {
         IndexReader r = IndexReader.open(startDir);
-        IndexSearcher searcher = new IndexSearcher(r);
+        IndexSearcher searcher = newSearcher(r);
         ScoreDoc[] hits = null;
         try {
           hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
@@ -908,6 +908,7 @@ public class TestIndexReader extends LuceneTestCase
           e.printStackTrace();
           fail("exception when init searching: " + e);
         }
+        searcher.close();
         r.close();
       }
 
@@ -996,15 +997,6 @@ public class TestIndexReader extends LuceneTestCase
             }
           }
 
-          // Whether we succeeded or failed, check that all
-          // un-referenced files were in fact deleted (ie,
-          // we did not create garbage).  Just create a
-          // new IndexFileDeleter, have it delete
-          // unreferenced files, then verify that in fact
-          // no files were deleted:
-          IndexWriter.unlock(dir);
-          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
-
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if
           // we failed, we see either all docs or no docs
@@ -1032,7 +1024,7 @@ public class TestIndexReader extends LuceneTestCase
           }
           */
 
-          IndexSearcher searcher = new IndexSearcher(newReader);
+          IndexSearcher searcher = newSearcher(newReader);
           ScoreDoc[] hits = null;
           try {
             hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
@@ -1171,7 +1163,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testMultiReaderDeletes() throws Exception {
       Directory dir = newDirectory();
-      RandomIndexWriter w = new RandomIndexWriter(random, dir);
+      RandomIndexWriter w= new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
       Document doc = new Document();
       doc.add(newField("f", "doctor", Field.Store.NO, Field.Index.NOT_ANALYZED));
       w.addDocument(doc);
@@ -1904,5 +1896,43 @@ public class TestIndexReader extends LuceneTestCase
       r.close();
       dir.close();
     }
+  }
+
+  // LUCENE-2474
+  public void testReaderFinishedListener() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
+    writer.setInfoStream(VERBOSE ? System.out : null);
+    writer.addDocument(new Document());
+    writer.commit();
+    writer.addDocument(new Document());
+    writer.commit();
+    final IndexReader reader = writer.getReader();
+    final int[] closeCount = new int[1];
+    final IndexReader.ReaderFinishedListener listener = new IndexReader.ReaderFinishedListener() {
+      public void finished(IndexReader reader) {
+        closeCount[0]++;
+      }
+    };
+
+    reader.addReaderFinishedListener(listener);
+
+    reader.close();
+
+    // Just the top reader
+    assertEquals(1, closeCount[0]);
+    writer.close();
+
+    // Now also the subs
+    assertEquals(3, closeCount[0]);
+
+    IndexReader reader2 = IndexReader.open(dir);
+    reader2.addReaderFinishedListener(listener);
+
+    closeCount[0] = 0;
+    reader2.close();
+    assertEquals(3, closeCount[0]);
+    dir.close();
   }
 }

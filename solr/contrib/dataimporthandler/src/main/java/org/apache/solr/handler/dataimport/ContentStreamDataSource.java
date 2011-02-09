@@ -39,10 +39,12 @@ public class ContentStreamDataSource extends DataSource<Reader> {
   private ContentStream contentStream;
   private Reader reader;
 
+  @Override
   public void init(Context context, Properties initProps) {
     this.context = (ContextImpl) context;
   }
 
+  @Override
   public Reader getData(String query) {
     contentStream = context.getDocBuilder().requestParameters.contentStream;
     if (contentStream == null)
@@ -55,6 +57,7 @@ public class ContentStreamDataSource extends DataSource<Reader> {
     }
   }
 
+  @Override
   public void close() {
     if (contentStream != null) {
       try {

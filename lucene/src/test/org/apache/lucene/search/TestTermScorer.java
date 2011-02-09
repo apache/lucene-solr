@@ -21,16 +21,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTermScorer extends LuceneTestCase {
   protected Directory directory;
@@ -46,7 +47,7 @@ public class TestTermScorer extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
       doc
@@ -56,7 +57,7 @@ public class TestTermScorer extends LuceneTestCase {
     }
     indexReader = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
-    indexSearcher = new IndexSearcher(indexReader);
+    indexSearcher = newSearcher(indexReader);
   }
   
   @Override

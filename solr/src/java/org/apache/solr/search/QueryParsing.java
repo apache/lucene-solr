@@ -330,16 +330,9 @@ public class QueryParsing {
             }
             throw new SolrException
               (SolrException.ErrorCode.BAD_REQUEST,
-               "sort param fiedl can't be found: " + field);
+               "sort param field can't be found: " + field);
           }
-              
-          // TODO: remove this - it should be up to the FieldType
-          if (!sf.indexed()) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                                    "can not sort on unindexed field: " 
-                                    + field);
-          }
-          lst.add(sf.getType().getSortField(sf, top));
+          lst.add(sf.getSortField(top));
         }
       }
 
@@ -828,6 +821,7 @@ public class QueryParsing {
       return pos < end ? val.charAt(pos) : 0;
     }
 
+    @Override
     public String toString() {
       return "'" + val + "'" + ", pos=" + pos;
     }

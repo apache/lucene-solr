@@ -22,11 +22,12 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MapBackedSet;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /** An IndexReader which reads multiple, parallel indexes.  Each index added
@@ -73,6 +74,7 @@ public class ParallelReader extends IndexReader {
   public ParallelReader(boolean closeSubReaders) throws IOException {
     super();
     this.incRefReaders = !closeSubReaders;
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
   }
 
   /** {@inheritDoc} */
@@ -529,8 +531,6 @@ public class ParallelReader extends IndexReader {
         readers.get(i).close();
       }
     }
-
-    FieldCache.DEFAULT.purge(this);
   }
 
   @Override
@@ -548,6 +548,21 @@ public class ParallelReader extends IndexReader {
     return topLevelReaderContext;
   }
 
+  @Override
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    super.addReaderFinishedListener(listener);
+    for (IndexReader reader : readers) {
+      reader.addReaderFinishedListener(listener);
+    }
+  }
+
+  @Override
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    super.removeReaderFinishedListener(listener);
+    for (IndexReader reader : readers) {
+      reader.removeReaderFinishedListener(listener);
+    }
+  }
 }
 
 

@@ -34,37 +34,47 @@ public class ConstValueSource extends ConstNumberSource {
     this.dv = constant;
   }
 
+  @Override
   public String description() {
     return "const(" + constant + ")";
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return constant;
       }
+      @Override
       public int intVal(int doc) {
         return (int)constant;
       }
+      @Override
       public long longVal(int doc) {
         return (long)constant;
       }
+      @Override
       public double doubleVal(int doc) {
         return dv;
       }
+      @Override
       public String strVal(int doc) {
         return Float.toString(constant);
       }
+      @Override
       public String toString(int doc) {
         return description();
       }
     };
   }
 
+  @Override
   public int hashCode() {
     return Float.floatToIntBits(constant) * 31;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof ConstValueSource)) return false;
     ConstValueSource other = (ConstValueSource)o;

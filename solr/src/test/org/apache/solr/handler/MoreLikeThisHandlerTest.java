@@ -94,7 +94,17 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     assertQ("morelike this - harrison ford",mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
 
+    // test MoreLikeThis debug
+    params.set(CommonParams.DEBUG_QUERY, "true");
+    assertQ("morelike this - harrison ford",mltreq
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='realMLTQuery']"
+        ,"//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/lst[@name='explain']/str[@name='45']"
+        );
+
     // test that qparser plugins work
+    params.remove(CommonParams.DEBUG_QUERY);
     params.set(CommonParams.Q, "{!field f=id}44");
     assertQ(mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
@@ -112,9 +122,9 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     assertQ(mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
 
-    // test that debugging works
+    // test that debugging works (test for MoreLikeThis*Handler*)
     params.set(CommonParams.QT, "/mlt");
-    params.set("debugQuery", "true");
+    params.set(CommonParams.DEBUG_QUERY, "true");
     assertQ(mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']"
         ,"//lst[@name='debug']/lst[@name='explain']"

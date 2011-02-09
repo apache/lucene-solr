@@ -395,6 +395,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
       this(tokens.toArray(new Token[tokens.size()]));
     }
     
+    @Override
     public boolean incrementToken() throws IOException {
       if (index >= tokens.length)
         return false;

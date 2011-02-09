@@ -17,17 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.BitSet;
+
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.DocIdBitSet;
-import java.util.BitSet;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * FilteredQuery JUnit tests.
@@ -49,7 +51,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter (random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter (random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
 
     Document doc = new Document();
     doc.add (newField("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
@@ -79,7 +81,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     reader = writer.getReader();
     writer.close ();
 
-    searcher = new IndexSearcher (reader);
+    searcher = newSearcher(reader);
     query = new TermQuery (new Term ("field", "three"));
     filter = newStaticFilterB();
   }

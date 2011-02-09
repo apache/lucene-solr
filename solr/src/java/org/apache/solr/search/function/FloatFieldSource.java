@@ -41,36 +41,44 @@ public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {
     super(creator);
   }
 
+  @Override
   public String description() {
     return "float(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final FloatValues vals = cache.getFloats(readerContext.reader, field, creator);
     final float[] arr = vals.values;
 	final Bits valid = vals.valid;
     
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int)arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Float.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + floatVal(doc);
       }

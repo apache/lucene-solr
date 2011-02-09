@@ -43,9 +43,9 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
   
   public void testSorting() throws Exception {
     SolrCore core = h.getCore();
-    assertU(adoc("id", "10", "title", "test", "val_s", "aaa"));
-    assertU(adoc("id", "11", "title", "test", "val_s", "bbb"));
-    assertU(adoc("id", "12", "title", "test", "val_s", "ccc"));
+    assertU(adoc("id", "10", "title", "test", "val_s1", "aaa"));
+    assertU(adoc("id", "11", "title", "test", "val_s1", "bbb"));
+    assertU(adoc("id", "12", "title", "test", "val_s1", "ccc"));
     assertU(commit());
     
     Map<String,String> args = new HashMap<String, String>();
@@ -58,7 +58,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             ,"//*[@numFound='3']"
             );
     
-    args.put( CommonParams.SORT, "val_s asc" );
+    args.put( CommonParams.SORT, "val_s1 asc" );
     assertQ("with sort param [asc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
@@ -66,7 +66,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             ,"//result/doc[3]/int[@name='id'][.='12']"
             );
 
-    args.put( CommonParams.SORT, "val_s desc" );
+    args.put( CommonParams.SORT, "val_s1 desc" );
     assertQ("with sort param [desc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='12']"
@@ -84,7 +84,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
     // Using legacy ';' param
     args.remove( CommonParams.SORT );
     args.put( QueryParsing.DEFTYPE, "lucenePlusSort" );
-    args.put( CommonParams.Q, "title:test; val_s desc" );
+    args.put( CommonParams.Q, "title:test; val_s1 desc" );
     assertQ("with sort param [desc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='12']"
@@ -92,8 +92,8 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             ,"//result/doc[3]/int[@name='id'][.='10']"
             );
 
-    args.put( CommonParams.Q, "title:test; val_s asc" );
-    assertQ("with sort param [desc]", req
+    args.put( CommonParams.Q, "title:test; val_s1 asc" );
+    assertQ("with sort param [asc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
             ,"//result/doc[2]/int[@name='id'][.='11']"

@@ -32,11 +32,14 @@ import java.io.IOException;
  * @version $Id$
  */
 public class IntField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
+    field.checkSortability();
     return new SortField(field.name,SortField.INT, reverse);
   }
 
@@ -45,6 +48,7 @@ public class IntField extends FieldType {
     return new IntFieldSource(new IntValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     String s = f.stringValue();
 

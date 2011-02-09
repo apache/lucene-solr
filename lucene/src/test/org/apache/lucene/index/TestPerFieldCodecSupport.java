@@ -123,7 +123,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
              new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(provider);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-    ((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
+    //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     IndexWriter writer = newWriter(dir, iwconf);
 
     addDocs(writer, 10);
@@ -143,8 +143,8 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
 
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.APPEND).setCodecProvider(provider);
-    ((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
+    //((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
+    //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
     provider = new MockCodecProvider2(); // uses standard for field content
@@ -227,7 +227,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     }
     IndexReader reader = IndexReader.open(dir, null, true,
         IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, codecs);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
     searcher.close();

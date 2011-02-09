@@ -110,7 +110,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
-        .setSimilarityProvider(similarity));
+                                                     .setSimilarityProvider(similarity).setMergePolicy(newInOrderLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -124,7 +124,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     searcher.setSimilarityProvider(similarity);
   }
 

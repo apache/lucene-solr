@@ -36,6 +36,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema.xml");
   }
   
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     assertU(delQ("*:*"));

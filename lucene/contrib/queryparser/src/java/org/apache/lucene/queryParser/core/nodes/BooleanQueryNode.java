@@ -28,8 +28,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class BooleanQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = -2206623652088638072L;
-
   /**
    * @param clauses
    *          - the query nodes to be and'ed

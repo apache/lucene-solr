@@ -53,10 +53,12 @@ public class FileFloatSource extends ValueSource {
     this.dataDir = parser.getReq().getCore().getDataDir();
   }
 
+  @Override
   public String description() {
     return "float(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     int offset = 0;
     ReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
@@ -64,32 +66,39 @@ public class FileFloatSource extends ValueSource {
 
     final float[] arr = getCachedFloats(topLevelContext.reader);
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return arr[doc + off];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int)arr[doc + off];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)arr[doc + off];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)arr[doc + off];
       }
 
+      @Override
       public String strVal(int doc) {
         return Float.toString(arr[doc + off]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + floatVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  FileFloatSource.class) return false;
     FileFloatSource other = (FileFloatSource)o;
@@ -99,10 +108,12 @@ public class FileFloatSource extends ValueSource {
             && this.dataDir.equals(other.dataDir);
   }
 
+  @Override
   public int hashCode() {
     return FileFloatSource.class.hashCode() + field.getName().hashCode();
   };
 
+  @Override
   public String toString() {
     return "FileFloatSource(field="+field.getName()+",keyField="+keyField.getName()
             + ",defVal="+defVal+",dataDir="+dataDir+")";
@@ -114,6 +125,7 @@ public class FileFloatSource extends ValueSource {
   }
 
   static Cache floatCache = new Cache() {
+    @Override
     protected Object createValue(IndexReader reader, Object key) {
       return getFloats(((Entry)key).ffs, reader);
     }
@@ -173,12 +185,14 @@ public class FileFloatSource extends ValueSource {
       this.ffs = ffs;
     }
 
+    @Override
     public boolean equals(Object o) {
       if (!(o instanceof Entry)) return false;
       Entry other = (Entry)o;
       return ffs.equals(other.ffs);
     }
 
+    @Override
     public int hashCode() {
       return ffs.hashCode();
     }

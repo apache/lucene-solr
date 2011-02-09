@@ -59,7 +59,7 @@ public class NearRealtimeReaderTask extends PerfTask {
     }
     
     long t = System.currentTimeMillis();
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     runData.setIndexReader(r);
     // Transfer our reference to runData
     r.decRef();

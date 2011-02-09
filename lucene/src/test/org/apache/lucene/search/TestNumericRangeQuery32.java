@@ -55,7 +55,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000))
+        .setMergePolicy(newInOrderLogMergePolicy()));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
@@ -88,7 +89,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     }
   
     reader = writer.getReader();
-    searcher=new IndexSearcher(reader);
+    searcher=newSearcher(reader);
     writer.close();
   }
   

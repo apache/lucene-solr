@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 /** A clause in a BooleanQuery. */
-public class BooleanClause implements java.io.Serializable {
+public class BooleanClause {
   
   /** Specifies how clauses are to occur in matching documents. */
   public static enum Occur {

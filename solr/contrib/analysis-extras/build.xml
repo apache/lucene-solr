@@ -73,7 +73,7 @@
     <pathelement path="${dest}/test-classes"/>
     <pathelement path="${java.class.path}"/>
     <pathelement location="${common-solr.dir}/build/tests"/> <!-- include solr test code -->
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <path refid="common.classpath"/>
   </path>
 

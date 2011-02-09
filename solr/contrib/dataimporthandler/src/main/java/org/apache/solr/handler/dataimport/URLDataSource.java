@@ -56,6 +56,7 @@ public class URLDataSource extends DataSource<Reader> {
   public URLDataSource() {
   }
 
+  @Override
   public void init(Context context, Properties initProps) {
     this.context = context;
     this.initProps = initProps;
@@ -81,6 +82,7 @@ public class URLDataSource extends DataSource<Reader> {
     }
   }
 
+  @Override
   public Reader getData(String query) {
     URL url = null;
     try {
@@ -114,6 +116,7 @@ public class URLDataSource extends DataSource<Reader> {
     }
   }
 
+  @Override
   public void close() {
   }
 

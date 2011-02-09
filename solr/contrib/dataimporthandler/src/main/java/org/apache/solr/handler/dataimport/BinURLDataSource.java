@@ -49,6 +49,7 @@ public class BinURLDataSource extends DataSource<InputStream>{
 
   public BinURLDataSource() { }
 
+  @Override
   public void init(Context context, Properties initProps) {
       this.context = context;
     this.initProps = initProps;
@@ -72,6 +73,7 @@ public class BinURLDataSource extends DataSource<InputStream>{
     }
   }
 
+  @Override
   public InputStream getData(String query) {
     URL url = null;
     try {
@@ -89,6 +91,7 @@ public class BinURLDataSource extends DataSource<InputStream>{
     }
   }
 
+  @Override
   public void close() { }
 
   private String getInitPropWithReplacements(String propertyName) {

@@ -115,6 +115,7 @@ public class DisMaxQParserPlugin extends QParserPlugin {
   public void init(NamedList args) {
   }
 
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new DisMaxQParser(qstr, localParams, params, req);
   }

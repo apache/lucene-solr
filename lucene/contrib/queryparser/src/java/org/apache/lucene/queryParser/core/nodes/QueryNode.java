@@ -17,7 +17,6 @@ package org.apache.lucene.queryParser.core.nodes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +26,7 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  * A {@link QueryNode} is a interface implemented by all nodes on a QueryNode
  * tree.
  */
-public interface QueryNode extends Serializable {
+public interface QueryNode {
 
   /** convert to a query string understood by the query parser */
   // TODO: this interface might be changed in the future

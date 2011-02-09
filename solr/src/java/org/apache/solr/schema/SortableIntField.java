@@ -37,11 +37,16 @@ import java.util.Map;
 import java.io.IOException;
 /**
  * @version $Id$
+ * 
+ * @deprecated use {@link IntField} or {@link TrieIntField} - will be removed in 5.x
  */
+@Deprecated
 public class SortableIntField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
   }
@@ -51,6 +56,7 @@ public class SortableIntField extends FieldType {
     return new SortableIntFieldSource(field.name);
   }
 
+  @Override
   public String toInternal(String val) {
     // special case single digits?  years?, etc
     // stringCache?  general stringCache on a
@@ -58,10 +64,12 @@ public class SortableIntField extends FieldType {
     return NumberUtils.int2sortableStr(val);
   }
 
+  @Override
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
   public String indexedToReadable(String indexedForm) {
     return NumberUtils.SortableStr2int(indexedForm);
   }
@@ -77,6 +85,7 @@ public class SortableIntField extends FieldType {
     return NumberUtils.SortableStr2int(f.stringValue(), 0, 3);    
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     String sval = f.stringValue();
     writer.writeInt(name, NumberUtils.SortableStr2int(sval,0,sval.length()));
@@ -97,41 +106,50 @@ class SortableIntFieldSource extends FieldCacheSource {
     this.defVal = defVal;
   }
 
+  @Override
   public String description() {
     return "sint(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final int def = defVal;
 
     return new StringIndexDocValues(this, readerContext, field) {
       private final BytesRef spare = new BytesRef();
 
+      @Override
       protected String toTerm(String readableValue) {
         return NumberUtils.int2sortableStr(readableValue);
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float)intVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         int ord=termsIndex.getOrd(doc);
         return ord==0 ? def  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare),0,3);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)intVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)intVal(doc);
       }
 
+      @Override
       public String strVal(int doc) {
         return Integer.toString(intVal(doc));
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }
@@ -163,6 +181,7 @@ class SortableIntFieldSource extends FieldCacheSource {
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     return o instanceof SortableIntFieldSource
             && super.equals(o)
@@ -170,6 +189,7 @@ class SortableIntFieldSource extends FieldCacheSource {
   }
 
   private static int hcode = SortableIntFieldSource.class.hashCode();
+  @Override
   public int hashCode() {
     return hcode + super.hashCode() + defVal;
   };

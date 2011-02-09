@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class LocaleAttributeImpl extends AttributeImpl
 				implements LocaleAttribute {
 
-  private static final long serialVersionUID = -6804760312720049526L;
-
   private Locale locale = Locale.getDefault();
 
   public LocaleAttributeImpl() {

@@ -37,10 +37,13 @@ import java.io.IOException;
  * @version $Id$
  */
 public class BoolField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
+    field.checkSortability();
     return getStringSort(field,reverse);
   }
 
@@ -58,6 +61,7 @@ public class BoolField extends FieldType {
   // handle single valued non-text fields (int,bool,etc) if needed.
 
   protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
+    @Override
     public TokenStreamInfo getStream(String fieldName, Reader reader) {
       Tokenizer tokenizer = new Tokenizer(reader) {
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -88,19 +92,23 @@ public class BoolField extends FieldType {
   };
 
 
+  @Override
   public Analyzer getAnalyzer() {
     return boolAnalyzer;
   }
 
+  @Override
   public Analyzer getQueryAnalyzer() {
     return boolAnalyzer;
   }
 
+  @Override
   public String toInternal(String val) {
     char ch = (val!=null && val.length()>0) ? val.charAt(0) : 0;
     return (ch=='1' || ch=='t' || ch=='T') ? "T" : "F";
   }
 
+  @Override
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
@@ -115,6 +123,7 @@ public class BoolField extends FieldType {
     return term.bytes[0] == 'T';
   }
 
+  @Override
   public String indexedToReadable(String indexedForm) {
     char ch = indexedForm.charAt(0);
     return ch=='T' ? "true" : "false";
@@ -129,6 +138,7 @@ public class BoolField extends FieldType {
     }
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeBool(name, f.stringValue().charAt(0) =='T');
   }

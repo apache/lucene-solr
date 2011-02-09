@@ -232,7 +232,7 @@ public class CoreContainer
         cores.load(solrHome, fconf);
       } else {
         log.info("no solr.xml file found - using default");
-        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes()));
+        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes("UTF-8")));
         cores.configFile = fconf;
       }
       

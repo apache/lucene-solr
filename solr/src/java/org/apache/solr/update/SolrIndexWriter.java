@@ -132,6 +132,7 @@ public class SolrIndexWriter extends IndexWriter {
    * ****
    */
   private volatile boolean isClosed = false;
+  @Override
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
     try {
@@ -178,6 +179,7 @@ public class SolrIndexWriter extends IndexWriter {
     // We might ideally want to override print(String) as well, but
     // looking through the code that writes to infoStream, it appears
     // that all the classes except CheckIndex just use println.
+    @Override
     public void println(String x) {
       print(dateFormat.format(new Date()) + " ");
       super.println(x);

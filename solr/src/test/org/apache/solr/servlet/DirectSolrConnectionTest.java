@@ -24,7 +24,9 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 public class DirectSolrConnectionTest extends AbstractSolrTestCase 
 {
+  @Override
   public String getSchemaFile() { return "solr/crazy-path-to-schema.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solr/crazy-path-to-config.xml"; }
   
   DirectSolrConnection direct;

@@ -99,7 +99,7 @@ public class TestDistance extends LuceneTestCase {
 
   public void testLatLongFilterOnDeletedDocs() throws Exception {
     writer.deleteDocuments(new Term("name", "Potomac"));
-    IndexReader r = IndexReader.open(writer);
+    IndexReader r = IndexReader.open(writer, true);
     LatLongDistanceFilter f = new LatLongDistanceFilter(new QueryWrapperFilter(new MatchAllDocsQuery()),
                                                         lat, lng, 1.0, latField, lngField);
 

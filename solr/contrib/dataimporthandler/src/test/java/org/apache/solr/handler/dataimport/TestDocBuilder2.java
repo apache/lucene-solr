@@ -252,6 +252,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   public static class MockTransformer extends Transformer {
+    @Override
     public Object transformRow(Map<String, Object> row, Context context) {
       assertTrue("Context gave incorrect data source", context.getDataSource("mockDs") instanceof MockDataSource2);
       return row;
@@ -259,6 +260,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   public static class AddDynamicFieldTransformer extends Transformer  {
+    @Override
     public Object transformRow(Map<String, Object> row, Context context) {
       // Add a dynamic field
       row.put("dynamic_s", "test");

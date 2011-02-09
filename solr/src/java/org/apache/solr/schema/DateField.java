@@ -125,12 +125,14 @@ public class DateField extends FieldType {
   // The easiest fix is to simply remove the 'Z' for the internal
   // format.
   
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
 
   protected static String NOW = "NOW";
   protected static char Z = 'Z';
   
+  @Override
   public String toInternal(String val) {
     return toInternal(parseMath(null, val));
   }
@@ -183,6 +185,7 @@ public class DateField extends FieldType {
     return formatDate(val);
   }
 
+  @Override
   public String indexedToReadable(String indexedForm) {
     return indexedForm + Z;
   }
@@ -193,6 +196,7 @@ public class DateField extends FieldType {
     out.write(Z);
   }
 
+  @Override
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
@@ -211,6 +215,7 @@ public class DateField extends FieldType {
     }
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
   }
@@ -219,6 +224,7 @@ public class DateField extends FieldType {
     return new OrdFieldSource(field.name);
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeDate(name, toExternal(f));
   }
@@ -336,6 +342,7 @@ public class DateField extends FieldType {
       this.setTimeZone(CANONICAL_TZ);
     }
 
+    @Override
     public Date parse(String i, ParsePosition p) {
       /* delegate to SimpleDateFormat for easy stuff */
       Date d = super.parse(i, p);
@@ -357,6 +364,7 @@ public class DateField extends FieldType {
       return d;
     }
 
+    @Override
     public StringBuffer format(Date d, StringBuffer toAppendTo,
                                FieldPosition pos) {
       /* delegate to SimpleDateFormat for easy stuff */
@@ -375,6 +383,7 @@ public class DateField extends FieldType {
       return toAppendTo;
     }
 
+    @Override
     public Object clone() {
       ISO8601CanonicalDateFormat c
         = (ISO8601CanonicalDateFormat) super.clone();
@@ -391,6 +400,7 @@ public class DateField extends FieldType {
       super();
       proto = d;
     }
+    @Override
     protected DateFormat initialValue() {
       return (DateFormat) proto.clone();
     }
@@ -423,34 +433,42 @@ class DateFieldSource extends FieldCacheSource {
     this.ft = ft;
   }
 
+  @Override
   public String description() {
     return "date(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new StringIndexDocValues(this, readerContext, field) {
+      @Override
       protected String toTerm(String readableValue) {
         // needed for frange queries to work properly
         return ft.toInternal(readableValue);
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float)intVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         int ord=termsIndex.getOrd(doc);
         return ord;
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)intVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)intVal(doc);
       }
 
+      @Override
       public String strVal(int doc) {
         int ord=termsIndex.getOrd(doc);
         if (ord == 0) {
@@ -463,18 +481,21 @@ class DateFieldSource extends FieldCacheSource {
         }
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     return o instanceof DateFieldSource
             && super.equals(o);
   }
 
   private static int hcode = DateFieldSource.class.hashCode();
+  @Override
   public int hashCode() {
     return hcode + super.hashCode();
   };

@@ -279,7 +279,7 @@ public class ZkTestServer {
       BufferedReader reader = null;
       try {
           OutputStream outstream = sock.getOutputStream();
-          outstream.write(cmd.getBytes());
+          outstream.write(cmd.getBytes("US-ASCII"));
           outstream.flush();
           // this replicates NC - close the output stream before reading
           sock.shutdownOutput();

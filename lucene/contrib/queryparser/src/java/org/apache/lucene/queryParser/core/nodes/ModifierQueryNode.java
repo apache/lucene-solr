@@ -36,8 +36,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class ModifierQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = -391209837953928169L;
-
   public enum Modifier {
     MOD_NONE, MOD_NOT, MOD_REQ;
 

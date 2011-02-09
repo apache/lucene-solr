@@ -57,15 +57,16 @@ public class TestSpansAdvanced extends LuceneTestCase {
     // create test index
     mDirectory = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random,
-        mDirectory, new MockAnalyzer(MockTokenizer.SIMPLE, true,
-                MockTokenFilter.ENGLISH_STOPSET, true));
+                                                           mDirectory, newIndexWriterConfig(TEST_VERSION_CURRENT,
+                                                                                            new MockAnalyzer(MockTokenizer.SIMPLE, true,
+                                                                                                             MockTokenFilter.ENGLISH_STOPSET, true)).setMergePolicy(newInOrderLogMergePolicy()));
     addDocument(writer, "1", "I think it should work.");
     addDocument(writer, "2", "I think it should work.");
     addDocument(writer, "3", "I think it should work.");
     addDocument(writer, "4", "I think it should work.");
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
   
   @Override

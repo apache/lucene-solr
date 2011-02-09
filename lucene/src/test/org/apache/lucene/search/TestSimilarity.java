@@ -80,7 +80,7 @@ public class TestSimilarity extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarityProvider(new SimpleSimilarity());
 
     Term a = new Term("field", "a");

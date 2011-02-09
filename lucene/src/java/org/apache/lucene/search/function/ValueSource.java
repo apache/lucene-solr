@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.search.function.DocValues;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 /**
  * Expert: source of values for basic function queries.
@@ -37,7 +36,7 @@ import java.io.Serializable;
  *
  *
  */
-public abstract class ValueSource implements Serializable {
+public abstract class ValueSource {
 
   /**
    * Return the DocValues used by the function query.

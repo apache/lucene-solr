@@ -40,7 +40,7 @@ public class TestValueSource extends LuceneTestCase {
       w.commit();
     }
 
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     w.close();
 
     assertTrue(r.getSequentialSubReaders().length > 1);

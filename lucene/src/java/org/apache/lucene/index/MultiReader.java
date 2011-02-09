@@ -20,13 +20,14 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.MapBackedSet;
 
 /** An IndexReader which reads multiple indexes, appending
  *  their content. */
@@ -82,6 +83,7 @@ public class MultiReader extends IndexReader implements Cloneable {
       }
     }
     starts[subReaders.length] = maxDoc;
+    readerFinishedListeners = new MapBackedSet<ReaderFinishedListener>(new ConcurrentHashMap<ReaderFinishedListener,Boolean>());
     return ReaderUtil.buildReaderContext(this);
   }
 
@@ -345,11 +347,6 @@ public class MultiReader extends IndexReader implements Cloneable {
         subReaders[i].close();
       }
     }
-
-    // NOTE: only needed in case someone had asked for
-    // FieldCache for top-level reader (which is generally
-    // not a good idea):
-    FieldCache.DEFAULT.purge(this);
   }
   
   @Override
@@ -386,7 +383,24 @@ public class MultiReader extends IndexReader implements Cloneable {
     return subReaders;
   }
   
+  @Override
   public ReaderContext getTopReaderContext() {
     return topLevelContext;
+  }
+
+  @Override
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    super.addReaderFinishedListener(listener);
+    for(IndexReader sub : subReaders) {
+      sub.addReaderFinishedListener(listener);
+    }
+  }
+
+  @Override
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    super.removeReaderFinishedListener(listener);
+    for(IndexReader sub : subReaders) {
+      sub.removeReaderFinishedListener(listener);
+    }
   }
 }

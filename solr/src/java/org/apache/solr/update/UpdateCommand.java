@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
       this.commandName = commandName;
     }
 
+    @Override
     public String toString() {
       return commandName;
     }

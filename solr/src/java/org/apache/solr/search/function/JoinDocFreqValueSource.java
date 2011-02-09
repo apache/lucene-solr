@@ -43,10 +43,12 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
     this.qfield = qfield;
   }
 
+  @Override
   public String description() {
     return NAME + "(" + field +":("+qfield+"))";
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException 
   {
     final DocTerms terms = cache.getTerms(readerContext.reader, field, true );
@@ -55,6 +57,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
     return new DocValues() {
       BytesRef ref = new BytesRef();
 
+      @Override
       public int intVal(int doc) 
       {
         try {
@@ -68,28 +71,34 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
         }
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float)intVal(doc);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)intVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)intVal(doc);
       }
 
+      @Override
       public String strVal(int doc) {
         return intVal(doc) + "";
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }
     };
   }
   
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  JoinDocFreqValueSource.class) return false;
     JoinDocFreqValueSource other = (JoinDocFreqValueSource)o;
@@ -97,6 +106,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
     return super.equals(other);
   }
 
+  @Override
   public int hashCode() {
     return qfield.hashCode() + super.hashCode();
   };

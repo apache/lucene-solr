@@ -19,6 +19,7 @@ package org.apache.lucene.store.instantiated;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -52,6 +53,7 @@ public class InstantiatedIndexReader extends IndexReader {
   public InstantiatedIndexReader(InstantiatedIndex index) {
     super();
     this.index = index;
+    readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
   }
 
   /**

@@ -157,8 +157,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       assertEquals(0, modifier.getSegmentCount());
       modifier.commit();
 
-      modifier.commit();
-
       IndexReader reader = IndexReader.open(dir, true);
       assertEquals(1, reader.numDocs());
 
@@ -567,7 +565,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                + e);
         }
 
-        IndexSearcher searcher = new IndexSearcher(newReader);
+        IndexSearcher searcher = newSearcher(newReader);
         ScoreDoc[] hits = null;
         try {
           hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
@@ -684,7 +682,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     MockDirectoryWrapper dir = newDirectory();
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
-                                                                     TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false));
+                                                                     TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false).setMergePolicy(newLogMergePolicy()));
     modifier.setInfoStream(VERBOSE ? System.out : null);
 
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();

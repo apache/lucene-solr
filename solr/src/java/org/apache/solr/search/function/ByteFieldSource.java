@@ -37,10 +37,12 @@ public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
     super(creator);
   }
 
+  @Override
   public String description() {
     return "byte(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final ByteValues vals = cache.getBytes(readerContext.reader, field, creator);
     final byte[] arr = vals.values;
@@ -56,26 +58,32 @@ public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
         return (short) arr[doc];
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float) arr[doc];
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) arr[doc];
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) arr[doc];
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double) arr[doc];
       }
 
+      @Override
       public String strVal(int doc) {
         return Byte.toString(arr[doc]);
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + byteVal(doc);
       }

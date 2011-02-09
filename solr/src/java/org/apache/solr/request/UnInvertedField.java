@@ -895,6 +895,7 @@ public class UnInvertedField {
     return te.skipTo(termNum);
   }
 
+  @Override
   public String toString() {
     return "{field=" + field
             + ",memSize="+memSize()
@@ -1163,6 +1164,7 @@ class TermIndex {
       ArrayList<BytesRef> lst;
       PagedBytes bytes;
 
+      @Override
       protected BytesRef setTerm() throws IOException {
         BytesRef br = super.setTerm();
         if (br != null && (pos & intervalMask)==0) {
@@ -1178,10 +1180,12 @@ class TermIndex {
         return br;
       }
 
+      @Override
       public BytesRef skipTo(int termNumber) throws IOException {
         throw new UnsupportedOperationException();
       }
 
+      @Override
       public void close() throws IOException {
         nTerms=pos;
         super.close();

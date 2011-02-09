@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Collection;
 
 import org.apache.lucene.index.FieldInvertState;
@@ -525,7 +524,7 @@ import org.apache.lucene.util.SmallFloat;
  * @see org.apache.lucene.index.IndexWriterConfig#setSimilarityProvider(SimilarityProvider)
  * @see IndexSearcher#setSimilarityProvider(SimilarityProvider)
  */
-public abstract class Similarity implements Serializable {
+public abstract class Similarity {
   
   public static final int NO_DOC_ID_PROVIDED = -1;
 

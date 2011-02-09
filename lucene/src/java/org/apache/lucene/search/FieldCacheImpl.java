@@ -137,6 +137,13 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     public Object getValue() { return value; }
   }
 
+  final static IndexReader.ReaderFinishedListener purgeReader = new IndexReader.ReaderFinishedListener() {
+    // @Override -- not until Java 1.6
+    public void finished(IndexReader reader) {
+      FieldCache.DEFAULT.purge(reader);
+    }
+  };
+
   /** Expert: Internal cache. */
   final static class Cache<T> {
     Cache() {
@@ -171,8 +178,10 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
       synchronized (readerCache) {
         innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
+          // First time this reader is using FieldCache
           innerCache = new HashMap<Entry<T>,Object>();
           readerCache.put(readerKey, innerCache);
+          reader.addReaderFinishedListener(purgeReader);
           value = null;
         } else {
           value = innerCache.get(key);

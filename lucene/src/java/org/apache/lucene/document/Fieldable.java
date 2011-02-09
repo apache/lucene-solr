@@ -22,7 +22,6 @@ import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 
 import java.io.Reader;
-import java.io.Serializable;
 
 /**
  * Synonymous with {@link Field}.
@@ -34,7 +33,7 @@ import java.io.Serializable;
  * </p>
  *
  **/
-public interface Fieldable extends Serializable {
+public interface Fieldable {
   /** Sets the boost factor hits on this field.  This value will be
    * multiplied into the score of all hits on this this field of this
    * document.

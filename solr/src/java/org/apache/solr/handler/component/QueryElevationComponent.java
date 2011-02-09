@@ -474,6 +474,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
     this.priority = boosts;
   }
 
+  @Override
   public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
     return new FieldComparator() {
       
@@ -482,10 +483,12 @@ class ElevationComparatorSource extends FieldComparatorSource {
       int bottomVal;
       private final BytesRef tempBR = new BytesRef();
 
+      @Override
       public int compare(int slot1, int slot2) {
         return values[slot2] - values[slot1];  // values will be small enough that there is no overflow concern
       }
 
+      @Override
       public void setBottom(int slot) {
         bottomVal = values[slot];
       }
@@ -496,19 +499,23 @@ class ElevationComparatorSource extends FieldComparatorSource {
         return prio == null ? 0 : prio.intValue();
       }
 
+      @Override
       public int compareBottom(int doc) throws IOException {
         return docVal(doc) - bottomVal;
       }
 
+      @Override
       public void copy(int slot, int doc) throws IOException {
         values[slot] = docVal(doc);
       }
 
+      @Override
       public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
         idIndex = FieldCache.DEFAULT.getTermsIndex(context.reader, fieldname);
         return this;
       }
 
+      @Override
       public Comparable value(int slot) {
         return values[slot];
       }

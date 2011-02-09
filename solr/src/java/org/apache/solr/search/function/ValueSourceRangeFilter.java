@@ -49,9 +49,11 @@ public class ValueSourceRangeFilter extends SolrFilter {
     this.includeUpper = upperVal != null && includeUpper;
   }
 
+  @Override
   public DocIdSet getDocIdSet(final Map context, final AtomicReaderContext readerContext) throws IOException {
      return new DocIdSet() {
-       public DocIdSetIterator iterator() throws IOException {
+       @Override
+      public DocIdSetIterator iterator() throws IOException {
          return valueSource.getValues(context, readerContext).getRangeScorer(readerContext.reader, lowerVal, upperVal, includeLower, includeUpper);
        }
      };
@@ -62,6 +64,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
     valueSource.createWeight(context, searcher);
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("frange(");
@@ -75,6 +78,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
     return sb.toString();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof ValueSourceRangeFilter)) return false;
@@ -89,6 +93,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
     return true;
   }
 
+  @Override
   public int hashCode() {
     int h = valueSource.hashCode();
     h += lowerVal != null ? lowerVal.hashCode() : 0x572353db;

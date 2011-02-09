@@ -49,8 +49,10 @@ public abstract class ValueSource implements Serializable {
    */
   public abstract DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException;
 
+  @Override
   public abstract boolean equals(Object o);
 
+  @Override
   public abstract int hashCode();
 
   /**
@@ -58,6 +60,7 @@ public abstract class ValueSource implements Serializable {
    */
   public abstract String description();
 
+  @Override
   public String toString() {
     return description();
   }
@@ -89,7 +92,7 @@ public abstract class ValueSource implements Serializable {
    * EXPERIMENTAL: This method is subject to change.
    * <br>WARNING: Sorted function queries are not currently weighted.
    * <p>
-   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, AtomicReaderContext)}
+   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, IndexReader.AtomicReaderContext)}
    * to populate the SortField.
    *
    * @param reverse true if this is a reverse sort.
@@ -127,6 +130,7 @@ public abstract class ValueSource implements Serializable {
       this.context = context;
     }
 
+    @Override
     public FieldComparator newComparator(String fieldname, int numHits,
                                          int sortPos, boolean reversed) throws IOException {
       return new ValueSourceComparator(context, numHits);
@@ -149,6 +153,7 @@ public abstract class ValueSource implements Serializable {
       values = new double[numHits];
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       final double v1 = values[slot1];
       final double v2 = values[slot2];
@@ -162,6 +167,7 @@ public abstract class ValueSource implements Serializable {
 
     }
 
+    @Override
     public int compareBottom(int doc) {
       final double v2 = docVals.doubleVal(doc);
       if (bottom > v2) {
@@ -173,19 +179,23 @@ public abstract class ValueSource implements Serializable {
       }
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = docVals.doubleVal(doc);
     }
 
+    @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
       docVals = getValues(fcontext, context);
       return this;
     }
 
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return values[slot];
     }

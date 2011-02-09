@@ -21,16 +21,20 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 public class TestQueryTypes extends AbstractSolrTestCase {
 
+  @Override
   public String getSchemaFile() { return "schema11.xml"; }
+  @Override
   public String getSolrConfigFile() { return "solrconfig.xml"; }
   public String getCoreName() { return "basic"; }
 
 
+  @Override
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
   }
+  @Override
   public void tearDown() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version

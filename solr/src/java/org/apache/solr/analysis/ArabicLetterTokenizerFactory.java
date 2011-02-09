@@ -29,6 +29,7 @@ import java.util.Map;
 @Deprecated
 public class ArabicLetterTokenizerFactory extends BaseTokenizerFactory{
 
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     assureMatchVersion();

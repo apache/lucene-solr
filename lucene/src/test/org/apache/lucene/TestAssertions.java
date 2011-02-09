@@ -35,34 +35,45 @@ public class TestAssertions extends LuceneTestCase {
   }
   
   static class TestAnalyzer1 extends Analyzer {
+    @Override
     public final TokenStream tokenStream(String s, Reader r) { return null; }
+    @Override
     public final TokenStream reusableTokenStream(String s, Reader r) { return null; }
   }
 
   static final class TestAnalyzer2 extends Analyzer {
+    @Override
     public TokenStream tokenStream(String s, Reader r) { return null; }
+    @Override
     public TokenStream reusableTokenStream(String s, Reader r) { return null; }
   }
 
   static class TestAnalyzer3 extends Analyzer {
+    @Override
     public TokenStream tokenStream(String s, Reader r) { return null; }
+    @Override
     public TokenStream reusableTokenStream(String s, Reader r) { return null; }
   }
 
   static class TestAnalyzer4 extends Analyzer {
+    @Override
     public final TokenStream tokenStream(String s, Reader r) { return null; }
+    @Override
     public TokenStream reusableTokenStream(String s, Reader r) { return null; }
   }
 
   static class TestTokenStream1 extends TokenStream {
+    @Override
     public final boolean incrementToken() { return false; }
   }
 
   static final class TestTokenStream2 extends TokenStream {
+    @Override
     public boolean incrementToken() { return false; }
   }
 
   static class TestTokenStream3 extends TokenStream {
+    @Override
     public boolean incrementToken() { return false; }
   }
 

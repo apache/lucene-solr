@@ -194,6 +194,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       return new FreqProxPostingsArray(size);
     }
 
+    @Override
     void copyTo(ParallelPostingsArray toArray, int numToCopy) {
       assert toArray instanceof FreqProxPostingsArray;
       FreqProxPostingsArray to = (FreqProxPostingsArray) toArray;

@@ -29,6 +29,7 @@ public class ServletSolrParams extends MultiMapSolrParams {
     super(req.getParameterMap());
   }
 
+  @Override
   public String get(String name) {
     String[] arr = map.get(name);
     if (arr==null) return null;

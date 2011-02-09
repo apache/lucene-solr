@@ -204,6 +204,7 @@ final class PerFieldCodecWrapper extends Codec {
     }
   }
 
+  @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new FieldsReader(state.dir, state.fieldInfos, state.segmentInfo,
@@ -213,7 +214,7 @@ final class PerFieldCodecWrapper extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo info, String codecId, Set<String> files)
       throws IOException {
-    // ignore codecid sicne segmentCodec will assign it per codec
+    // ignore codecid since segmentCodec will assign it per codec
     segmentCodecs.files(dir, info, files);
   }
 

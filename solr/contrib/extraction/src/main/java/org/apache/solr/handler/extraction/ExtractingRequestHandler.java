@@ -111,6 +111,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   }
 
 
+  @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     return new ExtractingDocumentLoader(req, processor, config, factory);
   }

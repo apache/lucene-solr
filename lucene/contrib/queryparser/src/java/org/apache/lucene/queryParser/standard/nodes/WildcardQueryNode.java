@@ -25,7 +25,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  * phrases. Examples: a*b*c Fl?w? m?ke*g
  */
 public class WildcardQueryNode extends FieldQueryNode {
-  private static final long serialVersionUID = 0L;
 
   /**
    * @param field

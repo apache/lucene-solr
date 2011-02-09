@@ -35,8 +35,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class RangeCollatorAttributeImpl extends AttributeImpl
 				implements RangeCollatorAttribute {
 
-  private static final long serialVersionUID = -6804360312723049526L;
-
   private Collator rangeCollator;
 
   public RangeCollatorAttributeImpl() {

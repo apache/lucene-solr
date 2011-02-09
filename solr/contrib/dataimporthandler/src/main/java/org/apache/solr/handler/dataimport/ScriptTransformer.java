@@ -47,6 +47,7 @@ public class ScriptTransformer extends Transformer {
 
   private String functionName;
 
+  @Override
   public Object transformRow(Map<String, Object> row, Context context) {
     try {
       if (engine == null)

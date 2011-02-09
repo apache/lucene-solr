@@ -36,6 +36,7 @@ import java.util.List;
  */
 public class BinaryRequestWriter extends RequestWriter {
 
+  @Override
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
@@ -55,10 +56,12 @@ public class BinaryRequestWriter extends RequestWriter {
   }
 
 
+  @Override
   public String getUpdateContentType() {
     return "application/octet-stream";
   }
 
+  @Override
   public ContentStream getContentStream(final UpdateRequest request) throws IOException {
     final BAOS baos = new BAOS();
       new JavaBinUpdateRequestCodec().marshal(request, baos);
@@ -91,6 +94,7 @@ public class BinaryRequestWriter extends RequestWriter {
   }
 
 
+  @Override
   public void write(SolrRequest request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
@@ -106,6 +110,7 @@ public class BinaryRequestWriter extends RequestWriter {
     }
   }
 
+  @Override
   public String getPath(SolrRequest req) {
     if (req instanceof UpdateRequest) {
       return "/update/javabin";

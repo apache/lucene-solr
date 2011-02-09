@@ -54,6 +54,7 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
   protected String defaultPatternRaw;
   protected Pattern defaultPattern;
 
+  @Override
   public void init(NamedList args) {
     super.init(args);
     defaultPatternRaw = LuceneRegexFragmenter.DEFAULT_PATTERN_RAW;

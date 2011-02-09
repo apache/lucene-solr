@@ -251,7 +251,7 @@ public class PackedInts {
 
   /** Returns how many bits are required to hold values up
    *  to and including maxValue
-   * @param maxValue the maximum value tha should be representable.
+   * @param maxValue the maximum value that should be representable.
    * @return the amount of bits needed to represent values from 0 to maxValue.
    * @lucene.internal
    */

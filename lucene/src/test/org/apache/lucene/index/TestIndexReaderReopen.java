@@ -174,7 +174,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   private void doTestReopenWithCommit (Random random, Directory dir, boolean withReopen) throws IOException {
     IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
-        OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()));
+                                                              OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(newInOrderLogMergePolicy()));
     iwriter.commit();
     IndexReader reader = IndexReader.open(dir, false);
     try {
@@ -773,14 +773,14 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 // not synchronized
                 IndexReader refreshed = r.reopen();
                 
-                IndexSearcher searcher = new IndexSearcher(refreshed);
+                IndexSearcher searcher = newSearcher(refreshed);
                 ScoreDoc[] hits = searcher.search(
                     new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))),
                     null, 1000).scoreDocs;
                 if (hits.length > 0) {
                   searcher.doc(hits[0].doc);
                 }
-                
+                searcher.close();
                 if (refreshed != r) {
                   refreshed.close();
                 }

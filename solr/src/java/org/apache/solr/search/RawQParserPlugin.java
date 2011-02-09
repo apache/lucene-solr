@@ -40,8 +40,10 @@ public class RawQParserPlugin extends QParserPlugin {
   public void init(NamedList args) {
   }
 
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
+      @Override
       public Query parse() throws ParseException {
         return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
       }

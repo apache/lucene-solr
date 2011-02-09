@@ -77,10 +77,11 @@ public class Grouping {
       int docsToCollect = getMax(off, len, max);
 
       // TODO: implement a DocList impl that doesn't need to start at offset=0
-      TopDocs topDocs = collector.topDocs(0, docsToCollect);
+      TopDocs topDocs = collector.topDocs(0, Math.max(docsToCollect,1));  // 0 isn't supported as a valid value
+      int docsCollected = Math.min(docsToCollect, topDocs.scoreDocs.length);
 
-      int ids[] = new int[topDocs.scoreDocs.length];
-      float[] scores = needScores ? new float[topDocs.scoreDocs.length] : null;
+      int ids[] = new int[docsCollected];
+      float[] scores = needScores ? new float[docsCollected] : null;
       for (int i=0; i<ids.length; i++) {
         ids[i] = topDocs.scoreDocs[i].doc;
         if (scores != null)

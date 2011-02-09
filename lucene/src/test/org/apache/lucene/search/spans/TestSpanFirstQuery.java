@@ -48,7 +48,7 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     writer.addDocument(doc2);
     
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // user queries on "starts-with quick"
     SpanQuery sfq = new SpanFirstQuery(new SpanTermQuery(new Term("field", "quick")), 1);

@@ -98,6 +98,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private AtomicBoolean replicationEnabled = new AtomicBoolean(true);
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
     final SolrParams solrParams = req.getParams();
@@ -143,6 +144,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
       new Thread() {
+        @Override
         public void run() {
           doFetch(paramsCopy);
         }
@@ -447,18 +449,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return fileMeta;
   }
 
+  @Override
   public String getDescription() {
     return "ReplicationHandler provides replication of index and configuration files from Master to Slaves";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
@@ -687,12 +693,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           LOG.error("Exception while writing replication details: ", e);
         }
       }
-      if (isMaster)
-        details.add("master", master);
-      if (isSlave && showSlaveDetails)
-        details.add("slave", slave);
-
     }
+
+    if (isMaster)
+      details.add("master", master);
+    if (isSlave && showSlaveDetails)
+      details.add("slave", slave);
     
     NamedList snapshotStats = snapShootDetails;
     if (snapshotStats != null)

@@ -50,10 +50,10 @@ public class TestElevationComparator extends LuceneTestCase {
     writer.addDocument(adoc(new String[] {"id", "y", "title", "boosted boosted", "str_s","y"}));
     writer.addDocument(adoc(new String[] {"id", "z", "title", "boosted boosted boosted","str_s", "z"}));
 
-    IndexReader r = IndexReader.open(writer);
+    IndexReader r = IndexReader.open(writer, true);
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(r);
+    IndexSearcher searcher = newSearcher(r);
 
     runTest(searcher, true);
     runTest(searcher, false);

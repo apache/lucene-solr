@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SimilarityProvider;
 
 public class CustomSimilarityFactory extends SimilarityFactory {
+  @Override
   public SimilarityProvider getSimilarityProvider() {
     return new MockConfigurableSimilarity(params.get("echo"));
   }

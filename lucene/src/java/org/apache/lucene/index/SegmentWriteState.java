@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitVector;
 
 /**
  * @lucene.experimental
@@ -31,6 +32,16 @@ public class SegmentWriteState {
   public final FieldInfos fieldInfos;
   public final int numDocs;
   public boolean hasVectors;
+
+  // Deletes to apply while we are flushing the segment.  A
+  // Term is enrolled in here if it was deleted at one
+  // point, and it's mapped to the docIDUpto, meaning any
+  // docID < docIDUpto containing this term should be
+  // deleted.
+  public final BufferedDeletes segDeletes;
+
+  // Lazily created:
+  public BitVector deletedDocs;
 
   final SegmentCodecs segmentCodecs;
   public final String codecId;
@@ -57,8 +68,9 @@ public class SegmentWriteState {
 
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-                           int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs) {
+                           int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes) {
     this.infoStream = infoStream;
+    this.segDeletes = segDeletes;
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
@@ -80,5 +92,6 @@ public class SegmentWriteState {
     termIndexInterval = state.termIndexInterval;
     segmentCodecs = state.segmentCodecs;
     this.codecId = codecId;
+    segDeletes = state.segDeletes;
   }
 }

@@ -19,7 +19,6 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,10 +34,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * implementation is by default the {@link SingleInstanceLockFactory}
  * but can be changed with {@link #setLockFactory}.
  */
-public class RAMDirectory extends Directory implements Serializable {
-
-  private static final long serialVersionUID = 1l;
-
+public class RAMDirectory extends Directory {
   protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<String,RAMFile>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   

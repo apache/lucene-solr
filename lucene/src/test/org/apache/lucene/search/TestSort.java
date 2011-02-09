@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -65,7 +64,7 @@ import org.apache.lucene.util._TestUtil;
  * @since   lucene 1.4
  */
 
-public class TestSort extends LuceneTestCase implements Serializable {
+public class TestSort extends LuceneTestCase {
 
   private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
   private IndexSearcher full;
@@ -121,7 +120,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   throws IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
 
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
@@ -144,7 +143,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
     IndexReader reader = writer.getReader();
     writer.close ();
-    IndexSearcher s = new IndexSearcher (reader);
+    IndexSearcher s = newSearcher(reader);
     s.setDefaultFieldSortScoring(true, true);
     return s;
   }
@@ -1059,14 +1058,15 @@ public class TestSort extends LuceneTestCase implements Serializable {
     doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(doc);
 
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     w.close();
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.STRING)));
     assertEquals(2, hits.totalHits);
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
     assertEquals(0, hits.scoreDocs[1].doc);
+    s.close();
     r.close();
     dir.close();
   }
@@ -1105,10 +1105,11 @@ public class TestSort extends LuceneTestCase implements Serializable {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TotalHitCountCollector c = new TotalHitCountCollector();
     searcher.search(new MatchAllDocsQuery(), null, c);
     assertEquals(5, c.getTotalHits());
+    searcher.close();
     reader.close();
     indexStore.close();
   }

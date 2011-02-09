@@ -94,6 +94,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     FieldAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     IndexSchema indexSchema = req.getCore().getSchema();

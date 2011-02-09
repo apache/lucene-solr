@@ -91,6 +91,7 @@ public class SpellingQueryConverter extends QueryConverter  {
    * @param original the original query string
    * @return a Collection of Lucene Tokens
    */
+  @Override
   public Collection<Token> convert(String original) {
     if (original == null) { // this can happen with q.alt = and no query
       return Collections.emptyList();

@@ -302,12 +302,12 @@ public abstract class BaseResponseWriter {
      * {@link SolrInputDocument}s to be spit out as a {@link SolrDocumentList}
      * so they can be processed as a whole, rather than on a doc-by-doc basis.
      * If set to false, this method calls
-     * {@link #writeAllDocs(DocListInfo, List)}, else if set to true, then this
+     * {@link #writeAllDocs(BaseResponseWriter.DocListInfo, List)}, else if set to true, then this
      * method forces calling {@link #writeDoc(SolrDocument)} on a doc-by-doc
      * basis. one
      * 
      * @return True to force {@link #writeDoc(SolrDocument)} to be called, False
-     *         to force {@link #writeAllDocs(DocListInfo, List)} to be called.
+     *         to force {@link #writeAllDocs(BaseResponseWriter.DocListInfo, List)} to be called.
      */
     public boolean isStreamingDocs() { return true; }
 

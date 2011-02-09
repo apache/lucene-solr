@@ -140,7 +140,7 @@ public final class CollectionUtil {
   /**
    * Sorts the given random access {@link List} using the {@link Comparator}.
    * The list must implement {@link RandomAccess}. This method uses the insertion sort
-   * algorithm. It is only recommened to use this algorithm for partially sorted small lists!
+   * algorithm. It is only recommended to use this algorithm for partially sorted small lists!
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T> void insertionSort(List<T> list, Comparator<? super T> comp) {
@@ -150,7 +150,7 @@ public final class CollectionUtil {
   /**
    * Sorts the given random access {@link List} in natural order.
    * The list must implement {@link RandomAccess}. This method uses the insertion sort
-   * algorithm. It is only recommened to use this algorithm for partially sorted small lists!
+   * algorithm. It is only recommended to use this algorithm for partially sorted small lists!
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T extends Comparable<? super T>> void insertionSort(List<T> list) {

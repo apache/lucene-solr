@@ -219,6 +219,7 @@ public class PayloadNearQuery extends SpanNearQuery {
           return true;    	
     }
 
+    @Override
     public float score() throws IOException {
 
       return super.score()

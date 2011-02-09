@@ -113,15 +113,18 @@ public class BitDocSet extends DocSetBase {
    *
    * @return the <b>internal</b> OpenBitSet that should <b>not</b> be modified.
    */
+  @Override
   public OpenBitSet getBits() {
     return bits;
   }
 
+  @Override
   public void add(int doc) {
     bits.set(doc);
     size=-1;  // invalidate size
   }
 
+  @Override
   public void addUnique(int doc) {
     bits.set(doc);
     size=-1;  // invalidate size

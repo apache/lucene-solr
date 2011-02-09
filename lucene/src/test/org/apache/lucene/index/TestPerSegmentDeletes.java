@@ -46,6 +46,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     RangeMergePolicy fsmp = new RangeMergePolicy(false);
     iwc.setMergePolicy(fsmp);
     IndexWriter writer = new IndexWriter(dir, iwc);
+    writer.setInfoStream(VERBOSE ? System.out : null);
     for (int x = 0; x < 5; x++) {
       writer.addDocument(TestIndexWriterReader.createDocument(x, "1", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
@@ -73,12 +74,12 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // flushing without applying deletes means 
     // there will still be deletes in the segment infos
     writer.flush(false, false);
-    assertTrue(writer.bufferedDeletes.any());
+    assertTrue(writer.bufferedDeletesStream.any());
     
     // get reader flushes pending deletes
     // so there should not be anymore
     IndexReader r1 = writer.getReader();
-    assertFalse(writer.bufferedDeletes.any());
+    assertFalse(writer.bufferedDeletesStream.any());
     r1.close();
     
     // delete id:2 from the first segment
@@ -256,6 +257,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     @Override
     public void close() {}
     
+    @Override
     public MergeSpecification findMerges(SegmentInfos segmentInfos)
         throws CorruptIndexException, IOException {
       MergeSpecification ms = new MergeSpecification();

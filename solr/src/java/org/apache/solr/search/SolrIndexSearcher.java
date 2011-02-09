@@ -205,6 +205,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
 
+  @Override
   public String toString() {
     return name;
   }
@@ -228,6 +229,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    *
    * In particular, the underlying reader and any cache's in use are closed.
    */
+  @Override
   public void close() throws IOException {
     if (cachingEnabled) {
       StringBuilder sb = new StringBuilder();
@@ -376,7 +378,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   /**
    * @return the indexDir on which this searcher is opened
-   * @see org.apache.solr.search.SolrIndexSearcher#SolrIndexSearcher(org.apache.solr.core.SolrCore, org.apache.solr.schema.IndexSchema, String, String, boolean)
+   * @see #SolrIndexSearcher(SolrCore, IndexSchema, String, Directory, boolean)
    */
   public String getIndexDir() {
     return indexDir;
@@ -411,6 +413,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
    */
+  @Override
   public Document doc(int i) throws IOException {
     return doc(i, (Set<String>)null);
   }
@@ -419,6 +422,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * This method does not currently use the Solr document cache.
    * 
    * @see IndexReader#document(int, FieldSelector) */
+  @Override
   public Document doc(int n, FieldSelector fieldSelector) throws IOException {
     return getIndexReader().document(n, fieldSelector);
   }
@@ -1139,13 +1143,17 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
       if (!needScores) {
         collector = new Collector () {
+          @Override
           public void setScorer(Scorer scorer) throws IOException {
           }
+          @Override
           public void collect(int doc) throws IOException {
             numHits[0]++;
           }
+          @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
           }
+          @Override
           public boolean acceptsDocsOutOfOrder() {
             return true;
           }
@@ -1153,16 +1161,20 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       } else {
         collector = new Collector() {
           Scorer scorer;
+          @Override
           public void setScorer(Scorer scorer) throws IOException {
             this.scorer = scorer;
           }
+          @Override
           public void collect(int doc) throws IOException {
             numHits[0]++;
             float score = scorer.score();
             if (score > topscore[0]) topscore[0]=score;            
           }
+          @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
           }
+          @Override
           public boolean acceptsDocsOutOfOrder() {
             return true;
           }
@@ -1260,16 +1272,20 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
        } else {
          collector = setCollector = new DocSetDelegateCollector(smallSetSize, maxDoc, new Collector() {
            Scorer scorer;
-           public void setScorer(Scorer scorer) throws IOException {
+           @Override
+          public void setScorer(Scorer scorer) throws IOException {
              this.scorer = scorer;
            }
-           public void collect(int doc) throws IOException {
+           @Override
+          public void collect(int doc) throws IOException {
              float score = scorer.score();
              if (score > topscore[0]) topscore[0]=score;
            }
-           public void setNextReader(AtomicReaderContext context) throws IOException {
+           @Override
+          public void setNextReader(AtomicReaderContext context) throws IOException {
            }
-           public boolean acceptsDocsOutOfOrder() {
+           @Override
+          public boolean acceptsDocsOutOfOrder() {
              return false;
            }
          });

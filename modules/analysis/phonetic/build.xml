@@ -48,6 +48,7 @@
   <path id="test.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
     <path refid="classpath"/>
+    <pathelement location="../../../lucene/build/classes/test-framework/"/>
     <pathelement location="../../../lucene/build/classes/test/"/>
   	<pathelement location="../build/common/classes/test/"/>
     <path refid="junit-path"/>

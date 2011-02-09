@@ -19,13 +19,14 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Document boost unit test.
  *
@@ -36,7 +37,7 @@ public class TestDocBoost extends LuceneTestCase {
 
   public void testDocBoost() throws Exception {
     Directory store = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, store);
+    RandomIndexWriter writer = new RandomIndexWriter(random, store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
 
     Fieldable f1 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
     Fieldable f2 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
@@ -64,7 +65,7 @@ public class TestDocBoost extends LuceneTestCase {
 
     final float[] scores = new float[4];
 
-    new IndexSearcher(reader).search
+    newSearcher(reader).search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
          private int base = 0;

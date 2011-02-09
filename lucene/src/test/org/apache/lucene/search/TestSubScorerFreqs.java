@@ -17,20 +17,20 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.*;
+import java.util.*;
+
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.util.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ScorerVisitor;
 import org.apache.lucene.store.*;
-
-import java.util.*;
-import java.io.*;
-
-import org.junit.Test;
+import org.apache.lucene.util.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestSubScorerFreqs extends LuceneTestCase {
 
@@ -41,7 +41,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   public static void makeIndex() throws Exception {
     dir = new RAMDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
-        random, dir);
+                                                random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     // make sure we have more than one segment occationally
     for (int i = 0; i < 31 * RANDOM_MULTIPLIER; i++) {
       Document doc = new Document();
@@ -54,7 +54,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       w.addDocument(doc);
     }
 
-    s = new IndexSearcher(w.getReader());
+    s = newSearcher(w.getReader());
     w.close();
   }
 

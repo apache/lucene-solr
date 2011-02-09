@@ -552,8 +552,7 @@ public class SortedIntDocSet extends DocSetBase {
       int lastEndIdx = 0;
 
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext contextX) throws IOException {
-        AtomicReaderContext context = (AtomicReaderContext)contextX;  // TODO: remove after lucene migration
+      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
         IndexReader reader = context.reader;
 
         final int base = context.docBase;
@@ -587,6 +586,7 @@ public class SortedIntDocSet extends DocSetBase {
 
 
         return new DocIdSet() {
+          @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int idx = startIdx;

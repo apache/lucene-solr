@@ -29,6 +29,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -47,6 +49,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.update.SolrIndexWriter;
+
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -221,10 +225,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler = new RequestHandlerBase() {
+        @Override
         public String getDescription() { return tmp; }
+        @Override
         public String getSourceId() { return tmp; }
+        @Override
         public String getSource() { return tmp; }
+        @Override
         public String getVersion() { return tmp; }
+        @Override
         public void handleRequestBody
           ( SolrQueryRequest req, SolrQueryResponse rsp ) {
           throw new RuntimeException(tmp);
@@ -652,6 +661,39 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             req("q", "patternreplacefilt:My__fine_feathered_friend_"),
             "*[count(//doc)=1]");
   }
+
+  @Test
+  public void testAbuseOfSort() {
+
+    assertU(adoc("id", "9999991",
+                 "sortabuse_b", "true",
+                 "sortabuse_t", "zzz xxx ccc vvv bbb nnn aaa sss ddd fff ggg"));
+    assertU(adoc("id", "9999992",
+                 "sortabuse_b", "true",
+                 "sortabuse_t", "zzz xxx ccc vvv bbb nnn qqq www eee rrr ttt"));
+
+    assertU(commit());
+  
+    try {
+      assertQ("sort on something that shouldn't work",
+              req("q", "sortabuse_b:true",
+                  "sort", "sortabuse_t asc"),
+              "*[count(//doc)=2]");
+      fail("no error encountered when sorting on sortabuse_t");
+    } catch (Exception outer) {
+      // EXPECTED
+      Throwable root = getRootCause(outer);
+      assertEquals("sort exception root cause", 
+                   SolrException.class, root.getClass());
+      SolrException e = (SolrException) root;
+      assertEquals("incorrect error type", 
+                   SolrException.ErrorCode.BAD_REQUEST,
+                   SolrException.ErrorCode.getErrorCode(e.code()));
+      assertTrue("exception doesn't contain field name",
+                 -1 != e.getMessage().indexOf("sortabuse_t"));
+    }
+  }
+
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {

@@ -37,7 +37,7 @@ public class TestEmptyIndex extends LuceneTestCase {
     InstantiatedIndex ii = new InstantiatedIndex();
 
     IndexReader r = new InstantiatedIndexReader(ii);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
 
     TopDocs td = s.search(new TermQuery(new Term("foo", "bar")), 1);
 

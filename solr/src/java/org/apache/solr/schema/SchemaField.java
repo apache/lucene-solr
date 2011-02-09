@@ -17,9 +17,12 @@
 
 package org.apache.solr.schema;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
+
 import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
@@ -120,8 +123,33 @@ public final class SchemaField extends FieldProperties {
     type.write(writer,name,val);
   }
 
+  /**
+   * Delegates to the FieldType for this field
+   * @see FieldType#getSortField
+   */
   public SortField getSortField(boolean top) {
     return type.getSortField(this, top);
+  }
+
+  /** 
+   * Sanity checks that the properties of this field type are plausible 
+   * for a field that may be used in sorting, throwing an appropraite 
+   * exception (including hte field name) if it is not.  FieldType subclasses 
+   * can choose to call this method in their getSortField implementation
+   * @see FieldType#getSortField
+   */
+  public void checkSortability() throws SolrException {
+    if (! indexed() ) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                              "can not sort on unindexed field: " 
+                              + getName());
+    }
+    if ( multiValued() ) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                              "can not sort on multivalued field: " 
+                              + getName());
+    }
+    
   }
 
 

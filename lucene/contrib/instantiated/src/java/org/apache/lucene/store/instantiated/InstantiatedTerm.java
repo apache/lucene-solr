@@ -16,7 +16,6 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 import org.apache.lucene.index.Term;
@@ -26,10 +25,7 @@ import org.apache.lucene.index.Term;
  *
  * @see org.apache.lucene.index.Term
  */
-public class InstantiatedTerm
-    implements Serializable {
-
-  private static final long serialVersionUID = 1l;
+public class InstantiatedTerm {
 
   public static final Comparator<InstantiatedTerm> comparator = new Comparator<InstantiatedTerm>() {
     public int compare(InstantiatedTerm instantiatedTerm, InstantiatedTerm instantiatedTerm1) {

@@ -63,6 +63,7 @@ public class TestExternalCodecs extends LuceneTestCase {
         return t2.length-t1.length;
       }
 
+      @Override
       public boolean equals(Object other) {
         return this == other;
       }
@@ -344,6 +345,7 @@ public class TestExternalCodecs extends LuceneTestCase {
         return ramField.termToDocs.get(current).totalTermFreq;
       }
 
+      @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
         return new RAMDocsEnum(ramField.termToDocs.get(current), skipDocs);
       }
@@ -737,7 +739,8 @@ public class TestExternalCodecs extends LuceneTestCase {
     
     
     final int NUM_DOCS = 173;
-    Directory dir = newDirectory();
+    MockDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).
@@ -766,7 +769,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
     w.deleteDocuments(new Term("id", "77"));
 
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     IndexReader[] subs = r.getSequentialSubReaders();
     // test each segment
     for(int i=0;i<subs.length;i++) {
@@ -776,7 +779,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     testTermsOrder(r);
     
     assertEquals(NUM_DOCS-1, r.numDocs());
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     r.close();
@@ -784,10 +787,10 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     w.deleteDocuments(new Term("id", "44"));
     w.optimize();
-    r = IndexReader.open(w);
+    r = IndexReader.open(w, true);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
-    s = new IndexSearcher(r);
+    s = newSearcher(r);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     assertEquals(1, s.search(new TermQuery(new Term("id", "76")), 1).totalHits);

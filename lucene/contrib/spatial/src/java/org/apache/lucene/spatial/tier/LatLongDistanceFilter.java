@@ -33,11 +33,6 @@ import org.apache.lucene.spatial.DistanceUtils;
  * release.</font>
  */
 public class LatLongDistanceFilter extends DistanceFilter {
-
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
   
   double lat;
   double lng;

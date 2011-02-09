@@ -19,8 +19,6 @@ package org.apache.lucene.store.instantiated;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 
-import java.io.Serializable;
-
 /**
  * Extended vector space view of a document in an {@link InstantiatedIndexReader}.
  *
@@ -28,9 +26,7 @@ import java.io.Serializable;
  */
 public class InstantiatedTermPositionVector
     extends InstantiatedTermFreqVector
-    implements TermPositionVector, Serializable {
-
-  private static final long serialVersionUID = 1l;
+    implements TermPositionVector {
 
   public InstantiatedTermPositionVector(InstantiatedDocument document, String field) {
     super(document, field);

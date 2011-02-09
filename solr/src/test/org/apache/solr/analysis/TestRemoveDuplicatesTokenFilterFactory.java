@@ -48,6 +48,7 @@ public class TestRemoveDuplicatesTokenFilterFactory extends BaseTokenTestCase {
           CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
           OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
           PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+          @Override
           public boolean incrementToken() {
             if (toks.hasNext()) {
               clearAttributes();

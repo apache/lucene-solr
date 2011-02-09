@@ -163,7 +163,8 @@ public class TestPayloads extends LuceneTestCase {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer)
-            .setOpenMode(OpenMode.CREATE));
+            .setOpenMode(OpenMode.CREATE)
+            .setMergePolicy(newInOrderLogMergePolicy()));
         
         // should be in sync with value in TermInfosWriter
         final int skipInterval = 16;

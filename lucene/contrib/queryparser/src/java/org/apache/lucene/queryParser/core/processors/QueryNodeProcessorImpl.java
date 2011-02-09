@@ -244,8 +244,6 @@ public abstract class QueryNodeProcessorImpl implements QueryNodeProcessor {
 
   private static class ChildrenList extends ArrayList<QueryNode> {
 
-    private static final long serialVersionUID = -2613518456949297135L;
-
     boolean beingUsed;
 
   }

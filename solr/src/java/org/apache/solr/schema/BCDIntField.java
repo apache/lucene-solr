@@ -30,9 +30,11 @@ import java.io.IOException;
  * @version $Id$
  */
 public class BCDIntField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
 
+  @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
   }
@@ -42,11 +44,13 @@ public class BCDIntField extends FieldType {
     throw new UnsupportedOperationException("ValueSource not implemented");
   }
 
+  @Override
   public String toInternal(String val) {
     // TODO? make sure each character is a digit?
     return BCDUtils.base10toBase10kSortableInt(val);
   }
 
+  @Override
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
@@ -57,10 +61,12 @@ public class BCDIntField extends FieldType {
     return Integer.valueOf( toExternal(f) );
   }
 
+  @Override
   public String indexedToReadable(String indexedForm) {
     return BCDUtils.base10kSortableIntToBase10(indexedForm);
   }
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeInt(name,toExternal(f));
   }

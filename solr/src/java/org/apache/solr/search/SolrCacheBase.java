@@ -55,6 +55,7 @@ public abstract class SolrCacheBase {
         throw new RuntimeException("Can't parse autoWarm value: " + configValue, e);
       }
     }
+    @Override
     public String toString() {
       return strVal;
     }

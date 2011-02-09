@@ -43,7 +43,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   String ndouble = "n_d";
   String tdouble = "n_td";
   String nlong = "n_l";
-  String tlong = "n_tl";
+  String tlong = "other_tl1";
   String ndate = "n_dt";
   String tdate = "n_tdt";
   
@@ -133,8 +133,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     query("q","*:*", "sort",i1+" desc");
     query("q","*:*", "sort",i1+" asc");
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
-    query("q","*:*", "sort",tlong+" asc", "fl","score");  // test legacy behavior - "score"=="*,score"
-    query("q","*:*", "sort",tlong+" desc");
+    query("q","*:*", "sort","n_tl1 asc", "fl","score");  // test legacy behavior - "score"=="*,score"
+    query("q","*:*", "sort","n_tl1 desc");
     handle.put("maxScore", SKIPVAL);
     query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
     //is agnostic of request params.

@@ -32,8 +32,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class DefaultOperatorAttributeImpl extends AttributeImpl
 				implements DefaultOperatorAttribute {
 
-  private static final long serialVersionUID = -6804760312723049526L;
-
   private Operator operator = Operator.OR;
 
   public DefaultOperatorAttributeImpl() {

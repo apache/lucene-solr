@@ -67,6 +67,7 @@ public class JavaBinUpdateRequestCodec {
     nl.add("delByQ", updateRequest.getDeleteQuery());
     nl.add("docs", docIter);
     new JavaBinCodec(){
+      @Override
       public void writeMap(Map val) throws IOException {
         if (val instanceof SolrInputDocument) {
           writeVal(solrInputDocumentToList((SolrInputDocument) val));
@@ -101,6 +102,7 @@ public class JavaBinUpdateRequestCodec {
       // is ever refactored, this will not work.
       private boolean seenOuterMostDocIterator = false;
         
+      @Override
       public NamedList readNamedList(FastInputStream dis) throws IOException {
         int sz = readSize(dis);
         NamedList nl = new NamedList();
@@ -115,6 +117,7 @@ public class JavaBinUpdateRequestCodec {
         return nl;
       }
 
+      @Override
       public List readIterator(FastInputStream fis) throws IOException {
 
         // default behavior for reading any regular Iterator in the stream

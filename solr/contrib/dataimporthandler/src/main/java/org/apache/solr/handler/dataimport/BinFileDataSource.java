@@ -43,10 +43,12 @@ import java.util.Properties;
 
 public class BinFileDataSource extends DataSource<InputStream>{
    protected String basePath;
+  @Override
   public void init(Context context, Properties initProps) {
      basePath = initProps.getProperty(FileDataSource.BASE_PATH);
   }
 
+  @Override
   public InputStream getData(String query) {
     File f = FileDataSource.getFile(basePath,query);
     try {
@@ -57,6 +59,7 @@ public class BinFileDataSource extends DataSource<InputStream>{
     }
   }
 
+  @Override
   public void close() {
 
   }

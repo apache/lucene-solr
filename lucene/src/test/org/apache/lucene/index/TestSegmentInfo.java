@@ -29,8 +29,9 @@ public class TestSegmentInfo extends LuceneTestCase {
 
   public void testSizeInBytesCache() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(dir, conf);
+    writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(new Field("a", "value", Store.YES, Index.ANALYZED));
     writer.addDocument(doc);

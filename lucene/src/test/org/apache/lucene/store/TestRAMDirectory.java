@@ -82,7 +82,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(docsToAdd, reader.numDocs());
     
     // open search zo check if all doc's are there
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // search for all documents
     for (int i = 0; i < docsToAdd; i++) {
@@ -138,18 +138,6 @@ public class TestRAMDirectory extends LuceneTestCase {
     
     writer.close();
   }
-
-
-  public void testSerializable() throws IOException {
-    Directory dir = new RAMDirectory();
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    assertEquals("initially empty", 0, bos.size());
-    ObjectOutput out = new ObjectOutputStream(bos);
-    int headerSize = bos.size();
-    out.writeObject(dir);
-    out.close();
-    assertTrue("contains more then just header", headerSize < bos.size());
-  } 
 
   @Override
   public void tearDown() throws Exception {

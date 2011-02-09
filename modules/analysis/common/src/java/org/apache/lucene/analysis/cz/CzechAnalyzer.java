@@ -86,7 +86,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
   private final Set<?> stemExclusionTable;
 
   /**
-   * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
+   * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
    *
    * @param matchVersion Lucene version to match See
    *          {@link <a href="#version">above</a>}

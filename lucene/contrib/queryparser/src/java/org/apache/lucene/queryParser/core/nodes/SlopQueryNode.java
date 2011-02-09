@@ -34,8 +34,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class SlopQueryNode extends QueryNodeImpl implements FieldableNode {
 
-  private static final long serialVersionUID = 0L;
-
   private int value = 0;
 
   /**

@@ -56,10 +56,12 @@ public final class QueryResultKey {
     hc = h;
   }
 
+  @Override
   public int hashCode() {
     return hc;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o==this) return true;
     if (!(o instanceof QueryResultKey)) return false;

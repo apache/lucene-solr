@@ -107,13 +107,18 @@ public class QueryComponent extends SearchComponent
         List<Query> filters = rb.getFilters();
         if (filters==null) {
           filters = new ArrayList<Query>(fqs.length);
-          rb.setFilters( filters );
         }
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, null, req);
             filters.add(fqp.getQuery());
           }
+        }
+        // only set the filters if they are not empty otherwise
+        // fq=&someotherParam= will trigger all docs filter for every request 
+        // if filter cache is disabled
+        if (!filters.isEmpty()) {
+          rb.setFilters( filters );
         }
       }
     } catch (ParseException e) {

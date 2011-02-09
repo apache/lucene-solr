@@ -29,7 +29,8 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
 	private static Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
 
-	@Before
+	@Override
+  @Before
 	public void setUp() throws Exception {
 	  super.setUp();
 		suggestions.clear();

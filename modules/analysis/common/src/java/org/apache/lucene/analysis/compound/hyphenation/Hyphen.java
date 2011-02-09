@@ -17,8 +17,6 @@
 
 package org.apache.lucene.analysis.compound.hyphenation;
 
-import java.io.Serializable;
-
 /**
  * This class represents a hyphen. A 'full' hyphen is made of 3 parts: the
  * pre-break text, post-break text and no-break. If no line-break is generated
@@ -32,7 +30,7 @@ import java.io.Serializable;
  * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
  */
 
-public class Hyphen implements Serializable {
+public class Hyphen {
   public String preBreak;
 
   public String noBreak;

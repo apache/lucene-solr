@@ -120,13 +120,13 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testSorting() throws IOException
   {
-    assertU(adoc("id", "a", "title", "ipod",           "str_s", "a" ));
-    assertU(adoc("id", "b", "title", "ipod ipod",      "str_s", "b" ));
-    assertU(adoc("id", "c", "title", "ipod ipod ipod", "str_s", "c" ));
+    assertU(adoc("id", "a", "title", "ipod",           "str_s1", "a" ));
+    assertU(adoc("id", "b", "title", "ipod ipod",      "str_s1", "b" ));
+    assertU(adoc("id", "c", "title", "ipod ipod ipod", "str_s1", "c" ));
 
-    assertU(adoc("id", "x", "title", "boosted",                 "str_s", "x" ));
-    assertU(adoc("id", "y", "title", "boosted boosted",         "str_s", "y" ));
-    assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s", "z" ));
+    assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "x" ));
+    assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "y" ));
+    assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "z" ));
     assertU(commit());
     
     String query = "title:ipod";
@@ -188,7 +188,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     // Try normal sort by 'id'
     // default 'forceBoost' should be false
     assertEquals( false, booster.forceElevation );
-    args.put( CommonParams.SORT, "str_s asc" );
+    args.put( CommonParams.SORT, "str_s1 asc" );
     assertQ( null, req
         ,"//*[@numFound='4']"
         ,"//result/doc[1]/str[@name='id'][.='a']"

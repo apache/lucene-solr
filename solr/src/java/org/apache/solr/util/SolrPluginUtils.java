@@ -703,6 +703,7 @@ public class SolrPluginUtils {
      * DisjunctionMaxQuery.  (so yes: aliases which point at other
      * aliases should work)
      */
+    @Override
     protected Query getFieldQuery(String field, String queryText, boolean quoted)
       throws ParseException {
 

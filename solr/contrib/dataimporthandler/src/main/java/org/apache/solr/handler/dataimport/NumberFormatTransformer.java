@@ -49,6 +49,7 @@ public class NumberFormatTransformer extends Transformer {
 
   private static final Pattern localeRegex = Pattern.compile("^([a-z]{2})-([A-Z]{2})$");
 
+  @Override
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
     for (Map<String, String> fld : context.getAllEntityFields()) {

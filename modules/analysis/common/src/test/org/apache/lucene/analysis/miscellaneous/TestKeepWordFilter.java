@@ -35,16 +35,26 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
     words.add( "aaa" );
     words.add( "bbb" );
     
-    String input = "aaa BBB ccc ddd EEE";
+    String input = "xxx yyy aaa zzz BBB ccc ddd EEE";
     
     // Test Stopwords
     TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
-    stream = new KeepWordFilter(stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
-    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
+    stream = new KeepWordFilter(true, stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 3, 2 });
        
     // Now force case
     stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
-    stream = new KeepWordFilter(stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
-    assertTokenStreamContents(stream, new String[] { "aaa" });
+    stream = new KeepWordFilter(true, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
+    assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 3 });
+    
+    // Test Stopwords
+    stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    stream = new KeepWordFilter(false, stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 1, 1 });
+       
+    // Now force case
+    stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    stream = new KeepWordFilter(false, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
+    assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 1 });
   }
 }

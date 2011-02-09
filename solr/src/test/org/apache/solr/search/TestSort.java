@@ -33,7 +33,9 @@ import java.io.IOException;
 import java.util.*;
 
 public class TestSort extends AbstractSolrTestCase {
+  @Override
   public String getSchemaFile() { return null; }
+  @Override
   public String getSolrConfigFile() { return null; }
 
   Random r = random;
@@ -49,6 +51,7 @@ public class TestSort extends AbstractSolrTestCase {
     String val;
     String val2;
 
+    @Override
     public String toString() {
       return "{id=" +doc + " val1="+val + " val2="+val2 + "}";
     }

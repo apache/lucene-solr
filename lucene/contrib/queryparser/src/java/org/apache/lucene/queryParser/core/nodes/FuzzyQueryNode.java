@@ -25,8 +25,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class FuzzyQueryNode extends FieldQueryNode {
 
-  private static final long serialVersionUID = -1794537213032589441L;
-
   private float similarity;
 
   private int prefixLength;

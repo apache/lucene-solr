@@ -31,8 +31,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class AllowLeadingWildcardAttributeImpl extends AttributeImpl 
 				implements AllowLeadingWildcardAttribute {
 
-  private static final long serialVersionUID = -2804763012723049527L;
-
   private boolean allowLeadingWildcard = false;  // default in 2.9
 
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {

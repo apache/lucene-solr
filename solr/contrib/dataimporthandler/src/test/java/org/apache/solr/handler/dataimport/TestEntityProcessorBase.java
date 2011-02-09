@@ -57,6 +57,7 @@ public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {
 
   static class T1 extends Transformer {
 
+    @Override
     public Object transformRow(Map<String, Object> aRow, Context context) {
       aRow.put("T1", "T1 called");
       return aRow;
@@ -66,6 +67,7 @@ public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {
 
   static class T2 extends Transformer {
 
+    @Override
     public Object transformRow(Map<String, Object> aRow, Context context) {
       aRow.put("T2", "T2 called");
       return aRow;

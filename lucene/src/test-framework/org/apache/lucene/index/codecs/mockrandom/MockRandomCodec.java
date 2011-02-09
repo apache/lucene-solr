@@ -236,7 +236,11 @@ public class MockRandomCodec extends Codec {
 
     try {
       if (random.nextBoolean()) {
-        state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+        // if termsIndexDivisor is set to -1, we should not touch it. It means a
+        // test explicitly instructed not to load the terms index.
+        if (state.termsIndexDivisor != -1) {
+          state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+        }
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: fixed-gap terms index (divisor=" + state.termsIndexDivisor + ")");
         }
@@ -256,7 +260,9 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: variable-gap terms index (divisor=" + state.termsIndexDivisor + ")");
         }
-        state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+        if (state.termsIndexDivisor != -1) {
+          state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+        }
         indexReader = new VariableGapTermsIndexReader(state.dir,
                                                       state.fieldInfos,
                                                       state.segmentInfo.name,

@@ -47,7 +47,9 @@ public class TestParallelReader extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     single.getIndexReader().close();
+    single.close();
     parallel.getIndexReader().close();
+    parallel.close();
     dir.close();
     dir1.close();
     dir2.close();
@@ -267,7 +269,7 @@ public class TestParallelReader extends LuceneTestCase {
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
-    return new IndexSearcher(pr);
+    return newSearcher(pr);
   }
 
   private Directory getDir1(Random random) throws IOException {

@@ -56,7 +56,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     iw.addDocument(doc);
     reader = iw.getReader();
     iw.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     searcher.setSimilarityProvider(sim);
   }
   

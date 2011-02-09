@@ -228,7 +228,6 @@ public interface FacetParams {
    * String indicating what "other" ranges should be computed for a
    * numerical range facet (multi-value).
    * Can be overriden on a per field basis.
-   * @see FacetNumberOther
    */
   public static final String FACET_RANGE_OTHER = FACET_RANGE + ".other";
   /**
@@ -270,6 +269,7 @@ public interface FacetParams {
    */
   public enum FacetRangeOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
+    @Override
     public String toString() { return super.toString().toLowerCase(); }
     public static FacetRangeOther get(String label) {
       try {
@@ -288,6 +288,7 @@ public interface FacetParams {
   @Deprecated
   public enum FacetDateOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
+    @Override
     public String toString() { return super.toString().toLowerCase(); }
     public static FacetDateOther get(String label) {
       try {
@@ -321,6 +322,7 @@ public interface FacetParams {
    */
   public enum FacetRangeInclude {
     ALL, LOWER, UPPER, EDGE, OUTER;
+    @Override
     public String toString() { return super.toString().toLowerCase(Locale.ENGLISH); }
     public static FacetRangeInclude get(String label) {
       try {

@@ -98,7 +98,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
 
       SegmentReader reader = getOnlySegmentReader(IndexReader.open(directory, false));
 
-        this.searcher = new IndexSearcher(reader);        
+      this.searcher = newSearcher(reader);
     }
     
     private ScoreDoc[] search() throws IOException {
@@ -126,7 +126,9 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         // test whether only the minimum amount of seeks()
         // are performed
         performTest(5);
+        searcher.close();
         performTest(10);
+        searcher.close();
     }
     
     public void testSeek() throws IOException {

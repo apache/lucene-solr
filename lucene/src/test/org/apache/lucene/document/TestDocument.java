@@ -156,7 +156,7 @@ public class TestDocument extends LuceneTestCase {
     writer.addDocument(makeDocumentWithFields());
     IndexReader reader = writer.getReader();
     
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // search for something that does exists
     Query query = new TermQuery(new Term("keyword", "test1"));
@@ -238,7 +238,7 @@ public class TestDocument extends LuceneTestCase {
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     Query query = new TermQuery(new Term("keyword", "test"));
     

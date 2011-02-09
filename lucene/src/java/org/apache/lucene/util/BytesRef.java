@@ -21,14 +21,13 @@ import java.util.Comparator;
 import java.io.UnsupportedEncodingException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Externalizable;
 import java.io.IOException;
 
 /** Represents byte[], as a slice (offset + length) into an
  *  existing byte[].
  *
  *  @lucene.experimental */
-public final class BytesRef implements Comparable<BytesRef>, Externalizable {
+public final class BytesRef implements Comparable<BytesRef> {
 
   static final int HASH_PRIME = 31;
   public static final byte[] EMPTY_BYTES = new byte[0]; 
@@ -209,6 +208,7 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
   }
 
   /** Returns hex encoded bytes, eg [0x6c 0x75 0x63 0x65 0x6e 0x65] */
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append('[');
@@ -362,27 +362,6 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
 
       // One is a prefix of the other, or, they are equal:
       return a.length - b.length;
-    }
-  }
-
-  public void writeExternal(ObjectOutput out)
-    throws IOException
-  {
-    out.writeInt(length);
-    if (length > 0) {
-      out.write(bytes, offset, length);
-    }
-  }
-
-  public void readExternal( ObjectInput in ) throws
-      IOException, ClassNotFoundException {
-    length = in.readInt();
-    offset = 0;
-    if (length > 0) {
-      bytes = new byte[length];
-      in.read(bytes, 0, length);
-    } else {
-      bytes = EMPTY_BYTES;
     }
   }
 }
