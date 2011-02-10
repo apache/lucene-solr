@@ -18,7 +18,6 @@ package org.apache.lucene.index.codecs.simple64;
  */
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfo;
@@ -32,8 +31,8 @@ import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
-import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
-import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
+import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
+import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.BlockTermsReader;
@@ -47,26 +46,22 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Simple64     
+ * Simple64
  *
  * @lucene.experimental
  */
 
-// nocommit: we are wasting bits by packing blocks of integers into as few longs as possible?
-// we should be a variable int block codec instead?
-// we then shouldnt need header bytes at all... we read a fixed number of longs per block.
 public class Simple64Codec extends Codec {
+  private final int multiplier;
 
-  private final int blockSize;
-
-  public Simple64Codec(int blockSize) {
-    this.blockSize = blockSize;
+  public Simple64Codec(int multiplier) {
     name = "Simple64";
+    this.multiplier = multiplier;
   }
 
   @Override
   public String toString() {
-    return name + "(blockSize=" + blockSize + ")";
+    return name;
   }
 
   // only for testing
@@ -77,25 +72,26 @@ public class Simple64Codec extends Codec {
   private class Simple64IntFactory extends IntStreamFactory {
 
     @Override
-    public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-      return new FixedIntBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
+    public IntIndexInput openInput(Directory dir, final String fileName, int readBufferSize) throws IOException {
+      return new VariableIntBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
 
         @Override
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
           return new BlockReader() {
-            final ByteBuffer byteBuffer = ByteBuffer.allocate(blockSize*8);
-            final byte[] input = byteBuffer.array();
-            final Simple64 decompressor = new Simple64();
-            
-            {
-              decompressor.setCompressedBuffer(byteBuffer.asLongBuffer());
-            }
-            
-            public void readBlock() throws IOException {
-              final int numBytes = in.readVInt() << 3; // read header
-              in.readBytes(input, 0, numBytes);
-              decompressor.setUnCompressedData(buffer, 0, buffer.length);
-              decompressor.decompress();              
+            private final int numBytes = multiplier*8;
+            private final byte[] bbuf = new byte[numBytes];
+            public int readBlock() throws IOException {
+              int count = 0;
+              int bufferPosition = 0;
+              in.readBytes(bbuf, 0, numBytes);
+              for(int i=0;i<multiplier;i++) {
+                final int i1 = ((bbuf[bufferPosition++] & 0xFF) << 24) | ((bbuf[bufferPosition++] & 0xFF) << 16)
+                | ((bbuf[bufferPosition++] & 0xFF) <<  8) |  (bbuf[bufferPosition++] & 0xFF);
+                final int i2 = ((bbuf[bufferPosition++] & 0xFF) << 24) | ((bbuf[bufferPosition++] & 0xFF) << 16)
+                | ((bbuf[bufferPosition++] & 0xFF) <<  8) |  (bbuf[bufferPosition++] & 0xFF);
+                count += Simple64.decompressSingle(i1, i2, buffer, count);
+              }
+              return count;
             }
           };
         }
@@ -104,22 +100,34 @@ public class Simple64Codec extends Codec {
 
     @Override
     public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      return new FixedIntBlockIndexOutput(dir.createOutput(fileName), blockSize) {
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(blockSize*8);
-        final byte[] output = byteBuffer.array();
-        final Simple64 compressor = new Simple64();
-        
-        {
-          compressor.setCompressedBuffer(byteBuffer.asLongBuffer());
-        }
+      return new VariableIntBlockIndexOutput(dir.createOutput(fileName), 61*multiplier) {
+        private final long[] buffer = new long[multiplier];
+        private int totWritten;
+        private int totConsumed;
+
+        private final long[] result = new long[1];
+        private final Simple64 compressor = new Simple64();
         
         @Override
-        protected void flushBlock() throws IOException {
-          compressor.setUnCompressedData(buffer, 0, buffer.length);
-          compressor.compress();
-          final int numBytes = compressor.compressedSize();
-          out.writeVInt(numBytes >>> 3);
-          out.writeBytes(output, numBytes);
+        protected int add(int v) throws IOException {
+          final int consumed = compressor.add(v, result);
+          if (consumed != 0) {
+            totConsumed += consumed;
+            buffer[totWritten++] = result[0];
+            if (totWritten == multiplier) {
+              for(int i=0;i<multiplier;i++) {
+                out.writeLong(buffer[i]);
+              }
+              final int ret = totConsumed;
+              totConsumed = 0;
+              totWritten = 0;
+              return ret;
+            } else {
+              return 0;
+            }
+          } else {
+            return 0;
+          }
         }
       };
     }

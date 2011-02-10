@@ -18,50 +18,33 @@ package org.apache.lucene.index.codecs.simple64;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.BulkPostingsEnum.BlockReader;
 import org.apache.lucene.index.codecs.CodecTestCase;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 public class Simple64Test extends CodecTestCase {
 
   @Test
   public void testSimple() throws IOException {
-    final int blockSize = 60;
-    final RAMDirectory dir = new RAMDirectory();
-    final String filename = Simple64.class.toString();
-    final IntStreamFactory factory = new Simple64Codec(blockSize).getIntFactory();
-    final IntIndexOutput output = factory.createOutput(dir, filename);
     final int[] values = { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,};
-
-    for (final int element : values) {
-      output.write(element);
-    }
-    output.close();
-
-    final IntIndexInput input = factory.openInput(dir, filename);
-    final BlockReader reader = input.reader();
-    int buffer[] = reader.getBuffer();
-    reader.fill();
-    for (int i = 0; i < values.length; i++) {
-      assertEquals("Error at record " + i, values[i], buffer[i]);
-    }
-    input.close();
-    dir.close();
+    doTest(values, 0);
   }
 
   @Test
   public void testSimple16bits() throws IOException {
-    final int blockSize = 60;
-    final RAMDirectory dir = new RAMDirectory();
-    final String filename = Simple64.class.toString();
-    final IntStreamFactory factory = new Simple64Codec(blockSize).getIntFactory();
-    final IntIndexOutput output = factory.createOutput(dir, filename);
+
+    // 60 values:
     final int[] values = { 60149,60149,60149,60149,60149,60149,60149,60149,60149,
                            60149,60149,60149,60149,60149,60149,60149,60149,60149,
                            60149,60149,60149,60149,60149,60149,60149,60149,60149,
@@ -70,35 +53,41 @@ public class Simple64Test extends CodecTestCase {
                            60149,60149,60149,60149,60149,60149,60149,60149,60149,
                            60149,60149,60149,60149,60149,60149,60149,60149,60149,
                            60149,};
-
-    for (final int element : values) {
-      output.write(element);
-    }
-    output.close();
-
-    final IntIndexInput input = factory.openInput(dir, filename);
-    final BlockReader reader = input.reader();
-    int buffer[] = reader.getBuffer();
-    reader.fill();
-    for (int i = 0; i < values.length; i++) {
-      assertEquals("Error at record " + i, values[i], buffer[i]);
-    }
-    input.close();
-    dir.close();
+    doTest(values, 0);
   }
 
+  // nocommit -- blockSize is unused:
   @Override
-  public void doTest(final int[] values, final int blockSize)
+  public void doTest(final int[] values, int blockSize)
       throws IOException {
     final RAMDirectory dir = new RAMDirectory();
     final String filename = Simple64.class.toString();
-    final IntStreamFactory factory = new Simple64Codec(blockSize).getIntFactory();
+    final IntStreamFactory factory = new Simple64Codec(_TestUtil.nextInt(random, 1, 4)).getIntFactory();
     final IntIndexOutput output = factory.createOutput(dir, filename);
 
-    for (final int element : values) {
+    if (VERBOSE) {
+      System.out.println("TEST: " + values.length + " values");
+    }
+
+    final IndexOutput indexOutput = dir.createOutput("index");
+    final List<Integer> indexed = new ArrayList<Integer>();
+
+    final IntIndexOutput.Index index = output.index();
+
+    for (int upto=0;upto<values.length;upto++) {
+      final int element = values[upto];
+      if (VERBOSE) {
+        System.out.println("  add " + element);
+      }
+      if (random.nextInt(20) == 17) {
+        index.mark();
+        index.write(indexOutput, true);
+        indexed.add(upto);
+      }
       output.write(element);
     }
     output.close();
+    indexOutput.close();
 
     final IntIndexInput input = factory.openInput(dir, filename);
     final BlockReader reader = input.reader();
@@ -107,17 +96,77 @@ public class Simple64Test extends CodecTestCase {
     int pointerMax = reader.fill();
     assertTrue(pointerMax > 0);
 
+    if (VERBOSE) {
+      System.out.println("  verify...");
+    }
     for(int i=0;i<values.length;i++) {
       if (pointer == pointerMax) {
         pointerMax = reader.fill();
         assertTrue(pointerMax > 0);
         pointer = 0;
       }
+      if (VERBOSE) {
+        System.out.println("  got " + buffer[pointer]);
+      }
       assertEquals(values[i], buffer[pointer++]);
+    }
+
+    // Now test seeking:
+    if (indexed.size() != 0) {
+      final IndexInput indexInput = dir.openInput("index");
+      List<IntIndexInput.Index> indexes = new ArrayList<IntIndexInput.Index>();
+      for(int spot : indexed) {
+        IntIndexInput.Index index2 = input.index();
+        index2.read(indexInput, true);
+        indexes.add(index2);
+      }
+      indexInput.close();
+
+      for(int iter=0;iter<100;iter++) {
+        final int spot = random.nextInt(indexed.size());
+        if (VERBOSE) {
+          System.out.println("TEST: seek index=" + indexes.get(spot));
+        }
+        indexes.get(spot).seek(reader);
+        pointerMax = reader.end();
+        pointer = reader.offset();
+        int upto = indexed.get(spot);
+        int limit = Math.min(upto+20, values.length);
+        while(upto < limit) {
+          if (pointer == pointerMax) {
+            pointerMax = reader.fill();
+            assertTrue(pointerMax > 0);
+            pointer = 0;
+          }
+          if (VERBOSE) {
+            System.out.println("  got " + buffer[pointer]);
+          }
+          assertEquals(values[upto++], buffer[pointer++]);
+        }
+      }
     }
 
     input.close();
     dir.close();
+  }
+
+  @Test
+  public void testRandom() throws Exception {
+    // nocommit mixup size of int[]
+    // nocommit more iters:
+    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+      int size = _TestUtil.nextInt(random, 10, 1000);
+      int[] values = new int[size];
+      for(int i=0;i<values.length;i++) {
+        if (random.nextInt(20) == 17) {
+          values[i] = random.nextInt() & Integer.MAX_VALUE;
+        } else {
+          // duh -- & 3:
+          values[i] = random.nextInt() & 4;
+        }
+      }
+      doTest(values, 0);
+    }
   }
 
   @Test

@@ -17,12 +17,12 @@
 
 package org.apache.lucene.index.codecs.simple64;
 
-import java.nio.LongBuffer;
+import java.nio.IntBuffer;
 
 public class Simple64 {
 
   protected int compressedSize = 0;
-  protected LongBuffer compressedBuffer;
+  protected IntBuffer compressedBuffer;
 
   /** Uncompressed data */
   protected int[] unCompressedData;
@@ -31,7 +31,7 @@ public class Simple64 {
   /** Size of unCompressedData, -1 when not available. */
   protected int unComprSize = -1;
 
-  public void setCompressedBuffer(final LongBuffer compressedBuffer) {
+  public void setCompressedBuffer(final IntBuffer compressedBuffer) {
     this.compressedBuffer = compressedBuffer;
   }
 
@@ -48,20 +48,20 @@ public class Simple64 {
 
   private static final int NUM_DATA_BITS = 60;
   private static final long BITS_60_MASK = (1L << 60) - 1;
-  private static final long BITS_30_MASK = (1 << 30) - 1;
-  private static final long BITS_20_MASK = (1 << 20) - 1;
-  private static final long BITS_15_MASK = (1 << 15) - 1;
-  private static final long BITS_12_MASK = (1 << 12) - 1;
-  private static final long BITS_11_MASK = (1 << 11) - 1;
-  private static final long BITS_10_MASK = (1 << 10) - 1;
-  private static final long BITS_8_MASK = (1 << 8) - 1; // 4 bits unused, then the last value take them
-  private static final long BITS_7_MASK = (1 << 7) - 1; // 4 bits unused, then the last value take them
-  private static final long BITS_6_MASK = (1 << 6) - 1;
-  private static final long BITS_5_MASK = (1 << 5) - 1;
-  private static final long BITS_4_MASK = (1 << 4) - 1;
-  private static final long BITS_3_MASK = (1 << 3) - 1;
-  private static final long BITS_2_MASK = (1 << 2) - 1;
-  private static final long BITS_1_MASK = (1 << 1) - 1;
+  private static final int BITS_30_MASK = (1 << 30) - 1;
+  private static final int BITS_20_MASK = (1 << 20) - 1;
+  private static final int BITS_15_MASK = (1 << 15) - 1;
+  private static final int BITS_12_MASK = (1 << 12) - 1;
+  private static final int BITS_11_MASK = (1 << 11) - 1;
+  private static final int BITS_10_MASK = (1 << 10) - 1;
+  private static final int BITS_8_MASK = (1 << 8) - 1; // 4 bits unused, then the last value take them
+  private static final int BITS_7_MASK = (1 << 7) - 1; // 4 bits unused, then the last value take them
+  private static final int BITS_6_MASK = (1 << 6) - 1;
+  private static final int BITS_5_MASK = (1 << 5) - 1;
+  private static final int BITS_4_MASK = (1 << 4) - 1;
+  private static final int BITS_3_MASK = (1 << 3) - 1;
+  private static final int BITS_2_MASK = (1 << 2) - 1;
+  private static final int BITS_1_MASK = (1 << 1) - 1;
 
   private static final int STATUS_1NUM_60BITS = 14;
   private static final int STATUS_2NUM_30BITS = 13;
@@ -434,7 +434,7 @@ public class Simple64 {
     return 0;
   }
 
-  public static int compressSingle(final int[] uncompressed, final int inOffset, final int inSize, final LongBuffer compressedBuffer, final int outOffset) {
+  public static int compressSingle(final int[] uncompressed, final int inOffset, final int inSize, final IntBuffer compressedBuffer, final int outOffset) {
     if (inSize < 1) {
       throw new IllegalArgumentException("Cannot compress input with non positive size " + inSize);
     }
@@ -489,20 +489,23 @@ public class Simple64 {
     case 60:
       s9 = STATUS_1NUM_60BITS;
       s9 |= (long) (uncompressed[inOffset]) << 4;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 1;
     case 30:
       s9 = STATUS_2NUM_30BITS;
       s9 |= (long) (uncompressed[inOffset]) << 4;
       s9 |= (long) (uncompressed[inOffset+1]) << 34;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 2;
     case 20:
       s9 = STATUS_3NUM_20BITS;
       s9 |= (long) (uncompressed[inOffset]) << 4;
       s9 |= (long) (uncompressed[inOffset+1]) << 24;
       s9 |= (long) (uncompressed[inOffset+2]) << 44;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 3;
     case 15:
       s9 = STATUS_4NUM_15BITS;
@@ -510,7 +513,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+1]) << 19;
       s9 |= (long) (uncompressed[inOffset+2]) << 34;
       s9 |= (long) (uncompressed[inOffset+3]) << 49;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 4;
     case 12:
       s9 = STATUS_5NUM_12BITS;
@@ -519,7 +523,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+2]) << 28;
       s9 |= (long) (uncompressed[inOffset+3]) << 40;
       s9 |= (long) (uncompressed[inOffset+4]) << 52;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 5;
     case 10:
       s9 = STATUS_6NUM_10BITS;
@@ -529,7 +534,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+3]) << 34;
       s9 |= (long) (uncompressed[inOffset+4]) << 44;
       s9 |= (long) (uncompressed[inOffset+5]) << 54;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 6;
     case 8:
       s9 = STATUS_7NUM_8BITS;
@@ -540,7 +546,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+4]) << 36;
       s9 |= (long) (uncompressed[inOffset+5]) << 44;
       s9 |= (long) (uncompressed[inOffset+6]) << 52; // 4 more bits
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 7;
     case 7:
       s9 = STATUS_8NUM_7BITS;
@@ -552,7 +559,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+5]) << 39;
       s9 |= (long) (uncompressed[inOffset+6]) << 46;
       s9 |= (long) (uncompressed[inOffset+7]) << 53; // 4 more bits
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 8;
     case 6:
       s9 = STATUS_10NUM_6BITS;
@@ -566,7 +574,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+7]) << 46;
       s9 |= (long) (uncompressed[inOffset+8]) << 52;
       s9 |= (long) (uncompressed[inOffset+9]) << 58;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 10;
     case 5:
       s9 = STATUS_12NUM_5BITS;
@@ -582,7 +591,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+9]) << 49;
       s9 |= (long) (uncompressed[inOffset+10]) << 54;
       s9 |= (long) (uncompressed[inOffset+11]) << 59;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 12;
     case 4:
       s9 = STATUS_15NUM_4BITS;
@@ -601,7 +611,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+12]) << 52;
       s9 |= (long) (uncompressed[inOffset+13]) << 56;
       s9 |= (long) (uncompressed[inOffset+14]) << 60;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 15;
     case 3:
       s9 = STATUS_20NUM_3BITS;
@@ -625,7 +636,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+17]) << 55;
       s9 |= (long) (uncompressed[inOffset+18]) << 58;
       s9 |= (long) (uncompressed[inOffset+19]) << 61;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 20;
     case 2:
       s9 = STATUS_30NUM_2BITS;
@@ -659,7 +671,8 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+27]) << 58;
       s9 |= (long) (uncompressed[inOffset+28]) << 60;
       s9 |= (long) (uncompressed[inOffset+29]) << 62;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 30;
     case 1:
       s9 = STATUS_60NUM_1BITS;
@@ -723,231 +736,229 @@ public class Simple64 {
       s9 |= (long) (uncompressed[inOffset+57]) << 61;
       s9 |= (long) (uncompressed[inOffset+58]) << 62;
       s9 |= (long) (uncompressed[inOffset+59]) << 63;
-      compressedBuffer.put(outOffset, s9);
+      compressedBuffer.put(outOffset, (int) (s9 >> 32));
+      compressedBuffer.put(outOffset+1, (int) s9);
       return 60;
     default:
       throw new Error("S98b.compressSingle internal error: unknown minBits: " + minBits);
     }
   }
-
-
-  public static int decompressSingle(final long s9, final int[] decompressed, final int outOffset) {
-    //System.out.println("S64.decompressSingle header=" + (int) (s9&15));
-    // nocommit case s9 to int then & with 15???
-    switch ((int) (s9 & 15)) {
+  
+  public static int decompressSingle(final int s9a, final int s9b, final int[] decompressed, final int outOffset) {
+    switch (s9b & 15) {
     case STATUS_1NUM_60BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_60_MASK); // The value can't be bigger than 2^32-1
-      return 1;
+      decompressed[outOffset] = (s9b >>> 4) | (s9a << 28);
+     return 1;
     case STATUS_2NUM_30BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_30_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 34) & BITS_30_MASK);
+      decompressed[outOffset] = (s9b >>> 4 | (s9a << 28)) & BITS_30_MASK;
+      decompressed[outOffset+1] = (s9a >>> 2) & BITS_30_MASK;
       return 2;
     case STATUS_3NUM_20BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_20_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 24) & BITS_20_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 44) & BITS_20_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_20_MASK;
+      decompressed[outOffset+1] = ((s9b >>> 24) | (s9a << 8)) & BITS_20_MASK;
+      decompressed[outOffset+2] = (s9a >>> 12) & BITS_20_MASK;
       return 3;
     case STATUS_4NUM_15BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_15_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 19) & BITS_15_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 34) & BITS_15_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 49) & BITS_15_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_15_MASK;
+      decompressed[outOffset+1] = ((s9b >>> 19) | (s9a << 13)) & BITS_15_MASK;
+      decompressed[outOffset+2] = (s9a >>> 2) & BITS_15_MASK;
+      decompressed[outOffset+3] = (s9a >>> 17) & BITS_15_MASK;
       return 4;
     case STATUS_5NUM_12BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_12_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 16) & BITS_12_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 28) & BITS_12_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 40) & BITS_12_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 52) & BITS_12_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_12_MASK;
+      decompressed[outOffset+1] = (s9b >>> 16) & BITS_12_MASK;
+      decompressed[outOffset+2] = ((s9b >>> 28) | (s9a << 4)) & BITS_12_MASK;
+      decompressed[outOffset+3] = (s9a >>> 8) & BITS_12_MASK;
+      decompressed[outOffset+4] = (s9a >>> 20) & BITS_12_MASK;
       return 5;
     case STATUS_6NUM_10BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_10_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 14) & BITS_10_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 24) & BITS_10_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 34) & BITS_10_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 44) & BITS_10_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 54) & BITS_10_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_10_MASK;
+      decompressed[outOffset+1] = (s9b >>> 14) & BITS_10_MASK;
+      decompressed[outOffset+2] = ((s9b >>> 24) | (s9a << 8)) & BITS_10_MASK;
+      decompressed[outOffset+3] = (s9a >>> 2) & BITS_10_MASK;
+      decompressed[outOffset+4] = (s9a >>> 12) & BITS_10_MASK;
+      decompressed[outOffset+5] = (s9a >>> 22) & BITS_10_MASK;
       return 6;
     case STATUS_7NUM_8BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_8_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 12) & BITS_8_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 20) & BITS_8_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 28) & BITS_8_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 36) & BITS_8_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 44) & BITS_8_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 52) & BITS_12_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_8_MASK;
+      decompressed[outOffset+1] = (s9b >>> 12) & BITS_8_MASK;
+      decompressed[outOffset+2] = (s9b >>> 20) & BITS_8_MASK;
+      decompressed[outOffset+3] = ((s9b >>> 28) | (s9a << 4)) & BITS_8_MASK;
+      decompressed[outOffset+4] = (s9a >>> 4) & BITS_8_MASK;
+      decompressed[outOffset+5] = (s9a >>> 12) & BITS_8_MASK;
+      decompressed[outOffset+6] = (s9a >>> 20) & BITS_12_MASK;
       return 7;
     case STATUS_8NUM_7BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_7_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 11) & BITS_7_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 18) & BITS_7_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 25) & BITS_7_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 32) & BITS_7_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 39) & BITS_7_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 46) & BITS_7_MASK);
-      decompressed[outOffset+7] = (int) ((s9 >>> 53) & BITS_11_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_7_MASK;
+      decompressed[outOffset+1] = (s9b >>> 11) & BITS_7_MASK;
+      decompressed[outOffset+2] = (s9b >>> 18) & BITS_7_MASK;
+      decompressed[outOffset+3] = (s9b >>> 25) & BITS_7_MASK;
+      decompressed[outOffset+4] = s9a & BITS_7_MASK;
+      decompressed[outOffset+5] = (s9a >>> 7) & BITS_7_MASK;
+      decompressed[outOffset+6] = (s9a >>> 14) & BITS_7_MASK;
+      decompressed[outOffset+7] = (s9a >>> 21) & BITS_11_MASK;
       return 8;
     case STATUS_10NUM_6BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_6_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 10) & BITS_6_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 16) & BITS_6_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 22) & BITS_6_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 28) & BITS_6_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 34) & BITS_6_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 40) & BITS_6_MASK);
-      decompressed[outOffset+7] = (int) ((s9 >>> 46) & BITS_6_MASK);
-      decompressed[outOffset+8] = (int) ((s9 >>> 52) & BITS_6_MASK);
-      decompressed[outOffset+9] = (int) ((s9 >>> 58) & BITS_6_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_6_MASK;
+      decompressed[outOffset+1] = (s9b >>> 10) & BITS_6_MASK;
+      decompressed[outOffset+2] = (s9b >>> 16) & BITS_6_MASK;
+      decompressed[outOffset+3] = (s9b >>> 22) & BITS_6_MASK;
+      decompressed[outOffset+4] = ((s9b >>> 28) | (s9a << 4)) & BITS_6_MASK;
+      decompressed[outOffset+5] = (s9a >>> 2) & BITS_6_MASK;
+      decompressed[outOffset+6] = (s9a >>> 8) & BITS_6_MASK;
+      decompressed[outOffset+7] = (s9a >>> 14) & BITS_6_MASK;
+      decompressed[outOffset+8] = (s9a >>> 20) & BITS_6_MASK;
+      decompressed[outOffset+9] = (s9a >>> 26) & BITS_6_MASK;
       return 10;
     case STATUS_12NUM_5BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_5_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 9) & BITS_5_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 14) & BITS_5_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 19) & BITS_5_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 24) & BITS_5_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 29) & BITS_5_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 34) & BITS_5_MASK);
-      decompressed[outOffset+7] = (int) ((s9 >>> 39) & BITS_5_MASK);
-      decompressed[outOffset+8] = (int) ((s9 >>> 44) & BITS_5_MASK);
-      decompressed[outOffset+9] = (int) ((s9 >>> 49) & BITS_5_MASK);
-      decompressed[outOffset+10] = (int) ((s9 >>> 54) & BITS_5_MASK);
-      decompressed[outOffset+11] = (int) ((s9 >>> 59) & BITS_5_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_5_MASK;
+      decompressed[outOffset+1] = (s9b >>> 9) & BITS_5_MASK;
+      decompressed[outOffset+2] = (s9b >>> 14) & BITS_5_MASK;
+      decompressed[outOffset+3] = (s9b >>> 19) & BITS_5_MASK;
+      decompressed[outOffset+4] = (s9b >>> 24) & BITS_5_MASK;
+      decompressed[outOffset+5] = ((s9b >>> 29) | (s9a << 3)) & BITS_5_MASK;
+      decompressed[outOffset+6] = (s9a >>> 2) & BITS_5_MASK;
+      decompressed[outOffset+7] = (s9a >>> 7) & BITS_5_MASK;
+      decompressed[outOffset+8] = (s9a >>> 12) & BITS_5_MASK;
+      decompressed[outOffset+9] = (s9a >>> 17) & BITS_5_MASK;
+      decompressed[outOffset+10] = (s9a >>> 22) & BITS_5_MASK;
+      decompressed[outOffset+11] = (s9a >>> 27) & BITS_5_MASK;
       return 12;
     case STATUS_15NUM_4BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_4_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 8) & BITS_4_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 12) & BITS_4_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 16) & BITS_4_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 20) & BITS_4_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 24) & BITS_4_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 28) & BITS_4_MASK);
-      decompressed[outOffset+7] = (int) ((s9 >>> 32) & BITS_4_MASK);
-      decompressed[outOffset+8] = (int) ((s9 >>> 36) & BITS_4_MASK);
-      decompressed[outOffset+9] = (int) ((s9 >>> 40) & BITS_4_MASK);
-      decompressed[outOffset+10] = (int) ((s9 >>> 44) & BITS_4_MASK);
-      decompressed[outOffset+11] = (int) ((s9 >>> 48) & BITS_4_MASK);
-      decompressed[outOffset+12] = (int) ((s9 >>> 52) & BITS_4_MASK);
-      decompressed[outOffset+13] = (int) ((s9 >>> 56) & BITS_4_MASK);
-      decompressed[outOffset+14] = (int) ((s9 >>> 60) & BITS_4_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_4_MASK;
+      decompressed[outOffset+1] = (s9b >>> 8) & BITS_4_MASK;
+      decompressed[outOffset+2] = (s9b >>> 12) & BITS_4_MASK;
+      decompressed[outOffset+3] = (s9b >>> 16) & BITS_4_MASK;
+      decompressed[outOffset+4] = (s9b >>> 20) & BITS_4_MASK;
+      decompressed[outOffset+5] = (s9b >>> 24) & BITS_4_MASK;
+      decompressed[outOffset+6] = (s9b >>> 28) & BITS_4_MASK;
+      decompressed[outOffset+7] = s9a & BITS_4_MASK;
+      decompressed[outOffset+8] = (s9a >>> 4) & BITS_4_MASK;
+      decompressed[outOffset+9] = (s9a >>> 8) & BITS_4_MASK;
+      decompressed[outOffset+10] = (s9a >>> 12) & BITS_4_MASK;
+      decompressed[outOffset+11] = (s9a >>> 16) & BITS_4_MASK;
+      decompressed[outOffset+12] = (s9a >>> 20) & BITS_4_MASK;
+      decompressed[outOffset+13] = (s9a >>> 24) & BITS_4_MASK;
+      decompressed[outOffset+14] = (s9a >>> 28) & BITS_4_MASK;
       return 15;
     case STATUS_20NUM_3BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_3_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 7) & BITS_3_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 10) & BITS_3_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 13) & BITS_3_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 16) & BITS_3_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 19) & BITS_3_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 22) & BITS_3_MASK);
-      decompressed[outOffset+7] = (int) ((s9 >>> 25) & BITS_3_MASK);
-      decompressed[outOffset+8] = (int) ((s9 >>> 28) & BITS_3_MASK);
-      decompressed[outOffset+9] = (int) ((s9 >>> 31) & BITS_3_MASK);
-      decompressed[outOffset+10] = (int) ((s9 >>> 34) & BITS_3_MASK);
-      decompressed[outOffset+11] = (int) ((s9 >>> 37) & BITS_3_MASK);
-      decompressed[outOffset+12] = (int) ((s9 >>> 40) & BITS_3_MASK);
-      decompressed[outOffset+13] = (int) ((s9 >>> 43) & BITS_3_MASK);
-      decompressed[outOffset+14] = (int) ((s9 >>> 46) & BITS_3_MASK);
-      decompressed[outOffset+15] = (int) ((s9 >>> 49) & BITS_3_MASK);
-      decompressed[outOffset+16] = (int) ((s9 >>> 52) & BITS_3_MASK);
-      decompressed[outOffset+17] = (int) ((s9 >>> 55) & BITS_3_MASK);
-      decompressed[outOffset+18] = (int) ((s9 >>> 58) & BITS_3_MASK);
-      decompressed[outOffset+19] = (int) ((s9 >>> 61) & BITS_3_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_3_MASK;
+      decompressed[outOffset+1] = (s9b >>> 7) & BITS_3_MASK;
+      decompressed[outOffset+2] = (s9b >>> 10) & BITS_3_MASK;
+      decompressed[outOffset+3] = (s9b >>> 13) & BITS_3_MASK;
+      decompressed[outOffset+4] = (s9b >>> 16) & BITS_3_MASK;
+      decompressed[outOffset+5] = (s9b >>> 19) & BITS_3_MASK;
+      decompressed[outOffset+6] = (s9b >>> 22) & BITS_3_MASK;
+      decompressed[outOffset+7] = (s9b >>> 25) & BITS_3_MASK;
+      decompressed[outOffset+8] = (s9b >>> 28) & BITS_3_MASK;
+      decompressed[outOffset+9] = ((s9b >>> 31) | (s9a << 1)) & BITS_3_MASK;
+      decompressed[outOffset+10] = (s9a >>> 2) & BITS_3_MASK;
+      decompressed[outOffset+11] = (s9a >>> 5) & BITS_3_MASK;
+      decompressed[outOffset+12] = (s9a >>> 8) & BITS_3_MASK;
+      decompressed[outOffset+13] = (s9a >>> 11) & BITS_3_MASK;
+      decompressed[outOffset+14] = (s9a >>> 14) & BITS_3_MASK;
+      decompressed[outOffset+15] = (s9a >>> 17) & BITS_3_MASK;
+      decompressed[outOffset+16] = (s9a >>> 20) & BITS_3_MASK;
+      decompressed[outOffset+17] = (s9a >>> 23) & BITS_3_MASK;
+      decompressed[outOffset+18] = (s9a >>> 26) & BITS_3_MASK;
+      decompressed[outOffset+19] = (s9a >>> 29) & BITS_3_MASK;
       return 20;
     case STATUS_30NUM_2BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_2_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 6) & BITS_2_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 8) & BITS_2_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 10) & BITS_2_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 12) & BITS_2_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 14) & BITS_2_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 16) & BITS_2_MASK);
-      decompressed[outOffset+7] = (int) ((s9 >>> 18) & BITS_2_MASK);
-      decompressed[outOffset+8] = (int) ((s9 >>> 20) & BITS_2_MASK);
-      decompressed[outOffset+9] = (int) ((s9 >>> 22) & BITS_2_MASK);
-      decompressed[outOffset+10] = (int) ((s9 >>> 24) & BITS_2_MASK);
-      decompressed[outOffset+11] = (int) ((s9 >>> 26) & BITS_2_MASK);
-      decompressed[outOffset+12] = (int) ((s9 >>> 28) & BITS_2_MASK);
-      decompressed[outOffset+13] = (int) ((s9 >>> 30) & BITS_2_MASK);
-      decompressed[outOffset+14] = (int) ((s9 >>> 32) & BITS_2_MASK);
-      decompressed[outOffset+15] = (int) ((s9 >>> 34) & BITS_2_MASK);
-      decompressed[outOffset+16] = (int) ((s9 >>> 36) & BITS_2_MASK);
-      decompressed[outOffset+17] = (int) ((s9 >>> 38) & BITS_2_MASK);
-      decompressed[outOffset+18] = (int) ((s9 >>> 40) & BITS_2_MASK);
-      decompressed[outOffset+19] = (int) ((s9 >>> 42) & BITS_2_MASK);
-      decompressed[outOffset+20] = (int) ((s9 >>> 44) & BITS_2_MASK);
-      decompressed[outOffset+21] = (int) ((s9 >>> 46) & BITS_2_MASK);
-      decompressed[outOffset+22] = (int) ((s9 >>> 48) & BITS_2_MASK);
-      decompressed[outOffset+23] = (int) ((s9 >>> 50) & BITS_2_MASK);
-      decompressed[outOffset+24] = (int) ((s9 >>> 52) & BITS_2_MASK);
-      decompressed[outOffset+25] = (int) ((s9 >>> 54) & BITS_2_MASK);
-      decompressed[outOffset+26] = (int) ((s9 >>> 56) & BITS_2_MASK);
-      decompressed[outOffset+27] = (int) ((s9 >>> 58) & BITS_2_MASK);
-      decompressed[outOffset+28] = (int) ((s9 >>> 60) & BITS_2_MASK);
-      decompressed[outOffset+29] = (int) ((s9 >>> 62) & BITS_2_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_2_MASK;
+      decompressed[outOffset+1] = (s9b >>> 6) & BITS_2_MASK;
+      decompressed[outOffset+2] = (s9b >>> 8) & BITS_2_MASK;
+      decompressed[outOffset+3] = (s9b >>> 10) & BITS_2_MASK;
+      decompressed[outOffset+4] = (s9b >>> 12) & BITS_2_MASK;
+      decompressed[outOffset+5] = (s9b >>> 14) & BITS_2_MASK;
+      decompressed[outOffset+6] = (s9b >>> 16) & BITS_2_MASK;
+      decompressed[outOffset+7] = (s9b >>> 18) & BITS_2_MASK;
+      decompressed[outOffset+8] = (s9b >>> 20) & BITS_2_MASK;
+      decompressed[outOffset+9] = (s9b >>> 22) & BITS_2_MASK;
+      decompressed[outOffset+10] = (s9b >>> 24) & BITS_2_MASK;
+      decompressed[outOffset+11] = (s9b >>> 26) & BITS_2_MASK;
+      decompressed[outOffset+12] = (s9b >>> 28) & BITS_2_MASK;
+      decompressed[outOffset+13] = (s9b >>> 30) & BITS_2_MASK;
+      decompressed[outOffset+14] = s9a & BITS_2_MASK;
+      decompressed[outOffset+15] = (s9a >>> 2) & BITS_2_MASK;
+      decompressed[outOffset+16] = (s9a >>> 4) & BITS_2_MASK;
+      decompressed[outOffset+17] = (s9a >>> 6) & BITS_2_MASK;
+      decompressed[outOffset+18] = (s9a >>> 8) & BITS_2_MASK;
+      decompressed[outOffset+19] = (s9a >>> 10) & BITS_2_MASK;
+      decompressed[outOffset+20] = (s9a >>> 12) & BITS_2_MASK;
+      decompressed[outOffset+21] = (s9a >>> 14) & BITS_2_MASK;
+      decompressed[outOffset+22] = (s9a >>> 16) & BITS_2_MASK;
+      decompressed[outOffset+23] = (s9a >>> 18) & BITS_2_MASK;
+      decompressed[outOffset+24] = (s9a >>> 20) & BITS_2_MASK;
+      decompressed[outOffset+25] = (s9a >>> 22) & BITS_2_MASK;
+      decompressed[outOffset+26] = (s9a >>> 24) & BITS_2_MASK;
+      decompressed[outOffset+27] = (s9a >>> 26) & BITS_2_MASK;
+      decompressed[outOffset+28] = (s9a >>> 28) & BITS_2_MASK;
+      decompressed[outOffset+29] = (s9a >>> 30) & BITS_2_MASK;
       return 30;
     case STATUS_60NUM_1BITS:
-      decompressed[outOffset] = (int) ((s9 >>> 4) & BITS_1_MASK);
-      decompressed[outOffset+1] = (int) ((s9 >>> 5) & BITS_1_MASK);
-      decompressed[outOffset+2] = (int) ((s9 >>> 6) & BITS_1_MASK);
-      decompressed[outOffset+3] = (int) ((s9 >>> 7) & BITS_1_MASK);
-      decompressed[outOffset+4] = (int) ((s9 >>> 8) & BITS_1_MASK);
-      decompressed[outOffset+5] = (int) ((s9 >>> 9) & BITS_1_MASK);
-      decompressed[outOffset+6] = (int) ((s9 >>> 10) & BITS_1_MASK);
-      decompressed[outOffset+7] = (int) ((s9 >>> 11) & BITS_1_MASK);
-      decompressed[outOffset+8] = (int) ((s9 >>> 12) & BITS_1_MASK);
-      decompressed[outOffset+9] = (int) ((s9 >>> 13) & BITS_1_MASK);
-      decompressed[outOffset+10] = (int) ((s9 >>> 14) & BITS_1_MASK);
-      decompressed[outOffset+11] = (int) ((s9 >>> 15) & BITS_1_MASK);
-      decompressed[outOffset+12] = (int) ((s9 >>> 16) & BITS_1_MASK);
-      decompressed[outOffset+13] = (int) ((s9 >>> 17) & BITS_1_MASK);
-      decompressed[outOffset+14] = (int) ((s9 >>> 18) & BITS_1_MASK);
-      decompressed[outOffset+15] = (int) ((s9 >>> 19) & BITS_1_MASK);
-      decompressed[outOffset+16] = (int) ((s9 >>> 20) & BITS_1_MASK);
-      decompressed[outOffset+17] = (int) ((s9 >>> 21) & BITS_1_MASK);
-      decompressed[outOffset+18] = (int) ((s9 >>> 22) & BITS_1_MASK);
-      decompressed[outOffset+19] = (int) ((s9 >>> 23) & BITS_1_MASK);
-      decompressed[outOffset+20] = (int) ((s9 >>> 24) & BITS_1_MASK);
-      decompressed[outOffset+21] = (int) ((s9 >>> 25) & BITS_1_MASK);
-      decompressed[outOffset+22] = (int) ((s9 >>> 26) & BITS_1_MASK);
-      decompressed[outOffset+23] = (int) ((s9 >>> 27) & BITS_1_MASK);
-      decompressed[outOffset+24] = (int) ((s9 >>> 28) & BITS_1_MASK);
-      decompressed[outOffset+25] = (int) ((s9 >>> 29) & BITS_1_MASK);
-      decompressed[outOffset+26] = (int) ((s9 >>> 30) & BITS_1_MASK);
-      decompressed[outOffset+27] = (int) ((s9 >>> 31) & BITS_1_MASK);
-      decompressed[outOffset+28] = (int) ((s9 >>> 32) & BITS_1_MASK);
-      decompressed[outOffset+29] = (int) ((s9 >>> 33) & BITS_1_MASK);
-      decompressed[outOffset+30] = (int) ((s9 >>> 34) & BITS_1_MASK);
-      decompressed[outOffset+31] = (int) ((s9 >>> 35) & BITS_1_MASK);
-      decompressed[outOffset+32] = (int) ((s9 >>> 36) & BITS_1_MASK);
-      decompressed[outOffset+33] = (int) ((s9 >>> 37) & BITS_1_MASK);
-      decompressed[outOffset+34] = (int) ((s9 >>> 38) & BITS_1_MASK);
-      decompressed[outOffset+35] = (int) ((s9 >>> 39) & BITS_1_MASK);
-      decompressed[outOffset+36] = (int) ((s9 >>> 40) & BITS_1_MASK);
-      decompressed[outOffset+37] = (int) ((s9 >>> 41) & BITS_1_MASK);
-      decompressed[outOffset+38] = (int) ((s9 >>> 42) & BITS_1_MASK);
-      decompressed[outOffset+39] = (int) ((s9 >>> 43) & BITS_1_MASK);
-      decompressed[outOffset+40] = (int) ((s9 >>> 44) & BITS_1_MASK);
-      decompressed[outOffset+41] = (int) ((s9 >>> 45) & BITS_1_MASK);
-      decompressed[outOffset+42] = (int) ((s9 >>> 46) & BITS_1_MASK);
-      decompressed[outOffset+43] = (int) ((s9 >>> 47) & BITS_1_MASK);
-      decompressed[outOffset+44] = (int) ((s9 >>> 48) & BITS_1_MASK);
-      decompressed[outOffset+45] = (int) ((s9 >>> 49) & BITS_1_MASK);
-      decompressed[outOffset+46] = (int) ((s9 >>> 50) & BITS_1_MASK);
-      decompressed[outOffset+47] = (int) ((s9 >>> 51) & BITS_1_MASK);
-      decompressed[outOffset+48] = (int) ((s9 >>> 52) & BITS_1_MASK);
-      decompressed[outOffset+49] = (int) ((s9 >>> 53) & BITS_1_MASK);
-      decompressed[outOffset+50] = (int) ((s9 >>> 54) & BITS_1_MASK);
-      decompressed[outOffset+51] = (int) ((s9 >>> 55) & BITS_1_MASK);
-      decompressed[outOffset+52] = (int) ((s9 >>> 56) & BITS_1_MASK);
-      decompressed[outOffset+53] = (int) ((s9 >>> 57) & BITS_1_MASK);
-      decompressed[outOffset+54] = (int) ((s9 >>> 58) & BITS_1_MASK);
-      decompressed[outOffset+55] = (int) ((s9 >>> 59) & BITS_1_MASK);
-      decompressed[outOffset+56] = (int) ((s9 >>> 60) & BITS_1_MASK);
-      decompressed[outOffset+57] = (int) ((s9 >>> 61) & BITS_1_MASK);
-      decompressed[outOffset+58] = (int) ((s9 >>> 62) & BITS_1_MASK);
-      decompressed[outOffset+59] = (int) ((s9 >>> 63) & BITS_1_MASK);
+      decompressed[outOffset] = (s9b >>> 4) & BITS_1_MASK;
+      decompressed[outOffset+1] = (s9b >>> 5) & BITS_1_MASK;
+      decompressed[outOffset+2] = (s9b >>> 6) & BITS_1_MASK;
+      decompressed[outOffset+3] = (s9b >>> 7) & BITS_1_MASK;
+      decompressed[outOffset+4] = (s9b >>> 8) & BITS_1_MASK;
+      decompressed[outOffset+5] = (s9b >>> 9) & BITS_1_MASK;
+      decompressed[outOffset+6] = (s9b >>> 10) & BITS_1_MASK;
+      decompressed[outOffset+7] = (s9b >>> 11) & BITS_1_MASK;
+      decompressed[outOffset+8] = (s9b >>> 12) & BITS_1_MASK;
+      decompressed[outOffset+9] = (s9b >>> 13) & BITS_1_MASK;
+      decompressed[outOffset+10] = (s9b >>> 14) & BITS_1_MASK;
+      decompressed[outOffset+11] = (s9b >>> 15) & BITS_1_MASK;
+      decompressed[outOffset+12] = (s9b >>> 16) & BITS_1_MASK;
+      decompressed[outOffset+13] = (s9b >>> 17) & BITS_1_MASK;
+      decompressed[outOffset+14] = (s9b >>> 18) & BITS_1_MASK;
+      decompressed[outOffset+15] = (s9b >>> 19) & BITS_1_MASK;
+      decompressed[outOffset+16] = (s9b >>> 20) & BITS_1_MASK;
+      decompressed[outOffset+17] = (s9b >>> 21) & BITS_1_MASK;
+      decompressed[outOffset+18] = (s9b >>> 22) & BITS_1_MASK;
+      decompressed[outOffset+19] = (s9b >>> 23) & BITS_1_MASK;
+      decompressed[outOffset+20] = (s9b >>> 24) & BITS_1_MASK;
+      decompressed[outOffset+21] = (s9b >>> 25) & BITS_1_MASK;
+      decompressed[outOffset+22] = (s9b >>> 26) & BITS_1_MASK;
+      decompressed[outOffset+23] = (s9b >>> 27) & BITS_1_MASK;
+      decompressed[outOffset+24] = (s9b >>> 28) & BITS_1_MASK;
+      decompressed[outOffset+25] = (s9b >>> 29) & BITS_1_MASK;
+      decompressed[outOffset+26] = (s9b >>> 30) & BITS_1_MASK;
+      decompressed[outOffset+27] = (s9b >>> 31) & BITS_1_MASK;
+      decompressed[outOffset+28] = s9a & BITS_1_MASK;
+      decompressed[outOffset+29] = (s9a >>> 1) & BITS_1_MASK;
+      decompressed[outOffset+30] = (s9a >>> 2) & BITS_1_MASK;
+      decompressed[outOffset+31] = (s9a >>> 3) & BITS_1_MASK;
+      decompressed[outOffset+32] = (s9a >>> 4) & BITS_1_MASK;
+      decompressed[outOffset+33] = (s9a >>> 5) & BITS_1_MASK;
+      decompressed[outOffset+34] = (s9a >>> 6) & BITS_1_MASK;
+      decompressed[outOffset+35] = (s9a >>> 7) & BITS_1_MASK;
+      decompressed[outOffset+36] = (s9a >>> 8) & BITS_1_MASK;
+      decompressed[outOffset+37] = (s9a >>> 9) & BITS_1_MASK;
+      decompressed[outOffset+38] = (s9a >>> 10) & BITS_1_MASK;
+      decompressed[outOffset+39] = (s9a >>> 11) & BITS_1_MASK;
+      decompressed[outOffset+40] = (s9a >>> 12) & BITS_1_MASK;
+      decompressed[outOffset+41] = (s9a >>> 13) & BITS_1_MASK;
+      decompressed[outOffset+42] = (s9a >>> 14) & BITS_1_MASK;
+      decompressed[outOffset+43] = (s9a >>> 15) & BITS_1_MASK;
+      decompressed[outOffset+44] = (s9a >>> 16) & BITS_1_MASK;
+      decompressed[outOffset+45] = (s9a >>> 17) & BITS_1_MASK;
+      decompressed[outOffset+46] = (s9a >>> 18) & BITS_1_MASK;
+      decompressed[outOffset+47] = (s9a >>> 19) & BITS_1_MASK;
+      decompressed[outOffset+48] = (s9a >>> 20) & BITS_1_MASK;
+      decompressed[outOffset+49] = (s9a >>> 21) & BITS_1_MASK;
+      decompressed[outOffset+50] = (s9a >>> 22) & BITS_1_MASK;
+      decompressed[outOffset+51] = (s9a >>> 23) & BITS_1_MASK;
+      decompressed[outOffset+52] = (s9a >>> 24) & BITS_1_MASK;
+      decompressed[outOffset+53] = (s9a >>> 25) & BITS_1_MASK;
+      decompressed[outOffset+54] = (s9a >>> 26) & BITS_1_MASK;
+      decompressed[outOffset+55] = (s9a >>> 27) & BITS_1_MASK;
+      decompressed[outOffset+56] = (s9a >>> 28) & BITS_1_MASK;
+      decompressed[outOffset+57] = (s9a >>> 29) & BITS_1_MASK;
+      decompressed[outOffset+58] = (s9a >>> 30) & BITS_1_MASK;
+      decompressed[outOffset+59] = (s9a >>> 31) & BITS_1_MASK;
       return 60;
     default:
-      throw new IllegalArgumentException("Unknown Simple9 status: " + (s9 >>> NUM_DATA_BITS));
+      throw new IllegalArgumentException("Unknown Simple9 status: " + (s9b >>> NUM_DATA_BITS));
     }
   }
 
@@ -959,9 +970,9 @@ public class Simple64 {
       encoded = compressSingle(unCompressedData, offset, unComprSize, compressedBuffer, compressedSize);
       offset += encoded;
       unComprSize -= encoded;
-      compressedSize++;
+      compressedSize+=2;
     }
-    compressedSize <<= 3;
+    compressedSize <<= 2;
   }
 
   public void decompress() {
@@ -969,7 +980,7 @@ public class Simple64 {
 
     compressedBuffer.rewind();
     while (unComprSize > 0) {
-      final int decoded = decompressSingle(compressedBuffer.get(), unCompressedData, totalOut);
+      final int decoded = decompressSingle(compressedBuffer.get(), compressedBuffer.get(), unCompressedData, totalOut);
       unComprSize -= decoded;
       totalOut += decoded;
     }
