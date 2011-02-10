@@ -2,7 +2,7 @@
 #macro(param $key)$request.params.get($key)#end
 
 #macro(url_for_solr)/solr#if($request.core.name != "")/$request.core.name#end#end
-#macro(url_for_home)#url_for_solr/browse?#end
+#macro(url_for_home)#url_for_solr/browse#end
 
 #macro(q)&q=$!{esc.url($params.get('q'))}#end
 
