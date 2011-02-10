@@ -222,6 +222,11 @@ public final class NumericField extends AbstractField {
     return (Number) fieldsData;
   }
   
+  /** Returns the precision step. */
+  public int getPrecisionStep() {
+    return numericTS.getPrecisionStep();
+  }
+  
   /**
    * Initializes the field with the supplied <code>long</code> value.
    * @param value the numeric value

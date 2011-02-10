@@ -293,6 +293,11 @@ public final class NumericTokenStream extends TokenStream {
     return (shift < valSize);
   }
 
+  /** Returns the precision step. */
+  public int getPrecisionStep() {
+    return precisionStep;
+  }
+  
   // members
   private final NumericTermAttribute numericAtt = addAttribute(NumericTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);

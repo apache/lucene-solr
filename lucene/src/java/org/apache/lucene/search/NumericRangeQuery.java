@@ -319,6 +319,9 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   /** Returns the upper value of this range query */
   public T getMax() { return max; }
   
+  /** Returns the precision step. */
+  public int getPrecisionStep() { return precisionStep; }
+  
   @Override
   public String toString(final String field) {
     final StringBuilder sb = new StringBuilder();

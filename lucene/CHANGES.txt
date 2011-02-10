@@ -856,7 +856,9 @@ New features
   CJK types are explicitly marked to allow for custom downstream handling: 
   <IDEOGRAPHIC>, <HANGUL>, <KATAKANA>, and <HIRAGANA>.  
   (Robert Muir, Steven Rowe)
-  
+
+* LUCENE-2913: Add missing getters to Numeric* classes. (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of
