@@ -235,6 +235,11 @@ public final class NumericTokenStream extends TokenStream {
     return sb.toString();
   }
 
+  /** Returns the precision step. */
+  public int getPrecisionStep() {
+    return precisionStep;
+  }
+  
   // members
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
