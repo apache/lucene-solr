@@ -106,16 +106,6 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void read(BulkPostingsEnum.BlockReader indexIn, boolean absolute)
-      throws IOException {
-      if (absolute) {
-        fp = readVLong(indexIn);
-      } else {
-        fp += readVLong(indexIn);
-      }
-    }
-
-    @Override
     public void set(IntIndexInput.Index other) {
       fp = ((Index) other).fp;
     }

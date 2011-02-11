@@ -180,25 +180,6 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
       //assert upto < maxBlockSize: "upto=" + upto + " max=" + maxBlockSize;
     }
 
-    // This is used on index stored in terms dict
-    @Override
-    public void read(final BulkPostingsEnum.BlockReader indexIn, final boolean absolute) throws IOException {
-      if (absolute) {
-        fp = readVLong(indexIn);
-        upto = next(indexIn)&0xFF;
-      } else {
-        final long delta = readVLong(indexIn);
-        if (delta == 0) {
-          // same block
-          upto = next(indexIn)&0xFF;
-        } else {
-          // new block
-          fp += delta;
-          upto = next(indexIn)&0xFF;
-        }
-      }
-    }
-
     @Override
     public String toString() {
       return "VarIntBlock.Index fp=" + fp + " upto=" + upto + " maxBlock=" + maxBlockSize;

@@ -105,26 +105,6 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
     }
 
     @Override
-    public void write(IntIndexOutput indexOut, boolean absolute) throws IOException {
-      assert upto >= 0;
-      if (absolute) {
-        indexOut.writeVLong(fp);
-        indexOut.write(upto);
-      } else if (fp == lastFP) {
-        // same block
-        indexOut.writeVLong(0);
-        assert upto >= lastUpto;
-        indexOut.write(upto);
-      } else {      
-        // new block
-        indexOut.writeVLong(fp - lastFP);
-        indexOut.write(upto);
-      }
-      lastUpto = upto;
-      lastFP = fp;
-    }
-
-    @Override
     public String toString() {
       return "VarIntBlock.Output fp=" + fp + " upto=" + upto;
     }

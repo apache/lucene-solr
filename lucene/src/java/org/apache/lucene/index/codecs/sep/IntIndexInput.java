@@ -41,8 +41,6 @@ public abstract class IntIndexInput implements Closeable {
 
     public abstract void read(DataInput indexIn, boolean absolute) throws IOException;
 
-    public abstract void read(BulkPostingsEnum.BlockReader indexIn, boolean absolute) throws IOException;
-
     /** Seeks primary stream to the last read offset.
      *  Returns true if the seek was "within block", ie
      *  within the last read block, at which point you
@@ -57,31 +55,5 @@ public abstract class IntIndexInput implements Closeable {
     
     @Override
     public abstract Object clone();
-  }
-
-
-  public static int next(BulkPostingsEnum.BlockReader reader) throws IOException {
-    final int[] buffer = reader.getBuffer();
-    int offset = reader.offset();
-    int end = reader.end();
-    if (offset >= end) {
-      offset = 0;
-      end = reader.fill();
-      assert offset < end;
-    }
-    reader.setOffset(1+offset);
-    return buffer[offset];
-  }
-
-  /** Reads long as 1 or 2 ints, and can only use 61 of
-   *  the 64 long bits. */
-  public static long readVLong(BulkPostingsEnum.BlockReader reader) throws IOException {
-    final int v = next(reader);
-    if ((v & 1) == 0) {
-      return v >> 1;
-    } else {
-      final long v2 = next(reader);
-      return (v2 << 30) | (v >> 1);
-    }
   }
 }

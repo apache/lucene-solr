@@ -167,26 +167,6 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       assert upto < blockSize;
     }
 
-    // This is used on index stored in terms dict
-    @Override
-    public void read(final BulkPostingsEnum.BlockReader indexIn, final boolean absolute) throws IOException {
-      if (absolute) {
-        fp = readVLong(indexIn);
-        upto = next(indexIn);
-      } else {
-        final long delta = readVLong(indexIn);
-        if (delta == 0) {
-          // same block
-          upto += next(indexIn);
-        } else {
-          // new block
-          fp += delta;
-          upto = next(indexIn);
-        }
-      }
-      assert upto < blockSize;
-    }
-
     @Override
     public void seek(final BulkPostingsEnum.BlockReader other) throws IOException {
       ((Reader) other).seek(fp, upto);
