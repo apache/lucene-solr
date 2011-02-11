@@ -26,13 +26,13 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.intblock.VariableIntFixedPhyBlockIndexInput;
+import org.apache.lucene.index.codecs.intblock.VariableIntFixedPhyBlockIndexOutput;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
-import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
-import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.BlockTermsReader;
@@ -73,7 +73,7 @@ public class Simple64Codec extends Codec {
 
     @Override
     public IntIndexInput openInput(Directory dir, final String fileName, int readBufferSize) throws IOException {
-      return new VariableIntBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
+      return new VariableIntFixedPhyBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
 
         @Override
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
@@ -100,7 +100,7 @@ public class Simple64Codec extends Codec {
 
     @Override
     public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      return new VariableIntBlockIndexOutput(dir.createOutput(fileName), 61*multiplier) {
+      return new VariableIntFixedPhyBlockIndexOutput(dir.createOutput(fileName), 61*multiplier, 8*multiplier) {
         private final long[] buffer = new long[multiplier];
         private int totWritten;
         private int totConsumed;
