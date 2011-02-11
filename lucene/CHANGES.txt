@@ -195,6 +195,10 @@ API Changes
   for building top-level norms. If you really need a top-level norms, use 
   MultiNorms or SlowMultiReaderWrapper. (Robert Muir, Mike Mccandless)
 
+* LUCENE-2892: Add QueryParser.newFieldQuery (called by getFieldQuery by default)
+  which takes Analyzer as a parameter, for easier customization by subclasses.
+  (Robert Muir)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
