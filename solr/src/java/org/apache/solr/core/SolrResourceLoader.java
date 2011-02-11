@@ -131,7 +131,12 @@ public class SolrResourceLoader implements ResourceLoader
    */
   void addToClassLoader(final String baseDir, final FileFilter filter) {
     File base = FileUtils.resolvePath(new File(getInstanceDir()), baseDir);
-    this.classLoader = replaceClassLoader(classLoader, base, filter);
+    if(base != null && base.canRead() && base.isDirectory()){
+      this.classLoader = replaceClassLoader(classLoader, base, filter);
+    }
+    else{
+      log.error("Can't find (or read) file to add to classloader: " + base);
+    }
   }
   
   /**
