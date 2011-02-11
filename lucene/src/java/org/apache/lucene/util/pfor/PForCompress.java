@@ -276,8 +276,10 @@ public class PForCompress extends ForCompress {
                                           + " + unComprSize " + unComprSize
                                           + ") > unCompressedData.length " + unCompressedData.length);
     }
-    int copy[] = Arrays.copyOfRange(unCompressedData, offset, offset + unComprSize);
-    assert copy.length == unComprSize;
+    int copy[] = new int[unComprSize];
+    System.arraycopy(unCompressedData, offset, copy, 0, unComprSize);
+    //int copy[] = Arrays.copyOfRange(unCompressedData, offset, offset + unComprSize);
+    //assert copy.length == unComprSize;
     Arrays.sort(copy);
     int maxValue = copy[copy.length-1];
     if (maxValue <= 1) {
