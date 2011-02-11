@@ -43,16 +43,14 @@ public interface Fieldable {
    * name, all such values are multiplied together.  This product is then
    * used to compute the norm factor for the field.  By
    * default, in the {@link
-   * org.apache.lucene.search.Similarity#computeNorm(String,
-   * FieldInvertState)} method, the boost value is multiplied
-   * by the {@link
-   * org.apache.lucene.search.Similarity#lengthNorm(String,
-   * int)} and then rounded by {@link org.apache.lucene.search.Similarity#encodeNormValue(float)} before it is stored in the
+   * org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)} method, the boost value is multiplied
+   * by the length normalization factor
+   * and then rounded by {@link org.apache.lucene.search.Similarity#encodeNormValue(float)} before it is stored in the
    * index.  One should attempt to ensure that this product does not overflow
    * the range of that encoding.
    *
    * @see org.apache.lucene.document.Document#setBoost(float)
-   * @see org.apache.lucene.search.Similarity#computeNorm(String, FieldInvertState)
+   * @see org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)
    * @see org.apache.lucene.search.Similarity#encodeNormValue(float)
    */
   void setBoost(float boost);

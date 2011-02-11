@@ -42,7 +42,7 @@ public class TestNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     @Override
-    public float computeNorm(String fieldName, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       // Disable length norm
       return state.getBoost();
     }
@@ -252,7 +252,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public float computeNorm(String field, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       return (float) state.getLength();
     }
   }

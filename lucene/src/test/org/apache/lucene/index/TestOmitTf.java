@@ -36,7 +36,7 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 public class TestOmitTf extends LuceneTestCase {
   
   public static class SimpleSimilarity extends Similarity implements SimilarityProvider {
-    @Override public float computeNorm(String field, FieldInvertState state) { return state.getBoost(); }
+    @Override public float computeNorm(FieldInvertState state) { return state.getBoost(); }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }

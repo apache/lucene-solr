@@ -31,7 +31,7 @@ public class DefaultSimilarity extends Similarity implements SimilarityProvider 
    *
    *  @lucene.experimental */
   @Override
-  public float computeNorm(String field, FieldInvertState state) {
+  public float computeNorm(FieldInvertState state) {
     final int numTerms;
     if (discountOverlaps)
       numTerms = state.getLength() - state.getNumOverlap();

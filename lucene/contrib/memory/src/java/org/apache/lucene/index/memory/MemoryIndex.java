@@ -1190,7 +1190,7 @@ public class MemoryIndex {
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
-        float n = fieldSim.computeNorm(fieldName, invertState);
+        float n = fieldSim.computeNorm(invertState);
         byte norm = fieldSim.encodeNormValue(n);
         norms = new byte[] {norm};
         

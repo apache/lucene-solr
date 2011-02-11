@@ -561,49 +561,13 @@ public abstract class Similarity {
    * Thus they have limited precision, and documents
    * must be re-indexed if this method is altered.
    *
-   * <p>For backward compatibility this method by default calls
-   * {@link #lengthNorm(String, int)} passing
-   * {@link FieldInvertState#getLength()} as the second argument, and
-   * then multiplies this value by {@link FieldInvertState#getBoost()}.</p>
-   * 
    * @lucene.experimental
    * 
-   * @param field field name
    * @param state current processing state for this field
    * @return the calculated float norm
    */
-  public abstract float computeNorm(String field, FieldInvertState state);
+  public abstract float computeNorm(FieldInvertState state);
   
-  /** Computes the normalization value for a field given the total number of
-   * terms contained in a field.  These values, together with field boosts, are
-   * stored in an index and multipled into scores for hits on each field by the
-   * search code.
-   *
-   * <p>Matches in longer fields are less precise, so implementations of this
-   * method usually return smaller values when <code>numTokens</code> is large,
-   * and larger values when <code>numTokens</code> is small.
-   * 
-   * <p>Note that the return values are computed under 
-   * {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document)} 
-   * and then stored using
-   * {@link #encodeNormValue(float)}.  
-   * Thus they have limited precision, and documents
-   * must be re-indexed if this method is altered.
-   *
-   * @param fieldName the name of the field
-   * @param numTokens the total number of tokens contained in fields named
-   * <i>fieldName</i> of <i>doc</i>.
-   * @return a normalization factor for hits on this field of this document
-   *
-   * @see org.apache.lucene.document.Field#setBoost(float)
-   *
-   * @deprecated Please override computeNorm instead
-   */
-  @Deprecated
-  public final float lengthNorm(String fieldName, int numTokens) {
-    throw new UnsupportedOperationException("please use computeNorm instead");
-  }
-
   /** Encodes a normalization factor for storage in an index.
    *
    * <p>The encoding uses a three-bit mantissa, a five-bit exponent, and
@@ -781,7 +745,6 @@ public abstract class Similarity {
    * The default implementation returns 1.
    *
    * @param docId The docId currently being scored.  If this value is {@link #NO_DOC_ID_PROVIDED}, then it should be assumed that the PayloadQuery implementation does not provide document information
-   * @param fieldName The fieldName of the term this payload belongs to
    * @param start The start position of the payload
    * @param end The end position of the payload
    * @param payload The payload byte array to be scored
@@ -791,7 +754,7 @@ public abstract class Similarity {
    *
    */
   // TODO: maybe switch this API to BytesRef?
-  public float scorePayload(int docId, String fieldName, int start, int end, byte [] payload, int offset, int length)
+  public float scorePayload(int docId, int start, int end, byte [] payload, int offset, int length)
   {
     return 1;
   }
