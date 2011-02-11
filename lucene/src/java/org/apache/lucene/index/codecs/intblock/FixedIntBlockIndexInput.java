@@ -144,19 +144,17 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       // nocommit -- somehow we should share the "upto" for
       // doc & freq since they will always be "in sync"
       if (absolute) {
-        fp = indexIn.readVLong();
         upto = indexIn.readVInt();
+        fp = indexIn.readVLong();
       } else {
-        // nocommit -- can't this be more efficient?  read a
-        // single byte and check a bit?  block size is 128...
-        final long delta = indexIn.readVLong();
-        if (delta == 0) {
+        final int uptoDelta = indexIn.readVInt();
+        if ((uptoDelta & 1) == 1) {
           // same block
-          upto += indexIn.readVInt();
+          upto += uptoDelta >>> 1;
         } else {
           // new block
-          fp += delta;
-          upto = indexIn.readVInt();
+          upto = uptoDelta >>> 1;
+          fp += indexIn.readVLong();
         }
       }
       assert upto < blockSize;
