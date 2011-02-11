@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.BulkPostingsEnum;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
@@ -1000,11 +998,6 @@ public class StandardPostingsReader extends PostingsReaderBase {
       public int offset() {
         return 0;
       }
-  
-      @Override
-      public void setOffset(int offset) {
-        throw new UnsupportedOperationException();
-      }
     }
   
     class FreqsReader extends BulkPostingsEnum.BlockReader {
@@ -1033,11 +1026,6 @@ public class StandardPostingsReader extends PostingsReaderBase {
       @Override
       public int offset() {
         return 0;
-      }
-  
-      @Override
-      public void setOffset(int offset) {
-        throw new UnsupportedOperationException();
       }
     }
   
@@ -1083,11 +1071,6 @@ public class StandardPostingsReader extends PostingsReaderBase {
       @Override
       public int offset() {
         return 0;
-      }
-  
-      @Override
-      public void setOffset(int offset) {
-        throw new UnsupportedOperationException();
       }
     }
     

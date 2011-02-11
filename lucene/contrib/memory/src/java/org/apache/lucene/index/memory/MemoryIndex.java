@@ -1096,11 +1096,6 @@ public class MemoryIndex {
         }
 
         @Override
-        public void setOffset(int offset) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
         public int end() {
           return 1;
         }
@@ -1126,11 +1121,6 @@ public class MemoryIndex {
         @Override
         public int offset() {
           return 0;
-        }
-
-        @Override
-        public void setOffset(int offset) {
-          throw new UnsupportedOperationException();
         }
 
         @Override
@@ -1166,11 +1156,6 @@ public class MemoryIndex {
         @Override
         public int offset() {
           return 0;
-        }
-
-        @Override
-        public void setOffset(int offset) {
-          throw new UnsupportedOperationException();
         }
 
         @Override

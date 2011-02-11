@@ -122,11 +122,6 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void setOffset(int offset) {
-      this.offset = offset;
-    }
-
-    @Override
     public int fill() throws IOException {
       //System.out.println("fii.fill seekPending=" + seekPending + " set lastFP=" + pendingFP + " this=" + this);
       // nocommit -- not great that we do this on each

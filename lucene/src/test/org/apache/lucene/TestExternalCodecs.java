@@ -456,11 +456,6 @@ public class TestExternalCodecs extends LuceneTestCase {
         public int offset() {
           return 0;
         }
-
-        @Override
-        public void setOffset(int offset) {
-          throw new UnsupportedOperationException();
-        }
       }
     }
 

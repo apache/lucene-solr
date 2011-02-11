@@ -1274,11 +1274,6 @@ public class PreFlexFields extends FieldsProducer {
       public int offset() {
         return 0;
       }
-
-      @Override
-      public void setOffset(int offset) {
-        throw new UnsupportedOperationException();
-      }
     }
 
     class FreqsReader extends BulkPostingsEnum.BlockReader {
@@ -1307,11 +1302,6 @@ public class PreFlexFields extends FieldsProducer {
       @Override
       public int offset() {
         return 0;
-      }
-
-      @Override
-      public void setOffset(int offset) {
-        throw new UnsupportedOperationException();
       }
     }
 
@@ -1360,11 +1350,6 @@ public class PreFlexFields extends FieldsProducer {
       @Override
       public int offset() {
         return 0;
-      }
-
-      @Override
-      public void setOffset(int offset) {
-        assert offset == 0;
       }
     }
     

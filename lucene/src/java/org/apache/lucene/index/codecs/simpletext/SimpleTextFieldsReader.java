@@ -517,11 +517,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       }
 
       @Override
-      public void setOffset(int offset) {
-        assert offset == 0;
-      }
-
-      @Override
       public int end() {
         return limit;
       }
@@ -570,11 +565,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       @Override
       public int offset() {
         return 0;
-      }
-
-      @Override
-      public void setOffset(int offset) {
-        assert offset == 0;
       }
 
       @Override

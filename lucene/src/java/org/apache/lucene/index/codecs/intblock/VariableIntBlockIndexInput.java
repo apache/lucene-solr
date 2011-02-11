@@ -140,11 +140,6 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void setOffset(int offset) {
-      this.offset = offset;
-    }
-
-    @Override
     public int fill() throws IOException {
       // nocommit -- not great that we do this on each
       // fill -- but we need it to detect seek w/in block

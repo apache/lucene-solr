@@ -73,11 +73,6 @@ public final class MultiBulkPostingsEnum extends BulkPostingsEnum {
     }
 
     @Override
-    public void setOffset(int offset) {
-      assert offset == 0;
-    }
-
-    @Override
     public int end() {
       return currentEnd;
     }

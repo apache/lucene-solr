@@ -76,9 +76,6 @@ public abstract class BulkPostingsEnum {
      *  you should not call this method anymore (the offset
      *  is always 0). */
     public abstract int offset();
-
-    // nocommit messy
-    public abstract void setOffset(int offset);
   }
 
   public abstract BlockReader getDocDeltasReader() throws IOException;

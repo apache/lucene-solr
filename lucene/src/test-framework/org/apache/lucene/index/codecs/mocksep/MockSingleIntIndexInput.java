@@ -75,11 +75,6 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void setOffset(int offset) {
-      this.offset = offset;
-    }
-
-    @Override
     public int end() {
       return 1;
     }

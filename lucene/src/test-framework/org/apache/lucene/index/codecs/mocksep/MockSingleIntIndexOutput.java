@@ -77,7 +77,7 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
       }
       lastFP = fp;
     }
-      
+
     @Override
     public String toString() {
       return Long.toString(fp);

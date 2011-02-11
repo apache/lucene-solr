@@ -78,11 +78,6 @@ public class InstantiatedBulkPostingsEnum extends BulkPostingsEnum {
     }
 
     @Override
-    public void setOffset(int v) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int end() {
       return limit;
     }
@@ -128,11 +123,6 @@ public class InstantiatedBulkPostingsEnum extends BulkPostingsEnum {
     }
 
     @Override
-    public void setOffset(int v) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int end() {
       return limit;
     }
@@ -175,11 +165,6 @@ public class InstantiatedBulkPostingsEnum extends BulkPostingsEnum {
     @Override
     public int offset() {
       return 0;
-    }
-
-    @Override
-    public void setOffset(int v) {
-      throw new UnsupportedOperationException();
     }
 
     @Override

@@ -482,11 +482,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       }
 
       @Override
-      public void setOffset(int offset) {
-        assert offset == 0;
-      }
-
-      @Override
       public int end() {
         return docDeltas.length;
       }
@@ -514,11 +509,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       }
 
       @Override
-      public void setOffset(int offset) {
-        assert offset == 0;
-      }
-
-      @Override
       public int end() {
         return numDocs;
       }
@@ -543,11 +533,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       @Override
       public int offset() {
         return 0;
-      }
-
-      @Override
-      public void setOffset(int offset) {
-        assert offset == 0;
       }
 
       @Override

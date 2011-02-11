@@ -946,11 +946,6 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
 
       @Override
-      public void setOffset(int offset) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
       public int fill() throws IOException {
         // Translate code back to pos deltas, and filter out
         // any changes in payload length.  NOTE: this is a
