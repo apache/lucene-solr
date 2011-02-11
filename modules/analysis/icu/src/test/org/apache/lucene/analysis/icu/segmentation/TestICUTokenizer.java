@@ -128,11 +128,10 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
   /*
    * For chinese, tokenize as char (these can later form bigrams or whatever)
-   * TODO: why do full-width numerics have no word-break prop?
    */
   public void testChinese() throws Exception {
     assertAnalyzesTo(a, "我是中国人。 １２３４ Ｔｅｓｔｓ ",
-        new String[] { "我", "是", "中", "国", "人", "tests"});
+        new String[] { "我", "是", "中", "国", "人", "1234", "tests"});
   }
   
   public void testEmpty() throws Exception {
@@ -220,5 +219,17 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "David has 5000 bones", 
         new String[] {"david", "has", "5000", "bones"},
         new String[] { "<ALPHANUM>", "<ALPHANUM>", "<NUM>", "<ALPHANUM>" });
+  }
+  
+  public void testKorean() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "훈민정음",
+        new String[] { "훈민정음" },
+        new String[] { "<HANGUL>" });
+  }
+  
+  public void testJapanese() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "仮名遣い カタカナ",
+        new String[] { "仮", "名", "遣", "い", "カタカナ" },
+        new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<HIRAGANA>", "<KATAKANA>" });
   }
 }

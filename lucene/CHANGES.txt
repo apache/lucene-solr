@@ -849,7 +849,16 @@ New features
   IndexReader, to allow apps that maintain external per-segment caches
   to evict entries when a segment is finished.  (Shay Banon, Yonik
   Seeley, Mike McCandless)
-  
+
+* LUCENE-2911: The new StandardTokenizer, UAX29URLEmailTokenizer, and
+  the ICUTokenizer in contrib now all tag types with a consistent set
+  of token types (defined in StandardTokenizer). Tokens in the major
+  CJK types are explicitly marked to allow for custom downstream handling: 
+  <IDEOGRAPHIC>, <HANGUL>, <KATAKANA>, and <HIRAGANA>.  
+  (Robert Muir, Steven Rowe)
+
+* LUCENE-2913: Add missing getters to Numeric* classes. (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of

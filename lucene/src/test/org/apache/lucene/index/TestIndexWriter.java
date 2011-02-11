@@ -287,7 +287,7 @@ public class TestIndexWriter extends LuceneTestCase {
       // Import to use same term index interval else a
       // smaller one here could increase the disk usage and
       // cause a false failure:
-      writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setTermIndexInterval(termIndexInterval));
+      writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND).setTermIndexInterval(termIndexInterval).setMergePolicy(newLogMergePolicy()));
       writer.setInfoStream(VERBOSE ? System.out : null);
       writer.optimize();
       writer.close();

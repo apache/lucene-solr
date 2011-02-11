@@ -23,6 +23,7 @@ package org.apache.lucene.index.codecs.standard;
 import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -44,8 +45,22 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   final IndexOutput freqOut;
   final IndexOutput proxOut;
   final DefaultSkipListWriter skipListWriter;
-  final int skipInterval;
-  final int maxSkipLevels;
+  /** Expert: The fraction of TermDocs entries stored in skip tables,
+   * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in
+   * smaller indexes, greater acceleration, but fewer accelerable cases, while
+   * smaller values result in bigger indexes, less acceleration and more
+   * accelerable cases. More detailed experiments would be useful here. */
+  final int skipInterval = 16;
+  
+  /**
+   * Expert: minimum docFreq to write any skip data at all
+   */
+  final int skipMinimum = skipInterval;
+
+  /** Expert: The maximum number of skip levels. Smaller values result in 
+   * slightly smaller indexes, but slower skipping in big posting lists.
+   */
+  final int maxSkipLevels = 10;
   final int totalNumDocs;
   IndexOutput termsOut;
 
@@ -84,14 +99,11 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
     totalNumDocs = state.numDocs;
 
-    skipListWriter = new DefaultSkipListWriter(state.skipInterval,
-                                               state.maxSkipLevels,
+    skipListWriter = new DefaultSkipListWriter(skipInterval,
+                                               maxSkipLevels,
                                                state.numDocs,
                                                freqOut,
                                                proxOut);
-     
-    skipInterval = state.skipInterval;
-    maxSkipLevels = state.maxSkipLevels;
   }
 
   @Override
@@ -100,6 +112,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
     CodecUtil.writeHeader(termsOut, CODEC, VERSION_CURRENT);
     termsOut.writeInt(skipInterval);                // write skipInterval
     termsOut.writeInt(maxSkipLevels);               // write maxSkipLevels
+    termsOut.writeInt(skipMinimum);                 // write skipMinimum
   }
 
   @Override
@@ -218,7 +231,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
     }
     lastFreqStart = freqStart;
 
-    if (df >= skipInterval) {
+    if (df >= skipMinimum) {
       bytesWriter.writeVInt((int) (skipListWriter.writeSkip(freqOut)-freqStart));
     }
 

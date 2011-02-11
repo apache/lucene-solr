@@ -15,8 +15,8 @@
  */
 
 // Generated from IANA Root Zone Database <http://www.internic.net/zones/root.zone>
-// file version from Wednesday, January 5, 2011 12:34:09 PM UTC
-// generated on Thursday, January 6, 2011 5:09:41 AM UTC
+// file version from Wednesday, February 9, 2011 12:34:10 PM UTC
+// generated on Wednesday, February 9, 2011 4:45:18 PM UTC
 // by org.apache.lucene.analysis.standard.GenerateJflexTLDMacros
 
 ASCIITLD = "." (
@@ -285,13 +285,19 @@ ASCIITLD = "." (
 	| [wW][sS]
 	| [xX][nN]--0[zZ][wW][mM]56[dD]
 	| [xX][nN]--11[bB]5[bB][sS]3[aA]9[aA][jJ]6[gG]
+	| [xX][nN]--3[eE]0[bB]707[eE]
+	| [xX][nN]--45[bB][rR][jJ]9[cC]
 	| [xX][nN]--80[aA][kK][hH][bB][yY][kK][nN][jJ]4[fF]
 	| [xX][nN]--9[tT]4[bB]11[yY][iI]5[aA]
+	| [xX][nN]--[cC][lL][cC][hH][cC]0[eE][aA]0[bB]2[gG]2[aA]9[gG][cC][dD]
 	| [xX][nN]--[dD][eE][bB][aA]0[aA][dD]
 	| [xX][nN]--[fF][iI][qQ][sS]8[sS]
 	| [xX][nN]--[fF][iI][qQ][zZ]9[sS]
+	| [xX][nN]--[fF][pP][cC][rR][jJ]9[cC]3[dD]
 	| [xX][nN]--[fF][zZ][cC]2[cC]9[eE]2[cC]
 	| [xX][nN]--[gG]6[wW]251[dD]
+	| [xX][nN]--[gG][eE][cC][rR][jJ]9[cC]
+	| [xX][nN]--[hH]2[bB][rR][jJ]9[cC]
 	| [xX][nN]--[hH][gG][bB][kK]6[aA][jJ]7[fF]53[bB][bB][aA]
 	| [xX][nN]--[hH][lL][cC][jJ]6[aA][yY][aA]9[eE][sS][cC]7[aA]
 	| [xX][nN]--[jJ]6[wW]193[gG]
@@ -301,13 +307,18 @@ ASCIITLD = "." (
 	| [xX][nN]--[kK][pP][rR][yY]57[dD]
 	| [xX][nN]--[mM][gG][bB][aA][aA][mM]7[aA]8[hH]
 	| [xX][nN]--[mM][gG][bB][aA][yY][hH]7[gG][pP][aA]
+	| [xX][nN]--[mM][gG][bB][bB][hH]1[aA]71[eE]
 	| [xX][nN]--[mM][gG][bB][eE][rR][pP]4[aA]5[dD]4[aA][rR]
 	| [xX][nN]--[oO]3[cC][wW]4[hH]
+	| [xX][nN]--[oO][gG][bB][pP][fF]8[fF][lL]
 	| [xX][nN]--[pP]1[aA][iI]
 	| [xX][nN]--[pP][gG][bB][sS]0[dD][hH]
+	| [xX][nN]--[sS]9[bB][rR][jJ]9[cC]
 	| [xX][nN]--[wW][gG][bB][hH]1[cC]
 	| [xX][nN]--[wW][gG][bB][lL]6[aA]
 	| [xX][nN]--[xX][kK][cC]2[aA][lL]3[hH][yY][eE]2[aA]
+	| [xX][nN]--[xX][kK][cC]2[dD][lL]3[aA]5[eE][eE]0[hH]
+	| [xX][nN]--[yY][fF][rR][oO]4[iI]67[oO]
 	| [xX][nN]--[yY][gG][bB][iI]2[aA][mM][mM][xX]
 	| [xX][nN]--[zZ][cC][kK][zZ][aA][hH]
 	| [yY][eE]

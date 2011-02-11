@@ -151,7 +151,7 @@ public class MockRandomCodec extends Codec {
 
               @Override
               public boolean isIndexTerm(BytesRef term, TermStats stats) {
-                return random.nextInt(gap) == 17;
+                return rand.nextInt(gap) == 17;
               }
 
               @Override

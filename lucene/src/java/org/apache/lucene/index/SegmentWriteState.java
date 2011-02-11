@@ -53,20 +53,6 @@ public class SegmentWriteState {
    * tweaking this is rarely useful.*/
   public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
 
-  /** Expert: The fraction of TermDocs entries stored in skip tables,
-   * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in
-   * smaller indexes, greater acceleration, but fewer accelerable cases, while
-   * smaller values result in bigger indexes, less acceleration and more
-   * accelerable cases. More detailed experiments would be useful here. */
-  public final int skipInterval = 16;
-  
-  /** Expert: The maximum number of skip levels. Smaller values result in 
-   * slightly smaller indexes, but slower skipping in big posting lists.
-   */
-  public final int maxSkipLevels = 10;
-  
-
-
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
                            int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes) {
     this.infoStream = infoStream;

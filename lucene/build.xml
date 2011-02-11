@@ -391,7 +391,8 @@
 
   <target name="dist-all" depends="dist, dist-src"/>
 
-  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package, jar-src, jar-test-framework-src, javadocs">
+  <target name="generate-maven-artifacts"
+          depends="maven.ant.tasks-check, package, jar-src, jar-test-framework-src, javadocs">
     <sequential>
 	  <ant target="get-maven-poms" dir=".."/>
  
@@ -403,22 +404,35 @@
                   classifier="sources"/>
           <attach file="${build.dir}/${final.name}-javadoc.jar"
                   classifier="javadoc"/>
-          <attach file="${build.dir}/${final.name}-tests.jar"
-                  classifier="tests"/>
         </artifact-attachments>
       </m2-deploy>
 
-      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
-      <artifact:pom id="test-framework-pom" file="src/test-framework/pom.xml"/>
-      <artifact:deploy>
-        <attach file="${build.dir}/${final.name}-tests.jar" 
-                classifier="tests" />
+      <!--
+        For the purposes of the generated artifacts, change the <packaging>
+        in the test-framework POM from "jar" to "test-jar" - this allows
+        artifact:deploy to properly name the artifact.  The Maven build doesn't
+        have a lifecycle mapping for the "test-jar" packaging, though, so the
+        POM in src/test-framework/ is left with the "jar" packaging.
+      -->
+      <property name="test-jar-packaging-test-framework-pom"
+                location="${build.dir}/test-jar-packaging-test-framework,pom"/>
+      <copy file="src/test-framework/pom.xml"
+            tofile="${test-jar-packaging-test-framework-pom}">
+        <filterset begintoken="&lt;packaging&gt;" endtoken="&lt;/packaging&gt;">
+          <filter token="jar"
+                  value="&lt;packaging&gt;test-jar&lt;/packaging&gt;"/>
+        </filterset>
+      </copy>
+      <artifact:pom id="test-framework-pom"
+                    file="${test-jar-packaging-test-framework-pom}"/>
+      <artifact:deploy file="${build.dir}/${final.name}-tests.jar">
         <attach file="${build.dir}/${final.name}-tests-src.jar"
                 classifier="test-sources"/>
         <attach file="${build.dir}/${final.name}-tests-javadoc.jar"
                 classifier="test-javadoc"/>
         <remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+          <authentication username="${m2.repository.username}"
+                          privateKey="${m2.repository.private.key}"/>
         </remoteRepository>
         <pom refid="test-framework-pom"/>
       </artifact:deploy>

@@ -78,6 +78,8 @@ public final class StandardTokenizer extends Tokenizer {
   public static final int SOUTHEAST_ASIAN = 9;
   public static final int IDEOGRAPHIC = 10;
   public static final int HIRAGANA = 11;
+  public static final int KATAKANA = 12;
+  public static final int HANGUL = 13;
   
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
@@ -92,7 +94,9 @@ public final class StandardTokenizer extends Tokenizer {
     "<ACRONYM_DEP>",
     "<SOUTHEAST_ASIAN>",
     "<IDEOGRAPHIC>",
-    "<HIRAGANA>"
+    "<HIRAGANA>",
+    "<KATAKANA>",
+    "<HANGUL>"
   };
 
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;

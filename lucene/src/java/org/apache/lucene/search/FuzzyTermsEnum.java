@@ -325,22 +325,26 @@ public final class FuzzyTermsEnum extends TermsEnum {
     
     /** finds the smallest Lev(n) DFA that accepts the term. */
     @Override
-    protected AcceptStatus accept(BytesRef term) {
-      if (term.equals(termRef)) { // ed = 0
-        boostAtt.setBoost(1.0F);
-        return AcceptStatus.YES_AND_SEEK;
-      }
+    protected AcceptStatus accept(BytesRef term) {    
+      int ed = matchers.length - 1;
       
-      int codePointCount = -1;
-      
-      // TODO: benchmark doing this backwards
-      for (int i = 1; i < matchers.length; i++)
-        if (matchers[i].run(term.bytes, term.offset, term.length)) {
-          // this sucks, we convert just to score based on length.
-          if (codePointCount == -1) {
-            codePointCount = UnicodeUtil.codePointCount(term);
+      if (matches(term, ed)) { // we match the outer dfa
+        // now compute exact edit distance
+        while (ed > 0) {
+          if (matches(term, ed - 1)) {
+            ed--;
+          } else {
+            break;
           }
-          final float similarity = 1.0f - ((float) i / (float) 
+        }
+        
+        // scale to a boost and return (if similarity > minSimilarity)
+        if (ed == 0) { // exact match
+          boostAtt.setBoost(1.0F);
+          return AcceptStatus.YES_AND_SEEK;
+        } else {
+          final int codePointCount = UnicodeUtil.codePointCount(term);
+          final float similarity = 1.0f - ((float) ed / (float) 
               (Math.min(codePointCount, termLength)));
           if (similarity > minSimilarity) {
             boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
@@ -349,8 +353,14 @@ public final class FuzzyTermsEnum extends TermsEnum {
             return AcceptStatus.NO_AND_SEEK;
           }
         }
-      
-      return AcceptStatus.NO_AND_SEEK;
+      } else {
+        return AcceptStatus.NO_AND_SEEK;
+      }
+    }
+    
+    /** returns true if term is within k edits of the query term */
+    final boolean matches(BytesRef term, int k) {
+      return k == 0 ? term.equals(termRef) : matchers[k].run(term.bytes, term.offset, term.length);
     }
     
     /** defers to superclass, except can start at an arbitrary location */
