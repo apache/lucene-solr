@@ -39,7 +39,7 @@ import org.apache.lucene.index.codecs.standard.StandardCodec;
  * </pre>
  */
 
-class CoreCodecProvider extends CodecProvider {
+public class CoreCodecProvider extends CodecProvider {
   CoreCodecProvider() {
     register(new StandardCodec());
     register(new PreFlexCodec());
