@@ -755,6 +755,9 @@
         excludes="*.tgz *.zip *.md5 **/*src*.jar **/*docs*.jar" />
       <tarfileset dir="${build.docs}"
         prefix="${fullnamever}/docs/" />
+      <tarfileset dir="../lucene"
+        prefix="lucene"
+        excludes="**/build/" />
     </tar>
     <solr-checksum file="${dist}/${fullnamever}.tgz"/>
 
@@ -774,6 +777,9 @@
         prefix="${fullnamever}"
         includes="**/*.sh **/bin/ src/scripts/"
         filemode="755" />
+      <zipfileset dir="../lucene"
+        prefix="lucene"
+        excludes="**/build/" />
     </zip>
     <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
