@@ -371,10 +371,11 @@ public final class SolrCore implements SolrInfoMBean {
     try {
 
       initDirectoryFactory();
-      boolean indexExists = getDirectoryFactory().exists(getNewIndexDir());
+      String indexDir = getNewIndexDir();
+      boolean indexExists = getDirectoryFactory().exists(indexDir);
       boolean firstTime;
       synchronized (SolrCore.class) {
-        firstTime = dirs.add(new File(getNewIndexDir()).getCanonicalPath());
+        firstTime = dirs.add(new File(indexDir).getCanonicalPath());
       }
       boolean removeLocks = solrConfig.unlockOnStartup;
 
@@ -383,10 +384,10 @@ public final class SolrCore implements SolrInfoMBean {
       if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
-        Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), getDirectoryFactory(), solrConfig.mainIndexConfig);
+        Directory dir = SolrIndexWriter.getDirectory(indexDir, getDirectoryFactory(), solrConfig.mainIndexConfig);
         if (dir != null)  {
           if (IndexWriter.isLocked(dir)) {
-            log.warn(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
+            log.warn(logid+"WARNING: Solr index directory '" + indexDir + "' is locked.  Unlocking...");
             IndexWriter.unlock(dir);
           }
           dir.close();
@@ -395,10 +396,10 @@ public final class SolrCore implements SolrInfoMBean {
 
       // Create the index if it doesn't exist.
       if(!indexExists) {
-        log.warn(logid+"Solr index directory '" + new File(getNewIndexDir()) + "' doesn't exist."
+        log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", getIndexDir(), getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
         writer.close();
       }
 
