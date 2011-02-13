@@ -35,6 +35,12 @@ To start using Solr UIMA Metadata Extraction Library you should go through the f
       </type>
     </fieldMapping>
   </uimaConfig>
+
+   where VALID_ALCHEMYAPI_KEY is your AlchemyAPI Access Key. You need to register AlchemyAPI Access
+   key to exploit the AlchemyAPI services: http://www.alchemyapi.com/api/register.html
+
+   where VALID_OPENCALAIS_KEY is your Calais Service Key. You need to register Calais Service
+   key to exploit the Calais services: http://www.opencalais.com/apikey
   
 5. the analysisEngine tag must contain an AE descriptor inside the specified path in the classpath
 
