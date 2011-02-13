@@ -51,7 +51,7 @@ To start using Solr UIMA Metadata Extraction Library you should go through the f
 
 8. define in your solrconfig.xml an UpdateRequestProcessorChain as following:
   <updateRequestProcessorChain name="uima">
-    <processor class="org.apache.solr.uima.processor.UIMAProcessorFactory"/>
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory"/>
     <processor class="solr.LogUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
