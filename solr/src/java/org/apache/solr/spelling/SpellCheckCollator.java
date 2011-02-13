@@ -29,7 +29,6 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +90,7 @@ public class SpellCheckCollator {
           queryComponent.process(checkResponse);
           hits = (Integer) checkResponse.rsp.getToLog().get("hits");
         } catch (Exception e) {
-          Log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
+          LOG.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
         } finally {
           checkResponse.req.close();  
         }
