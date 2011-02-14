@@ -20,9 +20,6 @@ package org.apache.lucene.misc;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.index.FieldInvertState;
 
-import java.util.Map;
-import java.util.HashMap;
-
 /**
  * A similarity with a lengthNorm that provides for a "plateau" of
  * equally good lengths, and tf helper functions.
@@ -49,11 +46,6 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   private int ln_min = 1;
   private int ln_max = 1;
   private float ln_steep = 0.5f;
-
-  private Map<String,Number> ln_maxs = new HashMap<String,Number>(7);
-  private Map<String,Number> ln_mins = new HashMap<String,Number>(7);
-  private Map<String,Float> ln_steeps = new HashMap<String,Float>(7);
-  private Map<String,Boolean> ln_overlaps = new HashMap<String,Boolean>(7);
 
   private float tf_base = 0.0f;
   private float tf_min = 0.0f;
@@ -98,55 +90,31 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * Sets the default function variables used by lengthNorm when no field
    * specific variables have been set.
    *
-   * @see #lengthNorm
+   * @see #computeLengthNorm
    */
-  public void setLengthNormFactors(int min, int max, float steepness) {
+  public void setLengthNormFactors(int min, int max, float steepness, boolean discountOverlaps) {
     this.ln_min = min;
     this.ln_max = max;
     this.ln_steep = steepness;
-  }
-
-  /**
-   * Sets the function variables used by lengthNorm for a specific named field.
-   * 
-   * @param field field name
-   * @param min minimum value
-   * @param max maximum value
-   * @param steepness steepness of the curve
-   * @param discountOverlaps if true, <code>numOverlapTokens</code> will be
-   * subtracted from <code>numTokens</code>; if false then
-   * <code>numOverlapTokens</code> will be assumed to be 0 (see
-   * {@link DefaultSimilarity#computeNorm(String, FieldInvertState)} for details).
-   *
-   * @see #lengthNorm
-   */
-  public void setLengthNormFactors(String field, int min, int max,
-                                   float steepness, boolean discountOverlaps) {
-    ln_mins.put(field, Integer.valueOf(min));
-    ln_maxs.put(field, Integer.valueOf(max));
-    ln_steeps.put(field, Float.valueOf(steepness));
-    ln_overlaps.put(field, new Boolean(discountOverlaps));
+    this.discountOverlaps = discountOverlaps;
   }
     
   /**
    * Implemented as <code> state.getBoost() *
-   * lengthNorm(fieldName, numTokens) </code> where
+   * computeLengthNorm(numTokens) </code> where
    * numTokens does not count overlap tokens if
    * discountOverlaps is true by default or true for this
    * specific field. */
   @Override
-  public float computeNorm(String fieldName, FieldInvertState state) {
+  public float computeNorm(FieldInvertState state) {
     final int numTokens;
-    boolean overlaps = discountOverlaps;
-    if (ln_overlaps.containsKey(fieldName)) {
-      overlaps = ln_overlaps.get(fieldName).booleanValue();
-    }
-    if (overlaps)
+
+    if (discountOverlaps)
       numTokens = state.getLength() - state.getNumOverlap();
     else
       numTokens = state.getLength();
 
-    return state.getBoost() * computeLengthNorm(fieldName, numTokens);
+    return state.getBoost() * computeLengthNorm(numTokens);
   }
 
   /**
@@ -167,20 +135,10 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    *
    * @see #setLengthNormFactors
    */
-  public float computeLengthNorm(String fieldName, int numTerms) {
-    int l = ln_min;
-    int h = ln_max;
-    float s = ln_steep;
-  
-    if (ln_mins.containsKey(fieldName)) {
-      l = ln_mins.get(fieldName).intValue();
-    }
-    if (ln_maxs.containsKey(fieldName)) {
-      h = ln_maxs.get(fieldName).intValue();
-    }
-    if (ln_steeps.containsKey(fieldName)) {
-      s = ln_steeps.get(fieldName).floatValue();
-    }
+  public float computeLengthNorm(int numTerms) {
+    final int l = ln_min;
+    final int h = ln_max;
+    final float s = ln_steep;
   
     return (float)
       (1.0f /

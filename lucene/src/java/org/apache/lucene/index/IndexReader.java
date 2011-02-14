@@ -1004,8 +1004,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
-   * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
-   * int) length normalization}.  Thus, to preserve the length normalization
+   * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its
+   * length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *
    * <b>NOTE:</b> If this field does not store norms, then

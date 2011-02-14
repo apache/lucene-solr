@@ -41,7 +41,7 @@ import java.io.IOException;
  * {@link org.apache.lucene.index.Term} occurs.
  * <p>
  * In order to take advantage of this, you must override
- * {@link org.apache.lucene.search.Similarity#scorePayload(int, String, int, int, byte[],int,int)}
+ * {@link org.apache.lucene.search.Similarity#scorePayload(int, int, int, byte[],int,int)}
  * which returns 1 by default.
  * <p>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
@@ -119,14 +119,14 @@ public class PayloadTermQuery extends SpanTermQuery {
           if (payload != null) {
             payloadScore = function.currentScore(doc, term.field(),
                                                  spans.start(), spans.end(), payloadsSeen, payloadScore,
-                                                 similarity.scorePayload(doc, term.field(), spans.start(),
+                                                 similarity.scorePayload(doc, spans.start(),
                                                                          spans.end(), payload.bytes,
                                                                          payload.offset,
                                                                          payload.length));
           } else {
             payloadScore = function.currentScore(doc, term.field(),
                                                  spans.start(), spans.end(), payloadsSeen, payloadScore,
-                                                 similarity.scorePayload(doc, term.field(), spans.start(),
+                                                 similarity.scorePayload(doc, spans.start(),
                                                                          spans.end(), null,
                                                                          0,
                                                                          0));

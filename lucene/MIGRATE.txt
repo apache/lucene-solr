@@ -332,8 +332,12 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   toString(), port your customization over to reflectWith(). reflectAsString() would
   then return what toString() did before.
 
-* LUCENE-2236: DefaultSimilarity can no longer be set statically (and dangerously) for the entire JVM.
+* LUCENE-2236, LUCENE-2912: DefaultSimilarity can no longer be set statically 
+  (and dangerously) for the entire JVM.
   Instead, IndexWriterConfig and IndexSearcher now take a SimilarityProvider.
   Similarity can now be configured on a per-field basis.
   Similarity retains only the field-specific relevance methods such as tf() and idf().
+  Previously some (but not all) of these methods, such as computeNorm and scorePayload took 
+  field as a parameter, this is removed due to the fact the entire Similarity (all methods)
+  can now be configured per-field.
   Methods that apply to the entire query such as coord() and queryNorm() exist in SimilarityProvider.

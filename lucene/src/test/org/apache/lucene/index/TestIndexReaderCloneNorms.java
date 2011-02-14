@@ -43,7 +43,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     @Override
-    public float computeNorm(String fieldName, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       // diable length norm
       return state.getBoost();
     }
@@ -106,13 +106,17 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     Directory dir3 = newDirectory();
 
     createIndex(random, dir3);
+    if (VERBOSE) {
+      System.out.println("TEST: now addIndexes/optimize");
+    }
     IndexWriter iw = new IndexWriter(
         dir3,
         newIndexWriterConfig(TEST_VERSION_CURRENT, anlzr).
             setOpenMode(OpenMode.APPEND).
             setMaxBufferedDocs(5).
-            setMergePolicy(newLogMergePolicy(3))
+        setMergePolicy(newLogMergePolicy(3))
     );
+    iw.setInfoStream(VERBOSE ? System.out : null);
     iw.addIndexes(dir1, dir2);
     iw.optimize();
     iw.close();
@@ -146,6 +150,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   // try cloning and reopening the norms
   private void doTestNorms(Random random, Directory dir) throws IOException {
+    if (VERBOSE) {
+      System.out.println("TEST: now doTestNorms");
+    }
     addDocs(random, dir, 12, true);
     IndexReader ir = IndexReader.open(dir, false);
     verifyIndex(ir);
@@ -237,13 +244,20 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   private void createIndex(Random random, Directory dir) throws IOException {
+    if (VERBOSE) {
+      System.out.println("TEST: createIndex");
+    }
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
                                      .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newLogMergePolicy()));
+
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
     iw.close();
+    if (VERBOSE) {
+      System.out.println("TEST: done createIndex");
+    }
   }
 
   private void modifyNormsForF1(IndexReader ir) throws IOException {
@@ -298,6 +312,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
     IndexWriter iw = new IndexWriter(dir, conf);
+    iw.setInfoStream(VERBOSE ? System.out : null);
     for (int i = 0; i < ndocs; i++) {
       iw.addDocument(newDoc());
     }
