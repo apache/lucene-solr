@@ -17,14 +17,15 @@ package org.apache.lucene.index.codecs.pfordelta;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.index.codecs.sep.IntStreamFactory;
-import org.apache.lucene.index.codecs.sep.IntIndexInput;
-import org.apache.lucene.index.codecs.sep.IntIndexOutput;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.index.codecs.fixed.FixedIntStreamFactory;
+import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
+import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
 
 import java.io.IOException;
 
-public class FORFactory extends IntStreamFactory {
+public class FORFactory extends FixedIntStreamFactory {
   private final int blockSize;
 
   /** blockSize is only used when creating the
@@ -33,11 +34,13 @@ public class FORFactory extends IntStreamFactory {
     this.blockSize = blockSize;
   }
 
-  public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-    return new FORIndexInput(dir, fileName, readBufferSize);
+  @Override
+  public FixedIntBlockIndexInput openInput(IndexInput in, String fileName, boolean isChild) throws IOException {
+    return new FORIndexInput(in);
   }
 
-  public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-    return new FORIndexOutput(dir, fileName, blockSize);
+  @Override
+  public FixedIntBlockIndexOutput createOutput(IndexOutput out, String fileName, boolean isChild) throws IOException {
+    return new FORIndexOutput(out, blockSize);
   }
 }

@@ -28,8 +28,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
-import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
+import org.apache.lucene.index.codecs.fixed.FixedPostingsReaderImpl;
+import org.apache.lucene.index.codecs.fixed.FixedPostingsWriterImpl;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
@@ -48,7 +48,7 @@ public class PatchedFrameOfRefCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new PForDeltaFactory(128));
+    PostingsWriterBase postingsWriter = new FixedPostingsWriterImpl(state, new PForDeltaFactory(128));
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -79,7 +79,7 @@ public class PatchedFrameOfRefCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
+    PostingsReaderBase postingsReader = new FixedPostingsReaderImpl(state.dir,
                                                                   state.segmentInfo,
                                                                   state.readBufferSize,
                                                                   new PForDeltaFactory(128),
@@ -126,14 +126,14 @@ public class PatchedFrameOfRefCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) {
-    SepPostingsReaderImpl.files(segmentInfo, id, files);
+    FixedPostingsReaderImpl.files(segmentInfo, id, files);
     BlockTermsReader.files(dir, segmentInfo, id, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    SepPostingsWriterImpl.getExtensions(extensions);
+    FixedPostingsWriterImpl.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
   }

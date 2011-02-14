@@ -21,7 +21,7 @@ package org.apache.lucene.index.codecs.pfordelta;
  *  expected to give poor performance; it's really only for
  *  testing the pluggability.  One should typically use pfor instead. */
 
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.pfor.ForCompress;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
 
@@ -38,14 +38,9 @@ public class FORIndexOutput extends FixedIntBlockIndexOutput {
   private final ForCompress compressor;
   private final byte[] output;
 
-  // nocommit
-  private final String fileName;
+  public FORIndexOutput(IndexOutput out, int blockSize) throws IOException {
+    super(out, blockSize);
 
-  public FORIndexOutput(Directory dir, String fileName, int blockSize) throws IOException {
-    super(dir.createOutput(fileName), blockSize);
-
-    // nocommit
-    this.fileName = fileName;
     compressor = new ForCompress();
     // nocommit -- can't hardwire 1024; it's a function of blockSize
     ByteBuffer byteBuffer = ByteBuffer.allocate(1024);

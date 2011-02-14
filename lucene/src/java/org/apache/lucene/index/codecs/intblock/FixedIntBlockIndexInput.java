@@ -39,7 +39,8 @@ import org.apache.lucene.store.IndexInput;
 public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
   private final IndexInput in;
-  protected final int blockSize;
+  /** @lucene.internal */
+  public final int blockSize;
   
   public FixedIntBlockIndexInput(final IndexInput in) throws IOException {
     this.in = in;
@@ -55,6 +56,14 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     // TODO: can this be simplified?
     return new Reader(clone, buffer, this.getBlockReader(clone, buffer));
   }
+  
+  /** Return a reader piggybacking on a previous reader.
+   * They share the same underlying indexinput (e.g. interleaved docs/freqs)
+   */
+  public Reader reader(Reader parent) throws IOException {
+    final int[] buffer = new int[blockSize];
+    return new Reader(parent.in, buffer, this.getBlockReader(parent.in, buffer));
+  }
 
   @Override
   public void close() throws IOException {
@@ -69,11 +78,20 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
   protected abstract BlockReader getBlockReader(IndexInput in, int[] buffer) throws IOException;
 
   public interface BlockReader {
+    /** Tead a block of integers */
     public void readBlock() throws IOException;
+    /** 
+     * Skip over a block of integers. 
+     * Decoding of the integers is not actually needed.
+     * A trivial implementation can always be to call readBlock(),
+     * but its preferred to avoid decoding and minimize i/o.
+     */
+    public void skipBlock() throws IOException;
     // nocommit -- need seek here so mmapdir "knows"
   }
 
-  private static class Reader extends BulkPostingsEnum.BlockReader {
+  /** @lucene.internal */
+  public static class Reader extends BulkPostingsEnum.BlockReader {
     private final IndexInput in;
 
     protected final int[] pending;
@@ -93,6 +111,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
 
     void seek(final long fp, final int upto) throws IOException {
       offset = upto;
+      //System.out.println("parent fill: " + in.getFilePointer() + " last=" + lastBlockFP + " fp=" + fp);
       if (fp != lastBlockFP) {
         // Seek to new block; this may in fact be the next
         // block ie when caller is doing sequential scan (eg
@@ -103,6 +122,34 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       } else {
         // Seek within current block
         //System.out.println("  seek in-block fp=" + fp + " upto=" + offset);
+      }
+      //System.out.println("fill complete: " + in.getFilePointer());
+    }
+    
+    /**
+     * Position both this reader and its child reader to an index.
+     * If the child's data is not actually needed (e.g. reading only docs but skipping over freqs),
+     * then the parameter <code>fill</code> is true.
+     */
+    public void seek(IntIndexInput.Index idx, Reader child, boolean fill) throws IOException {
+      //nocommit: could this be more ugly?
+      Index index = (Index) idx;
+      final long fp = index.fp;
+
+      // synchronize both the parent and child to the index offset, as they are in parallel.
+      child.offset = offset = index.upto;
+      
+      // nocommit: if the child previously skipBlock'ed, we fill both.. can we do better? 
+      if ((index.fp != lastBlockFP) || (fill && child.lastBlockFP == -1)) {
+        in.seek(fp);
+        fill();
+        if (fill) {
+          child.fill();
+        } else {
+          child.skipBlock(); // the child blocks are not actually needed.
+        }
+      } else {
+        // seek within block
       }
     }
 
@@ -131,6 +178,11 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       lastBlockFP = in.getFilePointer();
       blockReader.readBlock();
       return blockSize;
+    }
+    
+    public void skipBlock() throws IOException {
+      lastBlockFP = -1; /* nocommit: clear lastblockFP */
+      blockReader.skipBlock();
     }
   }
 

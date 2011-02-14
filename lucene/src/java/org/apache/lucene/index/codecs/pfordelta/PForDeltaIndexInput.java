@@ -17,7 +17,6 @@ package org.apache.lucene.index.codecs.pfordelta;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.util.pfor.PForDecompress;
@@ -26,15 +25,17 @@ import java.io.IOException;
 
 public class PForDeltaIndexInput extends FixedIntBlockIndexInput {
 
-  public PForDeltaIndexInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-    super(dir.openInput(fileName, readBufferSize));
+  public PForDeltaIndexInput(IndexInput in) throws IOException {
+    super(in);
   }
 
   private static class BlockReader implements FixedIntBlockIndexInput.BlockReader {
     private final PForDecompress decompressor;
-
+    private final IndexInput in;
+    
     public BlockReader(IndexInput in, int[] buffer) {
       decompressor = new PForDecompress(in, buffer, 0, buffer.length);
+      this.in = in;
     }
 
     public void seek(long pos) throws IOException {
@@ -43,6 +44,11 @@ public class PForDeltaIndexInput extends FixedIntBlockIndexInput {
 
     public void readBlock() throws IOException {
       decompressor.decompress();
+    }
+    
+    public void skipBlock() throws IOException {
+      int numBytes = in.readInt(); // nocommit: should PFOR use vint header?
+      in.seek(in.getFilePointer() + numBytes); // seek past block
     }
   }
 

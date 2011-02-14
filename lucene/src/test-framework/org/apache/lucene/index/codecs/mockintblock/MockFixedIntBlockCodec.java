@@ -90,6 +90,10 @@ public class MockFixedIntBlockCodec extends Codec {
                 buffer[i] = in.readVInt();
               }
             }
+            
+            public void skipBlock() throws IOException {
+              readBlock();
+            }
           };
         }
       };

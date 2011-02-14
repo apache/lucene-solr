@@ -37,7 +37,8 @@ import org.apache.lucene.store.IndexOutput;
 public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
 
   protected final IndexOutput out;
-  private final int blockSize;
+  /** @lucene.internal */
+  public final int blockSize;
   protected final int[] buffer;
   private int upto;
 
@@ -116,22 +117,27 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
     }
   }
 
+  /** Force a flush of any possible pending ints to the output. */
+  public void flush() throws IOException {
+    // NOTE: entries in the block after current upto are
+    // invalid
+    if (!abort) {
+      while(upto != 0) {
+        // nocommit -- risky since in theory a "smart" int
+        // encoder could do run-length-encoding and thus
+        // never flush on an infinite stream of 0s; maybe
+        // flush upto instead?  or random ints heh
+        // stuff 0s until final block is flushed
+        //System.out.println("upto=" + upto + " stuff 0; blockSize=" + blockSize);
+        write(0);
+      }
+    }
+  }
+
   @Override
   public void close() throws IOException {
     try {
-      // NOTE: entries in the block after current upto are
-      // invalid
-      if (!abort) {
-        while(upto != 0) {
-          // nocommit -- risky since in theory a "smart" int
-          // encoder could do run-length-encoding and thus
-          // never flush on an infinite stream of 0s; maybe
-          // flush upto instead?  or random ints heh
-          // stuff 0s until final block is flushed
-          //System.out.println("upto=" + upto + " stuff 0; blockSize=" + blockSize);
-          write(0);
-        }
-      }
+      flush();
       /*
       if (upto > 0) {
         while(upto < blockSize) {

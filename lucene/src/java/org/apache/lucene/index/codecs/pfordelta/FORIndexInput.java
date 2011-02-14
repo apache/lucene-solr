@@ -17,7 +17,6 @@ package org.apache.lucene.index.codecs.pfordelta;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.util.pfor.ForDecompress;
@@ -26,15 +25,17 @@ import java.io.IOException;
 
 public class FORIndexInput extends FixedIntBlockIndexInput {
 
-  public FORIndexInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-    super(dir.openInput(fileName, readBufferSize));
+  public FORIndexInput(IndexInput in) throws IOException {
+    super(in);
   }
 
   private static class BlockReader implements FixedIntBlockIndexInput.BlockReader {
     private final ForDecompress decompressor;
-
+    private final IndexInput in; // nocommit: add skipBlock to the decompressor?
+    
     public BlockReader(IndexInput in, int[] buffer) {
       decompressor = new ForDecompress(in, buffer, 0, buffer.length);
+      this.in = in;
     }
 
     public void seek(long pos) throws IOException {
@@ -44,6 +45,14 @@ public class FORIndexInput extends FixedIntBlockIndexInput {
     public void readBlock() throws IOException {
       decompressor.decompress();
       //System.out.println("  FOR.readBlock");
+    }
+    
+    // nocommit: abstraction, and can this be simplified?!
+    public void skipBlock() throws IOException {
+      int header = in.readInt(); // should FOR/PFOR use vint header?
+      final int numFrameBits = ((header >>> 8) & 31) + 1;
+      final int numBytes = numFrameBits << 4;
+      in.seek(in.getFilePointer() + numBytes); // seek past block
     }
   }
 

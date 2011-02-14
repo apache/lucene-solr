@@ -17,7 +17,7 @@ package org.apache.lucene.index.codecs.pfordelta;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
 import org.apache.lucene.util.pfor.PForCompress;
 
@@ -32,8 +32,8 @@ public class PForDeltaIndexOutput extends FixedIntBlockIndexOutput {
   private final PForCompress compressor;
   private final byte[] output;
 
-  public PForDeltaIndexOutput(Directory dir, String fileName, int blockSize) throws IOException {
-    super(dir.createOutput(fileName), blockSize);
+  public PForDeltaIndexOutput(IndexOutput out, int blockSize) throws IOException {
+    super(out, blockSize);
 
     compressor = new PForCompress();
     // nocommit -- can't hardwire 1024; it's a function of blockSize

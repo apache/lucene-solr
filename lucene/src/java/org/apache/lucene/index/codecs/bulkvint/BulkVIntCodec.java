@@ -27,11 +27,9 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.sep.IntStreamFactory;
-import org.apache.lucene.index.codecs.sep.IntIndexInput;
-import org.apache.lucene.index.codecs.sep.IntIndexOutput;
-import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
-import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
+import org.apache.lucene.index.codecs.fixed.FixedIntStreamFactory;
+import org.apache.lucene.index.codecs.fixed.FixedPostingsReaderImpl;
+import org.apache.lucene.index.codecs.fixed.FixedPostingsWriterImpl;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
@@ -67,21 +65,26 @@ public class BulkVIntCodec extends Codec {
   }
 
   // only for testing
-  public IntStreamFactory getIntFactory() {
+  public FixedIntStreamFactory getIntFactory() {
     return new BulkVIntFactory();
   }
 
-  private class BulkVIntFactory extends IntStreamFactory {
+  private class BulkVIntFactory extends FixedIntStreamFactory {
 
     @Override
-    public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-      return new FixedIntBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
+    public FixedIntBlockIndexInput openInput(IndexInput in, String fileName, boolean isChild) throws IOException {
+      return new FixedIntBlockIndexInput(in) {
 
         @Override
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
           return new BlockReader() {
             final byte bytes[] = new byte[blockSize*5]; // header * max(Vint)
             
+            public void skipBlock() throws IOException {
+              final int numBytes = in.readVInt(); // read header
+              in.seek(in.getFilePointer() + numBytes); // seek past block
+            }
+
             public void readBlock() throws IOException {
               final int numBytes = in.readVInt(); // read header
               if (numBytes == 0) { // 1's
@@ -110,8 +113,8 @@ public class BulkVIntCodec extends Codec {
     }
 
     @Override
-    public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      return new FixedIntBlockIndexOutput(dir.createOutput(fileName), blockSize) {
+    public FixedIntBlockIndexOutput createOutput(IndexOutput out, String fileName, boolean isChild) throws IOException {
+      return new FixedIntBlockIndexOutput(out, blockSize) {
         final byte bytes[] = new byte[blockSize*5]; // header * max(Vint)
         
         @Override
@@ -149,7 +152,7 @@ public class BulkVIntCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new BulkVIntFactory());
+    PostingsWriterBase postingsWriter = new FixedPostingsWriterImpl(state, new BulkVIntFactory());
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -180,7 +183,7 @@ public class BulkVIntCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
+    PostingsReaderBase postingsReader = new FixedPostingsReaderImpl(state.dir,
                                                                       state.segmentInfo,
                                                                       state.readBufferSize,
                                                                       new BulkVIntFactory(), state.codecId);
@@ -226,14 +229,14 @@ public class BulkVIntCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
-    SepPostingsReaderImpl.files(segmentInfo, codecId, files);
+    FixedPostingsReaderImpl.files(segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    SepPostingsWriterImpl.getExtensions(extensions);
+    FixedPostingsWriterImpl.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
   }

@@ -27,11 +27,9 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.sep.IntStreamFactory;
-import org.apache.lucene.index.codecs.sep.IntIndexInput;
-import org.apache.lucene.index.codecs.sep.IntIndexOutput;
-import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
-import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
+import org.apache.lucene.index.codecs.fixed.FixedIntStreamFactory;
+import org.apache.lucene.index.codecs.fixed.FixedPostingsReaderImpl;
+import org.apache.lucene.index.codecs.fixed.FixedPostingsWriterImpl;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
@@ -42,6 +40,7 @@ import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
+import org.apache.lucene.index.codecs.sep.IntStreamFactory;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.BytesRef;
@@ -109,11 +108,11 @@ public class PForDeltaFixedIntBlockCodec extends Codec {
       return new PForDeltaIntFactory();
     }
 
-    private class PForDeltaIntFactory extends IntStreamFactory {
+    private class PForDeltaIntFactory extends FixedIntStreamFactory {
 
       @Override
-      public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-        return new FixedIntBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
+      public FixedIntBlockIndexInput openInput(IndexInput in, String filename, boolean isChild) throws IOException {
+        return new FixedIntBlockIndexInput(in) {
 
           @Override
           protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
@@ -134,14 +133,19 @@ public class PForDeltaFixedIntBlockCodec extends Codec {
                   decodeOneBlockWithPForDelta(compressedData, blockSize, buffer);
                 }
               }
+              
+              public void skipBlock() throws IOException {
+                final int compressedSizeInInt = in.readInt(); // nocommit: should vint header be used?
+                in.seek(in.getFilePointer() + (compressedSizeInInt * 4)); // seek past block
+              }
             };
           }
         };
       }
 
       @Override
-      public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-        return new FixedIntBlockIndexOutput(dir.createOutput(fileName), blockSize) {
+      public FixedIntBlockIndexOutput createOutput(IndexOutput out, String fileName, boolean isChild) throws IOException {
+        return new FixedIntBlockIndexOutput(out, blockSize) {
           @Override
           protected void flushBlock() throws IOException {
             int compressedSizeInInts = 0; 
@@ -164,7 +168,7 @@ public class PForDeltaFixedIntBlockCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new PForDeltaIntFactory());
+    PostingsWriterBase postingsWriter = new FixedPostingsWriterImpl(state, new PForDeltaIntFactory());
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -195,7 +199,7 @@ public class PForDeltaFixedIntBlockCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
+    PostingsReaderBase postingsReader = new FixedPostingsReaderImpl(state.dir,
                                                                       state.segmentInfo,
                                                                       state.readBufferSize,
                                                                       new PForDeltaIntFactory(), state.codecId);
@@ -241,14 +245,14 @@ public class PForDeltaFixedIntBlockCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
-    SepPostingsReaderImpl.files(segmentInfo, codecId, files);
+    FixedPostingsReaderImpl.files(segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    SepPostingsWriterImpl.getExtensions(extensions);
+    FixedPostingsWriterImpl.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
   }

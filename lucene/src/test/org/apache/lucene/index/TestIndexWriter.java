@@ -2884,7 +2884,10 @@ public class TestIndexWriter extends LuceneTestCase {
     Document doc = new Document();
     Field f = newField(random, "field", "two", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(f);
-    final int NUM_GAPS = 100;
+    // THIS TEST DEPENDS ON THE FACT YOU WILL JUMP! (e.g. if you set a massive skip interval,
+    // don't impl skipping at all (like the SimpleText hack), or do something else interesting,
+    // it fails!)
+    final int NUM_GAPS = 200;
     for(int i=0;i<NUM_GAPS;i++) {
       f.setValue("one");
       w.addDocument(doc);
