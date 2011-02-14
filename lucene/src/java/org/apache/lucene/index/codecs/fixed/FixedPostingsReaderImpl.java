@@ -1228,6 +1228,8 @@ public class FixedPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public int fill() throws IOException {
+      // nocommit: keep freqs "one step behind" docs? this could avoid skipBlock() 
+      // calls for low-freq terms (e.g. termrangequery/wildcard) where omitTF is off.
       final int ret = docs.fill();
       freqs.skipBlock();
       return ret;
