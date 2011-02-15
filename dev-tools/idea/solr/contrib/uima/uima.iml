@@ -12,7 +12,6 @@
       <excludeFolder url="file://$MODULE_DIR$/build" />
     </content>
     <orderEntry type="module" module-name="solr" />
-    <orderEntry type="module" module-name="solrj" />
     <orderEntry type="module" module-name="lucene" scope="TEST" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
