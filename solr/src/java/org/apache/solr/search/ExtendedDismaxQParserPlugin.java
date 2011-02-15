@@ -48,6 +48,7 @@ import java.io.IOException;
 
 /**
  * An advanced multi-field query parser.
+ * @lucene.experimental
  */
 public class ExtendedDismaxQParserPlugin extends QParserPlugin {
   public static final String NAME = "edismax";
