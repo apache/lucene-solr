@@ -112,9 +112,12 @@ import org.apache.lucene.index.Payload;
  * based on the weights of the tokens from the input stream, output shingle size, etc.
  * See {@link #calculateShingleWeight(org.apache.lucene.analysis.Token, java.util.List, int, java.util.List, java.util.List)}.
  * <p/>
- * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
- * the ones located in org.apache.lucene.analysis.tokenattributes.
+ * @deprecated Will be removed in Lucene 4.0. This filter is unmaintained and might not behave
+ * correctly if used with custom Attributes, i.e. Attributes other than
+ * the ones located in <code>org.apache.lucene.analysis.tokenattributes</code>. It also uses
+ * hardcoded payload encoders which makes it not easily adaptable to other use-cases.
  */
+@Deprecated
 public final class ShingleMatrixFilter extends TokenStream {
 
   public static Character defaultSpacerCharacter = Character.valueOf('_');

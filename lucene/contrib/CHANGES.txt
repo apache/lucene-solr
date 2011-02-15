@@ -150,6 +150,9 @@ API Changes
  * LUCENE-2830: Use StringBuilder instead of StringBuffer across Benchmark, and
    remove the StringBuffer HtmlParser.parse() variant. (Shai Erera)
    
+ * LUCENE-2920: Deprecated ShingleMatrixFilter as it is unmaintained and does
+   not work with custom Attributes or custom payload encoders.  (Uwe Schindler)
+   
 New features
 
  * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific

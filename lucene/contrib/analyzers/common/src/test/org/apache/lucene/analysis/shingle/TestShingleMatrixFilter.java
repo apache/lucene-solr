@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
+@Deprecated
 public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   public void testIterator() throws IOException {
