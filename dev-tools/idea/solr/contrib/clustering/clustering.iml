@@ -16,7 +16,6 @@
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="phonetic" />
     <orderEntry type="module" module-name="queries" />
-    <orderEntry type="module" module-name="remote" />
     <orderEntry type="module" module-name="solr" />
     <orderEntry type="module" module-name="spatial" />
     <orderEntry type="module" module-name="spellchecker" />
