@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", "solr-dihextras");
+    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", getFile("solr-dihextras").getAbsolutePath());
   }
 
   public void testIndexingWithTikaEntityProcessor() throws Exception {

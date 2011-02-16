@@ -54,7 +54,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
 
   // note, a little twisted that we shadow this static method
   public static void initCore(String config, String schema) throws Exception {
-    initCore(config, schema, "solr-dih");
+    initCore(config, schema, getFile("solr-dih").getAbsolutePath());
   }
   
   @Override
