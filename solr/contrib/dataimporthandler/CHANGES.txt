@@ -86,6 +86,10 @@ Other Changes
 * SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
   (Chris Male via rmuir)
 
+* SOLR-2367: Reduced noise in test output by ensuring the properties file can be written.
+  (Gunnlaugur Thor Briem via rmuir)
+
+
 Build
 ----------------------
 
