@@ -520,6 +520,12 @@ Bug Fixes
 * SOLR-2339: Fix sorting to explicitly generate an error if you
   attempt to sort on a multiValued field. (hossman)
 
+* SOLR-1191: resolve DataImportHandler deltaQuery column against pk when pk
+  has a prefix (e.g. pk="book.id" deltaQuery="select id from ..."). More
+  useful error reporting when no match found (previously failed with a
+  NullPointerException in log and no clear user feedback). (gthb via yonik)
+
+
 Other Changes
 ----------------------
 
