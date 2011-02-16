@@ -167,7 +167,9 @@ class FixedSkipListReader extends MultiLevelSkipListReader {
     docIndex[level].read(skipStream, false);
     if (!omitTF) {
       posIndex[level].read(skipStream, false);
-      payloadPointer[level] += skipStream.readVInt();
+      if (currentFieldStoresPayloads) {
+        payloadPointer[level] += skipStream.readVInt();
+      }
     }
     
     return delta;

@@ -174,7 +174,9 @@ class FixedSkipListWriter extends MultiLevelSkipListWriter {
     if (!omitTF) {
       posIndex[level].mark();
       posIndex[level].write(skipBuffer, false);
-      skipBuffer.writeVInt((int) (curPayloadPointer - lastSkipPayloadPointer[level]));
+      if (curStorePayloads) {
+        skipBuffer.writeVInt((int) (curPayloadPointer - lastSkipPayloadPointer[level]));
+      }
     }
 
     lastSkipDoc[level] = curDoc;
