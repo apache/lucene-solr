@@ -24,15 +24,8 @@
     https://issues.apache.org/jira/browse/SOLR-1167
   -->
 <config xmlns:xi="http://www.w3.org/2001/XInclude">
-  <!--
-    Set this to 'false' if you want solr to continue working after it
-    has encountered an severe configuration error. In a production
-    environment, you may want solr to keep working even if one handler
-    is mis-configured. You may also set this to false using by setting
-    the system property: -Dsolr.abortOnConfigurationError=false
-  -->
+
   <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
-  <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
 
   <!--
     lib directives can be used to instruct Solr to load an Jars
