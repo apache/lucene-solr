@@ -679,6 +679,13 @@ Bug Fixes
   DocumentAnalysisRequestHandler to respect charset from XML file and only
   use HTTP header's "Content-Type" as a "hint". (Uwe Schindler)
 
+* SOLR-1191: resolve DataImportHandler deltaQuery column against pk when pk
+  has a prefix (e.g. pk="book.id" deltaQuery="select id from ..."). More
+  useful error reporting when no match found (previously failed with a
+  NullPointerException in log and no clear user feedback). (gthb via yonik)
+
+
+
 Other Changes
 ----------------------
 
