@@ -289,12 +289,8 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       }
       lastSkipFP = skipFP;
     } else if (isFirstTerm) {
-      // TODO: this is somewhat wasteful; eg if no terms in
-      // this block will use skip data, we don't need to
-      // write this:
-      final long skipFP = skipOut.getFilePointer();
-      indexBytesWriter.writeVLong(skipFP);
-      lastSkipFP = skipFP;
+      // lazily write an absolute delta if a term in this block requires skip data.
+      lastSkipFP = 0;
     }
 
     lastDocID = 0;

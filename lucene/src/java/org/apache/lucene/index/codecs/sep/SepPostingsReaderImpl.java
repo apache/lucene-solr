@@ -242,7 +242,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
       //System.out.println("  skipFP=" + termState.skipFP);
     } else if (isFirstTerm) {
-      termState.skipFP = termState.bytesReader.readVLong();
+      termState.skipFP = 0;
     }
   }
 
