@@ -220,7 +220,7 @@ public class FixedPostingsReaderImpl extends PostingsReaderBase {
         termState.skipFP += termState.bytesReader.readVLong();
       }
     } else if (isFirstTerm) {
-      termState.skipFP = termState.bytesReader.readVLong();
+      termState.skipFP = 0;
     }
   }
 
