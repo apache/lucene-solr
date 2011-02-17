@@ -2784,6 +2784,9 @@ public class TestIndexWriter extends LuceneTestCase {
       final String id = ""+i;
       idField.setValue(id);
       docs.put(id, doc);
+      if (VERBOSE) {
+        System.out.println("TEST: add doc id=" + id);
+      }
 
       for(int field: fieldIDs) {
         final String s;
@@ -2802,7 +2805,7 @@ public class TestIndexWriter extends LuceneTestCase {
       if (rand.nextInt(5) == 3 && i > 0) {
         final String delID = ""+rand.nextInt(i);
         if (VERBOSE) {
-          System.out.println("TEST: delete doc " + delID);
+          System.out.println("TEST: delete doc id=" + delID);
         }
         w.deleteDocuments(new Term("id", delID));
         docs.remove(delID);
@@ -2825,6 +2828,9 @@ public class TestIndexWriter extends LuceneTestCase {
 
         for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
           String testID = idsList[rand.nextInt(idsList.length)];
+          if (VERBOSE) {
+            System.out.println("TEST: test id=" + testID);
+          }
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);
           Document doc = r.document(hits.scoreDocs[0].doc);

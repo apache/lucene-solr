@@ -30,4 +30,9 @@ public class OrdTermState extends TermState {
     assert other instanceof OrdTermState : "can not copy from " + other.getClass().getName();
     this.ord = ((OrdTermState) other).ord;
   }
+
+  @Override
+  public String toString() {
+    return "OrdTermState ord=" + ord;
+  }
 }

@@ -144,7 +144,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
-      //System.out.println("  inlined");
+      //System.out.println("  inlined pos=" + termState.inlinedBytesReader.getPosition());
 
       // Inlined into terms dict -- just read the byte[] blob in,
       // but don't decode it now (we only decode when a DocsEnum

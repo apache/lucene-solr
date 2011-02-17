@@ -79,6 +79,9 @@ public class TestAutomatonQuery extends LuceneTestCase {
   }
   
   private int automatonQueryNrHits(AutomatonQuery query) throws IOException {
+    if (VERBOSE) {
+      System.out.println("TEST: run aq=" + query);
+    }
     return searcher.search(query, 5).totalHits;
   }
   

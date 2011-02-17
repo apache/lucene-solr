@@ -63,24 +63,23 @@ public class BlockTermsWriter extends FieldsConsumer {
   FieldInfo currentField;
   private final TermsIndexWriterBase termsIndexWriter;
   private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
-  private final Comparator<BytesRef> termComp;
-  private final String segment;
+
+  //private final String segment;
 
   public BlockTermsWriter(
       TermsIndexWriterBase termsIndexWriter,
       SegmentWriteState state,
-      PostingsWriterBase postingsWriter,
-      Comparator<BytesRef> termComp) throws IOException
+      PostingsWriterBase postingsWriter)
+    throws IOException
   {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
-    this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);
     fieldInfos = state.fieldInfos;
     writeHeader(out);
     currentField = null;
     this.postingsWriter = postingsWriter;
-    segment = state.segmentName;
+    //segment = state.segmentName;
 
     //System.out.println("BTW.init seg=" + state.segmentName);
 
@@ -161,7 +160,6 @@ public class BlockTermsWriter extends FieldsConsumer {
     private long numTerms;
     private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
     long sumTotalTermFreq;
-    private final BytesRef lastTerm = new BytesRef();
 
     private TermEntry[] pendingTerms;
 
@@ -185,12 +183,12 @@ public class BlockTermsWriter extends FieldsConsumer {
     
     @Override
     public Comparator<BytesRef> getComparator() {
-      return termComp;
+      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      //System.out.println("BTW.startTerm seg=" + segment + " term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text);
+      //System.out.println("BTW.startTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment);
       postingsWriter.startTerm();
       return postingsWriter;
     }
@@ -201,7 +199,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
       assert stats.docFreq > 0;
-      //System.out.println("BTW.finishTerm seg=" + segment + " term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " df=" + stats.docFreq);
+      //System.out.println("BTW.finishTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment + " df=" + stats.docFreq);
 
       final boolean isIndexTerm = fieldIndexWriter.checkIndexTerm(text, stats);
 
@@ -213,6 +211,7 @@ public class BlockTermsWriter extends FieldsConsumer {
           flushBlock();
         }
         fieldIndexWriter.add(text, stats, out.getFilePointer());
+        //System.out.println("  index term!");
       }
 
       if (pendingTerms.length == pendingCount) {
@@ -265,7 +264,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     private final RAMOutputStream bytesWriter = new RAMOutputStream();
 
     private void flushBlock() throws IOException {
-      //System.out.println("BTW.flushBlock pendingCount=" + pendingCount);
+      //System.out.println("BTW.flushBlock seg=" + segment + " pendingCount=" + pendingCount + " fp=" + out.getFilePointer());
 
       // First pass: compute common prefix for all terms
       // in the block, against term before first term in
