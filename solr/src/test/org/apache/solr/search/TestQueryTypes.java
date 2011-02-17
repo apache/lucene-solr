@@ -87,7 +87,6 @@ public class TestQueryTypes extends AbstractSolrTestCase {
               ,"//*[@name='id'][.='999.0']"
               ,"//*[@name='" + f + "'][.='" + v + "']"
               );
-      // System.out.println("#########################################" + f + "=" + v);
 
       // field qparser
       assertQ(req( "q", "{!field f="+f+"}"+v)
@@ -98,19 +97,33 @@ public class TestQueryTypes extends AbstractSolrTestCase {
       assertQ(req( "q", f + ":[\"" + v + "\" TO \"" + v + "\"]" )
               ,"//result[@numFound='1']"
               );
+    }
 
+    // frange and function query only work on single valued field types
+    Object[] fc_vals = new Object[] {
+      "id",999.0
+      ,"v_s","wow dude"
+      ,"v_ti",-1
+      ,"v_tl",-1234567891234567890L
+      ,"v_tf",-2.0f
+      ,"v_td",-2.0
+      ,"v_tdt","2000-05-10T01:01:01Z"
+    };
+    
+    for (int i=0; i<fc_vals.length; i+=2) {
+      String f = fc_vals[i].toString();
+      String v = fc_vals[i+1].toString();
+      
       // frange qparser
       assertQ(req( "q", "{!frange v="+f+" l='"+v+"' u='"+v+"'}" )
               ,"//result[@numFound='1']"
               );
-
+      
       // function query... just make sure it doesn't throw an exception
-       assertQ(req( "q", "+id:999 _val_:\"" + f + "\"")
-            ,"//result[@numFound='1']"
-        );
-
+      assertQ(req( "q", "+id:999 _val_:\"" + f + "\"")
+              ,"//result[@numFound='1']"
+              );
     }
-
 
     // Some basic tests to ensure that parsing local params is working
     assertQ("test prefix query",

@@ -48,6 +48,7 @@ public class StrField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+    field.checkFieldCacheSource(parser);
     return new StrFieldSource(field.getName());
   }
 

@@ -53,12 +53,13 @@ Upgrading from Solr 3.1-dev
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
 
-* In previous releases, sorting on fields that are "multiValued" 
-  (either by explicit declaration in schema.xml or by implict behavior
-  because the "version" attribute on the schema was less then 1.2) did 
-  not generally work, but it would sometimes silently act as if it
-  succeeded and order the docs arbitrarily.  Solr will now fail on any
-  attempt to sort on a multivalued field
+* In previous releases, sorting or evaluating function queries on 
+  fields that were "multiValued" (either by explicit declaration in
+  schema.xml or by implict behavior because the "version" attribute on
+  the schema was less then 1.2) did not generally work, but it would
+  sometimes silently act as if it succeeded and order the docs
+  arbitrarily.  Solr will now fail on any attempt to sort, or apply a
+  function to, multi-valued fields 
 
 
 
@@ -181,6 +182,9 @@ Bug Fixes
 
 * SOLR-2339: Fix sorting to explicitly generate an error if you
   attempt to sort on a multiValued field. (hossman)
+
+* SOLR-2348: Fix field types to explicitly generate an error if you
+  attempt to get a ValueSource for a multiValued field. (hossman)
 
 Other Changes
 ----------------------

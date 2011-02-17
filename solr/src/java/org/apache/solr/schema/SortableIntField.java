@@ -53,6 +53,7 @@ public class SortableIntField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     return new SortableIntFieldSource(field.name);
   }
 

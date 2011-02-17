@@ -496,6 +496,7 @@ public abstract class FieldType extends FieldProperties {
    *  Lucene FieldCache.)
    */
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+    field.checkFieldCacheSource(parser);
     return new StrFieldSource(field.name);
   }
 

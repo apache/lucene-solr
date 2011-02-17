@@ -47,7 +47,7 @@ public class DoubleField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
-    // fieldCache doesn't support double
+    field.checkFieldCacheSource(qparser);
     return new DoubleFieldSource( new DoubleValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }
 

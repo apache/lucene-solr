@@ -220,10 +220,6 @@ public class DateField extends FieldType {
     return getStringSort(field,reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
-    return new OrdFieldSource(field.name);
-  }
-
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeDate(name, toExternal(f));
@@ -408,6 +404,7 @@ public class DateField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+    field.checkFieldCacheSource(parser);
     return new DateFieldSource(field.getName(), field.getType());
   }
 
