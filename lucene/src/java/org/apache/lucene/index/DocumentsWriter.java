@@ -648,8 +648,16 @@ final class DocumentsWriter {
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
         final String delFileName = newSegment.getDelFileName();
+        if (infoStream != null) {
+          message("flush: write " + delCount + " deletes to " + delFileName);
+        }
         boolean success2 = false;
         try {
+          // TODO: in the NRT case it'd be better to hand
+          // this del vector over to the
+          // shortly-to-be-opened SegmentReader and let it
+          // carry the changes; there's no reason to use
+          // filesystem as intermediary here.
           flushState.deletedDocs.write(directory, delFileName);
           success2 = true;
         } finally {

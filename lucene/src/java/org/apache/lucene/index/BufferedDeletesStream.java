@@ -121,9 +121,13 @@ class BufferedDeletesStream {
     // Current gen, for the merged segment:
     public final long gen;
 
-    ApplyDeletesResult(boolean anyDeletes, long gen) {
+    // If non-null, contains segments that are 100% deleted
+    public final SegmentInfos allDeleted;
+
+    ApplyDeletesResult(boolean anyDeletes, long gen, SegmentInfos allDeleted) {
       this.anyDeletes = anyDeletes;
       this.gen = gen;
+      this.allDeleted = allDeleted;
     }
   }
 
@@ -154,14 +158,14 @@ class BufferedDeletesStream {
     final long t0 = System.currentTimeMillis();
 
     if (infos.size() == 0) {
-      return new ApplyDeletesResult(false, nextGen++);
+      return new ApplyDeletesResult(false, nextGen++, null);
     }
 
     assert checkDeleteStats();
 
     if (!any()) {
       message("applyDeletes: no deletes; skipping");
-      return new ApplyDeletesResult(false, nextGen++);
+      return new ApplyDeletesResult(false, nextGen++, null);
     }
 
     if (infoStream != null) {
@@ -177,6 +181,8 @@ class BufferedDeletesStream {
 
     int infosIDX = infos2.size()-1;
     int delIDX = deletes.size()-1;
+
+    SegmentInfos allDeleted = null;
 
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
@@ -199,6 +205,7 @@ class BufferedDeletesStream {
         assert readerPool.infoIsLive(info);
         SegmentReader reader = readerPool.get(info, false);
         int delCount = 0;
+        final boolean segAllDeletes;
         try {
           if (coalescedDeletes != null) {
             //System.out.println("    del coalesced");
@@ -209,13 +216,21 @@ class BufferedDeletesStream {
           // Don't delete by Term here; DocumentsWriter
           // already did that on flush:
           delCount += applyQueryDeletes(packet.queriesIterable(), reader);
+          segAllDeletes = reader.numDocs() == 0;
         } finally {
           readerPool.release(reader);
         }
         anyNewDeletes |= delCount > 0;
 
+        if (segAllDeletes) {
+          if (allDeleted == null) {
+            allDeleted = new SegmentInfos();
+          }
+          allDeleted.add(info);
+        }
+
         if (infoStream != null) {
-          message("seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount);
+          message("seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
         }
 
         if (coalescedDeletes == null) {
@@ -234,16 +249,25 @@ class BufferedDeletesStream {
           assert readerPool.infoIsLive(info);
           SegmentReader reader = readerPool.get(info, false);
           int delCount = 0;
+          final boolean segAllDeletes;
           try {
             delCount += applyTermDeletes(coalescedDeletes.termsIterable(), reader);
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), reader);
+            segAllDeletes = reader.numDocs() == 0;
           } finally {
             readerPool.release(reader);
           }
           anyNewDeletes |= delCount > 0;
 
+          if (segAllDeletes) {
+            if (allDeleted == null) {
+              allDeleted = new SegmentInfos();
+            }
+            allDeleted.add(info);
+          }
+
           if (infoStream != null) {
-            message("seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount);
+            message("seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
         info.setBufferedDeletesGen(nextGen);
@@ -258,7 +282,7 @@ class BufferedDeletesStream {
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
     
-    return new ApplyDeletesResult(anyNewDeletes, nextGen++);
+    return new ApplyDeletesResult(anyNewDeletes, nextGen++, allDeleted);
   }
 
   public synchronized long getNextGen() {

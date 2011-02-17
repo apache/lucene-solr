@@ -2,14 +2,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import java.lang.reflect.Method;
 
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -19,6 +18,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util._TestUtil;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
@@ -172,16 +172,7 @@ public class QueryUtils {
       }
       w.commit();
       w.deleteDocuments( new MatchAllDocsQuery() );
-      try {
-        // Carefully invoke what is a package-private (test
-        // only, internal) method on IndexWriter:
-        Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
-        m.setAccessible(true);
-        m.invoke(w);
-      } catch (Exception e) {
-        // Should not happen?
-        throw new RuntimeException(e);
-      }
+      _TestUtil.keepFullyDeletedSegments(w);
       w.commit();
 
       if (0 < numDeletedDocs)

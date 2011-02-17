@@ -1243,7 +1243,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     @Override
-    public String toString() {
+    public synchronized String toString() {
       return "RandomCodecProvider: " + previousMappings.toString();
     }
   }

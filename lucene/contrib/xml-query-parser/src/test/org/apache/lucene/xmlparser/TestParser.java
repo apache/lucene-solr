@@ -21,6 +21,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -186,6 +187,7 @@ public class TestParser extends LuceneTestCase {
 	}
 	public void testDuplicateFilterQueryXML() throws ParserException, IOException
 	{
+                        Assume.assumeTrue(searcher.getIndexReader().getSequentialSubReaders().length == 1);
 			Query q=parse("DuplicateFilterQuery.xml");
 			int h = searcher.search(q, null, 1000).totalHits;
 			assertEquals("DuplicateFilterQuery should produce 1 result ", 1,h);

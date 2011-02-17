@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.Random;
 import java.util.Map;
@@ -304,5 +305,18 @@ public class _TestUtil {
       }
     });
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
+  }
+
+  public static void keepFullyDeletedSegments(IndexWriter w) {
+    try {
+      // Carefully invoke what is a package-private (test
+      // only, internal) method on IndexWriter:
+      Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
+      m.setAccessible(true);
+      m.invoke(w);
+    } catch (Exception e) {
+      // Should not happen?
+      throw new RuntimeException(e);
+    }
   }
 }
