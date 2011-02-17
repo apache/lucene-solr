@@ -117,14 +117,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new LinearFloatFunction(source, slope, intercept);
       }
     });
-    addParser("max", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValueSource();
-        float val = fp.parseFloat();
-        return new MaxFloatFunction(source, val);
-      }
-    });
     addParser("recip", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
@@ -474,6 +466,18 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public double func(int doc, DocValues a, DocValues b) {
         return Math.atan2(a.doubleVal(doc), b.doubleVal(doc));
+      }
+    });
+    addParser(new Double2Parser("max") {
+      @Override
+      public double func(int doc, DocValues a, DocValues b) {
+        return Math.max(a.doubleVal(doc), b.doubleVal(doc));
+      }
+    });
+    addParser(new Double2Parser("min") {
+      @Override
+      public double func(int doc, DocValues a, DocValues b) {
+        return Math.min(a.doubleVal(doc), b.doubleVal(doc));
       }
     });
 
