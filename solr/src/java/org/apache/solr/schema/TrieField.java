@@ -132,7 +132,8 @@ public class TrieField extends FieldType {
   }
 
   @Override
-  public ValueSource getValueSource(SchemaField field) {
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     switch (type) {
       case INTEGER:
         return new IntFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER);

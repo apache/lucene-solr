@@ -23,6 +23,7 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.LongFieldSource;
+import org.apache.solr.search.QParser;
 
 import java.io.IOException;
 import java.util.Map;
@@ -44,8 +45,8 @@ public class LongField extends FieldType {
   }
 
   @Override
-  public ValueSource getValueSource(SchemaField field) {
-
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     return new LongFieldSource(field.name);
   }
 

@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -44,7 +45,8 @@ public class SortableFloatField extends FieldType {
   }
 
   @Override
-  public ValueSource getValueSource(SchemaField field) {
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     return new SortableFloatFieldSource(field.name);
   }
 

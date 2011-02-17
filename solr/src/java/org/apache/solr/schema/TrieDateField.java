@@ -75,13 +75,10 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public ValueSource getValueSource(SchemaField field) {
-    return new TrieDateFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER);
-  }
-
-  @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+    field.checkFieldCacheSource(parser);
     return new TrieDateFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER);
+
   }
 
   @Override

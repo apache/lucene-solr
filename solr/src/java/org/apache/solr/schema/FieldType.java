@@ -480,7 +480,8 @@ public abstract class FieldType extends FieldProperties {
    *  Lucene FieldCache.)
    */
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return getValueSource(field);
+    field.checkFieldCacheSource(parser);
+    return new OrdFieldSource(field.name);
   }
 
 
@@ -489,7 +490,7 @@ public abstract class FieldType extends FieldProperties {
    */
   @Deprecated
   public ValueSource getValueSource(SchemaField field) {
-    return new OrdFieldSource(field.name);
+    return getValueSource(field,null);
   }
 
   /**

@@ -213,11 +213,6 @@ public class DateField extends FieldType {
   }
 
   @Override
-  public ValueSource getValueSource(SchemaField field) {
-    return new OrdFieldSource(field.name);
-  }
-
-  @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeDate(name, toExternal(f));
   }
@@ -406,6 +401,7 @@ public class DateField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+    field.checkFieldCacheSource(parser);
     return new DateFieldSource(field.getName(), field.getType());
   }
 
