@@ -107,12 +107,12 @@
 	<classpathentry kind="lib" path="solr/lib/easymock.jar"/>
 	<classpathentry kind="lib" path="solr/lib/geronimo-stax-api_1.0_spec-1.0.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/guava-r05.jar"/>
-	<classpathentry kind="lib" path="solr/lib/jcl-over-slf4j-1.5.5.jar"/>
+	<classpathentry kind="lib" path="solr/lib/jcl-over-slf4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/junit-4.7.jar"/>
-	<classpathentry kind="lib" path="solr/lib/log4j-over-slf4j-1.5.5.jar"/>
+	<classpathentry kind="lib" path="solr/lib/log4j-over-slf4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/servlet-api-2.4.jar"/>
-	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.5.5.jar"/>
-	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.5.5.jar"/>
+	<classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.1.jar"/>
+	<classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/velocity-1.6.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/velocity-tools-2.0.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
