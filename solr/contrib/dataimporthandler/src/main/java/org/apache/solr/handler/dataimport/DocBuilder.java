@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
@@ -490,7 +491,7 @@ public class DocBuilder {
                 importStatistics.skipDocCount.getAndIncrement();
                 exception = null;//should not propogate up
               } else {
-                LOG.error("Exception while processing: "
+                SolrException.log(LOG, "Exception while processing: "
                         + entity.name + " document : " + docWrapper, dihe);
               }
               if (dihe.getErrCode() == DataImportHandlerException.SEVERE)
@@ -649,7 +650,7 @@ public class DocBuilder {
               importStatistics.skipDocCount.getAndIncrement();
               doc = null;
             } else {
-              LOG.error("Exception while processing: "
+              SolrException.log(LOG, "Exception while processing: "
                       + entity.name + " document : " + doc, e);
             }
             if (e.getErrCode() == DataImportHandlerException.SEVERE)

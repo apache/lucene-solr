@@ -37,6 +37,7 @@ public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
+    ignoreException("Unexpected close tag");
   }
   
   @Before @Override

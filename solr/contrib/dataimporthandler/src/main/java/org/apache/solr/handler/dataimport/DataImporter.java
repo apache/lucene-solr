@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
@@ -336,7 +337,7 @@ public class DataImporter {
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Throwable t) {
-      LOG.error("Full Import failed", t);
+      SolrException.log(LOG, "Full Import failed", t);
       docBuilder.rollback();
     } finally {
       setStatus(Status.IDLE);
