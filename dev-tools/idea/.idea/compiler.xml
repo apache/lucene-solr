@@ -23,6 +23,7 @@
       <entry name="?*.pdf" />
       <entry name="?*.png" />
       <entry name="?*.properties" />
+      <entry name="?*.rslp"/>
       <entry name="?*.tbl" />
       <entry name="?*.tld" />
       <entry name="?*.txt" />
