@@ -664,6 +664,13 @@
     </typedef>
   </target>
 
+  <target name="lucene-uptodate" unless="lucene.uptodate">
+    <uptodate property="lucene.uptodate" 
+              targetfile="${common.dir}/build/lucene-core-${version}.jar">
+     	<srcfiles dir="${common.dir}/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+  
   <target name="rat-sources" depends="rat-sources-typedef"
 	  description="runs the tasks over source and test files">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
