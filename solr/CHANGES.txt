@@ -53,14 +53,6 @@ Upgrading from Solr 3.1-dev
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
 
-* In previous releases, sorting or evaluating function queries on 
-  fields that were "multiValued" (either by explicit declaration in
-  schema.xml or by implict behavior because the "version" attribute on
-  the schema was less then 1.2) did not generally work, but it would
-  sometimes silently act as if it succeeded and order the docs
-  arbitrarily.  Solr will now fail on any attempt to sort, or apply a
-  function to, multi-valued fields 
-
 
 
 Detailed Change List
@@ -267,6 +259,14 @@ Upgrading from Solr 1.4
   backward compatible, the trunk version of Solr has already dropped support for all but the SpellingOptions method. (gsingers)
 
 * readercycle script was removed. (SOLR-2046)
+
+* In previous releases, sorting or evaluating function queries on 
+  fields that were "multiValued" (either by explicit declaration in
+  schema.xml or by implict behavior because the "version" attribute on
+  the schema was less then 1.2) did not generally work, but it would
+  sometimes silently act as if it succeeded and order the docs
+  arbitrarily.  Solr will now fail on any attempt to sort, or apply a
+  function to, multi-valued fields 
 
 Detailed Change List
 ----------------------
