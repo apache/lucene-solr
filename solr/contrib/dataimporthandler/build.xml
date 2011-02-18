@@ -276,7 +276,7 @@
   		<fileset dir="src/main/webapp" includes="**" />
   	</copy>
   	<mkdir dir="../../build/web/WEB-INF/lib"/>
-  	<copy file="target/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"></copy>
+  	<!--<copy file="target/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"></copy>-->
   	<copy file="target/${fullnamever}.jar" todir="${solr-path}/dist"></copy>
   	<copy file="target/apache-${ant.project.name}-extras-${version}.jar" todir="${solr-path}/dist"></copy>
   </target>

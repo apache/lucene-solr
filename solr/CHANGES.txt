@@ -54,7 +54,6 @@ Upgrading from Solr 3.1-dev
   their solrconfig.xml file.
 
 
-
 Detailed Change List
 ----------------------
 
@@ -267,6 +266,11 @@ Upgrading from Solr 1.4
   sometimes silently act as if it succeeded and order the docs
   arbitrarily.  Solr will now fail on any attempt to sort, or apply a
   function to, multi-valued fields 
+
+* The DataImportHandler jars are no longer included in the solr
+  WAR and should be added in Solr's lib directory, or referenced
+  via the <lib> directive in solrconfig.xml.
+
 
 Detailed Change List
 ----------------------
@@ -787,6 +791,8 @@ Other Changes
 
 * SOLR-2340: Add version infos to message in JavaBinCodec when throwing
   exception. (koji)
+
+* SOLR-2365: Move DIH jars out of solr.war (David Smiley via yonik)
 
 
 Build
