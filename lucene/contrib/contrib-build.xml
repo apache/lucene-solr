@@ -60,7 +60,11 @@
     <property name="core.compiled" value="true"/>
   </target>
   
-  <target name="init" depends="common.init,build-lucene"/>
+  <target name="jar-lucene" depends="build-lucene" unless="lucene.uptodate">
+    <ant dir="${common.dir}" target="jar-core" inheritAll="false"/>
+  </target>
+  
+  <target name="init" depends="common.init,lucene-uptodate,jar-lucene"/>
   <target name="compile-test" depends="init" if="contrib.has.tests">
     <antcall target="common.compile-test" inheritRefs="true" />
   </target>
