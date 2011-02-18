@@ -80,6 +80,11 @@ Upgrading from Solr 1.4
   arbitrarily.  Solr will now fail on any attempt to sort, or apply a
   function to, multi-valued fields 
 
+* The DataImportHandler jars are no longer included in the solr
+  WAR and should be added in Solr's lib directory, or referenced
+  via the <lib> directive in solrconfig.xml.
+
+
 Detailed Change List
 ----------------------
 
@@ -629,6 +634,9 @@ Other Changes
 * SOLR-2350: Since Solr no longer requires XML files to be in UTF-8
   (see SOLR-96) SimplePostTool (aka: post.jar) has been improved to
   work with files of any mime-type or charset. (hossman)
+
+* SOLR-2365: Move DIH jars out of solr.war (David Smiley via yonik)
+
 
 Build
 ----------------------

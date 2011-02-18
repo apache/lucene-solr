@@ -1,6 +1,5 @@
 <%@ page import="org.apache.solr.request.SolrRequestHandler" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="org.apache.solr.handler.dataimport.DataImportHandler" %>
 <%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
 <%--
  Licensed to the Apache Software Foundation (ASF) under one or more
@@ -36,7 +35,7 @@ Select handler:
 <ul>
 <%
     for (String key : handlers.keySet()) {
-      if (handlers.get(key) instanceof DataImportHandler) { %>
+      if (handlers.get(key).getClass().getName().equals("org.apache.solr.handler.dataimport.DataImportHandler")) { %>
   <li><a href="dataimport.jsp?handler=<%=key%>"><%=key%></a></li>
 <%
       }
