@@ -50,7 +50,6 @@ See http://forrest.apache.org/docs/linking.html for more info
       <javadoc label="Javadocs">
          <javadoc-all label="All" href="ext:javadocs-all"/>
 		 <javadoc-core label="Core" href="ext:javadocs-core"/>
-		 <javadoc-demo label="Demo" href="ext:javadocs-demo"/>
 		 <javadoc-contrib label="Contrib">
 		    <javadoc-contrib-analyzers label="Analyzers" href="ext:javadocs-contrib-analyzers"/>
 		    <javadoc-contrib-smartcn label="Smart Chinese Analyzer" href="ext:javadocs-contrib-smartcn"/>
@@ -59,6 +58,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-bdb label="Bdb" href="ext:javadocs-contrib-bdb"/>
 		    <javadoc-contrib-bdb-je label="Bdb-je" href="ext:javadocs-contrib-bdb-je"/>
 		    <javadoc-contrib-benchmark label="Benchmark" href="ext:javadocs-contrib-benchmark"/>
+        <javadoc-contrib-demo label="Demo" href="ext:javadocs-contrib-demo"/>
 		    <javadoc-contrib-highlighter label="Highlighter" href="ext:javadocs-contrib-highlighter"/>
 		    <javadoc-contrib-icu label="ICU" href="ext:javadocs-contrib-icu"/>
 		    <javadoc-contrib-instantiated label="Instantiated" href="ext:javadocs-contrib-instantiated"/>
@@ -102,7 +102,6 @@ See http://forrest.apache.org/docs/linking.html for more info
     <changes-contrib href="changes/Contrib-Changes.html" />
     <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
-	<javadocs-demo href="api/demo/index.html"/>
 	<javadocs-contrib-analyzers href="api/contrib-analyzers/index.html"/>
 	<javadocs-contrib-smartcn href="api/contrib-smartcn/index.html"/>
 	<javadocs-contrib-stempel href="api/contrib-stempel/index.html"/>
@@ -110,6 +109,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-bdb href="api/contrib-bdb/index.html"/>
 	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>
 	<javadocs-contrib-benchmark href="api/contrib-benchmark/index.html"/>
+  <javadocs-contrib-demo href="api/contrib-demo/index.html"/>
 	<javadocs-contrib-highlighter href="api/contrib-highlighter/index.html"/>
     <javadocs-contrib-icu href="api/contrib-icu/index.html"/>
 	<javadocs-contrib-instantiated href="api/contrib-instantiated/index.html"/>
