@@ -80,6 +80,10 @@ Bug Fixes
 
 * SOLR-2330: solrconfig.xml files in example-DIH are broken. (Matt Parker, koji)
 
+* SOLR-2116: Fix TikaConfig classloader bug in TikaEntityProcessor
+  (Martijn van Groningen via hossman)
+  
+
 Other Changes
 ----------------------
 
