@@ -264,5 +264,6 @@
                      outputDir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml"
 		     />
     </target>
-
+    
+    <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven"/>
 </project>
