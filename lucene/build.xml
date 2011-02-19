@@ -497,9 +497,6 @@
       <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
-      <fileset dir="contrib/demo/src/java/org/apache/lucene/demo/html" includes="*.java">
-        <containsregexp expression="Generated.*By.*JavaCC"/>
-      </fileset>
     </delete>
   </target>
 

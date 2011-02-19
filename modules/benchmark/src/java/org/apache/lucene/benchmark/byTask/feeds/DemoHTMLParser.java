@@ -30,7 +30,7 @@ import java.util.Properties;
 public class DemoHTMLParser implements org.apache.lucene.benchmark.byTask.feeds.HTMLParser {
 
   public DocData parse(DocData docData, String name, Date date, String title, Reader reader, DateFormat dateFormat) throws IOException, InterruptedException {
-    org.apache.lucene.demo.html.HTMLParser p = new org.apache.lucene.demo.html.HTMLParser(reader);
+    org.apache.lucene.benchmark.byTask.feeds.demohtml.HTMLParser p = new org.apache.lucene.benchmark.byTask.feeds.demohtml.HTMLParser(reader);
     
     // title
     if (title==null) {

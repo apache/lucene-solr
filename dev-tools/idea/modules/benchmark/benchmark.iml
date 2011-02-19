@@ -17,7 +17,6 @@
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="memory" />
-    <orderEntry type="module" module-name="demo" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

@@ -129,11 +129,8 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="api/core/index.html">Core</a>
 </div>
-<div class="menuitem">
-<a href="api/demo/index.html">Demo</a>
-</div>
-<div onclick="SwitchMenu('menu_1.1.3.4', 'skin/')" id="menu_1.1.3.4Title" class="menutitle">Contrib</div>
-<div id="menu_1.1.3.4" class="menuitemgroup">
+<div onclick="SwitchMenu('menu_1.1.3.3', 'skin/')" id="menu_1.1.3.3Title" class="menutitle">Contrib</div>
+<div id="menu_1.1.3.3" class="menuitemgroup">
 <div class="menuitem">
 <a href="api/contrib-ant/index.html">Ant</a>
 </div>
@@ -145,6 +142,9 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <div class="menuitem">
 <a href="api/contrib-benchmark/index.html">Benchmark</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-demo/index.html">Demo</a>
 </div>
 <div class="menuitem">
 <a href="api/contrib-highlighter/index.html">Highlighter</a>
@@ -251,7 +251,7 @@ document.write("Last Published: " + document.lastModified);
 <div class="section">
 <p>
 This document is intended as a "getting started" guide.  It has three audiences: first-time users
-looking to install Apache Lucene in their application or web server; developers looking to modify or base
+looking to install Apache Lucene in their application; developers looking to modify or base
 the applications they develop on Lucene; and developers looking to become involved in and contribute
 to the development of Lucene.  This document is written in tutorial and walk-through format.  The
 goal is to help you "get started".  It does not go into great depth on some of the conceptual or
@@ -274,25 +274,6 @@ may wish to skip sections.
 	demo</a>.  This section walks through the implementation details (sources) of the
 	command-line Lucene demo.  This section is intended for developers.</li> 
 <p></p>
-
-	
-<li>
-<a href="demo3.html">About installing and configuring the demo template web
-	application</a>.  While this walk-through assumes Tomcat as your container of choice,
-	there is no reason you can't (provided you have the requisite knowledge) adapt the
-	instructions to your container.  This section is intended for those responsible for the
-	development or deployment of Lucene-based web applications.</li> 
-<p></p>
-
-	
-<li>
-<a href="demo4.html">About the sources used to construct the demo template web
-	application</a>.  Please note the template application is designed to highlight features of
-	Lucene and is <b>not</b> an example of best practices.  (One would hopefully use MVC
-	architecture such as provided by Jakarta Struts and taglibs, but showing you how to do that
-	would be WAY beyond the scope of this guide.)  This section is intended for developers and
-	those wishing to customize the demo template web application to their needs.  </li>
-
 
 </ul>
 </div>

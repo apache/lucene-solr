@@ -17,81 +17,40 @@
     limitations under the License.
  -->
 
-<project name="demo" default="default" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+<project name="demo" default="jar-core" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <description>
     Lucene Demo
   </description>
 
-  <property name="build.demo.template" value="src/java/demo-build.template"/> 
-
   <property name="demo.name" value="lucene-demos-${version}"/>
-  <property name="demo.war.name" value="luceneweb"/>
 
   <import file="../contrib-build.xml"/>
 
   <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
       property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-
+  
+  <property name="lucene.jar" value="${common.dir}/build/lucene-core-${version}.jar"/>
+  <target name="lucene-jar-uptodate" unless="lucene.jar.uptodate">
+    <uptodate property="lucene.jar.uptodate" targetfile="${lucene.jar}">
+     	<srcfiles dir="${common.dir}/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+  <target name="jar-lucene" depends="build-lucene" unless="lucene.jar.uptodate">
+    <ant dir="${common.dir}" target="jar-core" inheritAll="false"/>
+  </target>
+  <target name="init" depends="contrib-build.init,lucene-jar-uptodate,jar-lucene"/>
+  
   <path id="classpath">
 	 <pathelement path="${analyzers-common.jar}"/>
-	 <path refid="base.classpath"/>
+   <pathelement path="${lucene.jar}"/>
   </path>
 
-  <target name="compile-core" depends="compile-analyzers-common, common.compile-core, war-demo" />
+  <target name="compile-core" depends="jar-analyzers-common,common.compile-core" />
 
-  <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
-    <subant target="default">
+  <target name="jar-analyzers-common" unless="analyzers-common.uptodate">
+    <subant target="jar-core">
       <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
     </subant>
   </target>
-
-  <target name="war-demo">
-    <sequential>
-      <build-manifest title="Lucene Search Engine: demos"/>
-  	  <war destfile="${build.dir}/${demo.war.name}.war"
-           webxml="src/jsp/WEB-INF/web.xml"
-      	   manifest="${manifest.file}">
-        <fileset dir="src/jsp" excludes="WEB-INF/web.xml"/>
-        <lib dir="${build.dir}/../.." includes="lucene-core-${version}.jar"/>
-  	  	<lib dir="${common.dir}/../modules/analysis/build/common" includes="lucene-analyzers-common-${version}.jar"/>
-        <lib dir="${build.dir}" includes="${final.name}.jar"/>
-        <metainf dir="${common.dir}">
-          <include name="LICENSE.txt"/>
-          <include name="NOTICE.txt"/>
-        </metainf>
-      </war>
-    </sequential>
-  </target>
-	
-  <target name="clean-javacc">
-    <fileset dir="src/java/org/apache/lucene/demo/html" includes="*.java">
-      <containsregexp expression="Generated.*By.*JavaCC"/>
-    </fileset>
-  </target>
-	
-  <target name="javacc" depends="init,javacc-check" if="javacc.present">
-    <invoke-javacc target="src/java/org/apache/lucene/demo/html/HTMLParser.jj"
-                     outputDir="src/java/org/apache/lucene/demo/html"
-    />
-  </target>
-
-  <target name="dist-maven" if="pom.xml.present" depends="compile-core,jar-src">
-    <sequential>
-      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
-      <artifact:pom id="maven.project" file="pom.xml"/>
-      <artifact:deploy file="${build.dir}/${demo.war.name}.war">
-        <attach file="${build.dir}/${maven.project.build.finalName}.jar"
-                classifier="classes"/>
-        <attach file="${build.dir}/${final.name}-src.jar"
-                classifier="sources"/>
-        <attach file="${build.dir}/${final.name}-javadoc.jar"
-                classifier="javadoc"/>
-        <remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
-        </remoteRepository>
-        <pom refid="maven.project"/>
-      </artifact:deploy>
-    </sequential>
-  </target>  	
 </project>
