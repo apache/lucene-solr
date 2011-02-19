@@ -74,6 +74,10 @@ Bug Fixes
 * SOLR-2252: When a child entity in nested entities is rootEntity="true", delta-import doesn't work.
   (koji)
 
+* SOLR-2116: Fix TikaConfig classloader bug in TikaEntityProcessor
+  (Martijn van Groningen via hossman)
+  
+
 Other Changes
 ----------------------
 
