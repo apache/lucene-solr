@@ -136,17 +136,14 @@ to the searcher.  Note that it's also possible to programmatically construct a r
 <a href="api/core/org/apache/lucene/search/Query.html">Query</a> object without using the query
 parser.  The query parser just enables decoding the <a href="queryparsersyntax.html">Lucene query
 syntax</a> into the corresponding <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
-object. Search can be executed in two different ways:
+object.
 </p>
 
-<ul>
-<li>Streaming: A <a href="api/core/org/apache/lucene/search/Collector.html">Collector</a> subclass
-simply prints out the document ID and score for each matching document.</li>
-<li>Paging: Using the <code>IndexSearcher.search(query,n)</code> method that returns 
-<a href="api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max <code>n</code> hits,
-the search results are printed in pages, sorted by score (i.e. relevance).</li>
-</ul>
-
+<p>
+<code>SearchFiles</code> uses the <code>IndexSearcher.search(query,n)</code> method that returns
+<a href="api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max <code>n</code> hits.
+The results are printed in pages, sorted by score (i.e. relevance).
+</p>
 </section>
 </body>
 </document>
