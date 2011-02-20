@@ -49,6 +49,9 @@ public class _TestUtil {
     return new File(LuceneTestCase.TEMP_DIR, desc + "." + new Random().nextLong());
   }
 
+  /**
+   * Deletes a directory and everything underneath it.
+   */
   public static void rmDir(File dir) throws IOException {
     if (dir.exists()) {
       for (File f : dir.listFiles()) {
@@ -175,6 +178,9 @@ public class _TestUtil {
     return randomUnicodeString(r, 20);
   }
 
+  /**
+   * Returns a random string up to a certain length.
+   */
   public static String randomUnicodeString(Random r, int maxLength) {
     final int end = r.nextInt(maxLength);
     if (end == 0) {
@@ -282,8 +288,8 @@ public class _TestUtil {
     }
   }
 
-  // just tries to configure things to keep the open file
-  // count lowish
+  /** just tries to configure things to keep the open file
+   * count lowish */
   public static void reduceOpenFiles(IndexWriter w) {
     // keep number of open files lowish
     LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
