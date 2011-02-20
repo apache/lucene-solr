@@ -91,6 +91,10 @@ public class RandomIndexWriter implements Closeable {
     }
   } 
 
+  /**
+   * Adds a Document.
+   * @see IndexWriter#addDocument(Document)
+   */
   public void addDocument(Document doc) throws IOException {
     w.addDocument(doc);
     if (docCount++ == flushAt) {
@@ -102,6 +106,10 @@ public class RandomIndexWriter implements Closeable {
     }
   }
   
+  /**
+   * Updates a document.
+   * @see IndexWriter#updateDocument(Term, Document)
+   */
   public void updateDocument(Term t, Document doc) throws IOException {
     w.updateDocument(t, doc);
     if (docCount++ == flushAt) {
@@ -162,6 +170,10 @@ public class RandomIndexWriter implements Closeable {
     }
   }
 
+  /**
+   * Close this writer.
+   * @see IndexWriter#close()
+   */
   public void close() throws IOException {
     // if someone isn't using getReader() API, we want to be sure to
     // maybeOptimize since presumably they might open a reader on the dir.
@@ -171,6 +183,13 @@ public class RandomIndexWriter implements Closeable {
     w.close();
   }
 
+  /**
+   * Forces an optimize.
+   * <p>
+   * NOTE: this should be avoided in tests unless absolutely necessary,
+   * as it will result in less test coverage.
+   * @see IndexWriter#optimize()
+   */
   public void optimize() throws IOException {
     w.optimize();
   }

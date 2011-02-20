@@ -708,7 +708,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Convinience method for logging an iterator.
+   * Convenience method for logging an iterator.
    *
    * @param label  String logged before/after the items in the iterator
    * @param iter   Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
@@ -728,7 +728,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Convinience method for logging an array.  Wraps the array in an iterator and delegates
+   * Convenience method for logging an array.  Wraps the array in an iterator and delegates
    *
    * @see #dumpIterator(String,Iterator,PrintStream)
    */
@@ -743,6 +743,7 @@ public abstract class LuceneTestCase extends Assert {
     return newIndexWriterConfig(random, v, a);
   }
   
+  /** create a new index writer config with random defaults using the specified random */
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
     if (r.nextBoolean()) {
@@ -835,6 +836,10 @@ public abstract class LuceneTestCase extends Assert {
     return newDirectory(random);
   }
   
+  /**
+   * Returns a new Directory instance, using the specified random.
+   * See {@link #newDirectory()} for more information.
+   */
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
@@ -889,6 +894,11 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
   
+  /**
+   * Returns a new Directory instance, using the specified random
+   * with contents copied from the provided directory. See 
+   * {@link #newDirectory()} for more information.
+   */
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
@@ -899,26 +909,45 @@ public abstract class LuceneTestCase extends Assert {
     return dir;
   }
   
+  /** Returns a new field instance. 
+   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
   public static Field newField(String name, String value, Index index) {
     return newField(random, name, value, index);
   }
   
+  /** Returns a new field instance. 
+   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
   public static Field newField(String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index);
   }
   
+  /**
+   * Returns a new Field instance. Use this when the test does not
+   * care about some specific field settings (most tests)
+   * <ul>
+   *  <li>If the store value is set to Store.NO, sometimes the field will be randomly stored.
+   *  <li>More term vector data than you ask for might be indexed, for example if you choose YES
+   *      it might index term vectors with offsets too.
+   * </ul>
+   */
   public static Field newField(String name, String value, Store store, Index index, TermVector tv) {
     return newField(random, name, value, store, index, tv);
   }
   
+  /** Returns a new field instance, using the specified random. 
+   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Index index) {
     return newField(random, name, value, Store.NO, index);
   }
   
+  /** Returns a new field instance, using the specified random. 
+   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index, TermVector.NO);
   }
   
+  /** Returns a new field instance, using the specified random. 
+   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
     if (!index.isIndexed())
       return new Field(name, value, store, index);
@@ -1029,7 +1058,8 @@ public abstract class LuceneTestCase extends Assert {
     } 
   }
   
-  /** create a new searcher over the reader */
+  /** create a new searcher over the reader.
+   * This searcher might randomly use threads. */
   public static IndexSearcher newSearcher(IndexReader r) throws IOException {
     if (random.nextBoolean()) {
       return new IndexSearcher(r);
