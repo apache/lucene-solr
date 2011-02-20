@@ -27,13 +27,10 @@ import java.util.Date;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -47,7 +44,6 @@ public class SearchFiles {
   public static void main(String[] args) throws Exception {
     String usage =
       "Usage:\tjava org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-query string] [-raw] [-paging hitsPerPage]\n\nSee http://lucene.apache.org/java/4_0/demo.html for details.";
-    usage += "\n\tSpecify 'false' for hitsPerPage to use streaming instead of paging search.";
     if (args.length > 0 && ("-h".equals(args[0]) || "-help".equals(args[0]))) {
       System.out.println(usage);
       System.exit(0);
@@ -58,7 +54,6 @@ public class SearchFiles {
     String queries = null;
     int repeat = 0;
     boolean raw = false;
-    boolean paging = true;
     String queryString = null;
     int hitsPerPage = 10;
     
@@ -81,13 +76,10 @@ public class SearchFiles {
       } else if ("-raw".equals(args[i])) {
         raw = true;
       } else if ("-paging".equals(args[i])) {
-        if (args[i+1].equals("false")) {
-          paging = false;
-        } else {
-          hitsPerPage = Integer.parseInt(args[i+1]);
-          if (hitsPerPage == 0) {
-            paging = false;
-          }
+        hitsPerPage = Integer.parseInt(args[i+1]);
+        if (hitsPerPage <= 0) {
+          System.err.println("There must be at least 1 hit per page.");
+          System.exit(1);
         }
         i++;
       }
@@ -131,56 +123,13 @@ public class SearchFiles {
         System.out.println("Time: "+(end.getTime()-start.getTime())+"ms");
       }
 
-      if (paging) {
-        doPagingSearch(in, searcher, query, hitsPerPage, raw, queries == null && queryString == null);
-      } else {
-        doStreamingSearch(searcher, query);
-      }
+      doPagingSearch(in, searcher, query, hitsPerPage, raw, queries == null && queryString == null);
 
       if (queryString != null) {
         break;
       }
     }
     searcher.close();
-  }
-  
-  /**
-   * This method uses a custom Collector implementation which simply prints out
-   * the docId and score of every matching document. 
-   * 
-   *  This simulates the streaming search use case, where all hits are supposed to
-   *  be processed, regardless of their relevance.
-   */
-  public static void doStreamingSearch(final IndexSearcher searcher, Query query) throws IOException {
-    Collector streamingHitCollector = new Collector() {
-      private Scorer scorer;
-      private int docBase;
-      
-      // simply print docId and score of every matching document
-      @Override
-      public void collect(int doc) throws IOException {
-        System.out.println("doc=" + doc + docBase + " score=" + scorer.score());
-      }
-
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return true;
-      }
-
-      @Override
-      public void setNextReader(AtomicReaderContext context)
-          throws IOException {
-        this.docBase = context.docBase;
-      }
-
-      @Override
-      public void setScorer(Scorer scorer) throws IOException {
-        this.scorer = scorer;
-      }
-      
-    };
-    
-    searcher.search(query, streamingHitCollector);
   }
 
   /**
