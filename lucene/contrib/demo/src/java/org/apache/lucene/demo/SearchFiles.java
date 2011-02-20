@@ -189,7 +189,7 @@ public class SearchFiles {
                   
       }
 
-      if (!interactive) {
+      if (!interactive || end == 0) {
         break;
       }
 
