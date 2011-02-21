@@ -20,9 +20,11 @@ package org.apache.lucene.util.automaton.fst;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -445,9 +447,9 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       if (VERBOSE && pairs.size() <= 20 && fst != null) {
-        PrintStream ps = new PrintStream("out.dot");
-        Util.toDot(fst, ps);
-        ps.close();
+        Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+        Util.toDot(fst, w, false, false);
+        w.close();
         System.out.println("SAVED out.dot");
       }
 
@@ -1128,9 +1130,9 @@ public class TestFSTs extends LuceneTestCase {
 
         System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.sizeInBytes());
         if (fst.getNodeCount() < 100) {
-          PrintStream ps = new PrintStream("out.dot");
-          Util.toDot(fst, ps);
-          ps.close();
+          Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+          Util.toDot(fst, w, false, false);
+          w.close();
           System.out.println("Wrote FST to out.dot");
         }
 
