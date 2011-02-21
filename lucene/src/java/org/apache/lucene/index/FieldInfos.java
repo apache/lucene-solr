@@ -102,7 +102,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       return byNumber.size();
     }
 
-    @Override
     public Iterator<FieldInfo> iterator() {
       return byNumber.values().iterator();
     }
