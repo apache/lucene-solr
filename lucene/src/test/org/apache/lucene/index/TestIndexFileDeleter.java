@@ -92,10 +92,9 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
     FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
     int contentFieldIndex = -1;
-    for(i=0;i<fieldInfos.size();i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
+    for (FieldInfo fi : fieldInfos) {
       if (fi.name.equals("content")) {
-        contentFieldIndex = i;
+        contentFieldIndex = fi.number;
         break;
       }
     }

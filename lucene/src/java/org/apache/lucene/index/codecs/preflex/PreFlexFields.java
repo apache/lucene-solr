@@ -19,14 +19,15 @@ package org.apache.lucene.index.codecs.preflex;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.TreeMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
-import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.CompoundFileReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
@@ -35,7 +36,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.CompoundFileReader;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -94,13 +94,11 @@ public class PreFlexFields extends FieldsProducer {
       // so that if an index update removes them we'll still have them
       freqStream = dir.openInput(info.name + ".frq", readBufferSize);
       boolean anyProx = false;
-      final int numFields = fieldInfos.size();
-      for(int i=0;i<numFields;i++) {
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
-        if (fieldInfo.isIndexed) {
-          fields.put(fieldInfo.name, fieldInfo);
-          preTerms.put(fieldInfo.name, new PreTerms(fieldInfo));
-          if (!fieldInfo.omitTermFreqAndPositions) {
+      for (FieldInfo fi : fieldInfos) {
+        if (fi.isIndexed) {
+          fields.put(fi.name, fi);
+          preTerms.put(fi.name, new PreTerms(fi));
+          if (!fi.omitTermFreqAndPositions) {
             anyProx = true;
           }
         }

@@ -17,21 +17,22 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.Constants;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.ArrayList;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Constants;
 
 /**
  * Information about a segment such as it's name, directory, and files related
@@ -41,6 +42,9 @@ import java.util.ArrayList;
  */
 public final class SegmentInfo {
 
+  @Deprecated
+  // remove with hasVector and hasProx
+  static final int CHECK_FIELDINFOS = -2;  // hasVector and hasProx use this for bw compatibility
   static final int NO = -1;          // e.g. no norms; no deletes;
   static final int YES = 1;          // e.g. have norms; have deletes;
   static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it. 
@@ -62,7 +66,7 @@ public final class SegmentInfo {
    * - NO says this field has no separate norms
    * >= YES says this field has separate norms with the specified generation
    */
-  private long[] normGen;                         
+  private Map<Integer,Long> normGen;
 
   private boolean isCompoundFile;         
 
@@ -80,9 +84,15 @@ public final class SegmentInfo {
 
   private int delCount;                           // How many deleted docs in this segment
 
-  private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
+  @Deprecated
+  // remove when we don't have to support old indexes anymore that had this field
+  private int hasProx = CHECK_FIELDINFOS;         // True if this segment has any fields with omitTermFreqAndPositions==false
 
-  private boolean hasVectors;                     // True if this segment wrote term vectors
+  @Deprecated
+  // remove when we don't have to support old indexes anymore that had this field
+  private int hasVectors = CHECK_FIELDINFOS;      // True if this segment wrote term vectors
+
+  private FieldInfos fieldInfos;
 
   private SegmentCodecs segmentCodecs;
 
@@ -100,7 +110,7 @@ public final class SegmentInfo {
   private long bufferedDeletesGen;
   
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
-                     boolean hasProx, SegmentCodecs segmentCodecs, boolean hasVectors) {
+                     SegmentCodecs segmentCodecs, FieldInfos fieldInfos) {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -108,18 +118,17 @@ public final class SegmentInfo {
     this.isCompoundFile = isCompoundFile;
     this.docStoreOffset = -1;
     this.docStoreSegment = name;
-    this.hasProx = hasProx;
     this.segmentCodecs = segmentCodecs;
-    this.hasVectors = hasVectors;
     delCount = 0;
     version = Constants.LUCENE_MAIN_VERSION;
+    this.fieldInfos = fieldInfos;
   }
 
   /**
    * Copy everything from src SegmentInfo into our instance.
    */
   void reset(SegmentInfo src) {
-    clearFiles();
+    clearFilesCache();
     version = src.version;
     name = src.name;
     docCount = src.docCount;
@@ -130,11 +139,14 @@ public final class SegmentInfo {
     docStoreIsCompoundFile = src.docStoreIsCompoundFile;
     hasVectors = src.hasVectors;
     hasProx = src.hasProx;
+    fieldInfos = src.fieldInfos == null ? null : (FieldInfos) src.fieldInfos.clone();
     if (src.normGen == null) {
       normGen = null;
     } else {
-      normGen = new long[src.normGen.length];
-      System.arraycopy(src.normGen, 0, normGen, 0, src.normGen.length);
+      normGen = new HashMap<Integer, Long>(src.normGen.size());
+      for (Entry<Integer,Long> entry : src.normGen.entrySet()) {
+        normGen.put(entry.getKey(), entry.getValue());
+    }
     }
     isCompoundFile = src.isCompoundFile;
     delCount = src.delCount;
@@ -184,17 +196,35 @@ public final class SegmentInfo {
     if (numNormGen == NO) {
       normGen = null;
     } else {
-      normGen = new long[numNormGen];
+      normGen = new HashMap<Integer, Long>();
       for(int j=0;j<numNormGen;j++) {
-        normGen[j] = input.readLong();
+        int fieldNumber = j;
+        if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+          fieldNumber = input.readInt();
       }
+
+        normGen.put(fieldNumber, input.readLong());
+    }
     }
     isCompoundFile = input.readByte() == YES;
+
+    Directory dir0 = dir;
+    if (isCompoundFile) {
+      dir0 = new CompoundFileReader(dir, IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+    }
+
+    try {
+      fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+    } finally {
+      if (dir != dir0) {
+        dir0.close();
+      }
+    }
 
     delCount = input.readInt();
     assert delCount <= docCount;
 
-    hasProx = input.readByte() == YES;
+    hasProx = input.readByte();
     
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
     segmentCodecs = new SegmentCodecs(codecs);
@@ -208,7 +238,7 @@ public final class SegmentInfo {
     diagnostics = input.readStringStringMap();
     
     if (format <= DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
-      hasVectors = input.readByte() == 1;
+      hasVectors = input.readByte();
     } else {
       final String storesSegment;
       final String ext;
@@ -229,7 +259,11 @@ public final class SegmentInfo {
         dirToTest = dir;
       }
       try {
-        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+        if (dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION))) {
+          hasVectors = YES;
+        } else {
+          hasVectors = NO;
+        }
       } finally {
         if (isCompoundFile) {
           dirToTest.close();
@@ -274,13 +308,13 @@ public final class SegmentInfo {
     }
   }
 
-  public boolean getHasVectors() throws IOException {
-    return hasVectors;
+  public boolean getHasVectors() {
+    return hasVectors == CHECK_FIELDINFOS ?
+        (fieldInfos == null ? true : fieldInfos.hasVectors()) : hasVectors == YES;
   }
 
-  public void setHasVectors(boolean v) {
-    hasVectors = v;
-    clearFiles();
+  public FieldInfos getFieldInfos() {
+    return fieldInfos;
   }
 
   public boolean hasDeletions() {
@@ -298,17 +332,18 @@ public final class SegmentInfo {
     } else {
       delGen++;
     }
-    clearFiles();
+    clearFilesCache();
   }
 
   void clearDelGen() {
     delGen = NO;
-    clearFiles();
+    clearFilesCache();
   }
 
   @Override
   public Object clone() {
-    SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, hasProx, segmentCodecs, false);
+    SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, segmentCodecs,
+        fieldInfos == null ? null : (FieldInfos) fieldInfos.clone());
     si.docStoreOffset = docStoreOffset;
     si.docStoreSegment = docStoreSegment;
     si.docStoreIsCompoundFile = docStoreIsCompoundFile;
@@ -316,8 +351,12 @@ public final class SegmentInfo {
     si.delCount = delCount;
     si.diagnostics = new HashMap<String, String>(diagnostics);
     if (normGen != null) {
-      si.normGen = normGen.clone();
+      si.normGen = new HashMap<Integer, Long>();
+      for (Entry<Integer,Long> entry : normGen.entrySet()) {
+        si.normGen.put(entry.getKey(), entry.getValue());
     }
+    }
+    si.hasProx = hasProx;
     si.hasVectors = hasVectors;
     si.version = version;
     return si;
@@ -339,7 +378,12 @@ public final class SegmentInfo {
    * @param fieldNumber the field index to check
    */
   public boolean hasSeparateNorms(int fieldNumber) {
-    return normGen != null && normGen[fieldNumber] != NO;
+    if (normGen == null) {
+      return false;
+  }
+
+    Long gen = normGen.get(fieldNumber);
+    return gen != null && gen.longValue() != NO;
   }
 
   /**
@@ -349,7 +393,7 @@ public final class SegmentInfo {
     if (normGen == null) {
       return false;
     } else {
-      for (long fieldNormGen : normGen) {
+      for (long fieldNormGen : normGen.values()) {
         if (fieldNormGen >= YES) {
           return true;
         }
@@ -359,10 +403,9 @@ public final class SegmentInfo {
     return false;
   }
 
-  void initNormGen(int numFields) {
+  void initNormGen() {
     if (normGen == null) { // normGen is null if this segments file hasn't had any norms set against it yet
-      normGen = new long[numFields];
-      Arrays.fill(normGen, NO);
+      normGen = new HashMap<Integer, Long>();
     }
   }
 
@@ -373,12 +416,13 @@ public final class SegmentInfo {
    * @param fieldIndex field whose norm file will be rewritten
    */
   void advanceNormGen(int fieldIndex) {
-    if (normGen[fieldIndex] == NO) {
-      normGen[fieldIndex] = YES;
+    Long gen = normGen.get(fieldIndex);
+    if (gen == null || gen.longValue() == NO) {
+      normGen.put(fieldIndex, new Long(YES));
     } else {
-      normGen[fieldIndex]++;
+      normGen.put(fieldIndex, gen+1);
     }
-    clearFiles();
+    clearFilesCache();
   }
 
   /**
@@ -388,7 +432,7 @@ public final class SegmentInfo {
    */
   public String getNormFileName(int number) {
     if (hasSeparateNorms(number)) {
-      return IndexFileNames.fileNameFromGeneration(name, "s" + number, normGen[number]);
+      return IndexFileNames.fileNameFromGeneration(name, "s" + number, normGen.get(number));
     } else {
       // single file for all norms 
       return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.NORMS_EXTENSION, WITHOUT_GEN);
@@ -403,7 +447,7 @@ public final class SegmentInfo {
    */
   void setUseCompoundFile(boolean isCompoundFile) {
     this.isCompoundFile = isCompoundFile;
-    clearFiles();
+    clearFilesCache();
   }
 
   /**
@@ -433,7 +477,7 @@ public final class SegmentInfo {
   
   void setDocStoreIsCompoundFile(boolean v) {
     docStoreIsCompoundFile = v;
-    clearFiles();
+    clearFilesCache();
   }
   
   public String getDocStoreSegment() {
@@ -446,14 +490,14 @@ public final class SegmentInfo {
   
   void setDocStoreOffset(int offset) {
     docStoreOffset = offset;
-    clearFiles();
+    clearFilesCache();
   }
 
   void setDocStore(int offset, String segment, boolean isCompoundFile) {        
     docStoreOffset = offset;
     docStoreSegment = segment;
     docStoreIsCompoundFile = isCompoundFile;
-    clearFiles();
+    clearFilesCache();
   }
   
   /** Save this segment's info. */
@@ -474,27 +518,24 @@ public final class SegmentInfo {
     if (normGen == null) {
       output.writeInt(NO);
     } else {
-      output.writeInt(normGen.length);
-      for (long fieldNormGen : normGen) {
-        output.writeLong(fieldNormGen);
+      output.writeInt(normGen.size());
+      for (Entry<Integer,Long> entry : normGen.entrySet()) {
+        output.writeInt(entry.getKey());
+        output.writeLong(entry.getValue());
       }
     }
     
     output.writeByte((byte) (isCompoundFile ? YES : NO));
     output.writeInt(delCount);
-    output.writeByte((byte) (hasProx ? 1:0));
+    output.writeByte((byte) hasProx);
     segmentCodecs.write(output);
     output.writeStringStringMap(diagnostics);
-    output.writeByte((byte) (hasVectors ? 1 : 0));
-  }
-
-  void setHasProx(boolean hasProx) {
-    this.hasProx = hasProx;
-    clearFiles();
+    output.writeByte((byte) hasVectors);
   }
 
   public boolean getHasProx() {
-    return hasProx;
+    return hasProx == CHECK_FIELDINFOS ?
+        (fieldInfos == null ? true : fieldInfos.hasProx()) : hasProx == YES;
   }
 
   /** Can only be called once. */
@@ -550,7 +591,7 @@ public final class SegmentInfo {
       } else {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_EXTENSION));
-        if (hasVectors) {
+        if (getHasVectors()) {
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
@@ -559,7 +600,7 @@ public final class SegmentInfo {
     } else if (!useCompoundFile) {
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_EXTENSION));
-      if (hasVectors) {
+      if (getHasVectors()) {
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
@@ -572,11 +613,11 @@ public final class SegmentInfo {
     }
 
     if (normGen != null) {
-      for (int i = 0; i < normGen.length; i++) {
-        long gen = normGen[i];
+      for (Entry<Integer,Long> entry : normGen.entrySet()) {
+        long gen = entry.getValue();
         if (gen >= YES) {
           // Definitely a separate norm file, with generation:
-          fileSet.add(IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + i, gen));
+          fileSet.add(IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + entry.getKey(), gen));
         }
       }
     }
@@ -588,7 +629,7 @@ public final class SegmentInfo {
 
   /* Called whenever any change is made that affects which
    * files this segment has. */
-  private void clearFiles() {
+  void clearFilesCache() {
     files = null;
     sizeInBytesNoStore = -1;
     sizeInBytesWithStore = -1;
@@ -623,7 +664,7 @@ public final class SegmentInfo {
     if (this.dir != dir) {
       s.append('x');
     }
-    if (hasVectors) {
+    if (getHasVectors()) {
       s.append('v');
     }
     s.append(docCount);

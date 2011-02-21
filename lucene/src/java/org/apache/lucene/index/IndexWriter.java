@@ -38,7 +38,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -221,6 +220,7 @@ public class IndexWriter implements Closeable {
   volatile long pendingCommitChangeCount;
 
   final SegmentInfos segmentInfos;       // the segments
+  final FieldInfos fieldInfos;
 
   private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
@@ -791,7 +791,10 @@ public class IndexWriter implements Closeable {
 
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates(), getCurrentFieldInfos(), bufferedDeletesStream);
+      // start with previous field numbers, but new FieldInfos
+      fieldInfos = getCurrentFieldInfos();
+      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates(),
+          fieldInfos.newFieldInfosWithGlobalFieldNumberMap(), bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
 
       // Default deleter (for backwards compatibility) is
@@ -854,23 +857,14 @@ public class IndexWriter implements Closeable {
   private FieldInfos getCurrentFieldInfos() throws IOException {
     final FieldInfos fieldInfos;
     if (segmentInfos.size() > 0) {
-      if (segmentInfos.getFormat() > DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
-        // Pre-4.0 index.  In this case we sweep all
-        // segments, merging their FieldInfos:
         fieldInfos = new FieldInfos();
         for(SegmentInfo info : segmentInfos) {
           final FieldInfos segFieldInfos = getFieldInfos(info);
-          final int fieldCount = segFieldInfos.size();
-          for(int fieldNumber=0;fieldNumber<fieldCount;fieldNumber++) {
-            fieldInfos.add(segFieldInfos.fieldInfo(fieldNumber));
+        for (FieldInfo fi : segFieldInfos) {
+          fieldInfos.add(fi);
           }
         }
       } else {
-        // Already a 4.0 index; just seed the FieldInfos
-        // from the last segment
-        fieldInfos = getFieldInfos(segmentInfos.info(segmentInfos.size()-1));
-      }
-    } else {
       fieldInfos = new FieldInfos();
     }
     return fieldInfos;
@@ -2272,7 +2266,7 @@ public class IndexWriter implements Closeable {
       String mergedName = newSegmentName();
       SegmentMerger merger = new SegmentMerger(directory, termIndexInterval,
                                                mergedName, null, codecs, payloadProcessorProvider,
-                                               ((FieldInfos) docWriter.getFieldInfos().clone()));
+                                               fieldInfos.newFieldInfosWithGlobalFieldNumberMap());
       
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -2280,8 +2274,8 @@ public class IndexWriter implements Closeable {
       int docCount = merger.merge();                // merge 'em
       
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, merger.fieldInfos().hasProx(), merger.getSegmentCodecs(),
-                                         merger.fieldInfos().hasVectors());
+                                         false, merger.getSegmentCodecs(),
+                                         merger.fieldInfos());
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
       boolean useCompoundFile;
@@ -3014,7 +3008,7 @@ public class IndexWriter implements Closeable {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false);
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, fieldInfos.newFieldInfosWithGlobalFieldNumberMap());
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
@@ -3165,7 +3159,7 @@ public class IndexWriter implements Closeable {
 
     SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge,
                                              codecs, payloadProcessorProvider,
-                                             ((FieldInfos) docWriter.getFieldInfos().clone()));
+                                             merge.info.getFieldInfos());
 
     if (infoStream != null) {
       message("merging " + merge.segString(directory) + " mergeVectors=" + merger.fieldInfos().hasVectors());
@@ -3174,7 +3168,8 @@ public class IndexWriter implements Closeable {
     merge.readers = new ArrayList<SegmentReader>();
     merge.readerClones = new ArrayList<SegmentReader>();
 
-    merge.info.setHasVectors(merger.fieldInfos().hasVectors());
+    merge.info.clearFilesCache();
+
 
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -3230,7 +3225,7 @@ public class IndexWriter implements Closeable {
       // because codec must know if prox was written for
       // this segment:
       //System.out.println("merger set hasProx=" + merger.hasProx() + " seg=" + merge.info.name);
-      merge.info.setHasProx(merger.fieldInfos().hasProx());
+      merge.info.clearFilesCache();
 
       boolean useCompoundFile;
       synchronized (this) { // Guard segmentInfos

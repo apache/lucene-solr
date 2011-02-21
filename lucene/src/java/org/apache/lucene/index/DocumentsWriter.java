@@ -279,12 +279,13 @@ final class DocumentsWriter {
   private int maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
 
   private boolean closed;
-  private final FieldInfos fieldInfos;
+  private FieldInfos fieldInfos;
 
   private final BufferedDeletesStream bufferedDeletesStream;
   private final IndexWriter.FlushControl flushControl;
 
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
+  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos,
+      BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.writer = writer;
     this.similarityProvider = writer.getConfig().getSimilarityProvider();
@@ -348,10 +349,6 @@ final class DocumentsWriter {
       pendingDeletes.addTerm(term, numDocs);
     }
     return doFlush;
-  }
-
-  public FieldInfos getFieldInfos() {
-    return fieldInfos;
   }
 
   /** If non-null, various details of indexing are printed
@@ -482,9 +479,14 @@ final class DocumentsWriter {
   private void doAfterFlush() throws IOException {
     // All ThreadStates should be idle when we are called
     assert allThreadsIdle();
+    for (DocumentsWriterThreadState threadState : threadStates) {
+      threadState.consumer.doAfterFlush();
+    }
+
     threadBindings.clear();
     waitQueue.reset();
     segment = null;
+    fieldInfos = fieldInfos.newFieldInfosWithGlobalFieldNumberMap();
     numDocs = 0;
     nextDocID = 0;
     bufferIsFull = false;
@@ -602,7 +604,7 @@ final class DocumentsWriter {
         pendingDeletes.docIDs.clear();
       }
 
-      newSegment = new SegmentInfo(segment, numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false);
+      newSegment = new SegmentInfo(segment, numDocs, directory, false, flushState.segmentCodecs, fieldInfos);
 
       Collection<DocConsumerPerThread> threads = new HashSet<DocConsumerPerThread>();
       for (DocumentsWriterThreadState threadState : threadStates) {
@@ -613,7 +615,7 @@ final class DocumentsWriter {
 
       consumer.flush(threads, flushState);
 
-      newSegment.setHasVectors(flushState.hasVectors);
+      newSegment.clearFilesCache();
 
       if (infoStream != null) {
         message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
@@ -796,7 +798,7 @@ final class DocumentsWriter {
       // work
       final DocWriter perDoc;
       try {
-        perDoc = state.consumer.processDocument();
+        perDoc = state.consumer.processDocument(fieldInfos);
       } finally {
         docState.clear();
       }
