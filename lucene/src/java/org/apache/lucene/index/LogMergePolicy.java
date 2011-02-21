@@ -546,9 +546,10 @@ public abstract class LogMergePolicy extends MergePolicy {
       if (size < 1) {
         size = 1;
       }
-      levels.add(new SegmentInfoAndLevel(info, (float) Math.log(size)/norm, i));
+      final SegmentInfoAndLevel infoLevel = new SegmentInfoAndLevel(info, (float) Math.log(size)/norm, i);
+      levels.add(infoLevel);
       if (verbose()) {
-        message("seg " + info.name + " level=" + levels.get(i).level + " size=" + size);
+        message("seg " + info.name + " level=" + infoLevel.level + " size=" + size);
       }
     }
 

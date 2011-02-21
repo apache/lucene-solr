@@ -2,7 +2,6 @@ package org.apache.lucene.store.instantiated;
 
 import org.apache.lucene.index.TermVectorOffsetInfo;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 /**
@@ -38,10 +37,7 @@ import java.util.Comparator;
  * </pre>
  * 
  */
-public class InstantiatedTermDocumentInformation
-    implements Serializable {
-
-  private static final long serialVersionUID = 1l;
+public class InstantiatedTermDocumentInformation {
 
   public static final Comparator<InstantiatedTermDocumentInformation> termComparator = new Comparator<InstantiatedTermDocumentInformation>() {
     public int compare(InstantiatedTermDocumentInformation instantiatedTermDocumentInformation, InstantiatedTermDocumentInformation instantiatedTermDocumentInformation1) {

@@ -18,15 +18,17 @@ package org.apache.lucene.index.codecs.mockrandom;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
@@ -46,6 +48,9 @@ import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSingleIntFactory;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsReaderImpl;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriterImpl;
+import org.apache.lucene.index.codecs.sep.IntIndexInput;
+import org.apache.lucene.index.codecs.sep.IntIndexOutput;
+import org.apache.lucene.index.codecs.sep.IntStreamFactory;
 import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
@@ -71,10 +76,56 @@ public class MockRandomCodec extends Codec {
     this.seedRandom = new Random(random.nextLong());
   }
 
+  // Chooses random IntStreamFactory depending on file's extension
+  private static class MockIntStreamFactory extends IntStreamFactory {
+    private final int salt;
+    private final List<IntStreamFactory> delegates = new ArrayList<IntStreamFactory>();
+
+    public MockIntStreamFactory(Random random) {
+      salt = random.nextInt();
+      delegates.add(new MockSingleIntFactory());
+      final int blockSize = _TestUtil.nextInt(random, 1, 2000);
+      delegates.add(new MockFixedIntBlockCodec.MockIntFactory(blockSize));
+      final int baseBlockSize = _TestUtil.nextInt(random, 1, 127);
+      delegates.add(new MockVariableIntBlockCodec.MockIntFactory(baseBlockSize));
+      // TODO: others
+    }
+
+    private static String getExtension(String fileName) {
+      final int idx = fileName.indexOf('.');
+      assert idx != -1;
+      return fileName.substring(idx);
+    }
+
+    @Override
+    public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
+      // Must only use extension, because IW.addIndexes can
+      // rename segment!
+      final IntStreamFactory f = delegates.get((Math.abs(salt ^ getExtension(fileName).hashCode())) % delegates.size());
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockRandomCodec: read using int factory " + f + " from fileName=" + fileName);
+      }
+      return f.openInput(dir, fileName, readBufferSize);
+    }
+
+    @Override
+    public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
+      final IntStreamFactory f = delegates.get((Math.abs(salt ^ getExtension(fileName).hashCode())) % delegates.size());
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockRandomCodec: write using int factory " + f + " to fileName=" + fileName);
+      }
+      return f.createOutput(dir, fileName);
+    }
+  }
+
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
 
     final long seed = seedRandom.nextLong();
+
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " seed=" + seed);
+    }
 
     final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SEED_EXT);
     final IndexOutput out = state.directory.createOutput(seedFileName);
@@ -83,25 +134,9 @@ public class MockRandomCodec extends Codec {
 
     final Random random = new Random(seed);
     PostingsWriterBase postingsWriter;
-    final int n = random.nextInt(4);
 
-    if (n == 0) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: writing MockSep postings");
-      }
-      postingsWriter = new SepPostingsWriterImpl(state, new MockSingleIntFactory());
-    } else if (n == 1) {
-      final int blockSize = _TestUtil.nextInt(random, 1, 2000);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: writing MockFixedIntBlock(" + blockSize + ") postings");
-      }
-      postingsWriter = new SepPostingsWriterImpl(state, new MockFixedIntBlockCodec.MockIntFactory(blockSize));
-    } else if (n == 2) {
-      final int baseBlockSize = _TestUtil.nextInt(random, 1, 127);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: writing MockVariableIntBlock(" + baseBlockSize + ") postings");
-      }
-      postingsWriter = new SepPostingsWriterImpl(state, new MockVariableIntBlockCodec.MockIntFactory(baseBlockSize));
+    if (random.nextBoolean()) {
+      postingsWriter = new SepPostingsWriterImpl(state, new MockIntStreamFactory(random));
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing Standard postings");
@@ -151,7 +186,7 @@ public class MockRandomCodec extends Codec {
 
               @Override
               public boolean isIndexTerm(BytesRef term, TermStats stats) {
-                return random.nextInt(gap) == 17;
+                return rand.nextInt(gap) == 17;
               }
 
               @Override
@@ -170,7 +205,7 @@ public class MockRandomCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter);
       success = true;
       return ret;
     } finally {
@@ -190,32 +225,17 @@ public class MockRandomCodec extends Codec {
     final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, SEED_EXT);
     final IndexInput in = state.dir.openInput(seedFileName);
     final long seed = in.readLong();
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " seed=" + seed);
+    }
     in.close();
 
     final Random random = new Random(seed);
     PostingsReaderBase postingsReader;
-    final int n = random.nextInt(4);
 
-    if (n == 0) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading MockSep postings");
-      }
+    if (random.nextBoolean()) {
       postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
-                                                 state.readBufferSize, new MockSingleIntFactory(), state.codecId);
-    } else if (n == 1) {
-      final int blockSize = _TestUtil.nextInt(random, 1, 2000);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading MockFixedIntBlock(" + blockSize + ") postings");
-      }
-      postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
-                                                 state.readBufferSize, new MockFixedIntBlockCodec.MockIntFactory(blockSize), state.codecId);
-    } else if (n == 2) {
-      final int baseBlockSize = _TestUtil.nextInt(random, 1, 127);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading MockVariableIntBlock(" + baseBlockSize + ") postings");
-      }
-      postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
-                                                 state.readBufferSize, new MockVariableIntBlockCodec.MockIntFactory(baseBlockSize), state.codecId);
+                                                 state.readBufferSize, new MockIntStreamFactory(random), state.codecId);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Standard postings");
@@ -286,7 +306,6 @@ public class MockRandomCodec extends Codec {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.readBufferSize,
-                                                BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                 termsCacheSize,
                                                 state.codecId);
       success = true;

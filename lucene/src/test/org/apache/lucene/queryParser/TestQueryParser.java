@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -58,6 +59,7 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -1175,5 +1177,87 @@ public class TestQueryParser extends LuceneTestCase {
       // expected
     }
   }
+  
+  /**
+   * adds synonym of "dog" for "dogs".
+   */
+  private class MockSynonymFilter extends TokenFilter {
+    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    boolean addSynonym = false;
+    
+    public MockSynonymFilter(TokenStream input) {
+      super(input);
+    }
 
+    @Override
+    public final boolean incrementToken() throws IOException {
+      if (addSynonym) { // inject our synonym
+        clearAttributes();
+        termAtt.setEmpty().append("dog");
+        posIncAtt.setPositionIncrement(0);
+        addSynonym = false;
+        return true;
+      }
+      
+      if (input.incrementToken()) {
+        addSynonym = termAtt.toString().equals("dogs");
+        return true;
+      } else {
+        return false;
+      }
+    } 
+  }
+  
+  /** whitespace+lowercase analyzer with synonyms */
+  private class Analyzer1 extends Analyzer {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new MockSynonymFilter(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+    }
+  }
+  
+  /** whitespace+lowercase analyzer without synonyms */
+  private class Analyzer2 extends Analyzer {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+    }
+  }
+  
+  /** query parser that doesn't expand synonyms when users use double quotes */
+  private class SmartQueryParser extends QueryParser {
+    Analyzer morePrecise = new Analyzer2();
+    
+    public SmartQueryParser() {
+      super(TEST_VERSION_CURRENT, "field", new Analyzer1());
+    }
+
+    @Override
+    protected Query getFieldQuery(String field, String queryText, boolean quoted)
+        throws ParseException {
+      if (quoted)
+        return newFieldQuery(morePrecise, field, queryText, quoted);
+      else
+        return super.getFieldQuery(field, queryText, quoted);
+    }
+  }
+  
+  public void testNewFieldQuery() throws Exception {
+    /** ordinary behavior, synonyms form uncoordinated boolean query */
+    QueryParser dumb = new QueryParser(TEST_VERSION_CURRENT, "field", new Analyzer1());
+    BooleanQuery expanded = new BooleanQuery(true);
+    expanded.add(new TermQuery(new Term("field", "dogs")), BooleanClause.Occur.SHOULD);
+    expanded.add(new TermQuery(new Term("field", "dog")), BooleanClause.Occur.SHOULD);
+    assertEquals(expanded, dumb.parse("\"dogs\""));
+    /** even with the phrase operator the behavior is the same */
+    assertEquals(expanded, dumb.parse("dogs"));
+    
+    /** custom behavior, the synonyms are expanded, unless you use quote operator */
+    QueryParser smart = new SmartQueryParser();
+    assertEquals(expanded, smart.parse("dogs"));
+    
+    Query unexpanded = new TermQuery(new Term("field", "dogs"));
+    assertEquals(unexpanded, smart.parse("\"dogs\""));
+  }
 }

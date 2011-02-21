@@ -36,6 +36,10 @@ public final class MockAnalyzer extends Analyzer {
   private final boolean payload;
   private int positionIncrementGap;
 
+  /**
+   * Calls {@link #MockAnalyzer(CharacterRunAutomaton, boolean, CharacterRunAutomaton, boolean, boolean) 
+   * MockAnalyzer(runAutomaton, lowerCase, filter, enablePositionIncrements, true}).
+   */
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
     this(runAutomaton, lowerCase, filter, enablePositionIncrements, true);    
   }
@@ -47,7 +51,7 @@ public final class MockAnalyzer extends Analyzer {
    * @param lowerCase true if the tokenizer should lowercase terms
    * @param filter DFA describing how terms should be filtered (set of stopwords, etc)
    * @param enablePositionIncrements true if position increments should reflect filtered terms.
-   * @param payload if payloads should be added
+   * @param payload if payloads should be added containing the positions (for testing)
    */
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements, boolean payload) {
     this.runAutomaton = runAutomaton;
@@ -58,21 +62,26 @@ public final class MockAnalyzer extends Analyzer {
   }
 
   /**
-   * Creates a new MockAnalyzer, with no filtering.
-   * 
-   * @param runAutomaton DFA describing how tokenization should happen (e.g. [a-zA-Z]+)
-   * @param lowerCase true if the tokenizer should lowercase terms
+   * Calls {@link #MockAnalyzer(CharacterRunAutomaton, boolean, CharacterRunAutomaton, boolean, boolean) 
+   * MockAnalyzer(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, true}).
    */
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
     this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, true);
   }
 
+  /**
+   * Calls {@link #MockAnalyzer(CharacterRunAutomaton, boolean, CharacterRunAutomaton, boolean, boolean) 
+   * MockAnalyzer(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, payload}).
+   */
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, boolean payload) {
     this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, payload);
   }
   
   /** 
-   * Create a Whitespace-lowercasing analyzer with no stopwords removal 
+   * Create a Whitespace-lowercasing analyzer with no stopwords removal.
+   * <p>
+   * Calls {@link #MockAnalyzer(CharacterRunAutomaton, boolean, CharacterRunAutomaton, boolean, boolean) 
+   * MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.EMPTY_STOPSET, false, true}).
    */
   public MockAnalyzer() {
     this(MockTokenizer.WHITESPACE, true);

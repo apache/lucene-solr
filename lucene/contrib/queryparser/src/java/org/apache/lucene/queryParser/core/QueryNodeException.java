@@ -42,8 +42,6 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
  */
 public class QueryNodeException extends Exception implements NLSException {
 
-  private static final long serialVersionUID = -5962648855261624214L;
-
   protected Message message = new MessageImpl(QueryParserMessages.EMPTY_MESSAGE);
 
   public QueryNodeException(Message message) {

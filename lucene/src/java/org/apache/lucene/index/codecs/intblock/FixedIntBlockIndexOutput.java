@@ -77,36 +77,17 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
     @Override
     public void write(IndexOutput indexOut, boolean absolute) throws IOException {
       if (absolute) {
-        indexOut.writeVLong(fp);
         indexOut.writeVInt(upto);
+        indexOut.writeVLong(fp);
       } else if (fp == lastFP) {
         // same block
-        indexOut.writeVLong(0);
         assert upto >= lastUpto;
-        indexOut.writeVInt(upto - lastUpto);
+        int uptoDelta = upto - lastUpto;
+        indexOut.writeVInt(uptoDelta << 1 | 1);
       } else {      
         // new block
+        indexOut.writeVInt(upto << 1);
         indexOut.writeVLong(fp - lastFP);
-        indexOut.writeVInt(upto);
-      }
-      lastUpto = upto;
-      lastFP = fp;
-    }
-
-    @Override
-    public void write(IntIndexOutput indexOut, boolean absolute) throws IOException {
-      if (absolute) {
-        indexOut.writeVLong(fp);
-        indexOut.write(upto);
-      } else if (fp == lastFP) {
-        // same block
-        indexOut.writeVLong(0);
-        assert upto >= lastUpto;
-        indexOut.write(upto - lastUpto);
-      } else {      
-        // new block
-        indexOut.writeVLong(fp - lastFP);
-        indexOut.write(upto);
       }
       lastUpto = upto;
       lastFP = fp;

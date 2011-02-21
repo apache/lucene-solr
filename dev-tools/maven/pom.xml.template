@@ -42,7 +42,7 @@
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.5</java.compat.version>
     <jetty.version>6.1.26</jetty.version>
-    <slf4j.version>1.5.5</slf4j.version>
+    <slf4j.version>1.6.1</slf4j.version>
     <tika.version>0.8</tika.version>
     <uima.version>${project.version}</uima.version>
   </properties>

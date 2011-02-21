@@ -49,6 +49,7 @@ public class BoolField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     return new OrdFieldSource(field.name);
   }
 

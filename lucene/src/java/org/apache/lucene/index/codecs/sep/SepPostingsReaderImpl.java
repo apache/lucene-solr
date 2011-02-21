@@ -56,6 +56,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
 
   int skipInterval;
   int maxSkipLevels;
+  int skipMinimum;
 
   public SepPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize, IntStreamFactory intFactory, String codecId) throws IOException {
 
@@ -102,6 +103,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       SepPostingsWriterImpl.VERSION_START, SepPostingsWriterImpl.VERSION_START);
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();
+    skipMinimum = termsIn.readInt();
   }
 
   @Override
@@ -231,7 +233,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
         //System.out.println("  payloadFP=" + termState.payloadFP);
       }
     }
-    if (termState.docFreq >= skipInterval) {
+    if (termState.docFreq >= skipMinimum) {
       //System.out.println("   readSkip @ " + termState.bytesReader.pos);
       if (isFirstTerm) {
         termState.skipFP = termState.bytesReader.readVLong();
@@ -240,7 +242,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
       //System.out.println("  skipFP=" + termState.skipFP);
     } else if (isFirstTerm) {
-      termState.skipFP = termState.bytesReader.readVLong();
+      termState.skipFP = 0;
     }
   }
 
@@ -344,7 +346,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
 
       docFreq = termState.docFreq;
-      // NOTE: unused if docFreq < skipInterval:
+      // NOTE: unused if docFreq < skipMinimum:
       skipFP = termState.skipFP;
       count = 0;
       doc = 0;
@@ -420,13 +422,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
 
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
-
-      if (docFreq >= skipInterval) {
+      if ((target - skipInterval) >= doc && docFreq >= skipMinimum) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and its not too close
 
         if (skipper == null) {
           // This DocsEnum has never done any skipping
@@ -599,13 +598,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     public int advance(int target) throws IOException {
       //System.out.println("SepD&P advance target=" + target + " vs current=" + doc + " this=" + this);
 
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
-
-      if (docFreq >= skipInterval) {
+      if ((target - skipInterval) >= doc && docFreq >= skipMinimum) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and its not too close
 
         if (skipper == null) {
           //System.out.println("  create skipper");

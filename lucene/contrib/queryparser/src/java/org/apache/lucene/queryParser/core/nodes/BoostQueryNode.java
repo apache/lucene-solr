@@ -34,8 +34,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class BoostQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = -3929082630855807593L;
-
   private float value = 0;
 
   /**

@@ -1,7 +1,5 @@
 package org.apache.lucene.index;
 
-import java.io.Serializable;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,7 +22,7 @@ import java.io.Serializable;
  * offset information.  This offset information is the character offset as set during the Analysis phase (and thus may not be the actual offset in the
  * original content).
  */
-public class TermVectorOffsetInfo implements Serializable {
+public class TermVectorOffsetInfo {
   /**
    * Convenience declaration when creating a {@link org.apache.lucene.index.TermPositionVector} that stores only position information.
    */

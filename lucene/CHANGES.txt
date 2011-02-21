@@ -118,6 +118,10 @@ Changes in backwards compatibility policy
   ParallelMultiSearcher into IndexSearcher as an optional
   ExecutorServiced passed to its ctor.  (Mike McCandless)
 
+* LUCENE-2908: Removed serialization code from lucene classes. It is recommended
+  that you serialize user search needs at a higher level in your application.
+  (Robert Muir)
+
 * LUCENE-2831: Changed Weight#scorer, Weight#explain & Filter#getDocIdSet to
   operate on a AtomicReaderContext instead of directly on IndexReader to enable
   searches to be aware of IndexSearcher's context. (Simon Willnauer)
@@ -190,6 +194,10 @@ API Changes
   Also removed norms(String, byte[], int), which was only used by MultiReader
   for building top-level norms. If you really need a top-level norms, use 
   MultiNorms or SlowMultiReaderWrapper. (Robert Muir, Mike Mccandless)
+
+* LUCENE-2892: Add QueryParser.newFieldQuery (called by getFieldQuery by default)
+  which takes Analyzer as a parameter, for easier customization by subclasses.
+  (Robert Muir)
 
 New features
 
@@ -845,7 +853,16 @@ New features
   IndexReader, to allow apps that maintain external per-segment caches
   to evict entries when a segment is finished.  (Shay Banon, Yonik
   Seeley, Mike McCandless)
-  
+
+* LUCENE-2911: The new StandardTokenizer, UAX29URLEmailTokenizer, and
+  the ICUTokenizer in contrib now all tag types with a consistent set
+  of token types (defined in StandardTokenizer). Tokens in the major
+  CJK types are explicitly marked to allow for custom downstream handling: 
+  <IDEOGRAPHIC>, <HANGUL>, <KATAKANA>, and <HIRAGANA>.  
+  (Robert Muir, Steven Rowe)
+
+* LUCENE-2913: Add missing getters to Numeric* classes. (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of

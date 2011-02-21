@@ -30,8 +30,6 @@ import org.apache.lucene.spatial.geohash.GeoHashDistanceFilter;
  * release.</font>
  */
 public class DistanceQueryBuilder {
-
-  private static final long serialVersionUID = 1L;
   
   private final double lat;
   private final double lng;

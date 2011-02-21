@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class DateResolutionAttributeImpl extends AttributeImpl 
 				implements DateResolutionAttribute {
 
-  private static final long serialVersionUID = -6804360312723049526L;
-
   private DateTools.Resolution dateResolution = null;
 
   public DateResolutionAttributeImpl() {

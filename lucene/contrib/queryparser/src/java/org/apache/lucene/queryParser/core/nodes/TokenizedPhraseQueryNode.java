@@ -28,8 +28,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
 public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
     FieldableNode {
 
-  private static final long serialVersionUID = -7185108320787917541L;
-
   public TokenizedPhraseQueryNode() {
     setLeaf(false);
     allocate();

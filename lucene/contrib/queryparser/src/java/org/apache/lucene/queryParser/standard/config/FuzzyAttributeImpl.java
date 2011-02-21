@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class FuzzyAttributeImpl extends AttributeImpl 
 				implements FuzzyAttribute {
 
-  private static final long serialVersionUID = -2104763012527049527L;
-
   private int prefixLength = FuzzyQuery.defaultPrefixLength;
 
   private float minSimilarity = FuzzyQuery.defaultMinSimilarity;

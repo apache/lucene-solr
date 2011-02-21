@@ -80,9 +80,9 @@ public class AutomatonTestUtil {
     return new String(buffer, 0, end);
   }
   
-  // picks a random int code point, avoiding surrogates;
-  // throws IllegalArgumentException if this transition only
-  // accepts surrogates
+  /** picks a random int code point, avoiding surrogates;
+   * throws IllegalArgumentException if this transition only
+   * accepts surrogates */
   private static int getRandomCodePoint(final Random r, final Transition t) {
     final int code;
     if (t.max < UnicodeUtil.UNI_SUR_HIGH_START ||

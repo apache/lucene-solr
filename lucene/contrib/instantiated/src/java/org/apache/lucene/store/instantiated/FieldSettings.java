@@ -3,7 +3,6 @@ package org.apache.lucene.store.instantiated;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Collection;
-import java.io.Serializable;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,7 +24,7 @@ import java.io.Serializable;
 /**
  * Essentially a Map<FieldName, {@link org.apache.lucene.store.instantiated.FieldSetting}> 
  */
-class FieldSettings implements Serializable {
+class FieldSettings {
 
 
   FieldSettings() {

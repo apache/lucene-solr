@@ -30,7 +30,7 @@ import org.apache.lucene.util.StringHelper;
   Note that terms may represent more than words from text fields, but also
   things like dates, email addresses, urls, etc.  */
 
-public final class Term implements Comparable<Term>, java.io.Serializable {
+public final class Term implements Comparable<Term> {
   String field;
   BytesRef bytes;
 
@@ -199,11 +199,4 @@ public final class Term implements Comparable<Term>, java.io.Serializable {
 
   @Override
   public final String toString() { return field + ":" + bytes.utf8ToString(); }
-
-  private void readObject(java.io.ObjectInputStream in)
-    throws java.io.IOException, ClassNotFoundException
-  {
-      in.defaultReadObject();
-      field = StringHelper.intern(field);
-  }
 }

@@ -47,6 +47,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   int skipInterval;
   int maxSkipLevels;
+  int skipMinimum;
 
   //private String segment;
 
@@ -86,6 +87,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();
+    skipMinimum = termsIn.readInt();
   }
 
   // Must keep final because we do non-standard clone
@@ -179,7 +181,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     //System.out.println("  freqFP=" + termState.freqOffset);
     assert termState.freqOffset < freqIn.length();
 
-    if (termState.docFreq >= skipInterval) {
+    if (termState.docFreq >= skipMinimum) {
       termState.skipOffset = termState.bytesReader.readVInt();
       //System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
       assert termState.freqOffset + termState.skipOffset < freqIn.length();
@@ -378,7 +380,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
 
-      if ((target - skipInterval) >= doc && limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
         // skip data, and it isn't too close.
@@ -528,7 +530,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       //System.out.println("StandardR.D&PE advance target=" + target);
 
-      if ((target - skipInterval) >= doc && limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
         // skip data, and it isn't too close
@@ -725,7 +727,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       //System.out.println("StandardR.D&PE advance seg=" + segment + " target=" + target + " this=" + this);
 
-      if ((target - skipInterval) >= doc && limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
         // skip data, and it isn't too close

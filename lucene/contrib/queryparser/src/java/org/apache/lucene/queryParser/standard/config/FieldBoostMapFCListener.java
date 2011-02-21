@@ -34,8 +34,6 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
  */
 public class FieldBoostMapFCListener implements FieldConfigListener {
 
-  private static final long serialVersionUID = -5929802948798314067L;
-
   private QueryConfigHandler config = null;
   
   public FieldBoostMapFCListener(QueryConfigHandler config) {

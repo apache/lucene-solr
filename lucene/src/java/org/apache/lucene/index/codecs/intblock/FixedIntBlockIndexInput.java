@@ -152,36 +152,17 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     @Override
     public void read(final DataInput indexIn, final boolean absolute) throws IOException {
       if (absolute) {
-        fp = indexIn.readVLong();
         upto = indexIn.readVInt();
-      } else {
-        final long delta = indexIn.readVLong();
-        if (delta == 0) {
-          // same block
-          upto += indexIn.readVInt();
-        } else {
-          // new block
-          fp += delta;
-          upto = indexIn.readVInt();
-        }
-      }
-      assert upto < blockSize;
-    }
-
-    @Override
-    public void read(final IntIndexInput.Reader indexIn, final boolean absolute) throws IOException {
-      if (absolute) {
         fp = indexIn.readVLong();
-        upto = indexIn.next();
       } else {
-        final long delta = indexIn.readVLong();
-        if (delta == 0) {
+        final int uptoDelta = indexIn.readVInt();
+        if ((uptoDelta & 1) == 1) {
           // same block
-          upto += indexIn.next();
+          upto += uptoDelta >>> 1;
         } else {
           // new block
-          fp += delta;
-          upto = indexIn.next();
+          upto = uptoDelta >>> 1;
+          fp += indexIn.readVLong();
         }
       }
       assert upto < blockSize;

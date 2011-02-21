@@ -60,6 +60,13 @@ public final class MockTokenFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   
+  /**
+   * Create a new MockTokenFilter.
+   * 
+   * @param input TokenStream to filter
+   * @param filter DFA representing the terms that should be removed.
+   * @param enablePositionIncrements true if the removal should accumulate position increments.
+   */
   public MockTokenFilter(TokenStream input, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
     super(input);
     this.filter = filter;

@@ -83,16 +83,6 @@ public class MockSingleIntIndexInput extends IntIndexInput {
     }
 
     @Override
-    public void read(IntIndexInput.Reader indexIn, boolean absolute)
-      throws IOException {
-      if (absolute) {
-        fp = indexIn.readVLong();
-      } else {
-        fp += indexIn.readVLong();
-      }
-    }
-
-    @Override
     public void set(IntIndexInput.Index other) {
       fp = ((Index) other).fp;
     }

@@ -59,6 +59,8 @@ ComplexContext = ([\p{LB:Complex_Context}] | {ComplexContextSupp})
 Han = ([\p{Script:Han}] | {HanSupp})
 Hiragana = ([\p{Script:Hiragana}] | {HiraganaSupp})
 
+// Script=Hangul & Aletter
+HangulEx       = (!(!\p{Script:Hangul}|!\p{WB:ALetter})) ({Format} | {Extend})*
 // UAX#29 WB4. X (Extend | Format)* --> X
 //
 ALetterEx      = {ALetter}                     ({Format} | {Extend})*
@@ -90,6 +92,10 @@ ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
   public static final int IDEOGRAPHIC_TYPE = StandardTokenizer.IDEOGRAPHIC;
   
   public static final int HIRAGANA_TYPE = StandardTokenizer.HIRAGANA;
+  
+  public static final int KATAKANA_TYPE = StandardTokenizer.KATAKANA;
+  
+  public static final int HANGUL_TYPE = StandardTokenizer.HANGUL;
 
   public final int yychar()
   {
@@ -123,6 +129,12 @@ ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 {ExtendNumLetEx}* 
   { return NUMERIC_TYPE; }
 
+// subset of the below for typing purposes only!
+{HangulEx}+
+  { return HANGUL_TYPE; }
+  
+{KatakanaEx}+
+  { return KATAKANA_TYPE; }
 
 // UAX#29 WB5.   ALetter × ALetter
 //        WB6.   ALetter × (MidLetter | MidNumLet) ALetter

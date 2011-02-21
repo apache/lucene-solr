@@ -347,7 +347,8 @@
     <attribute name="destdir"/>
   	<attribute name="title" default="${Name} ${version} API (${specversion})"/>
     <sequential>
-      <copy todir="@{destdir}/../prettify" overwrite="false">
+      <mkdir dir="@{destdir}"/>
+      <copy todir="@{destdir}/prettify" overwrite="false">
         <fileset dir="${prettify.dir}"/>
       </copy>
       <javadoc
@@ -363,7 +364,7 @@
           link="${javadoc.link.java}"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
-          stylesheetfile="@{destdir}/../prettify/stylesheet+prettify.css"
+          stylesheetfile="@{destdir}/prettify/stylesheet+prettify.css"
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="todo" description="To Do:"/>
         <tag name="uml.property" description="UML Property:"/>
@@ -376,7 +377,7 @@
         <link href="${javadoc.link.junit}"/>
         <link href="${javadoc.link.lucene}"/>
       	<header><![CDATA[
-      		 <script src="{@docRoot}/../prettify/prettify.js" type="text/javascript"></script>
+      		 <script src="{@docRoot}/prettify/prettify.js" type="text/javascript"></script>
       		 <script language="JavaScript">window.onload=function(){windowTitle();prettyPrint();}</script>
       	]]></header>
 

@@ -287,7 +287,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
     // TODO: Remove warning after API has been finalized
     @Override
-    public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
+    public float scorePayload(int docId, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[offset];
     }
@@ -296,7 +296,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override
-    public float computeNorm(String fieldName, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       return state.getBoost();
     }
 

@@ -1,19 +1,14 @@
 package org.apache.lucene.search;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.Random;
-import java.lang.reflect.Method;
 
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -23,6 +18,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util._TestUtil;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
@@ -102,7 +98,6 @@ public class QueryUtils {
    * @see #checkFirstSkipTo
    * @see #checkSkipTo
    * @see #checkExplanations
-   * @see #checkSerialization
    * @see #checkEqual
    */
   public static void check(Random random, Query q1, IndexSearcher s) {
@@ -124,7 +119,6 @@ public class QueryUtils {
           wrapped.close();
         }
         checkExplanations(q1,s);
-        checkSerialization(q1,s);
         
         Query q2 = (Query)q1.clone();
         checkEqual(s.rewrite(q1),
@@ -178,16 +172,7 @@ public class QueryUtils {
       }
       w.commit();
       w.deleteDocuments( new MatchAllDocsQuery() );
-      try {
-        // Carefully invoke what is a package-private (test
-        // only, internal) method on IndexWriter:
-        Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
-        m.setAccessible(true);
-        m.invoke(w);
-      } catch (Exception e) {
-        // Should not happen?
-        throw new RuntimeException(e);
-      }
+      _TestUtil.keepFullyDeletedSegments(w);
       w.commit();
 
       if (0 < numDeletedDocs)
@@ -203,31 +188,6 @@ public class QueryUtils {
                           numDeletedDocs, r.numDeletedDocs());
       r.close();
       return d;
-  }
-  
-
-  /** check that the query weight is serializable. 
-   * @throws IOException if serialization check fail. 
-   */
-  private static void checkSerialization(Query q, IndexSearcher s) throws IOException {
-    Weight w = q.weight(s);
-    try {
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      ObjectOutputStream oos = new ObjectOutputStream(bos);
-      oos.writeObject(w);
-      oos.close();
-      ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
-      ois.readObject();
-      ois.close();
-      
-      //skip equals() test for now - most weights don't override equals() and we won't add this just for the tests.
-      //TestCase.assertEquals("writeObject(w) != w.  ("+w+")",w2,w);   
-      
-    } catch (Exception e) {
-      IOException e2 = new IOException("Serialization failed for "+w);
-      e2.initCause(e);
-      throw e2;
-    }
   }
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc

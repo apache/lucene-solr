@@ -248,7 +248,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float computeNorm(String fieldName, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

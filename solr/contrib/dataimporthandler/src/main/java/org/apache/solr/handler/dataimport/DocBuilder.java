@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
@@ -318,7 +319,11 @@ public class DocBuilder {
       String keyName = root.isDocRoot ? root.getPk() : root.getSchemaPk();
       Object key = map.get(keyName);
       if(key == null) {
-        LOG.warn("no key was available for deleteted pk query. keyName = " + keyName);
+        keyName = findMatchingPkColumn(keyName, map);
+        key = map.get(keyName);
+      }
+      if(key == null) {
+        LOG.warn("no key was available for deleted pk query. keyName = " + keyName);
         continue;
       }
       writer.deleteDoc(key);
@@ -486,7 +491,7 @@ public class DocBuilder {
                 importStatistics.skipDocCount.getAndIncrement();
                 exception = null;//should not propogate up
               } else {
-                LOG.error("Exception while processing: "
+                SolrException.log(LOG, "Exception while processing: "
                         + entity.name + " document : " + docWrapper, dihe);
               }
               if (dihe.getErrCode() == DataImportHandlerException.SEVERE)
@@ -645,7 +650,7 @@ public class DocBuilder {
               importStatistics.skipDocCount.getAndIncrement();
               doc = null;
             } else {
-              LOG.error("Exception while processing: "
+              SolrException.log(LOG, "Exception while processing: "
                       + entity.name + " document : " + doc, e);
             }
             if (e.getErrCode() == DataImportHandlerException.SEVERE)
@@ -816,6 +821,28 @@ public class DocBuilder {
     return entity.processor = new EntityProcessorWrapper(entityProcessor, this);
   }
 
+  private String findMatchingPkColumn(String pk, Map<String, Object> row) {
+    if (row.containsKey(pk))
+      throw new IllegalArgumentException(
+        String.format("deltaQuery returned a row with null for primary key %s", pk));
+    String resolvedPk = null;
+    for (String columnName : row.keySet()) {
+      if (columnName.endsWith("." + pk) || pk.endsWith("." + columnName)) {
+        if (resolvedPk != null)
+          throw new IllegalArgumentException(
+            String.format(
+              "deltaQuery has more than one column (%s and %s) that might resolve to declared primary key pk='%s'",
+              resolvedPk, columnName, pk));
+        resolvedPk = columnName;
+      }
+    }
+    if (resolvedPk == null)
+      throw new IllegalArgumentException(
+        String.format("deltaQuery has no column to resolve to declared primary key pk='%s'", pk));
+    LOG.info(String.format("Resolving deltaQuery column '%s' to match entity's declared pk '%s'", resolvedPk, pk));
+    return resolvedPk;
+  }
+
   /**
    * <p> Collects unique keys of all Solr documents for whom one or more source tables have been changed since the last
    * indexed time. </p> <p> Note: In our definition, unique key of Solr document is the primary key of the top level
@@ -852,13 +879,20 @@ public class DocBuilder {
     Map<String, Map<String, Object>> deltaSet = new HashMap<String, Map<String, Object>>();
     LOG.info("Running ModifiedRowKey() for Entity: " + entity.name);
     //get the modified rows in this entity
+    String pk = entity.getPk();
     while (true) {
       Map<String, Object> row = entityProcessor.nextModifiedRowKey();
 
       if (row == null)
         break;
 
-      deltaSet.put(row.get(entity.getPk()).toString(), row);
+      Object pkValue = row.get(pk);
+      if (pkValue == null) {
+        pk = findMatchingPkColumn(pk, row);
+        pkValue = row.get(pk);
+      }
+
+      deltaSet.put(pkValue.toString(), row);
       importStatistics.rowsCount.incrementAndGet();
       // check for abort
       if (stop.get())
@@ -873,8 +907,14 @@ public class DocBuilder {
 
       deletedSet.add(row);
       
+      Object pkValue = row.get(pk);
+      if (pkValue == null) {
+        pk = findMatchingPkColumn(pk, row);
+        pkValue = row.get(pk);
+      }
+
       // Remove deleted rows from the delta rows
-      String deletedRowPk = row.get(entity.getPk()).toString();
+      String deletedRowPk = pkValue.toString();
       if (deltaSet.containsKey(deletedRowPk)) {
         deltaSet.remove(deletedRowPk);
       }

@@ -124,7 +124,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
     } else {
       iwc.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
     }
+    if (VERBOSE) {
+      System.out.println("TEST: make index");
+    }
     IndexWriter writer = new IndexWriter(dir1, iwc);
+    writer.setInfoStream(VERBOSE ? System.out : null);
 
     // create the index
     createIndexNoClose(!optimize, "index1", writer);
@@ -146,6 +150,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexReader r2 = writer.getReader();
     assertTrue(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r2));
+    if (VERBOSE) {
+      System.out.println("TEST: verify id");
+    }
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r2));
     
     r1.close();

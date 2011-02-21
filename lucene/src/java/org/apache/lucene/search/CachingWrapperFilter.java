@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -68,7 +67,7 @@ public class CachingWrapperFilter extends Filter {
 
   protected final FilterCache<DocIdSet> cache;
 
-  static abstract class FilterCache<T> implements Serializable {
+  static abstract class FilterCache<T> {
 
     /**
      * A transient Filter cache (package private because of test)

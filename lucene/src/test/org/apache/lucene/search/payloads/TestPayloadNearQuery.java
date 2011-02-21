@@ -299,14 +299,14 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   // must be static for weight serialization tests 
   static class BoostingSimilarity extends DefaultSimilarity {
 
-    @Override public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
+    @Override public float scorePayload(int docId, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[offset];
     }
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    @Override public float computeNorm(String fieldName, FieldInvertState state) {
+    @Override public float computeNorm(FieldInvertState state) {
       return state.getBoost();
     }
 

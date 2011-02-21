@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.Random;
 import java.util.Map;
@@ -51,6 +52,9 @@ public class _TestUtil {
     return new File(LuceneTestCase.TEMP_DIR, desc + "." + new Random().nextLong());
   }
 
+  /**
+   * Deletes a directory and everything underneath it.
+   */
   public static void rmDir(File dir) throws IOException {
     if (dir.exists()) {
       for (File f : dir.listFiles()) {
@@ -154,6 +158,9 @@ public class _TestUtil {
     return randomUnicodeString(r, 20);
   }
 
+  /**
+   * Returns a random string up to a certain length.
+   */
   public static String randomUnicodeString(Random r, int maxLength) {
     final int end = r.nextInt(maxLength);
     if (end == 0) {
@@ -310,8 +317,8 @@ public class _TestUtil {
     }
   }
 
-  // just tries to configure things to keep the open file
-  // count lowish
+  /** just tries to configure things to keep the open file
+   * count lowish */
   public static void reduceOpenFiles(IndexWriter w) {
     // keep number of open files lowish
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
@@ -335,5 +342,18 @@ public class _TestUtil {
       }
     });
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
+  }
+
+  public static void keepFullyDeletedSegments(IndexWriter w) {
+    try {
+      // Carefully invoke what is a package-private (test
+      // only, internal) method on IndexWriter:
+      Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
+      m.setAccessible(true);
+      m.invoke(w);
+    } catch (Exception e) {
+      // Should not happen?
+      throw new RuntimeException(e);
+    }
   }
 }

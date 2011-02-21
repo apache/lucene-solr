@@ -32,8 +32,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class DefaultPhraseSlopAttributeImpl extends AttributeImpl 
 				implements DefaultPhraseSlopAttribute {
 
-  private static final long serialVersionUID = -2104763012527049527L;
-
   private int defaultPhraseSlop = 0;
 
   public DefaultPhraseSlopAttributeImpl() {

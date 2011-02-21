@@ -1,0 +1,131 @@
+package org.apache.lucene.index;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.lucene.util.*;
+import org.apache.lucene.store.*;
+import org.apache.lucene.document.*;
+
+public class TestStressAdvance extends LuceneTestCase {
+
+  public void testStressAdvance() throws Exception {
+    for(int iter=0;iter<3;iter++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter);
+      }
+      Directory dir = newDirectory();
+      RandomIndexWriter w = new RandomIndexWriter(random, dir);
+      final Set<Integer> aDocs = new HashSet<Integer>();
+      final Document doc = new Document();
+      final Field f = newField("field", "", Field.Index.NOT_ANALYZED_NO_NORMS);
+      doc.add(f);
+      final Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      doc.add(idField);
+      for(int id=0;id<5000*RANDOM_MULTIPLIER;id++) {
+        if (random.nextInt(4) == 3) {
+          f.setValue("a");
+          aDocs.add(id);
+        } else {
+          f.setValue("b");
+        }
+        idField.setValue(""+id);
+        w.addDocument(doc);
+      }
+
+      w.optimize();
+
+      final List<Integer> aDocIDs = new ArrayList<Integer>();
+      final List<Integer> bDocIDs = new ArrayList<Integer>();
+
+      final IndexReader r = w.getReader();
+      final int[] idToDocID = new int[r.maxDoc()];
+      for(int docID=0;docID<idToDocID.length;docID++) {
+        int id = Integer.parseInt(r.document(docID).get("id"));
+        if (aDocs.contains(id)) {
+          aDocIDs.add(docID);
+        } else {
+          bDocIDs.add(docID);
+        }
+      }
+      final TermsEnum te = r.getSequentialSubReaders()[0].fields().terms("field").iterator();
+      
+      DocsEnum de = null;
+      for(int iter2=0;iter2<10;iter2++) {
+        if (VERBOSE) {
+          System.out.println("\nTEST: iter=" + iter + " iter2=" + iter2);
+        }
+        assertEquals(TermsEnum.SeekStatus.FOUND, te.seek(new BytesRef("a")));
+        de = te.docs(null, de);
+        testOne(de, aDocIDs);
+
+        assertEquals(TermsEnum.SeekStatus.FOUND, te.seek(new BytesRef("b")));
+        de = te.docs(null, de);
+        testOne(de, bDocIDs);
+      }
+
+      w.close();
+      r.close();
+      dir.close();
+    }
+  }
+
+  private void testOne(DocsEnum docs, List<Integer> expected) throws Exception {
+    if (VERBOSE) {
+      System.out.println("test");
+    }
+    int upto = -1;
+    while(upto < expected.size()) {
+      if (VERBOSE) {
+        System.out.println("  cycle upto=" + upto + " of " + expected.size());
+      }
+      final int docID;
+      if (random.nextInt(4) == 1 || upto == expected.size()-1) {
+        // test nextDoc()
+        if (VERBOSE) {
+          System.out.println("    do nextDoc");
+        }
+        upto++;
+        docID = docs.nextDoc();
+      } else {
+        // test advance()
+        final int inc = _TestUtil.nextInt(random, 1, expected.size()-1-upto);
+        if (VERBOSE) {
+          System.out.println("    do advance inc=" + inc);
+        }
+        upto += inc;
+        docID = docs.advance(expected.get(upto));
+      }
+      if (upto == expected.size()) {
+        if (VERBOSE) {
+          System.out.println("  expect docID=" + DocsEnum.NO_MORE_DOCS + " actual=" + docID);
+        }
+        assertEquals(DocsEnum.NO_MORE_DOCS, docID);
+      } else {
+        if (VERBOSE) {
+          System.out.println("  expect docID=" + expected.get(upto) + " actual=" + docID);
+        }
+        assertTrue(docID != DocsEnum.NO_MORE_DOCS);
+        assertEquals(expected.get(upto).intValue(), docID);
+      }
+    }
+  }
+}

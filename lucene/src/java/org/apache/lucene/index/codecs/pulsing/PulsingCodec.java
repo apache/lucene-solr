@@ -89,7 +89,7 @@ public class PulsingCodec extends Codec {
     // Terms dict
     success = false;
     try {
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, pulsingWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, pulsingWriter);
       success = true;
       return ret;
     } finally {
@@ -136,7 +136,6 @@ public class PulsingCodec extends Codec {
                                                 state.dir, state.fieldInfos, state.segmentInfo.name,
                                                 pulsingReader,
                                                 state.readBufferSize,
-                                                BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                 StandardCodec.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;

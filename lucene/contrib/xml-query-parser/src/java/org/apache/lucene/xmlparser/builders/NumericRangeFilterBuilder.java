@@ -154,7 +154,6 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
 	}
 
 	static class NoMatchFilter extends Filter {
-		private static final long serialVersionUID = 1L;
 
 		@Override
 		public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {

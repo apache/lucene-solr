@@ -17,11 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.util.ArrayList;
 
 /** Expert: Describes the score computation for document and query. */
-public class Explanation implements java.io.Serializable {
+public class Explanation {
   private float value;                            // the value of this node
   private String description;                     // what it represents
   private ArrayList<Explanation> details;                      // sub-explanations
@@ -135,7 +134,7 @@ public class Explanation implements java.io.Serializable {
    * before storing any large or un-serializable fields.
    *
    */
-  public static abstract class IDFExplanation implements Serializable {
+  public static abstract class IDFExplanation {
     /**
      * @return the idf factor
      */

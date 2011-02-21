@@ -36,6 +36,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
             setMaxBufferedDocs(10).
             setMergePolicy(newLogMergePolicy(false,2))
     );
+    writer.setInfoStream(VERBOSE ? System.out : null);
     IndexReader reader = writer.getReader(); // start pooling readers
     reader.close();
     RunThread[] indexThreads = new RunThread[4];

@@ -8,7 +8,6 @@
       <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
     </content>
-    <orderEntry type="module" module-name="remote" />
     <orderEntry type="module" module-name="lucene" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="misc" />

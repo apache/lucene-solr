@@ -23,9 +23,9 @@ how to use Lucene in their applications.
 
 <p>
 Relative to the directory created when you extracted Lucene or retrieved it from Subversion, you
-should see a directory called <code>src</code> which in turn contains a directory called
-<code>demo</code>.  This is the root for all of the Lucene demos.  Under this directory is
-<code>org/apache/lucene/demo</code>.  This is where all the Java sources for the demos live.
+should see a directory called <code>lucene/contrib/demo/</code>.  This is the root for the Lucene
+demo.  Under this directory is <code>src/java/org/apache/lucene/demo/</code>.  This is where all
+the Java sources for the demo live.
 </p>
 
 <p>
@@ -39,62 +39,80 @@ Bring it up in <code>vi</code> or your editor of choice and let's take a look at
 
 <p>
 As we discussed in the previous walk-through, the <a
-href="api/demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates a Lucene
+href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates a Lucene
 Index. Let's take a look at how it does this.
 </p>
 
 <p>
-The first substantial thing the <code>main</code> function does is instantiate <a
-href="api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a>.  It passes the string
-"<code>index</code>" and a new instance of a class called <a
-href="api/core/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>. 
-The "<code>index</code>" string is the name of the filesystem directory where all index information
-should be stored.  Because we're not passing a full path, this will be created as a subdirectory of
-the current working directory (if it does not already exist). On some platforms, it may be created
-in other directories (such as the user's home directory).
+The <code>main()</code> method parses the command-line parameters, then in preparation for
+instantiating <a href="api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a>, opens a 
+<a href="api/core/org/apache/lucene/store/Directory.html">Directory</a> and instantiates
+<a href="api/module-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html"
+>StandardAnalyzer</a> and
+<a href="api/core/org/apache/lucene/index/IndexWriterConfig.html">IndexWriterConfig</a>.
 </p>
 
 <p>
-The <a href="api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a> is the main
-class responsible for creating indices.  To use it you must instantiate it with a path that it can
-write the index into.  If this path does not exist it will first create it.  Otherwise it will
-refresh the index at that path.  You can also create an index using one of the subclasses of <a
-href="api/core/org/apache/lucene/store/Directory.html">Directory</a>.  In any case, you must also pass an
-instance of <a
-href="api/core/org/apache/lucene/analysis/Analyzer.html">org.apache.lucene.analysis.Analyzer</a>.
+The value of the <code>-index</code> command-line parameter is the name of the filesystem directory
+where all index information should be stored.  If <code>IndexFiles</code> is invoked with a 
+relative path given in the <code>-index</code> command-line parameter, or if the <code>-index</code>
+command-line parameter is not given, causing the default relative index path "<code>index</code>"
+to be used, the index path will be created as a subdirectory of the current working directory
+(if it does not already exist).  On some platforms, the index path may be created in a different
+directory (such as the user's home directory).
 </p>
 
 <p>
-The particular <a href="api/core/org/apache/lucene/analysis/Analyzer.html">Analyzer</a> we
-are using, <a
-href="api/core/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>, is
-little more than a standard Java Tokenizer, converting all strings to lowercase and filtering out
-stop words and characters from the index.  By stop words and characters I mean common language
-words such as articles (a, an, the, etc.) and other strings that may have less value for searching
-(e.g. <b>'s</b>) .  It should be noted that there are different rules for every language, and you
-should use the proper analyzer for each.  Lucene currently provides Analyzers for a number of
-different languages (see the <code>*Analyzer.java</code> sources under <a
-href="http://svn.apache.org/repos/asf/lucene/dev/trunk/modules/analysis/common/src/java/org/apache/lucene/analysis/">modules/analysis/common/src/java/org/apache/lucene/analysis</a>).
+The <code>-docs</code> command-line parameter value is the location of the directory containing
+files to be indexed.
+</p>
+  
+<p>
+The <code>-update</code> command-line parameter tells <code>IndexFiles</code> not to delete the
+index if it already exists.  When <code>-update</code> is not given, <code>IndexFiles</code> will
+first wipe the slate clean before indexing any documents.
 </p>
 
 <p>
-Looking further down in the file, you should see the <code>indexDocs()</code> code.  This recursive
-function simply crawls the directories and uses <a
-href="api/demo/org/apache/lucene/demo/FileDocument.html">FileDocument</a> to create <a
-href="api/core/org/apache/lucene/document/Document.html">Document</a> objects.  The <a
-href="api/core/org/apache/lucene/document/Document.html">Document</a> is simply a data object to
-represent the content in the file as well as its creation time and location.  These instances are
-added to the <code>indexWriter</code>.  Take a look inside <a
-href="api/demo/org/apache/lucene/demo/FileDocument.html">FileDocument</a>.  It's not particularly
-complicated.  It just adds fields to the <a
-href="api/core/org/apache/lucene/document/Document.html">Document</a>.
+Lucene <a href="api/core/org/apache/lucene/store/Directory.html">Directory</a>s are used by the
+<code>IndexWriter</code> to store information in the index.  In addition to the 
+<a href="api/core/org/apache/lucen/store/FSDirectory.html">FSDirectory</a> implementation we are using,
+there are several other <code>Directory</code> subclasses that can write to RAM, to databases, etc.
+</p>
+  
+<p>
+Lucene <a href="api/core/org/apache/lucene/analysis/Analyzer.html">Analyzer</a>s are processing pipelines
+that break up text into indexed tokens, a.k.a. terms, and optionally perform other operations on these
+tokens, e.g. downcasing, synonym insertion, filtering out unwanted tokens, etc.  The <code>Analyzer</code>
+we are using is <code>StandardAnalyzer</code>, which creates tokens using the Word Break rules from the
+Unicode Text Segmentation algorithm specified in <a href="http://unicode.org/reports/tr29/">Unicode
+Standard Annex #29</a>; converts tokens to lowercase; and then filters out stopwords.  Stopwords are
+common language words such as articles (a, an, the, etc.) and other tokens that may have less value for
+searching.  It should be noted that there are different rules for every language, and you should use the
+proper analyzer for each.  Lucene currently provides Analyzers for a number of different languages (see
+the <code>*Analyzer.java</code> sources under 
+<a href="http://svn.apache.org/repos/asf/lucene/dev/trunk/modules/analysis/common/src/java/org/apache/lucene/analysis/"
+>modules/analysis/common/src/java/org/apache/lucene/analysis</a>).
 </p>
 
 <p>
-As you can see there isn't much to creating an index.  The devil is in the details.  You may also
-wish to examine the other samples in this directory, particularly the <a
-href="api/demo/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a> class.  It is a bit more
-complex but builds upon this example.
+The <code>IndexWriterConfig</code> instance holds all configuration for <code>IndexWriter</code>.  For
+example, we set the <code>OpenMode</code> to use here based on the value of the <code>-update</code>
+command-line parameter.
+</p>
+  
+<p>
+Looking further down in the file, after <code>IndexWriter</code> is instantiated, you should see the
+<code>indexDocs()</code> code.  This recursive function crawls the directories and creates
+<a href="api/core/org/apache/lucene/document/Document.html">Document</a> objects.  The 
+<code>Document</code> is simply a data object to represent the text content from the file as well as
+its creation time and location.  These instances are added to the <code>IndexWriter</code>.  If
+the <code>-update</code> command-line parameter is given, the <code>IndexWriter</code> 
+<code>OpenMode</code> will be set to <code>OpenMode.CREATE_OR_APPEND</code>, and rather than
+adding documents to the index, the <code>IndexWriter</code> will <strong>update</strong> them
+in the index by attempting to find an already-indexed document with the same identifier (in our
+case, the file path serves as the identifier); deleting it from the index if it exists; and then
+adding the new document to the index.
 </p>
 
 </section>
@@ -102,43 +120,30 @@ complex but builds upon this example.
 <section id="Searching Files"><title>Searching Files</title>
 
 <p>
-The <a href="api/demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
-quite simple.  It primarily collaborates with an <a
-href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, <a
-href="api/core/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>
-(which is used in the <a
-href="api/core/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well) and a
-<a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>.  The
+The <a href="api/contrib-demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
+quite simple.  It primarily collaborates with an 
+<a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, 
+<a href="api/modules-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html"
+>StandardAnalyzer</a> (which is used in the
+<a href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
+and a <a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>.  The
 query parser is constructed with an analyzer used to interpret your query text in the same way the
-documents are interpreted: finding the end of words and removing useless words like 'a', 'an' and
-'the'.  The <a href="api/core/org/apache/lucene/search/Query.html">Query</a> object contains
-the results from the <a
-href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> which is passed to
-the searcher.  Note that it's also possible to programmatically construct a rich <a
-href="api/core/org/apache/lucene/search/Query.html">Query</a> object without using the query
+documents are interpreted: finding word boundaries, downcasing, and removing useless words like
+'a', 'an' and 'the'.  The <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
+object contains the results from the
+<a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> which is passed
+to the searcher.  Note that it's also possible to programmatically construct a rich 
+<a href="api/core/org/apache/lucene/search/Query.html">Query</a> object without using the query
 parser.  The query parser just enables decoding the <a href="queryparsersyntax.html">Lucene query
-syntax</a> into the corresponding <a
-href="api/core/org/apache/lucene/search/Query.html">Query</a> object. Search can be executed in 
-two different ways: 
-<ul>
-<li>Streaming: A <a href="api/core/org/apache/lucene/search/Collector.html">Collector</a> subclass
-simply prints out the document ID and score for each matching document.</li>
-<li>Paging: Using a <a href="api/core/org/apache/lucene/search/TopScoreDocCollector.html">TopScoreDocCollector</a>
- the search results are printed in pages, sorted by score (i. e. relevance).</li>
-</ul>  
+syntax</a> into the corresponding <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
+object.
 </p>
-
-</section>
-
-<section id="The Web example..."><title>The Web example...</title>
 
 <p>
-<a href="demo3.html">read on&gt;&gt;&gt;</a>
+<code>SearchFiles</code> uses the <code>IndexSearcher.search(query,n)</code> method that returns
+<a href="api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max <code>n</code> hits.
+The results are printed in pages, sorted by score (i.e. relevance).
 </p>
-
 </section>
-
 </body>
 </document>
-
-

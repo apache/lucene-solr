@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 
 /**
  * Provides a {@link FieldComparator} for custom field sorting.
@@ -26,7 +25,7 @@ import java.io.Serializable;
  * @lucene.experimental
  *
  */
-public abstract class FieldComparatorSource implements Serializable {
+public abstract class FieldComparatorSource {
 
   /**
    * Creates a comparator for the field in the given index.

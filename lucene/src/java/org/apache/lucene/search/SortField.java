@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Locale;
 
@@ -39,8 +38,7 @@ import org.apache.lucene.util.BytesRef;
  * @since   lucene 1.4
  * @see Sort
  */
-public class SortField
-implements Serializable {
+public class SortField {
 
   /** Sort by document score (relevance).  Sort values are Float and higher
    * values are at the front. */
@@ -434,13 +432,6 @@ implements Serializable {
     if (comparatorSource != null) hash += comparatorSource.hashCode();
     if (creator != null) hash += creator.hashCode()^0x3aaf56ff;
     return hash;
-  }
-
-  // field must be interned after reading from stream
-  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    if (field != null)
-      field = StringHelper.intern(field);
   }
 
   private boolean useIndexValues;

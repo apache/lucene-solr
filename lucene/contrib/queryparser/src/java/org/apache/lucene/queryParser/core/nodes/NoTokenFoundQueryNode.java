@@ -25,8 +25,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class NoTokenFoundQueryNode extends DeletedQueryNode {
 
-  private static final long serialVersionUID = 7332975497586993833L;
-
   public NoTokenFoundQueryNode() {
     super();
   }

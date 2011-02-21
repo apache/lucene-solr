@@ -17,7 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.ref.WeakReference;
@@ -30,7 +29,7 @@ import java.util.LinkedList;
  * Attributes are used to add data in a dynamic, yet type-safe way to a source
  * of usually streamed objects, e. g. a {@link org.apache.lucene.analysis.TokenStream}.
  */
-public abstract class AttributeImpl implements Cloneable, Serializable, Attribute {  
+public abstract class AttributeImpl implements Cloneable, Attribute {  
   /**
    * Clears the values in this AttributeImpl and resets it to its 
    * default value. If this implementation implements more than one Attribute interface

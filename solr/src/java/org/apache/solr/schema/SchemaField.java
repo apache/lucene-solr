@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
+import org.apache.solr.search.QParser;
 
 import org.apache.solr.response.TextResponseWriter;
 
@@ -133,8 +134,8 @@ public final class SchemaField extends FieldProperties {
 
   /** 
    * Sanity checks that the properties of this field type are plausible 
-   * for a field that may be used in sorting, throwing an appropraite 
-   * exception (including hte field name) if it is not.  FieldType subclasses 
+   * for a field that may be used in sorting, throwing an appropriate 
+   * exception (including the field name) if it is not.  FieldType subclasses 
    * can choose to call this method in their getSortField implementation
    * @see FieldType#getSortField
    */
@@ -152,6 +153,27 @@ public final class SchemaField extends FieldProperties {
     
   }
 
+  /** 
+   * Sanity checks that the properties of this field type are plausible 
+   * for a field that may be used to get a FieldCacheSource, throwing 
+   * an appropriate exception (including the field name) if it is not.  
+   * FieldType subclasses can choose to call this method in their 
+   * getValueSource implementation 
+   * @see FieldType#getValueSource
+   */
+  public void checkFieldCacheSource(QParser parser) throws SolrException {
+    if (! indexed() ) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                              "can not use FieldCache on unindexed field: " 
+                              + getName());
+    }
+    if ( multiValued() ) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+                              "can not use FieldCache on multivalued field: " 
+                              + getName());
+    }
+    
+  }
 
   static SchemaField create(String name, FieldType ft, Map<String,String> props) {
 

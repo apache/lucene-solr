@@ -44,4 +44,9 @@ public abstract class TermState implements Cloneable {
       throw new RuntimeException(cnse);
     }
   } 
+
+  @Override
+  public String toString() {
+    return "TermState";
+  }
 }

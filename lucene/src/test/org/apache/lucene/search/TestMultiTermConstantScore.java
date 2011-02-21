@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -59,7 +60,9 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "X       4 5 6" };
 
     small = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, small, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random, small, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, 
+            new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMergePolicy(newInOrderLogMergePolicy()));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();

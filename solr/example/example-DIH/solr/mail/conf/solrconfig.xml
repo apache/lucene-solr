@@ -27,7 +27,7 @@
   <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
 
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
-  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-extras-\d.*\.jar" />
+  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
   
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default unless overridden. -->

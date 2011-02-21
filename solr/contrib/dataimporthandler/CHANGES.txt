@@ -80,11 +80,19 @@ Bug Fixes
 
 * SOLR-2330: solrconfig.xml files in example-DIH are broken. (Matt Parker, koji)
 
+* SOLR-2116: Fix TikaConfig classloader bug in TikaEntityProcessor
+  (Martijn van Groningen via hossman)
+  
+
 Other Changes
 ----------------------
 
 * SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
   (Chris Male via rmuir)
+
+* SOLR-2367: Reduced noise in test output by ensuring the properties file can be written.
+  (Gunnlaugur Thor Briem via rmuir)
+
 
 Build
 ----------------------

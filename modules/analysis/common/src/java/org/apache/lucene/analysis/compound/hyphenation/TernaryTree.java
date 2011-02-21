@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.compound.hyphenation;
 
 import java.util.Enumeration;
 import java.util.Stack;
-import java.io.Serializable;
 
 /**
  * <h2>Ternary Search Tree.</h2>
@@ -63,7 +62,7 @@ import java.io.Serializable;
  * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
  */
 
-public class TernaryTree implements Cloneable, Serializable {
+public class TernaryTree implements Cloneable {
 
   /**
    * We use 4 arrays to represent a node. I guess I should have created a proper

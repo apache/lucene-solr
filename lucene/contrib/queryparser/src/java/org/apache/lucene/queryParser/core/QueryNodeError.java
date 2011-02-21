@@ -27,8 +27,6 @@ import org.apache.lucene.messages.NLSException;
  * @see org.apache.lucene.messages.Message
  */
 public class QueryNodeError extends Error implements NLSException {
-
-  private static final long serialVersionUID = 1804855832182710327L;
   private Message message;
 
   /**

@@ -17,15 +17,11 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.commons.io.IOUtils;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
-import static org.apache.solr.handler.dataimport.DataImporter.COLUMN;
-import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.ContentHandlerDecorator;
 import org.apache.tika.sax.XHTMLContentHandler;
@@ -47,6 +43,11 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+import static org.apache.solr.handler.dataimport.DataImporter.COLUMN;
+import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
 /**
  * <p>An implementation of {@link EntityProcessor} which reads data from rich docs
  * using <a href="http://tika.apache.org/">Apache Tika</a>
@@ -65,19 +66,20 @@ public class TikaEntityProcessor extends EntityProcessorBase {
 
   @Override
   protected void firstInit(Context context) {
-    String tikaConfigFile = context.getResolvedEntityAttribute("tikaConfig");
-    if (tikaConfigFile == null) {
-      tikaConfig = TikaConfig.getDefaultConfig();
-    } else {
-      File configFile = new File(tikaConfigFile);
-      if (!configFile.isAbsolute()) {
-        configFile = new File(context.getSolrCore().getResourceLoader().getConfigDir(), tikaConfigFile);
-      }
-      try {
+    try {
+      String tikaConfigFile = context.getResolvedEntityAttribute("tikaConfig");
+      if (tikaConfigFile == null) {
+        ClassLoader classLoader = context.getSolrCore().getResourceLoader().getClassLoader();
+        tikaConfig = new TikaConfig(classLoader);
+      } else {
+        File configFile = new File(tikaConfigFile);
+        if (!configFile.isAbsolute()) {
+          configFile = new File(context.getSolrCore().getResourceLoader().getConfigDir(), tikaConfigFile);
+        }
         tikaConfig = new TikaConfig(configFile);
-      } catch (Exception e) {
-        wrapAndThrow (SEVERE, e,"Unable to load Tika Config");
       }
+    } catch (Exception e) {
+      wrapAndThrow (SEVERE, e,"Unable to load Tika Config");
     }
 
     format = context.getResolvedEntityAttribute("format");

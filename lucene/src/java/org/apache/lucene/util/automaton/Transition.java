@@ -29,7 +29,6 @@
 
 package org.apache.lucene.util.automaton;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 /**
@@ -40,7 +39,7 @@ import java.util.Comparator;
  * 
  * @lucene.experimental
  */
-public class Transition implements Serializable, Cloneable {
+public class Transition implements Cloneable {
   
   /*
    * CLASS INVARIANT: min<=max

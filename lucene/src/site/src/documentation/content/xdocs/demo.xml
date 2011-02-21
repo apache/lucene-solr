@@ -18,10 +18,10 @@ It walks you through some basic installation and configuration.
 </section>
 
 
-<section id="About the Demos"><title>About the Demos</title>
+<section id="About the Demo"><title>About the Demo</title>
 <p>
-The Lucene command-line demo code consists of two applications that demonstrate various
-functionalities of Lucene and how one should go about adding Lucene to their applications.
+The Lucene command-line demo code consists of an application that demonstrates various
+functionalities of Lucene and how you can add Lucene to your applications.
 </p>
 </section>
 
@@ -30,14 +30,23 @@ functionalities of Lucene and how one should go about adding Lucene to their app
 First, you should <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">download</a> the
 latest Lucene distribution and then extract it to a working directory.  Alternatively, you can <a
 href="http://wiki.apache.org/lucene-java/SourceRepository">check out the sources from
-Subversion</a>, and then run <code>ant war-demo</code> to generate the JARs and WARs.
+Subversion</a>, and then run <code>ant</code> in the <code>lucene/contrib/demo/</code>
+directory to generate the JARs.
 </p>
 <p>
-You should see the Lucene JAR file in the directory you created when you extracted the archive.  It
-should be named something like <code>lucene-core-{version}.jar</code>.  You should also see a file
-called <code>lucene-demos-{version}.jar</code>.  If you checked out the sources from Subversion then
-the JARs are located under the <code>build</code> subdirectory (after running <code>ant</code>
-successfully).  Put both of these files in your Java CLASSPATH.
+You need three JARs: the Lucene JAR, the common analysis JAR, and the Lucene demo JAR.  You should
+see the Lucene JAR file in the directory you created when you extracted the archive -- it
+should be named something like <code>lucene-core-{version}.jar</code>.  You should also see files
+called <code>lucene-analysis-common-{version}.jar</code> and <code>lucene-demos-{version}.jar</code>.
+If you checked out the sources from Subversion then the JARs are located at:
+</p>
+<ul>
+  <li><code>lucene/build/lucene-core-4.0-SNAPSHOT.jar</code></li>
+  <li><code>modules/analysis/build/common/lucene-analyzers-common-4.0-SNAPSHOT.jar</code></li>
+  <li><code>lucene/build/contrib/demo/lucene-demo-4.0-SNAPSHOT.jar</code></li>
+</ul>
+<p>
+Put all three of these files in your Java CLASSPATH.
 </p>
 </section>
 
@@ -47,7 +56,7 @@ Once you've gotten this far you're probably itching to go.  Let's <b>build an in
 you've set your CLASSPATH correctly, just type:
 
 <pre>
-    java org.apache.lucene.demo.IndexFiles {full-path-to-lucene}/src
+    java org.apache.lucene.demo.IndexFiles -docs {path-to-lucene}/src
 </pre>
 
 This will produce a subdirectory called <code>index</code> which will contain an index of all of the
