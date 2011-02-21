@@ -116,9 +116,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>solr-dataimporthandler</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.codehaus.woodstox</groupId>
+      <artifactId>wstx-asl</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -156,11 +155,6 @@
         <configuration>
           <warSourceDirectory>web</warSourceDirectory>
           <webXml>web/WEB-INF/web.xml</webXml>
-          <webResources>
-            <resource>
-              <directory>../../contrib/dataimporthandler/src/main/webapp</directory>
-            </resource>
-          </webResources>
         </configuration>
       </plugin>
       <plugin>
@@ -177,7 +171,7 @@
           <webAppConfig>
             <contextPath>/</contextPath>
             <baseResource implementation="org.mortbay.resource.ResourceCollection">
-              <resources>web,../../contrib/dataimporthandler/src/main/webapp</resources>
+              <resources>web</resources>
             </baseResource>
           </webAppConfig>
         </configuration>
