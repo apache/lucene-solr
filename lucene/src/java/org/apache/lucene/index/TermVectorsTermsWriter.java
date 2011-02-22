@@ -94,7 +94,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       // vector output files, we must abort this segment
       // because those files will be in an unknown
       // state:
-      hasVectors = true;
       tvx = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_INDEX_EXTENSION));
       tvd = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
       tvf = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
@@ -112,7 +111,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument start");
 
-    if (numVectorFields == 0) {
+    if (!hasVectors) {
       return;
     }
 
@@ -201,7 +200,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   @Override
   void startDocument() throws IOException {
     assert clearLastVectorFieldName();
-    perFields = new TermVectorsTermsWriterPerField[1];
     reset();
   }
 

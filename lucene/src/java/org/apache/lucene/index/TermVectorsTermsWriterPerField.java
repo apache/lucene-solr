@@ -70,6 +70,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
 
     if (doVectors) {
+      termsWriter.hasVectors = true;
       if (termsWriter.tvx != null) {
         if (termsHashPerField.bytesHash.size() != 0) {
           // Only necessary if previous doc hit a
