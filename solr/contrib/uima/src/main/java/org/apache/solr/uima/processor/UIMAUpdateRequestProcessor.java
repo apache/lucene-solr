@@ -56,6 +56,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
             solrUIMAConfiguration.getAePath(), solrUIMAConfiguration.getRuntimeParameters());
   }
 
+  @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     try {
       /* get Solr document */

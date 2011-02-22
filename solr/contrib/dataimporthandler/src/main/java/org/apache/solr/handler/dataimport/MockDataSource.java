@@ -45,13 +45,16 @@ public class MockDataSource extends
     cache.clear();
   }
 
+  @Override
   public void init(Context context, Properties initProps) {
   }
 
+  @Override
   public Iterator<Map<String, Object>> getData(String query) {
     return cache.get(query);
   }
 
+  @Override
   public void close() {
     cache.clear();
 

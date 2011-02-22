@@ -74,6 +74,7 @@ public class SpanPayloadCheckQuery extends SpanPositionCheckQuery{
     return AcceptStatus.YES;
   } 
 
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanPayCheck(");

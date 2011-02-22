@@ -1,7 +1,5 @@
 package org.apache.lucene.search.regex;
 
-import java.io.Serializable;
-
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -25,7 +23,7 @@ import org.apache.lucene.util.BytesRef;
  * Defines basic operations needed by {@link RegexQuery} for a regular
  * expression implementation.
  */
-public interface RegexCapabilities extends Serializable {
+public interface RegexCapabilities {
   /**
    * Called by the constructor of {@link RegexTermsEnum} allowing
    * implementations to cache a compiled version of the regular

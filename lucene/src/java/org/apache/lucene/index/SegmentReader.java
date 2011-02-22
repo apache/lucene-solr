@@ -22,24 +22,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CloseableThreadLocal;
 
 /**
  * @lucene.experimental
@@ -121,7 +119,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         }
         cfsDir = dir0;
 
-        fieldInfos = new FieldInfos(cfsDir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+        fieldInfos = si.getFieldInfos();
         
         this.termsIndexDivisor = termsIndexDivisor;
         
@@ -183,13 +181,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
           storeCFSReader.close();
         }
 
-        // Force FieldCache to evict our entries at this
-        // point.  If the exception occurred while
-        // initializing the core readers, then
-        // origInstance will be null, and we don't want
-        // to call FieldCache.purge (it leads to NPE):
+        // Now, notify any ReaderFinished listeners:
         if (origInstance != null) {
-          FieldCache.DEFAULT.purge(origInstance);
+          origInstance.notifyReaderFinishedListeners();
         }
       }
     }
@@ -603,12 +597,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
     boolean normsUpToDate = true;
     
-    boolean[] fieldNormsChanged = new boolean[core.fieldInfos.size()];
-    final int fieldCount = core.fieldInfos.size();
-    for (int i = 0; i < fieldCount; i++) {
-      if (!this.si.getNormFileName(i).equals(si.getNormFileName(i))) {
+    Set<Integer> fieldNormsChanged = new HashSet<Integer>();
+    for (FieldInfo fi : core.fieldInfos) {
+      int fieldNumber = fi.number;
+      if (!this.si.getNormFileName(fieldNumber).equals(si.getNormFileName(fieldNumber))) {
         normsUpToDate = false;
-        fieldNormsChanged[i] = true;
+        fieldNormsChanged.add(fieldNumber);
       }
     }
 
@@ -633,6 +627,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       clone.si = si;
       clone.readBufferSize = readBufferSize;
       clone.pendingDeleteCount = pendingDeleteCount;
+      clone.readerFinishedListeners = readerFinishedListeners;
 
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
@@ -663,11 +658,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
       clone.norms = new HashMap<String,Norm>();
 
       // Clone norms
-      for (int i = 0; i < fieldNormsChanged.length; i++) {
-
+      for (FieldInfo fi : core.fieldInfos) {
         // Clone unchanged norms to the cloned reader
-        if (doClone || !fieldNormsChanged[i]) {
-          final String curField = core.fieldInfos.fieldInfo(i).name;
+        if (doClone || !fieldNormsChanged.contains(fi.number)) {
+          final String curField = fi.name;
           Norm norm = this.norms.get(curField);
           if (norm != null)
             clone.norms.put(curField, (Norm) norm.clone());
@@ -739,7 +733,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
 
     if (normsDirty) {               // re-write norms
-      si.initNormGen(core.fieldInfos.size());
+      si.initNormGen();
       for (final Norm norm : norms.values()) {
         if (norm.dirty) {
           norm.reWrite(si);
@@ -884,8 +878,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     ensureOpen();
 
     Set<String> fieldSet = new HashSet<String>();
-    for (int i = 0; i < core.fieldInfos.size(); i++) {
-      FieldInfo fi = core.fieldInfos.fieldInfo(i);
+    for (FieldInfo fi : core.fieldInfos) {
       if (fieldOption == IndexReader.FieldOption.ALL) {
         fieldSet.add(fi.name);
       }
@@ -963,8 +956,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
     long nextNormSeek = SegmentMerger.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
-    for (int i = 0; i < core.fieldInfos.size(); i++) {
-      FieldInfo fi = core.fieldInfos.fieldInfo(i);
+    for (FieldInfo fi : core.fieldInfos) {
       if (norms.containsKey(fi.name)) {
         // in case this SegmentReader is being re-opened, we might be able to
         // reuse some norm instances and skip loading them here
@@ -1202,5 +1194,15 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
+  }
+
+  @Override
+  protected void readerFinished() {
+    // Do nothing here -- we have more careful control on
+    // when to notify that a SegmentReader has finished,
+    // because a given core is shared across many cloned
+    // SegmentReaders.  We only notify once that core is no
+    // longer used (all SegmentReaders sharing it have been
+    // closed).
   }
 }

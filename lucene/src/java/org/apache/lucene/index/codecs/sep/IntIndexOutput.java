@@ -38,23 +38,6 @@ public abstract class IntIndexOutput implements Closeable {
    * >= 0.  */
   public abstract void write(int v) throws IOException;
 
-  public static final long MAX_SINGLE_INT_VLONG = Integer.MAX_VALUE - (1<<30);
-  public static final long MAX_VLONG = Long.MAX_VALUE - (1L<<62) - (1L<<61);
-
-  /** Encodes as 1 or 2 ints, and can only use 61 of the 64
-   *  long bits. */
-  public void writeVLong(long v) throws IOException {
-    assert v >= 0: "v=" + v;
-    assert v < MAX_VLONG: "v=" + v;
-    // we cannot pass a negative int 
-    if (v <= MAX_SINGLE_INT_VLONG) {
-      write(((int) v)<<1);
-    } else {
-      write(((int) ((v & MAX_SINGLE_INT_VLONG))<<1) | 1);
-      write(((int) (v >> 30)));
-    }
-  }
-
   public abstract static class Index {
 
     /** Internally records the current location */
@@ -66,8 +49,6 @@ public abstract class IntIndexOutput implements Closeable {
     /** Writes "location" of current output pointer of primary
      *  output to different output (out) */
     public abstract void write(IndexOutput indexOut, boolean absolute) throws IOException;
-
-    public abstract void write(IntIndexOutput indexOut, boolean absolute) throws IOException;
   }
 
   /** If you are indexing the primary output file, call

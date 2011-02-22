@@ -25,6 +25,7 @@ import java.util.ResourceBundle;
 
 import org.apache.lucene.messages.NLS;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
+import org.apache.lucene.queryParser.core.util.StringUtils;
 
 /**
  * A {@link QueryNodeImpl} is the default implementation of the interface
@@ -32,15 +33,13 @@ import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
  */
 public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
-  private static final long serialVersionUID = 5569870883474845989L;
-
   /* index default field */
   // TODO remove PLAINTEXT_FIELD_NAME replacing it with configuration APIs
   public static final String PLAINTEXT_FIELD_NAME = "_plain";
 
   private boolean isLeaf = true;
 
-  private Hashtable<CharSequence, Object> tags = new Hashtable<CharSequence, Object>();
+  private Hashtable<String, Object> tags = new Hashtable<String, Object>();
 
   private List<QueryNode> clauses = null;
 
@@ -117,7 +116,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     clone.isLeaf = this.isLeaf;
 
     // Reset all tags
-    clone.tags = new Hashtable<CharSequence, Object>();
+    clone.tags = new Hashtable<String, Object>();
 
     // copy children
     if (this.clauses != null) {
@@ -151,19 +150,20 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     return this.clauses;
   }
 
-  public void setTag(CharSequence tagName, Object value) {
-    this.tags.put(tagName.toString().toLowerCase(), value);
+  public void setTag(String tagName, Object value) {
+    this.tags.put(tagName.toLowerCase(), value);
   }
 
-  public void unsetTag(CharSequence tagName) {
-    this.tags.remove(tagName.toString().toLowerCase());
+  public void unsetTag(String tagName) {
+    this.tags.remove(tagName.toLowerCase());
   }
 
-  public boolean containsTag(CharSequence tagName) {
-    return this.tags.containsKey(tagName.toString().toLowerCase());
+  /** verify if a node contains a tag */
+  public boolean containsTag(String tagName) {
+    return this.tags.containsKey(tagName);
   }
 
-  public Object getTag(CharSequence tagName) {
+  public Object getTag(String tagName) {
     return this.tags.get(tagName.toString().toLowerCase());
   }
 
@@ -189,16 +189,20 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   /**
    * This method is use toQueryString to detect if fld is the default field
    * 
-   * @param fld
-   *          - field name
+   * @param fld - field name
    * @return true if fld is the default field
    */
+  // TODO: remove this method, it's commonly used by {@link
+  // #toQueryString(org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax)}
+  // to figure out what is the default field, however, {@link
+  // #toQueryString(org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax)}
+  // should receive the default field value directly by parameter
   protected boolean isDefaultField(CharSequence fld) {
     if (this.toQueryStringIgnoreFields)
       return true;
     if (fld == null)
       return true;
-    if (QueryNodeImpl.PLAINTEXT_FIELD_NAME.equals(fld.toString()))
+    if (QueryNodeImpl.PLAINTEXT_FIELD_NAME.equals(StringUtils.toString(fld)))
       return true;
     return false;
   }
@@ -216,12 +220,13 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   }
 
   /**
-   * @see org.apache.lucene.queryParser.core.nodes.QueryNode#getTag(CharSequence)
-   * @return a Map with all tags for this QueryNode
+   * Returns a map containing all tags attached to this query node.
+   * 
+   * @return a map containing all tags attached to this query node
    */
-  @SuppressWarnings( { "unchecked" })
-  public Map<CharSequence, Object> getTags() {
-    return (Map<CharSequence, Object>) this.tags.clone();
+  @SuppressWarnings("unchecked")
+  public Map<String, Object> getTagMap() {
+    return (Map<String, Object>) this.tags.clone();
   }
 
 } // end class QueryNodeImpl

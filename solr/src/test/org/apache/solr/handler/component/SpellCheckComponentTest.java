@@ -42,6 +42,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
   }
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
@@ -59,6 +60,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertU((commit()));
   }
   
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     assertU(delQ("*:*"));

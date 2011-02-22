@@ -29,8 +29,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class OrQueryNode extends BooleanQueryNode {
 
-  private static final long serialVersionUID = -3692323307688017852L;
-
   /**
    * @param clauses
    *          - the query nodes to be or'ed

@@ -23,6 +23,7 @@
       <entry name="?*.pdf" />
       <entry name="?*.png" />
       <entry name="?*.properties" />
+      <entry name="?*.rslp"/>
       <entry name="?*.tbl" />
       <entry name="?*.tld" />
       <entry name="?*.txt" />
@@ -32,6 +33,9 @@
       <entry name="?*.zip" />
       <entry name="README*" />
     </wildcardResourcePatterns>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-encoding utf-8" />
   </component>
 </project>
 

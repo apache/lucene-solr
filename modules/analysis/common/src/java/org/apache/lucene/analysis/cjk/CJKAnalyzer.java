@@ -65,7 +65,7 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Builds an analyzer which removes words in {@link #STOP_WORDS}.
+   * Builds an analyzer which removes words in {@link #getDefaultStopSet()}.
    */
   public CJKAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);

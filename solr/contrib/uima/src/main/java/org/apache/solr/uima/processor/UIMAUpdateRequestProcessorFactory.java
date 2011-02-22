@@ -29,6 +29,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
  */
 public class UIMAUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
 
+  @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp,
           UpdateRequestProcessor next) {
     return new UIMAUpdateRequestProcessor(next, req.getCore());

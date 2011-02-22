@@ -25,8 +25,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class QuotedFieldQueryNode extends FieldQueryNode {
 
-  private static final long serialVersionUID = -6675157780051428987L;
-
   /**
    * @param field
    *          - field name

@@ -144,7 +144,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
-      //System.out.println("  inlined");
+      //System.out.println("  inlined pos=" + termState.inlinedBytesReader.getPosition());
 
       // Inlined into terms dict -- just read the byte[] blob in,
       // but don't decode it now (we only decode when a DocsEnum
@@ -261,7 +261,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       while(true) {
         if (postings.eof()) {
           //System.out.println("PR   END");
-          return NO_MORE_DOCS;
+          return docID = NO_MORE_DOCS;
         }
 
         final int code = postings.readVInt();
@@ -319,7 +319,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         if (doc >= target)
           return doc;
       }
-      return NO_MORE_DOCS;
+      return docID = NO_MORE_DOCS;
     }
   }
 
@@ -368,7 +368,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
         if (postings.eof()) {
           //System.out.println("PR   END");
-          return NO_MORE_DOCS;
+          return docID = NO_MORE_DOCS;
         }
 
         final int code = postings.readVInt();
@@ -406,7 +406,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           return doc;
         }
       }
-      return NO_MORE_DOCS;
+      return docID = NO_MORE_DOCS;
     }
 
     @Override

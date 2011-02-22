@@ -121,7 +121,10 @@ public class TrieField extends FieldType {
     }
   }
 
+  @Override
   public SortField getSortField(SchemaField field, boolean top) {
+    field.checkSortability();
+
     int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
     Object missingValue = null;
     boolean sortMissingLast  = on( SORT_MISSING_LAST,  properties );
@@ -176,6 +179,7 @@ public class TrieField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
     switch (type) {
       case INTEGER:
@@ -194,6 +198,7 @@ public class TrieField extends FieldType {
   }
 
 
+  @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     byte[] arr = f.getBinaryValue();
     if (arr==null) {
@@ -586,6 +591,7 @@ class TrieDateFieldSource extends LongFieldSource {
     super(creator);
   }
 
+  @Override
   public String description() {
     return "date(" + field + ')';
   }

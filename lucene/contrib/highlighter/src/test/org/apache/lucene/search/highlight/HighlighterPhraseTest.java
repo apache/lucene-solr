@@ -70,7 +70,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final PhraseQuery phraseQuery = new PhraseQuery();
         phraseQuery.add(new Term(FIELD, "fox"));
@@ -114,7 +114,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
             new SpanTermQuery(new Term(FIELD, "fox")),
@@ -184,7 +184,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final PhraseQuery phraseQuery = new PhraseQuery();
         phraseQuery.add(new Term(FIELD, "did"));
@@ -227,7 +227,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final PhraseQuery phraseQuery = new PhraseQuery();
         phraseQuery.add(new Term(FIELD, "did"));
@@ -268,7 +268,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final IndexReader indexReader = IndexReader.open(directory, true);
     try {
       assertEquals(1, indexReader.numDocs());
-      final IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
       try {
         final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
             new SpanTermQuery(new Term(FIELD, "did")),

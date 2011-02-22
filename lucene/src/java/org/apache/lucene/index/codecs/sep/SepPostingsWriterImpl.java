@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -63,8 +64,23 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   IndexOutput termsOut;
 
   final SepSkipListWriter skipListWriter;
-  final int skipInterval;
-  final int maxSkipLevels;
+  /** Expert: The fraction of TermDocs entries stored in skip tables,
+   * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in
+   * smaller indexes, greater acceleration, but fewer accelerable cases, while
+   * smaller values result in bigger indexes, less acceleration and more
+   * accelerable cases. More detailed experiments would be useful here. */
+  final int skipInterval = 16;
+  
+  /**
+   * Expert: minimum docFreq to write any skip data at all
+   */
+  final int skipMinimum = skipInterval;
+
+  /** Expert: The maximum number of skip levels. Smaller values result in 
+   * slightly smaller indexes, but slower skipping in big posting lists.
+   */
+  final int maxSkipLevels = 10;
+
   final int totalNumDocs;
 
   boolean storePayloads;
@@ -118,15 +134,11 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
 
     totalNumDocs = state.numDocs;
 
-    // TODO: -- abstraction violation
-    skipListWriter = new SepSkipListWriter(state.skipInterval,
-                                           state.maxSkipLevels,
+    skipListWriter = new SepSkipListWriter(skipInterval,
+                                           maxSkipLevels,
                                            state.numDocs,
                                            freqOut, docOut,
                                            posOut, payloadOut);
-
-    skipInterval = state.skipInterval;
-    maxSkipLevels = state.maxSkipLevels;
   }
 
   @Override
@@ -136,6 +148,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     // TODO: -- just ask skipper to "start" here
     termsOut.writeInt(skipInterval);                // write skipInterval
     termsOut.writeInt(maxSkipLevels);               // write maxSkipLevels
+    termsOut.writeInt(skipMinimum);                 // write skipMinimum
   }
 
   @Override
@@ -264,7 +277,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       }
     }
 
-    if (df >= skipInterval) {
+    if (df >= skipMinimum) {
       //System.out.println("  skipFP=" + skipStart);
       final long skipFP = skipOut.getFilePointer();
       skipListWriter.writeSkip(skipOut);
@@ -276,12 +289,8 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       }
       lastSkipFP = skipFP;
     } else if (isFirstTerm) {
-      // TODO: this is somewhat wasteful; eg if no terms in
-      // this block will use skip data, we don't need to
-      // write this:
-      final long skipFP = skipOut.getFilePointer();
-      indexBytesWriter.writeVLong(skipFP);
-      lastSkipFP = skipFP;
+      // lazily write an absolute delta if a term in this block requires skip data.
+      lastSkipFP = 0;
     }
 
     lastDocID = 0;

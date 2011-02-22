@@ -31,6 +31,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
 
   /**
    */
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

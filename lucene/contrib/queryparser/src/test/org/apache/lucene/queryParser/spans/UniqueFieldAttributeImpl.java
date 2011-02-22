@@ -31,8 +31,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class UniqueFieldAttributeImpl extends AttributeImpl implements
     UniqueFieldAttribute {
 
-  private static final long serialVersionUID = 8553318595851064232L;
-
   private CharSequence uniqueField;
 
   public UniqueFieldAttributeImpl() {

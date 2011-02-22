@@ -17,15 +17,13 @@
 
 package org.apache.lucene.analysis.compound.hyphenation;
 
-import java.io.Serializable;
-
 /**
  * This class implements a simple char vector with access to the underlying
  * array.
  * 
  * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
  */
-public class CharVector implements Cloneable, Serializable {
+public class CharVector implements Cloneable {
 
   /**
    * Capacity increment size

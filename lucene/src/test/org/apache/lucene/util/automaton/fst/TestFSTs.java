@@ -20,9 +20,11 @@ package org.apache.lucene.util.automaton.fst;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,11 +61,13 @@ public class TestFSTs extends LuceneTestCase {
 
   private MockDirectoryWrapper dir;
 
+  @Override
   public void setUp() throws IOException {
     dir = newDirectory();
     dir.setPreventDoubleWrite(false);
   }
 
+  @Override
   public void tearDown() throws IOException {
     dir.close();
   }
@@ -443,9 +447,9 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       if (VERBOSE && pairs.size() <= 20 && fst != null) {
-        PrintStream ps = new PrintStream("out.dot");
-        Util.toDot(fst, ps);
-        ps.close();
+        Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+        Util.toDot(fst, w, false, false);
+        w.close();
         System.out.println("SAVED out.dot");
       }
 
@@ -958,7 +962,7 @@ public class TestFSTs extends LuceneTestCase {
       writer.addDocument(doc);
       docCount++;
     }
-    IndexReader r = IndexReader.open(writer);
+    IndexReader r = IndexReader.open(writer, true);
     writer.close();
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(random.nextBoolean());
     Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
@@ -1126,9 +1130,9 @@ public class TestFSTs extends LuceneTestCase {
 
         System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.sizeInBytes());
         if (fst.getNodeCount() < 100) {
-          PrintStream ps = new PrintStream("out.dot");
-          Util.toDot(fst, ps);
-          ps.close();
+          Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+          Util.toDot(fst, w, false, false);
+          w.close();
           System.out.println("Wrote FST to out.dot");
         }
 

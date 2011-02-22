@@ -36,13 +36,6 @@ final class DocFieldConsumers extends DocFieldConsumer {
   }
 
   @Override
-  void setFieldInfos(FieldInfos fieldInfos) {
-    super.setFieldInfos(fieldInfos);
-    one.setFieldInfos(fieldInfos);
-    two.setFieldInfos(fieldInfos);
-  }
-
-  @Override
   public void flush(Map<FieldInfo, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
 
     Map<FieldInfo, DocFieldConsumerPerField> oneFieldsToFlush = new HashMap<FieldInfo, DocFieldConsumerPerField>();
@@ -79,16 +72,16 @@ final class DocFieldConsumers extends DocFieldConsumer {
     try {
       one.finishDocument();
     } finally {
-      two.finishDocument();  
+      two.finishDocument();
     }
   }
-  
+
   @Override
   public void startDocument() throws IOException {
     one.startDocument();
     two.startDocument();
   }
-  
+
   @Override
   public DocFieldConsumerPerField addField(FieldInfo fi) {
     return new DocFieldConsumersPerField(this, fi, one.addField(fi), two.addField(fi));

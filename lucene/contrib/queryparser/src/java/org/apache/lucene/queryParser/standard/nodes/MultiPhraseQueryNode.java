@@ -33,8 +33,6 @@ import org.apache.lucene.search.PhraseQuery;
 public class MultiPhraseQueryNode extends QueryNodeImpl implements
     FieldableNode {
 
-  private static final long serialVersionUID = -2138501723963320158L;
-
   public MultiPhraseQueryNode() {
     setLeaf(false);
     allocate();

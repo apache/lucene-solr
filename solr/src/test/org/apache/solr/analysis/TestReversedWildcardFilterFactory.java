@@ -52,6 +52,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema-reversed.xml");
   }
   
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

@@ -16,6 +16,7 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 
@@ -50,6 +51,6 @@ public class BlockTermState extends OrdTermState {
 
   @Override
   public String toString() {
-    return super.toString() + "ord=" + ord + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termCount=" + termCount + " blockFP=" + blockFilePointer;
+    return "ord=" + ord + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termCount=" + termCount + " blockFP=" + blockFilePointer;
   }
 }

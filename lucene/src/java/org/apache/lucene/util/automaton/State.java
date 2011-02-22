@@ -31,7 +31,6 @@ package org.apache.lucene.util.automaton;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -41,7 +40,7 @@ import java.util.Iterator;
  * 
  * @lucene.experimental
  */
-public class State implements Serializable, Comparable<State> {
+public class State implements Comparable<State> {
   
   boolean accept;
   public Transition[] transitionsArray;

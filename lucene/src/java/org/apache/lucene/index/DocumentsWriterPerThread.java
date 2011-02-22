@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -81,7 +82,7 @@ public class DocumentsWriterPerThread {
   };
 
   // Deletes for our still-in-RAM (to be flushed next) segment
-  SegmentDeletes pendingDeletes = new SegmentDeletes();
+  BufferedDeletes pendingDeletes = new BufferedDeletes(false);
 
   static class DocState {
     final DocumentsWriterPerThread docWriter;
@@ -147,13 +148,13 @@ public class DocumentsWriterPerThread {
 
   final AtomicLong bytesUsed = new AtomicLong(0);
 
-  private final FieldInfos fieldInfos;
+  private FieldInfos fieldInfos;
 
-  public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent, IndexingChain indexingChain) {
+  public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent, FieldInfos fieldInfos, IndexingChain indexingChain) {
     this.directory = directory;
     this.parent = parent;
+    this.fieldInfos = fieldInfos.newFieldInfosWithGlobalFieldNumberMap();
     this.writer = parent.indexWriter;
-    this.fieldInfos = new FieldInfos();
     this.infoStream = parent.indexWriter.getInfoStream();
     this.docState = new DocState(this);
     this.docState.similarityProvider = parent.indexWriter.getConfig().getSimilarityProvider();
@@ -185,7 +186,7 @@ public class DocumentsWriterPerThread {
 
     boolean success = false;
     try {
-      consumer.processDocument();
+      consumer.processDocument(fieldInfos);
 
       success = true;
     } finally {
@@ -244,13 +245,6 @@ public class DocumentsWriterPerThread {
     return numDocsInRAM;
   }
 
-  /** Returns true if any of the fields in the current
-  *  buffered docs have omitTermFreqAndPositions==false */
-  boolean hasProx() {
-    return (docFieldProcessor != null) ? docFieldProcessor.fieldInfos.hasProx()
-                                      : true;
-  }
-
   SegmentCodecs getCodec() {
     return flushState.segmentCodecs;
   }
@@ -258,6 +252,8 @@ public class DocumentsWriterPerThread {
   /** Reset after a flush */
   private void doAfterFlush() throws IOException {
     segment = null;
+    consumer.doAfterFlush();
+    fieldInfos = fieldInfos.newFieldInfosWithGlobalFieldNumberMap();
     parent.substractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }
@@ -268,7 +264,19 @@ public class DocumentsWriterPerThread {
 
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
-        SegmentCodecs.build(fieldInfos, writer.codecs));
+        SegmentCodecs.build(fieldInfos, writer.codecs), pendingDeletes);
+
+    // Apply delete-by-docID now (delete-byDocID only
+    // happens when an exception is hit processing that
+    // doc, eg if analyzer has some problem w/ the text):
+    if (pendingDeletes.docIDs.size() > 0) {
+      flushState.deletedDocs = new BitVector(numDocsInRAM);
+      for(int delDocID : pendingDeletes.docIDs) {
+        flushState.deletedDocs.set(delDocID);
+      }
+      pendingDeletes.bytesUsed.addAndGet(-pendingDeletes.docIDs.size() * BufferedDeletes.BYTES_PER_DEL_DOCID);
+      pendingDeletes.docIDs.clear();
+    }
 
     if (infoStream != null) {
       message("flush postings as segment " + flushState.segmentName + " numDocs=" + numDocsInRAM);
@@ -285,11 +293,12 @@ public class DocumentsWriterPerThread {
 
     try {
 
-      SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false);
+      SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentCodecs, fieldInfos);
       consumer.flush(flushState);
-      newSegment.setHasVectors(flushState.hasVectors);
+      newSegment.clearFilesCache();
 
       if (infoStream != null) {
+        message("new segment has " + flushState.deletedDocs.count() + " deleted docs");
         message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
         message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());

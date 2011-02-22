@@ -24,9 +24,9 @@ public abstract class DocumentsWriterPerThreadPool {
     numThreadStatesActive = 0;
   }
 
-  public void initialize(DocumentsWriter documentsWriter) {
+  public void initialize(DocumentsWriter documentsWriter, FieldInfos fieldInfos) {
     for (int i = 0; i < perThreads.length; i++) {
-      perThreads[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, documentsWriter.chain));
+      perThreads[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, fieldInfos, documentsWriter.chain));
     }
   }
 

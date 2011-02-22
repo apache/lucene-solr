@@ -38,10 +38,12 @@ import java.util.UUID;
  */
 public class TestBinaryResponseWriter extends AbstractSolrTestCase {
 
+  @Override
   public String getSchemaFile() {
     return "schema12.xml";
   }
 
+  @Override
   public String getSolrConfigFile() {
     return "solrconfig.xml";
   }

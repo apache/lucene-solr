@@ -23,7 +23,6 @@ import java.util.Map;
 abstract class InvertedDocEndConsumer {
   abstract void flush(Map<FieldInfo, InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
   abstract void abort();
-  abstract void setFieldInfos(FieldInfos fieldInfos);
   abstract InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField, FieldInfo fieldInfo);
   abstract void startDocument() throws IOException;
   abstract void finishDocument() throws IOException;

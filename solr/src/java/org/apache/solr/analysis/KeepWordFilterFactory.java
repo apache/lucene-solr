@@ -23,22 +23,27 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
+import java.util.Map;
 import java.util.Set;
 import java.io.IOException;
 
 /**
  * @version $Id$
- * @since solr 1.3
  */
 public class KeepWordFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 
-  private CharArraySet words;
-  private boolean ignoreCase;
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
+    assureMatchVersion();
+  }
 
   public void inform(ResourceLoader loader) {
     String wordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
-    if (wordFiles != null) {   
+    enablePositionIncrements = getBoolean("enablePositionIncrements",false);
+
+    if (wordFiles != null) {
       try {
         words = getWordSet(loader, wordFiles, ignoreCase);
       } catch (IOException e) {
@@ -46,6 +51,10 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
       }
     }
   }
+
+  private CharArraySet words;
+  private boolean ignoreCase;
+  private boolean enablePositionIncrements;
 
   /**
    * Set the keep word list.
@@ -62,15 +71,19 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
     this.ignoreCase = ignoreCase;
   }
 
-  public KeepWordFilter create(TokenStream input) {
-    return new KeepWordFilter(input, words);
+  public boolean isEnablePositionIncrements() {
+    return enablePositionIncrements;
+  }
+
+  public boolean isIgnoreCase() {
+    return ignoreCase;
   }
 
   public CharArraySet getWords() {
     return words;
   }
 
-  public boolean isIgnoreCase() {
-    return ignoreCase;
+  public KeepWordFilter create(TokenStream input) {
+    return new KeepWordFilter(enablePositionIncrements, input, words);
   }
 }

@@ -24,19 +24,24 @@ import java.io.StringReader;
 
 public class TestLengthFilter extends BaseTokenStreamTestCase {
   
-  public void testFilter() throws Exception {
+  public void testFilterNoPosIncr() throws Exception {
     TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"));
-    LengthFilter filter = new LengthFilter(stream, 2, 6);
-    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
+    LengthFilter filter = new LengthFilter(false, stream, 2, 6);
+    assertTokenStreamContents(filter,
+      new String[]{"short", "ab", "foo"},
+      new int[]{1, 1, 1}
+    );
+  }
 
-    assertTrue(filter.incrementToken());
-    assertEquals("short", termAtt.toString());
-    assertTrue(filter.incrementToken());
-    assertEquals("ab", termAtt.toString());
-    assertTrue(filter.incrementToken());
-    assertEquals("foo", termAtt.toString());
-    assertFalse(filter.incrementToken());
+  public void testFilterWithPosIncr() throws Exception {
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
+        new StringReader("short toolong evenmuchlongertext a ab toolong foo"));
+    LengthFilter filter = new LengthFilter(true, stream, 2, 6);
+    assertTokenStreamContents(filter,
+      new String[]{"short", "ab", "foo"},
+      new int[]{1, 4, 2}
+    );
   }
 
 }

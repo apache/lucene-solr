@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitVector;
 
 /**
  * This class accepts multiple added documents and directly
@@ -126,24 +127,21 @@ final class DocumentsWriter {
   // non-zero we will flush by RAM usage instead.
   private int maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
 
-  private final FieldInfos fieldInfos;
-
-  final BufferedDeletes bufferedDeletes;
-  SegmentDeletes pendingDeletes;
+  final BufferedDeletesStream bufferedDeletesStream;
+  // TODO: cutover to BytesRefHash
+  private BufferedDeletes pendingDeletes = new BufferedDeletes(false);
   final IndexingChain chain;
 
   final DocumentsWriterPerThreadPool perThreadPool;
 
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain chain, DocumentsWriterPerThreadPool indexerThreadPool, FieldInfos fieldInfos, BufferedDeletes bufferedDeletes) throws IOException {
+  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain chain, DocumentsWriterPerThreadPool indexerThreadPool, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.indexWriter = writer;
     this.similarityProvider = writer.getConfig().getSimilarityProvider();
-    this.fieldInfos = fieldInfos;
-    this.bufferedDeletes = bufferedDeletes;
+    this.bufferedDeletesStream = bufferedDeletesStream;
     this.perThreadPool = indexerThreadPool;
-    this.pendingDeletes = new SegmentDeletes();
     this.chain = chain;
-    this.perThreadPool.initialize(this);
+    this.perThreadPool.initialize(this, fieldInfos);
   }
 
   boolean deleteQueries(final Query... queries) throws IOException {
@@ -164,7 +162,7 @@ final class DocumentsWriter {
     if (!deleted) {
       synchronized(this) {
         for (Query query : queries) {
-          pendingDeletes.addQuery(query, SegmentDeletes.MAX_INT);
+          pendingDeletes.addQuery(query, BufferedDeletes.MAX_INT);
         }
       }
     }
@@ -194,7 +192,7 @@ final class DocumentsWriter {
     if (!deleted) {
       synchronized(this) {
         for (Term term : terms) {
-          pendingDeletes.addTerm(term, SegmentDeletes.MAX_INT);
+          pendingDeletes.addTerm(term, BufferedDeletes.MAX_INT);
         }
       }
     }
@@ -202,6 +200,9 @@ final class DocumentsWriter {
     return false;
   }
 
+  // TODO: we could check w/ FreqProxTermsWriter: if the
+  // term doesn't exist, don't bother buffering into the
+  // per-DWPT map (but still must go into the global map)
   boolean deleteTerm(final Term term) throws IOException {
     return deleteTerms(term);
   }
@@ -224,16 +225,6 @@ final class DocumentsWriter {
     }
 
     return deleted;
-  }
-
-  public FieldInfos getFieldInfos() {
-    return fieldInfos;
-  }
-
-  /** Returns true if any of the fields in the current
-   *  buffered docs have omitTermFreqAndPositions==false */
-  boolean hasProx() {
-    return fieldInfos.hasProx();
   }
 
   /** If non-null, various details of indexing are printed
@@ -396,7 +387,8 @@ final class DocumentsWriter {
     ensureOpen();
 
     SegmentInfo newSegment = null;
-    SegmentDeletes segmentDeletes = null;
+    BufferedDeletes segmentDeletes = null;
+    BitVector deletedDocs = null;
 
     ThreadState perThread = perThreadPool.getAndLock(Thread.currentThread(), this, doc);
     try {
@@ -407,10 +399,10 @@ final class DocumentsWriter {
 
       newSegment = finishAddDocument(dwpt, perThreadRAMUsedBeforeAdd);
       if (newSegment != null) {
-        fieldInfos.update(dwpt.getFieldInfos());
+        deletedDocs = dwpt.flushState.deletedDocs;
         if (dwpt.pendingDeletes.any()) {
           segmentDeletes = dwpt.pendingDeletes;
-          dwpt.pendingDeletes = new SegmentDeletes();
+          dwpt.pendingDeletes = new BufferedDeletes(false);
         }
       }
     } finally {
@@ -423,7 +415,7 @@ final class DocumentsWriter {
 
     if (newSegment != null) {
       perThreadPool.clearThreadBindings(perThread);
-      indexWriter.addFlushedSegment(newSegment);
+      indexWriter.addFlushedSegment(newSegment, deletedDocs);
       return true;
     }
 
@@ -460,17 +452,23 @@ final class DocumentsWriter {
     }
   }
 
-  private final void pushDeletes(SegmentInfo segmentInfo, SegmentDeletes segmentDeletes) {
+  private final void pushDeletes(SegmentInfo segmentInfo, BufferedDeletes segmentDeletes) {
     synchronized(indexWriter) {
       // Lock order: DW -> BD
+      final long delGen = bufferedDeletesStream.getNextGen();
       if (segmentDeletes.any()) {
-        if (segmentInfo != null) {
-          bufferedDeletes.pushDeletes(segmentDeletes, segmentInfo);
-        } else if (indexWriter.segmentInfos.size() > 0) {
+        if (indexWriter.segmentInfos.size() > 0 || segmentInfo != null) {
+          final FrozenBufferedDeletes packet = new FrozenBufferedDeletes(segmentDeletes, delGen);
           if (infoStream != null) {
-            message("flush: push buffered deletes to previously flushed segment " + indexWriter.segmentInfos.lastElement());
+            message("flush: push buffered deletes");
           }
-          bufferedDeletes.pushDeletes(segmentDeletes, indexWriter.segmentInfos.lastElement(), true);
+          bufferedDeletesStream.push(packet);
+          if (infoStream != null) {
+            message("flush: delGen=" + packet.gen);
+          }
+          if (segmentInfo != null) {
+            segmentInfo.setBufferedDeletesGen(packet.gen);
+          }
         } else {
           if (infoStream != null) {
             message("flush: drop buffered deletes: no segments");
@@ -479,6 +477,8 @@ final class DocumentsWriter {
           // there are no segments, the deletions cannot
           // affect anything.
         }
+      } else if (segmentInfo != null) {
+        segmentInfo.setBufferedDeletesGen(delGen);
       }
     }
   }
@@ -489,7 +489,7 @@ final class DocumentsWriter {
     if (flushDeletes) {
       synchronized (this) {
         pushDeletes(null, pendingDeletes);
-        pendingDeletes = new SegmentDeletes();
+        pendingDeletes = new BufferedDeletes(false);
       }
     }
 
@@ -498,7 +498,8 @@ final class DocumentsWriter {
 
     while (threadsIterator.hasNext()) {
       SegmentInfo newSegment = null;
-      SegmentDeletes segmentDeletes = null;
+      BufferedDeletes segmentDeletes = null;
+      BitVector deletedDocs = null;
 
       ThreadState perThread = threadsIterator.next();
       perThread.lock();
@@ -519,17 +520,17 @@ final class DocumentsWriter {
           newSegment = dwpt.flush();
 
           if (newSegment != null) {
-            fieldInfos.update(dwpt.getFieldInfos());
             anythingFlushed = true;
+            deletedDocs = dwpt.flushState.deletedDocs;
             perThreadPool.clearThreadBindings(perThread);
             if (dwpt.pendingDeletes.any()) {
               segmentDeletes = dwpt.pendingDeletes;
-              dwpt.pendingDeletes = new SegmentDeletes();
+              dwpt.pendingDeletes = new BufferedDeletes(false);
             }
           }
         } else if (flushDeletes && dwpt.pendingDeletes.any()) {
           segmentDeletes = dwpt.pendingDeletes;
-          dwpt.pendingDeletes = new SegmentDeletes();
+          dwpt.pendingDeletes = new BufferedDeletes(false);
         }
       } finally {
         perThread.unlock();
@@ -543,7 +544,7 @@ final class DocumentsWriter {
       if (newSegment != null) {
         // important do unlock the perThread before finishFlushedSegment
         // is called to prevent deadlock on IndexWriter mutex
-        indexWriter.addFlushedSegment(newSegment);
+        indexWriter.addFlushedSegment(newSegment, deletedDocs);
       }
     }
 

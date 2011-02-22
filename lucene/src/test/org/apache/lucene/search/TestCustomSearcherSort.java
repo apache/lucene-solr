@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Map;
@@ -34,7 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Unit test for sorting code. */
-public class TestCustomSearcherSort extends LuceneTestCase implements Serializable {
+public class TestCustomSearcherSort extends LuceneTestCase {
   
   private Directory index = null;
   private IndexReader reader;

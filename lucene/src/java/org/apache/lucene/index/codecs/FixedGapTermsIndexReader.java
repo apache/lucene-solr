@@ -44,7 +44,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // number of places to multiply out the actual ord, and we
   // will overflow int during those multiplies.  So to avoid
   // having to upgrade each multiple to long in multiple
-  // places (error proned), we use long here:
+  // places (error prone), we use long here:
   private long totalIndexInterval;
 
   private int indexDivisor;

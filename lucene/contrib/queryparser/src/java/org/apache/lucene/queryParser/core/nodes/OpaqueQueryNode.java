@@ -26,8 +26,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class OpaqueQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = 0L;
-
   private CharSequence schema = null;
 
   private CharSequence value = null;

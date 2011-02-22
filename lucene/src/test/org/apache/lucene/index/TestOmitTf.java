@@ -36,7 +36,7 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 public class TestOmitTf extends LuceneTestCase {
   
   public static class SimpleSimilarity extends Similarity implements SimilarityProvider {
-    @Override public float computeNorm(String field, FieldInvertState state) { return state.getBoost(); }
+    @Override public float computeNorm(FieldInvertState state) { return state.getBoost(); }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
@@ -219,7 +219,7 @@ public class TestOmitTf extends LuceneTestCase {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
+                                                                   TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setUseCompoundFile(false);
@@ -255,8 +255,9 @@ public class TestOmitTf extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
             setMaxBufferedDocs(2).
             setSimilarityProvider(new SimpleSimilarity()).
-            setMergePolicy(newLogMergePolicy(2))
+            setMergePolicy(newInOrderLogMergePolicy(2))
     );
+    writer.setInfoStream(VERBOSE ? System.out : null);
         
     StringBuilder sb = new StringBuilder(265);
     String term = "term";
@@ -334,7 +335,7 @@ public class TestOmitTf extends LuceneTestCase {
                       public final void collect(int doc) throws IOException {
                         //System.out.println("Q2: Doc=" + doc + " score=" + score);
                         float score = scorer.score();
-                        assertTrue(score==1.0f+doc);
+                        assertEquals(1.0f+doc, score, 0.00001f);
                         super.collect(doc);
                       }
                     });

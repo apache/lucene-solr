@@ -47,6 +47,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
     this.missingValueProxy=missingValueProxy;
   }
 
+  @Override
   public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
     return new TermOrdValComparator_SML(numHits, fieldname, sortPos, reversed, missingValueProxy);
   }

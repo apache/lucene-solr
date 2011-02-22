@@ -38,9 +38,11 @@ public class TestFilterIndexReader extends LuceneTestCase {
       TestFields(Fields in) {
         super(in);
       }
+      @Override
       public FieldsEnum iterator() throws IOException {
         return new TestFieldsEnum(super.iterator());
       }
+      @Override
       public Terms terms(String field) throws IOException {
         return new TestTerms(super.terms(field));
       }
@@ -51,6 +53,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
         super(in);
       }
 
+      @Override
       public TermsEnum iterator() throws IOException {
         return new TestTermsEnum(super.iterator());
       }
@@ -61,6 +64,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
         super(in);
       }
 
+      @Override
       public TermsEnum terms() throws IOException {
         return new TestTermsEnum(super.terms());
       }

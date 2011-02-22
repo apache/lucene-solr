@@ -17,14 +17,12 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-
 import org.apache.lucene.util.AttributeImpl;
 
 /**
  * A Token's lexical type. The Default value is "word". 
  */
-public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, Cloneable, Serializable {
+public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, Cloneable {
   private String type;
   
   public TypeAttributeImpl() {

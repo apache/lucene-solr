@@ -22,12 +22,13 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.*;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
@@ -53,6 +54,7 @@ public class TestEntryCreators extends LuceneTestCase {
       this.parser = parser;
       values = new Number[NUM_DOCS];
     }
+    @Override
     public String toString()
     {
       return field;
@@ -65,7 +67,7 @@ public class TestEntryCreators extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
 
     typeTests = new NumberTypeTester[] {
         new NumberTypeTester( "theRandomByte",   "getBytes",   ByteValuesCreator.class,   ByteParser.class ),

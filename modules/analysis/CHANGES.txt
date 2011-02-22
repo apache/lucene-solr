@@ -80,6 +80,9 @@ New Features
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
 
+ * SOLR-1057: Add PathHierarchyTokenizer that represents file path hierarchies as synonyms of
+   /something, /something/something, /something/something/else. (Ryan McKinley, Koji Sekiguchi)
+
 Build
 
  * LUCENE-2413: All analyzers in contrib/analyzers and contrib/icu were moved to the 

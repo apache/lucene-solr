@@ -28,6 +28,8 @@
 
   <jmx />
 
+  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
+
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default unless overridden. -->
     <useCompoundFile>false</useCompoundFile>

@@ -46,7 +46,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    createFile(tmpdir, "x.xsl", xsl.getBytes(), false);
+    createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"), false);
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
             XPathEntityProcessor.FOR_EACH, "/catalog/cd");
     List fields = new ArrayList();
@@ -211,7 +211,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    TestFileListEntityProcessor.createFile(tmpdir, "x.xsl", xsl.getBytes(),
+    TestFileListEntityProcessor.createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"),
             false);
     Map entityAttrs = createMap("name", "e",
             XPathEntityProcessor.USE_SOLR_ADD_SCHEMA, "true", "xsl", ""
@@ -236,12 +236,15 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   private DataSource<Reader> getDataSource(final String xml) {
     return new DataSource<Reader>() {
 
+      @Override
       public void init(Context context, Properties initProps) {
       }
 
+      @Override
       public void close() {
       }
 
+      @Override
       public Reader getData(String query) {
         return new StringReader(xml);
       }

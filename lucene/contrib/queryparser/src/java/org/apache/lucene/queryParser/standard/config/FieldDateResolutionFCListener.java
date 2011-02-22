@@ -36,8 +36,6 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
  */
 public class FieldDateResolutionFCListener implements FieldConfigListener {
 
-  private static final long serialVersionUID = -5929802948798314067L;
-
   private QueryConfigHandler config = null;
 
   public FieldDateResolutionFCListener(QueryConfigHandler config) {
@@ -53,7 +51,7 @@ public class FieldDateResolutionFCListener implements FieldConfigListener {
       FieldDateResolutionMapAttribute dateResMapAttr = this.config
           .addAttribute(FieldDateResolutionMapAttribute.class);
       dateRes = dateResMapAttr.getFieldDateResolutionMap().get(
-          fieldConfig.getFieldName().toString());
+          fieldConfig.getField());
     }
 
     if (dateRes == null) {

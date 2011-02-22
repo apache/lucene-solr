@@ -44,7 +44,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
   /** inverts the normal notion of lengthNorm */
   public static SimilarityProvider s = new DefaultSimilarity() {
     @Override
-    public float computeNorm(String fieldName, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
     }
   };
@@ -54,7 +54,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
     super.setUp();
     store = newDirectory();
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+                                                                     TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();

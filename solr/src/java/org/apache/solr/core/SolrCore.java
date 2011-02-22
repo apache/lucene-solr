@@ -696,6 +696,7 @@ public final class SolrCore implements SolrInfoMBean {
       return refCount.get() <= 0;
   }
   
+  @Override
   protected void finalize() throws Throwable {
     try {
       if (getOpenCount() != 0) {
@@ -1192,6 +1193,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   private RefCounted<SolrIndexSearcher> newHolder(SolrIndexSearcher newSearcher) {
     RefCounted<SolrIndexSearcher> holder = new RefCounted<SolrIndexSearcher>(newSearcher) {
+      @Override
       public void close() {
         try {
           synchronized(searcherLock) {

@@ -38,7 +38,6 @@ import org.apache.lucene.document.Fieldable;
 
 final class DocFieldProcessor extends DocConsumer {
 
-  final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
 
@@ -60,9 +59,7 @@ final class DocFieldProcessor extends DocConsumer {
   public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
     this.docState = docWriter.docState;
     this.consumer = consumer;
-    fieldInfos = docWriter.getFieldInfos();
-    consumer.setFieldInfos(fieldInfos);
-    fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
+    fieldsWriter = new StoredFieldsWriter(docWriter);
   }
 
   @Override
@@ -73,7 +70,6 @@ final class DocFieldProcessor extends DocConsumer {
     for (DocFieldConsumerPerField f : fields) {
       childFields.put(f.getFieldInfo(), f);
     }
-    trimFields(state);
 
     fieldsWriter.flush(state);
     consumer.flush(childFields, state);
@@ -83,7 +79,7 @@ final class DocFieldProcessor extends DocConsumer {
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
-    fieldInfos.write(state.directory, fileName);
+    state.fieldInfos.write(state.directory, fileName);
   }
 
   @Override
@@ -122,43 +118,13 @@ final class DocFieldProcessor extends DocConsumer {
     return fields;
   }
 
-  /** If there are fields we've seen but did not see again
-   *  in the last run, then free them up. */
-
-  void trimFields(SegmentWriteState state) {
-
-    for(int i=0;i<fieldHash.length;i++) {
-      DocFieldProcessorPerField perField = fieldHash[i];
-      DocFieldProcessorPerField lastPerField = null;
-
-      while (perField != null) {
-
-        if (perField.lastGen == -1) {
-
-          // This field was not seen since the previous
-          // flush, so, free up its resources now
-
-          // Unhash
-          if (lastPerField == null)
-            fieldHash[i] = perField.next;
-          else
-            lastPerField.next = perField.next;
-
-          if (state.infoStream != null) {
-            state.infoStream.println("  purge field=" + perField.fieldInfo.name);
-          }
-
-          totalFieldCount--;
-
-        } else {
-          // Reset
-          perField.lastGen = -1;
-          lastPerField = perField;
-        }
-
-        perField = perField.next;
-      }
-    }
+  /** In flush we reset the fieldHash to not maintain per-field state
+   *  across segments */
+  @Override
+  void doAfterFlush() {
+    fieldHash = new DocFieldProcessorPerField[2];
+    hashMask = 1;
+    totalFieldCount = 0;
   }
 
   private void rehash() {
@@ -185,7 +151,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   @Override
-  public void processDocument() throws IOException {
+  public void processDocument(FieldInfos fieldInfos) throws IOException {
 
     consumer.startDocument();
     fieldsWriter.startDocument();

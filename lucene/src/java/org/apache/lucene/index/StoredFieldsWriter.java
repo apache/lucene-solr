@@ -28,16 +28,14 @@ final class StoredFieldsWriter {
 
   FieldsWriter fieldsWriter;
   final DocumentsWriterPerThread docWriter;
-  final FieldInfos fieldInfos;
   int lastDocID;
 
   int freeCount;
 
   final DocumentsWriterPerThread.DocState docState;
 
-  public StoredFieldsWriter(DocumentsWriterPerThread docWriter, FieldInfos fieldInfos) {
+  public StoredFieldsWriter(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
-    this.fieldInfos = fieldInfos;
     this.docState = docWriter.docState;
   }
 
@@ -79,7 +77,7 @@ final class StoredFieldsWriter {
 
   private synchronized void initFieldsWriter() throws IOException {
     if (fieldsWriter == null) {
-      fieldsWriter = new FieldsWriter(docWriter.directory, docWriter.getSegment(), fieldInfos);
+      fieldsWriter = new FieldsWriter(docWriter.directory, docWriter.getSegment());
       lastDocID = 0;
     }
   }

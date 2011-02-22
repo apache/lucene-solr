@@ -68,7 +68,7 @@ public class TestIsCurrent extends LuceneTestCase {
 
     // assert index has a document and reader is up2date 
     assertEquals("One document should be in the index", 1, writer.numDocs());
-    assertTrue("Document added, reader should be stale ", reader.isCurrent());
+    assertTrue("One document added, reader should be current", reader.isCurrent());
 
     // remove document
     Term idTerm = new Term("UUID", "1");

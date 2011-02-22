@@ -71,22 +71,27 @@ public class ContextImpl extends Context {
     parent = parentContext;
   }
 
+  @Override
   public String getEntityAttribute(String name) {
     return entity == null ? null : entity.allAttributes.get(name);
   }
 
+  @Override
   public String getResolvedEntityAttribute(String name) {
     return entity == null ? null : resolver.replaceTokens(entity.allAttributes.get(name));
   }
 
+  @Override
   public List<Map<String, String>> getAllEntityFields() {
     return entity == null ? Collections.EMPTY_LIST : entity.allFieldsList;
   }
 
+  @Override
   public VariableResolver getVariableResolver() {
     return resolver;
   }
 
+  @Override
   public DataSource getDataSource() {
     if (ds != null) return ds;
     if(entity == null) return  null;
@@ -101,26 +106,32 @@ public class ContextImpl extends Context {
     return entity.dataSrc;
   }
 
+  @Override
   public DataSource getDataSource(String name) {
     return dataImporter.getDataSourceInstance(entity, name, this);
   }
 
+  @Override
   public boolean isRootEntity() {
     return entity.isDocRoot;
   }
 
+  @Override
   public String currentProcess() {
     return currProcess;
   }
 
+  @Override
   public Map<String, Object> getRequestParameters() {
     return requestParams;
   }
 
+  @Override
   public EntityProcessor getEntityProcessor() {
     return entity == null ? null : entity.processor;
   }
 
+  @Override
   public void setSessionAttribute(String name, Object val, String scope) {
     if(name == null) return;
     if (Context.SCOPE_ENTITY.equals(scope)) {
@@ -148,6 +159,7 @@ public class ContextImpl extends Context {
     else entitySession.put(name, val);
   }
 
+  @Override
   public Object getSessionAttribute(String name, String scope) {
     if (Context.SCOPE_ENTITY.equals(scope)) {
       if (entitySession == null)
@@ -166,6 +178,7 @@ public class ContextImpl extends Context {
     return null;
   }
 
+  @Override
   public Context getParentContext() {
     return parent;
   }
@@ -187,15 +200,18 @@ public class ContextImpl extends Context {
   }
 
 
+  @Override
   public SolrCore getSolrCore() {
     return dataImporter == null ? null : dataImporter.getCore();
   }
 
 
+  @Override
   public Map<String, Object> getStats() {
     return docBuilder != null ? docBuilder.importStatistics.getStatsSnapshot() : Collections.<String, Object>emptyMap();
   }
 
+  @Override
   public String getScript() {
     if(dataImporter != null) {
       DataConfig.Script script = dataImporter.getConfig().script;
@@ -204,6 +220,7 @@ public class ContextImpl extends Context {
     return null;
   }
 
+  @Override
   public String getScriptLanguage() {
     if (dataImporter != null) {
       DataConfig.Script script = dataImporter.getConfig().script;
@@ -212,12 +229,14 @@ public class ContextImpl extends Context {
     return null;
   }
 
+  @Override
   public void deleteDoc(String id) {
     if(docBuilder != null){
       docBuilder.writer.deleteDoc(id);
     }
   }
 
+  @Override
   public void deleteDocByQuery(String query) {
     if(docBuilder != null){
       docBuilder.writer.deleteByQuery(query);
@@ -227,10 +246,12 @@ public class ContextImpl extends Context {
   DocBuilder getDocBuilder(){
     return docBuilder;
   }
+  @Override
   public Object resolve(String var) {
     return resolver.resolve(var);
   }
 
+  @Override
   public String replaceTokens(String template) {
     return resolver.replaceTokens(template);
   }

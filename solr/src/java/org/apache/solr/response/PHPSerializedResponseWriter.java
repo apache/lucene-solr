@@ -92,6 +92,7 @@ class PHPSerializedWriter extends JSONWriter {
     doIndent = false;
   }
 
+  @Override
   public void writeResponse() throws IOException {
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
     if(omitHeader != null && omitHeader) rsp.getValues().remove("responseHeader");

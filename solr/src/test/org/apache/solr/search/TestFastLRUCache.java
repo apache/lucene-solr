@@ -334,6 +334,7 @@ public class TestFastLRUCache extends LuceneTestCase {
     for (int i=0; i<threads.length; i++) {
       final int seed=random.nextInt();
       threads[i] = new Thread() {
+          @Override
           public void run() {
             int ret = useCache(sc, numGets/nThreads, maxKey, seed);
             puts.addAndGet(ret);

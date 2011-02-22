@@ -39,29 +39,37 @@ public abstract class DualFloatFunction extends ValueSource {
   protected abstract String name();
   protected abstract float func(int doc, DocValues aVals, DocValues bVals);
 
+  @Override
   public String description() {
     return name() + "(" + a.description() + "," + b.description() + ")";
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final DocValues aVals =  a.getValues(context, readerContext);
     final DocValues bVals =  b.getValues(context, readerContext);
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
 	return func(doc, aVals, bVals);
       }
+      @Override
       public int intVal(int doc) {
         return (int)floatVal(doc);
       }
+      @Override
       public long longVal(int doc) {
         return (long)floatVal(doc);
       }
+      @Override
       public double doubleVal(int doc) {
         return floatVal(doc);
       }
+      @Override
       public String strVal(int doc) {
         return Float.toString(floatVal(doc));
       }
+      @Override
       public String toString(int doc) {
 	return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
       }
@@ -74,6 +82,7 @@ public abstract class DualFloatFunction extends ValueSource {
     b.createWeight(context,searcher);
   }
 
+  @Override
   public int hashCode() {
     int h = a.hashCode();
     h ^= (h << 13) | (h >>> 20);
@@ -83,6 +92,7 @@ public abstract class DualFloatFunction extends ValueSource {
     return h;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     DualFloatFunction other = (DualFloatFunction)o;

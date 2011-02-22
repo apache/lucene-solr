@@ -436,6 +436,7 @@ public final class XMLWriter extends TextResponseWriter {
   }
 
 
+  @Override
   public void writeVal(String name, Object val) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
@@ -494,6 +495,7 @@ public final class XMLWriter extends TextResponseWriter {
   // Generic compound types
   //
 
+  @Override
   public void writeNamedList(String name, NamedList val) throws IOException {
     int sz = val.size();
     startTag("lst", name, sz<=0);

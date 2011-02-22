@@ -17,7 +17,6 @@ package org.apache.lucene.queryParser.core.nodes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +26,7 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  * A {@link QueryNode} is a interface implemented by all nodes on a QueryNode
  * tree.
  */
-public interface QueryNode extends Serializable {
+public interface QueryNode {
 
   /** convert to a query string understood by the query parser */
   // TODO: this interface might be changed in the future
@@ -43,14 +42,14 @@ public interface QueryNode extends Serializable {
   public boolean isLeaf();
 
   /** verify if a node contains a tag */
-  public boolean containsTag(CharSequence tagName);
-
+  public boolean containsTag(String tagName);
+  
   /**
    * @param tagName
    * @return of stored on under that tag name
    */
-  public Object getTag(CharSequence tagName);
-
+  public Object getTag(String tagName);
+  
   public QueryNode getParent();
 
   /**
@@ -81,15 +80,20 @@ public interface QueryNode extends Serializable {
    * @param tagName
    * @param value
    */
-  public void setTag(CharSequence tagName, Object value);
-
+  public void setTag(String tagName, Object value);
+  
   /**
    * Unset a tag. tagName will be converted to lowercase.
    * 
    * @param tagName
    */
-  public void unsetTag(CharSequence tagName);
-
-  public Map<CharSequence, Object> getTags();
+  public void unsetTag(String tagName);
+  
+  /**
+   * Returns a map containing all tags attached to this query node. 
+   * 
+   * @return a map containing all tags attached to this query node
+   */
+  public Map<String, Object> getTagMap();
 
 }

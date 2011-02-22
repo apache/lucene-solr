@@ -406,4 +406,16 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
         new String[] {"𩬅", "艱", "鍟", "䇹", "愯", "瀛"},
         new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>" });
   }
+  
+  public void testKorean() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "훈민정음",
+        new String[] { "훈민정음" },
+        new String[] { "<HANGUL>" });
+  }
+  
+  public void testJapanese() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "仮名遣い カタカナ",
+        new String[] { "仮", "名", "遣", "い", "カタカナ" },
+        new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<HIRAGANA>", "<KATAKANA>" });
+  }
 }

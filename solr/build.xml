@@ -18,6 +18,8 @@
 -->
 
 <project name="solr" default="usage" basedir="." xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+  <property name="solr-path" value="." />
 	
   <import file="common-build.xml"/>
   
@@ -340,7 +342,7 @@
     <path refid="compile.classpath.solrj" />
     <pathelement location="${dest}/solr"/>
     <pathelement location="${dest}/solrj"/> <!-- include solrj -->
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
   </path>
 
   <path id="test.run.classpath">
@@ -348,7 +350,7 @@
     <pathelement location="${dest}/tests"/>
     <!-- include the solrj classpath and jetty files included in example -->
     <path refid="compile.classpath.solrj" />
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 
@@ -754,6 +756,12 @@
         excludes="*.tgz *.zip *.md5 **/*src*.jar **/*docs*.jar" />
       <tarfileset dir="${build.docs}"
         prefix="${fullnamever}/docs/" />
+      <tarfileset dir="../lucene"
+        prefix="lucene"
+        excludes="**/build/" />
+      <tarfileset dir="../modules"
+        prefix="modules"
+        excludes="**/build/" />
     </tar>
     <solr-checksum file="${dist}/${fullnamever}.tgz"/>
 
@@ -773,6 +781,12 @@
         prefix="${fullnamever}"
         includes="**/*.sh **/bin/ src/scripts/"
         filemode="755" />
+      <zipfileset dir="../lucene"
+        prefix="lucene"
+        excludes="**/build/" />
+      <zipfileset dir="../modules"
+        prefix="modules"
+        excludes="**/build/" />
     </zip>
     <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
@@ -846,7 +860,7 @@
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, create-package">
     <sequential>
-	  <ant target="get-maven-poms" inheritAll="false" dir=".."/>
+	  <ant target="get-maven-poms" dir=".."/>
 
       <!--
 
@@ -912,7 +926,7 @@
         </artifact-attachments>
       </m2-deploy>
 
-      <m2-deploy pom.xml="contrib/extraction/solr-uima-pom.xml.template"
+      <m2-deploy pom.xml="contrib/uima/pom.xml"
                  jar.file="${dist}/apache-solr-uima-${version}.jar">
         <artifact-attachments>
           <attach file="${dist}/apache-solr-uima-src-${version}.jar" classifier="sources"/>
@@ -956,6 +970,8 @@
     description="runs the tasks over src/java excluding the license directory">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="src/java"/>
+      <fileset dir="src/test"/>
+      <fileset dir="src/webapp"/>
       <fileset dir="src/common"/>
       <fileset dir="src/solrj"/>
       <fileset dir="client">
@@ -963,6 +979,8 @@
       </fileset>
       <fileset dir="contrib/dataimporthandler/src/main/java"/>
       <fileset dir="contrib/dataimporthandler/src/test/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/main/java"/>
+      <fileset dir="contrib/dataimporthandler/src/extras/test/java"/>
       <fileset dir="contrib/clustering/src/main/java"/>
       <fileset dir="contrib/clustering/src/test/java"/>
       <fileset dir="contrib/extraction/src/main/java"/>

@@ -52,12 +52,14 @@ public class FieldStreamDataSource extends DataSource<InputStream> {
   protected String dataField;
   private EntityProcessorWrapper wrapper;
 
+  @Override
   public void init(Context context, Properties initProps) {
     dataField = context.getEntityAttribute("dataField");
     wrapper = (EntityProcessorWrapper) context.getEntityProcessor();
     /*no op*/
   }
 
+  @Override
   public InputStream getData(String query) {
     Object o = wrapper.getVariableResolver().resolve(dataField);
     if (o == null) {
@@ -90,6 +92,7 @@ public class FieldStreamDataSource extends DataSource<InputStream> {
 
   }
 
+  @Override
   public void close() {
   }
 }

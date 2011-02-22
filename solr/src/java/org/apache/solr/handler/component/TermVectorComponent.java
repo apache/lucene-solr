@@ -61,6 +61,20 @@ import java.util.Map;
  * term, frequency, position, offset, IDF.
  * <p/>
  * <b>Note</b> Returning IDF can be expensive.
+ * 
+ * <pre class="prettyprint">
+ * &lt;searchComponent name="tvComponent" class="solr.TermVectorComponent"/&gt;
+ * 
+ * &lt;requestHandler name="/terms" class="solr.SearchHandler"&gt;
+ *   &lt;lst name="defaults"&gt;
+ *     &lt;bool name="tv"&gt;true&lt;/bool&gt;
+ *   &lt;/lst&gt;
+ *   &lt;arr name="last-component"&gt;
+ *     &lt;str&gt;tvComponent&lt;/str&gt;
+ *   &lt;/arr&gt;
+ * &lt;/requestHandler&gt;</pre>
+ *
+ * @version $Id$
  */
 public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
 
@@ -71,6 +85,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   public static final String TERM_VECTORS = "termVectors";
 
 
+  @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
@@ -288,6 +303,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       this.reader = reader;
     }
 
+    @Override
     public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
       NamedList<Object> termInfo = new NamedList<Object>();
       fieldNL.add(term.utf8ToString(), termInfo);
@@ -336,6 +352,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       return result;
     }
 
+    @Override
     public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
 
       if (fieldOptions.docFreq == true && reader != null) {
@@ -358,6 +375,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
+  @Override
   public void prepare(ResponseBuilder rb) throws IOException {
 
   }
@@ -374,18 +392,22 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   }
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public String getDescription() {
     return "A Component for working with Term Vectors";
   }

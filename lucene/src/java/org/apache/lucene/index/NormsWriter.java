@@ -32,7 +32,6 @@ import org.apache.lucene.store.IndexOutput;
 
 final class NormsWriter extends InvertedDocEndConsumer {
 
-  private FieldInfos fieldInfos;
 
   @Override
   public void abort() {}
@@ -40,16 +39,11 @@ final class NormsWriter extends InvertedDocEndConsumer {
   // We only write the _X.nrm file at flush
   void files(Collection<String> files) {}
 
-  @Override
-  void setFieldInfos(FieldInfos fieldInfos) {
-    this.fieldInfos = fieldInfos;
-  }
-
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
   @Override
   public void flush(Map<FieldInfo,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
-    if (!fieldInfos.hasNorms()) {
+    if (!state.fieldInfos.hasNorms()) {
       return;
     }
 
@@ -59,15 +53,10 @@ final class NormsWriter extends InvertedDocEndConsumer {
     try {
       normsOut.writeBytes(SegmentMerger.NORMS_HEADER, 0, SegmentMerger.NORMS_HEADER.length);
 
-      final int numField = fieldInfos.size();
-
       int normCount = 0;
 
-      for(int fieldNumber=0;fieldNumber<numField;fieldNumber++) {
-
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
-
-        NormsWriterPerField toWrite = (NormsWriterPerField) fieldsToFlush.get(fieldInfo);
+      for (FieldInfo fi : state.fieldInfos) {
+        NormsWriterPerField toWrite = (NormsWriterPerField) fieldsToFlush.get(fi);
 
         int upto = 0;
         if (toWrite != null && toWrite.upto > 0) {
@@ -87,7 +76,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
           assert upto == toWrite.upto;
 
           toWrite.reset();
-        } else if (fieldInfo.isIndexed && !fieldInfo.omitNorms) {
+        } else if (fi.isIndexed && !fi.omitNorms) {
           normCount++;
           // Fill entire field with default norm:
           for(;upto<state.numDocs;upto++)

@@ -56,7 +56,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     iw.addDocument(doc);
     reader = iw.getReader();
     iw.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     searcher.setSimilarityProvider(sim);
   }
   
@@ -107,7 +107,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
   
   private class Sim1 extends Similarity {
     @Override
-    public float computeNorm(String field, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       return 1f;
     }
 
@@ -129,7 +129,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
   
   private class Sim2 extends Similarity {
     @Override
-    public float computeNorm(String field, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       return 10f;
     }
 

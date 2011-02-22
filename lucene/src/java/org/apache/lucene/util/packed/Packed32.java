@@ -214,6 +214,7 @@ class Packed32 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
     Arrays.fill(blocks, 0);
   }
 
+  @Override
   public String toString() {
     return "Packed32(bitsPerValue=" + bitsPerValue + ", maxPos=" + maxPos
             + ", elements.length=" + blocks.length + ")";

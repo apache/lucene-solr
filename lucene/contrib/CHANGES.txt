@@ -38,6 +38,11 @@ API Changes
  * LUCENE-2638 MakeHighFreqTerms.TermStats public to make it more useful
    for API use. (Andrzej Bialecki)
 
+ * LUCENE-2912: The field-specific hashmaps in SweetSpotSimilarity were removed.
+   Instead, use SimilarityProvider to return different SweetSpotSimilaritys
+   for different fields, this way all parameters (such as TF factors) can be 
+   customized on a per-field basis.  (Robert Muir)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -187,6 +192,9 @@ API Changes
 
  * LUCENE-2830: Use StringBuilder instead of StringBuffer across Benchmark, and
    remove the StringBuffer HtmlParser.parse() variant. (Shai Erera)
+   
+ * LUCENE-2920: Deprecated ShingleMatrixFilter as it is unmaintained and does
+   not work with custom Attributes or custom payload encoders.  (Uwe Schindler)
    
 New features
 

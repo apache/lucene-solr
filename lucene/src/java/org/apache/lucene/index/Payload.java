@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -34,7 +32,7 @@ import org.apache.lucene.util.ArrayUtil;
  *  to retrieve the payloads from the index.<br>
  *
  */
-public class Payload implements Serializable, Cloneable {
+public class Payload implements Cloneable {
   /** the byte array containing the payload data */
   protected byte[] data;
     

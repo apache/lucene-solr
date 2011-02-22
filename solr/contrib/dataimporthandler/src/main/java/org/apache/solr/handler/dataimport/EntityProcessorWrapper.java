@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import static org.apache.solr.handler.dataimport.EntityProcessorBase.*;
 import static org.apache.solr.handler.dataimport.EntityProcessorBase.SKIP;
@@ -54,6 +55,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
     this.docBuilder = docBuilder;
   }
 
+  @Override
   public void init(Context context) {
     rowcache = null;
     this.context = context;
@@ -79,6 +81,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
     String[] transArr = transClasses.split(",");
     transformers = new ArrayList<Transformer>() {
+      @Override
       public boolean add(Transformer transformer) {
         if (docBuilder != null && docBuilder.verboseDebug) {
           transformer = docBuilder.writer.getDebugLogger().wrapTransformer(transformer);
@@ -135,6 +138,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
       o = clazz.newInstance();
     }
 
+    @Override
     public Object transformRow(Map<String, Object> aRow, Context context) {
       try {
         return meth.invoke(o, aRow);
@@ -223,6 +227,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
             && Boolean.parseBoolean(oMap.get("$stopTransform").toString());
   }
 
+  @Override
   public Map<String, Object> nextRow() {
     if (rowcache != null) {
       return getFromRowCache();
@@ -236,7 +241,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
           wrapAndThrow(SEVERE, e);
         } else {
           //SKIP is not really possible. If this calls the nextRow() again the Entityprocessor would be in an inconisttent state           
-          log.error("Exception in entity : "+ entityName, e);          
+          SolrException.log(log, "Exception in entity : "+ entityName, e);
           return null;
         }
       }
@@ -252,6 +257,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
     }
   }
 
+  @Override
   public Map<String, Object> nextModifiedRowKey() {
     Map<String, Object> row = delegate.nextModifiedRowKey();
     row = applyTransformer(row);
@@ -259,6 +265,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
     return row;
   }
 
+  @Override
   public Map<String, Object> nextDeletedRowKey() {
     Map<String, Object> row = delegate.nextDeletedRowKey();
     row = applyTransformer(row);
@@ -266,10 +273,12 @@ public class EntityProcessorWrapper extends EntityProcessor {
     return row;
   }
 
+  @Override
   public Map<String, Object> nextModifiedParentRowKey() {
     return delegate.nextModifiedParentRowKey();
   }
 
+  @Override
   public void destroy() {
     delegate.destroy();
   }

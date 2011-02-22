@@ -100,22 +100,27 @@ public class HaversineFunction extends ValueSource {
 
     final DocValues vals2 = p2.getValues(context, readerContext);
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) doubleVal(doc);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) doubleVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return distance(doc, vals1, vals2);
       }
 
+      @Override
       public String strVal(int doc) {
         return Double.toString(doubleVal(doc));
       }
@@ -159,6 +164,7 @@ public class HaversineFunction extends ValueSource {
     return result;
   }
 
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');

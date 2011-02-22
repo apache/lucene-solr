@@ -156,7 +156,6 @@ This product includes software developed by the Carrot2 Project.
 
 See http://project.carrot2.org/
 
-
 =========================================================================
 ==     Guava Notice                                                    ==
 =========================================================================
@@ -166,6 +165,16 @@ Copyright ???? Google, Inc.
 This product includes software developed by the Google Guava project.
 
 See http://code.google.com/p/guava-libraries/
+
+=========================================================================
+==     Prettify Notice                                                 ==
+=========================================================================
+
+Copyright ???? Google, Inc.
+
+This product includes software developed by the Google Prettify project.
+
+See http://code.google.com/p/google-code-prettify/
 
 =========================================================================
 ==     Jackson Notice                                                  ==

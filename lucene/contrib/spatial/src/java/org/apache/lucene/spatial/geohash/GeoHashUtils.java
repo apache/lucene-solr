@@ -22,7 +22,7 @@ import java.util.Map;
 
 /**
  * Utilities for encoding and decoding geohashes. Based on
- * http://en.wikipedia.org/wiki/Geohash.
+ * <a href="http://en.wikipedia.org/wiki/Geohash">http://en.wikipedia.org/wiki/Geohash</a>.
  */
 public class GeoHashUtils {
 

@@ -141,7 +141,7 @@ public class SolrConfig extends Config {
     filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
     
     useFilterForSortedQuery = getBool("query/useFilterForSortedQuery", false);
-    queryResultWindowSize = getInt("query/queryResultWindowSize", 1);
+    queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
 

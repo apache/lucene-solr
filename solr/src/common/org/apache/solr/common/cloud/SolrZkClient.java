@@ -74,7 +74,6 @@ public class SolrZkClient {
    * @param zkClientTimeout
    * @param strat
    * @param onReconnect
-   * @param clientConnectTimeout
    * @throws InterruptedException
    * @throws TimeoutException
    * @throws IOException
@@ -164,7 +163,7 @@ public class SolrZkClient {
   
   /**
    * @param path
-   * @return
+   * @return true if path exists
    * @throws KeeperException
    * @throws InterruptedException
    */
@@ -178,7 +177,7 @@ public class SolrZkClient {
    * @param data
    * @param acl
    * @param createMode
-   * @return
+   * @return path of created node
    * @throws KeeperException
    * @throws InterruptedException
    */
@@ -190,7 +189,7 @@ public class SolrZkClient {
   /**
    * @param path
    * @param watcher
-   * @return
+   * @return children of the node at the path
    * @throws KeeperException
    * @throws InterruptedException
    */
@@ -203,7 +202,7 @@ public class SolrZkClient {
    * @param path
    * @param watcher
    * @param stat
-   * @return
+   * @return node's data
    * @throws KeeperException
    * @throws InterruptedException
    */
@@ -216,7 +215,7 @@ public class SolrZkClient {
    * @param path
    * @param data
    * @param version
-   * @return
+   * @return node's state
    * @throws KeeperException
    * @throws InterruptedException
    */
@@ -229,8 +228,8 @@ public class SolrZkClient {
    * 
    * @param path
    * @param data
-   * @param watcher
-   * @return
+   * @param createMode
+   * @return path of created node
    * @throws KeeperException
    * @throws InterruptedException
    */

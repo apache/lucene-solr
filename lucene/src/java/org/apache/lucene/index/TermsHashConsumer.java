@@ -26,10 +26,4 @@ abstract class TermsHashConsumer {
   abstract void startDocument() throws IOException;
   abstract void finishDocument(TermsHash termsHash) throws IOException;
   abstract public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo);
-
-  FieldInfos fieldInfos;
-
-  void setFieldInfos(FieldInfos fieldInfos) {
-    this.fieldInfos = fieldInfos;
-  }
 }

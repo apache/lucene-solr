@@ -120,6 +120,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
   //just for back-compat with the deprecated method
   private boolean initialized = false;
+  @Override
   @Deprecated
   public void initalize( SolrConfig config) {
     if (initialized) return;
@@ -333,6 +334,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @return NamedList containing a NamedList for each document, which in 
    * turns contains sets (field, summary) pairs.
    */
+  @Override
   @SuppressWarnings("unchecked")
   public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     SolrParams params = req.getParams(); 
@@ -639,6 +641,7 @@ class TermOffsetsTokenStream {
         this.length = length;
       }
       
+      @Override
       public boolean incrementToken() throws IOException {
         while( true ){
           if( bufferedToken == null ) {

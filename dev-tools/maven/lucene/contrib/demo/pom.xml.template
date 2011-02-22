@@ -28,8 +28,8 @@
   </parent>
   <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-demo</artifactId>
-  <packaging>war</packaging>
-  <name>Lucene Demos</name>
+  <packaging>jar</packaging>
+  <name>Lucene Demo</name>
   <description>This is the demo for Apache Lucene Java</description>
   <properties>
     <module-directory>lucene/contrib/demo</module-directory>
@@ -54,11 +54,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -80,15 +75,6 @@
     </testResources>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <warSourceDirectory>src/jsp</warSourceDirectory>
-          <attachClasses>true</attachClasses>
-          <classesClassifier/>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
@@ -101,16 +87,8 @@
           </platforms>
           <programs>
             <program>
-              <mainClass>org.apache.lucene.demo.DeleteFiles</mainClass>
-              <name>DeleteFiles</name>
-            </program>
-            <program>
               <mainClass>org.apache.lucene.demo.IndexFiles</mainClass>
               <name>IndexFiles</name>
-            </program>
-            <program>
-              <mainClass>org.apache.lucene.demo.IndexHTML</mainClass>
-              <name>IndexHTML</name>
             </program>
             <program>
               <mainClass>org.apache.lucene.demo.SearchFiles</mainClass>

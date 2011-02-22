@@ -36,11 +36,6 @@ import org.apache.lucene.spatial.tier.DistanceFilter;
  */
 
 public class GeoHashDistanceFilter extends DistanceFilter {
-
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
   
   private double lat;
   private double lng;

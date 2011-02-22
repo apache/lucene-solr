@@ -52,15 +52,17 @@ import java.util.TreeSet;
  * high-frequency lookups of medium size synonym tables.
  * <p>
  * Example Usage:
- * <pre>
+ * <pre class="prettyprint">
  * String[] words = new String[] { "hard", "woods", "forest", "wolfish", "xxxx"};
  * SynonymMap map = new SynonymMap(new FileInputStream("samples/fulltext/wn_s.pl"));
  * for (int i = 0; i &lt; words.length; i++) {
  *     String[] synonyms = map.getSynonyms(words[i]);
  *     System.out.println(words[i] + ":" + java.util.Arrays.asList(synonyms).toString());
  * }
- * 
+ * </pre>
+ * <b/>
  * Example output:
+ * <pre class="prettyprint">
  * hard:[arduous, backbreaking, difficult, fermented, firmly, grueling, gruelling, heavily, heavy, intemperately, knockout, laborious, punishing, severe, severely, strong, toilsome, tough]
  * woods:[forest, wood]
  * forest:[afforest, timber, timberland, wood, woodland, woods]
@@ -161,7 +163,7 @@ public class SynonymMap {
     return word.toLowerCase();
   }
 
-  private static boolean isValid(String str) {
+  protected boolean isValid(String str) {
     for (int i=str.length(); --i >= 0; ) {
       if (!Character.isLetter(str.charAt(i))) return false;
     }

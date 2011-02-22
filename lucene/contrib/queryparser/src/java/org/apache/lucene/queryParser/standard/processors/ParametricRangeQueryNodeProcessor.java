@@ -97,8 +97,15 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
 
       }
 
-      FieldConfig fieldConfig = getQueryConfigHandler().getFieldConfig(
-          parametricRangeNode.getField());
+      CharSequence field = parametricRangeNode.getField();
+      String fieldStr = null;
+
+      if (field != null) {
+        fieldStr = field.toString();
+      }
+
+      FieldConfig fieldConfig = getQueryConfigHandler()
+          .getFieldConfig(fieldStr);
 
       if (fieldConfig != null) {
 

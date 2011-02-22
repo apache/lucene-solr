@@ -22,6 +22,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.AutomatonTermsEnum.CompiledAutomaton;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
@@ -140,18 +141,18 @@ public final class FuzzyTermsEnum extends TermsEnum {
    */
   private TermsEnum getAutomatonEnum(int editDistance, BytesRef lastTerm)
       throws IOException {
-    final List<ByteRunAutomaton> runAutomata = initAutomata(editDistance);
+    final List<CompiledAutomaton> runAutomata = initAutomata(editDistance);
     if (editDistance < runAutomata.size()) {
       return new AutomatonFuzzyTermsEnum(runAutomata.subList(0, editDistance + 1)
-          .toArray(new ByteRunAutomaton[editDistance + 1]), lastTerm);
+          .toArray(new CompiledAutomaton[editDistance + 1]), lastTerm);
     } else {
       return null;
     }
   }
 
   /** initialize levenshtein DFAs up to maxDistance, if possible */
-  private List<ByteRunAutomaton> initAutomata(int maxDistance) {
-    final List<ByteRunAutomaton> runAutomata = dfaAtt.automata();
+  private List<CompiledAutomaton> initAutomata(int maxDistance) {
+    final List<CompiledAutomaton> runAutomata = dfaAtt.automata();
     if (runAutomata.size() <= maxDistance && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       LevenshteinAutomata builder = 
@@ -165,7 +166,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
             UnicodeUtil.newString(termText, 0, realPrefixLength));
           a = BasicOperations.concatenate(prefix, a);
         }
-        runAutomata.add(new ByteRunAutomaton(a));
+        runAutomata.add(new CompiledAutomaton(a, true));
       }
     }
     return runAutomata;
@@ -261,6 +262,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return actualEnum.docsAndPositions(skipDocs, reuse);
   }
   
+  @Override
   public void seek(BytesRef term, TermState state) throws IOException {
     actualEnum.seek(term, state);
   }
@@ -311,32 +313,38 @@ public final class FuzzyTermsEnum extends TermsEnum {
     private final BoostAttribute boostAtt =
       attributes().addAttribute(BoostAttribute.class);
     
-    public AutomatonFuzzyTermsEnum(ByteRunAutomaton matchers[], 
+    public AutomatonFuzzyTermsEnum(CompiledAutomaton compiled[], 
         BytesRef lastTerm) throws IOException {
-      super(matchers[matchers.length - 1], tenum, true, null);
-      this.matchers = matchers;
+      super(tenum, compiled[compiled.length - 1]);
+      this.matchers = new ByteRunAutomaton[compiled.length];
+      for (int i = 0; i < compiled.length; i++)
+        this.matchers[i] = compiled[i].runAutomaton;
       this.lastTerm = lastTerm;
       termRef = new BytesRef(term.text());
     }
     
     /** finds the smallest Lev(n) DFA that accepts the term. */
     @Override
-    protected AcceptStatus accept(BytesRef term) {
-      if (term.equals(termRef)) { // ed = 0
-        boostAtt.setBoost(1.0F);
-        return AcceptStatus.YES_AND_SEEK;
-      }
+    protected AcceptStatus accept(BytesRef term) {    
+      int ed = matchers.length - 1;
       
-      int codePointCount = -1;
-      
-      // TODO: benchmark doing this backwards
-      for (int i = 1; i < matchers.length; i++)
-        if (matchers[i].run(term.bytes, term.offset, term.length)) {
-          // this sucks, we convert just to score based on length.
-          if (codePointCount == -1) {
-            codePointCount = UnicodeUtil.codePointCount(term);
+      if (matches(term, ed)) { // we match the outer dfa
+        // now compute exact edit distance
+        while (ed > 0) {
+          if (matches(term, ed - 1)) {
+            ed--;
+          } else {
+            break;
           }
-          final float similarity = 1.0f - ((float) i / (float) 
+        }
+        
+        // scale to a boost and return (if similarity > minSimilarity)
+        if (ed == 0) { // exact match
+          boostAtt.setBoost(1.0F);
+          return AcceptStatus.YES_AND_SEEK;
+        } else {
+          final int codePointCount = UnicodeUtil.codePointCount(term);
+          final float similarity = 1.0f - ((float) ed / (float) 
               (Math.min(codePointCount, termLength)));
           if (similarity > minSimilarity) {
             boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
@@ -345,8 +353,14 @@ public final class FuzzyTermsEnum extends TermsEnum {
             return AcceptStatus.NO_AND_SEEK;
           }
         }
-      
-      return AcceptStatus.NO_AND_SEEK;
+      } else {
+        return AcceptStatus.NO_AND_SEEK;
+      }
+    }
+    
+    /** returns true if term is within k edits of the query term */
+    final boolean matches(BytesRef term, int k) {
+      return k == 0 ? term.equals(termRef) : matchers[k].run(term.bytes, term.offset, term.length);
     }
     
     /** defers to superclass, except can start at an arbitrary location */
@@ -562,14 +576,14 @@ public final class FuzzyTermsEnum extends TermsEnum {
   
   /** @lucene.internal */
   public static interface LevenshteinAutomataAttribute extends Attribute {
-    public List<ByteRunAutomaton> automata();
+    public List<CompiledAutomaton> automata();
   }
     
   /** @lucene.internal */
   public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
-    private final List<ByteRunAutomaton> automata = new ArrayList<ByteRunAutomaton>();
+    private final List<CompiledAutomaton> automata = new ArrayList<CompiledAutomaton>();
       
-    public List<ByteRunAutomaton> automata() {
+    public List<CompiledAutomaton> automata() {
       return automata;
     }
 
@@ -594,7 +608,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
 
     @Override
     public void copyTo(AttributeImpl target) {
-      final List<ByteRunAutomaton> targetAutomata =
+      final List<CompiledAutomaton> targetAutomata =
         ((LevenshteinAutomataAttribute) target).automata();
       targetAutomata.clear();
       targetAutomata.addAll(automata);

@@ -47,6 +47,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   int skipInterval;
   int maxSkipLevels;
+  int skipMinimum;
 
   //private String segment;
 
@@ -86,6 +87,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();
+    skipMinimum = termsIn.readInt();
   }
 
   // Must keep final because we do non-standard clone
@@ -99,12 +101,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
     ByteArrayDataInput bytesReader;
     byte[] bytes;
 
+    @Override
     public Object clone() {
       StandardTermState other = new StandardTermState();
       other.copyFrom(this);
       return other;
     }
 
+    @Override
     public void copyFrom(TermState _other) {
       super.copyFrom(_other);
       StandardTermState other = (StandardTermState) _other;
@@ -118,6 +122,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       // (rare!), they will be re-read from disk.
     }
 
+    @Override
     public String toString() {
       return super.toString() + " freqFP=" + freqOffset + " proxFP=" + proxOffset + " skipOffset=" + skipOffset;
     }
@@ -176,7 +181,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     //System.out.println("  freqFP=" + termState.freqOffset);
     assert termState.freqOffset < freqIn.length();
 
-    if (termState.docFreq >= skipInterval) {
+    if (termState.docFreq >= skipMinimum) {
       termState.skipOffset = termState.bytesReader.readVInt();
       //System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
       assert termState.freqOffset + termState.skipOffset < freqIn.length();
@@ -375,13 +380,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
     @Override
     public int advance(int target) throws IOException {
 
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
-
-      if (limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and it isn't too close.
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
@@ -528,13 +530,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       //System.out.println("StandardR.D&PE advance target=" + target);
 
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
-
-      if (limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and it isn't too close
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
@@ -575,6 +574,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return doc;
     }
 
+    @Override
     public int nextPosition() throws IOException {
 
       if (lazyProxPointer != -1) {
@@ -603,10 +603,12 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     /** Returns the payload at this position, or null if no
      *  payload was indexed. */
+    @Override
     public BytesRef getPayload() throws IOException {
       throw new IOException("No payloads exist for this field!");
     }
 
+    @Override
     public boolean hasPayload() {
       return false;
     }
@@ -724,13 +726,11 @@ public class StandardPostingsReader extends PostingsReaderBase {
     public int advance(int target) throws IOException {
 
       //System.out.println("StandardR.D&PE advance seg=" + segment + " target=" + target + " this=" + this);
-      // TODO: jump right to next() if target is < X away
-      // from where we are now?
 
-      if (limit >= skipInterval) {
+      if ((target - skipInterval) >= doc && limit >= skipMinimum) {
 
         // There are enough docs in the posting to have
-        // skip data
+        // skip data, and it isn't too close
 
         if (skipper == null) {
           // This is the first time this enum has ever been used for skipping -- do lazy init
@@ -773,6 +773,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return doc;
     }
 
+    @Override
     public int nextPosition() throws IOException {
 
       if (lazyProxPointer != -1) {
@@ -833,6 +834,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     /** Returns the payload at this position, or null if no
      *  payload was indexed. */
+    @Override
     public BytesRef getPayload() throws IOException {
       assert lazyProxPointer == -1;
       assert posPendingCount < freq;
@@ -850,6 +852,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return payload;
     }
 
+    @Override
     public boolean hasPayload() {
       return payloadPending && payloadLength > 0;
     }

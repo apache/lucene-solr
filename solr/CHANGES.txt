@@ -53,6 +53,7 @@ Upgrading from Solr 3.1-dev
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
 
+
 Detailed Change List
 ----------------------
 
@@ -106,8 +107,6 @@ New Features
   Adding a parameter NOW=<time_in_ms> to the request will override the
   current time.  (Peter Sturge, yonik)
 
-* SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
-
 Optimizations
 ----------------------
 
@@ -154,12 +153,6 @@ Bug Fixes
 * SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
   (Erick Erickson via hossman)
 
-* SOLR-2307: fix bug in PHPSerializedResponseWriter (wt=phps) when
-  dealing with SolrDocumentList objects -- ie: sharded queries.
-  (Antonio Verni via hossman)
-  
-* SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
-  (Ephraim Ofir, Mark Miller)
 
 Other Changes
 ----------------------
@@ -187,6 +180,7 @@ Documentation
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
+
 
 ==================  3.1.0-dev ==================
 Versions of Major Components
@@ -239,6 +233,19 @@ Upgrading from Solr 1.4
 
 * readercycle script was removed. (SOLR-2046)
 
+* In previous releases, sorting or evaluating function queries on 
+  fields that were "multiValued" (either by explicit declaration in
+  schema.xml or by implict behavior because the "version" attribute on
+  the schema was less then 1.2) did not generally work, but it would
+  sometimes silently act as if it succeeded and order the docs
+  arbitrarily.  Solr will now fail on any attempt to sort, or apply a
+  function to, multi-valued fields 
+
+* The DataImportHandler jars are no longer included in the solr
+  WAR and should be added in Solr's lib directory, or referenced
+  via the <lib> directive in solrconfig.xml.
+
+
 Detailed Change List
 ----------------------
 
@@ -254,7 +261,7 @@ New Features
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,
   fielded queries, improved proximity boosting, and improved stopword
-  handling. (yonik)
+  handling. Note: status is experimental for now. (yonik)
 
 * SOLR-1574: Add many new functions from java Math (e.g. sin, cos) (yonik)
 
@@ -393,7 +400,6 @@ New Features
   	     http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial. 
 	     Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers)
 
-
 * SOLR-2128: Full parameter substitution for function queries.
   Example: q=add($v1,$v2)&v1=mul(popularity,5)&v2=20.0
   (yonik)
@@ -413,6 +419,15 @@ New Features
 
 * SOLR-2129: Added a Solr module for dynamic metadata extraction/indexing with Apache UIMA.
   See contrib/uima/README.txt for more information.  (Tommaso Teofili via rmuir)
+
+* SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
+
+* SOLR-2263: Add ability for RawResponseWriter to stream binary files as well as
+  text files.  (Eric Pugh via yonik)
+
+* SOLR-860: Add debug output for MoreLikeThis. (koji)
+
+* SOLR-1057: Add PathHierarchyTokenizerFactory. (ryan, koji)
 
 Optimizations
 ----------------------
@@ -511,7 +526,8 @@ Bug Fixes
 * SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
   could halt the streaming of documents. The original patch to fix this
   (never officially released) introduced another hanging bug due to
-  connections not being released.  (Attila Babo, Erik Hetzner via yonik)
+  connections not being released.
+  (Attila Babo, Erik Hetzner, Johannes Tuchscherer via yonik)
   
 * SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
   retrieved from ContentStreams are not closed in various places, resulting
@@ -635,6 +651,48 @@ Bug Fixes
 * SOLR-2261: fix velocity template layout.vm that referred to an older
   version of jquery.  (Eric Pugh via rmuir)
 
+* SOLR-2307: fix bug in PHPSerializedResponseWriter (wt=phps) when
+  dealing with SolrDocumentList objects -- ie: sharded queries.
+  (Antonio Verni via hossman)
+
+* SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
+  (Ephraim Ofir, Mark Miller)
+
+* SOLR-2320: Fixed ReplicationHandler detail reporting for masters
+  (hossman)
+
+* SOLR-482: Provide more exception handling in CSVLoader (gsingers)
+
+* SOLR-1283: HTMLStripCharFilter sometimes threw a "Mark Invalid" exception. 
+  (Julien Coloos, hossman, yonik)
+
+* SOLR-2085: Improve SolrJ behavior when FacetComponent comes before
+  QueryComponent (Tomas Salfischberger via hossman)
+
+* SOLR-1940: Fix SolrDispatchFilter behavior when Content-Type is
+  unknown (Lance Norskog and hossman)
+
+* SOLR-1983: snappuller fails when modifiedConfFiles is not empty and
+  full copy of index is needed. (Alexander Kanarsky via yonik)
+
+* SOLR-2156: SnapPuller fails to clean Old Index Directories on Full Copy
+  (Jayendra Patil via yonik)
+
+* SOLR-96: Fix XML parsing in XMLUpdateRequestHandler and
+  DocumentAnalysisRequestHandler to respect charset from XML file and only
+  use HTTP header's "Content-Type" as a "hint". (Uwe Schindler)
+
+* SOLR-2339: Fix sorting to explicitly generate an error if you
+  attempt to sort on a multiValued field. (hossman)
+
+* SOLR-2348: Fix field types to explicitly generate an error if you
+  attempt to get a ValueSource for a multiValued field. (hossman)
+
+* SOLR-1191: resolve DataImportHandler deltaQuery column against pk when pk
+  has a prefix (e.g. pk="book.id" deltaQuery="select id from ..."). More
+  useful error reporting when no match found (previously failed with a
+  NullPointerException in log and no clear user feedback). (gthb via yonik)
+
 
 Other Changes
 ----------------------
@@ -728,6 +786,18 @@ Other Changes
   
 * SOLR-2213: Upgrade to jQuery 1.4.3 (Erick Erickson via ryan)
 
+* SOLR-1826: Add unit tests for highlighting with termOffsets=true
+  and overlapping tokens. (Stefan Oestreicher via rmuir)
+
+* SOLR-2340: Add version infos to message in JavaBinCodec when throwing
+  exception. (koji)
+
+* SOLR-2350: Since Solr no longer requires XML files to be in UTF-8
+  (see SOLR-96) SimplePostTool (aka: post.jar) has been improved to
+  work with files of any mime-type or charset. (hossman)
+
+* SOLR-2365: Move DIH jars out of solr.war (David Smiley via yonik)
+
 
 Build
 ----------------------
@@ -743,7 +813,6 @@ Build
 
 * LUCENE-2657: Switch from using Maven POM templates to full POMs when
   generating Maven artifacts (Steven Rowe)
-
 
 Documentation
 ----------------------
@@ -862,8 +931,7 @@ New Features
  7. SOLR-680: Add StatsComponent. This gets simple statistics on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
-    7.1 SOLR-1380: Added support for multi-valued fields to stats component
-        (Harish Agarwal via gsingers)
+    7.1 SOLR-1380: Added support for multi-valued fields (Harish Agarwal via gsingers)
 
  8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
     as well as configuration replication and exposes detailed statistics and progress information

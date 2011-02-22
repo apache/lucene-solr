@@ -32,41 +32,51 @@ public class StrFieldSource extends FieldCacheSource {
     super(field);
   }
 
+  @Override
   public String description() {
     return "str(" + field + ')';
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new StringIndexDocValues(this, readerContext, field) {
+      @Override
       protected String toTerm(String readableValue) {
         return readableValue;
       }
 
+      @Override
       public float floatVal(int doc) {
         return (float)intVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         int ord=termsIndex.getOrd(doc);
         return ord;
       }
 
+      @Override
       public long longVal(int doc) {
         return (long)intVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return (double)intVal(doc);
       }
 
+      @Override
       public int ordVal(int doc) {
         return termsIndex.getOrd(doc);
       }
 
+      @Override
       public int numOrd() {
         return termsIndex.numOrd();
       }
 
+      @Override
       public String strVal(int doc) {
         int ord=termsIndex.getOrd(doc);
         if (ord == 0) {
@@ -76,18 +86,21 @@ public class StrFieldSource extends FieldCacheSource {
         }
       }
 
+      @Override
       public String toString(int doc) {
         return description() + '=' + strVal(doc);
       }
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     return o instanceof StrFieldSource
             && super.equals(o);
   }
 
   private static int hcode = SortableFloatFieldSource.class.hashCode();
+  @Override
   public int hashCode() {
     return hcode + super.hashCode();
   };

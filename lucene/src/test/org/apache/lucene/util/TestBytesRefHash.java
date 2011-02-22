@@ -40,6 +40,7 @@ public class TestBytesRefHash extends LuceneTestCase {
   
   /**
    */
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

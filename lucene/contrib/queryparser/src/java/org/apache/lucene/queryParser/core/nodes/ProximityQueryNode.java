@@ -33,8 +33,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class ProximityQueryNode extends BooleanQueryNode {
 
-  private static final long serialVersionUID = 9018220596680832916L;
-
   public enum Type {
     PARAGRAPH {
       @Override

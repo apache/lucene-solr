@@ -56,7 +56,7 @@
 	  <pathelement path="target/classes" />
   	<pathelement path="target/test-classes" />
     <pathelement location="${solr-path}/build/tests"/> <!-- include solr test code -->
-    <pathelement location="${solr-path}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${solr-path}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 
@@ -68,7 +68,7 @@
   	<pathelement path="target/test-classes" />
   	<pathelement path="target/extras/test-classes" />
     <pathelement location="${solr-path}/build/tests"/> <!-- include solr test code -->
-    <pathelement location="${solr-path}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
+    <pathelement location="${solr-path}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 	
@@ -276,7 +276,7 @@
   		<fileset dir="src/main/webapp" includes="**" />
   	</copy>
   	<mkdir dir="../../build/web/WEB-INF/lib"/>
-  	<copy file="target/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"></copy>
+  	<!--<copy file="target/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"></copy>-->
   	<copy file="target/${fullnamever}.jar" todir="${solr-path}/dist"></copy>
   	<copy file="target/apache-${ant.project.name}-extras-${version}.jar" todir="${solr-path}/dist"></copy>
   </target>

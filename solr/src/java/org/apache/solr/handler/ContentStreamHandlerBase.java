@@ -32,6 +32,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
  **/
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     UpdateRequestProcessorChain processorChain =

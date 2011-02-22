@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ public class EntityProcessorBase extends EntityProcessor {
   protected String onError = ABORT;
 
 
+  @Override
   public void init(Context context) {
     rowIterator = null;
     this.context = context;
@@ -78,7 +80,7 @@ public class EntityProcessorBase extends EntityProcessor {
       rowIterator = null;
       return null;
     } catch (Exception e) {
-      log.error("getNext() failed for query '" + query + "'", e);
+      SolrException.log(log, "getNext() failed for query '" + query + "'", e);
       query = null;
       rowIterator = null;
       wrapAndThrow(DataImportHandlerException.WARN, e);
@@ -86,14 +88,17 @@ public class EntityProcessorBase extends EntityProcessor {
     }
   }
 
+  @Override
   public Map<String, Object> nextModifiedRowKey() {
     return null;
   }
 
+  @Override
   public Map<String, Object> nextDeletedRowKey() {
     return null;
   }
 
+  @Override
   public Map<String, Object> nextModifiedParentRowKey() {
     return null;
   }
@@ -105,11 +110,13 @@ public class EntityProcessorBase extends EntityProcessor {
    * @return a row where the key is the name of the field and value can be any Object or a Collection of objects. Return
    *         null to signal end of rows
    */
+  @Override
   public Map<String, Object> nextRow() {
     return null;// do not do anything
   }
 
 
+  @Override
   public void destroy() {
     /*no op*/
   }

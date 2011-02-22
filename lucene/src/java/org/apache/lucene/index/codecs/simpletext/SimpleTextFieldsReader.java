@@ -129,6 +129,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       fstEnum = new BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(fst);
     }
 
+    @Override
     public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
 
       //System.out.println("seek to text=" + text.utf8ToString());

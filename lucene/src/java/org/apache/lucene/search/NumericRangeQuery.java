@@ -76,8 +76,6 @@ import org.apache.lucene.index.TermsEnum;
  * BooleanQuery rewrite methods without changing
  * BooleanQuery's default max clause count.
  *
- * @lucene.experimental
- *
  * <br><h3>How it works</h3>
  *
  * <p>See the publication about <a target="_blank" href="http://www.panfmp.org">panFMP</a>,
@@ -320,6 +318,9 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
   /** Returns the upper value of this range query */
   public T getMax() { return max; }
+  
+  /** Returns the precision step. */
+  public int getPrecisionStep() { return precisionStep; }
   
   @Override
   public String toString(final String field) {

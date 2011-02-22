@@ -39,13 +39,6 @@
 	
   <import file="../../contrib-build.xml" />
 
-  <path id="test.classpath">
-    <path refid="classpath"/>
-    <pathelement location="../../../build/classes/test/"/>
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/java"/>
-  </path>
-
   <target name="get-je-jar" unless="je.jar.exists">
     <mkdir dir="lib" />
     <get src="http://download.oracle.com/maven/com/sleepycat/je/${je.version}/je-${je.version}.jar"

@@ -47,28 +47,37 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  */
 public class DateTools {
   
-  private final static TimeZone GMT = TimeZone.getTimeZone("GMT");
+  private static final class DateFormats {
+    final static TimeZone GMT = TimeZone.getTimeZone("GMT");
 
-  private static final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy", Locale.US);
-  private static final SimpleDateFormat MONTH_FORMAT = new SimpleDateFormat("yyyyMM", Locale.US);
-  private static final SimpleDateFormat DAY_FORMAT = new SimpleDateFormat("yyyyMMdd", Locale.US);
-  private static final SimpleDateFormat HOUR_FORMAT = new SimpleDateFormat("yyyyMMddHH", Locale.US);
-  private static final SimpleDateFormat MINUTE_FORMAT = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
-  private static final SimpleDateFormat SECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss", Locale.US);
-  private static final SimpleDateFormat MILLISECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
-  static {
-    // times need to be normalized so the value doesn't depend on the 
-    // location the index is created/used:
-    YEAR_FORMAT.setTimeZone(GMT);
-    MONTH_FORMAT.setTimeZone(GMT);
-    DAY_FORMAT.setTimeZone(GMT);
-    HOUR_FORMAT.setTimeZone(GMT);
-    MINUTE_FORMAT.setTimeZone(GMT);
-    SECOND_FORMAT.setTimeZone(GMT);
-    MILLISECOND_FORMAT.setTimeZone(GMT);
+    final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy", Locale.US);
+    final SimpleDateFormat MONTH_FORMAT = new SimpleDateFormat("yyyyMM", Locale.US);
+    final SimpleDateFormat DAY_FORMAT = new SimpleDateFormat("yyyyMMdd", Locale.US);
+    final SimpleDateFormat HOUR_FORMAT = new SimpleDateFormat("yyyyMMddHH", Locale.US);
+    final SimpleDateFormat MINUTE_FORMAT = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
+    final SimpleDateFormat SECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss", Locale.US);
+    final SimpleDateFormat MILLISECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
+    {
+      // times need to be normalized so the value doesn't depend on the 
+      // location the index is created/used:
+      YEAR_FORMAT.setTimeZone(GMT);
+      MONTH_FORMAT.setTimeZone(GMT);
+      DAY_FORMAT.setTimeZone(GMT);
+      HOUR_FORMAT.setTimeZone(GMT);
+      MINUTE_FORMAT.setTimeZone(GMT);
+      SECOND_FORMAT.setTimeZone(GMT);
+      MILLISECOND_FORMAT.setTimeZone(GMT);
+    }
+    
+    final Calendar calInstance = Calendar.getInstance(GMT, Locale.US);
   }
-
-  private static final Calendar calInstance = Calendar.getInstance(GMT);
+  
+  private static final ThreadLocal<DateFormats> FORMATS = new ThreadLocal<DateFormats>() {
+    @Override
+    protected DateFormats initialValue() {
+      return new DateFormats();
+    }
+  };
   
   // cannot create, the class has static methods only
   private DateTools() {}
@@ -82,7 +91,7 @@ public class DateTools {
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
    *  depending on <code>resolution</code>; using GMT as timezone 
    */
-  public static synchronized String dateToString(Date date, Resolution resolution) {
+  public static String dateToString(Date date, Resolution resolution) {
     return timeToString(date.getTime(), resolution);
   }
 
@@ -95,24 +104,20 @@ public class DateTools {
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
    *  depending on <code>resolution</code>; using GMT as timezone
    */
-  public static synchronized String timeToString(long time, Resolution resolution) {
-    calInstance.setTimeInMillis(round(time, resolution));
-    Date date = calInstance.getTime();
+  public static String timeToString(long time, Resolution resolution) {
+    final DateFormats formats = FORMATS.get();
     
-    if (resolution == Resolution.YEAR) {
-      return YEAR_FORMAT.format(date);
-    } else if (resolution == Resolution.MONTH) {
-      return MONTH_FORMAT.format(date);
-    } else if (resolution == Resolution.DAY) {
-      return DAY_FORMAT.format(date);
-    } else if (resolution == Resolution.HOUR) {
-      return HOUR_FORMAT.format(date);
-    } else if (resolution == Resolution.MINUTE) {
-      return MINUTE_FORMAT.format(date);
-    } else if (resolution == Resolution.SECOND) {
-      return SECOND_FORMAT.format(date);
-    } else if (resolution == Resolution.MILLISECOND) {
-      return MILLISECOND_FORMAT.format(date);
+    formats.calInstance.setTimeInMillis(round(time, resolution));
+    final Date date = formats.calInstance.getTime();
+    
+    switch (resolution) {
+      case YEAR: return formats.YEAR_FORMAT.format(date);
+      case MONTH:return formats.MONTH_FORMAT.format(date);
+      case DAY: return formats.DAY_FORMAT.format(date);
+      case HOUR: return formats.HOUR_FORMAT.format(date);
+      case MINUTE: return formats.MINUTE_FORMAT.format(date);
+      case SECOND: return formats.SECOND_FORMAT.format(date);
+      case MILLISECOND: return formats.MILLISECOND_FORMAT.format(date);
     }
     
     throw new IllegalArgumentException("unknown resolution " + resolution);
@@ -128,7 +133,7 @@ public class DateTools {
    * @throws ParseException if <code>dateString</code> is not in the 
    *  expected format 
    */
-  public static synchronized long stringToTime(String dateString) throws ParseException {
+  public static long stringToTime(String dateString) throws ParseException {
     return stringToDate(dateString).getTime();
   }
 
@@ -142,21 +147,23 @@ public class DateTools {
    * @throws ParseException if <code>dateString</code> is not in the 
    *  expected format 
    */
-  public static synchronized Date stringToDate(String dateString) throws ParseException {
+  public static Date stringToDate(String dateString) throws ParseException {
+    final DateFormats formats = FORMATS.get();
+    
     if (dateString.length() == 4) {
-      return YEAR_FORMAT.parse(dateString);
+      return formats.YEAR_FORMAT.parse(dateString);
     } else if (dateString.length() == 6) {
-      return MONTH_FORMAT.parse(dateString);
+      return formats.MONTH_FORMAT.parse(dateString);
     } else if (dateString.length() == 8) {
-      return DAY_FORMAT.parse(dateString);
+      return formats.DAY_FORMAT.parse(dateString);
     } else if (dateString.length() == 10) {
-      return HOUR_FORMAT.parse(dateString);
+      return formats.HOUR_FORMAT.parse(dateString);
     } else if (dateString.length() == 12) {
-      return MINUTE_FORMAT.parse(dateString);
+      return formats.MINUTE_FORMAT.parse(dateString);
     } else if (dateString.length() == 14) {
-      return SECOND_FORMAT.parse(dateString);
+      return formats.SECOND_FORMAT.parse(dateString);
     } else if (dateString.length() == 17) {
-      return MILLISECOND_FORMAT.parse(dateString);
+      return formats.MILLISECOND_FORMAT.parse(dateString);
     }
     throw new ParseException("Input is not valid date string: " + dateString, 0);
   }
@@ -170,7 +177,7 @@ public class DateTools {
    * @return the date with all values more precise than <code>resolution</code>
    *  set to 0 or 1
    */
-  public static synchronized Date round(Date date, Resolution resolution) {
+  public static Date round(Date date, Resolution resolution) {
     return new Date(round(date.getTime(), resolution));
   }
   
@@ -184,67 +191,63 @@ public class DateTools {
    * @return the date with all values more precise than <code>resolution</code>
    *  set to 0 or 1, expressed as milliseconds since January 1, 1970, 00:00:00 GMT
    */
-  public static synchronized long round(long time, Resolution resolution) {
+  public static long round(long time, Resolution resolution) {
+    final Calendar calInstance = FORMATS.get().calInstance;
     calInstance.setTimeInMillis(time);
     
-    if (resolution == Resolution.YEAR) {
-      calInstance.set(Calendar.MONTH, 0);
-      calInstance.set(Calendar.DAY_OF_MONTH, 1);
-      calInstance.set(Calendar.HOUR_OF_DAY, 0);
-      calInstance.set(Calendar.MINUTE, 0);
-      calInstance.set(Calendar.SECOND, 0);
-      calInstance.set(Calendar.MILLISECOND, 0);
-    } else if (resolution == Resolution.MONTH) {
-      calInstance.set(Calendar.DAY_OF_MONTH, 1);
-      calInstance.set(Calendar.HOUR_OF_DAY, 0);
-      calInstance.set(Calendar.MINUTE, 0);
-      calInstance.set(Calendar.SECOND, 0);
-      calInstance.set(Calendar.MILLISECOND, 0);
-    } else if (resolution == Resolution.DAY) {
-      calInstance.set(Calendar.HOUR_OF_DAY, 0);
-      calInstance.set(Calendar.MINUTE, 0);
-      calInstance.set(Calendar.SECOND, 0);
-      calInstance.set(Calendar.MILLISECOND, 0);
-    } else if (resolution == Resolution.HOUR) {
-      calInstance.set(Calendar.MINUTE, 0);
-      calInstance.set(Calendar.SECOND, 0);
-      calInstance.set(Calendar.MILLISECOND, 0);
-    } else if (resolution == Resolution.MINUTE) {
-      calInstance.set(Calendar.SECOND, 0);
-      calInstance.set(Calendar.MILLISECOND, 0);
-    } else if (resolution == Resolution.SECOND) {
-      calInstance.set(Calendar.MILLISECOND, 0);
-    } else if (resolution == Resolution.MILLISECOND) {
-      // don't cut off anything
-    } else {
-      throw new IllegalArgumentException("unknown resolution " + resolution);
+    switch (resolution) {
+      case YEAR:
+        calInstance.set(Calendar.MONTH, 0);
+        calInstance.set(Calendar.DAY_OF_MONTH, 1);
+        calInstance.set(Calendar.HOUR_OF_DAY, 0);
+        calInstance.set(Calendar.MINUTE, 0);
+        calInstance.set(Calendar.SECOND, 0);
+        calInstance.set(Calendar.MILLISECOND, 0);
+        break;
+      case MONTH:
+        calInstance.set(Calendar.DAY_OF_MONTH, 1);
+        calInstance.set(Calendar.HOUR_OF_DAY, 0);
+        calInstance.set(Calendar.MINUTE, 0);
+        calInstance.set(Calendar.SECOND, 0);
+        calInstance.set(Calendar.MILLISECOND, 0);
+        break;
+      case DAY:
+        calInstance.set(Calendar.HOUR_OF_DAY, 0);
+        calInstance.set(Calendar.MINUTE, 0);
+        calInstance.set(Calendar.SECOND, 0);
+        calInstance.set(Calendar.MILLISECOND, 0);
+        break;
+      case HOUR:
+        calInstance.set(Calendar.MINUTE, 0);
+        calInstance.set(Calendar.SECOND, 0);
+        calInstance.set(Calendar.MILLISECOND, 0);
+        break;
+      case MINUTE:
+        calInstance.set(Calendar.SECOND, 0);
+        calInstance.set(Calendar.MILLISECOND, 0);
+        break;
+      case SECOND:
+        calInstance.set(Calendar.MILLISECOND, 0);
+        break;
+      case MILLISECOND:
+        // don't cut off anything
+        break;
+      default:
+        throw new IllegalArgumentException("unknown resolution " + resolution);
     }
     return calInstance.getTimeInMillis();
   }
 
   /** Specifies the time granularity. */
-  public static class Resolution {
+  public static enum Resolution {
     
-    public static final Resolution YEAR = new Resolution("year");
-    public static final Resolution MONTH = new Resolution("month");
-    public static final Resolution DAY = new Resolution("day");
-    public static final Resolution HOUR = new Resolution("hour");
-    public static final Resolution MINUTE = new Resolution("minute");
-    public static final Resolution SECOND = new Resolution("second");
-    public static final Resolution MILLISECOND = new Resolution("millisecond");
+    YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, MILLISECOND;
 
-    private String resolution;
-
-    private Resolution() {
-    }
-    
-    private Resolution(String resolution) {
-      this.resolution = resolution;
-    }
-    
+    /** this method returns the name of the resolution
+     * in lowercase (for backwards compatibility) */
     @Override
     public String toString() {
-      return resolution;
+      return super.toString().toLowerCase(Locale.ENGLISH);
     }
 
   }

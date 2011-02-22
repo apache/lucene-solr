@@ -99,7 +99,9 @@ public class OrdFieldSource extends ValueSource {
   /*(non-Javadoc) @see java.lang.Object#equals(java.lang.Object) */
   @Override
   public boolean equals(Object o) {
-    if (o.getClass() !=  OrdFieldSource.class) return false;
+    if (o == this) return true;
+    if (o == null) return false;
+    if (o.getClass() != OrdFieldSource.class) return false;
     OrdFieldSource other = (OrdFieldSource)o;
     return this.field.equals(other.field);
   }

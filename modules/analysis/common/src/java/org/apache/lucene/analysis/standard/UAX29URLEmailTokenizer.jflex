@@ -77,6 +77,8 @@ ComplexContext = ([\p{LB:Complex_Context}] | {ComplexContextSupp})
 Han = ([\p{Script:Han}] | {HanSupp})
 Hiragana = ([\p{Script:Hiragana}] | {HiraganaSupp})
 
+// Script=Hangul & Aletter
+HangulEx       = (!(!\p{Script:Hangul}|!\p{WB:ALetter})) ({Format} | {Extend})*
 // UAX#29 WB4. X (Extend | Format)* --> X
 //
 ALetterEx      = {ALetter}                     ({Format} | {Extend})*
@@ -168,16 +170,16 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 
 %{
   /** Alphanumeric sequences */
-  public static final String WORD_TYPE = "<ALPHANUM>";
+  public static final String WORD_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ALPHANUM];
   
   /** Numbers */
-  public static final String NUMERIC_TYPE = "<NUM>";
+  public static final String NUMERIC_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.NUM];
   
   /** URLs with scheme: HTTP(S), FTP, or FILE; no-scheme URLs match HTTP syntax */
   public static final String URL_TYPE = "<URL>";
   
   /** E-mail addresses */
-  public static final String EMAIL_TYPE = "<EMAIL";
+  public static final String EMAIL_TYPE = "<EMAIL>";
   
   /**
    * Chars in class \p{Line_Break = Complex_Context} are from South East Asian
@@ -187,12 +189,16 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
    * <p>
    * See Unicode Line Breaking Algorithm: http://www.unicode.org/reports/tr14/#SA
    */
-  public static final String SOUTH_EAST_ASIAN_TYPE = "<SOUTHEAST_ASIAN>";
+  public static final String SOUTH_EAST_ASIAN_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.SOUTHEAST_ASIAN];
   
-  public static final String IDEOGRAPHIC_TYPE = "<IDEOGRAPHIC>";
+  public static final String IDEOGRAPHIC_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.IDEOGRAPHIC];
   
-  public static final String HIRAGANA_TYPE = "<HIRAGANA>";
+  public static final String HIRAGANA_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HIRAGANA];
   
+  public static final String KATAKANA_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.KATAKANA];
+
+  public static final String HANGUL_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HANGUL];
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncrAtt 
@@ -316,6 +322,12 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 {ExtendNumLetEx}* 
   { if (populateAttributes(NUMERIC_TYPE)) return true; }
 
+// subset of the below for typing purposes only!
+{HangulEx}+
+  { if (populateAttributes(HANGUL_TYPE)) return true; }
+
+{KatakanaEx}+
+  { if (populateAttributes(KATAKANA_TYPE)) return true; }
 
 // UAX#29 WB5.   ALetter × ALetter
 //        WB6.   ALetter × (MidLetter | MidNumLet) ALetter

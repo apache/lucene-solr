@@ -232,7 +232,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     // Copied from StandardRequestHandler... perhaps it should be added to doStandardDebug?
     if (dbg == true) {
       try {
-        NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.mltquery, mltDocs.docList, dbgQuery, dbgResults);
+        NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
         if (null != dbgInfo) {
           if (null != filters) {
             dbgInfo.add("filter_queries",req.getParams().getParams(CommonParams.FQ));
@@ -279,8 +279,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     final boolean needDocSet;
     Map<String,Float> boostFields;
     
-    Query mltquery;  // expose this for debugging
-    
     public MoreLikeThisHelper( SolrParams params, SolrIndexSearcher searcher )
     {
       this.searcher = searcher;
@@ -310,9 +308,26 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       boostFields = SolrPluginUtils.parseFieldBoosts(params.getParams(MoreLikeThisParams.QF));
     }
     
-    private void setBoosts(Query mltquery) {
+    private Query rawMLTQuery;
+    private Query boostedMLTQuery;
+    private BooleanQuery realMLTQuery;
+    
+    public Query getRawMLTQuery(){
+      return rawMLTQuery;
+    }
+    
+    public Query getBoostedMLTQuery(){
+      return boostedMLTQuery;
+    }
+    
+    public Query getRealMLTQuery(){
+      return realMLTQuery;
+    }
+    
+    private Query getBoostedQuery(Query mltquery) {
+      BooleanQuery boostedQuery = (BooleanQuery)mltquery.clone();
       if (boostFields.size() > 0) {
-        List clauses = ((BooleanQuery)mltquery).clauses();
+        List clauses = boostedQuery.clauses();
         for( Object o : clauses ) {
           TermQuery q = (TermQuery)((BooleanClause)o).getQuery();
           Float b = this.boostFields.get(q.getTerm().field());
@@ -321,49 +336,51 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           }
         }
       }
+      return boostedQuery;
     }
     
     public DocListAndSet getMoreLikeThis( int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
       Document doc = reader.document(id);
-      mltquery = mlt.like(id);
-      setBoosts(mltquery);
+      rawMLTQuery = mlt.like(id);
+      boostedMLTQuery = getBoostedQuery( rawMLTQuery );
       if( terms != null ) {
-        fillInterestingTermsFromMLTQuery( mltquery, terms );
+        fillInterestingTermsFromMLTQuery( rawMLTQuery, terms );
       }
 
       // exclude current document from results
-      BooleanQuery mltQuery = new BooleanQuery();
-      mltQuery.add(mltquery, BooleanClause.Occur.MUST);
-      mltQuery.add(
+      realMLTQuery = new BooleanQuery();
+      realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
+      realMLTQuery.add(
           new TermQuery(new Term(uniqueKeyField.getName(), uniqueKeyField.getType().storedToIndexed(doc.getFieldable(uniqueKeyField.getName())))), 
             BooleanClause.Occur.MUST_NOT);
       
       DocListAndSet results = new DocListAndSet();
       if (this.needDocSet) {
-        results = searcher.getDocListAndSet(mltQuery, filters, null, start, rows, flags);
+        results = searcher.getDocListAndSet(realMLTQuery, filters, null, start, rows, flags);
       } else {
-        results.docList = searcher.getDocList(mltQuery, filters, null, start, rows, flags);
+        results.docList = searcher.getDocList(realMLTQuery, filters, null, start, rows, flags);
       }
       return results;
     }
 
     public DocListAndSet getMoreLikeThis( Reader reader, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
-      mltquery = mlt.like(reader);
-      setBoosts(mltquery);
+      rawMLTQuery = mlt.like(reader);
+      boostedMLTQuery = getBoostedQuery( rawMLTQuery );
       if( terms != null ) {
-        fillInterestingTermsFromMLTQuery( mltquery, terms );
+        fillInterestingTermsFromMLTQuery( boostedMLTQuery, terms );
       }
       DocListAndSet results = new DocListAndSet();
       if (this.needDocSet) {
-        results = searcher.getDocListAndSet(mltquery, filters, null, start, rows, flags);
+        results = searcher.getDocListAndSet( boostedMLTQuery, filters, null, start, rows, flags);
       } else {
-        results.docList = searcher.getDocList(mltquery, filters, null, start, rows, flags);
+        results.docList = searcher.getDocList( boostedMLTQuery, filters, null, start, rows, flags);
       }
       return results;
     }
-    
+
+    @Deprecated
     public NamedList<DocList> getMoreLikeThese( DocList docs, int rows, int flags ) throws IOException
     {
       IndexSchema schema = searcher.getSchema();
@@ -382,7 +399,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     
     private void fillInterestingTermsFromMLTQuery( Query query, List<InterestingTerm> terms )
     { 
-      List clauses = ((BooleanQuery)mltquery).clauses();
+      List clauses = ((BooleanQuery)query).clauses();
       for( Object o : clauses ) {
         TermQuery q = (TermQuery)((BooleanClause)o).getQuery();
         InterestingTerm it = new InterestingTerm();

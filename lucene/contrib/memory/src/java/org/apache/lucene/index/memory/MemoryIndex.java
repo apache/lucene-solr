@@ -18,13 +18,13 @@ package org.apache.lucene.index.memory;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -185,7 +185,7 @@ import org.apache.lucene.util.Constants; // for javadocs
  * hprof tracing </a>).
  *
  */
-public class MemoryIndex implements Serializable {
+public class MemoryIndex {
 
   /** info for each field: Map<String fieldName, Info field> */
   private final HashMap<String,Info> fields = new HashMap<String,Info>();
@@ -198,8 +198,6 @@ public class MemoryIndex implements Serializable {
   
   /** Could be made configurable; See {@link Document#setBoost(float)} */
   private static final float docBoost = 1.0f;
-  
-  private static final long serialVersionUID = 2782195016849084649L;
 
   private static final boolean DEBUG = false;
   
@@ -588,7 +586,7 @@ public class MemoryIndex implements Serializable {
    * Index data structure for a field; Contains the tokenized term texts and
    * their positions.
    */
-  private static final class Info implements Serializable {
+  private static final class Info {
     
     /**
      * Term strings and their positions for this field: Map <String
@@ -612,8 +610,6 @@ public class MemoryIndex implements Serializable {
     public transient Term template;
 
     private final long sumTotalTermFreq;
-
-    private static final long serialVersionUID = 2882195016849084649L;  
 
     public Info(HashMap<BytesRef,ArrayIntList> terms, int numTokens, int numOverlapTokens, float boost) {
       this.terms = terms;
@@ -667,12 +663,10 @@ public class MemoryIndex implements Serializable {
    * Efficient resizable auto-expanding list holding <code>int</code> elements;
    * implemented with arrays.
    */
-  private static final class ArrayIntList implements Serializable {
+  private static final class ArrayIntList {
 
     private int[] elements;
     private int size = 0;
-    
-    private static final long serialVersionUID = 2282195016849084649L;  
       
     public ArrayIntList() {
       this(10);
@@ -758,6 +752,7 @@ public class MemoryIndex implements Serializable {
     
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
+      readerFinishedListeners = Collections.synchronizedSet(new HashSet<ReaderFinishedListener>());
     }
     
     private Info getInfo(String fieldName) {
@@ -1195,7 +1190,7 @@ public class MemoryIndex implements Serializable {
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
-        float n = fieldSim.computeNorm(fieldName, invertState);
+        float n = fieldSim.computeNorm(invertState);
         byte norm = fieldSim.encodeNormValue(n);
         norms = new byte[] {norm};
         

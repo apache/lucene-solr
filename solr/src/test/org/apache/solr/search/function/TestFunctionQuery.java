@@ -299,7 +299,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     state.setBoost(1.0f);
     state.setLength(4);
     assertQ(req("fl","*,score","q", "{!func}norm(a_t)", "fq","id:2"),
-        "//float[@name='score']='" + similarity.computeNorm("a_t",state)  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
+        "//float[@name='score']='" + similarity.computeNorm(state)  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
 
     // test that ord and rord are working on a global index basis, not just
     // at the segment level (since Lucene 2.9 has switched to per-segment searching)
@@ -498,6 +498,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     dofunc("deg(.5)", Math.toDegrees(.5));
     dofunc("sqrt(9)", Math.sqrt(9));
     dofunc("cbrt(8)", Math.cbrt(8));
+    dofunc("max(0,1)", Math.max(0,1));
+    dofunc("min(0,1)", Math.min(0,1));
     dofunc("log(100)", Math.log10(100));
     dofunc("ln(3)", Math.log(3));
     dofunc("exp(1)", Math.exp(1));

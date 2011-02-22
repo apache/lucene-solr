@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.icu.tokenattributes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
@@ -29,7 +27,7 @@ import com.ibm.icu.lang.UScript;
  * as an integer.
  * @lucene.experimental
  */
-public class ScriptAttributeImpl extends AttributeImpl implements ScriptAttribute, Cloneable, Serializable {
+public class ScriptAttributeImpl extends AttributeImpl implements ScriptAttribute, Cloneable {
   private int code = UScript.COMMON;
   
   public int getCode() {

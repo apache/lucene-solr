@@ -18,7 +18,6 @@ package org.apache.lucene.search.cache;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -27,7 +26,7 @@ import org.apache.lucene.index.IndexReader;
  * 
  * @lucene.experimental
  */
-public abstract class EntryCreator<T> implements Serializable
+public abstract class EntryCreator<T>
 {
   public abstract T create( IndexReader reader ) throws IOException;
   public abstract T validate( T entry, IndexReader reader ) throws IOException;
@@ -58,6 +57,7 @@ public abstract class EntryCreator<T> implements Serializable
   // This can be removed
   //------------------------------------------------------------------------
 
+  @Override
   public boolean equals(Object obj) {
     if( obj instanceof EntryCreator ) {
       return getCacheKey().equals( ((EntryCreator)obj).getCacheKey() );

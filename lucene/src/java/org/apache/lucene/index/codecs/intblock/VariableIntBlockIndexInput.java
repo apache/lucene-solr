@@ -171,40 +171,22 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     @Override
     public void read(final DataInput indexIn, final boolean absolute) throws IOException {
       if (absolute) {
+        upto = indexIn.readVInt();
         fp = indexIn.readVLong();
-        upto = indexIn.readByte()&0xFF;
       } else {
-        final long delta = indexIn.readVLong();
-        if (delta == 0) {
+        final int uptoDelta = indexIn.readVInt();
+        if ((uptoDelta & 1) == 1) {
           // same block
-          upto = indexIn.readByte()&0xFF;
+          upto += uptoDelta >>> 1;
         } else {
           // new block
-          fp += delta;
-          upto = indexIn.readByte()&0xFF;
+          upto = uptoDelta >>> 1;
+          fp += indexIn.readVLong();
         }
       }
       // TODO: we can't do this assert because non-causal
       // int encoders can have upto over the buffer size
       //assert upto < maxBlockSize: "upto=" + upto + " max=" + maxBlockSize;
-    }
-
-    @Override
-    public void read(final IntIndexInput.Reader indexIn, final boolean absolute) throws IOException {
-      if (absolute) {
-        fp = indexIn.readVLong();
-        upto = indexIn.next()&0xFF;
-      } else {
-        final long delta = indexIn.readVLong();
-        if (delta == 0) {
-          // same block
-          upto = indexIn.next()&0xFF;
-        } else {
-          // new block
-          fp += delta;
-          upto = indexIn.next()&0xFF;
-        }
-      }
     }
 
     @Override

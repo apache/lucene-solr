@@ -217,6 +217,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         .create(shardsPath + "/" + zkNodeName, bytes, CreateMode.PERSISTENT);
   }
   
+  @Override
   public void tearDown() throws Exception {
     SolrConfig.severeErrors.clear();
     super.tearDown();

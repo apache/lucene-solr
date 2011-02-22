@@ -42,7 +42,7 @@ public class TestNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     @Override
-    public float computeNorm(String fieldName, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       // Disable length norm
       return state.getBoost();
     }
@@ -152,7 +152,7 @@ public class TestNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newInOrderLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
@@ -197,7 +197,7 @@ public class TestNorms extends LuceneTestCase {
   private void addDocs(Random random, Directory dir, int ndocs, boolean compound) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newInOrderLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
@@ -252,7 +252,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public float computeNorm(String field, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       return (float) state.getLength();
     }
   }

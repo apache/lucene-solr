@@ -300,15 +300,17 @@ public class SnapPuller {
         isFullCopyNeeded = true;
       successfulInstall = false;
       boolean deleteTmpIdxDir = true;
+      File indexDir = null ;
       try {
-        File indexDir = new File(core.getIndexDir());
+        indexDir = new File(core.getIndexDir());
         downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestVersion);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
         if (!modifiedConfFiles.isEmpty()) {
           downloadConfFiles(confFilesToDownload, latestVersion);
           if (isFullCopyNeeded) {
-            modifyIndexProps(tmpIndexDir.getName());
+            successfulInstall = modifyIndexProps(tmpIndexDir.getName());
+            deleteTmpIdxDir =  false;
           } else {
             successfulInstall = copyIndexFiles(tmpIndexDir, indexDir);
           }
@@ -339,7 +341,8 @@ public class SnapPuller {
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       } finally {
-        if(deleteTmpIdxDir) delTree(tmpIndexDir);
+        if (deleteTmpIdxDir) delTree(tmpIndexDir);
+        else delTree(indexDir);
       }
       return successfulInstall;
     } finally {
@@ -505,6 +508,7 @@ public class SnapPuller {
 
   private void reloadCore() {
     new Thread() {
+      @Override
       public void run() {
         try {
           solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());

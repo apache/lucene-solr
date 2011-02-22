@@ -34,36 +34,43 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
 
   AtomicInteger initCounter = new AtomicInteger(0);
 
+  @Override
   public void init(NamedList args) {
     initCounter.incrementAndGet();
     super.init(args);
   }
 
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     this.req = req;
     this.rsp = rsp;
   }
 
+  @Override
   public String getDescription() {
     String result = null;
     return result;
   }
 
+  @Override
   public String getSourceId() {
     String result = null;
     return result;
   }
 
+  @Override
   public String getSource() {
     String result = null;
     return result;
   }
 
+  @Override
   public String getVersion() {
     String result = null;
     return result;
   }
 
+  @Override
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = super.getStatistics();
     lst.add("initCount", initCounter.intValue());

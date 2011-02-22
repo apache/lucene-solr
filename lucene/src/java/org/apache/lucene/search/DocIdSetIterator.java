@@ -78,10 +78,10 @@ public abstract class DocIdSetIterator {
    * 
    * Some implementations are considerably more efficient than that.
    * <p>
-   * <b>NOTE:</b> certain implementations may return a different value (each
-   * time) if called several times in a row with the same target.
+   * <b>NOTE:</b> when <code> target &le; current</code> implementations may opt 
+   * not to advance beyond their current {@link #docID()}.
    * <p>
-   * <b>NOTE:</b> this method may be called with {@value #NO_MORE_DOCS} for
+   * <b>NOTE:</b> this method may be called with {@link #NO_MORE_DOCS} for
    * efficiency by some Scorers. If your implementation cannot efficiently
    * determine that it should exhaust, it is recommended that you check for that
    * value in each call to this method.

@@ -79,7 +79,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
       // If this field has postings then add them to the
       // segment
-      fieldWriter.flush(consumer, state);
+      fieldWriter.flush(fieldInfo.name, consumer, state);
 
       TermsHashPerField perField = fieldWriter.termsHashPerField;
       assert termsHash == null || termsHash == perField.termsHash;

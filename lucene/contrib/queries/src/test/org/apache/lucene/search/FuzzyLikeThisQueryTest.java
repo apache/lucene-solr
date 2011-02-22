@@ -40,7 +40,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	public void setUp() throws Exception	{
 	  super.setUp();
 		directory = newDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
 		
 		//Add series of docs with misspelt names
 		addDoc(writer, "jonathon smythe","1");
@@ -51,7 +51,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 		addDoc(writer, "johnathon smythe","6");
 		reader = writer.getReader();
 		writer.close();
-		searcher=new IndexSearcher(reader);			
+		searcher=newSearcher(reader);			
 	}
 	
 	@Override

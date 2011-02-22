@@ -32,7 +32,7 @@ public final class FieldInfo {
   public boolean omitTermFreqAndPositions;
 
   public boolean storePayloads; // whether this field stores payloads together with term positions
-  int codecId = 0; // set inside SegmentCodecs#build() during segment flush - this is used to identify the codec used to write this field 
+  private int codecId = -1; // set inside SegmentCodecs#build() during segment flush - this is used to identify the codec used to write this field
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
@@ -57,10 +57,21 @@ public final class FieldInfo {
     }
   }
 
+  public void setCodecId(int codecId) {
+    assert this.codecId == -1 : "CodecId can only be set once.";
+    this.codecId = codecId;
+  }
+
+  public int getCodecId() {
+    return codecId;
+  }
+
   @Override
   public Object clone() {
-    return new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
+    FieldInfo clone = new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
                          storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+    clone.codecId = this.codecId;
+    return clone;
   }
 
   void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 

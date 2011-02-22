@@ -45,7 +45,9 @@ public class RubyResponseWriter implements QueryResponseWriter {
 
 class RubyWriter extends NaNFloatWriter {
 
+  @Override
   protected String getNaN() { return "(0.0/0.0)"; }
+  @Override
   protected String getInf() { return "(1.0/0.0)"; }
 
   public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {

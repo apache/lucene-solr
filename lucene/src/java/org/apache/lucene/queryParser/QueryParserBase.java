@@ -467,7 +467,14 @@ public abstract class QueryParserBase {
   /**
    * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field, String queryText, boolean quoted)  throws ParseException {
+  protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
+    return newFieldQuery(analyzer, field, queryText, quoted);
+  }
+  
+  /**
+   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   */
+  protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, boolean quoted)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 

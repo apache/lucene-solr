@@ -289,6 +289,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionDocumentsWriterInit() throws IOException {
     Directory dir = newDirectory();
     MockIndexWriter2 w = new MockIndexWriter2(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "a field", Field.Store.YES,
                       Field.Index.ANALYZED));
@@ -360,7 +361,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionOnMergeInit() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-      .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler());
+      .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(2);
     MockIndexWriter3 w = new MockIndexWriter3(dir, conf);
     w.doFail = true;
@@ -528,7 +529,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         System.out.println("TEST: cycle i=" + i);
       }
       MockDirectoryWrapper dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
       writer.setInfoStream(VERBOSE ? System.out : null);
 
       // don't allow a sudden merge to clean up the deleted
@@ -568,23 +569,24 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         System.out.println("TEST: open reader");
       }
       IndexReader reader = IndexReader.open(dir, true);
-      int expected = 3+(1-i)*2;
-      assertEquals(expected, reader.docFreq(new Term("contents", "here")));
-      assertEquals(expected, reader.maxDoc());
-      int numDel = 0;
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
-      assertNotNull(delDocs);
-      for(int j=0;j<reader.maxDoc();j++) {
-        if (delDocs.get(j))
-          numDel++;
-        else {
-          reader.document(j);
-          reader.getTermFreqVectors(j);
+      if (i == 0) { 
+        int expected = 5;
+        assertEquals(expected, reader.docFreq(new Term("contents", "here")));
+        assertEquals(expected, reader.maxDoc());
+        int numDel = 0;
+        final Bits delDocs = MultiFields.getDeletedDocs(reader);
+        assertNotNull(delDocs);
+        for(int j=0;j<reader.maxDoc();j++) {
+          if (delDocs.get(j))
+            numDel++;
+          else {
+            reader.document(j);
+            reader.getTermFreqVectors(j);
+          }
         }
+        assertEquals(1, numDel);
       }
       reader.close();
-
-      assertEquals(1, numDel);
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
           analyzer).setMaxBufferedDocs(10));
@@ -597,10 +599,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       writer.close();
 
       reader = IndexReader.open(dir, true);
-      expected = 19+(1-i)*2;
+      int expected = 19+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
-      numDel = 0;
+      int numDel = 0;
       assertNull(MultiFields.getDeletedDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
@@ -844,7 +846,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   public void testOptimizeExceptions() throws IOException {
     Directory startDir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2);
+    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(100);
     IndexWriter w = new IndexWriter(startDir, conf);
     for(int i=0;i<27;i++)
@@ -982,7 +984,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // latest segments file and make sure we get an
   // IOException trying to open the index:
   public void testSimulatedCorruptIndex1() throws IOException {
-      Directory dir = newDirectory();
+      MockDirectoryWrapper dir = newDirectory();
+      dir.setCheckIndexOnClose(false); // we are corrupting it!
 
       IndexWriter writer = null;
 
@@ -1029,8 +1032,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // files and make sure we get an IOException trying to
   // open the index:
   public void testSimulatedCorruptIndex2() throws IOException {
-      Directory dir = newDirectory();
-
+      MockDirectoryWrapper dir = newDirectory();
+      dir.setCheckIndexOnClose(false); // we are corrupting it!
       IndexWriter writer = null;
 
       writer  = new IndexWriter(

@@ -134,8 +134,6 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * values are returned as {@link String}s (according to
  * <code>toString(value)</code> of the used data type).
  *
- * @lucene.experimental
- *
  * @since 2.9
  */
 public final class NumericField extends AbstractField {
@@ -222,6 +220,11 @@ public final class NumericField extends AbstractField {
   /** Returns the current numeric value as a subclass of {@link Number}, <code>null</code> if not yet initialized. */
   public Number getNumericValue() {
     return (Number) fieldsData;
+  }
+  
+  /** Returns the precision step. */
+  public int getPrecisionStep() {
+    return numericTS.getPrecisionStep();
   }
   
   /**

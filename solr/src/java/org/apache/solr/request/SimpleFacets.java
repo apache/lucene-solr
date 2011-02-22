@@ -779,8 +779,9 @@ public class SimpleFacets {
    * SolrParams
    *
    * @see FacetParams#FACET_DATE
+   * @deprecated Use getFacetRangeCounts which is more generalized
    */
-
+  @Deprecated
   public NamedList<Object> getFacetDateCounts()
     throws IOException, ParseException {
 
@@ -802,6 +803,10 @@ public class SimpleFacets {
     return resOuter;
   }
 
+  /**
+   * @deprecated Use getFacetRangeCounts which is more generalized
+   */
+  @Deprecated
   public void getFacetDateCounts(String dateFacet, NamedList<Object> resOuter)
       throws IOException, ParseException {
 
@@ -1031,7 +1036,7 @@ public class SimpleFacets {
     
     final String f = sf.getName();
     final NamedList<Object> res = new SimpleOrderedMap<Object>();
-    final NamedList<Integer> counts = new SimpleOrderedMap<Integer>();
+    final NamedList<Integer> counts = new NamedList<Integer>();
     res.add("counts", counts);
 
     final T start = calc.getValue(required.getFieldParam(f,FacetParams.FACET_RANGE_START));
@@ -1158,6 +1163,10 @@ public class SimpleFacets {
     return searcher.numDocs(rangeQ ,base);
   }
 
+  /**
+   * @deprecated Use rangeCount(SchemaField,String,String,boolean,boolean) which is more generalized
+   */
+  @Deprecated
   protected int rangeCount(SchemaField sf, Date low, Date high,
                            boolean iLow, boolean iHigh) throws IOException {
     Query rangeQ = ((DateField)(sf.getType())).getRangeQuery(null, sf,low,high,iLow,iHigh);
@@ -1177,9 +1186,11 @@ public class SimpleFacets {
     }
     public K key;
     public V val;
+    @Override
     public int hashCode() {
       return key.hashCode() ^ val.hashCode();
     }
+    @Override
     public boolean equals(Object o) {
       if (! (o instanceof CountPair)) return false;
       CountPair<?,?> that = (CountPair<?,?>) o;
@@ -1290,9 +1301,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Float> {
 
     public FloatRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Float parseVal(String rawval) {
       return Float.valueOf(rawval);
     }
+    @Override
     public Float parseAndAddGap(Float value, String gap) {
       return new Float(value.floatValue() + Float.valueOf(gap).floatValue());
     }
@@ -1301,9 +1314,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Double> {
 
     public DoubleRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Double parseVal(String rawval) {
       return Double.valueOf(rawval);
     }
+    @Override
     public Double parseAndAddGap(Double value, String gap) {
       return new Double(value.floatValue() + Double.valueOf(gap).floatValue());
     }
@@ -1312,9 +1327,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Integer> {
 
     public IntegerRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Integer parseVal(String rawval) {
       return Integer.valueOf(rawval);
     }
+    @Override
     public Integer parseAndAddGap(Integer value, String gap) {
       return new Integer(value.intValue() + Integer.valueOf(gap).intValue());
     }
@@ -1323,9 +1340,11 @@ public class SimpleFacets {
     extends RangeEndpointCalculator<Long> {
 
     public LongRangeEndpointCalculator(final SchemaField f) { super(f); }
+    @Override
     protected Long parseVal(String rawval) {
       return Long.valueOf(rawval);
     }
+    @Override
     public Long parseAndAddGap(Long value, String gap) {
       return new Long(value.intValue() + Long.valueOf(gap).intValue());
     }
@@ -1342,15 +1361,19 @@ public class SimpleFacets {
           ("SchemaField must use filed type extending DateField");
       }
     }
+    @Override
     public String formatValue(Date val) {
       return ((DateField)field.getType()).toExternal(val);
     }
+    @Override
     protected Date parseVal(String rawval) {
       return ((DateField)field.getType()).parseMath(now, rawval);
     }
+    @Override
     protected Object parseGap(final String rawval) {
       return rawval;
     }
+    @Override
     public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
       final DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
       dmp.setNow(value);

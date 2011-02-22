@@ -46,6 +46,7 @@ class LuceneQueryOptimizer {
    */
   public LuceneQueryOptimizer(final int cacheSize, float threshold) {
     this.cache = new LinkedHashMap(cacheSize, 0.75f, true) {
+        @Override
         protected boolean removeEldestEntry(Map.Entry eldest) {
           return size() > cacheSize;              // limit size of cache
         }

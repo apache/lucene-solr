@@ -27,6 +27,7 @@ import java.util.Map;
 public class NumericPayloadTokenFilterFactory extends BaseTokenFilterFactory {
   private float payload;
   private String typeMatch;
+  @Override
   public void init(Map<String, String> args) {
     super.init(args);
     payload = Float.parseFloat(args.get("payload"));

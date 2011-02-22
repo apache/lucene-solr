@@ -133,6 +133,11 @@ public class CoreContainer
     if (zkRun == null && zookeeperHost == null)
         return;  // not in zk mode
 
+    // zookeeper in quorum mode currently causes a failure when trying to
+    // register log4j mbeans.  See SOLR-2369
+    // TODO: remove after updating to an slf4j based zookeeper
+    System.setProperty("zookeeper.jmx.log4j.disable", "true");
+
     zkServer = new SolrZkServer(zkRun, zookeeperHost, solrHome, hostPort);
     zkServer.parseConfig();
     zkServer.start();
@@ -232,7 +237,7 @@ public class CoreContainer
         cores.load(solrHome, fconf);
       } else {
         log.info("no solr.xml file found - using default");
-        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes()));
+        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes("UTF-8")));
         cores.configFile = fconf;
       }
       

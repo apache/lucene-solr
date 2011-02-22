@@ -40,14 +40,14 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   public void testQuery() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2));
+                                                               TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2).setMergePolicy(newInOrderLogMergePolicy()));
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);
     addDoc("three four", iw, 300f);
     iw.close();
 
     IndexReader ir = IndexReader.open(dir, false);
-    IndexSearcher is = new IndexSearcher(ir);
+    IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
 
     // assert with norms scoring turned off
@@ -93,7 +93,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(1, hits.length);
 
     // delete a document:
-    is.getIndexReader().deleteDocument(0);
+    ir.deleteDocument(0);
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
     assertEquals(2, hits.length);
     

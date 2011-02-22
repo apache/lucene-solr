@@ -29,8 +29,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
 public class ParametricRangeQueryNode extends QueryNodeImpl implements
     FieldableNode {
 
-  private static final long serialVersionUID = 7120958816535573935L;
-
   public ParametricRangeQueryNode(ParametricQueryNode lowerBound,
       ParametricQueryNode upperBound) {
 

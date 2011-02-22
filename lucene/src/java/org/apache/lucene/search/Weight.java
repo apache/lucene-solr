@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -54,7 +53,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
  * 
  * @since 2.9
  */
-public abstract class Weight implements Serializable {
+public abstract class Weight {
 
   /**
    * An explanation of the score computation for the named document.

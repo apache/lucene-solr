@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 public class MD5Signature extends Signature {
   protected final static Logger log = LoggerFactory.getLogger(MD5Signature.class);
   private static ThreadLocal<MessageDigest> DIGESTER_FACTORY = new ThreadLocal<MessageDigest>() {
+    @Override
     protected MessageDigest initialValue() {
       try {
         return MessageDigest.getInstance("MD5");
@@ -41,6 +42,7 @@ public class MD5Signature extends Signature {
     digester.reset();
   }
 
+  @Override
   public void add(String content) {
     try {
       digester.update(content.getBytes("UTF-8"));
@@ -51,6 +53,7 @@ public class MD5Signature extends Signature {
     }
   }
 
+  @Override
   public byte[] getSignature() {
     return digester.digest();
   }

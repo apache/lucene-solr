@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Fieldable;
@@ -26,6 +27,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -200,6 +202,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       return new FreqProxPostingsArray(size);
     }
 
+    @Override
     void copyTo(ParallelPostingsArray toArray, int numToCopy) {
       assert toArray instanceof FreqProxPostingsArray;
       FreqProxPostingsArray to = (FreqProxPostingsArray) toArray;
@@ -225,13 +228,22 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   /* Walk through all unique text tokens (Posting
    * instances) found in this field and serialize them
    * into a single RAM segment. */
-  void flush(FieldsConsumer consumer,  final SegmentWriteState state)
+  void flush(String fieldName, FieldsConsumer consumer,  final SegmentWriteState state)
     throws CorruptIndexException, IOException {
 
     final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
     final Comparator<BytesRef> termComp = termsConsumer.getComparator();
 
+    final Term protoTerm = new Term(fieldName);
+
     final boolean currentFieldOmitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+
+    final Map<Term,Integer> segDeletes;
+    if (state.segDeletes != null && state.segDeletes.terms.size() > 0) {
+      segDeletes = state.segDeletes.terms;
+    } else {
+      segDeletes = null;
+    }
 
     final int[] termIDs = termsHashPerField.sortPostings(termComp);
     final int numTerms = termsHashPerField.bytesHash.size();
@@ -259,6 +271,18 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       // DocsConsumer) to handle delivery of docs/positions
 
       final PostingsConsumer postingsConsumer = termsConsumer.startTerm(text);
+
+      final int delDocLimit;
+      if (segDeletes != null) {
+        final Integer docIDUpto = segDeletes.get(protoTerm.createTerm(text));
+        if (docIDUpto != null) {
+          delDocLimit = docIDUpto;
+        } else {
+          delDocLimit = 0;
+        }
+      } else {
+        delDocLimit = 0;
+      }
 
       // Now termStates has numToMerge FieldMergeStates
       // which all share the same term.  Now we must
@@ -300,7 +324,28 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         numDocs++;
         assert docID < state.numDocs: "doc=" + docID + " maxDoc=" + state.numDocs;
         final int termDocFreq = termFreq;
+
+        // NOTE: we could check here if the docID was
+        // deleted, and skip it.  However, this is somewhat
+        // dangerous because it can yield non-deterministic
+        // behavior since we may see the docID before we see
+        // the term that caused it to be deleted.  This
+        // would mean some (but not all) of its postings may
+        // make it into the index, which'd alter the docFreq
+        // for those terms.  We could fix this by doing two
+        // passes, ie first sweep marks all del docs, and
+        // 2nd sweep does the real flush, but I suspect
+        // that'd add too much time to flush.
         postingsConsumer.startDoc(docID, termDocFreq);
+        if (docID < delDocLimit) {
+          // Mark it deleted.  TODO: we could also skip
+          // writing its postings; this would be
+          // deterministic (just for this Term's docs).
+          if (state.deletedDocs == null) {
+            state.deletedDocs = new BitVector(state.numDocs);
+          }
+          state.deletedDocs.set(docID);
+        }
 
         // Carefully copy over the prox + payload info,
         // changing the format to match Lucene's segment

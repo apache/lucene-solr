@@ -16,7 +16,6 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import java.io.Serializable;
 import org.apache.lucene.search.Explanation;
 
 /**
@@ -29,7 +28,7 @@ import org.apache.lucene.search.Explanation;
  *               change
  * 
  **/
-public abstract class PayloadFunction implements Serializable {
+public abstract class PayloadFunction {
 
   /**
    * Calculate the score up to this point for this doc and field

@@ -25,8 +25,6 @@ import java.util.Locale;
  */
 public class MessageImpl implements Message {
 
-  private static final long serialVersionUID = -3077643314630884523L;
-
   private String key;
 
   private Object[] arguments = new Object[0];

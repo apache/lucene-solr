@@ -30,6 +30,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
  */
 abstract public class SolrExampleTestBase extends AbstractSolrTestCase 
 {
+  @Override
   public String getSolrHome() { return "../../../example/solr/"; }
   
   @Override public String getSchemaFile()     { return getSolrHome()+"conf/schema.xml";     }

@@ -81,23 +81,27 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
   static {
     addParser("ord", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
         return new OrdFieldSource(field);
       }
     });
     addParser("literal", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new LiteralValueSource(fp.getString());
       }
     });
     addParser("rord", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
         return new ReverseOrdFieldSource(field);
       }
     });
     addParser("top", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         // top(vs) is now a no-op
         ValueSource source = fp.parseValueSource();
@@ -105,6 +109,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("linear", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float slope = fp.parseFloat();
@@ -112,14 +117,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new LinearFloatFunction(source, slope, intercept);
       }
     });
-    addParser("max", new ValueSourceParser() {
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValueSource();
-        float val = fp.parseFloat();
-        return new MaxFloatFunction(source, val);
-      }
-    });
     addParser("recip", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float m = fp.parseFloat();
@@ -129,6 +128,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("scale", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
@@ -137,6 +137,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("div", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
@@ -144,6 +145,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("map", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
@@ -155,13 +157,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("abs", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         return new SimpleFloatFunction(source) {
+          @Override
           protected String name() {
             return "abs";
           }
 
+          @Override
           protected float func(int doc, DocValues vals) {
             return Math.abs(vals.floatVal(doc));
           }
@@ -169,6 +174,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("sum", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
@@ -177,6 +183,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     alias("sum","add");    
 
     addParser("product", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
@@ -185,14 +192,17 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     alias("product","mul");
 
     addParser("sub", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
         return new DualFloatFunction(a, b) {
+          @Override
           protected String name() {
             return "sub";
           }
 
+          @Override
           protected float func(int doc, DocValues aVals, DocValues bVals) {
             return aVals.floatVal(doc) - bVals.floatVal(doc);
           }
@@ -200,12 +210,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("vector", new ValueSourceParser(){
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException{
         return new VectorValueSource(fp.parseValueSourceList());
       }
     });
     addParser("query", new ValueSourceParser() {
       // boost(query($q),rating)
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         Query q = fp.parseNestedQuery();
         float defVal = 0.0f;
@@ -216,6 +228,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("boost", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         Query q = fp.parseNestedQuery();
         ValueSource vs = fp.parseValueSource();
@@ -224,6 +237,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("joindf", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String f0 = fp.parseArg();
         String qf = fp.parseArg();
@@ -234,6 +248,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("geodist", HaversineConstFunction.parser);
 
     addParser("hsin", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         double radius = fp.parseDouble();
@@ -274,6 +289,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("ghhsin", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         double radius = fp.parseDouble();
 
@@ -285,6 +301,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("geohash", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         ValueSource lat = fp.parseValueSource();
@@ -294,6 +311,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
     addParser("strdist", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         ValueSource str1 = fp.parseValueSource();
@@ -319,117 +337,152 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser(new DoubleParser("rad") {
+      @Override
       public double func(int doc, DocValues vals) {
         return vals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
       }
     });
     addParser(new DoubleParser("deg") {
+      @Override
       public double func(int doc, DocValues vals) {
         return vals.doubleVal(doc) * DistanceUtils.RADIANS_TO_DEGREES;
       }
     });
     addParser(new DoubleParser("sqrt") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.sqrt(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("cbrt") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.cbrt(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("log") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.log10(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("ln") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.log(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("exp") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.exp(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("sin") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.sin(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("cos") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.cos(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("tan") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.tan(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("asin") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.asin(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("acos") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.acos(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("atan") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.atan(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("sinh") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.sinh(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("cosh") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.cosh(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("tanh") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.tanh(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("ceil") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.ceil(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("floor") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.floor(vals.doubleVal(doc));
       }
     });
     addParser(new DoubleParser("rint") {
+      @Override
       public double func(int doc, DocValues vals) {
         return Math.rint(vals.doubleVal(doc));
       }
     });
     addParser(new Double2Parser("pow") {
+      @Override
       public double func(int doc, DocValues a, DocValues b) {
         return Math.pow(a.doubleVal(doc), b.doubleVal(doc));
       }
     });
     addParser(new Double2Parser("hypot") {
+      @Override
       public double func(int doc, DocValues a, DocValues b) {
         return Math.hypot(a.doubleVal(doc), b.doubleVal(doc));
       }
     });
     addParser(new Double2Parser("atan2") {
+      @Override
       public double func(int doc, DocValues a, DocValues b) {
         return Math.atan2(a.doubleVal(doc), b.doubleVal(doc));
       }
     });
+    addParser(new Double2Parser("max") {
+      @Override
+      public double func(int doc, DocValues a, DocValues b) {
+        return Math.max(a.doubleVal(doc), b.doubleVal(doc));
+      }
+    });
+    addParser(new Double2Parser("min") {
+      @Override
+      public double func(int doc, DocValues a, DocValues b) {
+        return Math.min(a.doubleVal(doc), b.doubleVal(doc));
+      }
+    });
 
     addParser("sqedist", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         List<ValueSource> sources = fp.parseValueSourceList();
         MVResult mvr = getMultiValueSources(sources);
@@ -439,6 +492,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("dist", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         float power = fp.parseFloat();
         List<ValueSource> sources = fp.parseValueSourceList();
@@ -450,11 +504,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     
     addParser("pi", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new DoubleConstValueSource(Math.PI);
       }
     });
     addParser("e", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new DoubleConstValueSource(Math.E);
       }
@@ -462,6 +518,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
 
     addParser("docfreq", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         TInfo tinfo = parseTerm(fp);
         return new DocFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
@@ -469,6 +526,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("idf", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         TInfo tinfo = parseTerm(fp);
         return new IDFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
@@ -476,6 +534,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("termfreq", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         TInfo tinfo = parseTerm(fp);
         return new TermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
@@ -483,6 +542,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("tf", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         TInfo tinfo = parseTerm(fp);
         return new TFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
@@ -490,6 +550,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("norm", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseArg();
         return new NormValueSource(field);
@@ -497,12 +558,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
 
     addParser("maxdoc", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new MaxDocValueSource();
       }
     });
 
     addParser("numdocs", new ValueSourceParser() {
+      @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new NumDocsValueSource();
       }
@@ -599,6 +662,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 class DateValueSourceParser extends ValueSourceParser {
   DateField df = new TrieDateField();
 
+  @Override
   public void init(NamedList args) {
   }
 
@@ -619,6 +683,7 @@ class DateValueSourceParser extends ValueSourceParser {
     return f.getType().getValueSource(f, fp);
   }
 
+  @Override
   public ValueSource parse(FunctionQParser fp) throws ParseException {
     String first = fp.parseArg();
     String second = fp.parseArg();
@@ -655,10 +720,12 @@ class DateValueSourceParser extends ValueSourceParser {
     // "dv"
     if (d1 != null && v2 != null)
       return new DualFloatFunction(new LongConstValueSource(ms1), v2) {
+        @Override
         protected String name() {
           return "ms";
         }
 
+        @Override
         protected float func(int doc, DocValues aVals, DocValues bVals) {
           return ms1 - bVals.longVal(doc);
         }
@@ -667,10 +734,12 @@ class DateValueSourceParser extends ValueSourceParser {
     // "vd"
     if (v1 != null && d2 != null)
       return new DualFloatFunction(v1, new LongConstValueSource(ms2)) {
+        @Override
         protected String name() {
           return "ms";
         }
 
+        @Override
         protected float func(int doc, DocValues aVals, DocValues bVals) {
           return aVals.longVal(doc) - ms2;
         }
@@ -679,10 +748,12 @@ class DateValueSourceParser extends ValueSourceParser {
     // "vv"
     if (v1 != null && v2 != null)
       return new DualFloatFunction(v1, v2) {
+        @Override
         protected String name() {
           return "ms";
         }
 
+        @Override
         protected float func(int doc, DocValues aVals, DocValues bVals) {
           return aVals.longVal(doc) - bVals.longVal(doc);
         }
@@ -706,42 +777,52 @@ class LongConstValueSource extends ConstNumberSource {
     this.fv = constant;
   }
 
+  @Override
   public String description() {
     return "const(" + constant + ")";
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return fv;
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) constant;
       }
 
+      @Override
       public long longVal(int doc) {
         return constant;
       }
 
+      @Override
       public double doubleVal(int doc) {
         return dv;
       }
 
+      @Override
       public String strVal(int doc) {
         return Long.toString(constant);
       }
 
+      @Override
       public String toString(int doc) {
         return description();
       }
     };
   }
 
+  @Override
   public int hashCode() {
     return (int) constant + (int) (constant >>> 32);
   }
 
+  @Override
   public boolean equals(Object o) {
     if (LongConstValueSource.class != o.getClass()) return false;
     LongConstValueSource other = (LongConstValueSource) o;
@@ -793,6 +874,7 @@ abstract class DoubleParser extends NamedParser {
 
   public abstract double func(int doc, DocValues vals);
 
+  @Override
   public ValueSource parse(FunctionQParser fp) throws ParseException {
     return new Function(fp.parseValueSource());
   }
@@ -802,6 +884,7 @@ abstract class DoubleParser extends NamedParser {
       super(source);
     }
 
+    @Override
     public String name() {
       return DoubleParser.this.name();
     }
@@ -810,21 +893,27 @@ abstract class DoubleParser extends NamedParser {
     public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
       final DocValues vals =  source.getValues(context, readerContext);
       return new DocValues() {
+        @Override
         public float floatVal(int doc) {
           return (float)doubleVal(doc);
         }
+        @Override
         public int intVal(int doc) {
           return (int)doubleVal(doc);
         }
+        @Override
         public long longVal(int doc) {
           return (long)doubleVal(doc);
         }
+        @Override
         public double doubleVal(int doc) {
           return func(doc, vals);
         }
+        @Override
         public String strVal(int doc) {
           return Double.toString(doubleVal(doc));
         }
+        @Override
         public String toString(int doc) {
           return name() + '(' + vals.toString(doc) + ')';
         }
@@ -841,6 +930,7 @@ abstract class Double2Parser extends NamedParser {
 
   public abstract double func(int doc, DocValues a, DocValues b);
 
+  @Override
   public ValueSource parse(FunctionQParser fp) throws ParseException {
     return new Function(fp.parseValueSource(), fp.parseValueSource());
   }
@@ -858,29 +948,37 @@ abstract class Double2Parser extends NamedParser {
       this.b = b;
     }
 
+    @Override
     public String description() {
       return name() + "(" + a.description() + "," + b.description() + ")";
     }
 
+    @Override
     public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
       final DocValues aVals =  a.getValues(context, readerContext);
       final DocValues bVals =  b.getValues(context, readerContext);
       return new DocValues() {
+        @Override
         public float floatVal(int doc) {
           return (float)doubleVal(doc);
         }
+        @Override
         public int intVal(int doc) {
           return (int)doubleVal(doc);
         }
+        @Override
         public long longVal(int doc) {
           return (long)doubleVal(doc);
         }
+        @Override
         public double doubleVal(int doc) {
           return func(doc, aVals, bVals);
         }
+        @Override
         public String strVal(int doc) {
           return Double.toString(doubleVal(doc));
         }
+        @Override
         public String toString(int doc) {
           return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
         }
@@ -891,6 +989,7 @@ abstract class Double2Parser extends NamedParser {
     public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     }
 
+    @Override
     public int hashCode() {
       int h = a.hashCode();
       h ^= (h << 13) | (h >>> 20);
@@ -900,6 +999,7 @@ abstract class Double2Parser extends NamedParser {
       return h;
     }
 
+    @Override
     public boolean equals(Object o) {
       if (this.getClass() != o.getClass()) return false;
       Function other = (Function)o;

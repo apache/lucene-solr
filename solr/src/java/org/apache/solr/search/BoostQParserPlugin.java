@@ -43,12 +43,14 @@ public class BoostQParserPlugin extends QParserPlugin {
   public void init(NamedList args) {
   }
 
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       QParser baseParser;
       ValueSource vs;
       String b;
 
+      @Override
       public Query parse() throws ParseException {
         b = localParams.get(BOOSTFUNC);
         baseParser = subQuery(localParams.get(QueryParsing.V), null);
@@ -65,14 +67,17 @@ public class BoostQParserPlugin extends QParserPlugin {
       }
 
 
+      @Override
       public String[] getDefaultHighlightFields() {
         return baseParser.getDefaultHighlightFields();
       }
                                            
+      @Override
       public Query getHighlightQuery() throws ParseException {
         return baseParser.getHighlightQuery();
       }
 
+      @Override
       public void addDebugInfo(NamedList<Object> debugInfo) {
         // encapsulate base debug info in a sub-list?
         baseParser.addDebugInfo(debugInfo);

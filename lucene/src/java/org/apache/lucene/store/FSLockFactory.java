@@ -33,7 +33,7 @@ public abstract class FSLockFactory extends LockFactory {
   /**
    * Set the lock directory. This method can be only called
    * once to initialize the lock directory. It is used by {@link FSDirectory}
-   * to set the lock directory to itsself.
+   * to set the lock directory to itself.
    * Subclasses can also use this method to set the directory
    * in the constructor.
    */

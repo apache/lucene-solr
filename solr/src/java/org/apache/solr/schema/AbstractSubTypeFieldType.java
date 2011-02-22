@@ -85,6 +85,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     //Just set these, delegate everything else to the field type
     props.put("indexed", "true");
     props.put("stored", "false");
+    props.put("multiValued", "false");
     int p = SchemaField.calcProps(name, type, props);
     SchemaField proto = SchemaField.create(name,
             type, p, null);
@@ -103,6 +104,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
   /**
    * Throws UnsupportedOperationException()
    */
+  @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     throw new UnsupportedOperationException();
   }

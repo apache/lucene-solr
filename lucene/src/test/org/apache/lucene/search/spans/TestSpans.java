@@ -53,7 +53,7 @@ public class TestSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
@@ -61,7 +61,7 @@ public class TestSpans extends LuceneTestCase {
     }
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
   
   @Override
@@ -486,7 +486,7 @@ public class TestSpans extends LuceneTestCase {
 
     // Get searcher
     final IndexReader reader = IndexReader.open(dir, true);
-    final IndexSearcher searcher = new IndexSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader);
 
     // Control (make sure docs indexed)
     assertEquals(2, hitCount(searcher, "the"));
@@ -499,6 +499,7 @@ public class TestSpans extends LuceneTestCase {
                  searcher.search(createSpan(0, true,                                 
                                             new SpanQuery[] {createSpan(4, false, "chased", "cat"),
                                                              createSpan("ate")}), 10).totalHits);
+    searcher.close();
     reader.close();
     dir.close();
   }

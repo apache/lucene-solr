@@ -57,7 +57,7 @@ public class TestDateFilter extends LuceneTestCase {
     
     IndexReader reader = writer.getReader();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // filter that should preserve matches
     // DateFilter df1 = DateFilter.Before("datefield", now);
@@ -98,6 +98,7 @@ public class TestDateFilter extends LuceneTestCase {
     
     result = searcher.search(query2, df2, 1000).scoreDocs;
     assertEquals(0, result.length);
+    searcher.close();
     reader.close();
     indexStore.close();
   }
@@ -123,7 +124,7 @@ public class TestDateFilter extends LuceneTestCase {
     
     IndexReader reader = writer.getReader();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // filter that should preserve matches
     // DateFilter df1 = DateFilter.After("datefield", now);
@@ -165,6 +166,7 @@ public class TestDateFilter extends LuceneTestCase {
     
     result = searcher.search(query2, df2, 1000).scoreDocs;
     assertEquals(0, result.length);
+    searcher.close();
     reader.close();
     indexStore.close();
   }

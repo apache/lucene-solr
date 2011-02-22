@@ -106,6 +106,7 @@ class PackedWriter extends PackedInts.Writer {
     }
   }
 
+  @Override
   public String toString() {
     return "PackedWriter(written " + written + "/" + valueCount + " with "
             + bitsPerValue + " bits/value)";

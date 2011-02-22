@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -80,6 +81,62 @@ import java.util.concurrent.atomic.AtomicInteger;
  (non-Lucene) objects instead.
 */
 public abstract class IndexReader implements Cloneable,Closeable {
+
+  /**
+   * A custom listener that's invoked when the IndexReader
+   * is finished.
+   *
+   * <p>For a SegmentReader, this listener is called only
+   * once all SegmentReaders sharing the same core are
+   * closed.  At this point it is safe for apps to evict
+   * this reader from any caches keyed on {@link
+   * #getCoreCacheKey}.  This is the same interface that
+   * {@link FieldCache} uses, internally, to evict
+   * entries.</p>
+   *
+   * <p>For other readers, this listener is called when they
+   * are closed.</p>
+   *
+   * @lucene.experimental
+   */
+  public static interface ReaderFinishedListener {
+    public void finished(IndexReader reader);
+  }
+
+  // Impls must set this if they may call add/removeReaderFinishedListener:
+  protected volatile Collection<ReaderFinishedListener> readerFinishedListeners;
+
+  /** Expert: adds a {@link ReaderFinishedListener}.  The
+   * provided listener is also added to any sub-readers, if
+   * this is a composite reader.  Also, any reader reopened
+   * or cloned from this one will also copy the listeners at
+   * the time of reopen.
+   *
+   * @lucene.experimental */
+  public void addReaderFinishedListener(ReaderFinishedListener listener) {
+    readerFinishedListeners.add(listener);
+  }
+
+  /** Expert: remove a previously added {@link ReaderFinishedListener}.
+   *
+   * @lucene.experimental */
+  public void removeReaderFinishedListener(ReaderFinishedListener listener) {
+    readerFinishedListeners.remove(listener);
+  }
+
+  protected void notifyReaderFinishedListeners() {
+    // Defensive (should never be null -- all impls must set
+    // this):
+    if (readerFinishedListeners != null) {
+      for(ReaderFinishedListener listener : readerFinishedListeners) {
+        listener.finished(this);
+      }
+    }
+  }
+
+  protected void readerFinished() {
+    notifyReaderFinishedListeners();
+  }
 
   /**
    * Constants describing field properties, for example used for
@@ -195,6 +252,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
           refCount.incrementAndGet();
         }
       }
+      readerFinished();
     }
   }
   
@@ -238,23 +296,25 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /**
    * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
    *
-   *
    * @param writer The IndexWriter to open from
+   * @param applyAllDeletes If true, all buffered deletes will
+   * be applied (made visible) in the returned reader.  If
+   * false, the deletes are not applied but remain buffered
+   * (in IndexWriter) so that they will be applied in the
+   * future.  Applying deletes can be costly, so if your app
+   * can tolerate deleted documents being returned you might
+   * gain some performance by passing false.
    * @return The new IndexReader
    * @throws CorruptIndexException
    * @throws IOException if there is a low-level IO error
    *
-   * @see #reopen(IndexWriter)
+   * @see #reopen(IndexWriter,boolean)
    *
    * @lucene.experimental
    */
-  public static IndexReader open(final IndexWriter writer) throws CorruptIndexException, IOException {
-    return writer.getReader();
+  public static IndexReader open(final IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    return writer.getReader(applyAllDeletes);
   }
-
-  
-
-
 
   /** Expert: returns an IndexReader reading the index in the given
    *  {@link IndexCommit}.  You should pass readOnly=true, since it
@@ -358,7 +418,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  memory.  By setting this to a value > 1 you can reduce
    *  memory usage, at the expense of higher latency when
    *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
+   *  to -1 to skip loading the terms index entirely. This is only useful in 
+   *  advanced situations when you will only .next() through all terms; 
+   *  attempts to seek will hit an exception.
+   *  
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -557,17 +620,25 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * if you attempt to reopen any of those readers, you'll
    * hit an {@link AlreadyClosedException}.</p>
    *
-   * @lucene.experimental
-   *
    * @return IndexReader that covers entire index plus all
    * changes made so far by this IndexWriter instance
    *
+   * @param writer The IndexWriter to open from
+   * @param applyAllDeletes If true, all buffered deletes will
+   * be applied (made visible) in the returned reader.  If
+   * false, the deletes are not applied but remain buffered
+   * (in IndexWriter) so that they will be applied in the
+   * future.  Applying deletes can be costly, so if your app
+   * can tolerate deleted documents being returned you might
+   * gain some performance by passing false.
+   *
    * @throws IOException
+   *
+   * @lucene.experimental
    */
-  public IndexReader reopen(IndexWriter writer) throws CorruptIndexException, IOException {
-    return writer.getReader();
+  public IndexReader reopen(IndexWriter writer, boolean applyAllDeletes) throws CorruptIndexException, IOException {
+    return writer.getReader(applyAllDeletes);
   }
-
 
   /**
    * Efficiently clones the IndexReader (sharing most
@@ -933,8 +1004,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
-   * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
-   * int) length normalization}.  Thus, to preserve the length normalization
+   * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its
+   * length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *
    * <b>NOTE:</b> If this field does not store norms, then
@@ -1163,7 +1234,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return n;
   }
 
-  /** Undeletes all documents currently marked as deleted in this index.
+  /** Undeletes all documents currently marked as deleted in
+   * this index.
+   *
+   * <p>NOTE: this method can only recover documents marked
+   * for deletion but not yet removed from the index; when
+   * and how Lucene removes deleted documents is an
+   * implementation detail, subject to change from release
+   * to release.  However, you can use {@link
+   * #numDeletedDocs} on the current IndexReader instance to
+   * see how many documents will be un-deleted.
    *
    * @throws StaleReaderException if the index has changed
    *  since this reader was opened

@@ -62,7 +62,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     @Override
-    public float computeNorm(String fieldName, FieldInvertState state) {
+    public float computeNorm(FieldInvertState state) {
       // Disable length norm
       return state.getBoost();
     }
@@ -85,7 +85,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index,
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-            .setSimilarityProvider(sim));
+                                                     .setSimilarityProvider(sim).setMergePolicy(newInOrderLogMergePolicy()));
     
     // hed is the most important field, dek is secondary
     
@@ -149,7 +149,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     r = new SlowMultiReaderWrapper(writer.getReader());
     writer.close();
-    s = new IndexSearcher(r);
+    s = newSearcher(r);
     s.setSimilarityProvider(sim);
   }
   

@@ -42,16 +42,14 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
 
   private int upto;
 
-  private static final int MAX_BLOCK_SIZE = 1 << 8;
+  // TODO what Var-Var codecs exist in practice... and what are there blocksizes like?
+  // if its less than 128 we should set that as max and use byte?
 
-  /** NOTE: maxBlockSize plus the max non-causal lookahead
-   *  of your codec must be less than 256.  EG Simple9
+  /** NOTE: maxBlockSize must be the maximum block size 
+   *  plus the max non-causal lookahead of your codec.  EG Simple9
    *  requires lookahead=1 because on seeing the Nth value
    *  it knows it must now encode the N-1 values before it. */
   protected VariableIntBlockIndexOutput(IndexOutput out, int maxBlockSize) throws IOException {
-    if (maxBlockSize > MAX_BLOCK_SIZE) {
-      throw new IllegalArgumentException("maxBlockSize must be <= " + MAX_BLOCK_SIZE + "; got " + maxBlockSize);
-    }
     this.out = out;
     out.writeInt(maxBlockSize);
   }
@@ -88,37 +86,17 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
     public void write(IndexOutput indexOut, boolean absolute) throws IOException {
       assert upto >= 0;
       if (absolute) {
+        indexOut.writeVInt(upto);
         indexOut.writeVLong(fp);
-        indexOut.writeByte((byte) upto);
       } else if (fp == lastFP) {
         // same block
-        indexOut.writeVLong(0);
         assert upto >= lastUpto;
-        indexOut.writeByte((byte) upto);
+        int uptoDelta = upto - lastUpto;
+        indexOut.writeVInt(uptoDelta << 1 | 1);
       } else {      
         // new block
+        indexOut.writeVInt(upto << 1);
         indexOut.writeVLong(fp - lastFP);
-        indexOut.writeByte((byte) upto);
-      }
-      lastUpto = upto;
-      lastFP = fp;
-    }
-
-    @Override
-    public void write(IntIndexOutput indexOut, boolean absolute) throws IOException {
-      assert upto >= 0;
-      if (absolute) {
-        indexOut.writeVLong(fp);
-        indexOut.write(upto);
-      } else if (fp == lastFP) {
-        // same block
-        indexOut.writeVLong(0);
-        assert upto >= lastUpto;
-        indexOut.write(upto);
-      } else {      
-        // new block
-        indexOut.writeVLong(fp - lastFP);
-        indexOut.write(upto);
       }
       lastUpto = upto;
       lastFP = fp;

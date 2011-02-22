@@ -263,6 +263,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     int[] lastOffsets;                                 // Last offset we saw
     int[] lastPositions;                               // Last position where this term occurred
 
+    @Override
     ParallelPostingsArray newInstance(int size) {
       return new TermVectorsPostingsArray(size);
     }

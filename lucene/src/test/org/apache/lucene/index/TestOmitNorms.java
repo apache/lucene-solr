@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
 public class TestOmitNorms extends LuceneTestCase {
@@ -194,7 +193,7 @@ public class TestOmitNorms extends LuceneTestCase {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
+            TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     writer.setInfoStream(VERBOSE ? System.out : null);
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
@@ -265,7 +264,7 @@ public class TestOmitNorms extends LuceneTestCase {
    */
   static byte[] getNorms(String field, Field f1, Field f2) throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy());
     RandomIndexWriter riw = new RandomIndexWriter(random, dir, iwc);
     
     // add f1

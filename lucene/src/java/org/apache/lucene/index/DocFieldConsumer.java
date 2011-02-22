@@ -21,9 +21,6 @@ import java.io.IOException;
 import java.util.Map;
 
 abstract class DocFieldConsumer {
-
-  FieldInfos fieldInfos;
-
   /** Called when DocumentsWriter decides to create a new
    *  segment */
   abstract void flush(Map<FieldInfo, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
@@ -42,7 +39,4 @@ abstract class DocFieldConsumer {
 
   abstract void finishDocument() throws IOException;
 
-  void setFieldInfos(FieldInfos fieldInfos) {
-    this.fieldInfos = fieldInfos;
-  }
 }

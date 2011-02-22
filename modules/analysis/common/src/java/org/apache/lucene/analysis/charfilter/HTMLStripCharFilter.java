@@ -101,6 +101,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
     if (len>0) {
       return pushed.charAt(len-1);
     }
+    numRead++;
     int ch = input.read();
     push(ch);
     return ch;
@@ -672,6 +673,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
 
 
 
+  @Override
   public int read() throws IOException {
     // TODO: Do we ever want to preserve CDATA sections?
     // where do we have to worry about them?
@@ -740,6 +742,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
 
   }
 
+  @Override
   public int read(char cbuf[], int off, int len) throws IOException {
     int i=0;
     for (i=0; i<len; i++) {
@@ -754,6 +757,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
     return i;
   }
 
+  @Override
   public void close() throws IOException {
     input.close();
   }

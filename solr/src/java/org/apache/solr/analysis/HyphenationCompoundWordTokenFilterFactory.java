@@ -61,6 +61,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFa
   private int maxSubwordSize;
   private boolean onlyLongestMatch;
   
+  @Override
   public void init(Map<String, String> args) {
     super.init(args);
     assureMatchVersion();

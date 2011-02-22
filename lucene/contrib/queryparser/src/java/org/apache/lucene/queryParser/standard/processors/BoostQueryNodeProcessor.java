@@ -26,6 +26,7 @@ import org.apache.lucene.queryParser.core.nodes.BoostQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FieldableNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
+import org.apache.lucene.queryParser.core.util.StringUtils;
 import org.apache.lucene.queryParser.standard.config.BoostAttribute;
 
 /**
@@ -49,7 +50,8 @@ public class BoostQueryNodeProcessor extends QueryNodeProcessorImpl {
       QueryConfigHandler config = getQueryConfigHandler();
 
       if (config != null) {
-        FieldConfig fieldConfig = config.getFieldConfig(fieldNode.getField());
+        CharSequence field = fieldNode.getField();
+        FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));
 
         if (fieldConfig != null && fieldConfig.hasAttribute(BoostAttribute.class)) {
           BoostAttribute boostAttr = fieldConfig.getAttribute(BoostAttribute.class);

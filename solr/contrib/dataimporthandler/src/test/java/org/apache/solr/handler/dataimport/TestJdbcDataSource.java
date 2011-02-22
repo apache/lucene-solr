@@ -57,6 +57,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
 
   String sysProp = System.getProperty("java.naming.factory.initial");
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -69,6 +70,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     connection = mockControl.createMock(Connection.class);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (sysProp == null) {

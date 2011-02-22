@@ -40,7 +40,7 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 public class TestSimilarity extends LuceneTestCase {
   
   public static class SimpleSimilarity extends Similarity implements SimilarityProvider {
-    @Override public float computeNorm(String field, FieldInvertState state) { return state.getBoost(); }
+    @Override public float computeNorm(FieldInvertState state) { return state.getBoost(); }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
@@ -80,7 +80,7 @@ public class TestSimilarity extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarityProvider(new SimpleSimilarity());
 
     Term a = new Term("field", "a");

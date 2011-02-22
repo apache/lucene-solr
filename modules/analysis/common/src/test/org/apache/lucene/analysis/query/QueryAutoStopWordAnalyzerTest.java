@@ -76,7 +76,10 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   private int search(Analyzer a, String queryString) throws IOException, ParseException {
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "repetitiveField", a);
     Query q = qp.parse(queryString);
-    return new IndexSearcher(reader).search(q, null, 1000).totalHits;
+    IndexSearcher searcher = newSearcher(reader);
+    int hits = searcher.search(q, null, 1000).totalHits;
+    searcher.close();
+    return hits;
   }
 
   public void testUninitializedAnalyzer() throws Exception {

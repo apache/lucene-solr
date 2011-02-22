@@ -41,14 +41,17 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
   }
 
   /** Returns the encapsulated filter */
+  @Override
   public Filter getFilter() {
     return filter;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
 
+  @Override
   public void extractTerms(Set terms) {
     // OK to not add any terms when used for MultiSearcher,
     // but may not be OK for highlighting

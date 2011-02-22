@@ -31,9 +31,19 @@ public class LengthFilterTest extends BaseTokenTestCase {
     Map<String, String> args = new HashMap<String, String>();
     args.put(LengthFilterFactory.MIN_KEY, String.valueOf(4));
     args.put(LengthFilterFactory.MAX_KEY, String.valueOf(10));
+    // default: args.put("enablePositionIncrements", "false");
     factory.init(args);
     String test = "foo foobar super-duper-trooper";
     TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(test)));
-    assertTokenStreamContents(stream, new String[] { "foobar" });
+    assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 1 });
+
+    factory = new LengthFilterFactory();
+    args = new HashMap<String, String>();
+    args.put(LengthFilterFactory.MIN_KEY, String.valueOf(4));
+    args.put(LengthFilterFactory.MAX_KEY, String.valueOf(10));
+    args.put("enablePositionIncrements", "true");
+    factory.init(args);
+    stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(test)));
+    assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 2 });
   }
 }

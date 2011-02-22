@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**Testcase for TikaEntityProcessor
  * @version $Id$
@@ -25,9 +26,10 @@ import org.junit.BeforeClass;
 public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", "solr-dihextras");
+    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", getFile("solr-dihextras").getAbsolutePath());
   }
 
+  @Test
   public void testIndexingWithTikaEntityProcessor() throws Exception {
     String conf =
             "<dataConfig>" +
@@ -35,12 +37,17 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
                     "  <document>" +
                     "    <entity processor=\"TikaEntityProcessor\" url=\"" + getFile("solr-word.pdf").getAbsolutePath() + "\" >" +
                     "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
-                    "      <field column=\"title\" meta=\"true\" name=\"docTitle\"/>" +
+                    "      <field column=\"title\" meta=\"true\" name=\"title\"/>" +
                     "      <field column=\"text\"/>" +
                     "     </entity>" +
                     "  </document>" +
                     "</dataConfig>";
     runFullImport(conf);
-    assertQ(req("*:*"), "//*[@numFound='1']");
+    assertQ(req("*:*")
+            ,"//*[@numFound='1']"
+            ,"//str[@name='author'][.='Grant Ingersoll']"
+            ,"//str[@name='title'][.='solr-word']"
+            ,"//str[@name='text']"
+            );
   }
 }

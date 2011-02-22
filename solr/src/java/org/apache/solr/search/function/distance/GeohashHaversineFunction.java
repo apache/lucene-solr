@@ -59,22 +59,27 @@ public class GeohashHaversineFunction extends ValueSource {
     final DocValues gh2DV = geoHash2.getValues(context, readerContext);
 
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
       }
 
+      @Override
       public int intVal(int doc) {
         return (int) doubleVal(doc);
       }
 
+      @Override
       public long longVal(int doc) {
         return (long) doubleVal(doc);
       }
 
+      @Override
       public double doubleVal(int doc) {
         return distance(doc, gh1DV, gh2DV);
       }
 
+      @Override
       public String strVal(int doc) {
         return Double.toString(doubleVal(doc));
       }

@@ -29,7 +29,6 @@ import org.apache.lucene.util.BytesRef;
  */
 public class RegexpQueryNode extends QueryNodeImpl  implements TextableQueryNode,
 FieldableNode {
-  private static final long serialVersionUID = 0L;
   private CharSequence text;
   private CharSequence field;
   /**

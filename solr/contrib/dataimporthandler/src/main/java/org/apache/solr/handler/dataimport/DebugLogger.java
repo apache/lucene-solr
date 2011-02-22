@@ -60,6 +60,7 @@ class DebugLogger {
     output = new NamedList();
     debugStack = new Stack<DebugInfo>() {
 
+      @Override
       public DebugInfo pop() {
         if (size() == 1)
           throw new DataImportHandlerException(
@@ -169,14 +170,17 @@ class DebugLogger {
 
   DataSource wrapDs(final DataSource ds) {
     return new DataSource() {
+      @Override
       public void init(Context context, Properties initProps) {
         ds.init(context, initProps);
       }
 
+      @Override
       public void close() {
         ds.close();
       }
 
+      @Override
       public Object getData(String query) {
         writer.log(SolrWriter.ENTITY_META, "query", query);
         long start = System.currentTimeMillis();
@@ -203,6 +207,7 @@ class DebugLogger {
 
   Transformer wrapTransformer(final Transformer t) {
     return new Transformer() {
+      @Override
       public Object transformRow(Map<String, Object> row, Context context) {
         writer.log(SolrWriter.PRE_TRANSFORMER_ROW, null, row);
         String tName = getTransformerName(t);

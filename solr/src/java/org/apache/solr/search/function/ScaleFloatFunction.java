@@ -46,6 +46,7 @@ public class ScaleFloatFunction extends ValueSource {
     this.max = max;
   }
 
+  @Override
   public String description() {
     return "scale(" + source.description() + "," + min + "," + max + ")";
   }
@@ -93,6 +94,7 @@ public class ScaleFloatFunction extends ValueSource {
     return scaleInfo;
   }
 
+  @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
 
     ScaleInfo scaleInfo = (ScaleInfo)context.get(source);
@@ -107,21 +109,27 @@ public class ScaleFloatFunction extends ValueSource {
     final DocValues vals =  source.getValues(context, readerContext);
 
     return new DocValues() {
+      @Override
       public float floatVal(int doc) {
 	return (vals.floatVal(doc) - minSource) * scale + min;
       }
+      @Override
       public int intVal(int doc) {
         return (int)floatVal(doc);
       }
+      @Override
       public long longVal(int doc) {
         return (long)floatVal(doc);
       }
+      @Override
       public double doubleVal(int doc) {
         return (double)floatVal(doc);
       }
+      @Override
       public String strVal(int doc) {
         return Float.toString(floatVal(doc));
       }
+      @Override
       public String toString(int doc) {
 	return "scale(" + vals.toString(doc) + ",toMin=" + min + ",toMax=" + max
                 + ",fromMin=" + minSource
@@ -136,6 +144,7 @@ public class ScaleFloatFunction extends ValueSource {
     source.createWeight(context, searcher);
   }
 
+  @Override
   public int hashCode() {
     int h = Float.floatToIntBits(min);
     h = h*29;
@@ -145,6 +154,7 @@ public class ScaleFloatFunction extends ValueSource {
     return h;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (ScaleFloatFunction.class != o.getClass()) return false;
     ScaleFloatFunction other = (ScaleFloatFunction)o;

@@ -31,8 +31,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class PositionIncrementsAttributeImpl extends AttributeImpl
 				implements PositionIncrementsAttribute {
 
-  private static final long serialVersionUID = -2804763012793049527L;
-
   private boolean positionIncrementsEnabled = false;
 
   public PositionIncrementsAttributeImpl() {

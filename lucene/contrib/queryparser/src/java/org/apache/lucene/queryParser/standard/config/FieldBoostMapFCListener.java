@@ -34,8 +34,6 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
  */
 public class FieldBoostMapFCListener implements FieldConfigListener {
 
-  private static final long serialVersionUID = -5929802948798314067L;
-
   private QueryConfigHandler config = null;
   
   public FieldBoostMapFCListener(QueryConfigHandler config) {
@@ -47,7 +45,7 @@ public class FieldBoostMapFCListener implements FieldConfigListener {
       FieldBoostMapAttribute fieldBoostMapAttr = this.config.getAttribute(FieldBoostMapAttribute.class);
       BoostAttribute boostAttr = fieldConfig.addAttribute(BoostAttribute.class);
       
-      Float boost = fieldBoostMapAttr.getFieldBoostMap().get(fieldConfig.getFieldName());
+      Float boost = fieldBoostMapAttr.getFieldBoostMap().get(fieldConfig.getField());
 
       if (boost != null) {
         boostAttr.setBoost(boost.floatValue());

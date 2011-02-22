@@ -84,8 +84,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
  * parameter as well as how numeric fields work under the hood.</p>
  *
- * @lucene.experimental
- *
  * @since 2.9
  */
 public final class NumericTokenStream extends TokenStream {
@@ -137,7 +135,7 @@ public final class NumericTokenStream extends TokenStream {
     }
   }
 
-  /** Implementatation of {@link NumericTermAttribute}.
+  /** Implementation of {@link NumericTermAttribute}.
    * @lucene.internal
    * @since 4.0
    */
@@ -295,6 +293,11 @@ public final class NumericTokenStream extends TokenStream {
     return (shift < valSize);
   }
 
+  /** Returns the precision step. */
+  public int getPrecisionStep() {
+    return precisionStep;
+  }
+  
   // members
   private final NumericTermAttribute numericAtt = addAttribute(NumericTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);

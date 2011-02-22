@@ -27,8 +27,6 @@ import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
  */
 public class PrefixWildcardQueryNode extends WildcardQueryNode {
 
-  private static final long serialVersionUID = 6851557641826407515L;
-
   /**
    * @param field
    *          - field name

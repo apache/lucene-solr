@@ -50,6 +50,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml", "solr-uima");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

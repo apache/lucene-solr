@@ -51,7 +51,7 @@ public class TestRegexQuery extends LuceneTestCase {
     writer.addDocument(doc);
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
 
   @Override

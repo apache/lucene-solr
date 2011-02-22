@@ -69,7 +69,7 @@ public class TestBasics extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, true))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newInOrderLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();
@@ -77,7 +77,7 @@ public class TestBasics extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
   }
 

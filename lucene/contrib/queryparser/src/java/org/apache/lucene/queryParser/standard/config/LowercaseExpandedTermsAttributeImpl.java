@@ -33,8 +33,6 @@ import org.apache.lucene.util.AttributeImpl;
 public class LowercaseExpandedTermsAttributeImpl extends AttributeImpl
 				implements LowercaseExpandedTermsAttribute {
 
-  private static final long serialVersionUID = -2804760312723049527L;
-
   private boolean lowercaseExpandedTerms = true;
 
   public LowercaseExpandedTermsAttributeImpl() {

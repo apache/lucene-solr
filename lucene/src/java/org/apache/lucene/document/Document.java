@@ -35,7 +35,7 @@ import org.apache.lucene.index.IndexReader;  // for javadoc
  * ScoreDoc#doc} or {@link IndexReader#document(int)}.
  */
 
-public final class Document implements java.io.Serializable {
+public final class Document {
   List<Fieldable> fields = new ArrayList<Fieldable>();
   private float boost = 1.0f;
 

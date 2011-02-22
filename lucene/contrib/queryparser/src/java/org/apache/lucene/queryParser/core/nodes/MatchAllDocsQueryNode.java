@@ -25,8 +25,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class MatchAllDocsQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = -7050381275423477809L;
-
   public MatchAllDocsQueryNode() {
     // empty constructor
   }

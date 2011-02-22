@@ -145,7 +145,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   /**
    * Called whenever the running merges have changed, to pause & unpause
    * threads. This method sorts the merge threads by their merge size in
-   * descending order and then pauses/unpauses threads from first to lsat --
+   * descending order and then pauses/unpauses threads from first to last --
    * that way, smaller merges are guaranteed to run before larger ones.
    */
   protected synchronized void updateMergeThreads() {
@@ -308,10 +308,31 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     // pending merges, until it's empty:
     while (true) {
 
+      synchronized(this) {
+        long startStallTime = 0;
+        while (mergeThreadCount() >= 1+maxMergeCount) {
+          startStallTime = System.currentTimeMillis();
+          if (verbose()) {
+            message("    too many merges; stalling...");
+          }
+          try {
+            wait();
+          } catch (InterruptedException ie) {
+            throw new ThreadInterruptedException(ie);
+          }
+        }
+
+        if (verbose()) {
+          if (startStallTime != 0) {
+            message("  stalled for " + (System.currentTimeMillis()-startStallTime) + " msec");
+          }
+        }
+      }
+
+
       // TODO: we could be careful about which merges to do in
       // the BG (eg maybe the "biggest" ones) vs FG, which
       // merges to do first (the easiest ones?), etc.
-
       MergePolicy.OneMerge merge = writer.getNextMerge();
       if (merge == null) {
         if (verbose())
@@ -326,32 +347,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       boolean success = false;
       try {
         synchronized(this) {
-          final MergeThread merger;
-          long startStallTime = 0;
-          while (mergeThreadCount() >= maxMergeCount) {
-            startStallTime = System.currentTimeMillis();
-            if (verbose()) {
-              message("    too many merges; stalling...");
-            }
-            try {
-              wait();
-            } catch (InterruptedException ie) {
-              throw new ThreadInterruptedException(ie);
-            }
-          }
-
-          if (verbose()) {
-            if (startStallTime != 0) {
-              message("  stalled for " + (System.currentTimeMillis()-startStallTime) + " msec");
-            }
-            message("  consider merge " + merge.segString(dir));
-          }
-
-          assert mergeThreadCount() < maxMergeCount;
+          message("  consider merge " + merge.segString(dir));
 
           // OK to spawn a new merge thread to handle this
           // merge:
-          merger = getMergeThread(writer, merge);
+          final MergeThread merger = getMergeThread(writer, merge);
           mergeThreads.add(merger);
           if (verbose()) {
             message("    launch new thread [" + merger.getName() + "]");

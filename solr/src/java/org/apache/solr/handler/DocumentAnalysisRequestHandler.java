@@ -27,6 +27,7 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -41,7 +42,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -105,6 +106,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     DocumentAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     return handleAnalysisRequest(analysisRequest, req.getSchema());
@@ -156,10 +158,14 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     request.setShowMatch(showMatch);
 
     ContentStream stream = extractSingleContentStream(req);
-    Reader reader = stream.getReader();
-    XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
-
+    InputStream is = null;
+    XMLStreamReader parser = null;
+    
     try {
+      is = stream.getStream();
+      final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+      parser = (charset == null) ?
+        inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
 
       while (true) {
         int event = parser.next();
@@ -181,8 +187,8 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       }
 
     } finally {
-      parser.close();
-      IOUtils.closeQuietly(reader);
+      if (parser != null) parser.close();
+      IOUtils.closeQuietly(is);
     }
   }
 

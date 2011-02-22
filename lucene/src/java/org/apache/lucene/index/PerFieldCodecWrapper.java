@@ -67,7 +67,7 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      final FieldsConsumer fields = consumers.get(field.codecId);
+      final FieldsConsumer fields = consumers.get(field.getCodecId());
       return fields.addField(field);
     }
 
@@ -100,18 +100,16 @@ final class PerFieldCodecWrapper extends Codec {
     public FieldsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
         int readBufferSize, int indexDivisor) throws IOException {
 
-      final int fieldCount = fieldInfos.size();
       final Map<Codec, FieldsProducer> producers = new HashMap<Codec, FieldsProducer>();
       boolean success = false;
       try {
-        for (int i = 0; i < fieldCount; i++) {
-          FieldInfo fi = fieldInfos.fieldInfo(i);
+        for (FieldInfo fi : fieldInfos) {
           if (fi.isIndexed) { // TODO this does not work for non-indexed fields
             fields.add(fi.name);
-            Codec codec = segmentCodecs.codecs[fi.codecId];
+            Codec codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                                                                             si, fieldInfos, readBufferSize, indexDivisor, ""+fi.codecId)));
+                                                                             si, fieldInfos, readBufferSize, indexDivisor, ""+fi.getCodecId())));
             }
             codecs.put(fi.name, producers.get(codec));
           }
@@ -204,6 +202,7 @@ final class PerFieldCodecWrapper extends Codec {
     }
   }
 
+  @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new FieldsReader(state.dir, state.fieldInfos, state.segmentInfo,
@@ -213,7 +212,7 @@ final class PerFieldCodecWrapper extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo info, String codecId, Set<String> files)
       throws IOException {
-    // ignore codecid sicne segmentCodec will assign it per codec
+    // ignore codecid since segmentCodec will assign it per codec
     segmentCodecs.files(dir, info, files);
   }
 

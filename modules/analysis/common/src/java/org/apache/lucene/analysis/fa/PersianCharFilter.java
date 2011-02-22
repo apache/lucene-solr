@@ -32,6 +32,7 @@ public class PersianCharFilter extends CharFilter {
     super(in);
   }
   
+  @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
     final int charsRead = super.read(cbuf, off, len);
     if (charsRead > 0) {

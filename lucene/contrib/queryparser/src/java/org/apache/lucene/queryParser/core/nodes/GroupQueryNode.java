@@ -34,8 +34,6 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class GroupQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = -9204673493869114999L;
-
   /**
    * This QueryNode is used to identify parenthesis on the original query string
    */

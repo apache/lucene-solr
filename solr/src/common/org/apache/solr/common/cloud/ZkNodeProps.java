@@ -46,6 +46,7 @@ public class ZkNodeProps extends HashMap<String,String> {
     return sb.toString().getBytes("UTF-8");
   }
   
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     Set<Entry<String,String>> entries = entrySet();

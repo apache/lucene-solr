@@ -63,6 +63,7 @@ public class TestExternalCodecs extends LuceneTestCase {
         return t2.length-t1.length;
       }
 
+      @Override
       public boolean equals(Object other) {
         return this == other;
       }
@@ -344,6 +345,7 @@ public class TestExternalCodecs extends LuceneTestCase {
         return ramField.termToDocs.get(current).totalTermFreq;
       }
 
+      @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
         return new RAMDocsEnum(ramField.termToDocs.get(current), skipDocs);
       }
@@ -494,142 +496,17 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
   }
 
-  public static class MyCodecs extends CodecProvider {
-    MyCodecs() {
-      Codec ram = new RAMOnlyCodec();
-      register(ram);
-      setDefaultFieldCodec(ram.name);
-    }
-  }
-
-  // copied from PulsingCodec, just changing the terms
-  // comparator
-  private static class PulsingReverseTermsCodec extends Codec {
-
-    public PulsingReverseTermsCodec() {
-      name = "PulsingReverseTerms";
-    }
-
-    @Override
-    public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
-
-      // Terms that have <= freqCutoff number of docs are
-      // "pulsed" (inlined):
-      final int freqCutoff = 1;
-      PostingsWriterBase pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
-
-      // Terms dict index
-      TermsIndexWriterBase indexWriter;
-      boolean success = false;
-      try {
-        indexWriter = new FixedGapTermsIndexWriter(state) {
-            // We sort in reverse unicode order, so, we must
-            // disable the suffix-stripping opto that
-            // FixedGapTermsIndexWriter does by default!
-            @Override
-            protected int indexedTermPrefixLength(BytesRef priorTerm, BytesRef indexedTerm) {
-              return indexedTerm.length;
-            }
-          };
-        success = true;
-      } finally {
-        if (!success) {
-          pulsingWriter.close();
-        }
-      }
-
-      // Terms dict
-      success = false;
-      try {
-        FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          try {
-            pulsingWriter.close();
-          } finally {
-            indexWriter.close();
-          }
-        }
-      }
-    }
-
-    @Override
-    public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-
-      PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
-      PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
-
-      // Terms dict index reader
-      TermsIndexReaderBase indexReader;
-
-      boolean success = false;
-      try {
-        indexReader = new FixedGapTermsIndexReader(state.dir,
-                                                         state.fieldInfos,
-                                                         state.segmentInfo.name,
-                                                         state.termsIndexDivisor,
-                                                         reverseUnicodeComparator,
-                                                         state.codecId);
-        success = true;
-      } finally {
-        if (!success) {
-          pulsingReader.close();
-        }
-      }
-
-      // Terms dict reader
-      success = false;
-      try {
-        FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                  state.dir,
-                                                  state.fieldInfos,
-                                                  state.segmentInfo.name,
-                                                  pulsingReader,
-                                                  state.readBufferSize,
-                                                  reverseUnicodeComparator,
-                                                  StandardCodec.TERMS_CACHE_SIZE,
-                                                  state.codecId);
-        success = true;
-        return ret;
-      } finally {
-        if (!success) {
-          try {
-            pulsingReader.close();
-          } finally {
-            indexReader.close();
-          }
-        }
-      }
-    }
-
-    @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
-      StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-      BlockTermsReader.files(dir, segmentInfo, codecId, files);
-      FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    }
-
-    @Override
-    public void getExtensions(Set<String> extensions) {
-      StandardCodec.getStandardExtensions(extensions);
-    }
-  }
-
-
   // tests storing "id" and "field2" fields as pulsing codec,
   // whose term sort is backwards unicode code point, and
   // storing "field1" as a custom entirely-in-RAM codec
   public void testPerFieldCodec() throws Exception {
-    CodecProvider provider = new MyCodecs();
-    Codec pulsing = new PulsingReverseTermsCodec();
-    provider.register(pulsing);
-    
+    CodecProvider provider = new CoreCodecProvider();
+    provider.register(new RAMOnlyCodec());
+    provider.setDefaultFieldCodec("RamOnly");
     
     final int NUM_DOCS = 173;
-    Directory dir = newDirectory();
+    MockDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).
@@ -642,11 +519,11 @@ public class TestExternalCodecs extends LuceneTestCase {
     doc.add(newField("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));
     // uses pulsing codec:
     Field field2 = newField("field2", "this field uses the pulsing codec as the test", Field.Store.NO, Field.Index.ANALYZED);
-    provider.setFieldCodec(field2.name(), pulsing.name);
+    provider.setFieldCodec(field2.name(), "Pulsing");
     doc.add(field2);
     
     Field idField = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
-    provider.setFieldCodec(idField.name(), pulsing.name);
+    provider.setFieldCodec(idField.name(), "Pulsing");
 
     doc.add(idField);
     for(int i=0;i<NUM_DOCS;i++) {
@@ -656,19 +533,16 @@ public class TestExternalCodecs extends LuceneTestCase {
         w.commit();
       }
     }
+    if (VERBOSE) {
+      System.out.println("TEST: now delete id=77");
+    }
     w.deleteDocuments(new Term("id", "77"));
 
-    IndexReader r = IndexReader.open(w);
+    IndexReader r = IndexReader.open(w, true);
     IndexReader[] subs = r.getSequentialSubReaders();
-    // test each segment
-    for(int i=0;i<subs.length;i++) {
-      testTermsOrder(subs[i]);
-    }
-    // test each multi-reader
-    testTermsOrder(r);
     
     assertEquals(NUM_DOCS-1, r.numDocs());
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-1, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     r.close();
@@ -676,43 +550,21 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     w.deleteDocuments(new Term("id", "44"));
     w.optimize();
-    r = IndexReader.open(w);
+    r = IndexReader.open(w, true);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
-    s = new IndexSearcher(r);
+    s = newSearcher(r);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field1", "standard")), 1).totalHits);
     assertEquals(NUM_DOCS-2, s.search(new TermQuery(new Term("field2", "pulsing")), 1).totalHits);
     assertEquals(1, s.search(new TermQuery(new Term("id", "76")), 1).totalHits);
     assertEquals(0, s.search(new TermQuery(new Term("id", "77")), 1).totalHits);
     assertEquals(0, s.search(new TermQuery(new Term("id", "44")), 1).totalHits);
 
-    testTermsOrder(r);
     r.close();
     s.close();
 
     w.close();
 
     dir.close();
-  }
-
-  private void testTermsOrder(IndexReader r) throws Exception {
-
-    // Verify sort order matches what my comparator said:
-    BytesRef lastBytesRef = null;
-    TermsEnum terms = MultiFields.getFields(r).terms("id").iterator();
-    //System.out.println("id terms:");
-    while(true) {
-      BytesRef t = terms.next();
-      if (t == null) {
-        break;
-      }
-      //System.out.println("  " + t);
-      if (lastBytesRef == null) {
-        lastBytesRef = new BytesRef(t);
-      } else {
-        assertTrue("terms in wrong order last=" + lastBytesRef.utf8ToString() + " current=" + t.utf8ToString(), reverseUnicodeComparator.compare(lastBytesRef, t) < 0);
-        lastBytesRef.copy(t);
-      }
-    }
   }
 }

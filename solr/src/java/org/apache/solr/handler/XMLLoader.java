@@ -24,6 +24,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -36,8 +37,8 @@ import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.transform.TransformerConfigurationException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 
 
@@ -54,24 +55,31 @@ class XMLLoader extends ContentStreamLoader {
     this.inputFactory = inputFactory;
   }
 
+  @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws Exception {
     errHeader = "XMLLoader: " + stream.getSourceInfo();
-    Reader reader = null;
+    InputStream is = null;
+    XMLStreamReader parser = null;
     try {
-      reader = stream.getReader();
+      is = stream.getStream();
+      final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       if (XmlUpdateRequestHandler.log.isTraceEnabled()) {
-        String body = IOUtils.toString(reader);
-        XmlUpdateRequestHandler.log.trace("body", body);
-        reader = new StringReader(body);
+        final byte[] body = IOUtils.toByteArray(is);
+        // TODO: The charset may be wrong, as the real charset is later
+        // determined by the XML parser, the content-type is only used as a hint!
+        XmlUpdateRequestHandler.log.trace("body", new String(body, (charset == null) ?
+          ContentStreamBase.DEFAULT_CHARSET : charset));
+        IOUtils.closeQuietly(is);
+        is = new ByteArrayInputStream(body);
       }
-
-      XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
+      parser = (charset == null) ?
+        inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
       this.processUpdate(req, processor, parser);
-    }
-    catch (XMLStreamException e) {
+    } catch (XMLStreamException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     } finally {
-      IOUtils.closeQuietly(reader);
+      if (parser != null) parser.close();
+      IOUtils.closeQuietly(is);
     }
   }
 

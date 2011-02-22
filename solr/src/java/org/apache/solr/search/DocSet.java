@@ -152,6 +152,7 @@ public interface DocSet /* extends Collection<Integer> */ {
 abstract class DocSetBase implements DocSet {
 
   // Not implemented efficiently... for testing purposes only
+  @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof DocSet)) return false;
     DocSet other = (DocSet)obj;
@@ -247,9 +248,8 @@ abstract class DocSetBase implements DocSet {
 
     return new Filter() {
       @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext ctx) throws IOException {
-        IndexReader.AtomicReaderContext context = (IndexReader.AtomicReaderContext)ctx;  // TODO: remove after lucene migration
-        IndexReader reader = ctx.reader;
+      public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+        IndexReader reader = context.reader;
 
         if (context.isTopLevel) {
           return bs;
@@ -260,6 +260,7 @@ abstract class DocSetBase implements DocSet {
         final int max = base + maxDoc;   // one past the max doc in this segment.
 
         return new DocIdSet() {
+          @Override
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int pos=base-1;

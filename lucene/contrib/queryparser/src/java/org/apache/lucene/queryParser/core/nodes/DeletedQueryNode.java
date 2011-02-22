@@ -27,8 +27,6 @@ import org.apache.lucene.queryParser.core.processors.RemoveDeletedQueryNodesProc
  */
 public class DeletedQueryNode extends QueryNodeImpl {
 
-  private static final long serialVersionUID = -9151675506000425293L;
-
   public DeletedQueryNode() {
     // empty constructor
   }

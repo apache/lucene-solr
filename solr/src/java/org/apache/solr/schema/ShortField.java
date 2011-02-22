@@ -35,20 +35,22 @@ import java.util.Map;
  *
  **/
 public class ShortField extends FieldType {
+  @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
   }
 
   /////////////////////////////////////////////////////////////
 
+  @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
-
+    field.checkSortability();
     return new SortField(field.name, SortField.SHORT, reverse);
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
-
+    field.checkFieldCacheSource(qparser);
     return new ShortFieldSource(new ShortValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }
 

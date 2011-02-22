@@ -39,10 +39,12 @@ public class BinContentStreamDataSource extends DataSource<InputStream> {
   private InputStream in;
 
 
+  @Override
   public void init(Context context, Properties initProps) {
     this.context = (ContextImpl) context;
   }
 
+  @Override
   public InputStream getData(String query) {
      contentStream = context.getDocBuilder().requestParameters.contentStream;
     if (contentStream == null)
@@ -55,6 +57,7 @@ public class BinContentStreamDataSource extends DataSource<InputStream> {
     }
   }
 
+  @Override
   public void close() {
      if (contentStream != null) {
       try {

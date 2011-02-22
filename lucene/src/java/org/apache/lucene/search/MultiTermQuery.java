@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -67,7 +66,7 @@ public abstract class MultiTermQuery extends Query {
   transient int numberOfTerms = 0;
 
   /** Abstract class that defines how the query is rewritten. */
-  public static abstract class RewriteMethod implements Serializable {
+  public static abstract class RewriteMethod {
     public abstract Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException;
   }
 
@@ -89,11 +88,6 @@ public abstract class MultiTermQuery extends Query {
       Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
       result.setBoost(query.getBoost());
       return result;
-    }
-
-    // Make sure we are still a singleton even after deserializing
-    protected Object readResolve() {
-      return CONSTANT_SCORE_FILTER_REWRITE;
     }
   };
 
@@ -239,11 +233,6 @@ public abstract class MultiTermQuery extends Query {
     @Override
     public void setDocCountPercent(double percent) {
       throw new UnsupportedOperationException("Please create a private instance");
-    }
-
-    // Make sure we are still a singleton even after deserializing
-    protected Object readResolve() {
-      return CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
     }
   };
 

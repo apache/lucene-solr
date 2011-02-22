@@ -25,10 +25,12 @@ public class ProductFloatFunction extends MultiFloatFunction {
     super(sources);
   }
 
+  @Override
   protected String name() {
     return "product";
   }
 
+  @Override
   protected float func(int doc, DocValues[] valsArr) {
     float val = 1.0f;
     for (DocValues vals : valsArr) {

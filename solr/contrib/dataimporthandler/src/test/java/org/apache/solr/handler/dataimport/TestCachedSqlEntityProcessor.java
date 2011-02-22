@@ -158,6 +158,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
 
   public static class DoubleTransformer extends Transformer {
 
+    @Override
     public Object transformRow(Map<String, Object> row, Context context) {
       List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
       rows.add(row);
@@ -169,6 +170,7 @@ public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestC
 
   public static class UppercaseTransformer extends Transformer {
 
+    @Override
     public Object transformRow(Map<String, Object> row, Context context) {
       for (Map.Entry<String, Object> entry : row.entrySet()) {
         Object val = entry.getValue();

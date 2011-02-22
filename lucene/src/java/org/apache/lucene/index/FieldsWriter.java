@@ -44,14 +44,12 @@ final class FieldsWriter {
   // If null - we were supplied with streams, if notnull - we manage them ourselves
   private Directory directory;
   private String segment;
-  private FieldInfos fieldInfos;
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
-  FieldsWriter(Directory directory, String segment, FieldInfos fn) throws IOException {
+  FieldsWriter(Directory directory, String segment) throws IOException {
     this.directory = directory;
     this.segment = segment;
-    fieldInfos = fn;
 
     boolean success = false;
     try {
@@ -69,10 +67,9 @@ final class FieldsWriter {
     }
   }
 
-  FieldsWriter(IndexOutput fdx, IndexOutput fdt, FieldInfos fn) {
+  FieldsWriter(IndexOutput fdx, IndexOutput fdt) {
     directory = null;
     segment = null;
-    fieldInfos = fn;
     fieldsStream = fdt;
     indexStream = fdx;
   }
@@ -164,7 +161,7 @@ final class FieldsWriter {
     assert fieldsStream.getFilePointer() == position;
   }
 
-  final void addDocument(Document doc) throws IOException {
+  final void addDocument(Document doc, FieldInfos fieldInfos) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
 
     int storedCount = 0;
