@@ -22,7 +22,15 @@ import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.solr.analysis.BaseTokenFilterFactory;
 
 /**
- * Factory for {@link HyphenatedWordsFilter}
+ * Factory for {@link HyphenatedWordsFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_hyphn" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.HyphenatedWordsFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
+ * @version $Id$
  */
 public class HyphenatedWordsFilterFactory extends BaseTokenFilterFactory {
 	public HyphenatedWordsFilter create(TokenStream input) {
