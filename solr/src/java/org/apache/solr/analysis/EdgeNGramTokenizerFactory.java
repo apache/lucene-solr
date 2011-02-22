@@ -24,6 +24,13 @@ import java.util.Map;
 
 /**
  * Creates new instances of {@link EdgeNGramTokenizer}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_edgngrm" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.EdgeNGramTokenizerFactory" side="front" minGramSize="1" maxGramSize="1"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
  */
 public class EdgeNGramTokenizerFactory extends BaseTokenizerFactory {
     private int maxGramSize = 0;

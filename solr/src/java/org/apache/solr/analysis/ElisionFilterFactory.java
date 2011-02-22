@@ -26,7 +26,17 @@ import org.apache.lucene.analysis.fr.*;
 import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
 
-/** Factory for {@link ElisionFilter} */
+/**
+ * Factory for {@link ElisionFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_elsn" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.ElisionFilterFactory" articles="stopwordarticles.txt"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
+ */
 public class ElisionFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 
   private CharArraySet articles;
