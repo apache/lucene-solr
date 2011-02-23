@@ -56,6 +56,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.automaton.fst.FST.Arc;
 
 public class TestFSTs extends LuceneTestCase {
 
@@ -1321,5 +1322,86 @@ public class TestFSTs extends LuceneTestCase {
     assertNotNull(seekResult);
     assertEquals(b, seekResult.input);
     assertEquals(42, (long) seekResult.output);
+  }
+
+  /**
+   * Test state expansion (array format) on close-to-root states. Creates
+   * synthetic input that has one expanded state on each level.
+   * 
+   * @see "https://issues.apache.org/jira/browse/LUCENE-2933" 
+   */
+  public void testExpandedCloseToRoot() throws Exception {
+    class SyntheticData {
+      FST<Object> compile(String[] lines) throws IOException {
+        final NoOutputs outputs = NoOutputs.getSingleton();
+        final Object nothing = outputs.getNoOutput();
+        final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+
+        int line = 0;
+        final BytesRef term = new BytesRef();
+        while (line < lines.length) {
+          String w = lines[line++];
+          if (w == null) {
+            break;
+          }
+          term.copy(w);
+          b.add(term, nothing);
+        }
+        
+        return b.finish();
+      }
+      
+      void generate(ArrayList<String> out, StringBuilder b, char from, char to,
+          int depth) {
+        if (depth == 0 || from == to) {
+          String seq = b.toString() + "_" + out.size() + "_end";
+          out.add(seq);
+        } else {
+          for (char c = from; c <= to; c++) {
+            b.append(c);
+            generate(out, b, from, c == to ? to : from, depth - 1);
+            b.deleteCharAt(b.length() - 1);
+          }
+        }
+      }
+
+      public int verifyStateAndBelow(FST<Object> fst, Arc<Object> arc, int depth) 
+        throws IOException {
+        if (fst.targetHasArcs(arc)) {
+          int childCount = 0;
+          for (arc = fst.readFirstTargetArc(arc, arc);; 
+               arc = fst.readNextArc(arc), childCount++)
+          {
+            boolean expanded = fst.isExpandedTarget(arc);
+            int children = verifyStateAndBelow(fst, new FST.Arc<Object>().copyFrom(arc), depth + 1);
+
+            assertEquals(
+                expanded,
+                (depth <= FST.FIXED_ARRAY_SHALLOW_DISTANCE && 
+                    children >= FST.FIXED_ARRAY_NUM_ARCS_SHALLOW) ||
+                 children >= FST.FIXED_ARRAY_NUM_ARCS_DEEP);
+            if (arc.isLast()) break;
+          }
+
+          return childCount;
+        }
+        return 0;
+      }
+    }
+
+    // Sanity check.
+    assertTrue(FST.FIXED_ARRAY_NUM_ARCS_SHALLOW < FST.FIXED_ARRAY_NUM_ARCS_DEEP);
+    assertTrue(FST.FIXED_ARRAY_SHALLOW_DISTANCE >= 0);
+
+    SyntheticData s = new SyntheticData();
+
+    ArrayList<String> out = new ArrayList<String>();
+    StringBuilder b = new StringBuilder();
+    s.generate(out, b, 'a', 'i', 10);
+    String[] input = out.toArray(new String[out.size()]);
+    Arrays.sort(input);
+    FST<Object> fst = s.compile(input);
+    FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<Object>());
+    s.verifyStateAndBelow(fst, arc, 1);
   }
 }

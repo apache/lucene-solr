@@ -189,6 +189,8 @@ public final class Util {
    */
   public static <T> void toDot(FST<T> fst, Writer out, boolean sameRank, boolean labelStates) 
     throws IOException {    
+    final String expandedNodeColor = "blue";
+
     // This is the start arc in the automaton (from the epsilon state to the first state 
     // with outgoing transitions.
     final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());
@@ -219,7 +221,9 @@ public final class Util {
     }
 
     emitDotState(out, "initial", "point", "white", "");
-    emitDotState(out, Integer.toString(startArc.target), stateShape, null, "");
+    emitDotState(out, Integer.toString(startArc.target), stateShape, 
+        fst.isExpandedTarget(startArc) ? expandedNodeColor : null, 
+        "");
     out.write("  initial -> " + startArc.target + "\n");
 
     final T NO_OUTPUT = fst.outputs.getNoOutput();
@@ -243,7 +247,9 @@ public final class Util {
           while (true) {
             // Emit the unseen state and add it to the queue for the next level.
             if (arc.target >= 0 && !seen.get(arc.target)) {
-              emitDotState(out, Integer.toString(arc.target), stateShape, null, 
+              final boolean isExpanded = fst.isExpandedTarget(arc);
+              emitDotState(out, Integer.toString(arc.target), stateShape, 
+                  isExpanded ?  expandedNodeColor : null, 
                   labelStates ? Integer.toString(arc.target) : ""); 
               seen.set(arc.target);
               nextLevelQueue.add(new FST.Arc<T>().copyFrom(arc));
@@ -285,10 +291,10 @@ public final class Util {
       }
       sameLevelStates.clear();                
     }
-    
+
     // Emit terminating state (always there anyway).
     out.write("  -1 [style=filled, color=black, shape=circle, label=\"\"]\n\n");
-    out.write("  {rank=sink; -1 } ");
+    out.write("  {rank=sink; -1 }\n");
     
     out.write("}\n");
     out.flush();
