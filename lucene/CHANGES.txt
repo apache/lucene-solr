@@ -387,6 +387,13 @@ Bug fixes
 * LUCENE-2891: IndexWriterConfig did not accept -1 in setReaderTermIndexDivisor,
   which can be used to prevent loading the terms index into memory. (Shai Erera)
 
+* LUCENE-2937: Encoding a float into a byte (e.g. encoding field norms during
+  indexing) had an underflow detection bug that caused floatToByte(f)==0 where
+  f was greater than 0, but slightly less than byteToFloat(1).  This meant that
+  certain very small field norms (index_boost * length_norm) could have
+  been rounded down to 0 instead of being rounded up to the smallest
+  positive number.  (yonik)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
