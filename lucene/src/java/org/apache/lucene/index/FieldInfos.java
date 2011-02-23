@@ -403,6 +403,14 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     return false;
   }
 
+  void clearVectors() {
+    for (FieldInfo fi : this) {
+      fi.storeTermVector = false;
+      fi.storeOffsetWithTermVector = false;
+      fi.storePositionWithTermVector = false;
+    }
+  }
+
   public boolean hasNorms() {
     for (FieldInfo fi : this) {
       if (!fi.omitNorms) {
