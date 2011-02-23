@@ -26,7 +26,15 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  */
 
 /**
- * Factory for {@link KeywordMarkerFilter}
+ * Factory for {@link KeywordMarkerFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_keyword" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.KeywordMarkerFilterFactory" protected="protectedkeyword.txt" ignoreCase="false"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
+ * @version $Id$
  */
 public class KeywordMarkerFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";

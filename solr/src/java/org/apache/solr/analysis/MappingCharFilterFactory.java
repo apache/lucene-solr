@@ -32,6 +32,14 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
+ * Factory for {@link MappingCharFilter}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_map" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;charFilter class="solr.MappingCharFilterFactory" mapping="mapping.txt"/&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  *
  * @version $Id$
  * @since Solr 1.4
