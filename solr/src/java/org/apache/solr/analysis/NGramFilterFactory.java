@@ -22,7 +22,15 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 
 /**
- * Creates new instances of {@link NGramTokenFilter}.
+ * Factory for {@link NGramTokenFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_ngrm" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.NGramFilterFactory" minGramSize="1" maxGramSize="2"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
+ * @version $Id$
  */
 public class NGramFilterFactory extends BaseTokenFilterFactory {
   private int maxGramSize = 0;

@@ -1055,7 +1055,7 @@ Documentation
   (Adriano Crestani via Robert Muir)
 
 * LUCENE-2894: Use google-code-prettify for syntax highlighting in javadoc.
-  (Koji Sekiguchi)
+  (Shinichiro Abe, Koji Sekiguchi)
   
 ================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
 
