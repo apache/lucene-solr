@@ -2085,12 +2085,12 @@ public class IndexWriter implements Closeable {
 
     setDiagnostics(newSegment, "flush");
 
-    if (useCompoundFile(newSegment)) {
-      String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
-      message("creating compound file " + compoundFileName);
+    boolean success = false;
+    try {
+      if (useCompoundFile(newSegment)) {
+        String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+        message("creating compound file " + compoundFileName);
       // Now build compound file
-      boolean success = false;
-      try {
         CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
         for(String fileName : newSegment.files()) {
           cfsWriter.addFile(fileName);
@@ -2103,55 +2103,54 @@ public class IndexWriter implements Closeable {
         }
 
         newSegment.setUseCompoundFile(true);
+      }
 
-        // Must write deleted docs after the CFS so we don't
-        // slurp the del file into CFS:
-        if (deletedDocs != null) {
-          final int delCount = deletedDocs.count();
-          assert delCount > 0;
-          newSegment.setDelCount(delCount);
-          newSegment.advanceDelGen();
-          final String delFileName = newSegment.getDelFileName();
-          if (infoStream != null) {
-            message("flush: write " + delCount + " deletes to " + delFileName);
-          }
-          boolean success2 = false;
-          try {
-            // TODO: in the NRT case it'd be better to hand
-            // this del vector over to the
-            // shortly-to-be-opened SegmentReader and let it
-            // carry the changes; there's no reason to use
-            // filesystem as intermediary here.
-            deletedDocs.write(directory, delFileName);
-            success2 = true;
-          } finally {
-            if (!success2) {
-              try {
-                directory.deleteFile(delFileName);
-              } catch (Throwable t) {
-                // suppress this so we keep throwing the
-                // original exception
-              }
-            }
-          }
+      // Must write deleted docs after the CFS so we don't
+      // slurp the del file into CFS:
+      if (deletedDocs != null) {
+        final int delCount = deletedDocs.count();
+        assert delCount > 0;
+        newSegment.setDelCount(delCount);
+        newSegment.advanceDelGen();
+        final String delFileName = newSegment.getDelFileName();
+        if (infoStream != null) {
+          message("flush: write " + delCount + " deletes to " + delFileName);
         }
-
-        success = true;
-      } finally {
-        if (!success) {
-          if (infoStream != null) {
-            message("hit exception " +
-                "reating compound file for newly flushed segment " + newSegment.name);
-          }
-
-          synchronized(this) {
-            deleter.refresh(newSegment.name);
+        boolean success2 = false;
+        try {
+          // TODO: in the NRT case it'd be better to hand
+          // this del vector over to the
+          // shortly-to-be-opened SegmentReader and let it
+          // carry the changes; there's no reason to use
+          // filesystem as intermediary here.
+          deletedDocs.write(directory, delFileName);
+          success2 = true;
+        } finally {
+          if (!success2) {
+            try {
+              directory.deleteFile(delFileName);
+            } catch (Throwable t) {
+              // suppress this so we keep throwing the
+              // original exception
+            }
           }
         }
       }
 
+      success = true;
+    } finally {
+      if (!success) {
+        if (infoStream != null) {
+          message("hit exception " +
+              "reating compound file for newly flushed segment " + newSegment.name);
+        }
 
+        synchronized(this) {
+          deleter.refresh(newSegment.name);
+        }
+      }
     }
+
 
     synchronized(this) {
       segmentInfos.add(newSegment);
