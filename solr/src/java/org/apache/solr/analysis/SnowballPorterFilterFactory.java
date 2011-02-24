@@ -35,7 +35,8 @@ import org.tartarus.snowball.SnowballProgram;
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_snowballstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *     &lt;filter class="solr.SnowballPorterFilterFactory" protected="protectedkeyword.txt" language="English"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
