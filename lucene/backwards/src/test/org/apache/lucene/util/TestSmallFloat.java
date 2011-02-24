@@ -33,8 +33,8 @@ public class TestSmallFloat extends LuceneTestCase {
     return Float.intBitsToFloat(bits);
   }
 
-  // original lucene floatToByte
-  static byte orig_floatToByte(float f) {
+  // original lucene floatToByte (since lucene 1.3)
+  static byte orig_floatToByte_v13(float f) {
     if (f < 0.0f)                                 // round negatives up to zero
       f = 0.0f;
 
@@ -57,6 +57,33 @@ public class TestSmallFloat extends LuceneTestCase {
 
     return (byte)((exponent << 3) | mantissa);    // pack into a byte
   }
+
+  // This is the original lucene floatToBytes (from v1.3)
+  // except with the underflow detection bug fixed for values like 5.8123817E-10f
+  static byte orig_floatToByte(float f) {
+    if (f < 0.0f)                                 // round negatives up to zero
+      f = 0.0f;
+
+    if (f == 0.0f)                                // zero is a special case
+      return 0;
+
+    int bits = Float.floatToIntBits(f);           // parse float into parts
+    int mantissa = (bits & 0xffffff) >> 21;
+    int exponent = (((bits >> 24) & 0x7f) - 63) + 15;
+
+    if (exponent > 31) {                          // overflow: use max value
+      exponent = 31;
+      mantissa = 7;
+    }
+
+    if (exponent < 0 || exponent == 0 && mantissa == 0) { // underflow: use min value
+      exponent = 0;
+      mantissa = 1;
+    }
+
+    return (byte)((exponent << 3) | mantissa);    // pack into a byte
+  }
+
 
   public void testByteToFloat() {
     for (int i=0; i<256; i++) {
