@@ -29,10 +29,18 @@ import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
- * Construct CommonGramsQueryFilter
+ * Construct {@link CommonGramsQueryFilter}.
  * 
- * This is pretty close to a straight copy from StopFilterFactory
+ * This is pretty close to a straight copy from {@link StopFilterFactory}.
  * 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_cmmngrmsqry" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.CommonGramsQueryFilterFactory" words="commongramsquerystopwords.txt" ignoreCase="false"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
  */
 public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
     implements ResourceLoaderAware {

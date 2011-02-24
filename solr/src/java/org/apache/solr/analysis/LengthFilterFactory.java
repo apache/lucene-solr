@@ -23,6 +23,14 @@ import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 import java.util.Map;
 
 /**
+ * Factory for {@link LengthFilter}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_lngth" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.LengthFilterFactory" min="0" max="1" enablePositionIncrements="false"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
  * @version $Id$
  */
 public class LengthFilterFactory extends BaseTokenFilterFactory {

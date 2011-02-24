@@ -24,7 +24,14 @@ import java.io.Reader;
 import java.util.Map;
 
 /**
- * Creates new instances of {@link NGramTokenizer}.
+ * Factory for {@link NGramTokenizer}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_ngrm" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.NGramTokenizerFactory" minGramSize="1" maxGramSize="2"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
+ * @version $Id$
  */
 public class NGramTokenizerFactory extends BaseTokenizerFactory {
     private int maxGramSize = 0;

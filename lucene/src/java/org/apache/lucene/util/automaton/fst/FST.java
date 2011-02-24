@@ -25,6 +25,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.automaton.fst.Builder.UnCompiledNode;
 
 /** Represents an FST using a compact byte[] format.
  *  <p> The format is similar to what's used by Morfologik
@@ -47,11 +48,21 @@ public class FST<T> {
   // this when number of arcs is > NUM_ARCS_ARRAY:
   private final static int BIT_ARCS_AS_FIXED_ARRAY = 1 << 6;
 
-  // If the node has >= this number of arcs, the arcs are
-  // stored as a fixed array.  Fixed array consumes more RAM
-  // but enables binary search on the arcs (instead of
-  // linear scan) on lookup by arc label:
-  private final static int NUM_ARCS_FIXED_ARRAY = 10;
+  /**
+   * @see #shouldExpand(UnCompiledNode)
+   */
+  final static int FIXED_ARRAY_SHALLOW_DISTANCE = 3; // 0 => only root node.
+
+  /**
+   * @see #shouldExpand(UnCompiledNode)
+   */
+  final static int FIXED_ARRAY_NUM_ARCS_SHALLOW = 5;
+
+  /**
+   * @see #shouldExpand(UnCompiledNode)
+   */
+  final static int FIXED_ARRAY_NUM_ARCS_DEEP = 10;
+
   private int[] bytesPerArc = new int[0];
 
   // Increment version to change it
@@ -315,7 +326,7 @@ public class FST<T> {
     int startAddress = writer.posWrite;
     //System.out.println("  startAddr=" + startAddress);
 
-    final boolean doFixedArray = node.numArcs >= NUM_ARCS_FIXED_ARRAY;
+    final boolean doFixedArray = shouldExpand(node);
     final int fixedArrayStart;
     if (doFixedArray) {
       if (bytesPerArc.length < node.numArcs) {
@@ -518,6 +529,23 @@ public class FST<T> {
     return readNextArc(arc);
   }
 
+  /**
+   * Checks if <code>arc</code>'s target state is in expanded (or vector) format. 
+   * 
+   * @return Returns <code>true</code> if <code>arc</code> points to a state in an
+   * expanded array format.
+   */
+  boolean isExpandedTarget(Arc<T> follow) throws IOException {
+    if (follow.isFinal()) {
+      return false;
+    } else {
+      final BytesReader in = getBytesReader(follow.target);
+      final byte b = in.readByte();
+      
+      return (b & BIT_ARCS_AS_FIXED_ARRAY) != 0;
+    }
+  }
+
   /** In-place read; returns the arc. */
   public Arc<T> readNextArc(Arc<T> arc) throws IOException {
     if (arc.label == -1) {
@@ -711,6 +739,26 @@ public class FST<T> {
 
   public int getArcWithOutputCount() {
     return arcWithOutputCount;
+  }
+  
+  /**
+   * Nodes will be expanded if their depth (distance from the root node) is
+   * &lt;= this value and their number of arcs is &gt;=
+   * {@link #FIXED_ARRAY_NUM_ARCS_SHALLOW}.
+   * 
+   * <p>
+   * Fixed array consumes more RAM but enables binary search on the arcs
+   * (instead of a linear scan) on lookup by arc label.
+   * 
+   * @return <code>true</code> if <code>node</code> should be stored in an
+   *         expanded (array) form.
+   * 
+   * @see #FIXED_ARRAY_NUM_ARCS_DEEP
+   * @see Builder.UnCompiledNode#depth
+   */
+  private boolean shouldExpand(UnCompiledNode<T> node) {
+    return (node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
+            node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP;
   }
 
   // Non-static: writes to FST's byte[]

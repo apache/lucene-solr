@@ -83,7 +83,7 @@ public class Builder<T> {
     @SuppressWarnings("unchecked") final UnCompiledNode<T>[] f = (UnCompiledNode<T>[]) new UnCompiledNode[10];
     frontier = f;
     for(int idx=0;idx<frontier.length;idx++) {
-      frontier[idx] = new UnCompiledNode<T>(this);
+      frontier[idx] = new UnCompiledNode<T>(this, idx);
     }
   }
 
@@ -201,7 +201,7 @@ public class Builder<T> {
           // undecided on whether to prune it.  later, it
           // will be either compiled or pruned, so we must
           // allocate a new node:
-          frontier[idx] = new UnCompiledNode<T>(this);
+          frontier[idx] = new UnCompiledNode<T>(this, idx);
         }
       }
     }
@@ -292,7 +292,7 @@ public class Builder<T> {
         new UnCompiledNode[ArrayUtil.oversize(input.length+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(frontier, 0, next, 0, frontier.length);
       for(int idx=frontier.length;idx<next.length;idx++) {
-        next[idx] = new UnCompiledNode<T>(this);
+        next[idx] = new UnCompiledNode<T>(this, idx);
       }
       frontier = next;
     }
@@ -424,12 +424,22 @@ public class Builder<T> {
     boolean isFinal;
     int inputCount;
 
+    /** This node's depth, starting from the automaton root. */
+    final int depth;
+
+    /**
+     * @param depth
+     *          The node's depth starting from the automaton root. Needed for
+     *          LUCENE-2934 (node expansion based on conditions other than the
+     *          fanout size).
+     */
     @SuppressWarnings("unchecked")
-    public UnCompiledNode(Builder<T> owner) {
+    public UnCompiledNode(Builder<T> owner, int depth) {
       this.owner = owner;
       arcs = (Arc<T>[]) new Arc[1];
       arcs[0] = new Arc<T>();
       output = owner.NO_OUTPUT;
+      this.depth = depth;
     }
 
     public boolean isCompiled() {
@@ -441,6 +451,9 @@ public class Builder<T> {
       isFinal = false;
       output = owner.NO_OUTPUT;
       inputCount = 0;
+
+      // We don't clear the depth here because it never changes 
+      // for nodes on the frontier (even when reused).
     }
 
     public T getLastOutput(int labelToMatch) {
