@@ -25,7 +25,9 @@ import org.apache.lucene.analysis.fr.FrenchMinimalStemFilter;
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_frminstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *     &lt;filter class="solr.ElisionFilterFactory"/&gt;
  *     &lt;filter class="solr.FrenchMinimalStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
