@@ -21,6 +21,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 
 /**
+ * Factory for {@link RemoveDuplicatesTokenFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_rmdup" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.RemoveDuplicatesTokenFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  * @version $Id$
  */
 public class RemoveDuplicatesTokenFilterFactory extends BaseTokenFilterFactory {

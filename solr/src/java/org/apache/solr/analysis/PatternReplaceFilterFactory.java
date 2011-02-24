@@ -24,6 +24,15 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
+ * Factory for {@link PatternReplaceFilter}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_ptnreplace" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.PatternReplaceFilterFactory" pattern="([^a-z])" replacement=""
+ *             replace="all"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  * @version $Id$
  * @see PatternReplaceFilter
  */
