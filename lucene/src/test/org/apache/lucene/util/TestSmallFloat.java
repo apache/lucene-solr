@@ -81,12 +81,6 @@ public class TestSmallFloat extends LuceneTestCase {
 
 
   public void testByteToFloat() {
-    assertEquals(0, orig_floatToByte_v13(5.8123817E-10f));       // verify the old bug (see LUCENE-2937)
-    assertEquals(1, orig_floatToByte(5.8123817E-10f));           // verify it's fixed in this test code
-    assertEquals(1, SmallFloat.floatToByte315(5.8123817E-10f));  // verify it's fixed
-
-    assertEquals(1, orig_floatToByte(Float.MIN_VALUE));
-
     for (int i=0; i<256; i++) {
       float f1 = orig_byteToFloat((byte)i);
       float f2 = SmallFloat.byteToFloat((byte)i, 3,15);
@@ -101,6 +95,22 @@ public class TestSmallFloat extends LuceneTestCase {
   }
 
   public void testFloatToByte() {
+    assertEquals(0, orig_floatToByte_v13(5.8123817E-10f));       // verify the old bug (see LUCENE-2937)
+    assertEquals(1, orig_floatToByte(5.8123817E-10f));           // verify it's fixed in this test code
+    assertEquals(1, SmallFloat.floatToByte315(5.8123817E-10f));  // verify it's fixed
+
+    // test some constants
+    assertEquals(0, SmallFloat.floatToByte315(0));
+    assertEquals(1, SmallFloat.floatToByte315(Float.MIN_VALUE));             // underflow rounds up to smallest positive
+    assertEquals(255, SmallFloat.floatToByte315(Float.MAX_VALUE) & 0xff);    // overflow rounds down to largest positive
+    assertEquals(255, SmallFloat.floatToByte315(Float.POSITIVE_INFINITY) & 0xff);
+
+    // all negatives map to 0
+    assertEquals(0, SmallFloat.floatToByte315(-Float.MIN_VALUE));
+    assertEquals(0, SmallFloat.floatToByte315(-Float.MAX_VALUE));
+    assertEquals(0, SmallFloat.floatToByte315(Float.NEGATIVE_INFINITY));
+
+
     // up iterations for more exhaustive test after changing something
     int num = 100000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
