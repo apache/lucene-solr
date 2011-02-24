@@ -22,7 +22,16 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 
-/** Factory for {@link WikipediaTokenizer}*/
+/** 
+ * Factory for {@link WikipediaTokenizer}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_wiki" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WikipediaTokenizerFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
+ * @version $Id$
+ */
 public class WikipediaTokenizerFactory extends BaseTokenizerFactory {
   // TODO: add support for WikipediaTokenizer's advanced options.
   public Tokenizer create(Reader input) {

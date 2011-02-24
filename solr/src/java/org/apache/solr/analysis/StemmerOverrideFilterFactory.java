@@ -28,7 +28,15 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
- * Factory for {@link StemmerOverrideFilter}
+ * Factory for {@link StemmerOverrideFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_dicstem" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.StemmerOverrideFilterFactory" dictionary="dictionary.txt" ignoreCase="false"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id
  */
 public class StemmerOverrideFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   private CharArrayMap<String> dictionary = null;
