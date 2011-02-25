@@ -532,6 +532,10 @@ Bug Fixes
   useful error reporting when no match found (previously failed with a
   NullPointerException in log and no clear user feedback). (gthb via yonik)
 
+* SOLR-2380: Distributed faceting could miss values when facet.sort=index
+  and when facet.offset was greater than 0. (yonik)
+  
+
 
 Other Changes
 ----------------------
