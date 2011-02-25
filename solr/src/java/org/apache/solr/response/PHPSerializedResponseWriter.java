@@ -43,8 +43,9 @@ import org.apache.solr.common.SolrDocumentList;
  * must know if the Writers passed to it will result in an output of CESU-8 (UTF-8 w/o support
  * for large code points outside of the BMP)
  * <p>
- * Currently Solr assumes that all Jetty servlet containers (detected using the "jetty.home"
- * system property) use CESU-8 instead of UTF-8 (verified to the current release of 6.1.20).
+ * Solr versions before 3.1 assume that all Jetty servlet containers (detected using the "jetty.home"
+ * system property) use CESU-8 instead of UTF-8 (verified to the current release of 6.1.26).
+ * Solr 3.1 contains a patched version of Jetty that uses real UTF-8 (SOLR-2381)
  * <p>
  * In installations where Solr auto-detects incorrectly, the Solr Administrator should set the
  * "solr.phps.cesu8" system property to either "true" or "false" accordingly.
@@ -56,14 +57,7 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
   // large characters outside the BMP).
   boolean CESU8 = false;
   public void init(NamedList n) {
-    String cesu8Setting = System.getProperty("solr.phps.cesu8");
-    if (cesu8Setting != null) {
-      CESU8="true".equals(cesu8Setting);
-    } else {
-      // guess at the setting.
-      // Jetty up until 6.1.20 at least (and probably versions after) uses CESU8
-      CESU8 = System.getProperty("jetty.home") != null;
-    }
+    CESU8 = "true".equals(System.getProperty("solr.phps.cesu8"));
   }
   
  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
