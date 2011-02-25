@@ -355,6 +355,9 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
+* LUCENE-2936: PhraseQuery score explanations were not correctly 
+  identifying matches vs non-matches.  (hossman)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

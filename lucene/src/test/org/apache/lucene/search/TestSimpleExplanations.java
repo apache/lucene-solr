@@ -289,4 +289,62 @@ public class TestSimpleExplanations extends TestExplanations {
     qtest(q, new int[] { 0,3 });
     
   }
+
+  /* BQ of TQ: using alt so some fields have zero boost and some don't */
+  
+  public void testMultiFieldBQ1() throws Exception {
+    qtest("+w1 +alt:w2", new int[] { 0,1,2,3 });
+  }
+  public void testMultiFieldBQ2() throws Exception {
+    qtest("+yy +alt:w3", new int[] { 2,3 });
+  }
+  public void testMultiFieldBQ3() throws Exception {
+    qtest("yy +alt:w3", new int[] { 0,1,2,3 });
+  }
+  public void testMultiFieldBQ4() throws Exception {
+    qtest("w1 (-xx alt:w2)", new int[] { 0,1,2,3 });
+  }
+  public void testMultiFieldBQ5() throws Exception {
+    qtest("w1 (+alt:qq alt:w2)", new int[] { 0,1,2,3 });
+  }
+  public void testMultiFieldBQ6() throws Exception {
+    qtest("w1 -(-alt:qq alt:w5)", new int[] { 1,2,3 });
+  }
+  public void testMultiFieldBQ7() throws Exception {
+    qtest("+w1 +(alt:qq (alt:xx -alt:w2) (+alt:w3 +alt:w4))", new int[] { 0 });
+  }
+  public void testMultiFieldBQ8() throws Exception {
+    qtest("+alt:w1 (qq (alt:xx -w2) (+alt:w3 +w4))", new int[] { 0,1,2,3 });
+  }
+  public void testMultiFieldBQ9() throws Exception {
+    qtest("+w1 (alt:qq (-xx w2) -(+alt:w3 +w4))", new int[] { 0,1,2,3 });
+  }
+  public void testMultiFieldBQ10() throws Exception {
+    qtest("+w1 +(alt:qq (-xx alt:w2) -(+alt:w3 +w4))", new int[] { 1 });
+  }
+
+  /* BQ of PQ: using alt so some fields have zero boost and some don't */
+  
+  public void testMultiFieldBQofPQ1() throws Exception {
+    qtest("\"w1 w2\" alt:\"w1 w2\"", new int[] { 0 });
+  }
+  public void testMultiFieldBQofPQ2() throws Exception {
+    qtest("\"w1 w3\" alt:\"w1 w3\"", new int[] { 1,3 });
+  }
+  public void testMultiFieldBQofPQ3() throws Exception {
+    qtest("\"w1 w2\"~1 alt:\"w1 w2\"~1", new int[] { 0,1,2 });
+  }
+  public void testMultiFieldBQofPQ4() throws Exception {
+    qtest("\"w2 w3\"~1 alt:\"w2 w3\"~1", new int[] { 0,1,2,3 });
+  }
+  public void testMultiFieldBQofPQ5() throws Exception {
+    qtest("\"w3 w2\"~1 alt:\"w3 w2\"~1", new int[] { 1,3 });
+  }
+  public void testMultiFieldBQofPQ6() throws Exception {
+    qtest("\"w3 w2\"~2 alt:\"w3 w2\"~2", new int[] { 0,1,3 });
+  }
+  public void testMultiFieldBQofPQ7() throws Exception {
+    qtest("\"w3 w2\"~3 alt:\"w3 w2\"~3", new int[] { 0,1,2,3 });
+  }
+
 }
