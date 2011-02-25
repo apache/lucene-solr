@@ -38,8 +38,8 @@ public class CheckHits {
     
   /**
    * Tests that all documents up to maxDoc which are *not* in the
-   * expected result set, have an explanation which indicates no match
-   * (ie: Explanation value of 0.0f)
+   * expected result set, have an explanation which indicates that 
+   * the document does not match
    */
   public static void checkNoMatchExplanations(Query q, String defaultFieldName,
                                               Searcher searcher, int[] results)
@@ -58,9 +58,9 @@ public class CheckHits {
       Explanation exp = searcher.explain(q, doc);
       Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
-      Assert.assertEquals("Explanation of [["+d+"]] for #"+doc+
-                            " doesn't indicate non-match: " + exp.toString(),
-                            0.0f, exp.getValue(), 0.0f);
+      Assert.assertFalse("Explanation of [["+d+"]] for #"+doc+
+                         " doesn't indicate non-match: " + exp.toString(),
+                         exp.isMatch());
     }
     
   }
@@ -498,6 +498,9 @@ public class CheckHits {
       
       Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
       verifyExplanation(d,doc,scorer.score(),deep,exp);
+      Assert.assertTrue("Explanation of [["+d+"]] for #"+ doc + 
+                        " does not indicate match: " + exp.toString(), 
+                        exp.isMatch());
     }
     @Override
     public void setNextReader(IndexReader reader, int docBase) {

@@ -1,5 +1,8 @@
 Lucene Change Log
 
+* LUCENE-2936: PhraseQuery score explanations were not correctly 
+  identifying matches vs non-matches.  (hossman)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

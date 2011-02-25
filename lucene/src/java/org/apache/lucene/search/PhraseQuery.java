@@ -210,7 +210,7 @@ public class PhraseQuery extends Query {
     public Explanation explain(IndexReader reader, int doc)
       throws IOException {
 
-      Explanation result = new Explanation();
+      ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
       StringBuilder docFreqs = new StringBuilder();
@@ -289,10 +289,7 @@ public class PhraseQuery extends Query {
 
       // combine them
       result.setValue(queryExpl.getValue() * fieldExpl.getValue());
-
-      if (queryExpl.getValue() == 1.0f)
-        return fieldExpl;
-
+      result.setMatch(tfExplanation.isMatch());
       return result;
     }
   }
