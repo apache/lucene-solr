@@ -483,7 +483,7 @@ public class FST<T> {
    * this changes the provided <code>arc</code> (2nd arg) in-place and returns
    * it.
    * 
-   * @returns Returns the second argument (<code>arc</code>).
+   * @return Returns the second argument (<code>arc</code>).
    */
   public Arc<T> readFirstTargetArc(Arc<T> follow, Arc<T> arc) throws IOException {
     //int pos = address;
