@@ -637,6 +637,10 @@ Other Changes
 
 * SOLR-2365: Move DIH jars out of solr.war (David Smiley via yonik)
 
+* SOLR-2381: Include a patched version of Jetty (6.1.26 + JETTY-1340) 
+  to fix problematic UTF-8 handling for supplementary characters.
+  (uschindler, yonik, rmuir)
+
 
 Build
 ----------------------
