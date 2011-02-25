@@ -98,7 +98,7 @@ public abstract class Scorer extends DocIdSetIterator {
    *
    * <p><b>NOTE:</b> Because of backwards compatibility, this method is still
    * declared as <b>protected</b>, but it is intended to be <b>public</b>,
-   * because it's called from other classes (like {@link BooleanScorer}).
+   * because it's called from other classes (like BooleanScorer).
    * If you subclass {@code Scorer}, you should declare the overridden method
    * as public to ease transition to Lucene 4.0, where it will be public.</p>
    * 
