@@ -181,7 +181,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
 
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField( "id", "id2", 1.0f );
-    doc2.addField( "name", "h\u1234llo", 1.0f );
+    doc2.addField( "name", "h\uD866\uDF05llo", 1.0f );
     doc2.addField( "price", 20 );
     
     Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
@@ -209,7 +209,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     // System.out.println( rsp.getResults() );
 
     // query outside ascii range
-    query.setQuery("name:h\u1234llo");
+    query.setQuery("name:h\uD866\uDF05llo");
     rsp = server.query( query );
     assertEquals( 1, rsp.getResults().getNumFound() );
 

@@ -117,8 +117,8 @@
 	<classpathentry kind="lib" path="solr/lib/velocity-tools-2.0.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
 	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.1.jar"/>
-	<classpathentry kind="lib" path="solr/example/lib/jetty-6.1.26.jar"/>
-	<classpathentry kind="lib" path="solr/example/lib/jetty-util-6.1.26.jar"/>
+	<classpathentry kind="lib" path="solr/example/lib/jetty-6.1.26-patched-JETTY-1340.jar"/>
+	<classpathentry kind="lib" path="solr/example/lib/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/servlet-api-2.5-20081211.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/core-3.1.1.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-2.1-glassfish-2.1.v20091210.jar"/>
