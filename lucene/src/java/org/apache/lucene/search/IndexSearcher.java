@@ -429,7 +429,7 @@ public class IndexSearcher {
    * <p>NOTE: this does not compute scores by default.  If you
    * need scores, create a {@link TopFieldCollector}
    * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(Weight, Filter,
+   * then pass that to {@link #search(IndexReader.AtomicReaderContext[], Weight, Filter,
    * Collector)}.</p>
    */
   protected TopFieldDocs search(Weight weight, Filter filter, int nDocs,
@@ -475,7 +475,7 @@ public class IndexSearcher {
    * <p>NOTE: this does not compute scores by default.  If you
    * need scores, create a {@link TopFieldCollector}
    * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(Weight, Filter,
+   * then pass that to {@link #search(IndexReader.AtomicReaderContext[], Weight, Filter,
    * Collector)}.</p>
    */
   protected TopFieldDocs search(AtomicReaderContext[] leaves, Weight weight, Filter filter, int nDocs,

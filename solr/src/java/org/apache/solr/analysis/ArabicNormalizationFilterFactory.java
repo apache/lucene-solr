@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_arnormal" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.ArabicNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>

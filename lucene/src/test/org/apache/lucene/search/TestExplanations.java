@@ -52,7 +52,10 @@ public class TestExplanations extends LuceneTestCase {
   protected Directory directory;
   
   public static final String KEY = "KEY";
+  // boost on this field is the same as the iterator for the doc
   public static final String FIELD = "field";
+  // same contents, but no field boost
+  public static final String ALTFIELD = "alt";
   public static final QueryParser qp =
     new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer());
 
@@ -72,7 +75,10 @@ public class TestExplanations extends LuceneTestCase {
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(newField(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      Field f = newField(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED);
+      f.setBoost(i);
+      doc.add(f);
+      doc.add(newField(ALTFIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

@@ -21,7 +21,15 @@ import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.fa.PersianCharFilter;
 
 /**
- * Factory for {@link PersianCharFilter}
+ * Factory for {@link PersianCharFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_fa" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;charFilter class="solr.PersianCharFilterFactory"/&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
  */
 public class PersianCharFilterFactory extends BaseCharFilterFactory {
 
