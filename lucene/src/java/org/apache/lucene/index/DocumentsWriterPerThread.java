@@ -101,6 +101,26 @@ public class DocumentsWriterPerThread {
     public boolean testPoint(String name) {
       return docWriter.writer.testPoint(name);
     }
+
+    public void clear() {
+      // don't hold onto doc nor analyzer, in case it is
+      // largish:
+      doc = null;
+      analyzer = null;
+  }
+  }
+
+  static class FlushedSegment {
+    final SegmentInfo segmentInfo;
+    final BufferedDeletes segmentDeletes;
+    final BitVector deletedDocuments;
+
+    private FlushedSegment(SegmentInfo segmentInfo,
+        BufferedDeletes segmentDeletes, BitVector deletedDocuments) {
+      this.segmentInfo = segmentInfo;
+      this.segmentDeletes = segmentDeletes;
+      this.deletedDocuments = deletedDocuments;
+    }
   }
 
   /** Called if we hit an exception at a bad time (when
@@ -136,7 +156,6 @@ public class DocumentsWriterPerThread {
   final Directory directory;
   final DocState docState;
   final DocConsumer consumer;
-  private DocFieldProcessor docFieldProcessor;
 
   String segment;                         // Current segment we are working on
   boolean aborting;               // True if an abort is pending
@@ -160,10 +179,7 @@ public class DocumentsWriterPerThread {
     this.docState.similarityProvider = parent.indexWriter.getConfig().getSimilarityProvider();
 
     consumer = indexingChain.getChain(this);
-    if (consumer instanceof DocFieldProcessor) {
-      docFieldProcessor = (DocFieldProcessor) consumer;
     }
-  }
 
   void setAborting() {
     aborting = true;
@@ -175,7 +191,7 @@ public class DocumentsWriterPerThread {
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
     if (delTerm != null) {
-      pendingDeletes.addTerm(delTerm, docState.docID);
+      pendingDeletes.addTerm(delTerm, numDocsInRAM);
     }
 
     if (segment == null) {
@@ -186,7 +202,11 @@ public class DocumentsWriterPerThread {
 
     boolean success = false;
     try {
+      try {
       consumer.processDocument(fieldInfos);
+      } finally {
+        docState.clear();
+      }
 
       success = true;
     } finally {
@@ -230,15 +250,19 @@ public class DocumentsWriterPerThread {
   }
 
   void deleteQueries(Query... queries) {
+    if (numDocsInRAM > 0) {
     for (Query query : queries) {
       pendingDeletes.addQuery(query, numDocsInRAM);
     }
   }
+  }
 
   void deleteTerms(Term... terms) {
+    if (numDocsInRAM > 0) {
     for (Term term : terms) {
       pendingDeletes.addTerm(term, numDocsInRAM);
     }
+  }
   }
 
   int getNumDocsInRAM() {
@@ -254,12 +278,12 @@ public class DocumentsWriterPerThread {
     segment = null;
     consumer.doAfterFlush();
     fieldInfos = fieldInfos.newFieldInfosWithGlobalFieldNumberMap();
-    parent.substractFlushedNumDocs(numDocsInRAM);
+    parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }
 
   /** Flush all pending docs to a new segment */
-  SegmentInfo flush() throws IOException {
+  FlushedSegment flush() throws IOException {
     assert numDocsInRAM > 0;
 
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
@@ -295,6 +319,7 @@ public class DocumentsWriterPerThread {
 
       SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentCodecs, fieldInfos);
       consumer.flush(flushState);
+      pendingDeletes.terms.clear();
       newSegment.clearFilesCache();
 
       if (infoStream != null) {
@@ -305,11 +330,19 @@ public class DocumentsWriterPerThread {
       }
       flushedDocCount += flushState.numDocs;
 
+      BufferedDeletes segmentDeletes = null;
+      if (pendingDeletes.queries.isEmpty()) {
+        pendingDeletes.clear();
+      } else {
+        segmentDeletes = pendingDeletes;
+        pendingDeletes = new BufferedDeletes(false);
+      }
+
       doAfterFlush();
 
       success = true;
 
-      return newSegment;
+      return new FlushedSegment(newSegment, segmentDeletes, flushState.deletedDocs);
     } finally {
       if (!success) {
         if (segment != null) {

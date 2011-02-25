@@ -71,7 +71,6 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     if (doVectors) {
       termsWriter.hasVectors = true;
-      if (termsWriter.tvx != null) {
         if (termsHashPerField.bytesHash.size() != 0) {
           // Only necessary if previous doc hit a
           // non-aborting exception while writing vectors in
@@ -79,7 +78,6 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
           termsHashPerField.reset();
         }
       }
-    }
 
     // TODO: only if needed for performance
     //perThread.postingsCount = 0;

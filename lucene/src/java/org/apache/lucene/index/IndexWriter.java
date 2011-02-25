@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -2080,8 +2081,10 @@ public class IndexWriter implements Closeable {
     deleter.checkpoint(segmentInfos, false);
   }
 
-  void addFlushedSegment(SegmentInfo newSegment, BitVector deletedDocs) throws IOException {
-    assert newSegment != null;
+  void addFlushedSegment(FlushedSegment flushedSegment) throws IOException {
+    assert flushedSegment != null;
+
+    SegmentInfo newSegment = flushedSegment.segmentInfo;
 
     setDiagnostics(newSegment, "flush");
 
@@ -2107,8 +2110,8 @@ public class IndexWriter implements Closeable {
 
       // Must write deleted docs after the CFS so we don't
       // slurp the del file into CFS:
-      if (deletedDocs != null) {
-        final int delCount = deletedDocs.count();
+      if (flushedSegment.deletedDocuments != null) {
+        final int delCount = flushedSegment.deletedDocuments.count();
         assert delCount > 0;
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
@@ -2123,7 +2126,7 @@ public class IndexWriter implements Closeable {
           // shortly-to-be-opened SegmentReader and let it
           // carry the changes; there's no reason to use
           // filesystem as intermediary here.
-          deletedDocs.write(directory, delFileName);
+          flushedSegment.deletedDocuments.write(directory, delFileName);
           success2 = true;
         } finally {
           if (!success2) {
