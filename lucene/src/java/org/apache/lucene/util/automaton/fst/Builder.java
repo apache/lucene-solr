@@ -91,7 +91,7 @@ public class Builder<T> {
     return fst.nodeCount;
   }
 
-  public int getTermCount() {
+  public long getTermCount() {
     return frontier[0].inputCount;
   }
 
@@ -422,7 +422,7 @@ public class Builder<T> {
     Arc<T>[] arcs;
     T output;
     boolean isFinal;
-    int inputCount;
+    long inputCount;
 
     /** This node's depth, starting from the automaton root. */
     final int depth;
