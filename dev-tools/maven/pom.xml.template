@@ -42,6 +42,7 @@
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.5</java.compat.version>
     <jetty.version>6.1.26</jetty.version>
+    <patched.jetty.version>6.1.26-patched-JETTY-1340</patched.jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
     <tika.version>0.8</tika.version>
     <uima.version>${project.version}</uima.version>
@@ -315,12 +316,12 @@
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty</artifactId>
-        <version>${jetty.version}</version>
+        <version>${patched.jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-util</artifactId>
-        <version>${jetty.version}</version>
+        <version>${patched.jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
@@ -784,6 +785,34 @@
                   <packaging>jar</packaging>
                   <file>solr/contrib/uima/lib/uima-core.jar</file>
                 </configuration>  
+              </execution>
+              <execution>
+                <id>install-jetty</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>install-file</goal>
+                </goals>
+                <configuration>
+                  <groupId>org.mortbay.jetty</groupId>
+                  <artifactId>jetty</artifactId>
+                  <version>${patched.jetty.version}</version>
+                  <packaging>jar</packaging>
+                  <file>solr/example/lib/jetty-${patched.jetty.version}.jar</file>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-jetty-util</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>install-file</goal>
+                </goals>
+                <configuration>
+                  <groupId>org.mortbay.jetty</groupId>
+                  <artifactId>jetty-util</artifactId>
+                  <version>${patched.jetty.version}</version>
+                  <packaging>jar</packaging>
+                  <file>solr/example/lib/jetty-util-${patched.jetty.version}.jar</file>
+                </configuration>
               </execution>
             </executions>
           </plugin>
