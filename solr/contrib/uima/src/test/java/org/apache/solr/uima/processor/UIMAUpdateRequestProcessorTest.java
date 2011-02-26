@@ -36,6 +36,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -69,6 +70,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore("unstable: see https://issues.apache.org/jira/browse/SOLR-2387")
   public void testProcessing() throws Exception {
     // this test requires an internet connection (e.g. opencalais api)
     checkInternetConnection();
