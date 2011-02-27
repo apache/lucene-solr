@@ -4045,7 +4045,7 @@ public class IndexWriter implements Closeable {
       final int termsIndexDivisor;
       final boolean loadDocStores;
 
-      if (poolReaders && mergedSegmentWarmer != null) {
+      if (mergedSegmentWarmer != null) {
         // Load terms index & doc stores so the segment
         // warmer can run searches, load documents/term
         // vectors
