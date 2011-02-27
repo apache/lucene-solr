@@ -133,10 +133,15 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
         if (!RESOURCE_LOADER_AUTHORITY_ABSOLUTE.equals(authority)) {
           path = path.substring(1);
         }
-        final InputSource is = new InputSource(loader.openResource(path));
-        is.setSystemId(uri.toASCIIString());
-        is.setPublicId(publicId);
-        return is;
+        try {
+          final InputSource is = new InputSource(loader.openResource(path));
+          is.setSystemId(uri.toASCIIString());
+          is.setPublicId(publicId);
+          return is;
+        } catch (RuntimeException re) {
+          // unfortunately XInclude fallback only works with IOException, but openResource() never throws that one
+          throw (IOException) (new IOException(re.getMessage()).initCause(re));
+        }
       } else {
         // resolve all other URIs using the standard resolver
         return null;
