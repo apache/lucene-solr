@@ -30,7 +30,7 @@
   <property name="example.local" value="example"/>
   
   <path id="common.classpath">
-    <fileset dir="lib"/>
+  	<fileset dir="lib" includes="*.jar"/>
     <pathelement location="${solr-path}/build/solr"/>
     <pathelement location="${solr-path}/build/solrj"/>
     <path refid="lucene.classpath"/>
