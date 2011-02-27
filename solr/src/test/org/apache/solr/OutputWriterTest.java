@@ -83,6 +83,15 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
         assertTrue(out.contains("DUMMY"));
     }
     
+    @Test
+    public void testTrivialXsltWriterInclude() throws Exception {
+        lrf.args.put("wt", "xslt");
+        lrf.args.put("tr", "dummy-using-include.xsl");
+        String out = h.query(req("foo"));
+        // System.out.println(out);
+        assertTrue(out.contains("DUMMY"));
+    }
+    
     
     ////////////////////////////////////////////////////////////////////////////
     /** An output writer that doesn't do anything useful. */

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -65,7 +66,7 @@ public class SolrDispatchFilter implements Filter
 
   public SolrDispatchFilter() {
     try {
-      adminRequestParser = new SolrRequestParsers(new Config(null,"solr",new ByteArrayInputStream("<root/>".getBytes("UTF-8")),"") );
+      adminRequestParser = new SolrRequestParsers(new Config(null,"solr",new InputSource(new ByteArrayInputStream("<root/>".getBytes("UTF-8"))),"") );
     } catch (Exception e) {
       //unlikely
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);

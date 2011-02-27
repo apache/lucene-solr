@@ -42,6 +42,7 @@ import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import org.xml.sax.InputSource;
 
 
 /**
@@ -129,7 +130,7 @@ public class CoreContainer
         cores.load(solrHome, fconf);
       } else {
         cores.defaultAbortOnConfigError = abortOnConfigurationError;
-        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes("UTF-8")));
+        cores.load(solrHome, new InputSource(new ByteArrayInputStream(DEF_SOLR_XML.getBytes("UTF-8"))));
         cores.configFile = fconf;
       }
       setAbortOnConfigurationError(0 < cores.numCoresAbortOnConfigError);
@@ -203,7 +204,7 @@ public class CoreContainer
    */
   public void load(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException {
     this.configFile = configFile;
-    this.load(dir, new FileInputStream(configFile));
+    this.load(dir, new InputSource(configFile.toURI().toASCIIString()));
   } 
 
   /**
@@ -215,117 +216,109 @@ public class CoreContainer
    * @throws IOException
    * @throws SAXException
    */
-  public void load(String dir, InputStream cfgis)
+  public void load(String dir, InputSource cfgis)
       throws ParserConfigurationException, IOException, SAXException {
     this.loader = new SolrResourceLoader(dir);
     solrHome = loader.getInstanceDir();
-    try {
-      Config cfg = new Config(loader, null, cfgis, null);
-      String dcoreName = cfg.get("solr/cores/@defaultCoreName", null);
-      if(dcoreName != null) {
-        defaultCoreName = dcoreName;
-      }
-      persistent = cfg.getBool( "solr/@persistent", false );
-      libDir     = cfg.get(     "solr/@sharedLib", null);
-      adminPath  = cfg.get(     "solr/cores/@adminPath", null );
-      shareSchema = cfg.getBool("solr/cores/@shareSchema", false );
-      if(shareSchema){
-        indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
-      }
-      adminHandler  = cfg.get("solr/cores/@adminHandler", null );
-      managementPath  = cfg.get("solr/cores/@managementPath", null );
+    Config cfg = new Config(loader, null, cfgis, null);
+    String dcoreName = cfg.get("solr/cores/@defaultCoreName", null);
+    if(dcoreName != null) {
+      defaultCoreName = dcoreName;
+    }
+    persistent = cfg.getBool( "solr/@persistent", false );
+    libDir     = cfg.get(     "solr/@sharedLib", null);
+    adminPath  = cfg.get(     "solr/cores/@adminPath", null );
+    shareSchema = cfg.getBool("solr/cores/@shareSchema", false );
+    if(shareSchema){
+      indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
+    }
+    adminHandler  = cfg.get("solr/cores/@adminHandler", null );
+    managementPath  = cfg.get("solr/cores/@managementPath", null );
 
-      if (libDir != null) {
-        File f = FileUtils.resolvePath(new File(dir), libDir);
-        log.info( "loading shared library: "+f.getAbsolutePath() );
-        libLoader = SolrResourceLoader.createClassLoader(f, null);
-      }
+    if (libDir != null) {
+      File f = FileUtils.resolvePath(new File(dir), libDir);
+      log.info( "loading shared library: "+f.getAbsolutePath() );
+      libLoader = SolrResourceLoader.createClassLoader(f, null);
+    }
 
-      if (adminPath != null) {
-        if (adminHandler == null) {
-          coreAdminHandler = new CoreAdminHandler(this);
-        } else {
-          coreAdminHandler = this.createMultiCoreHandler(adminHandler);
-        }
-      }
-
-      try {
-        containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate("solr", XPathConstants.NODESET)).item(0));
-      } catch (Throwable e) {
-        SolrConfig.severeErrors.add(e);
-        SolrException.logOnce(log,null,e);
-      }
-      
-      // before looping over each core, let's check the names and fail 
-      // fast if the same one is reused multiple times.
-      { // local scope, won't need these vars again
-        NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core/@name", 
-                                                XPathConstants.NODESET);
-        Set<String> names = new HashSet<String>();
-        for (int i=0; i<nodes.getLength(); i++) {
-          String name = DOMUtil.getText(nodes.item(i));
-          if (names.contains(name)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                    "Multiple cores found with same name: " + 
-                                    name);
-          }
-          names.add(name);
-        }
-      }
-
-      NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
-      for (int i=0; i<nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-        try {
-          String name = DOMUtil.getAttr(node, "name", null);
-          if (null == name) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                    "Each core in solr.xml must have a 'name'");
-          }
-          if (name.equals(defaultCoreName)){
-            // for the default core we use a blank name,
-            // later on attempts to access it by it's full name will 
-            // be mapped to this.
-            name="";
-          }
-
-          CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
-
-          // deal with optional settings
-          String opt = DOMUtil.getAttr(node, "config", null);
-          if(solrConfigFilenameOverride != null && name.equals("")) {
-            p.setConfigName(solrConfigFilenameOverride);
-          } else if (opt != null) {
-            p.setConfigName(opt);
-          }
-          opt = DOMUtil.getAttr(node, "schema", null);
-          if (opt != null) {
-            p.setSchemaName(opt);
-          }
-          opt = DOMUtil.getAttr(node, "properties", null);
-          if (opt != null) {
-            p.setPropertiesName(opt);
-          }
-          opt = DOMUtil.getAttr(node, CoreAdminParams.DATA_DIR, null);
-          if (opt != null) {
-            p.setDataDir(opt);
-          }
-
-          p.setCoreProperties(readProperties(cfg, node));
-
-          SolrCore core = create(p);
-          register(name, core, false);
-        }
-        catch (Throwable ex) {
-          SolrConfig.severeErrors.add( ex );
-          SolrException.logOnce(log,null,ex);
-        }
+    if (adminPath != null) {
+      if (adminHandler == null) {
+        coreAdminHandler = new CoreAdminHandler(this);
+      } else {
+        coreAdminHandler = this.createMultiCoreHandler(adminHandler);
       }
     }
 
-    finally {
-      if (cfgis != null) {
-        try { cfgis.close(); } catch (Exception xany) {}
+    try {
+      containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate("solr", XPathConstants.NODESET)).item(0));
+    } catch (Throwable e) {
+      SolrConfig.severeErrors.add(e);
+      SolrException.logOnce(log,null,e);
+    }
+    
+    // before looping over each core, let's check the names and fail 
+    // fast if the same one is reused multiple times.
+    { // local scope, won't need these vars again
+      NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core/@name", 
+                                              XPathConstants.NODESET);
+      Set<String> names = new HashSet<String>();
+      for (int i=0; i<nodes.getLength(); i++) {
+        String name = DOMUtil.getText(nodes.item(i));
+        if (names.contains(name)) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                  "Multiple cores found with same name: " + 
+                                  name);
+        }
+        names.add(name);
+      }
+    }
+
+    NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
+    for (int i=0; i<nodes.getLength(); i++) {
+      Node node = nodes.item(i);
+      try {
+        String name = DOMUtil.getAttr(node, "name", null);
+        if (null == name) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                  "Each core in solr.xml must have a 'name'");
+        }
+        if (name.equals(defaultCoreName)){
+          // for the default core we use a blank name,
+          // later on attempts to access it by it's full name will 
+          // be mapped to this.
+          name="";
+        }
+
+        CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
+
+        // deal with optional settings
+        String opt = DOMUtil.getAttr(node, "config", null);
+        if(solrConfigFilenameOverride != null && name.equals("")) {
+          p.setConfigName(solrConfigFilenameOverride);
+        } else if (opt != null) {
+          p.setConfigName(opt);
+        }
+        opt = DOMUtil.getAttr(node, "schema", null);
+        if (opt != null) {
+          p.setSchemaName(opt);
+        }
+        opt = DOMUtil.getAttr(node, "properties", null);
+        if (opt != null) {
+          p.setPropertiesName(opt);
+        }
+        opt = DOMUtil.getAttr(node, CoreAdminParams.DATA_DIR, null);
+        if (opt != null) {
+          p.setDataDir(opt);
+        }
+
+        p.setCoreProperties(readProperties(cfg, node));
+
+        SolrCore core = create(p);
+        register(name, core, false);
+      }
+      catch (Throwable ex) {
+        SolrConfig.severeErrors.add( ex );
+        SolrException.logOnce(log,null,ex);
       }
     }
   }

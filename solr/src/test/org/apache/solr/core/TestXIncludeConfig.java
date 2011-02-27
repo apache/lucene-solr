@@ -17,11 +17,8 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.util.AbstractSolrTestCase;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -46,19 +43,16 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
 
   @Override
   public void setUp() throws Exception {
-    File dest = new File("solrconfig-reqHandler.incl");
-    dest.deleteOnExit();
-    FileUtils.copyFile(getFile("solr/conf/solrconfig-reqHandler.incl"), dest);
     supports = true;
     javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     try {
       //see whether it even makes sense to run this test
       dbf.setXIncludeAware(true);
       dbf.setNamespaceAware(true);
-      super.setUp();
     } catch (UnsupportedOperationException e) {
       supports = false;
     }
+    super.setUp();
   }
 
   public void testXInclude() throws Exception {
