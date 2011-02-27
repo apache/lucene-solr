@@ -62,17 +62,14 @@ public abstract class DocumentsWriterPerThreadPool {
     return new Iterator<ThreadState>() {
       int i = 0;
 
-      @Override
       public boolean hasNext() {
         return i < upto;
       }
 
-      @Override
       public ThreadState next() {
         return perThreads[i++];
       }
 
-      @Override
       public void remove() {
         throw new UnsupportedOperationException("remove() not supported.");
       }
