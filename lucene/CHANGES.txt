@@ -138,6 +138,9 @@ Changes in backwards compatibility policy
 * LUCENE-2236: Similarity can now be configured on a per-field basis. See the
   migration notes in MIGRATE.txt for more details.  (Robert Muir, Doron Cohen)
 
+* LUCENE-2315: AttributeSource's methods for accessing attributes are now final,
+  else its easy to corrupt the internal states.  (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
