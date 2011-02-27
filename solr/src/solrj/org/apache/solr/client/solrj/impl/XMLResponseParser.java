@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.XMLErrorLogger;
 
 /**
  * 
@@ -48,6 +49,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 public class XMLResponseParser extends ResponseParser
 {
   public static Logger log = LoggerFactory.getLogger(XMLResponseParser.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   // reuse the factory among all parser instances so things like string caches
   // won't be duplicated
@@ -68,6 +70,7 @@ public class XMLResponseParser extends ResponseParser
       // isimplementation specific.
       log.debug( "Unable to set the 'reuse-instance' property for the input factory: "+factory );
     }
+    factory.setXMLReporter(xmllog);
   }
 
   public XMLResponseParser() {}

@@ -21,6 +21,7 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -49,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Config {
   public static final Logger log = LoggerFactory.getLogger(Config.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
@@ -152,6 +154,7 @@ public class Config {
       
       final DocumentBuilder db = dbf.newDocumentBuilder();
       db.setEntityResolver(new SystemIdResolver(loader));
+      db.setErrorHandler(xmllog);
       try {
         doc = db.parse(is);
       } finally {
