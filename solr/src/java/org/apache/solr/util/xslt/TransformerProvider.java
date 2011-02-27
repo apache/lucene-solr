@@ -31,6 +31,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrConfig;
 
 /** Singleton that creates a Transformer for the XSLTServletFilter.
@@ -42,18 +43,17 @@ import org.apache.solr.core.SolrConfig;
  */
 
 public class TransformerProvider {
-  public static TransformerProvider instance = new TransformerProvider();
-
   private String lastFilename;
   private Templates lastTemplates = null;
   private long cacheExpires = 0;
   
-  private static Logger log;
+  private static final Logger log = LoggerFactory.getLogger(TransformerProvider.class.getName());
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
+  public static TransformerProvider instance = new TransformerProvider();
+
   /** singleton */
   private TransformerProvider() {
-    log = LoggerFactory.getLogger(TransformerProvider.class.getName());
-    
     // tell'em: currently, we only cache the last used XSLT transform, and blindly recompile it
     // once cacheLifetimeSeconds expires
     log.warn(
@@ -103,6 +103,7 @@ public class TransformerProvider {
       final String fn = "xslt/" + filename;
       final TransformerFactory tFactory = TransformerFactory.newInstance();
       tFactory.setURIResolver(new SystemIdResolver(loader).asURIResolver());
+      tFactory.setErrorListener(xmllog);
       final StreamSource src = new StreamSource(loader.openResource(fn),
         SystemIdResolver.createSystemIdFromResourceName(fn));
       try {

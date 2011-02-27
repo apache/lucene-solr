@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.util.XMLErrorLogger;
 import javax.xml.stream.XMLInputFactory;
 import static javax.xml.stream.XMLStreamConstants.*;
 import javax.xml.stream.XMLStreamException;
@@ -25,6 +26,8 @@ import java.io.Reader;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -54,6 +57,9 @@ import java.util.regex.Pattern;
  * @since solr 1.3
  */
 public class XPathRecordReader {
+  private static final Logger LOG = LoggerFactory.getLogger(XPathRecordReader.class);
+  private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
+
   private Node rootNode = new Node("/", null);
 
   /** 
@@ -622,6 +628,7 @@ public class XPathRecordReader {
   static{
     factory.setProperty(XMLInputFactory.IS_VALIDATING , Boolean.FALSE); 
     factory.setProperty(XMLInputFactory.SUPPORT_DTD , Boolean.FALSE);
+    factory.setXMLReporter(XMLLOG);
   }
 
   /**Implement this interface to stream records as and when one is found.

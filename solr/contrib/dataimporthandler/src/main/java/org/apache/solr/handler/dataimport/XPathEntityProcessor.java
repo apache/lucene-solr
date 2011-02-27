@@ -21,6 +21,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrap
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.io.IOUtils;
@@ -54,6 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class XPathEntityProcessor extends EntityProcessorBase {
   private static final Logger LOG = LoggerFactory.getLogger(XPathEntityProcessor.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(LOG);
 
   private static final Map<String, Object> END_MARKER = new HashMap<String, Object>();
   
@@ -124,6 +126,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           // fallback for tests
           xsltSource = new StreamSource(xslt);
         }
+        transFact.setErrorListener(xmllog);
         try {
           xslTransformer = transFact.newTransformer(xsltSource);
         } finally {

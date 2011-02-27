@@ -25,6 +25,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.common.util.XMLErrorLogger;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
@@ -60,6 +61,7 @@ public class DataImporter {
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
+  private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
 
   private Status status = Status.IDLE;
 
@@ -188,6 +190,7 @@ public class DataImporter {
       DocumentBuilder builder = dbf.newDocumentBuilder();
       if (core != null)
         builder.setEntityResolver(new SystemIdResolver(core.getResourceLoader()));
+      builder.setErrorHandler(XMLLOG);
       Document document;
       try {
         document = builder.parse(configFile);
