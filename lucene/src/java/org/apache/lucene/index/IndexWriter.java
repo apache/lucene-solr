@@ -857,14 +857,14 @@ public class IndexWriter implements Closeable {
   private FieldInfos getCurrentFieldInfos() throws IOException {
     final FieldInfos fieldInfos;
     if (segmentInfos.size() > 0) {
-        fieldInfos = new FieldInfos();
-        for(SegmentInfo info : segmentInfos) {
-          final FieldInfos segFieldInfos = getFieldInfos(info);
+      fieldInfos = new FieldInfos();
+      for(SegmentInfo info : segmentInfos) {
+        final FieldInfos segFieldInfos = getFieldInfos(info);
         for (FieldInfo fi : segFieldInfos) {
           fieldInfos.add(fi);
-          }
         }
-      } else {
+      }
+    } else {
       fieldInfos = new FieldInfos();
     }
     return fieldInfos;
@@ -3290,7 +3290,7 @@ public class IndexWriter implements Closeable {
       final int termsIndexDivisor;
       final boolean loadDocStores;
 
-      if (poolReaders && mergedSegmentWarmer != null) {
+      if (mergedSegmentWarmer != null) {
         // Load terms index & doc stores so the segment
         // warmer can run searches, load documents/term
         // vectors
@@ -3298,7 +3298,6 @@ public class IndexWriter implements Closeable {
         loadDocStores = true;
       } else {
         termsIndexDivisor = -1;
-        loadDocStores = false;
       }
 
       // TODO: in the non-realtime case, we may want to only
