@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.io.IOUtils;
 
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
@@ -29,6 +30,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 
 /** Singleton that creates a Transformer for the XSLTServletFilter.
@@ -42,7 +44,6 @@ import org.apache.solr.core.SolrConfig;
 public class TransformerProvider {
   public static TransformerProvider instance = new TransformerProvider();
 
-  private final TransformerFactory tFactory = TransformerFactory.newInstance();
   private String lastFilename;
   private Templates lastTemplates = null;
   private long cacheExpires = 0;
@@ -99,8 +100,17 @@ public class TransformerProvider {
       if(log.isDebugEnabled()) {
         log.debug("compiling XSLT templates:" + filename);
       }
-      final InputStream xsltStream = loader.openResource("xslt/" + filename);
-      result = tFactory.newTemplates(new StreamSource(xsltStream));
+      final String fn = "xslt/" + filename;
+      final TransformerFactory tFactory = TransformerFactory.newInstance();
+      tFactory.setURIResolver(new SystemIdResolver(loader).asURIResolver());
+      final StreamSource src = new StreamSource(loader.openResource(fn),
+        SystemIdResolver.createSystemIdFromResourceName(fn));
+      try {
+        result = tFactory.newTemplates(src);
+      } finally {
+        // some XML parsers are broken and don't close the byte stream (but they should according to spec)
+        IOUtils.closeQuietly(src.getInputStream());
+      }
     } catch (Exception e) {
       log.error(getClass().getName(), "newTemplates", e);
       final IOException ioe = new IOException("Unable to initialize Templates '" + filename + "'");

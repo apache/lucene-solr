@@ -680,7 +680,7 @@ Bug Fixes
 
 * SOLR-96: Fix XML parsing in XMLUpdateRequestHandler and
   DocumentAnalysisRequestHandler to respect charset from XML file and only
-  use HTTP header's "Content-Type" as a "hint". (Uwe Schindler)
+  use HTTP header's "Content-Type" as a "hint". (uschindler)
 
 * SOLR-2339: Fix sorting to explicitly generate an error if you
   attempt to sort on a multiValued field. (hossman)
@@ -696,6 +696,19 @@ Bug Fixes
 * SOLR-2380: Distributed faceting could miss values when facet.sort=index
   and when facet.offset was greater than 0. (yonik)
   
+* SOLR-1656: XIncludes and other HREFs in XML files loaded by ResourceLoader
+  are fixed to be resolved using the URI standard (RFC 2396). The system 
+  identifier is no longer a plain filename with path, it gets initialized 
+  using a custom URI scheme "solrres:". This scheme is resolved using a 
+  EntityResolver that utilizes ResourceLoader 
+  (org.apache.solr.common.util.SystemIdResolver). This makes all relative 
+  pathes in Solr's config files behave like expected. This change 
+  introduces some backwards breaks in the API: Some config classes 
+  (Config, SolrConfig, IndexSchema) were changed to take 
+  org.xml.sax.InputSource instead of InputStream. There may also be some 
+  backwards breaks in existing config files, it is recommended to check 
+  your config files / XSLTs and replace all XIncludes/HREFs that were 
+  hacked to use absolute paths to use relative ones. (uschindler)
 
 
 Other Changes
