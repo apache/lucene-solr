@@ -1071,7 +1071,7 @@
       <entities_apikey>04490000a72fe7ec5cb3497f14e77f338c86f2fe</entities_apikey>
       <oc_licenseID>g6h9zamsdtwhb93nc247ecrs</oc_licenseID>
   </runtimeParameters>
-  <analysisEngine>/org/apache/uima/desc/OverridingParamsExtServicesAE.xml</analysisEngine>
+  <analysisEngine>/TestAE.xml</analysisEngine>
   <analyzeFields merge="false">text</analyzeFields>
   <fieldMapping>
     <type name="org.apache.uima.alchemy.ts.categorization.Category">
