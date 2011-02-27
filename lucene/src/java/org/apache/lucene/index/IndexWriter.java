@@ -3298,6 +3298,7 @@ public class IndexWriter implements Closeable {
         loadDocStores = true;
       } else {
         termsIndexDivisor = -1;
+        loadDocStores = false;
       }
 
       // TODO: in the non-realtime case, we may want to only
