@@ -18,12 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.text.Collator;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -109,11 +105,6 @@ public class TestSort extends LuceneTestCase {
   {   "c",   "m",            "5",           "5.0",           "5",    null,    null,              "5",           "5", "5", "5", null},
   {   "d",   "m",            null,          null,           null,    null,    null,              null,           null, null, null, null}
   }; 
-  
-  // the sort order of Ø versus U depends on the version of the rules being used
-  // for the inherited root locale: Ø's order isnt specified in Locale.US since 
-  // its not used in english.
-  private boolean oStrokeFirst = Collator.getInstance(new Locale("")).compare("Ø", "U") < 0;
   
   // create an index of all the documents, or just the x, or just the y documents
   private IndexSearcher getIndex (boolean even, boolean odd)
@@ -564,12 +555,6 @@ public class TestSort extends LuceneTestCase {
     sort.setSort (new SortField ("string", SortField.STRING, true) );
     assertMatches (full, queryF, sort, "IJZ");
     
-    sort.setSort (new SortField ("i18n", Locale.ENGLISH));
-    assertMatches (full, queryF, sort, "ZJI");
-    
-    sort.setSort (new SortField ("i18n", Locale.ENGLISH, true));
-    assertMatches (full, queryF, sort, "IJZ");
-
     sort.setSort (new SortField ("int", SortField.INT) );
     assertMatches (full, queryF, sort, "IZJ");
 
@@ -630,36 +615,6 @@ public class TestSort extends LuceneTestCase {
     assertMatches (full, queryX, sort, "GICEA");
   }
 
-  // test using a Locale for sorting strings
-  public void testLocaleSort() throws Exception {
-    sort.setSort (new SortField ("string", Locale.US) );
-    assertMatches (full, queryX, sort, "AIGEC");
-    assertMatches (full, queryY, sort, "DJHFB");
-
-    sort.setSort (new SortField ("string", Locale.US, true) );
-    assertMatches (full, queryX, sort, "CEGIA");
-    assertMatches (full, queryY, sort, "BFHJD");
-  }
-
-  // test using various international locales with accented characters
-  // (which sort differently depending on locale)
-  public void testInternationalSort() throws Exception {
-    sort.setSort (new SortField ("i18n", Locale.US));
-    assertMatches (full, queryY, sort, oStrokeFirst ? "BFJHD" : "BFJDH");
-
-    sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
-    assertMatches (full, queryY, sort, "BJDFH");
-
-    sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
-    assertMatches (full, queryY, sort, "BJDHF");
-
-    sort.setSort (new SortField ("i18n", Locale.US));
-    assertMatches (full, queryX, sort, "ECAGI");
-
-    sort.setSort (new SortField ("i18n", Locale.FRANCE));
-    assertMatches (full, queryX, sort, "EACGI");
-  }
-    
   // test a variety of sorts using a parallel multisearcher
   public void testParallelMultiSort() throws Exception {
     ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
@@ -976,19 +931,6 @@ public class TestSort extends LuceneTestCase {
     assertSaneFieldCaches(getName() + " various");
     // next we'll check Locale based (String[]) for 'string', so purge first
     FieldCache.DEFAULT.purgeAllCaches();
-
-    sort.setSort(new SortField ("string", Locale.US) );
-    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
-
-    sort.setSort(new SortField ("string", Locale.US, true) );
-    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
-
-    sort.setSort(new SortField ("string", Locale.UK) );
-    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
-
-    assertSaneFieldCaches(getName() + " Locale.US + Locale.UK");
-    FieldCache.DEFAULT.purgeAllCaches();
-
   }
 
   private void assertMatches(IndexSearcher searcher, Query query, Sort sort, String expectedResult) throws IOException {
@@ -1012,37 +954,6 @@ public class TestSort extends LuceneTestCase {
       }
     }
     assertEquals (msg, expectedResult, buff.toString());
-  }
-
-  private HashMap<String,Float> getScores (ScoreDoc[] hits, IndexSearcher searcher)
-  throws IOException {
-    HashMap<String,Float> scoreMap = new HashMap<String,Float>();
-    int n = hits.length;
-    for (int i=0; i<n; ++i) {
-      Document doc = searcher.doc(hits[i].doc);
-      String[] v = doc.getValues("tracer");
-      assertEquals (v.length, 1);
-      scoreMap.put (v[0], Float.valueOf(hits[i].score));
-    }
-    return scoreMap;
-  }
-
-  // make sure all the values in the maps match
-  private <K, V> void assertSameValues (HashMap<K,V> m1, HashMap<K,V> m2) {
-    int n = m1.size();
-    int m = m2.size();
-    assertEquals (n, m);
-    Iterator<K> iter = m1.keySet().iterator();
-    while (iter.hasNext()) {
-      K key = iter.next();
-      V o1 = m1.get(key);
-      V o2 = m2.get(key);
-      if (o1 instanceof Float) {
-        assertEquals(((Float)o1).floatValue(), ((Float)o2).floatValue(), 1e-6);
-      } else {
-        assertEquals (m1.get(key), m2.get(key));
-      }
-    }
   }
 
   public void testEmptyStringVsNullStringSort() throws Exception {

@@ -29,8 +29,8 @@ import org.apache.lucene.util.AttributeSource;
  * Emits the entire input as a single token.
  */
 public final class KeywordTokenizer extends Tokenizer {
-  
-  private static final int DEFAULT_BUFFER_SIZE = 256;
+  /** Default read buffer size */ 
+  public static final int DEFAULT_BUFFER_SIZE = 256;
 
   private boolean done = false;
   private int finalOffset;

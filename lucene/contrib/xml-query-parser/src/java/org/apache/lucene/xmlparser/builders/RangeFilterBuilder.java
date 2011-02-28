@@ -41,7 +41,7 @@ public class RangeFilterBuilder implements FilterBuilder {
 		String upperTerm=e.getAttribute("upperTerm");
 		boolean includeLower=DOMUtils.getAttribute(e,"includeLower",true);
 		boolean includeUpper=DOMUtils.getAttribute(e,"includeUpper",true);
-		return new TermRangeFilter(fieldName,lowerTerm,upperTerm,includeLower,includeUpper);
+		return TermRangeFilter.newStringRange(fieldName,lowerTerm,upperTerm,includeLower,includeUpper);
 	}
 
 }

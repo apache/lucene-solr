@@ -39,7 +39,10 @@ import java.nio.ByteBuffer;
  * <p/>
  *
  * @lucene.experimental
+ * @deprecated Implement {@link TermToBytesRefAttribute} and store bytes directly
+ * instead. This class will be removed in Lucene 5.0
  */
+@Deprecated
 public final class IndexableBinaryStringTools {
 
   private static final CodingCase[] CODING_CASES = {

@@ -36,6 +36,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -56,7 +57,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
    * @param keyBits the result from 
    *  collator.getCollationKey(original).toByteArray()
    * @return The encoded collation key for the original String
+   * @deprecated only for testing deprecated filters
    */
+  @Deprecated
   protected String encodeCollationKey(byte[] keyBits) {
     // Ensure that the backing char[] array is large enough to hold the encoded
     // Binary String
@@ -65,10 +68,10 @@ public abstract class CollationTestBase extends LuceneTestCase {
     IndexableBinaryStringTools.encode(keyBits, 0, keyBits.length, encodedBegArray, 0, encodedLength);
     return new String(encodedBegArray);
   }
-    
-  public void testFarsiRangeFilterCollating(Analyzer analyzer, String firstBeg, 
-                                            String firstEnd, String secondBeg,
-                                            String secondEnd) throws Exception {
+  
+  public void testFarsiRangeFilterCollating(Analyzer analyzer, BytesRef firstBeg, 
+                                            BytesRef firstEnd, BytesRef secondBeg,
+                                            BytesRef secondEnd) throws Exception {
     RAMDirectory ramDir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
@@ -98,9 +101,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
     searcher.close();
   }
  
-  public void testFarsiRangeQueryCollating(Analyzer analyzer, String firstBeg, 
-                                            String firstEnd, String secondBeg,
-                                            String secondEnd) throws Exception {
+  public void testFarsiRangeQueryCollating(Analyzer analyzer, BytesRef firstBeg, 
+                                            BytesRef firstEnd, BytesRef secondBeg,
+                                            BytesRef secondEnd) throws Exception {
     RAMDirectory ramDir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
@@ -126,8 +129,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     searcher.close();
   }
 
-  public void testFarsiTermRangeQuery(Analyzer analyzer, String firstBeg,
-      String firstEnd, String secondBeg, String secondEnd) throws Exception {
+  public void testFarsiTermRangeQuery(Analyzer analyzer, BytesRef firstBeg,
+      BytesRef firstEnd, BytesRef secondBeg, BytesRef secondEnd) throws Exception {
 
     RAMDirectory farsiIndex = new RAMDirectory();
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(

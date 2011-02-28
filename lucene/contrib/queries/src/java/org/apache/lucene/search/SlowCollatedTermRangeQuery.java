@@ -18,11 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.text.Collator;
 
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -30,86 +30,88 @@ import org.apache.lucene.util.ToStringUtils;
  *
  * <p>This query matches the documents looking for terms that fall into the
  * supplied range according to {@link
- * Byte#compareTo(Byte)}. It is not intended
+ * String#compareTo(String)}, unless a <code>Collator</code> is provided. It is not intended
  * for numerical ranges; use {@link NumericRangeQuery} instead.
  *
  * <p>This query uses the {@link
  * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
  * rewrite method.
- * @since 2.9
+ * @deprecated Index collation keys with CollationKeyAnalyzer or ICUCollationKeyAnalyzer instead.
+ * This class will be removed in Lucene 5.0
  */
-
-public class TermRangeQuery extends MultiTermQuery {
-  private BytesRef lowerTerm;
-  private BytesRef upperTerm;
+@Deprecated
+public class SlowCollatedTermRangeQuery extends MultiTermQuery {
+  private String lowerTerm;
+  private String upperTerm;
   private boolean includeLower;
   private boolean includeUpper;
+  private Collator collator;
 
-
-  /**
-   * Constructs a query selecting all terms greater/equal than <code>lowerTerm</code>
-   * but less/equal than <code>upperTerm</code>. 
-   * 
+  /** Constructs a query selecting all terms greater/equal than
+   * <code>lowerTerm</code> but less/equal than <code>upperTerm</code>.
    * <p>
    * If an endpoint is null, it is said 
    * to be "open". Either or both endpoints may be open.  Open endpoints may not 
    * be exclusive (you can't select all but the first or last term without 
    * explicitly specifying the term to exclude.)
-   * 
-   * @param field The field that holds both lower and upper terms.
-   * @param lowerTerm
-   *          The term text at the lower end of the range
-   * @param upperTerm
-   *          The term text at the upper end of the range
+   * <p>
+   *
+   * @param lowerTerm The Term text at the lower end of the range
+   * @param upperTerm The Term text at the upper end of the range
    * @param includeLower
    *          If true, the <code>lowerTerm</code> is
    *          included in the range.
    * @param includeUpper
    *          If true, the <code>upperTerm</code> is
    *          included in the range.
+   * @param collator The collator to use to collate index Terms, to determine
+   *  their membership in the range bounded by <code>lowerTerm</code> and
+   *  <code>upperTerm</code>.
    */
-  public TermRangeQuery(String field, BytesRef lowerTerm, BytesRef upperTerm, boolean includeLower, boolean includeUpper) {
+  public SlowCollatedTermRangeQuery(String field, String lowerTerm, String upperTerm, 
+      boolean includeLower, boolean includeUpper,  Collator collator) {
     super(field);
     this.lowerTerm = lowerTerm;
     this.upperTerm = upperTerm;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
-  }
-
-  /**
-   * Factory that creates a new TermRangeQuery using Strings for term text.
-   */
-  public static TermRangeQuery newStringRange(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper) {
-    BytesRef lower = lowerTerm == null ? null : new BytesRef(lowerTerm);
-    BytesRef upper = upperTerm == null ? null : new BytesRef(upperTerm);
-    return new TermRangeQuery(field, lower, upper, includeLower, includeUpper);
+    this.collator = collator;
   }
 
   /** Returns the lower value of this range query */
-  public BytesRef getLowerTerm() { return lowerTerm; }
+  public String getLowerTerm() { return lowerTerm; }
 
   /** Returns the upper value of this range query */
-  public BytesRef getUpperTerm() { return upperTerm; }
+  public String getUpperTerm() { return upperTerm; }
   
   /** Returns <code>true</code> if the lower endpoint is inclusive */
   public boolean includesLower() { return includeLower; }
   
   /** Returns <code>true</code> if the upper endpoint is inclusive */
   public boolean includesUpper() { return includeUpper; }
+
+  /** Returns the collator used to determine range inclusion */
+  public Collator getCollator() { return collator; }
   
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    if (lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {
+    if (lowerTerm != null && upperTerm != null && collator.compare(lowerTerm, upperTerm) > 0) {
       return TermsEnum.EMPTY;
     }
     
     TermsEnum tenum = terms.iterator();
-    
-    if ((lowerTerm == null || (includeLower && lowerTerm.length == 0)) && upperTerm == null) {
+
+    if (lowerTerm == null && upperTerm == null) {
       return tenum;
     }
-    return new TermRangeTermsEnum(tenum,
-        lowerTerm, upperTerm, includeLower, includeUpper);
+    return new SlowCollatedTermRangeTermsEnum(tenum,
+        lowerTerm, upperTerm, includeLower, includeUpper, collator);
+  }
+
+  /** @deprecated */
+  @Deprecated
+  public String field() {
+    return getField();
   }
 
   /** Prints a user-readable version of this query. */
@@ -121,10 +123,9 @@ public class TermRangeQuery extends MultiTermQuery {
           buffer.append(":");
       }
       buffer.append(includeLower ? '[' : '{');
-      // TODO: all these toStrings for queries should just output the bytes, it might not be UTF-8!
-      buffer.append(lowerTerm != null ? ("*".equals(lowerTerm.utf8ToString()) ? "\\*" : lowerTerm.utf8ToString())  : "*");
+      buffer.append(lowerTerm != null ? lowerTerm : "*");
       buffer.append(" TO ");
-      buffer.append(upperTerm != null ? ("*".equals(upperTerm.utf8ToString()) ? "\\*" : upperTerm.utf8ToString()) : "*");
+      buffer.append(upperTerm != null ? upperTerm : "*");
       buffer.append(includeUpper ? ']' : '}');
       buffer.append(ToStringUtils.boost(getBoost()));
       return buffer.toString();
@@ -134,6 +135,7 @@ public class TermRangeQuery extends MultiTermQuery {
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
+    result = prime * result + ((collator == null) ? 0 : collator.hashCode());
     result = prime * result + (includeLower ? 1231 : 1237);
     result = prime * result + (includeUpper ? 1231 : 1237);
     result = prime * result + ((lowerTerm == null) ? 0 : lowerTerm.hashCode());
@@ -149,7 +151,12 @@ public class TermRangeQuery extends MultiTermQuery {
       return false;
     if (getClass() != obj.getClass())
       return false;
-    TermRangeQuery other = (TermRangeQuery) obj;
+    SlowCollatedTermRangeQuery other = (SlowCollatedTermRangeQuery) obj;
+    if (collator == null) {
+      if (other.collator != null)
+        return false;
+    } else if (!collator.equals(other.collator))
+      return false;
     if (includeLower != other.includeLower)
       return false;
     if (includeUpper != other.includeUpper)
@@ -166,5 +173,4 @@ public class TermRangeQuery extends MultiTermQuery {
       return false;
     return true;
   }
-
 }

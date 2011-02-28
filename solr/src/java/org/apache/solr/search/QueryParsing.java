@@ -398,8 +398,8 @@ public class QueryParsing {
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
       out.append(q.includesLower() ? '[' : '{');
-      String lt = q.getLowerTerm();
-      String ut = q.getUpperTerm();
+      String lt = q.getLowerTerm().utf8ToString();
+      String ut = q.getUpperTerm().utf8ToString();
       if (lt == null) {
         out.append('*');
       } else {

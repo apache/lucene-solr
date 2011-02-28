@@ -828,7 +828,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        TermRangeFilter rf = new TermRangeFilter("contents", "john", "john", true, true);
+        TermRangeFilter rf = TermRangeFilter.newStringRange("contents", "john", "john", true, true);
         SpanQuery clauses[] = { new SpanTermQuery(new Term("contents", "john")),
             new SpanTermQuery(new Term("contents", "kennedy")), };
         SpanNearQuery snq = new SpanNearQuery(clauses, 1, true);
@@ -851,7 +851,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        TermRangeFilter rf = new TermRangeFilter("contents", "john", "john", true, true);
+        TermRangeFilter rf = TermRangeFilter.newStringRange("contents", "john", "john", true, true);
         PhraseQuery pq = new PhraseQuery();
         pq.add(new Term("contents", "john"));
         pq.add(new Term("contents", "kennedy"));

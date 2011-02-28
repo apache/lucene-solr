@@ -112,11 +112,10 @@ algorithm.
 
 <h3>Farsi Range Queries</h3>
 <code><pre>
-  Collator collator = Collator.getInstance(new Locale("ar"));
-  ICUCollationKeyAnalyzer analyzer = new ICUCollationKeyAnalyzer(collator);
+  Collator collator = Collator.getInstance(new ULocale("ar"));
+  ICUCollationKeyAnalyzer analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_40, collator);
   RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter
-    (ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(Version.LUCENE_40, analyzer));
   Document doc = new Document();
   doc.add(new Field("content", "\u0633\u0627\u0628", 
                     Field.Store.YES, Field.Index.ANALYZED));
@@ -124,12 +123,9 @@ algorithm.
   writer.close();
   IndexSearcher is = new IndexSearcher(ramDir, true);
 
-  // The AnalyzingQueryParser in Lucene's contrib allows terms in range queries
-  // to be passed through an analyzer - Lucene's standard QueryParser does not
-  // allow this.
-  AnalyzingQueryParser aqp = new AnalyzingQueryParser("content", analyzer);
-  aqp.setLowercaseExpandedTerms(false);
-  
+  QueryParser aqp = new QueryParser(Version.LUCENE_40, "content", analyzer);
+  aqp.setAnalyzeRangeTerms(true);
+    
   // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
   // orders the U+0698 character before the U+0633 character, so the single
   // indexed Term above should NOT be returned by a ConstantScoreRangeQuery
@@ -143,10 +139,9 @@ algorithm.
 <h3>Danish Sorting</h3>
 <code><pre>
   Analyzer analyzer 
-    = new ICUCollationKeyAnalyzer(Collator.getInstance(new Locale("da", "dk")));
+    = new ICUCollationKeyAnalyzer(Version.LUCENE_40, Collator.getInstance(new ULocale("da", "dk")));
   RAMDirectory indexStore = new RAMDirectory();
-  IndexWriter writer = new IndexWriter 
-    (indexStore, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+  IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(Version.LUCENE_40, analyzer));
   String[] tracer = new String[] { "A", "B", "C", "D", "E" };
   String[] data = new String[] { "HAT", "HUT", "H\u00C5T", "H\u00D8T", "HOT" };
   String[] sortedTracerOrder = new String[] { "A", "E", "B", "D", "C" };
@@ -157,7 +152,7 @@ algorithm.
     writer.addDocument(doc);
   }
   writer.close();
-  Searcher searcher = new IndexSearcher(indexStore, true);
+  IndexSearcher searcher = new IndexSearcher(indexStore, true);
   Sort sort = new Sort();
   sort.setSort(new SortField("contents", SortField.STRING));
   Query query = new MatchAllDocsQuery();
@@ -170,18 +165,17 @@ algorithm.
 
 <h3>Turkish Case Normalization</h3>
 <code><pre>
-  Collator collator = Collator.getInstance(new Locale("tr", "TR"));
+  Collator collator = Collator.getInstance(new ULocale("tr", "TR"));
   collator.setStrength(Collator.PRIMARY);
-  Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
+  Analyzer analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_40, collator);
   RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter
-    (ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(Version.LUCENE_40, analyzer));
   Document doc = new Document();
   doc.add(new Field("contents", "DIGY", Field.Store.NO, Field.Index.ANALYZED));
   writer.addDocument(doc);
   writer.close();
   IndexSearcher is = new IndexSearcher(ramDir, true);
-  QueryParser parser = new QueryParser("contents", analyzer);
+  QueryParser parser = new QueryParser(Version.LUCENE_40, "contents", analyzer);
   Query query = parser.parse("d\u0131gy");   // U+0131: dotless i
   ScoreDoc[] result = is.search(query, null, 1000).scoreDocs;
   assertEquals("The index Term should be included.", 1, result.length);

@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
+import java.text.Collator;
 
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -29,14 +29,16 @@ import org.apache.lucene.util.BytesRef;
  * <p>Term enumerations are always ordered by
  * {@link #getComparator}.  Each term in the enumeration is
  * greater than all that precede it.</p>
+ * @deprecated Index collation keys with CollationKeyAnalyzer or ICUCollationKeyAnalyzer instead.
+ *  This class will be removed in Lucene 5.0
  */
-public class TermRangeTermsEnum extends FilteredTermsEnum {
-
-  final private boolean includeLower;
-  final private boolean includeUpper;
-  final private BytesRef lowerBytesRef;
-  final private BytesRef upperBytesRef;
-  private final Comparator<BytesRef> termComp;
+@Deprecated
+public class SlowCollatedTermRangeTermsEnum extends FilteredTermsEnum {
+  private Collator collator;
+  private String upperTermText;
+  private String lowerTermText;
+  private boolean includeLower;
+  private boolean includeUpper;
 
   /**
    * Enumerates all terms greater/equal than <code>lowerTerm</code>
@@ -48,62 +50,53 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
    * explicitly specifying the term to exclude.)
    * 
    * @param tenum
-   *          TermsEnum to filter
-   * @param lowerTerm
+   * @param lowerTermText
    *          The term text at the lower end of the range
-   * @param upperTerm
+   * @param upperTermText
    *          The term text at the upper end of the range
    * @param includeLower
    *          If true, the <code>lowerTerm</code> is included in the range.
    * @param includeUpper
    *          If true, the <code>upperTerm</code> is included in the range.
+   * @param collator
+   *          The collator to use to collate index Terms, to determine their
+   *          membership in the range bounded by <code>lowerTerm</code> and
+   *          <code>upperTerm</code>.
    * 
    * @throws IOException
    */
-  public TermRangeTermsEnum(TermsEnum tenum, BytesRef lowerTerm, BytesRef upperTerm, 
-    boolean includeLower, boolean includeUpper) throws IOException {
+  public SlowCollatedTermRangeTermsEnum(TermsEnum tenum, String lowerTermText, String upperTermText, 
+    boolean includeLower, boolean includeUpper, Collator collator) throws IOException {
     super(tenum);
+    this.collator = collator;
+    this.upperTermText = upperTermText;
+    this.lowerTermText = lowerTermText;
+    this.includeLower = includeLower;
+    this.includeUpper = includeUpper;
 
     // do a little bit of normalization...
     // open ended range queries should always be inclusive.
-    if (lowerTerm == null) {
-      this.lowerBytesRef = new BytesRef();
+    if (this.lowerTermText == null) {
+      this.lowerTermText = "";
       this.includeLower = true;
-    } else {
-      this.lowerBytesRef = lowerTerm;
-      this.includeLower = includeLower;
     }
 
-    if (upperTerm == null) {
-      this.includeUpper = true;
-      upperBytesRef = null;
-    } else {
-      this.includeUpper = includeUpper;
-      upperBytesRef = upperTerm;
-    }
-
-    setInitialSeekTerm(lowerBytesRef);
-    termComp = getComparator();
+    // TODO: optimize
+    BytesRef startBytesRef = new BytesRef("");
+    setInitialSeekTerm(startBytesRef);
   }
 
   @Override
   protected AcceptStatus accept(BytesRef term) {
-    if (!this.includeLower && term.equals(lowerBytesRef))
-      return AcceptStatus.NO;
-    
-    // Use this field's default sort ordering
-    if (upperBytesRef != null) {
-      final int cmp = termComp.compare(upperBytesRef, term);
-      /*
-       * if beyond the upper term, or is exclusive and this is equal to
-       * the upper term, break out
-       */
-      if ((cmp < 0) ||
-          (!includeUpper && cmp==0)) {
-        return AcceptStatus.END;
-      }
+    if ((includeLower
+         ? collator.compare(term.utf8ToString(), lowerTermText) >= 0
+         : collator.compare(term.utf8ToString(), lowerTermText) > 0)
+        && (upperTermText == null
+            || (includeUpper
+                ? collator.compare(term.utf8ToString(), upperTermText) <= 0
+                : collator.compare(term.utf8ToString(), upperTermText) < 0))) {
+      return AcceptStatus.YES;
     }
-
-    return AcceptStatus.YES;
+    return AcceptStatus.NO;
   }
 }

@@ -77,7 +77,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   }
   
   // *** TermToBytesRefAttribute interface ***
-  public final int toBytesRef(BytesRef target) {
+  public int toBytesRef(BytesRef target) {
     return UnicodeUtil.UTF16toUTF8WithHash(termBuffer, 0, termLength, target);
   }
   

@@ -313,6 +313,21 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
 
+* LUCENE-2514: The option to use a Collator's order (instead of binary order) for
+  sorting and range queries has been moved to contrib/queries.
+
+  The Collated TermRangeQuery/Filter has been moved to SlowCollatedTermRangeQuery/Filter, 
+  and the collated sorting has been moved to SlowCollatedStringComparator.
+
+  Note: this functionality isn't very scalable and if you are using it, consider 
+  indexing collation keys with the collation support in the analysis module instead.
+  
+  To perform collated range queries, use a suitable collating analyzer: CollationKeyAnalyzer 
+  or ICUCollationKeyAnalyzer, and set qp.setAnalyzeRangeTerms(true).
+  
+  TermRangeQuery and TermRangeFilter now work purely on bytes. Both have helper factory methods
+  (newStringRange) similar to the NumericRange API, to easily perform range queries on Strings.
+  
 * LUCENE-2691: The near-real-time API has moved from IndexWriter to
   IndexReader.  Instead of IndexWriter.getReader(), call
   IndexReader.open(IndexWriter) or IndexReader.reopen(IndexWriter).

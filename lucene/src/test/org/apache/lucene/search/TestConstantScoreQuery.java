@@ -35,7 +35,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testCSQ() throws Exception {
     final Query q1 = new ConstantScoreQuery(new TermQuery(new Term("a", "b")));
     final Query q2 = new ConstantScoreQuery(new TermQuery(new Term("a", "c")));
-    final Query q3 = new ConstantScoreQuery(new TermRangeFilter("a", "b", "c", true, true));
+    final Query q3 = new ConstantScoreQuery(TermRangeFilter.newStringRange("a", "b", "c", true, true));
     QueryUtils.check(q1);
     QueryUtils.check(q2);
     QueryUtils.checkEqual(q1,q1);

@@ -67,7 +67,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       if (lower>upper) {
         int a=lower; lower=upper; upper=a;
       }
-      TermRangeQuery cq=new TermRangeQuery("asc", format.format(lower), format.format(upper), true, true);
+      TermRangeQuery cq=TermRangeQuery.newStringRange("asc", format.format(lower), format.format(upper), true, true);
       NumericRangeQuery<Integer> tq=NumericRangeQuery.newIntRange("trie", lower, upper, true, true);
       TopDocs trTopDocs = searcher.search(cq, 1);
       TopDocs nrTopDocs = searcher.search(tq, 1);

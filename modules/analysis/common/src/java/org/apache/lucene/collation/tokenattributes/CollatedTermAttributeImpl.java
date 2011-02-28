@@ -1,4 +1,4 @@
-package org.apache.lucene.queryParser.standard.config;
+package org.apache.lucene.collation.tokenattributes;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,19 +19,30 @@ package org.apache.lucene.queryParser.standard.config;
 
 import java.text.Collator;
 
-import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
-import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.Attribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * This attribute is used by {@link ParametricRangeQueryNodeProcessor} processor
- * and must be defined in the {@link QueryConfigHandler}. This attribute tells
- * the processor which {@link Collator} should be used for a
- * {@link TermRangeQuery} <br/>
- * 
+ * Extension of {@link CharTermAttributeImpl} that encodes the term
+ * text as a binary Unicode collation key instead of as UTF-8 bytes.
  */
-public interface RangeCollatorAttribute extends Attribute {
-  public void setDateResolution(Collator rangeCollator);
-  public Collator getRangeCollator();
+public class CollatedTermAttributeImpl extends CharTermAttributeImpl {
+  private final Collator collator;
+
+  /**
+   * Create a new CollatedTermAttributeImpl
+   * @param collator Collation key generator
+   */
+  public CollatedTermAttributeImpl(Collator collator) {
+    this.collator = collator;
+  }
+  
+  @Override
+  public int toBytesRef(BytesRef target) {
+    target.bytes = collator.getCollationKey(toString()).toByteArray();
+    target.offset = 0;
+    target.length = target.bytes.length;
+    return target.hashCode();
+  }
+
 }

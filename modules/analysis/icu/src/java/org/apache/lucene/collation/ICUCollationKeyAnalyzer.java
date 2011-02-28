@@ -19,24 +19,20 @@ package org.apache.lucene.collation;
 
 
 import com.ibm.icu.text.Collator;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.Tokenizer;
-
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.collation.CollationKeyAnalyzer; // javadocs
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
-import java.io.IOException;
-
 
 /**
  * <p>
  *   Filters {@link KeywordTokenizer} with {@link ICUCollationKeyFilter}.
  * <p>
  *   Converts the token into its {@link com.ibm.icu.text.CollationKey}, and
- *   then encodes the CollationKey with 
- *   {@link org.apache.lucene.util.IndexableBinaryStringTools}, to allow it to
+ *   then encodes the CollationKey either directly or with 
+ *   {@link IndexableBinaryStringTools} (see <a href="#version">below</a>), to allow it to
  *   be stored as an index term.
  * </p>
  * <p>
@@ -70,39 +66,48 @@ import java.io.IOException;
  *   generation timing and key length comparisons between ICU4J and
  *   java.text.Collator over several languages.
  * </p>
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating ICUCollationKeyAnalyzer:
+ * <ul>
+ *   <li> As of 4.0, Collation Keys are directly encoded as bytes. Previous
+ *   versions will encode the bytes with {@link IndexableBinaryStringTools}.
+ * </ul>
  */
-public final class ICUCollationKeyAnalyzer extends Analyzer {
-  private Collator collator;
+public final class ICUCollationKeyAnalyzer extends ReusableAnalyzerBase {
+  private final Collator collator;
+  private final ICUCollationAttributeFactory factory;
+  private final Version matchVersion;
 
-  public ICUCollationKeyAnalyzer(Collator collator) {
+  /**
+   * Create a new ICUCollationKeyAnalyzer, using the specified collator.
+   * 
+   * @param matchVersion See <a href="#version">above</a>
+   * @param collator CollationKey generator
+   */
+  public ICUCollationKeyAnalyzer(Version matchVersion, Collator collator) {
+    this.matchVersion = matchVersion;
     this.collator = collator;
+    this.factory = new ICUCollationAttributeFactory(collator);
+  }
+
+  /**
+   * @deprecated Use {@link ICUCollationKeyAnalyzer#ICUCollationKeyAnalyzer(Version, Collator)}
+   *   and specify a version instead. This ctor will be removed in Lucene 5.0
+   */
+  @Deprecated
+  public ICUCollationKeyAnalyzer(Collator collator) {
+    this(Version.LUCENE_31, collator);
   }
 
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new KeywordTokenizer(reader);
-    result = new ICUCollationKeyFilter(result, collator);
-    return result;
-  }
-  
-  private class SavedStreams {
-    Tokenizer source;
-    TokenStream result;
-  }
-  
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) 
-    throws IOException {
-    
-    SavedStreams streams = (SavedStreams)getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new KeywordTokenizer(reader);
-      streams.result = new ICUCollationKeyFilter(streams.source, collator);
-      setPreviousTokenStream(streams);
+  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    if (matchVersion.onOrAfter(Version.LUCENE_40)) {
+      KeywordTokenizer tokenizer = new KeywordTokenizer(factory, reader, KeywordTokenizer.DEFAULT_BUFFER_SIZE);
+      return new TokenStreamComponents(tokenizer, tokenizer);
     } else {
-      streams.source.reset(reader);
+      KeywordTokenizer tokenizer = new KeywordTokenizer(reader);
+      return new TokenStreamComponents(tokenizer, new ICUCollationKeyFilter(tokenizer, collator));
     }
-    return streams.result;
   }
 }

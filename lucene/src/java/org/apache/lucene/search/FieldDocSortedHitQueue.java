@@ -20,9 +20,6 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 
-import java.text.Collator;
-import java.util.Locale;
-
 /**
  * Expert: Collects sorted results from Searchable's and collates them.
  * The elements put into this queue must be of type FieldDoc.
@@ -34,11 +31,6 @@ import java.util.Locale;
 class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
 
   volatile SortField[] fields = null;
-
-  // used in the case where the fields are sorted by locale
-  // based strings
-  volatile Collator[] collators = null;
-
 
   /**
    * Creates a hit queue sorted by the given list of fields.
@@ -60,7 +52,6 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
    */
   void setFields (SortField[] fields) {
     this.fields = fields;
-    this.collators = hasCollators (fields);
   }
 
 
@@ -68,24 +59,6 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
   SortField[] getFields() {
     return fields;
   }
-
-
-  /** Returns an array of collators, possibly <code>null</code>.  The collators
-   * correspond to any SortFields which were given a specific locale.
-   * @param fields Array of sort fields.
-   * @return Array, possibly <code>null</code>.
-   */
-  private Collator[] hasCollators (final SortField[] fields) {
-    if (fields == null) return null;
-    Collator[] ret = new Collator[fields.length];
-    for (int i=0; i<fields.length; ++i) {
-      Locale locale = fields[i].getLocale();
-      if (locale != null)
-        ret[i] = Collator.getInstance (locale);
-    }
-    return ret;
-  }
-
 
   /**
    * Returns whether <code>a</code> is less relevant than <code>b</code>.
@@ -109,11 +82,9 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
           c = (s2 == null) ? 0 : -1;
         } else if (s2 == null) {
           c = 1;
-        } else if (fields[i].getLocale() == null) {
-          c = s1.compareTo(s2);
         } else {
-          c = collators[i].compare(s1.utf8ToString(), s2.utf8ToString());
-        }
+          c = s1.compareTo(s2);
+        } 
       } else {
         c = docA.fields[i].compareTo(docB.fields[i]);
         if (type == SortField.SCORE) {

@@ -60,8 +60,6 @@ public class TestAttributes extends LuceneTestCase {
       Collections.singletonMap(MultiTermRewriteMethodAttribute.class.getName()+"#multiTermRewriteMethod", MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT));
     _TestUtil.assertAttributeReflection(new PositionIncrementsAttributeImpl(),
       Collections.singletonMap(PositionIncrementsAttribute.class.getName()+"#positionIncrementsEnabled", false));
-    _TestUtil.assertAttributeReflection(new RangeCollatorAttributeImpl(),
-      Collections.singletonMap(RangeCollatorAttribute.class.getName()+"#rangeCollator", null));
   }
 
 }
