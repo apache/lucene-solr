@@ -658,6 +658,13 @@ Other Changes
   to fix problematic UTF-8 handling for supplementary characters.
   (uschindler, yonik, rmuir)
 
+* SOLR-2391: The preferred Content-Type for XML was changed to
+  application/xml. XMLResponseWriter now only delivers using this
+  type; updating documents and analyzing documents is still supported
+  using text/xml as Content-Type, too. If you have clients that are
+  hardcoded on text/xml as Content-Type, you have to change them.
+  (uschindler, rmuir)
+
 
 Build
 ----------------------
