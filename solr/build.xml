@@ -379,7 +379,7 @@
   <!-- Run contrib unit tests. -->
   <target name="test"
         description="Runs the core unit tests."
-        depends="test-core, test-contrib" />
+        depends="test-core, test-contrib, test-jsp" />
 
   <target name="junit" depends="compileTests,junit-mkdir,junit-sequential,junit-parallel"/>
 
@@ -554,6 +554,37 @@
     </clover-report>
   </target>
 
+  <!-- ========================================================================= -->
+
+  <!-- Checks that all JSP files in the webapp compile successfully using Jetty's Jasper -->
+  <target name="test-jsp" depends="compile">
+    <property name="jsp.target" location="${dest}/jsp-temp" />
+    <taskdef classname="org.apache.jasper.JspC" name="jasper" >
+      <classpath>
+        <fileset dir="example/lib" includes="**/*.jar" />
+      </classpath>
+    </taskdef>
+    <delete dir="${jsp.target}" />
+    <mkdir dir="${jsp.target}" />
+    <jasper
+      uriroot="${src}/webapp/web"
+      outputDir="${jsp.target}" 
+      compile="false" 
+      verbose="1"
+      package="j"
+    />
+    <javac
+      srcdir="${jsp.target}"
+      destdir="${jsp.target}"
+      target="${java.compat.version}"
+      source="${java.compat.version}"
+      debug="off"
+      encoding="utf8"
+      includeAntRuntime="${javac.includeAntRuntime}"
+      classpathref="test.compile.classpath"
+    />
+  </target>
+
 
   <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
@@ -568,7 +599,7 @@
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file."
-          depends="compile, make-manifest, dist-jar, dist-solrj, lucene-jars-to-solr">
+          depends="compile, test-jsp, make-manifest, dist-jar, dist-solrj, lucene-jars-to-solr">
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${fullnamever}.war"
          webxml="${web.xml}"
