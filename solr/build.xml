@@ -823,6 +823,57 @@
 
   </target>
 
+  <target name="package-bin"
+          description="Packages the Solr Binary Distribution"
+          depends="dist, example">
+
+    <copy failonerror="false" todir="${build.docs}">
+      <fileset dir="site" />
+    </copy>
+
+    <delete file="${dist}/${fullnamever}-bin.tgz" failonerror="false" />
+    <delete file="${dist}/${fullnamever}-bin.zip" failonerror="false" />
+
+    <tar destfile="${dist}/${fullnamever}-bin.tgz" compression="gzip" longfile="gnu">
+      <tarfileset dir="."
+        prefix="${fullnamever}"
+        includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/dataimporthandler/lib/ contrib/extraction/lib/ contrib/clustering/lib/"
+        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/** contrib/uima/lib/**" />
+      <tarfileset dir="."
+        mode="755"
+        prefix="${fullnamever}"
+        includes="**/*.sh **/bin/" />
+      <tarfileset dir="."
+        prefix="${fullnamever}"
+        includes="dist/**"
+        excludes="*.tgz *.zip *.md5 **/*src*.jar **/*docs*.jar" />
+       <tarfileset dir="${build.docs}"
+        prefix="${fullnamever}/docs/" />
+    </tar>
+    <solr-checksum file="${dist}/${fullnamever}-bin.tgz"/>
+
+    <gunzip src="${dist}/${fullnamever}-bin.tgz" dest="${dest}/${fullnamever}-bin.tar"/>
+    <untar src="${dest}/${fullnamever}-bin.tar" dest="${dest}"/>
+
+    <fixcrlf srcdir="${dest}/${fullnamever}"
+       eol="crlf"
+       includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
+     />
+
+    <zip destfile="${dist}/${fullnamever}-bin.zip">
+      <zipfileset dir="${dest}/${fullnamever}"
+        prefix="${fullnamever}" 
+        excludes="**/*.sh **/bin/ src/scripts/" />
+      <zipfileset dir="${dest}/${fullnamever}"
+        prefix="${fullnamever}"
+        includes="**/*.sh **/bin/ src/scripts/"
+        filemode="755" />
+    </zip>
+    <solr-checksum file="${dist}/${fullnamever}-bin.zip"/>
+
+  </target>
+
+
   	<target name="build-site" depends="svn-up, init-forrest-entities" description="Prototype Helper for Committers.  Assumes SVN is in the path">
 		<delete dir="src/site/build"/>
 		<exec executable="forrest" dir="src/site"/>
