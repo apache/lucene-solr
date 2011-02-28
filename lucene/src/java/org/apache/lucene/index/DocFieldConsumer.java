@@ -22,6 +22,9 @@ import java.util.Collection;
 import java.util.Map;
 
 abstract class DocFieldConsumer {
+
+  FieldInfos fieldInfos;
+
   /** Called when DocumentsWriter decides to create a new
    *  segment */
   abstract void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException;
@@ -36,4 +39,8 @@ abstract class DocFieldConsumer {
    *  The consumer should free RAM, if possible, returning
    *  true if any RAM was in fact freed. */
   abstract boolean freeRAM();
+
+  void setFieldInfos(FieldInfos fieldInfos) {
+    this.fieldInfos = fieldInfos;
   }
+}

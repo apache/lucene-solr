@@ -34,13 +34,16 @@ import java.util.HashMap;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocumentsWriter docWriter;
+  final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
 
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
     this.docWriter = docWriter;
     this.consumer = consumer;
-    fieldsWriter = new StoredFieldsWriter(docWriter);
+    fieldInfos = docWriter.getFieldInfos();
+    consumer.setFieldInfos(fieldInfos);
+    fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
   }
 
   @Override
@@ -50,6 +53,7 @@ final class DocFieldProcessor extends DocConsumer {
     for ( DocConsumerPerThread thread : threads) {
       DocFieldProcessorPerThread perThread = (DocFieldProcessorPerThread) thread;
       childThreadsAndFields.put(perThread.consumer, perThread.fields());
+      perThread.trimFields(state);
     }
     fieldsWriter.flush(state);
     consumer.flush(childThreadsAndFields, state);
@@ -59,14 +63,7 @@ final class DocFieldProcessor extends DocConsumer {
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
-
-    // If this segment only has docs that hit non-aborting exceptions,
-    // then no term vectors files will have been written; therefore we
-    // need to update the fieldInfos and clear the term vectors bits
-    if (!state.hasVectors) {
-      state.fieldInfos.clearVectors();
-    }
-    state.fieldInfos.write(state.directory, fileName);
+    fieldInfos.write(state.directory, fileName);
   }
 
   @Override

@@ -23,14 +23,14 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
-import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -238,9 +238,9 @@ public class TestCodecs extends LuceneTestCase {
     final FieldData[] fields = new FieldData[] {field};
 
     final Directory dir = newDirectory();
-    FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, true);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, SegmentCodecs.build(clonedFieldInfos, CodecProvider.getDefault()), clonedFieldInfos);
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
+    si.setHasProx(false);
 
     final FieldsProducer reader = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 64, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
@@ -289,10 +289,8 @@ public class TestCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now write postings");
     }
-
-    FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, false);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, SegmentCodecs.build(clonedFieldInfos, CodecProvider.getDefault()), clonedFieldInfos);
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
 
     if (VERBOSE) {
       System.out.println("TEST: now read postings");
@@ -442,7 +440,7 @@ public class TestCodecs extends LuceneTestCase {
         final FieldData field = fields[TestCodecs.random.nextInt(fields.length)];
         final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator();
 
-        if (si.getSegmentCodecs().codecs[field.fieldInfo.getCodecId()] instanceof PreFlexCodec) {
+        if (si.getSegmentCodecs().codecs[field.fieldInfo.codecId] instanceof PreFlexCodec) {
           // code below expects unicode sort order
           continue;
         }
@@ -596,7 +594,7 @@ public class TestCodecs extends LuceneTestCase {
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
     Arrays.sort(fields);
     for (final FieldData field : fields) {
-      if (!allowPreFlex && codecInfo.codecs[field.fieldInfo.getCodecId()] instanceof PreFlexCodec) {
+      if (!allowPreFlex && codecInfo.codecs[field.fieldInfo.codecId] instanceof PreFlexCodec) {
         // code below expects unicode sort order
         continue;
       }

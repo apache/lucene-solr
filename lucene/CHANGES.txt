@@ -163,11 +163,6 @@ Changes in Runtime Behavior
   LogMergePolicy impls, and call setRequireContiguousMerge(true).
   (Mike McCandless)
 
-* LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
-  per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
-  properties from all previous segments combined.  The corresponding file format
-  changes are backwards-compatible. (Michael Busch)
-
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer

@@ -17,22 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.StringHelper;
+
+import java.io.IOException;
+import java.util.*;
 
 /** Access to the Fieldable Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
@@ -41,71 +34,7 @@ import org.apache.lucene.util.StringHelper;
  *  accessing this object.
  *  @lucene.experimental
  */
-public final class FieldInfos implements Iterable<FieldInfo> {
-  private static final class FieldNumberBiMap {
-    private final Map<Integer,String> numberToName;
-    private final Map<String,Integer> nameToNumber;
-
-    private FieldNumberBiMap() {
-      this.nameToNumber = new HashMap<String, Integer>();
-      this.numberToName = new HashMap<Integer, String>();
-    }
-
-    synchronized int addOrGet(String fieldName, FieldInfoBiMap fieldInfoMap, int preferredFieldNumber) {
-      Integer fieldNumber = nameToNumber.get(fieldName);
-      if (fieldNumber == null) {
-        if (!numberToName.containsKey(preferredFieldNumber)) {
-          // cool - we can use this number globally
-          fieldNumber = preferredFieldNumber;
-        } else {
-          fieldNumber = findNextAvailableFieldNumber(preferredFieldNumber + 1, numberToName.keySet());
-        }
-
-        numberToName.put(fieldNumber, fieldName);
-        nameToNumber.put(fieldName, fieldNumber);
-      }
-
-      return fieldNumber;
-    }
-
-    synchronized void setIfNotSet(int fieldNumber, String fieldName) {
-     if (!numberToName.containsKey(fieldNumber) && !nameToNumber.containsKey(fieldName)) {
-        numberToName.put(fieldNumber, fieldName);
-        nameToNumber.put(fieldName, fieldNumber);
-      }
-    }
-  }
-
-  private static final class FieldInfoBiMap implements Iterable<FieldInfo> {
-    private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
-    private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
-    private int nextAvailableNumber = 0;
-
-    public void put(FieldInfo fi) {
-      assert !byNumber.containsKey(fi.number);
-      assert !byName.containsKey(fi.name);
-
-      byNumber.put(fi.number, fi);
-      byName.put(fi.name, fi);
-    }
-
-    public FieldInfo get(String fieldName) {
-      return byName.get(fieldName);
-    }
-
-    public FieldInfo get(int fieldNumber) {
-      return byNumber.get(fieldNumber);
-    }
-
-    public int size() {
-      assert byNumber.size() == byName.size();
-      return byNumber.size();
-    }
-
-    public Iterator<FieldInfo> iterator() {
-      return byNumber.values().iterator();
-    }
-  }
+public final class FieldInfos {
 
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
@@ -124,18 +53,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
   
-  private final FieldNumberBiMap globalFieldNumbers;
-  private final FieldInfoBiMap localFieldInfos;
-
+  private final ArrayList<FieldInfo> byNumber = new ArrayList<FieldInfo>();
+  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private int format;
 
   public FieldInfos() {
-    this(new FieldNumberBiMap());
-  }
-
-  private FieldInfos(FieldNumberBiMap globalFieldNumbers) {
-    this.globalFieldNumbers = globalFieldNumbers;
-    this.localFieldInfos = new FieldInfoBiMap();
   }
 
   /**
@@ -146,7 +68,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @throws IOException
    */
   public FieldInfos(Directory d, String name) throws IOException {
-    this(new FieldNumberBiMap());
     IndexInput input = d.openInput(name);
     try {
       read(input, name);
@@ -155,27 +76,17 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
   }
 
-  private static final int findNextAvailableFieldNumber(int nextPreferredNumber, Set<Integer> unavailableNumbers) {
-    while (unavailableNumbers.contains(nextPreferredNumber)) {
-      nextPreferredNumber++;
-    }
-
-    return nextPreferredNumber;
-  }
-
-  public FieldInfos newFieldInfosWithGlobalFieldNumberMap() {
-    return new FieldInfos(this.globalFieldNumbers);
-  }
-
   /**
    * Returns a deep clone of this FieldInfos instance.
    */
   @Override
   synchronized public Object clone() {
-    FieldInfos fis = new FieldInfos(globalFieldNumbers);
-    for (FieldInfo fi : this) {
-      FieldInfo clone = (FieldInfo) (fi).clone();
-      fis.localFieldInfos.put(clone);
+    FieldInfos fis = new FieldInfos();
+    final int numField = byNumber.size();
+    for(int i=0;i<numField;i++) {
+      FieldInfo fi = (FieldInfo) ( byNumber.get(i)).clone();
+      fis.byNumber.add(fi);
+      fis.byName.put(fi.name, fi);
     }
     return fis;
   }
@@ -191,7 +102,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
   /** Returns true if any fields do not omitTermFreqAndPositions */
   public boolean hasProx() {
-    for (FieldInfo fi : this) {
+    final int numFields = byNumber.size();
+    for(int i=0;i<numFields;i++) {
+      final FieldInfo fi = fieldInfo(i);
       if (fi.isIndexed && !fi.omitTermFreqAndPositions) {
         return true;
       }
@@ -302,28 +215,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
                        boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
-    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
-                               storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-  }
-
-  synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
-      boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-      boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
-
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      if (preferredFieldNumber == -1) {
-        preferredFieldNumber = findNextAvailableFieldNumber(localFieldInfos.nextAvailableNumber, localFieldInfos.byNumber.keySet());
-        localFieldInfos.nextAvailableNumber = preferredFieldNumber;
-      }
-
-      // get a global number for this field
-      int fieldNumber = globalFieldNumbers.addOrGet(name, localFieldInfos, preferredFieldNumber);
-      if (localFieldInfos.get(fieldNumber) != null) {
-        // fall back if the global number is already taken
-        fieldNumber = preferredFieldNumber;
-      }
-      return addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     }
@@ -331,27 +225,20 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
 
   synchronized public FieldInfo add(FieldInfo fi) {
-    int preferredFieldNumber = fi.number;
-    FieldInfo other = localFieldInfos.get(preferredFieldNumber);
-    if (other == null || !other.name.equals(fi.name)) {
-      preferredFieldNumber = -1;
-    }
-    return addOrUpdateInternal(fi.name, preferredFieldNumber, fi.isIndexed, fi.storeTermVector,
+    return add(fi.name, fi.isIndexed, fi.storeTermVector,
                fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
                fi.omitTermFreqAndPositions);
   }
 
-  private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
+  private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     name = StringHelper.intern(name);
-    globalFieldNumbers.setIfNotSet(fieldNumber, name);
-    FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
+    FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
                                  storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-
-    assert localFieldInfos.get(fi.number) == null;
-    localFieldInfos.put(fi);
+    byNumber.add(fi);
+    byName.put(name, fi);
     return fi;
   }
 
@@ -361,7 +248,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
 
   public FieldInfo fieldInfo(String fieldName) {
-    return localFieldInfos.get(fieldName);
+    return  byName.get(fieldName);
   }
 
   /**
@@ -383,37 +270,25 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * doesn't exist.
    */  
   public FieldInfo fieldInfo(int fieldNumber) {
-	return (fieldNumber >= 0) ? localFieldInfos.get(fieldNumber) : null;
-  }
-
-  public Iterator<FieldInfo> iterator() {
-    return localFieldInfos.iterator();
+	return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
 
   public int size() {
-    return localFieldInfos.size();
+    return byNumber.size();
   }
 
   public boolean hasVectors() {
-    for (FieldInfo fi : this) {
-      if (fi.storeTermVector) {
+    for (int i = 0; i < size(); i++) {
+      if (fieldInfo(i).storeTermVector) {
         return true;
       }
     }
     return false;
   }
 
-  void clearVectors() {
-    for (FieldInfo fi : this) {
-      fi.storeTermVector = false;
-      fi.storeOffsetWithTermVector = false;
-      fi.storePositionWithTermVector = false;
-    }
-  }
-
   public boolean hasNorms() {
-    for (FieldInfo fi : this) {
-      if (!fi.omitNorms) {
+    for (int i = 0; i < size(); i++) {
+      if (!fieldInfo(i).omitNorms) {
         return true;
       }
     }
@@ -432,7 +307,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   public void write(IndexOutput output) throws IOException {
     output.writeVInt(FORMAT_CURRENT);
     output.writeVInt(size());
-    for (FieldInfo fi : this) {
+    for (int i = 0; i < size(); i++) {
+      FieldInfo fi = fieldInfo(i);
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
@@ -442,8 +318,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
       if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
       output.writeString(fi.name);
-      output.writeInt(fi.number);
-      output.writeInt(fi.getCodecId());
+      output.writeInt(fi.codecId);
       output.writeByte(bits);
     }
   }
@@ -463,7 +338,6 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     for (int i = 0; i < size; i++) {
       String name = StringHelper.intern(input.readString());
       // if this is a previous format codec 0 will be preflex!
-      final int fieldNumber = format <= FORMAT_PER_FIELD_CODEC? input.readInt():i;
       final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
@@ -473,8 +347,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
-      final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-      addInternal.setCodecId(codecId);
+      final FieldInfo addInternal = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      addInternal.codecId = codecId;
     }
 
     if (input.getFilePointer() != input.length()) {

@@ -25,20 +25,20 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.BytesRef;
 
 public class TestDocumentWriter extends LuceneTestCase {
   private Directory dir;
@@ -98,7 +98,8 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     // test that the norms are not present in the segment if
     // omitNorms is true
-    for (FieldInfo fi : reader.core.fieldInfos) {
+    for (int i = 0; i < reader.core.fieldInfos.size(); i++) {
+      FieldInfo fi = reader.core.fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
         assertTrue(fi.omitNorms == !reader.hasNorms(fi.name));
       }

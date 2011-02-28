@@ -216,7 +216,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
               IndexFileNames.FIELD_INFOS_EXTENSION));
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
       assertEquals("faild for segment index: " + i, codec[i],
-          codecInfo.codecs[fieldInfo.getCodecId()]);
+          codecInfo.codecs[fieldInfo.codecId]);
     }
   }
 

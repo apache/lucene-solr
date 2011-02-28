@@ -528,9 +528,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
-      for (FieldInfo fi : fieldInfos) {
+      for(int i=0;i<fieldInfos.size();i++) {
+        FieldInfo fi = fieldInfos.fieldInfo(i);
         if (fi.name.equals("content")) {
-          contentFieldIndex = fi.number;
+          contentFieldIndex = i;
           break;
         }
       }

@@ -32,7 +32,7 @@ final class StoredFieldsWriterPerThread {
   public StoredFieldsWriterPerThread(DocumentsWriter.DocState docState, StoredFieldsWriter storedFieldsWriter) throws IOException {
     this.storedFieldsWriter = storedFieldsWriter;
     this.docState = docState;
-    localFieldsWriter = new FieldsWriter((IndexOutput) null, (IndexOutput) null);
+    localFieldsWriter = new FieldsWriter((IndexOutput) null, (IndexOutput) null, storedFieldsWriter.fieldInfos);
   }
 
   public void startDocument() {

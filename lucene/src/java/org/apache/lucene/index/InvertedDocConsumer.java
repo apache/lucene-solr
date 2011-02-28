@@ -35,4 +35,10 @@ abstract class InvertedDocConsumer {
   /** Attempt to free RAM, returning true if any RAM was
    *  freed */
   abstract boolean freeRAM();
+
+  FieldInfos fieldInfos;
+
+  void setFieldInfos(FieldInfos fieldInfos) {
+    this.fieldInfos = fieldInfos;
   }
+}

@@ -41,13 +41,14 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
   float docBoost;
   int fieldGen;
   final DocFieldProcessor docFieldProcessor;
+  final FieldInfos fieldInfos;
   final DocFieldConsumerPerThread consumer;
 
   // Holds all fields seen in current doc
   DocFieldProcessorPerField[] fields = new DocFieldProcessorPerField[1];
   int fieldCount;
 
-  // Hash table for all fields seen in current segment
+  // Hash table for all fields ever seen
   DocFieldProcessorPerField[] fieldHash = new DocFieldProcessorPerField[2];
   int hashMask = 1;
   int totalFieldCount;
@@ -59,6 +60,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
   public DocFieldProcessorPerThread(DocumentsWriterThreadState threadState, DocFieldProcessor docFieldProcessor) throws IOException {
     this.docState = threadState.docState;
     this.docFieldProcessor = docFieldProcessor;
+    this.fieldInfos = docFieldProcessor.fieldInfos;
     this.consumer = docFieldProcessor.consumer.addThread(this);
     fieldsWriter = docFieldProcessor.fieldsWriter.addThread(docState);
   }
@@ -73,7 +75,6 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
         field = next;
       }
     }
-    doAfterFlush();
     fieldsWriter.abort();
     consumer.abort();
   }
@@ -91,14 +92,44 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     return fields;
   }
 
-  /** In flush we reset the fieldHash to not maintain per-field state
-   *  across segments */
-  @Override
-  void doAfterFlush() {
-    fieldHash = new DocFieldProcessorPerField[2];
-    hashMask = 1;
-    totalFieldCount = 0;
+  /** If there are fields we've seen but did not see again
+   *  in the last run, then free them up. */
+
+  void trimFields(SegmentWriteState state) {
+
+    for(int i=0;i<fieldHash.length;i++) {
+      DocFieldProcessorPerField perField = fieldHash[i];
+      DocFieldProcessorPerField lastPerField = null;
+
+      while (perField != null) {
+
+        if (perField.lastGen == -1) {
+
+          // This field was not seen since the previous
+          // flush, so, free up its resources now
+
+          // Unhash
+          if (lastPerField == null)
+            fieldHash[i] = perField.next;
+          else
+            lastPerField.next = perField.next;
+
+          if (state.infoStream != null) {
+            state.infoStream.println("  purge field=" + perField.fieldInfo.name);
           }
+
+          totalFieldCount--;
+
+        } else {
+          // Reset
+          perField.lastGen = -1;
+          lastPerField = perField;
+        }
+
+        perField = perField.next;
+      }
+    }
+  }
 
   private void rehash() {
     final int newHashSize = (fieldHash.length*2);
@@ -124,7 +155,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
   }
 
   @Override
-  public DocumentsWriter.DocWriter processDocument(FieldInfos fieldInfos) throws IOException {
+  public DocumentsWriter.DocWriter processDocument() throws IOException {
 
     consumer.startDocument();
     fieldsWriter.startDocument();

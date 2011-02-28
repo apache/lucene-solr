@@ -67,7 +67,7 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      final FieldsConsumer fields = consumers.get(field.getCodecId());
+      final FieldsConsumer fields = consumers.get(field.codecId);
       return fields.addField(field);
     }
 
@@ -100,16 +100,18 @@ final class PerFieldCodecWrapper extends Codec {
     public FieldsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
         int readBufferSize, int indexDivisor) throws IOException {
 
+      final int fieldCount = fieldInfos.size();
       final Map<Codec, FieldsProducer> producers = new HashMap<Codec, FieldsProducer>();
       boolean success = false;
       try {
-        for (FieldInfo fi : fieldInfos) {
+        for (int i = 0; i < fieldCount; i++) {
+          FieldInfo fi = fieldInfos.fieldInfo(i);
           if (fi.isIndexed) { // TODO this does not work for non-indexed fields
             fields.add(fi.name);
-            Codec codec = segmentCodecs.codecs[fi.getCodecId()];
+            Codec codec = segmentCodecs.codecs[fi.codecId];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                                                                             si, fieldInfos, readBufferSize, indexDivisor, ""+fi.getCodecId())));
+                                                                             si, fieldInfos, readBufferSize, indexDivisor, ""+fi.codecId)));
             }
             codecs.put(fi.name, producers.get(codec));
           }
