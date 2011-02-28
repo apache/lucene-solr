@@ -44,8 +44,8 @@ public final class XMLWriter extends TextResponseWriter {
 
   private static final char[] XML_START1="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".toCharArray();
 
-  private static final char[] XML_STYLESHEET="<?xml-stylesheet type=\"text/xsl\" href=\"/admin/".toCharArray();
-  private static final char[] XML_STYLESHEET_END=".xsl\"?>\n".toCharArray();
+  private static final char[] XML_STYLESHEET="<?xml-stylesheet type=\"text/xsl\" href=\"".toCharArray();
+  private static final char[] XML_STYLESHEET_END="\"?>\n".toCharArray();
 
   /***
   private static final char[] XML_START2_SCHEMA=(
@@ -89,7 +89,7 @@ public final class XMLWriter extends TextResponseWriter {
     String stylesheet = req.getParams().get("stylesheet");
     if (stylesheet != null && stylesheet.length() > 0) {
       writer.write(XML_STYLESHEET);
-      writer.write(stylesheet);
+      XML.escapeAttributeValue(stylesheet, writer);
       writer.write(XML_STYLESHEET_END);
     }
 
