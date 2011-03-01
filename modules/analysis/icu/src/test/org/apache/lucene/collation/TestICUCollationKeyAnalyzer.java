@@ -84,4 +84,14 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
     (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
      "BFJHD", "ECAGI", "BJDFH", "BJDHF");
   }
+  
+  public void testThreadSafe() throws Exception {
+    int iters = 20 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < iters; i++) {
+      Locale locale = randomLocale(random);
+      Collator collator = Collator.getInstance(locale);
+      collator.setStrength(Collator.IDENTICAL);
+      assertThreadSafe(new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator));
+    }
+  }
 }

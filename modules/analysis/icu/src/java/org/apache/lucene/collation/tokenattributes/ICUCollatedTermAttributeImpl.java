@@ -36,7 +36,12 @@ public class ICUCollatedTermAttributeImpl extends CharTermAttributeImpl {
    * @param collator Collation key generator
    */
   public ICUCollatedTermAttributeImpl(Collator collator) {
-    this.collator = collator;
+    // clone the collator: see http://userguide.icu-project.org/collation/architecture
+    try {
+      this.collator = (Collator) collator.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
   }
   
   @Override

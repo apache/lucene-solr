@@ -34,7 +34,9 @@ public class CollatedTermAttributeImpl extends CharTermAttributeImpl {
    * @param collator Collation key generator
    */
   public CollatedTermAttributeImpl(Collator collator) {
-    this.collator = collator;
+    // clone in case JRE doesnt properly sync,
+    // or to reduce contention in case they do
+    this.collator = (Collator) collator.clone();
   }
   
   @Override

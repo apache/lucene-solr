@@ -148,6 +148,9 @@ Bug fixes
 
  * LUCENE-2874: Highlighting overlapping tokens outputted doubled words.
    (Pierre Gossé via Robert Muir)
+
+ * LUCENE-2943: Fix thread-safety issues with ICUCollationKeyFilter. 
+   (Robert Muir)
    
 API Changes
 
