@@ -451,13 +451,15 @@ public class TestSort extends LuceneTestCase implements Serializable {
       bottomValue = slotValues[bottom];
     }
 
+    private static final FieldCache.IntParser testIntParser = new FieldCache.IntParser() {
+      public final int parseInt(final String val) {
+        return (val.charAt(0)-'A') * 123456;
+      }
+    };
+
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
-          public final int parseInt(final String val) {
-            return (val.charAt(0)-'A') * 123456;
-          }
-        });
+      docValues = FieldCache.DEFAULT.getInts(reader, "parser", testIntParser);
     }
 
     @Override
