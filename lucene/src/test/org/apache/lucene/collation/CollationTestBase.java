@@ -21,6 +21,8 @@ package org.apache.lucene.collation;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -39,8 +41,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class CollationTestBase extends LuceneTestCase {
 
@@ -258,5 +264,74 @@ public abstract class CollationTestBase extends LuceneTestCase {
       }
     }
     assertEquals(expectedResult, buff.toString());
+  }
+  
+  private String randomString() {
+    // ideally we could do this!
+    // return _TestUtil.randomUnicodeString(random);
+    //
+    // http://bugs.icu-project.org/trac/ticket/8060
+    // http://bugs.icu-project.org/trac/ticket/7732
+    // ...
+    // 
+    // as a workaround, just test the BMP for now (and avoid 0xFFFF etc)
+    int length = _TestUtil.nextInt(random, 0, 10);
+    char chars[] = new char[length];
+    for (int i = 0; i < length; i++) {
+      if (random.nextBoolean()) {
+        chars[i] = (char) _TestUtil.nextInt(random, 0, 0xD7FF);
+      } else {
+        chars[i] = (char) _TestUtil.nextInt(random, 0xE000, 0xFFFD);
+      }
+    }
+    return new String(chars, 0, length);
+  }
+
+  public void assertThreadSafe(final Analyzer analyzer) throws Exception {
+    int numTestPoints = 1000;
+    int numThreads = _TestUtil.nextInt(random, 3, 5);
+    final HashMap<String,String> map = new HashMap<String,String>();
+    
+    // create a map<String,SortKey> up front.
+    // then with multiple threads, generate sort keys for all the keys in the map
+    // and ensure they are the same as the ones we produced in serial fashion.
+
+    for (int i = 0; i < numTestPoints; i++) {
+      String term = randomString();
+      TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
+      CharTermAttribute encodedBytes = ts.addAttribute(CharTermAttribute.class);
+      ts.reset();
+      assertTrue(ts.incrementToken());
+      // ensure we make a copy of the actual bytes too
+      map.put(term, encodedBytes.toString());
+    }
+    
+    Thread threads[] = new Thread[numThreads];
+    for (int i = 0; i < numThreads; i++) {
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          try {
+            for (Map.Entry<String,String> mapping : map.entrySet()) {
+              String term = mapping.getKey();
+              String expected = mapping.getValue();
+              TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
+              CharTermAttribute encodedBytes = ts.addAttribute(CharTermAttribute.class);
+              ts.reset();
+              assertTrue(ts.incrementToken());
+              assertEquals(expected, encodedBytes.toString());
+            }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+    }
+    for (int i = 0; i < numThreads; i++) {
+      threads[i].start();
+    }
+    for (int i = 0; i < numThreads; i++) {
+      threads[i].join();
+    }
   }
 }

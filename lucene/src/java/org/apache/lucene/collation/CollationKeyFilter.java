@@ -82,7 +82,9 @@ public final class CollationKeyFilter extends TokenFilter {
    */
   public CollationKeyFilter(TokenStream input, Collator collator) {
     super(input);
-    this.collator = collator;
+    // clone in case JRE doesnt properly sync,
+    // or to reduce contention in case they do
+    this.collator = (Collator) collator.clone();
   }
 
   @Override

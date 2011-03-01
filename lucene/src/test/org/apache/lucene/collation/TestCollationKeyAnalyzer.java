@@ -79,4 +79,14 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
     (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
      oStrokeFirst ? "BFJHD" : "BFJDH", "EACGI", "BJDFH", "BJDHF");
   }
+  
+  public void testThreadSafe() throws Exception {
+    int iters = 20 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < iters; i++) {
+      Locale locale = randomLocale(random);
+      Collator collator = Collator.getInstance(locale);
+      collator.setStrength(Collator.PRIMARY);
+      assertThreadSafe(new CollationKeyAnalyzer(collator));
+    }
+  }
 }
