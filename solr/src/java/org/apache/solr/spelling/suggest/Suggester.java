@@ -84,6 +84,8 @@ public class Suggester extends SolrSpellChecker {
     if (lookupImpl == null) {
       lookupImpl = JaspellLookup.class.getName();
     }
+    lookup = (Lookup) core.getResourceLoader().newInstance(lookupImpl);
+    lookup.init(config, core);
     String store = (String)config.get(STORE_DIR);
     if (store != null) {
       storeDir = new File(store);
@@ -92,6 +94,13 @@ public class Suggester extends SolrSpellChecker {
       }
       if (!storeDir.exists()) {
         storeDir.mkdirs();
+      } else {
+        // attempt reload of the stored lookup
+        try {
+          lookup.load(storeDir);
+        } catch (IOException e) {
+          LOG.warn("Loading stored lookup data failed", e);
+        }
       }
     }
     return name;
@@ -108,17 +117,17 @@ public class Suggester extends SolrSpellChecker {
         dictionary = new FileDictionary(new InputStreamReader(
                 core.getResourceLoader().openResource(sourceLocation), "UTF-8"));
       } catch (UnsupportedEncodingException e) {
-        e.printStackTrace();
+        // should not happen
+        LOG.error("should not happen", e);
       }
     }
-    lookup = (Lookup) core.getResourceLoader().newInstance(lookupImpl);
     try {
       lookup.build(dictionary);
       if (storeDir != null) {
         lookup.store(storeDir);
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.error("Error while building or storing Suggester data", e);
     }
   }
 
