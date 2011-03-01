@@ -658,8 +658,16 @@ public class SimpleFacets {
 
     final int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
 
-    final EnumSet<FacetRangeInclude> include = FacetRangeInclude.parseParam
-        (params.getFieldParams(f,FacetParams.FACET_DATE_INCLUDE));
+    String[] iStrs = params.getFieldParams(f,FacetParams.FACET_DATE_INCLUDE);
+    // Legacy support for default of [lower,upper,edge] for date faceting
+    // this is not handled by FacetRangeInclude.parseParam because
+    // range faceting has differnet defaults
+    final EnumSet<FacetRangeInclude> include = 
+      (null == iStrs || 0 == iStrs.length ) ?
+      EnumSet.of(FacetRangeInclude.LOWER, 
+                 FacetRangeInclude.UPPER, 
+                 FacetRangeInclude.EDGE)
+      : FacetRangeInclude.parseParam(iStrs);
 
     try {
       Date low = start;
