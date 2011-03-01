@@ -442,13 +442,17 @@ public class IndexSearcher {
       // use all leaves here!
       return search (leafContexts, weight, filter, nDocs, sort, fillFields);
     } else {
-      // TODO: make this respect fillFields
-      final FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue(nDocs);
+      final TopFieldCollector topCollector = TopFieldCollector.create(sort, nDocs,
+                                                                      fillFields,
+                                                                      fieldSortDoTrackScores,
+                                                                      fieldSortDoMaxScore,
+                                                                      false);
+
       final Lock lock = new ReentrantLock();
       final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<TopFieldDocs>(executor);
       for (int i = 0; i < leafSlices.length; i++) { // search each leaf slice
         runner.submit(
-                      new SearcherCallableWithSort(lock, this, leafSlices[i], weight, filter, nDocs, hq, sort));
+                      new SearcherCallableWithSort(lock, this, leafSlices[i], weight, filter, nDocs, topCollector, sort));
       }
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -458,11 +462,10 @@ public class IndexSearcher {
           maxScore = Math.max(maxScore, topFieldDocs.getMaxScore());
         }
       }
-      final ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
-      for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
-        scoreDocs[i] = hq.pop();
 
-      return new TopFieldDocs(totalHits, scoreDocs, hq.getFields(), maxScore);
+      final TopFieldDocs topDocs = (TopFieldDocs) topCollector.topDocs();
+
+      return new TopFieldDocs(totalHits, topDocs.scoreDocs, topDocs.fields, topDocs.getMaxScore());
     }
   }
   
@@ -721,12 +724,12 @@ public class IndexSearcher {
     private final Weight weight;
     private final Filter filter;
     private final int nDocs;
-    private final FieldDocSortedHitQueue hq;
+    private final TopFieldCollector hq;
     private final Sort sort;
     private final LeafSlice slice;
 
     public SearcherCallableWithSort(Lock lock, IndexSearcher searcher, LeafSlice slice, Weight weight,
-        Filter filter, int nDocs, FieldDocSortedHitQueue hq, Sort sort) {
+        Filter filter, int nDocs, TopFieldCollector hq, Sort sort) {
       this.lock = lock;
       this.searcher = searcher;
       this.weight = weight;
@@ -737,26 +740,57 @@ public class IndexSearcher {
       this.slice = slice;
     }
 
+    private final class FakeScorer extends Scorer {
+      float score;
+      int doc;
+
+      public FakeScorer() {
+        super(null);
+      }
+    
+      @Override
+      public int advance(int target) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int docID() {
+        return doc;
+      }
+
+      @Override
+      public float freq() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int nextDoc() {
+        throw new UnsupportedOperationException();
+      }
+    
+      @Override
+      public float score() {
+        return score;
+      }
+    }
+
+    private final FakeScorer fakeScorer = new FakeScorer();
+
     public TopFieldDocs call() throws IOException {
+      assert slice.leaves.length == 1;
       final TopFieldDocs docs = searcher.search (slice.leaves, weight, filter, nDocs, sort, true);
       lock.lock();
       try {
-        hq.setFields(docs.fields);
+        final int base = slice.leaves[0].docBase;
+        hq.setNextReader(slice.leaves[0]);
+        hq.setScorer(fakeScorer);
+        for(ScoreDoc scoreDoc : docs.scoreDocs) {
+          fakeScorer.doc = scoreDoc.doc - base;
+          fakeScorer.score = scoreDoc.score;
+          hq.collect(scoreDoc.doc-base);
+        }
       } finally {
         lock.unlock();
-      }
-
-      final ScoreDoc[] scoreDocs = docs.scoreDocs;
-      for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
-        final FieldDoc fieldDoc = (FieldDoc) scoreDocs[j];
-        //it would be so nice if we had a thread-safe insert 
-        lock.lock();
-        try {
-          if (fieldDoc == hq.insertWithOverflow(fieldDoc))
-            break;
-        } finally {
-          lock.unlock();
-        }
       }
       return docs;
     }

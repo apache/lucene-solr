@@ -495,13 +495,15 @@ public class TestSort extends LuceneTestCase {
       bottomValue = slotValues[bottom];
     }
 
+    private static final FieldCache.IntParser testIntParser = new FieldCache.IntParser() {
+      public final int parseInt(final BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 123456;
+      }
+    };
+
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      docValues = FieldCache.DEFAULT.getInts(context.reader, "parser", new FieldCache.IntParser() {
-          public final int parseInt(final BytesRef term) {
-            return (term.bytes[term.offset]-'A') * 123456;
-          }
-        });
+      docValues = FieldCache.DEFAULT.getInts(context.reader, "parser", testIntParser);
       return this;
     }
 

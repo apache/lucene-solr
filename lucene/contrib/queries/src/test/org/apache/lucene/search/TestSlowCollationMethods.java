@@ -62,10 +62,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     reader = iw.getReader();
     iw.close();
 
-    // TODO: we should be able to use newSearcher, but custom sorts are broken if IS has an executorservice
-    // see LUCENE-2941
-    //searcher = newSearcher(reader);
-    searcher = new IndexSearcher(reader); 
+    searcher = newSearcher(reader);
   }
   
   @AfterClass
