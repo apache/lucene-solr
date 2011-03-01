@@ -27,6 +27,7 @@ import org.apache.solr.util.TermFreqIterator;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,29 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testReload() throws Exception {
+    String leaveData = System.getProperty("solr.test.leavedatadir");
+    if (leaveData == null) leaveData = "";
+    System.setProperty("solr.test.leavedatadir", "true");
+    addDocs();
+    assertU(commit());
+    File data = dataDir;
+    String config = configString;
+    deleteCore();
+    dataDir = data;
+    configString = config;
+    initCore();
+    assertQ(req("qt","/suggest", "q","ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
+            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
+            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
+            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
+        );
+    
+    // restore the property
+    System.setProperty("solr.test.leavedatadir", leaveData);
+  }
+  
+  @Test
+  public void testRebuild() throws Exception {
     addDocs();
     assertU(commit());
     assertQ(req("qt","/suggest", "q","ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),

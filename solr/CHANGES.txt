@@ -175,6 +175,10 @@ Other Changes
   using Generics where applicable in method/object declatations, and
   adding @SuppressWarnings("unchecked") when appropriate (hossman)
 
+* SOLR-2375: Suggester Lookup implementations now store trie data
+  and load it back on init. This means that large tries don't have to be
+  rebuilt on every commit or core reload. (ab)
+
 Documentation
 ----------------------
 

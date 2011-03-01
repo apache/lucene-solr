@@ -127,6 +127,16 @@ public class JaspellTernarySearchTrie {
    */
   public JaspellTernarySearchTrie() {
   }
+  
+  // for loading
+  void setRoot(TSTNode newRoot) {
+    rootNode = newRoot;
+  }
+  
+  // for saving
+  TSTNode getRoot() {
+    return rootNode;
+  }
 
   /**
    * Constructs a Ternary Search Trie and loads data from a <code>File</code>
