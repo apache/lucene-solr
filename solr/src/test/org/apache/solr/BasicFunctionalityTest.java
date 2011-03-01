@@ -675,6 +675,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(commit());
   
     try {
+      ignoreException("can not sort on multivalued field: sortabuse_t");
       assertQ("sort on something that shouldn't work",
               req("q", "sortabuse_b:true",
                   "sort", "sortabuse_t asc"),
