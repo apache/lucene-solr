@@ -83,9 +83,9 @@ import org.junit.runners.model.InitializationError;
  * <code>super.tearDown()</code>
  * </p>
  *
- * @After - replaces setup
- * @Before - replaces teardown
- * @Test - any public method with this annotation is a test case, regardless
+ * <code>@After</code> - replaces setup
+ * <code>@Before</code> - replaces teardown
+ * <code>@Test</code> - any public method with this annotation is a test case, regardless
  * of its name
  * <p>
  * <p>
@@ -612,7 +612,7 @@ public abstract class LuceneTestCase extends Assert {
    * directly in the same scope as the IndexReader.
    * </p>
    *
-   * @see FieldCacheSanityChecker
+   * @see org.apache.lucene.util.FieldCacheSanityChecker
    */
   protected void assertSaneFieldCaches(final String msg) {
     final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
@@ -910,13 +910,13 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /** Returns a new field instance. 
-   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(String name, String value, Index index) {
     return newField(random, name, value, index);
   }
   
   /** Returns a new field instance. 
-   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index);
   }
@@ -935,19 +935,19 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /** Returns a new field instance, using the specified random. 
-   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Index index) {
     return newField(random, name, value, Store.NO, index);
   }
   
   /** Returns a new field instance, using the specified random. 
-   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index, TermVector.NO);
   }
   
   /** Returns a new field instance, using the specified random. 
-   * See {@link #newField(String, String, Store, Index, TermVector)} for more information */
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
     if (!index.isIndexed())
       return new Field(name, value, store, index);

@@ -163,6 +163,7 @@
 <ul>
   <li><a href="all/index.html">All</a></li>
   <li><a href="core/index.html">Core</a></li>
+  <li><a href="test-framework/index.html">Test Framework</a></li>
   <li>Contrib packages:</li>
   <ul>
 ]]></echo>

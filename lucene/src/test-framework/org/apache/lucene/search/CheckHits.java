@@ -268,7 +268,7 @@ public class CheckHits {
    * query corresponds with the true score. 
    *
    * @see ExplanationAsserter
-   * @see #checkExplanations(Query, String, Searcher, boolean) for a
+   * @see #checkExplanations(Query, String, IndexSearcher, boolean) for a
    * "deep" testing of the explanation details.
    *   
    * @param query the query to test
