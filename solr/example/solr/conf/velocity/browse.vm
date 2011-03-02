@@ -1,15 +1,16 @@
 #set($searcher=$request.searcher)
 #set($params=$request.params)
 #set($clusters = $response.response.clusters)
-
+#set($annotate = $request.params.get("annotateBrowse"))
 <div class="query-box">
   <form id="query-form" action="#{url_for_home}" method="GET">
-  <a href="#url_for_home#if($request.params.get('debugQuery'))?debugQuery=true#end"><img src="#{url_for_solr}/admin/solr_small.png" id="logo"/></a>
-    
     <div class="inputs"><span>Find: <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/> <input type="submit"/> <input type="reset"/></span>
-    <div class="query-boost"><input type="checkbox" name="bf" value="price" #boostPrice>Boost by Price</input> </div></div>
+    <div class="query-boost"><input type="checkbox" name="bf" #annTitle("Add the boost function &bf=price to the query") value="price" #if($request.params.get('bf') == 'price')checked="true"#end>Boost by Price</input> </div></div>
     #if($request.params.get('debugQuery'))
       <input type="hidden" name="debugQuery" value="true"/>
+    #end
+    #if($annotate == true)
+      <input type="hidden" name="annotateBrowse" value="true"/>
     #end
     #foreach($fq in $request.params.getParams('fq'))
       <input type="hidden" name="fq" value="$esc.html($fq)"/>
