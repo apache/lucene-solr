@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.nio.CharBuffer;
 import java.nio.ByteBuffer;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute; // javadoc
 
 /**
  * Provides support for converting byte sequences to Strings and back again.
