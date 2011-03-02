@@ -149,8 +149,8 @@ public class TestParallelReader extends LuceneTestCase {
     
     assertTrue(pr.isCurrent());
     IndexReader modifier = IndexReader.open(dir1, false);
-    SimilarityProvider sim = new DefaultSimilarity();
-    modifier.setNorm(0, "f1", sim.get("f1").encodeNormValue(100f));
+    Similarity sim = new DefaultSimilarity();
+    modifier.setNorm(0, "f1", sim.encodeNormValue(100f));
     modifier.close();
     
     // one of the two IndexReaders which ParallelReader is using
@@ -158,7 +158,7 @@ public class TestParallelReader extends LuceneTestCase {
     assertFalse(pr.isCurrent());
     
     modifier = IndexReader.open(dir2, false);
-    modifier.setNorm(0, "f3", sim.get("f3").encodeNormValue(100f));
+    modifier.setNorm(0, "f3", sim.encodeNormValue(100f));
     modifier.close();
     
     // now both are not current anymore
