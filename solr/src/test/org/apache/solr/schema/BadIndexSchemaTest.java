@@ -22,6 +22,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrConfig;
 
+import java.util.regex.Pattern;
+
 import org.junit.Test;
 
 public class BadIndexSchemaTest extends SolrTestCaseJ4 {
@@ -29,7 +31,7 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
   private void doTest(final String schema, final String errString) 
     throws Exception {
 
-    ignoreException(errString);
+    ignoreException(Pattern.quote(errString));
     try {
       initCore( "solrconfig.xml", schema );
     } catch (SolrException e) {
@@ -59,5 +61,10 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
   @Test
   public void testSevereErrorsForDuplicateFieldType() throws Exception {
     doTest("bad-schema-dup-fieldType.xml", "ftAgain");
+  }
+
+  @Test
+  public void testSevereErrorsForUnexpectedAnalyzer() throws Exception {
+    doTest("bad-schema-nontext-analyzer.xml", "StrField (bad_type)");
   }
 }

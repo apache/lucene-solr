@@ -153,6 +153,11 @@ Bug Fixes
 * SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
   (Erick Erickson via hossman)
 
+* SOLR-309: Fix FieldType so setting an analyzer on a FieldType that
+  doesn't expect it will generate an error.  Practically speaking this
+  means that Solr will now correctly generate an error on
+  initialization if the schema.xml contains an analyzer configuration
+  for a fieldType that does not use TextField.  (hossman) 
 
 Other Changes
 ----------------------

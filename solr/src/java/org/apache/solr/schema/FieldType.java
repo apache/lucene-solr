@@ -33,6 +33,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
@@ -418,6 +419,7 @@ public abstract class FieldType extends FieldProperties {
    * of this type, subclasses can set analyzer themselves or override
    * getAnalyzer()
    * @see #getAnalyzer
+   * @see #setAnalyzer
    */
   protected Analyzer analyzer=new DefaultAnalyzer(256);
 
@@ -426,6 +428,7 @@ public abstract class FieldType extends FieldProperties {
    * of this type, subclasses can set analyzer themselves or override
    * getAnalyzer()
    * @see #getQueryAnalyzer
+   * @see #setQueryAnalyzer
    */
   protected Analyzer queryAnalyzer=analyzer;
 
@@ -451,22 +454,52 @@ public abstract class FieldType extends FieldProperties {
     return queryAnalyzer;
   }
 
+  private final String analyzerError = 
+    "FieldType: " + this.getClass().getSimpleName() + 
+    " (" + typeName + ") does not support specifying an analyzer";
+
   /**
    * Sets the Analyzer to be used when indexing fields of this type.
+   *
+   * <p>
+   * The default implementation throws a SolrException.  
+   * Subclasses that override this method need to ensure the behavior 
+   * of the analyzer is consistent with the implementation of toInternal.
+   * </p>
+   * 
+   * @see #toInternal
+   * @see #setQueryAnalyzer
    * @see #getAnalyzer
    */
   public void setAnalyzer(Analyzer analyzer) {
-    this.analyzer = analyzer;
-    log.trace("FieldType: " + typeName + ".setAnalyzer(" + analyzer.getClass().getName() + ")" );
+    SolrException e = new SolrException
+      (ErrorCode.SERVER_ERROR,
+       "FieldType: " + this.getClass().getSimpleName() + 
+       " (" + typeName + ") does not support specifying an analyzer");
+    SolrException.logOnce(log,null,e);
+    throw e;
   }
 
   /**
    * Sets the Analyzer to be used when querying fields of this type.
+   *
+   * <p>
+   * The default implementation throws a SolrException.  
+   * Subclasses that override this method need to ensure the behavior 
+   * of the analyzer is consistent with the implementation of toInternal.
+   * </p>
+   * 
+   * @see #toInternal
+   * @see #setAnalyzer
    * @see #getQueryAnalyzer
    */
   public void setQueryAnalyzer(Analyzer analyzer) {
-    this.queryAnalyzer = analyzer;
-    log.trace("FieldType: " + typeName + ".setQueryAnalyzer(" + analyzer.getClass().getName() + ")" );
+    SolrException e = new SolrException
+      (ErrorCode.SERVER_ERROR,
+       "FieldType: " + this.getClass().getSimpleName() + 
+       " (" + typeName + ") does not support specifying an analyzer");
+    SolrException.logOnce(log,null,e);
+    throw e;
   }
 
   /**
