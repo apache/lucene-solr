@@ -1207,9 +1207,7 @@
            See http://project.carrot2.org/algorithms.html for the
            algorithm's characteristics.
         -->
-      <str name="carrot.algorithm">
-        org.carrot2.clustering.lingo.LingoClusteringAlgorithm
-      </str>
+      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
       <!-- Overriding values for Carrot2 default algorithm attributes.
 
            For a description of all available attributes, see:
@@ -1230,9 +1228,7 @@
     </lst>
     <lst name="engine">
       <str name="name">stc</str>
-      <str name="carrot.algorithm">
-        org.carrot2.clustering.stc.STCClusteringAlgorithm
-      </str>
+      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
     </lst>
   </searchComponent>
 
