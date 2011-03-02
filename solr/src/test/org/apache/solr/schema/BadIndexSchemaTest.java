@@ -17,16 +17,21 @@
 
 package org.apache.solr.schema;
 
+import java.util.regex.Pattern;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.solr.core.SolrConfig;
 
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
+
+
 
 /**
  */
 public class BadIndexSchemaTest extends AbstractSolrTestCase {
+
+  private static final String bad_type = "StrField (bad_type)";
 
   @Override public String getSchemaFile() { return "bad-schema.xml"; }
   @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
@@ -36,6 +41,7 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
     ignoreException("_twice");
     ignoreException("ftAgain");
     ignoreException("fAgain");
+    ignoreException(Pattern.quote(bad_type));
 
     super.setUp();
   }
@@ -58,7 +64,7 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
   }
   
   
-  public void testSevereErrorsForDuplicateNames() 
+  public void testSevereErrors() 
   {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
@@ -67,7 +73,7 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
       log.info( "got ex:"+t.getMessage() );
     }
     
-    assertEquals( 3, SolrConfig.severeErrors.size() );
+    assertEquals( 4, SolrConfig.severeErrors.size() );
 
     List<Throwable> err = new LinkedList<Throwable>();
     err.addAll( SolrConfig.severeErrors );
@@ -81,6 +87,10 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
     err.remove( t );
     
     t = findErrorWithSubstring( err, "fAgain" );
+    assertNotNull( t );
+    err.remove( t );
+
+    t = findErrorWithSubstring( err, bad_type );
     assertNotNull( t );
     err.remove( t );
 

@@ -83,6 +83,15 @@ public class TextField extends FieldType {
     return parseFieldQuery(parser, getQueryAnalyzer(), field.getName(), externalVal);
   }
 
+  @Override
+  public void setAnalyzer(Analyzer analyzer) {
+    this.analyzer = analyzer;
+  }
+
+  @Override
+  public void setQueryAnalyzer(Analyzer analyzer) {
+    this.queryAnalyzer = analyzer;
+  }
 
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
     int phraseSlop = 0;

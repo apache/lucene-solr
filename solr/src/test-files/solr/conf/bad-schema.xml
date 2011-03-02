@@ -21,6 +21,12 @@
 
     <fieldType name="string" class="solr.StrField"/>
     
+    <fieldType name="bad_type" class="solr.StrField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
+
     <fieldType name="ftAgain" class="solr.IntField"/>
     <fieldType name="ftAgain" class="solr.IntField"/>
 

@@ -549,6 +549,11 @@ Bug Fixes
   your config files / XSLTs and replace all XIncludes/HREFs that were 
   hacked to use absolute paths to use relative ones. (uschindler)
 
+* SOLR-309: Fix FieldType so setting an analyzer on a FieldType that
+  doesn't expect it will generate an error.  Practically speaking this
+  means that Solr will now correctly generate an error on
+  initialization if the schema.xml contains an analyzer configuration
+  for a fieldType that does not use TextField.  (hossman) 
 
 Other Changes
 ----------------------
