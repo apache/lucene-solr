@@ -288,7 +288,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
   }
 
   public void assertThreadSafe(final Analyzer analyzer) throws Exception {
-    int numTestPoints = 1000;
+    int numTestPoints = 100;
     int numThreads = _TestUtil.nextInt(random, 3, 5);
     final HashMap<String,String> map = new HashMap<String,String>();
     
