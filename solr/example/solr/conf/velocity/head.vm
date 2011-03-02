@@ -1,0 +1,45 @@
+
+    ## An example of using an arbitrary request parameter
+    <!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<title>#param('title')</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+
+<script type="text/javascript" src="#{url_for_solr}/admin/jquery-1.2.3.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="#{url_for_solr}/admin/file?file=/velocity/main.css&contentType=text/css"/>
+  <link rel="stylesheet" href="#{url_for_solr}/admin/file?file=/velocity/jquery.autocomplete.css&contentType=text/css" type="text/css" />
+  <script type="text/javascript" src="#{url_for_solr}/admin/file?file=/velocity/jquery.autocomplete.js&contentType=text/javascript"></script>
+
+
+    <script>
+    $(document).ready(function(){
+      $("\#q").autocomplete('#{url_for_solr}/terms', {  ## backslash escaped #q as that is a macro defined in VM_global_library.vm
+           extraParams:{
+             'terms.prefix': function() { return $("\#q").val();},
+             'terms.sort': 'count',
+             'terms.fl': 'name',
+             'wt': 'velocity',
+             'v.template': 'suggest'
+           }
+         }
+      );
+
+      // http://localhost:8983/solr/terms?terms.fl=name&terms.prefix=i&terms.sort=count
+    });
+
+    </script>

@@ -122,7 +122,6 @@ a {
 
 .query-box .inputs{
   left: 180px;
-  top: -20px;
   position: relative;
   
 }
@@ -178,4 +177,8 @@ a {
 
 li.show {
   list-style: disc;
+}
+
+.group-value{
+  font-weight: bold;
 }
