@@ -5,8 +5,9 @@
 <div class="query-box">
   <form id="query-form" action="#{url_for_home}" method="GET">
   <a href="#url_for_home#if($request.params.get('debugQuery'))?debugQuery=true#end"><img src="#{url_for_solr}/admin/solr_small.png" id="logo"/></a>
-  
-    Find: <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/>
+    
+    <div class="inputs"><span>Find: <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/> <input type="submit"/> <input type="reset"/></span>
+    <div class="query-boost"><input type="checkbox" name="bf" value="price" #if($response.responseHeader.params.bf == 'price')CHECKED#end>Boost by Price</input> </div></div>
     #if($request.params.get('debugQuery'))
       <input type="hidden" name="debugQuery" value="true"/>
     #end
