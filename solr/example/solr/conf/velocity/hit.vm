@@ -8,9 +8,10 @@
   #end
 #end
 <div class="result-document">
-  <p><b>#field('name')</b> $!number.currency($doc.getFieldValue('price'))</p>
-  
-  <p>#field('features')</p>
+  <p><b>#field('name')</b></p>
+  <p>Price: $!number.currency($doc.getFieldValue('price'))</p>
+  <p>Features: #field('features')</p>
+  <p>In Stock: #field('inStock')</p>
   
   #if($params.getBool("debugQuery",false))
     <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle explain</a>

@@ -17,8 +17,15 @@
 
 #macro(url_for_filters $p)#url_for_home?#q#if($list.size($p) > 0)&#fqs($p)#end#debug#end
 
+#macro(url_for_nested_facet_query $field)#url_for_home#lens&fq=$esc.url($field)#end
+
 ## TODO: convert to use {!raw f=$field}$value (with escaping of course)
 #macro(url_for_facet_filter $field $value)#url_for_home#lens&fq=$esc.url($field):%22$esc.url($value)%22#end
+
+#macro(url_for_facet_date_filter $field $value)#url_for_home#lens&fq=$esc.url($field):$esc.url($value)#end
+
+#macro(url_for_facet_range_filter $field $value)#url_for_home#lens&fq=$esc.url($field):$esc.url($value)#end
+
 
 #macro(link_to_previous_page $text)
   #if($page.current_page_number > 1)
@@ -42,5 +49,110 @@
       #set($page_start = $page_number * $page.results_per_page - $page.results_per_page)
       <a class="page" href="#url_for_start($page_start)">$text</a>
     #end
+  #end
+#end
+
+#macro(display_facet_query $field, $display, $fieldName)
+  #if($field.size() > 0)
+  <span class="facet-field">$display</span>
+    <ul>
+    #foreach ($facet in $field)
+      #if ($facet.value > 0)
+        #set($facetURL = "#url_for_nested_facet_query($facet.key)")
+        #if ($facetURL != '')
+          <li><a href="$facetURL">$facet.key</a> ($facet.value)</li>
+        #end
+      #end
+    #end
+    </ul>
+  #end      
+#end
+
+#macro(display_facet_date $field, $display, $fieldName, $gap)
+  <span class="facet-field">$display</span>
+    <ul>
+    #foreach ($facet in $field)
+      #set($theDate = $date.toDate("yyyy-MM-dd'T'HH:mm:ss'Z'", $facet.key))
+      #set($value = '["' + $facet.key + '" TO "' + $facet.key + $gap + '"]')
+
+      #set($facetURL = "#url_for_facet_date_filter($fieldName, $value)")
+      #if ($facetURL != '')
+        #if ($facet.key != "gap" && $facet.key != "start" && $facet.key != "end" && $facet.key != "before" && $facet.key != "after")
+
+          <li><a href="$facetURL">$date.format('MMM yyyy', $theDate)</a> ($facet.value)</li>
+        #end
+        #if ($facet.key == "before" && $facet.value > 0)
+          <li><a href="$facetURL">Before</a> ($facet.value)</li>
+        #end
+        #if ($facet.key == "after" && $facet.value > 0)
+          <li><a href="$facetURL">After</a> ($facet.value)</li>
+        #end
+      #end
+    #end
+    </ul>
+#end
+        
+
+
+#macro(display_facet_range $field, $display, $fieldName, $start, $end, $gap, $before, $after)
+  <span class="facet-field">$display</span>
+    <ul>
+    #if($before && $before != "")
+      #set($value = '[* TO "' + $start + '"]')
+      #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
+      <li><a href="$facetURL">Less than $start</a> ($before)</li>
+    #end
+    #foreach ($facet in $field)
+      #set($rangeEnd = $math.add($facet.key, $gap))
+      #set($value = "[" + $facet.key + " TO $rangeEnd]")
+      #set($facetURL = "#url_for_facet_filter($fieldName, $value)")
+      #if ($facetURL != '')
+        <li><a href="$facetURL">$facet.key</a> ($facet.value)</li>
+      #end
+    #end
+    #if($end && $end != "")
+      #set($value = "[" + $end + " TO *]")
+      #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
+      <li><a href="$facetURL">More than $math.toNumber($end)</a> ($after)</li>
+    #end
+    </ul>
+#end
+
+##   <lst name="facet_pivot">
+##     <arr name="cat,inStock">
+##       <lst>
+##         <str name="field">cat</str>
+##         <str name="value">electronics</str>
+##         <int name="count">17</int>
+##         <arr name="pivot">
+##           <lst>
+##             <str name="field">inStock</str>
+##             <str name="value">true</str>
+##             <int name="count">13</int>
+##           </lst>
+##           <lst>
+##           <str name="field">inStock</str>
+##             <str name="value">false</str>
+##             <int name="count">4</int>
+##           </lst>
+##         </arr>
+##       </lst>
+
+## $pivots is a list of facet_pivot
+#macro(display_facet_pivot $pivots, $display)
+  #if($pivots.size() > 0)
+  <span class="facet-field">$display</span>
+    <ul>
+      #foreach ($pivot in $pivots)
+        #foreach ($entry in $pivot.value)
+          <a href="#url_for_facet_filter($entry.field, $entry.value)">$entry.field::$entry.value</a> ($entry.count)
+          <ul>
+            #foreach($nest in $entry.pivot)
+              <a href="#url_for_facet_filter($entry.field, $entry.value)&fq=$esc.url($nest.field):%22$esc.url($nest.value)%22">$nest.field::$nest.value</a> ($nest.count)
+            #end
+          </ul>
+        #end
+      #end
+    </ul>
   #end
 #end

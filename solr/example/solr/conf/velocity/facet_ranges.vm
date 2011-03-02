@@ -1,0 +1,9 @@
+#set($field = $response.response.facet_counts.facet_ranges.price.counts)
+#set($start = $response.response.facet_counts.facet_ranges.price.start)
+#set($end = $response.response.facet_counts.facet_ranges.price.end)
+#set($gap = $response.response.facet_counts.facet_ranges.price.gap)
+#set($before = $response.response.facet_counts.facet_ranges.price.before)
+#set($after = $response.response.facet_counts.facet_ranges.price.after)
+##TODO: Make this display the "range", not just the lower value
+##TODO: Have a generic way to deal with ranges
+#display_facet_range($field, "Price (in $)", "price", $start, $end, $gap, $before, $after)
