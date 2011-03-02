@@ -20,7 +20,7 @@
 
 #macro(qOpts)#set($queryOpts = $request.params.get("queryOpts"))#if($queryOpts && $queryOpts != "")&queryOpts=$queryOpts#end#end
 
-#macro(lensNoQ)?#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#boostPrice#annotate#spatial#qOpts#group#end
+#macro(lensNoQ)?#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#boostPrice#annotate#spatial#qOpts#end
 #macro(lens)#lensNoQ#q#end
         
 
