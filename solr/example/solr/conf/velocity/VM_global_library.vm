@@ -9,7 +9,9 @@
 
 #macro(debug)#if($request.params.get('debugQuery'))&debugQuery=true#end#end
 
-#macro(lens)?#q#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#end
+#macro(boostPrice)#if($request.params.get('bf') == 'price')CHECKED#end#end        
+
+#macro(lens)?#q#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#if($request.params.get('bf') == 'price')&bf=price#end#end
 
 #macro(url_for_lens)#{url_for_home}#lens#end
 
