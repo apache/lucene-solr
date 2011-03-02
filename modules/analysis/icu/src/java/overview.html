@@ -66,12 +66,12 @@ algorithm.
 </ul>
 <h2>Example Usages</h2>
 <h3>Tokenizing multilanguage text</h3>
-<code><pre>
+<pre class="prettyprint">
   /**
    * This tokenizer will work well in general for most languages.
    */
   Tokenizer tokenizer = new ICUTokenizer(reader);
-</pre></code>
+</pre>
 <hr/>
 <h1><a name="collation">Collation</a></h1>
 <p>
@@ -111,7 +111,7 @@ algorithm.
 <h2>Example Usages</h2>
 
 <h3>Farsi Range Queries</h3>
-<code><pre>
+<pre class="prettyprint">
   Collator collator = Collator.getInstance(new ULocale("ar"));
   ICUCollationKeyAnalyzer analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_40, collator);
   RAMDirectory ramDir = new RAMDirectory();
@@ -134,10 +134,10 @@ algorithm.
   ScoreDoc[] result
     = is.search(aqp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
   assertEquals("The index Term should not be included.", 0, result.length);
-</pre></code>
+</pre>
 
 <h3>Danish Sorting</h3>
-<code><pre>
+<pre class="prettyprint">
   Analyzer analyzer 
     = new ICUCollationKeyAnalyzer(Version.LUCENE_40, Collator.getInstance(new ULocale("da", "dk")));
   RAMDirectory indexStore = new RAMDirectory();
@@ -161,10 +161,10 @@ algorithm.
     Document doc = searcher.doc(result[i].doc);
     assertEquals(sortedTracerOrder[i], doc.getValues("tracer")[0]);
   }
-</pre></code>
+</pre>
 
 <h3>Turkish Case Normalization</h3>
-<code><pre>
+<pre class="prettyprint">
   Collator collator = Collator.getInstance(new ULocale("tr", "TR"));
   collator.setStrength(Collator.PRIMARY);
   Analyzer analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_40, collator);
@@ -179,7 +179,7 @@ algorithm.
   Query query = parser.parse("d\u0131gy");   // U+0131: dotless i
   ScoreDoc[] result = is.search(query, null, 1000).scoreDocs;
   assertEquals("The index Term should be included.", 1, result.length);
-</pre></code>
+</pre>
 
 <h2>Caveats and Comparisons</h2>
 <p>
@@ -239,7 +239,7 @@ algorithm.
 </ul>
 <h2>Example Usages</h2>
 <h3>Normalizing text to NFC</h3>
-<code><pre>
+<pre class="prettyprint">
   /**
    * Normalizer2 objects are unmodifiable and immutable.
    */
@@ -248,7 +248,7 @@ algorithm.
    * This filter will normalize to NFC.
    */
   TokenStream tokenstream = new ICUNormalizer2Filter(tokenizer, normalizer);
-</pre></code>
+</pre>
 <hr/>
 <h1><a name="casefolding">Case Folding</a></h1>
 <p>
@@ -278,12 +278,12 @@ this integration. To perform case-folding, you use normalization with the form
 </ul>
 <h2>Example Usages</h2>
 <h3>Lowercasing text</h3>
-<code><pre>
+<pre class="prettyprint">
   /**
    * This filter will case-fold and normalize to NFKC.
    */
   TokenStream tokenstream = new ICUNormalizer2Filter(tokenizer);
-</pre></code>
+</pre>
 <hr/>
 <h1><a name="searchfolding">Search Term Folding</a></h1>
 <p>
@@ -305,13 +305,13 @@ many character foldings recursively.
 </ul>
 <h2>Example Usages</h2>
 <h3>Removing accents</h3>
-<code><pre>
+<pre class="prettyprint">
   /**
    * This filter will case-fold, remove accents and other distinctions, and
    * normalize to NFKC.
    */
   TokenStream tokenstream = new ICUFoldingFilter(tokenizer);
-</pre></code>
+</pre>
 <hr/>
 <h1><a name="transform">Text Transformation</a></h1>
 <p>
@@ -335,19 +335,19 @@ and
 </ul>
 <h2>Example Usages</h2>
 <h3>Convert Traditional to Simplified</h3>
-<code><pre>
+<pre class="prettyprint">
   /**
    * This filter will map Traditional Chinese to Simplified Chinese
    */
   TokenStream tokenstream = new ICUTransformFilter(tokenizer, Transliterator.getInstance("Traditional-Simplified"));
-</pre></code>
+</pre>
 <h3>Transliterate Serbian Cyrillic to Serbian Latin</h3>
-  <code><pre>
+<pre class="prettyprint">
   /**
    * This filter will map Serbian Cyrillic to Serbian Latin according to BGN rules
    */
   TokenStream tokenstream = new ICUTransformFilter(tokenizer, Transliterator.getInstance("Serbian-Latin/BGN"));
-</pre></code>
+</pre>
 <hr/>
 <h1><a name="backcompat">Backwards Compatibility</a></h1>
 <p>
@@ -359,7 +359,7 @@ a specific Unicode Version by using a {@link com.ibm.icu.text.FilteredNormalizer
 </p>
 <h2>Example Usages</h2>
 <h3>Restricting normalization to Unicode 5.0</h3>
-<code><pre>
+<pre class="prettyprint">
   /**
    * This filter will do NFC normalization, but will ignore any characters that
    * did not exist as of Unicode 5.0. Because of the normalization stability policy
@@ -371,6 +371,6 @@ a specific Unicode Version by using a {@link com.ibm.icu.text.FilteredNormalizer
     set.freeze(); 
     FilteredNormalizer2 unicode50 = new FilteredNormalizer2(normalizer, set);
     TokenStream tokenstream = new ICUNormalizer2Filter(tokenizer, unicode50);
-</pre></code>
+</pre>
 </body>
 </html>

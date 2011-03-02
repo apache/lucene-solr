@@ -52,7 +52,7 @@
 <h2>Example Usages</h2>
 
 <h3>Farsi Range Queries</h3>
-<code><pre>
+<pre class="prettyprint">
   // "fa" Locale is not supported by Sun JDK 1.4 or 1.5
   Collator collator = Collator.getInstance(new Locale("ar"));
   CollationKeyAnalyzer analyzer = new CollationKeyAnalyzer(Version.LUCENE_40, collator);
@@ -76,10 +76,10 @@
   ScoreDoc[] result
     = is.search(aqp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
   assertEquals("The index Term should not be included.", 0, result.length);
-</pre></code>
+</pre>
 
 <h3>Danish Sorting</h3>
-<code><pre>
+<pre class="prettyprint">
   Analyzer analyzer 
     = new CollationKeyAnalyzer(Version.LUCENE_40, Collator.getInstance(new Locale("da", "dk")));
   RAMDirectory indexStore = new RAMDirectory();
@@ -103,10 +103,10 @@
     Document doc = searcher.doc(result[i].doc);
     assertEquals(sortedTracerOrder[i], doc.getValues("tracer")[0]);
   }
-</pre></code>
+</pre>
 
 <h3>Turkish Case Normalization</h3>
-<code><pre>
+<pre class="prettyprint">
   Collator collator = Collator.getInstance(new Locale("tr", "TR"));
   collator.setStrength(Collator.PRIMARY);
   Analyzer analyzer = new CollationKeyAnalyzer(Version.LUCENE_40, collator);
@@ -121,7 +121,7 @@
   Query query = parser.parse("d\u0131gy");   // U+0131: dotless i
   ScoreDoc[] result = is.search(query, null, 1000).scoreDocs;
   assertEquals("The index Term should be included.", 1, result.length);
-</pre></code>
+</pre>
 
 <h2>Caveats and Comparisons</h2>
 <p>
