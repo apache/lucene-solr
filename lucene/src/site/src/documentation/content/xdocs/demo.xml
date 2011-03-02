@@ -31,13 +31,13 @@ First, you should <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">do
 latest Lucene distribution and then extract it to a working directory.
 </p>
 <p>
-You need three JARs: the Lucene JAR, the common analysis JAR, and the Lucene demo JAR.  You should
+You need two JARs: the Lucene JAR, and the Lucene demo JAR.  You should
 see the Lucene JAR file in the directory you created when you extracted the archive -- it
-should be named something like <code>lucene-core-{version}.jar</code>.  You should also see files
-called <code>lucene-analysis-common-{version}.jar</code> and <code>lucene-demos-{version}.jar</code>.
+should be named something like <code>lucene-core-{version}.jar</code>.  You should also see a file
+called <code>lucene-demo-{version}.jar</code>.
 </p>
 <p>
-Put all three of these files in your Java CLASSPATH.
+Put both of these files in your Java CLASSPATH.
 </p>
 </section>
 

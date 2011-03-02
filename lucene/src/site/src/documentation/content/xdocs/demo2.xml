@@ -76,7 +76,7 @@ first wipe the slate clean before indexing any documents.
 <p>
 Lucene <a href="api/core/org/apache/lucene/store/Directory.html">Directory</a>s are used by the
 <code>IndexWriter</code> to store information in the index.  In addition to the 
-<a href="api/core/org/apache/lucen/store/FSDirectory.html">FSDirectory</a> implementation we are using,
+<a href="api/core/org/apache/lucene/store/FSDirectory.html">FSDirectory</a> implementation we are using,
 there are several other <code>Directory</code> subclasses that can write to RAM, to databases, etc.
 </p>
   
@@ -90,9 +90,9 @@ Standard Annex #29</a>; converts tokens to lowercase; and then filters out stopw
 common language words such as articles (a, an, the, etc.) and other tokens that may have less value for
 searching.  It should be noted that there are different rules for every language, and you should use the
 proper analyzer for each.  Lucene currently provides Analyzers for a number of different languages (see
-the <code>*Analyzer.java</code> sources under 
-<a href="http://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/contrib/analyzers/common/src/java/org/apache/lucene/analysis/"
->lucene/contrib/analyzers/common/src/java/org/apache/lucene/analysis/</a>).
+the javadocs under 
+<a href="api/contrib-analyzers/org/apache/lucene/analysis/package-summary.html"
+>lucene/contrib/analyzers/common/src/java/org/apache/lucene/analysis</a>).
 </p>
 
 <p>
