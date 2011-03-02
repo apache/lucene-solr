@@ -25,6 +25,7 @@
 
       // http://localhost:8983/solr/terms?terms.fl=name&terms.prefix=i&terms.sort=count
     });
+  
     </script>
 
   </head>
