@@ -87,6 +87,10 @@
 	        uncompressed). See issue LUCENE-1960 for details.
             </p>
 
+        <p>
+            In version 3.1, segments records the code version
+            that created them. See LUCENE-2720 for details.
+           </p>
         </section>
 
         <section id="Definitions"><title>Definitions</title>
@@ -928,8 +932,8 @@
                     written twice.
                 </p>
                 <p>
-                    <b>2.9</b>
-                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
+                    <b>3.1</b>
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegVersion, SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
                     NormGen<sup>NumField</sup>,
                     IsCompoundFile, DeletionCount, HasProx, Diagnostics&gt;<sup>SegCount</sup>, CommitUserData, Checksum
                 </p>
@@ -944,7 +948,7 @@
                 </p>
 
                 <p>
-                   SegName, DocStoreSegment --&gt; String
+                   SegVersion, SegName, DocStoreSegment --&gt; String
                 </p>
 
 		<p>
@@ -971,6 +975,10 @@
 
                 <p>
                     NameCounter is used to generate names for new segment files.
+                </p>
+
+                <p>
+                    SegVersion is the code version that created the segment.
                 </p>
 
                 <p>
