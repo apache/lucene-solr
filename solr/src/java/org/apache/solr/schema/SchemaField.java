@@ -150,7 +150,6 @@ public final class SchemaField extends FieldProperties {
                               "can not sort on multivalued field: " 
                               + getName());
     }
-    
   }
 
   /** 
