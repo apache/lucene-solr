@@ -823,6 +823,71 @@
 
   </target>
 
+  <!-- copied from lucene build.xml -->
+  <patternset id="src.dist.patterns"
+              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/,backwards/"
+              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/"
+  />
+
+
+  <target name="package-src"
+          description="Packages the Solr Source Distribution"
+          depends="">
+
+    <mkdir dir="${dest}" />
+
+    <delete file="${dist}/${fullnamever}-src.tgz" failonerror="false" />
+    <delete file="${dist}/${fullnamever}-src.zip" failonerror="false" />
+
+    <tar destfile="${dist}/${fullnamever}-src.tgz" compression="gzip" longfile="gnu">
+      <tarfileset dir=".."
+        prefix="${fullnamever}"
+        includes="*.txt *.xml dev-tools/*" />
+      <tarfileset dir="."
+        prefix="${fullnamever}/solr"
+        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
+        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/lib/downloads/**" />
+      <tarfileset dir="."
+        prefix="${fullnamever}/solr"
+        includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
+      <tarfileset dir="."
+        mode="755"
+        prefix="${fullnamever}/solr"
+        includes="**/*.sh **/bin/ src/scripts/" />
+      <tarfileset dir="../lucene" prefix="${fullnamever}/lucene">
+        <patternset refid="src.dist.patterns"/>
+      </tarfileset>
+      <tarfileset dir="../modules"
+        prefix="${fullnamever}/modules"
+        excludes="**/build/" />
+    </tar>
+    <solr-checksum file="${dist}/${fullnamever}-src.tgz"/>
+
+    <gunzip src="${dist}/${fullnamever}-src.tgz" dest="${dest}/${fullnamever}-src.tar"/>
+    <untar src="${dest}/${fullnamever}-src.tar" dest="${dest}"/>
+
+    <fixcrlf srcdir="${dest}/${fullnamever}"
+       eol="crlf"
+       includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
+     />
+
+    <zip destfile="${dist}/${fullnamever}-src.zip">
+      <zipfileset dir="${dest}/${fullnamever}"
+        prefix="${fullnamever}" 
+        excludes="**/*.sh **/bin/ src/scripts/" />
+      <zipfileset dir="${dest}/${fullnamever}"
+        prefix="${fullnamever}"
+        includes="**/*.sh **/bin/ src/scripts/"
+        filemode="755" />
+    </zip>
+    <solr-checksum file="${dist}/${fullnamever}-src.zip"/>
+
+  </target>
+
+
+
+
+
   <target name="package-bin"
           description="Packages the Solr Binary Distribution"
           depends="dist, example">
