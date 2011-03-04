@@ -755,66 +755,7 @@
   </target>
   
   <!-- make a distribution -->
-  <target name="package" depends="create-package"/>
-
-  <target name="create-package"
-          description="Packages the Solr Distribution files and Documentation."
-          depends="dist, example, javadoc, dist-src, dist-javadoc">
-
-    <copy failonerror="false" todir="${build.docs}">
-      <fileset dir="site" />
-    </copy>
-
-    <delete file="${dist}/${fullnamever}.tgz" failonerror="false" />
-    <delete file="${dist}/${fullnamever}.zip" failonerror="false" />
-
-    <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
-      <tarfileset dir="."
-        prefix="${fullnamever}"
-        includes="LICENSE.txt NOTICE.txt *.txt *.xml lucene-libs/** lib/** src/** example/** client/** contrib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/** contrib/uima/lib/**" />
-      <tarfileset dir="."
-        prefix="${fullnamever}"
-        includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
-      <tarfileset dir="."
-        mode="755"
-        prefix="${fullnamever}"
-        includes="**/*.sh **/bin/ src/scripts/" />
-      <tarfileset dir="."
-        prefix="${fullnamever}"
-        includes="dist/**"
-        excludes="*.tgz *.zip *.md5 **/*src*.jar **/*docs*.jar" />
-      <tarfileset dir="${build.docs}"
-        prefix="${fullnamever}/docs/" />
-      <tarfileset dir="../lucene"
-        prefix="lucene"
-        excludes="**/build/" />
-    </tar>
-    <solr-checksum file="${dist}/${fullnamever}.tgz"/>
-
-    <gunzip src="${dist}/${fullnamever}.tgz" dest="${dest}/${fullnamever}.tar"/>
-    <untar src="${dest}/${fullnamever}.tar" dest="${dest}"/>
-
-    <fixcrlf srcdir="${dest}/${fullnamever}"
-       eol="crlf"
-       includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
-     />
-
-    <zip destfile="${dist}/${fullnamever}.zip">
-      <zipfileset dir="${dest}/${fullnamever}"
-        prefix="${fullnamever}" 
-        excludes="**/*.sh **/bin/ src/scripts/" />
-      <zipfileset dir="${dest}/${fullnamever}"
-        prefix="${fullnamever}"
-        includes="**/*.sh **/bin/ src/scripts/"
-        filemode="755" />
-      <zipfileset dir="../lucene"
-        prefix="lucene"
-        excludes="**/build/" />
-    </zip>
-    <solr-checksum file="${dist}/${fullnamever}.zip"/>
-
-  </target>
+  <target name="package" depends="package-src,create-package"/>
 
   <!-- copied from lucene build.xml -->
   <patternset id="src.dist.patterns"
@@ -822,13 +763,18 @@
               excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/"
   />
 
-
   <target name="package-src"
           description="Packages the Solr Source Distribution"
           depends="dist">
 
-    <mkdir dir="${dest}" />
+    <delete includeemptydirs="true">
+      <fileset dir="${example}/work" includes="**/*"/>
+    </delete>
 
+    <delete includeemptydirs="true" failonerror="false">
+      <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
+    </delete>
+ 
     <delete file="${dist}/${fullnamever}-src.tgz" failonerror="false" />
     <delete file="${dist}/${fullnamever}-src.zip" failonerror="false" />
 
@@ -839,7 +785,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}/solr"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/lib/downloads/**" />
+        excludes="${dist}/** example/webapps/*.war lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/python client/javascript contrib/**/build/ **/*.iml **/*.ipr **/*.iws" />
       <tarfileset dir="."
         prefix="${fullnamever}/solr"
         includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
@@ -875,10 +821,7 @@
   </target>
 
 
-
-
-
-  <target name="package-bin"
+  <target name="create-package"
           description="Packages the Solr Binary Distribution"
           depends="dist, example">
 
@@ -886,14 +829,22 @@
       <fileset dir="site" />
     </copy>
 
-    <delete file="${dist}/${fullnamever}-bin.tgz" failonerror="false" />
-    <delete file="${dist}/${fullnamever}-bin.zip" failonerror="false" />
+    <delete includeemptydirs="true">
+      <fileset dir="${example}/work" includes="**/*"/>
+    </delete>
 
-    <tar destfile="${dist}/${fullnamever}-bin.tgz" compression="gzip" longfile="gnu">
+    <delete includeemptydirs="true" failonerror="false">
+      <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
+    </delete>
+
+    <delete file="${dist}/${fullnamever}.tgz" failonerror="false" />
+    <delete file="${dist}/${fullnamever}.zip" failonerror="false" />
+
+    <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/dataimporthandler/lib/ contrib/extraction/lib/ contrib/clustering/lib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/** contrib/uima/lib/**" />
+        includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/**/lib/ contrib/**/README.txt contrib/**/CHANGES.txt"
+        excludes="${dist}/** lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/** src/site/build/** **/target/** client/ruby/flare/** client/python/** client/javascript/** contrib/**/build/** **/*.iml **/*.ipr **/*.iws" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
@@ -901,21 +852,21 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="dist/**"
-        excludes="*.tgz *.zip *.md5 **/*src*.jar **/*docs*.jar" />
+        excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar" />
        <tarfileset dir="${build.docs}"
         prefix="${fullnamever}/docs/" />
     </tar>
-    <solr-checksum file="${dist}/${fullnamever}-bin.tgz"/>
+    <solr-checksum file="${dist}/${fullnamever}.tgz"/>
 
-    <gunzip src="${dist}/${fullnamever}-bin.tgz" dest="${dest}/${fullnamever}-bin.tar"/>
-    <untar src="${dest}/${fullnamever}-bin.tar" dest="${dest}"/>
+    <gunzip src="${dist}/${fullnamever}.tgz" dest="${dest}/${fullnamever}.tar"/>
+    <untar src="${dest}/${fullnamever}.tar" dest="${dest}"/>
 
     <fixcrlf srcdir="${dest}/${fullnamever}"
        eol="crlf"
        includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
      />
 
-    <zip destfile="${dist}/${fullnamever}-bin.zip">
+    <zip destfile="${dist}/${fullnamever}.zip">
       <zipfileset dir="${dest}/${fullnamever}"
         prefix="${fullnamever}" 
         excludes="**/*.sh **/bin/ src/scripts/" />
@@ -924,7 +875,7 @@
         includes="**/*.sh **/bin/ src/scripts/"
         filemode="755" />
     </zip>
-    <solr-checksum file="${dist}/${fullnamever}-bin.zip"/>
+    <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
   </target>
 
