@@ -717,7 +717,7 @@
           javacchome="${javacc.home}"
           jdkversion="${javac.source}"
       />
-      <fixcrlf srcdir="@{outputDir}" includes="*.java">
+      <fixcrlf srcdir="@{outputDir}" includes="*.java" encoding="UTF-8">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fixcrlf>
     </sequential>
