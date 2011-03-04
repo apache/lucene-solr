@@ -786,7 +786,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}/solr"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
-        excludes="${dist}/** lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/python client/javascript contrib/**/build/ **/*.iml **/*.ipr **/*.iws" />
+        excludes="${dist}/** example/webapps/*.war lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/python client/javascript contrib/**/build/ **/*.iml **/*.ipr **/*.iws" />
       <tarfileset dir="."
         prefix="${fullnamever}/solr"
         includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
