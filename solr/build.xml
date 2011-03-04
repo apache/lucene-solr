@@ -803,6 +803,7 @@
     <untar src="${dest}/${fullnamever}-src.tar" dest="${dest}"/>
 
     <fixcrlf srcdir="${dest}/${fullnamever}"
+       encoding="UTF-8"
        eol="crlf"
        includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
      />
@@ -862,6 +863,7 @@
     <untar src="${dest}/${fullnamever}.tar" dest="${dest}"/>
 
     <fixcrlf srcdir="${dest}/${fullnamever}"
+       encoding="UTF-8"
        eol="crlf"
        includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
      />
