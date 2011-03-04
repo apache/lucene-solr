@@ -810,6 +810,7 @@
        encoding="UTF-8"
        eol="crlf"
        includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
+       excludes="**/stopwordsWrongEncoding.txt **/gb18030-example.xml"
      />
 
     <zip destfile="${dist}/${fullnamever}-src.zip">
@@ -870,6 +871,7 @@
        encoding="UTF-8"
        eol="crlf"
        includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
+       excludes="**/stopwordsWrongEncoding.txt **/gb18030-example.xml"
      />
 
     <zip destfile="${dist}/${fullnamever}.zip">
