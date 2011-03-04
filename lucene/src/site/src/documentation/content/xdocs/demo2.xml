@@ -22,6 +22,11 @@ how to use Lucene in their applications.
 <section id="Location of the source"><title>Location of the source</title>
 
 <p>
+NOTE: to examine the sources, you need to download and extract a source checkout of 
+Lucene: (lucene-{version}-src.zip).
+</p>
+
+<p>
 Relative to the directory created when you extracted Lucene, you
 should see a directory called <code>lucene/contrib/demo/</code>.  This is the root for the Lucene
 demo.  Under this directory is <code>src/java/org/apache/lucene/demo/</code>.  This is where all
