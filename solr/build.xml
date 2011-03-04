@@ -825,7 +825,7 @@
 
   <target name="package-src"
           description="Packages the Solr Source Distribution"
-          depends="">
+          depends="dist">
 
     <mkdir dir="${dest}" />
 
