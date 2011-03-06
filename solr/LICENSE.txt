@@ -534,7 +534,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ==========================================================================
-The following license applies to easymock.jar
+The following license applies to easymock-2.2.jar
 --------------------------------------------------------------------------
 EasyMock 2 License (MIT License)
 Copyright (c) 2001-2007 OFFIS, Tammo Freese.

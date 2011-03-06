@@ -606,7 +606,7 @@
          manifest="${dest}/META-INF/MANIFEST.MF">
        <lib dir="${lib}">
          <exclude name="servlet-api*.jar" />
-         <exclude name="easymock.jar" />
+         <exclude name="easymock-*.jar" />
          <exclude name="junit-*.jar" />
          <exclude name="*.txt" />
          <exclude name="*.template" />
