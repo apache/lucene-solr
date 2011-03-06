@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2010 The Apache Software Foundation
+ Copyright 2006-2011 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed by
@@ -160,7 +160,7 @@ See http://project.carrot2.org/
 ==     Guava Notice                                                    ==
 =========================================================================
 
-Copyright ???? Google, Inc.
+Copyright (C) 2009 Google Inc.
 
 This product includes software developed by the Google Guava project.
 
@@ -170,7 +170,7 @@ See http://code.google.com/p/guava-libraries/
 ==     Prettify Notice                                                 ==
 =========================================================================
 
-Copyright ???? Google, Inc.
+Copyright (C) 2009 Google Inc.
 
 This product includes software developed by the Google Prettify project.
 
@@ -179,7 +179,7 @@ See http://code.google.com/p/google-code-prettify/
 =========================================================================
 ==     Jackson Notice                                                  ==
 =========================================================================
-Copyright ????
+Copyright 2010 FasterXML, LLC
 
 This product includes software developed by the Jackson project.
 
