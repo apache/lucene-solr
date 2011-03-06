@@ -122,7 +122,6 @@
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-2.1-jetty-6.1.26.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-api-2.1-glassfish-2.1.v20091210.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.4.2.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/commons-lang-2.4.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-core-asl-1.5.2.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-mapper-asl-1.5.2.jar"/>
@@ -139,7 +138,6 @@
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/dom4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/fontbox-1.3.1.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/extraction/lib/geronimo-stax-api_1.0_spec-1.0.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/jempbox-1.3.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/metadata-extractor-2.4.0-beta-1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/netcdf-4.2.jar"/>
