@@ -30,7 +30,7 @@ Carrot2 3.4.2
 Velocity 1.6.4 and Velocity Tools 2.0
 
 
-Upgrading from Solr 3.1-dev
+Upgrading from Solr 3.2-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -190,6 +190,14 @@ Documentation
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
 
+==================  3.2.0-dev ==================
+Versions of Major Components
+---------------------
+Apache Lucene trunk
+Apache Tika 0.8-SNAPSHOT
+Carrot2 3.4.2
+
+(No Changes)
 
 ==================  3.1.0-dev ==================
 Versions of Major Components
