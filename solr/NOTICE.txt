@@ -42,11 +42,90 @@ License: http://hsqldb.org/web/hsqlLicense.html
 =========================================================================
 ==  Apache Lucene Notice                                               ==
 =========================================================================
+Includes lib/servlet-api-2.4.jar from  Apache Tomcat
+Includes lib/ant-1.7.1.jar and lib/ant-junit-1.7.1.jar from Apache Ant
+Includes contrib/queries/lib/jakarta-regexp-1.4.jar from Apache Jakarta Regexp
+
+ICU4J, (under contrib/icu) is licensed under an MIT styles license
+(contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
+International Business Machines Corporation and others
+
+Some data files (under contrib/icu/src/data) are derived from Unicode data such
+as the Unicode Character Database. See http://unicode.org/copyright.html for more
+details.
+
+The class org.apache.lucene.SorterTemplate was inspired by CGLIB's class with
+the same name. The implementation part is mainly done using pre-existing
+Lucene sorting code. In-place stable mergesort was borrowed from CGLIB,
+which is Apache-licensed.
+
+The Google Code Prettify is Apache License 2.0.
+See http://code.google.com/p/google-code-prettify/
+
+JUnit (under lib/junit-4.7.jar) is licensed under the Common Public License v. 1.0
+See http://junit.sourceforge.net/cpl-v10.html
+
+JLine (under contrib/lucli/lib/jline.jar) is licensed under the BSD License.
+See http://jline.sourceforge.net/
+
+Includes software from other Apache Software Foundation projects,
+including, but not limited to:
+ - Commons Beanutils (lib/commons-beanutils-1.7.0.jar)
+ - Commons Collections (lib/commons-collections-3.1.jar)
+ - Commons Compress (lib/commons-compress-1.0.jar)
+ - Commons Digester (lib/commons-digester-1.7.jar)
+ - Commons Logging (lib/commons-logging-1.0.4.jar)
+ - Xerces (lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar, lib/xml-apis-2.9.0.jar)
+ - Apache Commons
+
 The snowball stemmers in
-  contrib/snowball/src/java/net/sf/snowball
+  contrib/analyzers/common/src/java/net/sf/snowball
+were developed by Martin Porter and Richard Boulton.
+The snowball stopword lists in
+  contrib/analyzers/common/src/resources/org/apache/lucene/analysis/snowball
 were developed by Martin Porter and Richard Boulton.
 The full snowball package is available from
   http://snowball.tartarus.org/
+
+The Arabic,Persian,Romanian,Bulgarian, and Hindi analyzers (common) come with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  These files reside in:
+contrib/analyzers/common/src/resources/org/apache/lucene/analysis/ar/stopwords.txt,
+contrib/analyzers/common/src/resources/org/apache/lucene/analysis/fa/stopwords.txt,
+contrib/analyzers/common/src/resources/org/apache/lucene/analysis/ro/stopwords.txt,
+contrib/analyzers/common/src/resources/org/apache/lucene/analysis/bg/stopwords.txt,
+contrib/analyzers/common/src/resources/org/apache/lucene/analysis/hi/stopwords.txt
+See http://members.unine.ch/jacques.savoy/clef/index.html.
+
+The German,Spanish,Finnish,French,Hungarian,Italian,Portuguese,Russian and Swedish light stemmers
+(common) are based on BSD-licensed reference implementations created by Jacques Savoy and
+Ljiljana Dolamic. These files reside in:
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/de/GermanLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/de/GermanMinimalStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/es/SpanishLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/fi/FinnishLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/fr/FrenchLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/fr/FrenchMinimalStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/hu/HungarianLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/it/ItalianLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/pt/PortugueseLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/ru/RussianLightStemmer.java
+contrib/analyzers/common/src/java/org/apache/lucene/analysis/sv/SwedishLightStemmer.java
+
+The Stempel analyzer (stempel) includes BSD-licensed software developed 
+by the Egothor project http://egothor.sf.net/, created by Leo Galambos, Martin Kvapil,
+and Edmond Nolan.
+
+The Polish analyzer (stempel) comes with a default
+stopword list that is BSD-licensed created by the Carrot2 project. The file resides
+in contrib/analyzers/stempel/src/resources/org/apache/lucene/analysis/pl/stopwords.txt.
+See http://project.carrot2.org/license.html.
+
+The SmartChineseAnalyzer source code (smartcn) was
+provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
+
+WordBreakTestUnicode_*.java (under src/test/) 
+is derived from Unicode data such as the Unicode Character Database. 
+See http://unicode.org/copyright.html for more details.
 ---
 
 This product includes/uses software, Woodstox (http://woodstox.codehaus.org),
