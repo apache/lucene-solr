@@ -49,6 +49,14 @@ See http://project.carrot2.org/license.html.
 Includes lib/servlet-api-2.4.jar from  Apache Tomcat
 Includes lib/ant-1.7.1.jar and lib/ant-junit-1.7.1.jar from Apache Ant
 Includes contrib/queries/lib/jakarta-regexp-1.4.jar from Apache Jakarta Regexp
+Includes software from other Apache Software Foundation projects,
+including, but not limited to:
+ - Commons Beanutils (contrib/benchmark/lib/commons-beanutils-1.7.0.jar)
+ - Commons Collections (contrib/benchmark/lib/commons-collections-3.1.jar)
+ - Commons Compress (contrib/benchmark/lib/commons-compress-1.0.jar)
+ - Commons Digester (contrib/benchmark/lib/commons-digester-1.7.jar)
+ - Commons Logging (contrib/benchmark/lib/commons-logging-1.0.4.jar)
+ - Xerces (contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar, contrib/benchmark/lib/xml-apis-2.9.0.jar)
 
 The SmartChineseAnalyzer source code (under contrib/analyzers) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
