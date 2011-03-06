@@ -21,7 +21,7 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-==================  3.1.0-dev ==================
+==================  3.1.0 ==================
 Versions of Major Components
 ---------------------
 Apache Lucene trunk

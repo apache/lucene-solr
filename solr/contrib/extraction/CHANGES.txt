@@ -24,7 +24,7 @@ Current Version: Tika 0.8 (released 11/07/2010)
 
 $Id:$
 
-================== Release 3.1-dev ==================
+================== Release 3.1 ==================
 
 * SOLR-1902: Upgraded to Tika 0.8 and changed deprecated parse call
 
