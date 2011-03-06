@@ -1,0 +1,15 @@
+Apache Commons Compress
+Copyright 2002-2009 The Apache Software Foundation
+
+This product includes software developed by
+The Apache Software Foundation (http://www.apache.org/).
+
+Original BZip2 classes contributed by Keiron Liddle
+<keiron@aftexsw.com>, Aftex Software to the Apache Ant project
+
+Original Tar classes from contributors of the Apache Ant project
+
+Original Zip classes from contributors of the Apache Ant project
+
+Original CPIO classes contributed by Markus Kuss and the jRPM project
+(jrpm.sourceforge.net)
