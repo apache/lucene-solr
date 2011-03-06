@@ -783,6 +783,9 @@
       <tarfileset dir=".."
         prefix="${fullnamever}"
         includes="*.txt *.xml dev-tools/*" />
+      <tarfileset dir="." 
+        prefix="${fullnamever}"
+        includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="."
         prefix="${fullnamever}/solr"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
