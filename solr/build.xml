@@ -849,7 +849,7 @@
     <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/**/lib/ contrib/**/README.txt contrib/**/CHANGES.txt"
+        includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/**/lib/ contrib/**/lucene-libs/ contrib/**/README.txt contrib/**/CHANGES.txt"
         excludes="${dist}/** ${dest}/** lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/** src/site/build/** **/target/** client/ruby/flare/** client/python/** client/javascript/** contrib/**/build/** **/*.iml **/*.ipr **/*.iws" />
       <tarfileset dir="."
         mode="755"
