@@ -21,6 +21,15 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
+==================  3.2.0-dev ==================
+Versions of Major Components
+---------------------
+Apache Lucene trunk
+Apache Tika 0.8-SNAPSHOT
+Carrot2 3.4.2
+
+(No Changes)
+
 ==================  3.1.0-dev ==================
 Versions of Major Components
 ---------------------
