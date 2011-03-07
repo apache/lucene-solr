@@ -35,7 +35,7 @@ import java.io.IOException;
 
 
 /**
- * Factory for {@link WordDelimiterFilter}.
+ * Factory for WordDelimiterFilter.
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_wd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
