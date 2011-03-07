@@ -930,6 +930,8 @@
     </input>
     <sign-artifact input.file="${dist}/${fullnamever}.tgz" output.file="${dist}/${fullnamever}.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${dist}/${fullnamever}.zip" output.file="${dist}/${fullnamever}.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${dist}/${fullnamever}-src.tgz" output.file="${dist}/${fullnamever}-src.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${dist}/${fullnamever}-src.zip" output.file="${dist}/${fullnamever}-src.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- Maven artifacts -->
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv" gpg.passphrase="${gpg.passphrase}"/>
