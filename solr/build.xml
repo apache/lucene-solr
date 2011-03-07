@@ -853,10 +853,10 @@
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
-        includes="**/*.sh **/bin/" />
+        includes="example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="dist/**"
+        includes="dist/*.jar dist/*.war dist/solrj-lib/*"
         excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar" />
        <tarfileset dir="${build.docs}"
         prefix="${fullnamever}/docs/" />
