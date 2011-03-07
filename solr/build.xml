@@ -968,7 +968,7 @@
 	</tar>
   </target>
 
-  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, create-package">
+  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check,dist,dist-src,dist-javadoc">
     <sequential>
       <ant target="get-maven-poms" dir=".."/>
 
