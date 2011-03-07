@@ -306,25 +306,10 @@
    -->
   <macrodef name="solr-checksum">
     <attribute name="file"/>
-    <!-- NOTE: we use the value of @{file} in the names any properties
-         set because macro's don't have variables, and otherwise we
-         wouldn't be able to checksum more then one file per build
-      -->
     <sequential>
-     <checksum file="@{file}"
-               property="@{file}.sum"
-               algorithm="${checksum.algorithm}" />
-     <basename file="@{file}" property="@{file}.base" />
-     <concat destfile="@{file}.${checksum.algorithm}"
-             force="yes"
-             append="false"
-             fixlastline="yes">
-       <header trimleading="yes">${@{file}.sum}  </header>
-       <!-- empty fileset to trick concat -->
-       <fileset dir="." excludes="**" />
-       <footer trimleading="yes">${@{file}.base}
-       </footer>
-     </concat>
+      <echo>Building checksums for '@{file}'</echo>
+      <checksum file="@{file}" algorithm="md5" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+      <checksum file="@{file}" algorithm="sha1" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
     </sequential>
   </macrodef>
 
