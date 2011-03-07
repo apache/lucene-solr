@@ -392,7 +392,7 @@ New Features
 * SOLR-1240: "Range Faceting" has been added.  This is a generalization
   of the existing "Date Faceting" logic so that it now supports any
   all stock numeric field types that support range queries in addition
-  to dates.  
+  to dates. facet.date is now deprecated in favor of this generalized mechanism.
   (Gijs Kunze, hossman)
 
 * SOLR-2021: Add SolrEncoder plugin to Highlighter. (koji)
