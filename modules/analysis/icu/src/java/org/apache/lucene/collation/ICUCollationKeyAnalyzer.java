@@ -22,6 +22,7 @@ import com.ibm.icu.text.Collator;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.collation.CollationKeyAnalyzer; // javadocs
+import org.apache.lucene.util.IndexableBinaryStringTools; // javadocs
 import org.apache.lucene.util.Version;
 
 import java.io.Reader;

@@ -74,7 +74,7 @@ public class CollationAttributeFactory extends AttributeSource.AttributeFactory 
   
   /**
    * Create a CollationAttributeFactory, using 
-   * {@link AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY} as the
+   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY} as the
    * factory for all other attributes.
    * @param collator CollationKey generator
    */

@@ -21,6 +21,7 @@ import org.apache.lucene.collation.tokenattributes.ICUCollatedTermAttributeImpl;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.collation.CollationAttributeFactory; // javadoc
 
 import com.ibm.icu.text.Collator;
 
@@ -67,7 +68,7 @@ public class ICUCollationAttributeFactory extends AttributeSource.AttributeFacto
   
   /**
    * Create an ICUCollationAttributeFactory, using 
-   * {@link AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY} as the
+   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY} as the
    * factory for all other attributes.
    * @param collator CollationKey generator
    */

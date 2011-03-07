@@ -19,6 +19,9 @@ package org.apache.lucene.search;
 
 import java.text.Collator;
 
+import org.apache.lucene.search.NumericRangeFilter; // javadoc
+import org.apache.lucene.search.FieldCacheRangeFilter; // javadoc
+
 /**
  * A Filter that restricts search results to a range of term
  * values in a given field.

@@ -22,6 +22,8 @@ import java.text.Collator;
 
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.MultiTermQuery; // javadoc
+import org.apache.lucene.search.NumericRangeQuery; // javadoc
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 
