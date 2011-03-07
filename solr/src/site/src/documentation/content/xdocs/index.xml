@@ -50,7 +50,7 @@ customization is required.
       </p>
 
       <p>
-        For more information about Solr, please see the <a href="http://wiki.apache.org/solr">Solr wiki</a>.
+        For more information about Solr, please see the <a href="http://wiki.apache.org/solr/FrontPage">Solr wiki</a>.
       </p>
 
     </section>
@@ -59,13 +59,101 @@ customization is required.
       <ul>
         <li>Download Solr <a href="ext:releases">here</a></li>
         <li>Check out the <a href="tutorial.html">tutorial</a></li>
-        <li>Read the <a href="http://wiki.apache.org/solr">Solr wiki</a> to learn more</li>
+        <li>Read the <a href="http://wiki.apache.org/solr/FrontPage">Solr wiki</a> to learn more</li>
         <li>Join the <a href="mailing_lists.html">community</a></li>
         <li><a href="http://wiki.apache.org/solr/HowToContribute">Give Back</a>! (Optional, but encouraged!)</li>
       </ul>
     </section>
     <section id="news">
       <title>News</title>
+            <section>
+   <title>13 March 2011 - Solr 3.1 Released</title>
+   <p>
+     Solr 3.1 has been released and is now available for public <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
+     
+   New Solr 3.1 features include
+ </p>
+  <ul>
+    <li>Improved geospatial support</li>
+    <li>A new termvector-based highlighter</li>
+    <li>Improved spellchecking capabilities</li>
+    <li>Improved integration with Apache Lucene</li>
+    <li>New autosuggest component</li>
+    <li>Distributed support for more components</li>
+    <li>Many other Bugfixes, improvements and optimizations</li>
+  </ul>
+     
+	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_1/CHANGES.txt">release notes</a> for more details.
+ </p>
+
+</section>
+        <section>
+          <title>25 June 2010 - Solr 1.4.1 Released</title>
+          <p>
+           Solr 1.4.1 has been released and is now available for public
+           <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
+
+           Solr 1.4.1 is a bug fix release for Solr 1.4 that includes many
+           Solr bug fixes as well as Lucene bug fixes from Lucene 2.9.3.
+          </p>
+
+          <p>
+          See the <a
+          href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.4.1/CHANGES.txt">release notes</a>
+          for more details.
+          </p>
+
+        </section>
+      <section>
+	<title>7 May 2010 - Apache Lucene Eurocon 2010 Coming to Prague May 18-21</title>
+	<p>
+          On May 18th to the 21st Prague will play host to the first
+          ever dedicated Lucene and Solr User Conference in Europe: 
+          <a href="http://lucene-eurocon.org/">Apache Lucene
+            Eurocon 2010</a>.  
+          This is a a not-for-profit conference presented by Lucid
+          Imagination, with net proceeds being 
+          donated to The Apache Software Foundation.  
+          <a href="http://guest.cvent.com/i.aspx?4W%2cM3%2c4d21e59c-fd92-4a83-bc1f-175dc506905f">Registration
+            is now open</a>.  Schedule highlights include:
+        </p>
+          
+        <ul>
+          <li>
+            <a href="http://lucene-eurocon.org/training.html">Two
+              days of in depth training classes</a>:
+            <ul>
+              <li>Solr Application Development Workshop - Erik Hatcher</li>
+              <li>Lucene Bootcamp - Grant Ingersoll</li>
+            </ul>
+          </li>
+          <li><a href="http://lucene-eurocon.org/sessions-general.html">Four
+              general sessions</a>:
+            <ul>
+              <li>The Search Revolution: How Lucene &amp; Solr Are
+                Changing The World - Eric Gries</li>
+              <li>From Publisher To Platform: How The Guardian
+                Used Content, Search, and Open Source To Build a
+                Powerful New Business Model - Stephen Dunn</li>
+              <li>Software Disruption: How Using Open Source,
+                Search, Big Data and Cloud technology are
+                Disrupting IT - Zack Urlocker</li>
+              <li>Solr 1.5 and Beyond - Yonik Seeley</li>
+            </ul>
+          </li>
+          <li><a href="http://lucene-eurocon.org/agenda.html">24
+              technical sessions, spanning two days, divided into two
+              tracks</a>
+          </li>
+          <li><a href="http://lucene-eurocon.org/meetup.html">A
+              Thursday night MeetUp</a>
+          </li>
+          <li><a href="http://lucene-eurocon.org/beerfestival.html">An
+              event at the
+              Czech Beer Festival</a> 
+          </li>
+        </ul>
+      </section>
       <section>
    <title>10 November 2009 - Solr 1.4 Released</title>
    <p>
