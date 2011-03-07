@@ -1,8 +1,5 @@
 Lucene Change Log
 
-* LUCENE-2936: PhraseQuery score explanations were not correctly 
-  identifying matches vs non-matches.  (hossman)
-
 ======================= Lucene 3.x (not yet released) =======================
 
 (No changes)
@@ -400,6 +397,9 @@ Bug fixes
   certain very small field norms (index_boost * length_norm) could have
   been rounded down to 0 instead of being rounded up to the smallest
   positive number.  (yonik)
+
+* LUCENE-2936: PhraseQuery score explanations were not correctly 
+  identifying matches vs non-matches.  (hossman)
 
 New features
 
