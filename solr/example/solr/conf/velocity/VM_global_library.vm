@@ -81,26 +81,29 @@
   #end      
 #end
 
-#macro(display_facet_date $field, $display, $fieldName, $gap)
+#macro(display_facet_range_date $field, $display, $fieldName)
   <span class="facet-field">$display</span>
+    ##Note: even if mincount is 1, you can still get a '0' before & after
+    ##Note: We assume facet.range.include='lower'
     <ul>
-    #foreach ($facet in $field)
+    #if ($field.before && $field.before > 0)
+      #set($value = "[* TO " + $date.format("yyyy-MM-dd'T'HH:mm:ss'Z'", $field.start) + "-1MILLIS]")
+      #set($facetURL = "#url_for_facet_date_filter($fieldName, $value)")
+      <li><a href="$facetURL">Before</a> ($field.before)</li>
+    #end
+    #foreach ($facet in $field.counts)
       #set($theDate = $date.toDate("yyyy-MM-dd'T'HH:mm:ss'Z'", $facet.key))
-      #set($value = '["' + $facet.key + '" TO "' + $facet.key + $gap + '"]')
+      #set($value = '["' + $facet.key + '" TO "' + $facet.key + $field.gap + '-1MILLIS"]')
 
       #set($facetURL = "#url_for_facet_date_filter($fieldName, $value)")
       #if ($facetURL != '')
-        #if ($facet.key != "gap" && $facet.key != "start" && $facet.key != "end" && $facet.key != "before" && $facet.key != "after")
-
           <li><a href="$facetURL">$date.format('MMM yyyy', $theDate)</a> ($facet.value)</li>
-        #end
-        #if ($facet.key == "before" && $facet.value > 0)
-          <li><a href="$facetURL">Before</a> ($facet.value)</li>
-        #end
-        #if ($facet.key == "after" && $facet.value > 0)
-          <li><a href="$facetURL">After</a> ($facet.value)</li>
-        #end
       #end
+    #end
+    #if ($field.after && $field.after > 0)
+      #set($value = "[" + $date.format("yyyy-MM-dd'T'HH:mm:ss'Z'", $field.after) + " TO *]")
+      #set($facetURL = "#url_for_facet_date_filter($fieldName, $value)")
+      <li><a href="$facetURL">After</a> ($field.after)</li>
     #end
     </ul>
 #end

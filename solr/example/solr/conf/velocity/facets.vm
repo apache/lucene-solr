@@ -1,7 +1,6 @@
 #parse('facet_fields.vm')  
 #parse('facet_queries.vm')
 #parse('facet_ranges.vm')
-#parse('facet_dates.vm')
 #parse('cluster.vm')        
 
 

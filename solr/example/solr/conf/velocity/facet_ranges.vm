@@ -25,3 +25,6 @@
 ##TODO: Make this display the "range", not just the lower value
 ##TODO: Have a generic way to deal with ranges
 #display_facet_range($field, "Price (in $)", "price", $start, $end, $gap, $before, $after)
+
+#set($field = $response.response.facet_counts.facet_ranges.manufacturedate_dt)
+#display_facet_range_date($field, "Manufacture Date", "manufacturedate_dt")
