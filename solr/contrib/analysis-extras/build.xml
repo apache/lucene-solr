@@ -186,7 +186,7 @@
         </fileset>
       </copy>
     -->
-    <copy file="${dest}/${fullnamever}.jar" todir="${dist-work}"/>
+    <copy file="${dest}/${fullnamever}.jar" todir="${solr-path}/dist"/>
   </target>
 
   <target name="javadoc">
