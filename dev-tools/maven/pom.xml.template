@@ -560,6 +560,7 @@
           <doCheck>false</doCheck>
           <doUpdate>false</doUpdate>
           <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+          <revisionOnScmFailure>NO-REVISION-AVAILABLE</revisionOnScmFailure>
           <buildNumberPropertyName>svn.revision</buildNumberPropertyName>
         </configuration>
       </plugin>
