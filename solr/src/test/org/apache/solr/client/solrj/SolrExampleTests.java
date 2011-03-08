@@ -471,8 +471,8 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( "they have the same distribution", inStockF.getStddev(), inStockT.getStddev() );
   }
 
- @Test
- public void testPingHandler() throws Exception
+  @Test
+  public void testPingHandler() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -495,8 +495,8 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     }
   }
   
- @Test
- public void testFaceting() throws Exception
+  @Test
+  public void testFaceting() throws Exception
   {    
     SolrServer server = getSolrServer();
     
