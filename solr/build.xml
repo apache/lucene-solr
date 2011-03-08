@@ -845,7 +845,7 @@
 
   <target name="create-package"
           description="Packages the Solr Binary Distribution"
-          depends="dist, example">
+          depends="dist, example, javadoc">
 
     <copy failonerror="false" todir="${build.docs}">
       <fileset dir="site" />
