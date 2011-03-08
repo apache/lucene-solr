@@ -116,6 +116,8 @@
 
   <!-- Destination for compiled classes and binaries -->
   <property name="dest" value="build" />
+
+  <property name="dist-work" value="${common-solr.dir}/${dest}/dist-work"/>
   
   <!-- Destination for Lucene jars -->
   <property name="lucene-libs" location="lucene-libs" />

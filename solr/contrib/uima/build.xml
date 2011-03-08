@@ -160,7 +160,7 @@
   </target>
 
   <target name="dist" depends="build">
-    <copy file="build/${fullnamever}.jar" todir="${solr-path}/dist"/>
+    <copy file="build/${fullnamever}.jar" todir="${dist-work}"/>
   </target>
 
   <target name="example" depends="build">

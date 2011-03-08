@@ -252,7 +252,7 @@
       <fileset dir="${lib}">
         <include name="lucene-*.jar"/>
       </fileset>
-      <fileset dir="${dist}">
+      <fileset dir="${dist-work}">
         <include name="*.jar"/>
         <exclude name="*solrj*.jar"/>
       </fileset>
@@ -599,8 +599,8 @@
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file."
           depends="compile, test-jsp, make-manifest, dist-jar, dist-solrj, lucene-jars-to-solr">
-    <mkdir dir="${dist}" />
-    <war destfile="${dist}/${fullnamever}.war"
+    <mkdir dir="${dist-work}" />
+    <war destfile="${dist-work}/${fullnamever}.war"
          webxml="${web.xml}"
          filesetmanifest="skip"
          manifest="${dest}/META-INF/MANIFEST.MF">
@@ -614,7 +614,7 @@
       
        <lib dir="${lucene-libs}"/>
          
-       <lib dir="${dist}">
+       <lib dir="${dist-work}">
          <include name="${fullname}-solrj-${version}.jar" />
          <include name="${fullname}-core-${version}.jar" />
        </lib>
@@ -629,30 +629,30 @@
 
   <target name="dist-src" description="Creates the Solr source distribution files"
           depends="make-manifest">
-    <mkdir dir="${dist}" />
+    <mkdir dir="${dist-work}" />
 
-    <solr-jar destfile="${dist}/${fullname}-solrj-src-${version}.jar">
+    <solr-jar destfile="${dist-work}/${fullname}-solrj-src-${version}.jar">
       <fileset dir="${src}/common" />
       <fileset dir="${src}/solrj"/>
     </solr-jar>
     	
-    <solr-jar destfile="${dist}/${fullname}-core-src-${version}.jar">
+    <solr-jar destfile="${dist-work}/${fullname}-core-src-${version}.jar">
       <fileset dir="${src}/java" />
       <fileset dir="${src}/webapp/src"/>
     </solr-jar>
   	
-    <solr-jar destfile="${dist}/apache-solr-dataimporthandler-src-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-dataimporthandler-src-${version}.jar"
               basedir="contrib/dataimporthandler/src/main/java" />
-    <solr-jar destfile="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-dataimporthandler-extras-src-${version}.jar"
               basedir="contrib/dataimporthandler/src/extras/main/java" />
 
-    <solr-jar destfile="${dist}/apache-solr-cell-src-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-cell-src-${version}.jar"
               basedir="contrib/extraction/src" />
-    <solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-clustering-src-${version}.jar"
               basedir="contrib/clustering/src" />
-    <solr-jar destfile="${dist}/apache-solr-analysis-extras-src-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-analysis-extras-src-${version}.jar"
               basedir="contrib/analysis-extras/src" />
-    <solr-jar destfile="${dist}/apache-solr-uima-src-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-uima-src-${version}.jar"
               basedir="contrib/uima/src/main/java" >
        <fileset dir="contrib/uima/src/main/resources" />
     </solr-jar>
@@ -660,21 +660,21 @@
 
   <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
           depends="make-manifest, javadoc">
-    <mkdir dir="${dist}" />
+    <mkdir dir="${dist-work}" />
 
-    <solr-jar destfile="${dist}/${fullname}-core-docs-${version}.jar"
+    <solr-jar destfile="${dist-work}/${fullname}-core-docs-${version}.jar"
               basedir="${build.javadoc}/solr" />
-    <solr-jar destfile="${dist}/${fullname}-solrj-docs-${version}.jar"
+    <solr-jar destfile="${dist-work}/${fullname}-solrj-docs-${version}.jar"
               basedir="${build.javadoc}/solrj" />
-    <solr-jar destfile="${dist}/apache-solr-dataimporthandler-docs-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-dataimporthandler-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-dataimporthandler" />
-    <solr-jar destfile="${dist}/apache-solr-clustering-docs-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-clustering-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-clustering" />
-    <solr-jar destfile="${dist}/apache-solr-cell-docs-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-cell-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-cell" />
-    <solr-jar destfile="${dist}/apache-solr-analysis-extras-docs-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-analysis-extras-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-analysis-extras" />
-    <solr-jar destfile="${dist}/apache-solr-uima-docs-${version}.jar"
+    <solr-jar destfile="${dist-work}/apache-solr-uima-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-uima" />
   </target>
 
@@ -682,8 +682,8 @@
   <target name="dist-jar"
           description="Creates the Solr JAR Distribution file."
           depends="compile, make-manifest">
-    <mkdir dir="${dist}" />
-    <solr-jar destfile="${dist}/${fullname}-core-${version}.jar">
+    <mkdir dir="${dist-work}" />
+    <solr-jar destfile="${dist-work}/${fullname}-core-${version}.jar">
       <fileset dir="${dest}/solr" />
     </solr-jar>
 
@@ -693,13 +693,13 @@
   <target name="dist-solrj"
           description="Creates the Solr JAR Distribution file."
           depends="compile-solrj, make-manifest">
-    <mkdir dir="${dist}" />
+    <mkdir dir="${dist-work}" />
     <solr-jar
-         destfile="${dist}/${fullname}-solrj-${version}.jar"
+         destfile="${dist-work}/${fullname}-solrj-${version}.jar"
          basedir="${dest}/solrj" />
 
-    <mkdir  dir="${dist}/solrj-lib" />
-    <copy todir="${dist}/solrj-lib">
+    <mkdir  dir="${dist-work}/solrj-lib" />
+    <copy todir="${dist-work}/solrj-lib">
       <fileset dir="${lib}">
         <include name="commons-codec-*.jar"/>
         <include name="commons-io-*.jar"/>
@@ -716,7 +716,7 @@
   <target name="example" 
           description="Creates a runnable example configuration."
           depends="init-forrest-entities,compile-lucene,dist-contrib,dist-war,example-contrib">
-    <copy file="${dist}/${fullnamever}.war"
+    <copy file="${dist-work}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
          basedir="${dest}/solr"
@@ -766,6 +766,7 @@
   <target name="package-src"
           description="Packages the Solr Source Distribution"
           depends="dist">
+    <mkdir dir="${dist}"/>
 
     <delete includeemptydirs="true">
       <fileset dir="${example}/work" includes="**/*"/>
@@ -854,9 +855,9 @@
         mode="755"
         prefix="${fullnamever}"
         includes="example/**/*.sh example/**/bin/" />
-      <tarfileset dir="."
-        prefix="${fullnamever}"
-        includes="dist/*.jar dist/*.war dist/solrj-lib/*"
+      <tarfileset dir="${dist-work}"
+        prefix="${fullnamever}/dist"
+        includes="*.jar *.war solrj-lib/*"
         excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar" />
        <tarfileset dir="${build.docs}"
         prefix="${fullnamever}/docs/" />
@@ -958,15 +959,8 @@
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${maven_version}/solr-parent-${maven_version}.pom" gpg.passphrase="${gpg.passphrase}"/>
   </target>
 
-  <target name="prepare-release" depends="clean, dist-src, dist-javadoc, generate-maven-artifacts, package" description="Prepare the release artifacts">
-
-    <tar destfile="${dist}/solr-maven.tar" longfile="gnu">
-		  <tarfileset dir="${dist}/maven" prefix="maven"/>
-    </tar>
-	<tar destfile="${dist}/solr.tar" longfile="gnu">
-		<tarfileset dir="${dist}" includes="${fullnamever}.* solr-maven.tar" excludes="${fullnamever}.war"/>
-	</tar>
-  </target>
+  <target name="prepare-release" depends="clean, dist-src, dist-javadoc, generate-maven-artifacts, package"
+          description="Prepare the release artifacts"/>
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check,dist,dist-src,dist-javadoc">
     <sequential>
@@ -997,71 +991,71 @@
                                    jar.file="lib/apache-solr-noggit-r944541.jar" />
 
       <m2-deploy pom.xml="contrib/dataimporthandler/src/pom.xml"
-                 jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-dataimporthandler-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-dataimporthandler-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-dataimporthandler-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
       <m2-deploy pom.xml="contrib/dataimporthandler/src/extras/pom.xml"
-                 jar.file="${dist}/apache-solr-dataimporthandler-extras-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-dataimporthandler-extras-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-dataimporthandler-extras-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
       <m2-deploy pom.xml="contrib/extraction/pom.xml"
-                 jar.file="${dist}/apache-solr-cell-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-cell-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-cell-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-cell-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-cell-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-cell-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
       <m2-deploy pom.xml="contrib/clustering/pom.xml"
-                 jar.file="${dist}/apache-solr-clustering-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-clustering-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-clustering-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-clustering-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-clustering-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-clustering-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
       
       <m2-deploy pom.xml="contrib/analysis-extras/pom.xml"
-                 jar.file="${dist}/apache-solr-analysis-extras-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-analysis-extras-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-analysis-extras-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-analysis-extras-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-analysis-extras-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-analysis-extras-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
       <m2-deploy pom.xml="contrib/uima/pom.xml"
-                 jar.file="${dist}/apache-solr-uima-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-uima-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-uima-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-uima-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-uima-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-uima-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
       <m2-deploy pom.xml="src/pom.xml"
-                 jar.file="${dist}/apache-solr-core-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-core-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-core-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-core-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-core-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-core-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
       <m2-deploy pom.xml="src/solrj/pom.xml"
-                 jar.file="${dist}/apache-solr-solrj-${version}.jar">
+                 jar.file="${dist-work}/apache-solr-solrj-${version}.jar">
         <artifact-attachments>
-          <attach file="${dist}/apache-solr-solrj-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-solrj-docs-${version}.jar" classifier="javadoc"/>
+          <attach file="${dist-work}/apache-solr-solrj-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist-work}/apache-solr-solrj-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
 
       <m2-deploy pom.xml="src/webapp/pom.xml"
-                 jar.file="${dist}/apache-solr-${version}.war"/>
+                 jar.file="${dist-work}/apache-solr-${version}.war"/>
     </sequential>
   </target>
 
