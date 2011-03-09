@@ -100,7 +100,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   
   @Test
   public void testIgnoredFields() throws Exception {
-    lrf.args.put("version","2.0");
+    lrf.args.put(CommonParams.VERSION,"2.2");
     assertU("adding doc with ignored field",
             adoc("id", "42", "foo_ignored", "blah blah"));
     assertU("commit",
@@ -123,7 +123,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals("Mergefactor was not picked up", ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
     writer.close();
 
-    lrf.args.put("version","2.0");
+    lrf.args.put(CommonParams.VERSION,"2.2");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")
             ,"//result[@numFound='0']"
@@ -445,7 +445,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultFieldValues() {
     clearIndex();
-    lrf.args.put("version","2.1");
+    lrf.args.put(CommonParams.VERSION,"2.2");
     assertU(adoc("id",  "4055",
                  "subject", "Hoss the Hoss man Hostetter"));
     assertU(adoc("id",  "4056",

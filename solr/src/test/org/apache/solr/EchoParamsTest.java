@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultEchoParams() {
     lrf.args.put("wt", "xml");
-    lrf.args.put("version", "2.2");    
+    lrf.args.put(CommonParams.VERSION, "2.2");    
     assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
     assertQ(req("foo"),"not(//lst[@name='params'])");
   }
@@ -42,7 +43,7 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultEchoParamsDefaultVersion() {
     lrf.args.put("wt", "xml");
-    lrf.args.remove("version");    
+    lrf.args.remove(CommonParams.VERSION);    
     assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
     assertQ(req("foo"),"not(//lst[@name='params'])");
   }
@@ -50,7 +51,7 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
   @Test
   public void testExplicitEchoParams() {
     lrf.args.put("wt", "xml");
-    lrf.args.put("version", "2.2");
+    lrf.args.put(CommonParams.VERSION, "2.2");
     lrf.args.put("echoParams", "explicit");
     assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
     assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']");
@@ -61,7 +62,7 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
   public void testAllEchoParams() {
     lrf = h.getRequestFactory
       ("crazy_custom_qt", 0, 20,
-       "version","2.2",
+       CommonParams.VERSION,"2.2",
        "wt","xml",
        "echoParams", "all",
        "echoHandler","true"

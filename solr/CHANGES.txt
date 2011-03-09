@@ -184,6 +184,11 @@ Other Changes
   and load it back on init. This means that large tries don't have to be
   rebuilt on every commit or core reload. (ab)
 
+* SOLR-2413: Support for returning multi-valued fields w/o <arr> tag 
+  in the XMLResponseWriter was removed.  XMLResponseWriter only 
+  no longer work with values less then 2.2 (ryan)
+
+
 Documentation
 ----------------------
 

@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
 import org.junit.BeforeClass;
@@ -46,7 +47,7 @@ public class SampleTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testSimple() {
-    lrf.args.put("version","2.0");
+    lrf.args.put(CommonParams.VERSION,"2.2");
     assertU("Simple assertion that adding a document works",
             adoc("id",  "4055",
                  "subject", "Hoss the Hoss man Hostetter"));
@@ -70,7 +71,7 @@ public class SampleTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testAdvanced() throws Exception {
-    lrf.args.put("version","2.0");        
+    lrf.args.put(CommonParams.VERSION,"2.2");        
     assertU("less common case, a complex addition with options",
             add(doc("id", "4059",
                     "subject", "Who Me?"),
@@ -102,7 +103,7 @@ public class SampleTest extends SolrTestCaseJ4 {
      * Note: the qt proves we are using our custom config...
      */
     TestHarness.LocalRequestFactory l = h.getRequestFactory
-      ("crazy_custom_qt",100,200,"version","2.1");
+      ("crazy_custom_qt",100,200,CommonParams.VERSION,"2.2");
     assertQ("how did i find Mack Daddy? ",
             l.makeRequest( "Mack Daddy" )
             ,"//result[@numFound=0]"
