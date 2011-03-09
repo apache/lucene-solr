@@ -518,7 +518,7 @@ final class DocumentsWriter {
       if (segmentInfos.size() > 0 || newSegment != null) {
         final FrozenBufferedDeletes packet = new FrozenBufferedDeletes(pendingDeletes, delGen);
         if (infoStream != null) {
-          message("flush: push buffered deletes");
+          message("flush: push buffered deletes startSize=" + pendingDeletes.bytesUsed.get() + " frozenSize=" + packet.bytesUsed);
         }
         bufferedDeletesStream.push(packet);
         if (infoStream != null) {
