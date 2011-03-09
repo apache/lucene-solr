@@ -103,7 +103,7 @@ public abstract class TextResponseWriter {
 
   public abstract void writeNamedList(String name, NamedList val) throws IOException;
 
-  public void writeVal(String name, Object val) throws IOException {
+  public final void writeVal(String name, Object val) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)

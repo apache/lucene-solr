@@ -436,61 +436,6 @@ public final class XMLWriter extends TextResponseWriter {
   }
 
 
-  @Override
-  public void writeVal(String name, Object val) throws IOException {
-
-    // if there get to be enough types, perhaps hashing on the type
-    // to get a handler might be faster (but types must be exact to do that...)
-
-    // go in order of most common to least common
-    if (val==null) {
-      writeNull(name);
-    } else if (val instanceof String) {
-      writeStr(name, (String)val, true);
-    } else if (val instanceof Integer) {
-      // it would be slower to pass the int ((Integer)val).intValue()
-      writeInt(name, val.toString());
-    } else if (val instanceof Boolean) {
-      // could be optimized... only two vals
-      writeBool(name, val.toString());
-    } else if (val instanceof Long) {
-      writeLong(name, val.toString());
-    } else if (val instanceof Date) {
-      writeDate(name,(Date)val);
-    } else if (val instanceof Float) {
-      // we pass the float instead of using toString() because
-      // it may need special formatting. same for double.
-      writeFloat(name, ((Float)val).floatValue());
-    } else if (val instanceof Double) {
-      writeDouble(name, ((Double)val).doubleValue());
-    } else if (val instanceof Document) {
-      writeDoc(name, (Document)val, returnFields, 0.0f, false);
-    } else if (val instanceof DocList) {
-      // requires access to IndexReader
-      writeDocList(name, (DocList)val, returnFields, null);
-    }else if (val instanceof SolrDocumentList) {
-        // requires access to IndexReader
-      writeSolrDocumentList(name, (SolrDocumentList)val, returnFields, null);
-    }else if (val instanceof DocSet) {
-      // how do we know what fields to read?
-      // todo: have a DocList/DocSet wrapper that
-      // restricts the fields to write...?
-    } else if (val instanceof Map) {
-      writeMap(name, (Map)val, false, true);
-    } else if (val instanceof NamedList) {
-      writeNamedList(name, (NamedList)val);
-    } else if (val instanceof Iterable) {
-      writeArray(name,((Iterable)val).iterator());
-    } else if (val instanceof Object[]) {
-      writeArray(name,(Object[])val);
-    } else if (val instanceof Iterator) {
-      writeArray(name,(Iterator)val);
-    } else {
-      // default...
-      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
-    }
-  }
-
   //
   // Generic compound types
   //
