@@ -15,10 +15,12 @@ package org.apache.solr.servlet;/**
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.XMLResponseWriter;
+import org.apache.solr.common.util.FastWriter;
 
 /**
  * @version $Id$
@@ -44,6 +47,8 @@ public class SolrUpdateServlet extends HttpServlet {
   XmlUpdateRequestHandler legacyUpdateHandler;
   XMLResponseWriter xmlResponseWriter;
   private boolean hasMulticore = false;
+
+  private static final Charset UTF8 = Charset.forName("UTF-8");
 
   @Override
   public void init() throws ServletException
@@ -66,7 +71,9 @@ public class SolrUpdateServlet extends HttpServlet {
       response.sendError( 400, "Missing solr core name in path" );
       return;
     }
-    BufferedReader requestReader = request.getReader();
+    final InputStream in = request.getInputStream();
+    final String inct = request.getContentType();
+    
     response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
 
     if( request.getQueryString() != null ) {
@@ -75,7 +82,9 @@ public class SolrUpdateServlet extends HttpServlet {
           +"  If you are using solrj, make sure to register a request handler to /update rather then use this servlet.\n"
           +"  Add: <requestHandler name=\"/update\" class=\"solr.XmlUpdateRequestHandler\" > to your solrconfig.xml\n\n" );
     }
-    PrintWriter writer = response.getWriter();
-    legacyUpdateHandler.doLegacyUpdate(requestReader, writer);
+    
+    final Writer output = new FastWriter(new OutputStreamWriter(response.getOutputStream(), UTF8));
+    legacyUpdateHandler.doLegacyUpdate(in, inct, output);
+    output.flush();
   }
 }

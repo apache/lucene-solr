@@ -670,7 +670,7 @@ Other Changes
 
 * SOLR-2381: Include a patched version of Jetty (6.1.26 + JETTY-1340) 
   to fix problematic UTF-8 handling for supplementary characters.
-  (uschindler, yonik, rmuir)
+  (Bernd Fehling, uschindler, yonik, rmuir)
 
 * SOLR-2391: The preferred Content-Type for XML was changed to
   application/xml. XMLResponseWriter now only delivers using this

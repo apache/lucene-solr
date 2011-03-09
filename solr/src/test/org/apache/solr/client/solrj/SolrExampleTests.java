@@ -27,6 +27,10 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.lucene.util._TestUtil;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -212,6 +216,90 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
 
   }
   
+  private String randomTestString(int maxLength) {
+    // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc
+    // (considered invalid by XML)
+    
+    int size = random.nextInt(maxLength);
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < size; i++) {
+      switch(random.nextInt(4)) {
+        case 0: /* single byte */ 
+          sb.append('a'); 
+          break;
+        case 1: /* two bytes */
+          sb.append('\u0645');
+          break;
+        case 2: /* three bytes */
+          sb.append('\u092a');
+          break;
+        case 3: /* four bytes */
+          sb.appendCodePoint(0x29B05);
+      }
+    }
+    return sb.toString();
+  }
+  
+  public void testUnicode() throws Exception {
+    int numIterations = 100 * RANDOM_MULTIPLIER;
+    
+    SolrServer server = getSolrServer();
+    
+    // save the old parser, so we can set it back.
+    ResponseParser oldParser = null;
+    if (server instanceof CommonsHttpSolrServer) {
+      CommonsHttpSolrServer cserver = (CommonsHttpSolrServer) server;
+      oldParser = cserver.getParser();
+    }
+    
+    try {
+      for (int iteration = 0; iteration < numIterations; iteration++) {
+        // choose format
+        if (server instanceof CommonsHttpSolrServer) {
+          if (random.nextBoolean()) {
+            ((CommonsHttpSolrServer) server).setParser(new BinaryResponseParser());
+          } else {
+            ((CommonsHttpSolrServer) server).setParser(new XMLResponseParser());
+          }
+        }
+
+        int numDocs = _TestUtil.nextInt(random, 1, 100);
+        
+        // Empty the database...
+        server.deleteByQuery("*:*");// delete everything!
+        
+        List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+        for (int i = 0; i < numDocs; i++) {
+          // Now add something...
+          SolrInputDocument doc = new SolrInputDocument();
+          doc.addField("id", "" + i);
+          doc.addField("unicode_s", randomTestString(30));
+          docs.add(doc);
+        }
+        
+        server.add(docs);
+        server.commit();
+        
+        SolrQuery query = new SolrQuery();
+        query.setQuery("*:*");
+        query.setRows(numDocs);
+        
+        QueryResponse rsp = server.query( query );
+        
+        for (int i = 0; i < numDocs; i++) {
+          String expected = (String) docs.get(i).getFieldValue("unicode_s");
+          String actual = (String) rsp.getResults().get(i).getFieldValue("unicode_s");
+          assertEquals(expected, actual);
+        }
+      }
+    } finally {
+      if (oldParser != null) {
+        // set the old parser back
+        ((CommonsHttpSolrServer)server).setParser(oldParser);
+      }
+    }
+  }
+
   /**
    * query the example
    */
