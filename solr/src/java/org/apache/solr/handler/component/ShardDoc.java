@@ -82,6 +82,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
   protected List<String> fieldNames = new ArrayList<String>();
 
   public ShardFieldSortedHitQueue(SortField[] fields, int size) {
+    super(size);
     final int n = fields.length;
     comparators = new Comparator[n];
     this.fields = new SortField[n];
@@ -107,8 +108,6 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
 
       //System.out.println("%%%%%%%%%%%%%%%%%% got "+fields[i].getType() +"   for "+ fieldname +"  fields[i].getReverse(): "+fields[i].getReverse());
     }
-
-    initialize(size);
   }
 
   @Override

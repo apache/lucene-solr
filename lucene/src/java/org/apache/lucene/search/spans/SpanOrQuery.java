@@ -145,7 +145,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
   private class SpanQueue extends PriorityQueue<Spans> {
     public SpanQueue(int size) {
-      initialize(size);
+      super(size);
     }
 
     @Override

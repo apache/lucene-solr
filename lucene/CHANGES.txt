@@ -202,6 +202,12 @@ API Changes
   which takes Analyzer as a parameter, for easier customization by subclasses.
   (Robert Muir)
 
+* LUCENE-2953: PriorityQueue's internal heap was made private, as subclassing
+  with generics can lead to ClassCastException. For advanced use (e.g. in Solr)
+  a method getHeapArray() was added to retrieve the internal heap array as a
+  non-generic Object[]. Also the initialize(int) function was moved into the
+  ctor. (Uwe Schindler, Yonik Seeley)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
