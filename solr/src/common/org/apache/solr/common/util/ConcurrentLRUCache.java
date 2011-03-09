@@ -352,8 +352,11 @@ public class ConcurrentLRUCache<K,V> {
 
   private static class PQueue extends PriorityQueue {
     int myMaxSize;
+    final Object[] heap;
+    
     PQueue(int maxSz) {
       super.initialize(maxSz);
+      heap = getHeapArray();
       myMaxSize = maxSz;
     }
 

@@ -29,7 +29,7 @@ package org.apache.lucene.util;
 public abstract class PriorityQueue<T> {
   private int size;
   private int maxSize;
-  protected T[] heap;
+  private T[] heap;
 
   /** Determines the ordering of objects in this priority queue.  Subclasses
    *  must define this one method.
@@ -246,5 +246,12 @@ public abstract class PriorityQueue<T> {
       }
     }
     heap[i] = node;				  // install saved node
+  }
+  
+  /** This method returns the internal heap array as Object[].
+   * @lucene.internal
+   */
+  protected final Object[] getHeapArray() {
+    return (Object[]) heap;
   }
 }
