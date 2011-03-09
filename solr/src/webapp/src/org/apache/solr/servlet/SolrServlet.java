@@ -20,6 +20,9 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +32,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
@@ -48,6 +54,8 @@ public class SolrServlet extends HttpServlet {
   final Logger log = LoggerFactory.getLogger(SolrServlet.class);
   private boolean hasMulticore = false;
     
+  private static final Charset UTF8 = Charset.forName("UTF-8");
+
   @Override
   public void init() throws ServletException {
     log.info("SolrServlet.init()");
@@ -88,9 +96,22 @@ public class SolrServlet extends HttpServlet {
       core.execute(handler, solrReq, solrRsp );
       if (solrRsp.getException() == null) {
         QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
-        response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
-        PrintWriter out = response.getWriter();
-        responseWriter.write(out, solrReq, solrRsp);
+        // Now write it out
+        final String ct = responseWriter.getContentType(solrReq, solrRsp);
+        // don't call setContentType on null
+        if (null != ct) response.setContentType(ct); 
+        if (responseWriter instanceof BinaryQueryResponseWriter) {
+          BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
+          binWriter.write(response.getOutputStream(), solrReq, solrRsp);
+        } else {
+          String charset = ContentStreamBase.getCharsetFromContentType(ct);
+          Writer out = (charset == null || charset.equalsIgnoreCase("UTF-8"))
+            ? new OutputStreamWriter(response.getOutputStream(), UTF8)
+            : new OutputStreamWriter(response.getOutputStream(), charset);
+          out = new FastWriter(out);
+          responseWriter.write(out, solrReq, solrRsp);
+          out.flush();
+        }
       } else {
         Exception e = solrRsp.getException();
         int rc=500;

@@ -44,7 +44,7 @@ import javax.xml.xpath.XPathFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringReader;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -200,12 +200,14 @@ public class TestHarness {
    */
   @Deprecated
   public String update(String xml) {
-                
-    StringReader req = new StringReader(xml);
-    StringWriter writer = new StringWriter(32000);
-
-    updater.doLegacyUpdate(req, writer);
-    return writer.toString();
+    try {
+      final InputStream req = new ByteArrayInputStream(xml.getBytes("UTF-16BE"));
+      final StringWriter out = new StringWriter(32000);
+      updater.doLegacyUpdate(req, "application/xml; charset=UTF-16BE", out);
+      return out.toString();
+    } catch (UnsupportedEncodingException uue) {
+      throw new RuntimeException(uue); // cannot happen
+    }
   }
   
         

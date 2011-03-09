@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
-import java.io.Reader;
+import java.io.InputStream;
 import java.io.Writer;
 import java.util.HashMap;
 
@@ -111,25 +112,23 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
    * success or failure from an XML formated Update (from the Reader)
    *
    * @since solr 1.2
-   * @deprecated Direct updates from a Reader, as well as the response 
+   * @deprecated Direct updates from a Servlet, as well as the response 
    *             format produced by this method, have been deprecated 
    *             and will be removed in future versions.  Any code using
    *             this method should be changed to use {@link #handleRequest} 
    *             method with a ContentStream. 
-   *             This metrhod is also broken regarding XML charset detection,
-   *             as XML files need to be parsed as InputStream and not as Reader.
    */
   @Deprecated
-  public void doLegacyUpdate(Reader input, Writer output) {
+  public void doLegacyUpdate(InputStream input, String inputContentType, Writer output) {
     SolrCore core = SolrCore.getSolrCore();
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new HashMap<String,String[]>());
-
     try {
       // Old style requests do not choose a custom handler
       UpdateRequestProcessorChain processorFactory = core.getUpdateProcessingChain(null);
-
       SolrQueryResponse rsp = new SolrQueryResponse(); // ignored
-      XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
+      final String charset = ContentStreamBase.getCharsetFromContentType(inputContentType);
+      final XMLStreamReader parser = (charset == null) ?
+        inputFactory.createXMLStreamReader(input) : inputFactory.createXMLStreamReader(input, charset);
       UpdateRequestProcessor processor = processorFactory.createProcessor(req, rsp);
       XMLLoader loader = (XMLLoader) newLoader(req, processor);
       loader.processUpdate(processor, parser);
