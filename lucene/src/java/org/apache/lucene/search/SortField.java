@@ -90,7 +90,7 @@ public class SortField {
   private String field;
   private int type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
-  private CachedArrayCreator<?> creator;
+  @SuppressWarnings("unchecked") private CachedArrayCreator creator;
   public Object missingValue = null; // used for 'sortMissingFirst/Last'
 
   // Used for CUSTOM sort
