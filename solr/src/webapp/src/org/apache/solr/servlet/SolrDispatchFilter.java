@@ -18,9 +18,12 @@
 package org.apache.solr.servlet;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.OutputStreamWriter;
 import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.WeakHashMap;
 import org.slf4j.Logger;
@@ -40,6 +43,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.*;
 import org.apache.solr.request.*;
 import org.apache.solr.response.BinaryQueryResponseWriter;
@@ -63,6 +68,8 @@ public class SolrDispatchFilter implements Filter
   protected String solrConfigFilename = null;
   protected final Map<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
   protected final SolrRequestParsers adminRequestParser;
+  
+  private static final Charset UTF8 = Charset.forName("UTF-8");
 
   public SolrDispatchFilter() {
     try {
@@ -319,14 +326,19 @@ public class SolrDispatchFilter implements Filter
       final String ct = responseWriter.getContentType(solrReq, solrRsp);
       // don't call setContentType on null
       if (null != ct) response.setContentType(ct); 
+
       if (Method.HEAD != reqMethod) {
         if (responseWriter instanceof BinaryQueryResponseWriter) {
           BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
           binWriter.write(response.getOutputStream(), solrReq, solrRsp);
         } else {
-          PrintWriter out = response.getWriter();
+          String charset = ContentStreamBase.getCharsetFromContentType(ct);
+          Writer out = (charset == null || charset.equalsIgnoreCase("UTF-8"))
+            ? new OutputStreamWriter(response.getOutputStream(), UTF8)
+            : new OutputStreamWriter(response.getOutputStream(), charset);
+          out = new FastWriter(out);
           responseWriter.write(out, solrReq, solrRsp);
-
+          out.flush();
         }
       }
       //else http HEAD request, nothing to write out, waited this long just to get ContentType
