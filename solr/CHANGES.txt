@@ -848,6 +848,14 @@ Other Changes
   hardcoded on text/xml as Content-Type, you have to change them.
   (uschindler, rmuir)
 
+* SOLR-2414: All ResponseWriters now use only ServletOutputStreams
+  and wrap their own Writer around it when serializing. This fixes
+  the bug in PHPSerializedResponseWriter that produced wrong string
+  length if the servlet container had a broken UTF-8 encoding that was
+  in fact CESU-8 (see SOLR-1091). The system property to enable the
+  CESU-8 byte counting in PHPSerializesResponseWriters for broken
+  servlet containers was therefore removed and is now ignored if set.
+  Output is always UTF-8.  (uschindler, yonik, rmuir)
 
 Build
 ----------------------
