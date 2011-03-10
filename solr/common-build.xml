@@ -35,6 +35,7 @@
 
   <property name="dev-tools.dir" value="${solr-path}/../dev-tools"/>
   <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
+  <property name="package.dir" location="package"/>
 
   <tstamp>
     <format property="year" pattern="yyyy"/>
@@ -150,7 +151,7 @@
 
   <!-- Maven properties -->
   <property name="maven.build.dir" value="${basedir}/build/maven"/>
-  <property name="maven.dist.dir" value="${basedir}/dist/maven"/>
+  <property name="maven.dist.dir" value="${package.dir}/maven"/>
 
   <property name="maven.dist.prefix" value="${maven.dist.dir}/org/apache/solr"/>
 
