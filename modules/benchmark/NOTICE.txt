@@ -11,4 +11,4 @@ including, but not limited to:
  - Commons Compress (lib/commons-compress-1.0.jar)
  - Commons Digester (lib/commons-digester-1.7.jar)
  - Commons Logging (lib/commons-logging-1.0.4.jar)
- - Xerces (lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar, lib/xml-apis-2.9.0.jar)
+ - Xerces (lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar)
