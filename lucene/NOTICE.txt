@@ -56,7 +56,7 @@ including, but not limited to:
  - Commons Compress (contrib/benchmark/lib/commons-compress-1.0.jar)
  - Commons Digester (contrib/benchmark/lib/commons-digester-1.7.jar)
  - Commons Logging (contrib/benchmark/lib/commons-logging-1.0.4.jar)
- - Xerces (contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar, contrib/benchmark/lib/xml-apis-2.9.0.jar)
+ - Xerces (contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar)
 
 The SmartChineseAnalyzer source code (under contrib/analyzers) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
