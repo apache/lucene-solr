@@ -368,11 +368,6 @@
         <version>2.9.1-patched-XERCESJ-1257</version>
       </dependency>
       <dependency>
-        <groupId>xml-apis</groupId>
-        <artifactId>xml-apis</artifactId>
-        <version>2.9.0</version>
-      </dependency>
-      <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>servlet-api</artifactId>
         <version>2.4</version>
@@ -644,20 +639,6 @@
                   <version>2.9.1-patched-XERCESJ-1257</version>
                   <packaging>jar</packaging>
                   <file>lucene/contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-xml-apis</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>xml-apis</groupId>
-                  <artifactId>xml-apis</artifactId>
-                  <version>2.9.0</version>
-                  <packaging>jar</packaging>
-                  <file>lucene/contrib/benchmark/lib/xml-apis-2.9.0.jar</file>
                 </configuration>  
               </execution>
               <execution>
