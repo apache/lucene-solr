@@ -1010,6 +1010,9 @@
       <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-core-pom.xml.template"
                                    jar.file="contrib/uima/lib/uima-core.jar" />
       
+      <m2-deploy-with-pom-template pom.xml="contrib/clustering/lib/solr-carrot2-core-pom.xml.template"
+                                   jar.file="contrib/clustering/lib/carrot2-core-3.4.2.jar" />
+
       <!-- ========== SOLR ARTIFACTS ========== -->
 
       <m2-deploy pom.xml="contrib/dataimporthandler/src/pom.xml"

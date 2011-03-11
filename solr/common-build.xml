@@ -398,6 +398,9 @@
         <filterset begintoken="@" endtoken="@">
           <filter token="version" value="${version}"/>
         </filterset>
+        <filterset begintoken="$${" endtoken="}">
+          <filter token="project.version" value="${version}"/>
+        </filterset>
       </copy>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />

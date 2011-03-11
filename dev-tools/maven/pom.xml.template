@@ -297,9 +297,9 @@
         <version>3.3.1</version>
       </dependency>
       <dependency>
-        <groupId>org.carrot2</groupId>
-        <artifactId>carrot2-core</artifactId>
-        <version>3.4.2</version>
+        <groupId>org.apache.solr</groupId>
+        <artifactId>solr-carrot2-core</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>
@@ -374,7 +374,7 @@
     </dependencies>
   </dependencyManagement>
   <build>
-    <directory>lucene/build/lucene-parent</directory>
+    <directory>lucene/build/lucene-solr-grandparent</directory>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -591,6 +591,33 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>filter-carrot2-core-pom</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <resources>
+                    <resource>  <!-- Filter carrot2-core POM, for local install -->
+                      <directory>solr/contrib/clustering/lib</directory>
+                      <includes>
+                        <include>*pom.xml.template</include>
+                      </includes>
+                      <filtering>true</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+            <configuration>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
               <execution>
@@ -701,18 +728,16 @@
                 <!-- use the org.carrot2:carrot2-core .jar compiled with   -->
                 <!-- Java5 in solr/contrib/clustering/lib/ - the .jar in   -->
                 <!-- the central Maven repository was compiled with Java6. -->
+                <!-- The version in the carrot2-core POM file is filtered  -->
+                <!-- so that the version is the same as this project's.    -->
                 <id>install-java5-carrot2-core</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
-                  <groupId>org.carrot2</groupId>
-                  <artifactId>carrot2-core</artifactId>
-                  <version>3.4.2</version>
-                  <packaging>jar</packaging>
                   <file>solr/contrib/clustering/lib/carrot2-core-3.4.2.jar</file>
-                  <pomFile>solr/contrib/clustering/lib/carrot2-core-3.4.2.pom</pomFile>
+                  <pomFile>lucene/build/lucene-solr-grandparent/solr-carrot2-core-pom.xml.template</pomFile>
                 </configuration>  
               </execution>
               <execution>
