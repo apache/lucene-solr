@@ -28,6 +28,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.junit.Ignore;
 
 public class ZkSolrClientTest extends AbstractSolrTestCase {
   private static final boolean DEBUG = false;
@@ -159,6 +160,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     }
   }
 
+  @Ignore("test case crashes modern jres")
   public void testWatchChildren() throws Exception {
     String zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
