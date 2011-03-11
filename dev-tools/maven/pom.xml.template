@@ -259,22 +259,22 @@
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-alchemy-annotator</artifactId>
+        <artifactId>solr-uima-an-alchemy</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-OpenCalaisAnnotator</artifactId>
+        <artifactId>solr-uima-an-calais</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-Tagger</artifactId>
+        <artifactId>solr-uima-an-tagger</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-WhitespaceTokenizer</artifactId>
+        <artifactId>solr-uima-an-wst</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -698,56 +698,56 @@
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-alchemy-annotator</id>
+                <id>install-solr-uima-an-alchemy</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-alchemy-annotator</artifactId>
+                  <artifactId>solr-uima-an-alchemy</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/contrib/uima/lib/uima-an-alchemy.jar</file>
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-OpenCalaisAnnotator</id>
+                <id>install-solr-uima-an-calais</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-OpenCalaisAnnotator</artifactId>
+                  <artifactId>solr-uima-an-calais</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/contrib/uima/lib/uima-an-calais.jar</file>
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-Tagger</id>
+                <id>install-solr-uima-an-tagger</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-Tagger</artifactId>
+                  <artifactId>solr-uima-an-tagger</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/contrib/uima/lib/uima-an-tagger.jar</file>
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-WhitespaceTokenizer</id>
+                <id>install-solr-uima-an-wst</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-WhitespaceTokenizer</artifactId>
+                  <artifactId>solr-uima-an-wst</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>solr/contrib/uima/lib/uima-an-wst.jar</file>
