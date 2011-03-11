@@ -37,7 +37,7 @@
     <module>solr</module>
   </modules>
   <properties>
-    <base.specification.version>3.1.0</base.specification.version>
+    <base.specification.version>3.2.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.5</java.compat.version>
     <jetty.version>6.1.26</jetty.version>

@@ -34,7 +34,7 @@
   <properties>
     <module-directory>solr/src/solrj</module-directory>
     <build-directory>../../build/solrj</build-directory>
-    <tests.luceneMatchVersion>3.1</tests.luceneMatchVersion>
+    <tests.luceneMatchVersion>3.2</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>

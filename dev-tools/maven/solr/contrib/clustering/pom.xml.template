@@ -34,7 +34,7 @@
   <properties>
     <module-directory>solr/contrib/clustering</module-directory>
     <build-directory>build</build-directory>
-    <tests.luceneMatchVersion>3.1</tests.luceneMatchVersion>
+    <tests.luceneMatchVersion>3.2</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>
@@ -100,6 +100,16 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
