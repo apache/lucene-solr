@@ -132,4 +132,9 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
       <classpath refid="classpath"/>
     </compile>
   </target>
+  
+  <target name="dist-maven" depends="contrib-build.dist-maven">
+    <m2-deploy-with-pom-template pom.xml="lib/lucene-icu4j-pom.xml.template"
+                                 jar.file="lib/icu4j-4_6.jar" />
+  </target>
 </project>

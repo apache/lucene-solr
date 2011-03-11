@@ -70,8 +70,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.ibm.icu</groupId>
-      <artifactId>icu4j</artifactId>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-icu4j</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -83,8 +83,8 @@
       <artifactId>tika-parsers</artifactId>
     </dependency>
     <dependency>
-      <groupId>xerces</groupId>
-      <artifactId>xercesImpl</artifactId>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-xercesImpl</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

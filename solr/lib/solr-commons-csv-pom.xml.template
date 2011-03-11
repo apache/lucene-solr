@@ -31,6 +31,6 @@
   <artifactId>solr-commons-csv</artifactId>
   <name>Solr Specific Commons CSV</name>
   <version>@version@</version>
-  <description>Solr Specific Commons CSV</description>
+  <description>Solr Specific Commons CSV v1.0-SNAPSHOT-r966014</description>
   <packaging>jar</packaging>
 </project>

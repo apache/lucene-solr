@@ -76,23 +76,23 @@
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>uima-alchemy-annotator</artifactId>
+      <artifactId>solr-uima-alchemy-annotator</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>uima-OpenCalaisAnnotator</artifactId>
+      <artifactId>solr-uima-OpenCalaisAnnotator</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>uima-Tagger</artifactId>
+      <artifactId>solr-uima-Tagger</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>uima-WhitespaceTokenizer</artifactId>
+      <artifactId>solr-uima-WhitespaceTokenizer</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>uima-uimaj-core</artifactId>
+      <artifactId>solr-uima-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
