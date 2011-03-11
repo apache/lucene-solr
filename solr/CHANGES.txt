@@ -28,6 +28,7 @@ Apache Lucene trunk
 Apache Tika 0.8-SNAPSHOT
 Carrot2 3.4.2
 Velocity 1.6.4 and Velocity Tools 2.0
+Apache UIMA 2.3.1-SNAPSHOT
 
 
 Upgrading from Solr 3.2-dev
