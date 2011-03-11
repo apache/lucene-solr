@@ -72,8 +72,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.carrot2</groupId>
-      <artifactId>carrot2-core</artifactId>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-carrot2-core</artifactId>
       <exclusions>
         <exclusion>
           <groupId>org.apache.lucene</groupId>
