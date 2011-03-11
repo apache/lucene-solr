@@ -57,6 +57,7 @@
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
+    <echo message="Use 'ant javadoc' to build javadoc under build/docs/api" />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
     <echo message="Use 'ant luke' to start luke.  see: http://www.getopt.org/luke/" />
