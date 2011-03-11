@@ -3,39 +3,44 @@
 
 Introduction
 ------------
-Apache Solr is an open source enterprise search server based on the Apache Lucene Java
-search library, with XML/HTTP and JSON APIs, hit highlighting, faceted search,
-caching, replication, and a web administration interface. It runs in a Java
-servlet container such as Tomcat.
+Solr is the popular, blazing fast open source enterprise search platform from
+the Apache Lucene project. Its major features include powerful full-text
+search, hit highlighting, faceted search, dynamic clustering, database
+integration, and rich document (e.g., Word, PDF) handling. Solr is highly
+scalable, providing distributed search and index replication, and it powers the
+search and navigation features of many of the world's largest internet sites.
 
-See http://lucene.apache.org/solr for more information.
+Solr is written in Java and runs as a standalone full-text search server within
+a servlet container such as Tomcat. Solr uses the Lucene Java search library at
+its core for full-text indexing and search, and has REST-like HTTP/XML and JSON
+APIs that make it easy to use from virtually any programming language. Solr's
+powerful external configuration allows it to be tailored to almost any type of
+application without Java coding, and it has an extensive plugin architecture
+when more advanced customization is required. 
 
+See README.txt and http://lucene.apache.org/solr for more information
+on how to get started.
 
-Getting Started
----------------
-You need a Java 1.5 VM or later installed.
-In this release, there is an example Solr server including a bundled 
-servlet container in the directory named "example".
-See the tutorial at http://lucene.apache.org/solr/tutorial.html
-
-
-$Id$
 
 ==================  3.2.0-dev ==================
 Versions of Major Components
 ---------------------
-Apache Lucene trunk
+Apache Lucene 3x
 Apache Tika 0.8-SNAPSHOT
 Carrot2 3.4.2
 
 (No Changes)
 
-==================  3.1.0-dev ==================
+
+==================  3.1.0 ==================
 Versions of Major Components
 ---------------------
-Apache Lucene trunk
+Apache Lucene 3.1.0
 Apache Tika 0.8-SNAPSHOT
 Carrot2 3.4.2
+Velocity 1.6.1 and Velocity Tools 2.0-beta3
+Apache UIMA 2.3.1-SNAPSHOT
+
 
 
 Upgrading from Solr 1.4
