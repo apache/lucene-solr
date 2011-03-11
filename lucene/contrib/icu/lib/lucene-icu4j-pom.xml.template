@@ -22,15 +22,15 @@
   -->
 
   <parent>
-    <groupId>org.apache.solr</groupId>
-    <artifactId>solr-parent</artifactId>
+    <groupId>org.apache.lucene</groupId>
+    <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.solr</groupId>
-  <artifactId>solr-noggit</artifactId>
-  <name>Solr Specific Noggit</name>
+  <groupId>org.apache.lucene</groupId>
+  <artifactId>lucene-icu4j</artifactId>
+  <name>Lucene Specific ICU4J</name>
   <version>@version@</version>
-  <description>Solr Specific Noggit r944541</description>
+  <description>Lucene Specific ICU4J v4.6</description>
   <packaging>jar</packaging>
 </project>

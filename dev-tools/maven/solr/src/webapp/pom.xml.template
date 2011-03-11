@@ -94,14 +94,6 @@
           <artifactId>struts-tiles</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.mortbay.jetty</groupId>
-          <artifactId>jetty</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.mortbay.jetty</groupId>
-          <artifactId>jetty-util</artifactId>
-        </exclusion>
-        <exclusion>
           <groupId>oro</groupId>
           <artifactId>oro</artifactId>
         </exclusion>
