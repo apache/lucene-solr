@@ -59,9 +59,6 @@ docs/index.html
 docs/api/index.html
   The Apache Solr Javadoc API documentation.
 
-src/
-  The Apache Solr source code.
-
 
 
 Instructions for Building Apache Solr from Source
