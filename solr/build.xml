@@ -948,6 +948,11 @@
     <!-- Maven artifacts -->
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-noggit" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-alchemy" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-calais" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-tagger" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-wst" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-core" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-war-artifacts artifact.id="solr" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-analysis-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
@@ -983,14 +988,29 @@
 
       <m2-deploy pom.xml="pom.xml"/>
 
-      <!-- ========== SOLR SPECIFIC COMMONS CSV ========== -->
+      <!-- ========== SOLR SPECIFIC NON-MAVENIZED DEPENDENCIES ========== -->
       <m2-deploy-with-pom-template pom.xml="lib/solr-commons-csv-pom.xml.template"
                                    jar.file="lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
 
-      <!-- ========== SOLR ARTIFACTS ========== -->
-
       <m2-deploy-with-pom-template pom.xml="lib/apache-solr-noggit-pom.xml.template"
                                    jar.file="lib/apache-solr-noggit-r944541.jar" />
+      
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-alchemy-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-alchemy.jar" />
+
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-calais-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-calais.jar" />
+
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-tagger-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-tagger.jar" />
+
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-wst-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-wst.jar" />
+
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-core-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-core.jar" />
+      
+      <!-- ========== SOLR ARTIFACTS ========== -->
 
       <m2-deploy pom.xml="contrib/dataimporthandler/src/pom.xml"
                  jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">

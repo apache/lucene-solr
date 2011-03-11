@@ -22,15 +22,15 @@
   -->
 
   <parent>
-    <groupId>org.apache.solr</groupId>
-    <artifactId>solr-parent</artifactId>
+    <groupId>org.apache.lucene</groupId>
+    <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.solr</groupId>
-  <artifactId>solr-noggit</artifactId>
-  <name>Solr Specific Noggit</name>
+  <groupId>org.apache.lucene</groupId>
+  <artifactId>lucene-xercesImpl</artifactId>
+  <name>Lucene Specific xercesImpl</name>
   <version>@version@</version>
-  <description>Solr Specific Noggit r944541</description>
+  <description>Lucene Specific xercesImpl v2.9.1 patched with XERCESJ-1257</description>
   <packaging>jar</packaging>
 </project>

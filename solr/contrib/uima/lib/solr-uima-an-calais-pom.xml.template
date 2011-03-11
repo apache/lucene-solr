@@ -28,9 +28,9 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.solr</groupId>
-  <artifactId>solr-noggit</artifactId>
-  <name>Solr Specific Noggit</name>
+  <artifactId>solr-uima-an-calais</artifactId>
+  <name>Solr Specific UIMA Open Calais Annotator</name>
   <version>@version@</version>
-  <description>Solr Specific Noggit r944541</description>
+  <description>Solr Specific UIMA Open Calais Annotator v2.3.1-SNAPSHOT</description>
   <packaging>jar</packaging>
 </project>
