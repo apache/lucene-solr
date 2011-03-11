@@ -157,7 +157,13 @@
     </solr-javac>
   </target>
 
-  <target name="javadoc-solrj" depends="compile-solrj" description="Generates solrj javadoc documentation.">
+  <target name="javadoc-dep">
+    <copy failonerror="false" todir="${build.docs}">
+      <fileset dir="site" />
+    </copy>
+  </target>
+
+  <target name="javadoc-solrj" depends="compile-solrj,javadoc-dep" description="Generates solrj javadoc documentation.">
     <sequential>
       <mkdir dir="${build.javadoc}/solrj"/>
 
@@ -176,7 +182,7 @@
     </sequential>
   </target>
   
-  <target name="javadoc-core" depends="compile"  description="Generates javadoc documentation for core.">
+  <target name="javadoc-core" depends="compile,javadoc-dep"  description="Generates javadoc documentation for core.">
 
     <sequential>
       <mkdir dir="${build.javadoc}/solr"/>
@@ -199,7 +205,7 @@
   </target>
 
 
-  <target name="javadoc-all" description="Generate javadoc for core, client and contrib">
+  <target name="javadoc-all" depends="compile,javadoc-dep" description="Generate javadoc for core, client and contrib">
     <sequential>
       <mkdir dir="${build.javadoc}"/>
 
@@ -235,12 +241,12 @@
     </sequential>
   </target>
 
-  <target name="javadoc-contrib" description="Generate javadoc for contrib classes" depends="build-contrib">
+  <target name="javadoc-contrib" description="Generate javadoc for contrib classes" depends="build-contrib,javadoc-dep">
     <contrib-crawl target="javadoc"
                    failonerror="true"/>
   </target>
 
-  <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
+  <target name="javadoc" depends="javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
 
   <target name="stub-factories" depends="dist-jar"
@@ -849,10 +855,6 @@
           description="Packages the Solr Binary Distribution"
           depends="dist, example, javadoc">
     <mkdir dir="${package.dir}"/>
-
-    <copy failonerror="false" todir="${build.docs}">
-      <fileset dir="site" />
-    </copy>
 
     <delete includeemptydirs="true">
       <fileset dir="${example}/work" includes="**/*"/>
