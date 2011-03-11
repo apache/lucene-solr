@@ -706,6 +706,170 @@ Documentation
 * SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
   (hossman)
 
+================== 1.4.2-dev ==================
+Upgrading from Solr 1.4
+-----------------------
+
+This is a bug fix release - no changes are required when upgrading from Solr 1.4.
+However, a reindex is needed for some of the analysis fixes to take effect.
+
+Versions of Major Components
+----------------------------
+Apache Lucene 2.9.3
+Apache Tika 0.8-SNAPSHOT
+Carrot2 3.1.0
+
+Lucene Information
+----------------
+
+Since Solr is built on top of Lucene, many people add customizations to Solr
+that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_3/,
+especially http://lucene.apache.org/java/2_9_3/changes/Changes.html for more
+information on the version of Lucene used in Solr.
+
+Bug Fixes
+----------------------
+
+* SOLR-1902: Upgraded Tika to 0.8-SNAPSHOT (Tommaso Teofili, gsingers)
+
+* SOLR-2036: Avoid expensive fieldCache ram estimation for the
+  admin stats page. (yonik)
+
+* SOLR-2100: The replication handler backup command didn't save the commit
+  point and hence could fail when a newer commit caused the older commit point
+  to be removed before it was finished being copied.  This did not affect
+  normal master/slave replication.  (Peter Sturge via yonik)
+
+* SOLR-2180: It was possible for EmbeddedSolrServer to leave searchers
+  open if a request threw an exception. (yonik)
+
+* SOLR-2192: StreamingUpdateSolrServer.blockUntilFinished was not
+  thread safe and could throw an exception. (yonik)
+
+* SOLR-1667: PatternTokenizer does not reset attributes such as positionIncrement
+  (Robert Muir via shalin)
+
+ * SOLR-1993: fix String cast assumption in JavaBinCodec - specific
+   addresses "commitWithin" option on Update requests.
+   (noble, hossman, and Maxim Valyanskiy)
+
+================== Release 1.4.1 ==================
+Release Date:  See http://lucene.apache.org/solr for the official release date.
+
+Upgrading from Solr 1.4
+-----------------------
+
+This is a bug fix release - no changes are required when upgrading from Solr 1.4. 
+However, a reindex is needed for some of the analysis fixes to take effect.
+
+Versions of Major Components
+----------------------------
+Apache Lucene 2.9.3
+Apache Tika 0.4
+Carrot2 3.1.0
+
+Lucene Information
+----------------
+
+Since Solr is built on top of Lucene, many people add customizations to Solr
+that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_3/,
+especially http://lucene.apache.org/java/2_9_3/changes/Changes.html for more
+information on the version of Lucene used in Solr.
+
+Bug Fixes
+----------------------
+
+* SOLR-1934: Upgrade to Apache Lucene 2.9.3 to obtain several bug
+  fixes from the previous 2.9.1.  See the Lucene 2.9.3 release notes
+  for details.  (hossman, Mark Miller)
+
+* SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
+  to the original ValueSource.getValues(reader) so custom sources
+  will work. (yonik)
+
+* SOLR-1572: FastLRUCache correctly implemented the LRU policy only
+  for the first 2B accesses. (yonik)
+
+* SOLR-1595: StreamingUpdateSolrServer used the platform default character
+  set when streaming updates, rather than using UTF-8 as the HTTP headers
+  indicated, leading to an encoding mismatch. (hossman, yonik)
+
+* SOLR-1660: CapitalizationFilter crashes if you use the maxWordCountOption
+  (Robert Muir via shalin)
+
+* SOLR-1662: Added Javadocs in BufferedTokenStream and fixed incorrect cloning
+  in TestBufferedTokenStream (Robert Muir, Uwe Schindler via shalin)
+
+* SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
+  could halt the streaming of documents. The original patch to fix this
+  (never officially released) introduced another hanging bug due to
+  connections not being released.  (Attila Babo, Erik Hetzner via yonik)
+  
+* SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
+  retrieved from ContentStreams are not closed in various places, resulting
+  in file descriptor leaks.
+  (Christoff Brill, Mark Miller)
+  
+* SOLR-1580: Solr Configuration ignores 'mergeFactor' parameter, always 
+  uses Lucene default. (Lance Norskog via Mark Miller)
+
+* SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
+  result in incorrectly sorted results.  (yonik)
+
+* SOLR-1797: fix ConcurrentModificationException and potential memory
+  leaks in ResourceLoader. (yonik)
+
+* SOLR-1798: Small memory leak (~100 bytes) in fastLRUCache for every
+  commit. (yonik)
+
+* SOLR-1522: Show proper message if <script> tag is missing for DIH 
+  ScriptTransformer (noble)
+
+* SOLR-1538: Reordering of object allocations in ConcurrentLRUCache to eliminate
+  (an extremely small) potential for deadlock.
+  (gabriele renzi via hossman)
+
+* SOLR-1558: QueryElevationComponent only works if the uniqueKey field is
+  implemented using StrField.  In previous versions of Solr no warning or
+  error would be generated if you attempted to use QueryElevationComponent,
+  it would just fail in unexpected ways.  This has been changed so that it
+  will fail with a clear error message on initialization. (hossman)
+
+* SOLR-1563: Binary fields, including trie-based numeric fields, caused null
+  pointer exceptions in the luke request handler. (yonik)
+
+* SOLR-1579: Fixes to XML escaping in stats.jsp
+  (David Bowen and hossman)
+
+* SOLR-1582: copyField was ignored for BinaryField types (gsingers)
+
+* SOLR-1596: A rollback operation followed by the shutdown of Solr
+  or the close of a core resulted in a warning:
+  "SEVERE: SolrIndexWriter was not closed prior to finalize()" although
+  there were no other consequences. (yonik)
+
+* SOLR-1651: Fixed Incorrect dataimport handler package name in SolrResourceLoader
+  (Akshay Ukey via shalin)
+
+* SOLR-1936: The JSON response format needed to escape unicode code point
+  U+2028 - 'LINE SEPARATOR' (Robert Hofstra, yonik)
+
+* SOLR-1852: Fix WordDelimiterFilterFactory bug where position increments
+  were not being applied properly to subwords.  (Peter Wolanin via Robert Muir)
+
+* SOLR-1706: fixed WordDelimiterFilter for certain combinations of options
+  where it would output incorrect tokens. (Robert Muir, Chris Male)
+
+* SOLR-1948: PatternTokenizerFactory should use parent's args (koji)
+
+* SOLR-1870: Indexing documents using the 'javabin' format no longer
+  fails with a ClassCastException whenSolrInputDocuments contain field
+  values which are Collections or other classes that implement
+  Iterable. (noble, hossman)
+
+* SOLR-1769 Solr 1.4 Replication - Repeater throwing NullPointerException (noble)
+
+
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.
 
