@@ -20,9 +20,6 @@ lucene-core-XX.jar
 contrib/demo/lucene-demos-XX.jar
   The compiled simple example code.
 
-contrib/demo/luceneweb.war
-  The compiled simple example Web Application.
-
 contrib/*
   Contributed code which extends and enhances Lucene, but is not
   part of the core library.  Of special note are the JAR files in the analyzers directory which
