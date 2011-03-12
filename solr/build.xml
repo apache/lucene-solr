@@ -247,7 +247,7 @@
                    failonerror="true"/>
   </target>
 
-  <target name="javadoc" depends="javadoc-contrib, javadoc-solrj, javadoc-all">
+  <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
 
   <target name="stub-factories" depends="dist-jar"
@@ -635,7 +635,7 @@
     </war>
   </target>
 
-  <target name="dist-src" description="Creates the Solr source distribution files"
+  <target name="dist-src" description="Creates the Solr source distribution files for maven"
           depends="make-manifest">
     <mkdir dir="${dist}" />
 
@@ -666,7 +666,7 @@
     </solr-jar>
   </target>
 
-  <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
+  <target name="dist-javadoc" description="Creates the Solr javadoc distribution files for maven"
           depends="make-manifest, javadoc">
     <mkdir dir="${dist}" />
 
@@ -864,8 +864,11 @@
         prefix="${fullnamever}"
         includes="dist/*.jar dist/*.war dist/solrj-lib/*"
         excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar" />
-       <tarfileset dir="${build.docs}"
-        prefix="${fullnamever}/docs/" />
+      <!-- hack: the javadocs are built twice since maven needs separate packages... exclude those -->
+      <tarfileset dir="${build.docs}"
+        prefix="${fullnamever}/docs/"
+        excludes="api/solr/** api/contrib-*/**"
+       />
     </tar>
     <solr-checksum file="${package.dir}/${fullnamever}.tgz"/>
 
