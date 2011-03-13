@@ -971,6 +971,7 @@
     <sign-maven-artifacts artifact.id="solr-dataimporthandler" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-solrj" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-uima" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- These are special since there are no jars, just poms -->
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
