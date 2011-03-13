@@ -101,11 +101,7 @@ public class SortField {
   private int type;  // defaults to determining type dynamically
   private Locale locale;    // defaults to "natural order" (no Locale)
   boolean reverse = false;  // defaults to natural order
-  
-  // This is not generified because of a javac bug in early JDK 1.5 (e.g. used by FreeBSD).
-  // With <?> as type param, getComparator() fails to compile because of cast problems.
-  @SuppressWarnings("unchecked") private CachedArrayCreator creator;
-  
+  private CachedArrayCreator<?> creator;
   public Object missingValue = null; // used for 'sortMissingFirst/Last'
 
   // Used for CUSTOM sort
