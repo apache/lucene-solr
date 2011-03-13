@@ -959,6 +959,7 @@
     <sign-maven-dependency-artifacts artifact.id="solr-uima-an-tagger" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-uima-an-wst" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-uima-core" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-carrot2-core" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-war-artifacts artifact.id="solr" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-analysis-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
@@ -967,6 +968,7 @@
     <sign-maven-artifacts artifact.id="solr-dataimporthandler" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-solrj" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-uima" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- These are special since there are no jars, just poms -->
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>

@@ -451,7 +451,7 @@
     </sequential>
   </macrodef>
 
-  <macrodef name="sign-maven-war-artifacts" description="Signs the Solr .war artifact">
+  <macrodef name="sign-maven-war-artifacts" description="Signs the Solr .war artifact and its POM">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
     <attribute name="gpg.passphrase"/>
@@ -461,12 +461,13 @@
     </sequential>
   </macrodef>
 
-  <macrodef name="sign-maven-dependency-artifacts" description="Signs maven artifacts">
+  <macrodef name="sign-maven-dependency-artifacts" description="Signs a maven artifact and its POM">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.jar"  gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.pom"  gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>
 
