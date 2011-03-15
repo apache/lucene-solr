@@ -138,6 +138,9 @@ Changes in backwards compatibility policy
 * LUCENE-2236: Similarity can now be configured on a per-field basis. See the
   migration notes in MIGRATE.txt for more details.  (Robert Muir, Doron Cohen)
 
+* LUCENE-2315: AttributeSource's methods for accessing attributes are now final,
+  else its easy to corrupt the internal states.  (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -198,6 +201,12 @@ API Changes
 * LUCENE-2892: Add QueryParser.newFieldQuery (called by getFieldQuery by default)
   which takes Analyzer as a parameter, for easier customization by subclasses.
   (Robert Muir)
+
+* LUCENE-2953: PriorityQueue's internal heap was made private, as subclassing
+  with generics can lead to ClassCastException. For advanced use (e.g. in Solr)
+  a method getHeapArray() was added to retrieve the internal heap array as a
+  non-generic Object[]. Also the initialize(int) function was moved into the
+  ctor. (Uwe Schindler, Yonik Seeley)
 
 New features
 
@@ -350,7 +359,14 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
+* LUCENE-2936: PhraseQuery score explanations were not correctly 
+  identifying matches vs non-matches.  (hossman)
+
 ======================= Lucene 3.x (not yet released) =======================
+
+(No changes)
+
+======================= Lucene 3.1 (not yet released) =======================
 
 Changes in backwards compatibility policy
 
@@ -734,6 +750,13 @@ Bug fixes
 * LUCENE-2891: IndexWriterConfig did not accept -1 in setReaderTermIndexDivisor,
   which can be used to prevent loading the terms index into memory. (Shai Erera)
 
+* LUCENE-2937: Encoding a float into a byte (e.g. encoding field norms during
+  indexing) had an underflow detection bug that caused floatToByte(f)==0 where
+  f was greater than 0, but slightly less than byteToFloat(1).  This meant that
+  certain very small field norms (index_boost * length_norm) could have
+  been rounded down to 0 instead of being rounded up to the smallest
+  positive number.  (yonik)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
@@ -1050,7 +1073,7 @@ Documentation
   (Adriano Crestani via Robert Muir)
 
 * LUCENE-2894: Use google-code-prettify for syntax highlighting in javadoc.
-  (Koji Sekiguchi)
+  (Shinichiro Abe, Koji Sekiguchi)
   
 ================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
 

@@ -127,8 +127,8 @@ public class TrieField extends FieldType {
 
     int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
     Object missingValue = null;
-    boolean sortMissingLast  = on( SORT_MISSING_LAST,  properties );
-    boolean sortMissingFirst = on( SORT_MISSING_FIRST, properties );
+    boolean sortMissingLast  = field.sortMissingLast();
+    boolean sortMissingFirst = field.sortMissingFirst();
     
     switch (type) {
       case INTEGER:
@@ -179,6 +179,7 @@ public class TrieField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
     switch (type) {
       case INTEGER:

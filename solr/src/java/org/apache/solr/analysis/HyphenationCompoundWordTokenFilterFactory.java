@@ -33,7 +33,7 @@ import java.io.InputStream;
 import org.xml.sax.InputSource;
 
 /**
- * Factory for {@link HyphenationCompoundWordTokenFilter}
+ * Factory for {@link HyphenationCompoundWordTokenFilter}.
  * <p>
  * This factory accepts the following parameters:
  * <ul>
@@ -48,6 +48,15 @@ import org.xml.sax.InputSource;
  *    to the stream. defaults to false.
  * </ul>
  * <p>
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_hyphncomp" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.HyphenationCompoundWordTokenFilterFactory" hyphenator="hyphenator.xml" encoding="UTF-8"
+ *     	     dictionary="dictionary.txt" minWordSize="5" minSubwordSize="2" maxSubwordSize="15" onlyLongestMatch="false"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
  * @see HyphenationCompoundWordTokenFilter
  */
 public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {

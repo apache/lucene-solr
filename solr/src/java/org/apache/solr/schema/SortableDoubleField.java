@@ -53,6 +53,7 @@ public class SortableDoubleField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
+    field.checkFieldCacheSource(qparser);
     return new SortableDoubleFieldSource(field.name);
   }
 

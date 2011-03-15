@@ -27,7 +27,7 @@ import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.index.BulkPostingsEnum;
 
 /** Reads IndexInputs written with {@link
- *  SingleIntIndexOutput}.  NOTE: this class is just for
+ *  MockSingleIntIndexOutput}.  NOTE: this class is just for
  *  demonstration puprposes (it is a very slow way to read a
  *  block of ints).
  *

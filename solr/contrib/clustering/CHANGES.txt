@@ -11,6 +11,10 @@ $Id$
 
 (No Changes)
 
+================== Release 3.2.0-dev ==================
+
+(No Changes)
+
 ================== Release 3.1.0-dev ==================
 
 * SOLR-1684: Switch to use the SolrIndexSearcher.doc(int, Set<String>) method b/c it can use the document cache (gsingers)

@@ -22,7 +22,17 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.payloads.TokenOffsetPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 
-/** Factory for {@link TokenOffsetPayloadTokenFilter} */
+/** 
+ * Factory for {@link TokenOffsetPayloadTokenFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_tokenoffset" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.TokenOffsetPayloadTokenFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$ 
+ */
 public class TokenOffsetPayloadTokenFilterFactory extends BaseTokenFilterFactory {
   public TokenOffsetPayloadTokenFilter create(TokenStream input) {
     return new TokenOffsetPayloadTokenFilter(input);

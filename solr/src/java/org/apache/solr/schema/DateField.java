@@ -220,10 +220,6 @@ public class DateField extends FieldType {
     return getStringSort(field,reverse);
   }
 
-  public ValueSource getValueSource(SchemaField field) {
-    return new OrdFieldSource(field.name);
-  }
-
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeDate(name, toExternal(f));
@@ -408,12 +404,13 @@ public class DateField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+    field.checkFieldCacheSource(parser);
     return new DateFieldSource(field.getName(), field.getType());
   }
 
   /** DateField specific range query */
   public Query getRangeQuery(QParser parser, SchemaField sf, Date part1, Date part2, boolean minInclusive, boolean maxInclusive) {
-    return new TermRangeQuery(
+    return TermRangeQuery.newStringRange(
             sf.getName(),
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),

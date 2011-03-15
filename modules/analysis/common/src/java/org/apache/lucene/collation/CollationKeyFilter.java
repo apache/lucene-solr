@@ -71,7 +71,10 @@ import java.text.Collator;
  *   CollationKeyFilter to generate index terms, do not use
  *   ICUCollationKeyFilter on the query side, or vice versa.
  * </p>
+ * @deprecated Use {@link CollationAttributeFactory} instead, which encodes
+ *  terms directly as bytes. This filter will be removed in Lucene 5.0
  */
+@Deprecated
 public final class CollationKeyFilter extends TokenFilter {
   private final Collator collator;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -82,7 +85,9 @@ public final class CollationKeyFilter extends TokenFilter {
    */
   public CollationKeyFilter(TokenStream input, Collator collator) {
     super(input);
-    this.collator = collator;
+    // clone in case JRE doesnt properly sync,
+    // or to reduce contention in case they do
+    this.collator = (Collator) collator.clone();
   }
 
   @Override

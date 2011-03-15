@@ -25,6 +25,10 @@ API Changes
  * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
    can be generated. (Chris Harris via Steven Rowe)
    
+ * LUCENE-2514, LUCENE-2551: JDK and ICU CollationKeyAnalyzers were changed to
+   use pure byte keys when Version >= 4.0. This cuts sort key size approximately
+   in half. (Robert Muir)
+   
 New Features
    
  * LUCENE-2413: Consolidated Solr analysis components into common. 

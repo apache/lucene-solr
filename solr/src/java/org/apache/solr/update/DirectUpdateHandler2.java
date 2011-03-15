@@ -91,7 +91,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
 
-    ReadWriteLock rwl = new ReentrantReadWriteLock();
+    // Pass fairness=true so commit request is not starved
+    // when add/updates are running hot (SOLR-2342):
+    ReadWriteLock rwl = new ReentrantReadWriteLock(true);
     iwAccess = rwl.readLock();
     iwCommit = rwl.writeLock();
 

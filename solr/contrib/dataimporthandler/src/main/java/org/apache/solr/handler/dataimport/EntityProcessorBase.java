@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +80,7 @@ public class EntityProcessorBase extends EntityProcessor {
       rowIterator = null;
       return null;
     } catch (Exception e) {
-      log.error("getNext() failed for query '" + query + "'", e);
+      SolrException.log(log, "getNext() failed for query '" + query + "'", e);
       query = null;
       rowIterator = null;
       wrapAndThrow(DataImportHandlerException.WARN, e);

@@ -21,54 +21,58 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.BytesRef;
 
 public class TestIndexWriter extends LuceneTestCase {
 
@@ -2550,7 +2554,7 @@ public class TestIndexWriter extends LuceneTestCase {
     final Random r = random;
 
     Directory dir = newDirectory();
-    FlushCountingIndexWriter w = new FlushCountingIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, false)).setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMaxBufferedDeleteTerms(-1));
+    FlushCountingIndexWriter w = new FlushCountingIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, false)).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(-1).setMaxBufferedDeleteTerms(-1));
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
@@ -2577,7 +2581,7 @@ public class TestIndexWriter extends LuceneTestCase {
           count++;
         }
       }
-      assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 1500);
+      assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 3000);
     }
     w.close();
     dir.close();
@@ -2785,6 +2789,9 @@ public class TestIndexWriter extends LuceneTestCase {
       final String id = ""+i;
       idField.setValue(id);
       docs.put(id, doc);
+      if (VERBOSE) {
+        System.out.println("TEST: add doc id=" + id);
+      }
 
       for(int field: fieldIDs) {
         final String s;
@@ -2803,7 +2810,7 @@ public class TestIndexWriter extends LuceneTestCase {
       if (rand.nextInt(5) == 3 && i > 0) {
         final String delID = ""+rand.nextInt(i);
         if (VERBOSE) {
-          System.out.println("TEST: delete doc " + delID);
+          System.out.println("TEST: delete doc id=" + delID);
         }
         w.deleteDocuments(new Term("id", delID));
         docs.remove(delID);
@@ -2826,6 +2833,9 @@ public class TestIndexWriter extends LuceneTestCase {
 
         for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
           String testID = idsList[rand.nextInt(idsList.length)];
+          if (VERBOSE) {
+            System.out.println("TEST: test id=" + testID);
+          }
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);
           Document doc = r.document(hits.scoreDocs[0].doc);
@@ -3034,6 +3044,125 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     w.close();
+    dir.close();
+  }
+
+  private static class StringSplitAnalyzer extends Analyzer {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new StringSplitTokenizer(reader);
+    }
+  }
+
+  private static class StringSplitTokenizer extends Tokenizer {
+    private final String[] tokens;
+    private int upto = 0;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+    public StringSplitTokenizer(Reader r) {
+      try {
+        final StringBuilder b = new StringBuilder();
+        final char[] buffer = new char[1024];
+        int n;
+        while((n = r.read(buffer)) != -1) {
+          b.append(buffer, 0, n);
+        }
+        tokens = b.toString().split(" ");
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
+    }
+
+    @Override
+    public final boolean incrementToken() throws IOException {
+      clearAttributes();      
+      if (upto < tokens.length) {
+        termAtt.setEmpty();
+        termAtt.append(tokens[upto]);
+        upto++;
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  /**
+   * Make sure we skip wicked long terms.
+   */
+  public void testWickedLongTerm() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, dir, new StringSplitAnalyzer());
+
+    char[] chars = new char[DocumentsWriter.MAX_TERM_LENGTH_UTF8];
+    Arrays.fill(chars, 'x');
+    Document doc = new Document();
+    final String bigTerm = new String(chars);
+    final BytesRef bigTermBytesRef = new BytesRef(bigTerm);
+
+    // This contents produces a too-long term:
+    String contents = "abc xyz x" + bigTerm + " another term";
+    doc.add(new Field("content", contents, Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+
+    // Make sure we can add another normal document
+    doc = new Document();
+    doc.add(new Field("content", "abc bbb ccc", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+
+    IndexReader reader = w.getReader();
+    w.close();
+
+    // Make sure all terms < max size were indexed
+    assertEquals(2, reader.docFreq(new Term("content", "abc")));
+    assertEquals(1, reader.docFreq(new Term("content", "bbb")));
+    assertEquals(1, reader.docFreq(new Term("content", "term")));
+    assertEquals(1, reader.docFreq(new Term("content", "another")));
+
+    // Make sure position is still incremented when
+    // massive term is skipped:
+    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
+    assertEquals(0, tps.nextDoc());
+    assertEquals(1, tps.freq());
+    assertEquals(3, tps.nextPosition());
+
+    // Make sure the doc that has the massive term is in
+    // the index:
+    assertEquals("document with wicked long term should is not in the index!", 2, reader.numDocs());
+
+    reader.close();
+    dir.close();
+    dir = newDirectory();
+
+    // Make sure we can add a document with exactly the
+    // maximum length term, and search on that term:
+    doc = new Document();
+    Field contentField = new Field("content", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    doc.add(contentField);
+
+    w = new RandomIndexWriter(random, dir);
+
+    contentField.setValue("other");
+    w.addDocument(doc);
+
+    contentField.setValue("term");
+    w.addDocument(doc);
+
+    contentField.setValue(bigTerm);
+    w.addDocument(doc);
+
+    contentField.setValue("zzz");
+    w.addDocument(doc);
+
+    reader = w.getReader();
+    w.close();
+    assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
+
+    FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(reader, "content", random.nextBoolean());
+    assertEquals(5, dti.numOrd());                // +1 for null ord
+    assertEquals(4, dti.size());
+    assertEquals(bigTermBytesRef, dti.lookup(3, new BytesRef()));
+    reader.close();
     dir.close();
   }
 }

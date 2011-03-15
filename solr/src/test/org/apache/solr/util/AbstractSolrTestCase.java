@@ -25,6 +25,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.*;
 import org.apache.solr.util.TestHarness;
@@ -132,7 +133,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
               solrConfig,
               getSchemaFile());
       lrf = h.getRequestFactory
-              ("standard",0,20,"version","2.2");
+              ("standard",0,20,CommonParams.VERSION,"2.2");
     }
     log.info("####SETUP_END " + getName());
   }

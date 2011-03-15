@@ -17,34 +17,24 @@ package org.apache.lucene.queryParser.standard.nodes;
  * limitations under the License.
  */
 
-import java.text.Collator;
-
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
-import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 
 /**
- * This query node represents a range query. It also holds which collator will
- * be used by the range query and if the constant score rewrite is enabled. <br/>
+ * This query node represents a range query. 
  * 
  * @see ParametricRangeQueryNodeProcessor
- * @see RangeCollatorAttribute
  * @see org.apache.lucene.search.TermRangeQuery
  */
 public class RangeQueryNode extends ParametricRangeQueryNode {
-
-  private Collator collator;
 
   /**
    * @param lower
    * @param upper
    */
-  public RangeQueryNode(ParametricQueryNode lower, ParametricQueryNode upper, Collator collator) {
+  public RangeQueryNode(ParametricQueryNode lower, ParametricQueryNode upper) {
     super(lower, upper);
-
-    this.collator = collator;
-
   }
 
   @Override
@@ -57,12 +47,4 @@ public class RangeQueryNode extends ParametricRangeQueryNode {
     return sb.toString();
 
   }
-
-  /**
-   * @return the collator
-   */
-  public Collator getCollator() {
-    return this.collator;
-  }
-
 }

@@ -205,7 +205,7 @@ public class MockRandomCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter);
       success = true;
       return ret;
     } finally {
@@ -306,7 +306,6 @@ public class MockRandomCodec extends Codec {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.readBufferSize,
-                                                BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                 termsCacheSize,
                                                 state.codecId);
       success = true;

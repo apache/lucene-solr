@@ -56,15 +56,13 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
     
     public OneComparatorFieldValueHitQueue(SortField[] fields, int size)
         throws IOException {
-      super(fields);
+      super(fields, size);
 
       SortField field = fields[0];
       setComparator(0,field.getComparator(size, 0));
       oneReverseMul = field.reverse ? -1 : 1;
 
       reverseMul[0] = oneReverseMul;
-      
-      initialize(size);
     }
 
     /**
@@ -98,7 +96,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
 
     public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size)
         throws IOException {
-      super(fields);
+      super(fields, size);
 
       int numComparators = comparators.length;
       for (int i = 0; i < numComparators; ++i) {
@@ -107,8 +105,6 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
         reverseMul[i] = field.reverse ? -1 : 1;
         setComparator(i, field.getComparator(size, i));
       }
-
-      initialize(size);
     }
   
     @Override
@@ -133,7 +129,8 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
   }
   
   // prevent instantiation and extension.
-  private FieldValueHitQueue(SortField[] fields) {
+  private FieldValueHitQueue(SortField[] fields, int size) {
+    super(size);
     // When we get here, fields.length is guaranteed to be > 0, therefore no
     // need to check it again.
     

@@ -23,7 +23,17 @@ import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import java.util.Map;
 
-/** Factory for {@link NumericPayloadTokenFilter} */
+/** 
+ * Factory for {@link NumericPayloadTokenFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_numpayload" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.NumericPayloadTokenFilterFactory" payload="24" typeMatch="word"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$  
+ */
 public class NumericPayloadTokenFilterFactory extends BaseTokenFilterFactory {
   private float payload;
   private String typeMatch;

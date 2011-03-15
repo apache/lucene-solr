@@ -102,10 +102,10 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
     
     //test functions (more deep)
-    sort = QueryParsing.parseSort("sum(product(r_f,sum(d_f,t_f,1)),a_f) asc", req);
+    sort = QueryParsing.parseSort("sum(product(r_f1,sum(d_f1,t_f1,1)),a_f1) asc", req);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.CUSTOM);
-    assertEquals(flds[0].getField(), "sum(product(float(r_f),sum(float(d_f),float(t_f),const(1.0))),float(a_f))");
+    assertEquals(flds[0].getField(), "sum(product(float(r_f1),sum(float(d_f1),float(t_f1),const(1.0))),float(a_f1))");
 
     sort = QueryParsing.parseSort("pow(weight,                 2)         desc", req);
     flds = sort.getSort();
@@ -135,11 +135,11 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[0].getField(), "weight");
 
     //Test literals in functions
-    sort = QueryParsing.parseSort("strdist(foo_s, \"junk\", jw) desc", req);
+    sort = QueryParsing.parseSort("strdist(foo_s1, \"junk\", jw) desc", req);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.CUSTOM);
     //the value sources get wrapped, so the out field is different than the input
-    assertEquals(flds[0].getField(), "strdist(str(foo_s),literal(junk), dist=org.apache.lucene.search.spell.JaroWinklerDistance)");
+    assertEquals(flds[0].getField(), "strdist(str(foo_s1),literal(junk), dist=org.apache.lucene.search.spell.JaroWinklerDistance)");
 
     sort = QueryParsing.parseSort("", req);
     assertNull(sort);

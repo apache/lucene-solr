@@ -35,6 +35,7 @@
 
   <property name="dev-tools.dir" value="${solr-path}/../dev-tools"/>
   <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
+  <property name="package.dir" location="package"/>
 
   <tstamp>
     <format property="year" pattern="yyyy"/>
@@ -150,7 +151,7 @@
 
   <!-- Maven properties -->
   <property name="maven.build.dir" value="${basedir}/build/maven"/>
-  <property name="maven.dist.dir" value="${basedir}/dist/maven"/>
+  <property name="maven.dist.dir" value="${package.dir}/maven"/>
 
   <property name="maven.dist.prefix" value="${maven.dist.dir}/org/apache/solr"/>
 
@@ -306,25 +307,10 @@
    -->
   <macrodef name="solr-checksum">
     <attribute name="file"/>
-    <!-- NOTE: we use the value of @{file} in the names any properties
-         set because macro's don't have variables, and otherwise we
-         wouldn't be able to checksum more then one file per build
-      -->
     <sequential>
-     <checksum file="@{file}"
-               property="@{file}.sum"
-               algorithm="${checksum.algorithm}" />
-     <basename file="@{file}" property="@{file}.base" />
-     <concat destfile="@{file}.${checksum.algorithm}"
-             force="yes"
-             append="false"
-             fixlastline="yes">
-       <header trimleading="yes">${@{file}.sum}  </header>
-       <!-- empty fileset to trick concat -->
-       <fileset dir="." excludes="**" />
-       <footer trimleading="yes">${@{file}.base}
-       </footer>
-     </concat>
+      <echo>Building checksums for '@{file}'</echo>
+      <checksum file="@{file}" algorithm="md5" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+      <checksum file="@{file}" algorithm="sha1" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
     </sequential>
   </macrodef>
 
@@ -347,7 +333,8 @@
     <attribute name="destdir"/>
   	<attribute name="title" default="${Name} ${version} API (${specversion})"/>
     <sequential>
-      <copy todir="@{destdir}/../prettify" overwrite="false">
+      <mkdir dir="@{destdir}"/>
+      <copy todir="@{destdir}/prettify" overwrite="false">
         <fileset dir="${prettify.dir}"/>
       </copy>
       <javadoc
@@ -363,7 +350,7 @@
           link="${javadoc.link.java}"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
-          stylesheetfile="@{destdir}/../prettify/stylesheet+prettify.css"
+          stylesheetfile="@{destdir}/prettify/stylesheet+prettify.css"
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="todo" description="To Do:"/>
         <tag name="uml.property" description="UML Property:"/>
@@ -376,7 +363,7 @@
         <link href="${javadoc.link.junit}"/>
         <link href="${javadoc.link.lucene}"/>
       	<header><![CDATA[
-      		 <script src="{@docRoot}/../prettify/prettify.js" type="text/javascript"></script>
+      		 <script src="{@docRoot}/prettify/prettify.js" type="text/javascript"></script>
       		 <script language="JavaScript">window.onload=function(){windowTitle();prettyPrint();}</script>
       	]]></header>
 
@@ -454,34 +441,32 @@
   <macrodef name="sign-maven-artifacts" description="Signs maven artifacts">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
-    <attribute name="maven.version" default="${version}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar" gpg.passphrase="@{gpg.passphrase}"/>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-javadoc.jar" gpg.passphrase="@{gpg.passphrase}"/>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-sources.jar" gpg.passphrase="@{gpg.passphrase}"/>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}-javadoc.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}-sources.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>
 
   <macrodef name="sign-maven-war-artifacts" description="Signs maven artifacts">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
-    <attribute name="maven.version" default="${version}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.war" gpg.passphrase="@{gpg.passphrase}"/>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.war" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>
 
-  <macrodef name="sign-maven-dependency-artifacts" description="Signs maven artifacts">
+  <macrodef name="sign-maven-dependency-artifacts" description="Signs a maven artifact and its POM">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
-    <attribute name="maven.version" default="${version}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"  gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.jar"  gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/${version}/@{artifact.id}-${version}.pom"  gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>
 

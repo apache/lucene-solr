@@ -571,6 +571,11 @@ final class SegmentMerger {
     return mergeState.delCounts;
   }
   
+  public boolean getAnyNonBulkMerges() {
+    assert matchedCount <= readers.size();
+    return matchedCount != readers.size();
+  }
+
   private void mergeNorms() throws IOException {
     IndexOutput output = null;
     try {

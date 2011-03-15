@@ -83,31 +83,26 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
                     + " attached if you need it, but it is also committed to trunk and 3_x branch."
                     + " Last Lucene European Conference has been held in Prague."));
     assertU(commit());
-    assertQ(req("language:english"), "//*[@numFound='1']");
+    assertQ(req("suggested_category:*"), "//*[@numFound='1']");
   }
 
   @Test
-  public void testTwoUpdates() {
+  public void testTwoUpdates() throws Exception {
     // this test requires an internet connection (e.g. opencalais api)
     checkInternetConnection();
 
-    try {
-      addDoc(adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
-              + "BarCampApache Sydney, Australia, the first ASF-backed event in the Southern "
-              + "Hemisphere!"));
-      assertU(commit());
-      assertQ(req("language:english"), "//*[@numFound='1']");
+    addDoc(adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
+            + "BarCampApache Sydney, Australia, the first ASF-backed event in the Southern "
+            + "Hemisphere!"));
+    assertU(commit());
+    assertQ(req("suggested_category:*"), "//*[@numFound='1']");
 
-      addDoc(adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
-              + "of Sydney's Darlington Centre, the BarCampApache \"unconference\" will be"
-              + " attendee-driven, facilitated by members of the Apache community and will "
-              + "focus on the Apache..."));
-      assertU(commit());
-      assertQ(req("language:english"), "//*[@numFound='2']");
-
-    } catch (Exception e) {
-      assumeNoException("Multiple updates on same instance didn't work", e);
-    }
+    addDoc(adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
+            + "of Sydney's Darlington Centre, the BarCampApache \"unconference\" will be"
+            + " attendee-driven, facilitated by members of the Apache community and will "
+            + "focus on the Apache..."));
+    assertU(commit());
+    assertQ(req("suggested_category:*"), "//*[@numFound='2']");
   }
 
   private void addDoc(String doc) throws Exception {

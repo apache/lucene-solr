@@ -24,43 +24,30 @@ import java.io.PrintStream;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDemo extends LuceneTestCase {
-  // LUCENE-589
-  public void testUnicodeHtml() throws Exception {
-    File dir = getDataFile("test-files/html");
-    File indexDir = new File(TEMP_DIR, "demoIndex");
-    IndexHTML.main(new String[] { "-create", "-index", indexDir.getPath(), dir.getPath() });
-    File queries = getDataFile("test-files/queries.txt");
+
+  private void testOneSearch(String query, int expectedHitCount) throws Exception {
     PrintStream outSave = System.out;
     try {
       ByteArrayOutputStream bytes = new ByteArrayOutputStream();
       PrintStream fakeSystemOut = new PrintStream(bytes);
       System.setOut(fakeSystemOut);
-      SearchFiles.main(new String[] { "-index", indexDir.getPath(), "-queries", queries.getPath()});
+      SearchFiles.main(new String[] {"-query", query});
       fakeSystemOut.flush();
       String output = bytes.toString(); // intentionally use default encoding
-      assertTrue(output.contains("1 total matching documents"));
+      assertTrue("output=" + output, output.contains(expectedHitCount + " total matching documents"));
     } finally {
       System.setOut(outSave);
     }
   }
-  
-  // LUCENE-591
-  public void testIndexKeywords() throws Exception {
-    File dir = getDataFile("test-files/html");
-    File indexDir = new File(TEMP_DIR, "demoIndex2");
-    IndexHTML.main(new String[] { "-create", "-index", indexDir.getPath(), dir.getPath() });
-    File queries = getDataFile("test-files/queries2.txt");
-    PrintStream outSave = System.out;
-    try {
-      ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-      PrintStream fakeSystemOut = new PrintStream(bytes);
-      System.setOut(fakeSystemOut);
-      SearchFiles.main(new String[] { "-index", indexDir.getPath(), "-queries", queries.getPath()});
-      fakeSystemOut.flush();
-      String output = bytes.toString(); // intentionally use default encoding
-      assertTrue(output.contains("1 total matching documents"));
-    } finally {
-      System.setOut(outSave);
-    }
+
+  public void testIndexSearch() throws Exception {
+    File dir = getDataFile("test-files/docs");
+    IndexFiles.main(new String[] { "-create", "-docs", dir.getPath() });
+    testOneSearch("apache", 3);
+    testOneSearch("patent", 8);
+    testOneSearch("lucene", 0);
+    testOneSearch("gnu", 6);
+    testOneSearch("derivative", 8);
+    testOneSearch("license", 13);
   }
 }

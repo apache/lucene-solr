@@ -41,7 +41,7 @@ public final class SuggestWordQueue extends PriorityQueue<SuggestWord> {
    * @param size The size of the queue
    */
   public SuggestWordQueue (int size) {
-    initialize(size);
+    super(size);
     comparator = DEFAULT_COMPARATOR;
   }
 
@@ -51,7 +51,7 @@ public final class SuggestWordQueue extends PriorityQueue<SuggestWord> {
    * @param comparator The comparator.
    */
   public SuggestWordQueue(int size, Comparator<SuggestWord> comparator){
-    initialize(size);
+    super(size);
     this.comparator = comparator;
   }
 

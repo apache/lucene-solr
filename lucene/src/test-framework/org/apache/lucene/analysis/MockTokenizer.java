@@ -20,7 +20,7 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
@@ -46,14 +46,14 @@ public class MockTokenizer extends CharTokenizer {
   private int state;
 
   public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    super(Version.LUCENE_CURRENT, factory, input);
+    super(LuceneTestCase.TEST_VERSION_CURRENT, factory, input);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
   }
 
   public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    super(Version.LUCENE_CURRENT, input);
+    super(LuceneTestCase.TEST_VERSION_CURRENT, input);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();

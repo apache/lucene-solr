@@ -21,6 +21,8 @@ package org.apache.lucene.collation;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -36,11 +38,15 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import java.io.StringReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class CollationTestBase extends LuceneTestCase {
 
@@ -56,7 +62,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
    * @param keyBits the result from 
    *  collator.getCollationKey(original).toByteArray()
    * @return The encoded collation key for the original String
+   * @deprecated only for testing deprecated filters
    */
+  @Deprecated
   protected String encodeCollationKey(byte[] keyBits) {
     // Ensure that the backing char[] array is large enough to hold the encoded
     // Binary String
@@ -65,10 +73,10 @@ public abstract class CollationTestBase extends LuceneTestCase {
     IndexableBinaryStringTools.encode(keyBits, 0, keyBits.length, encodedBegArray, 0, encodedLength);
     return new String(encodedBegArray);
   }
-    
-  public void testFarsiRangeFilterCollating(Analyzer analyzer, String firstBeg, 
-                                            String firstEnd, String secondBeg,
-                                            String secondEnd) throws Exception {
+  
+  public void testFarsiRangeFilterCollating(Analyzer analyzer, BytesRef firstBeg, 
+                                            BytesRef firstEnd, BytesRef secondBeg,
+                                            BytesRef secondEnd) throws Exception {
     RAMDirectory ramDir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
@@ -98,9 +106,9 @@ public abstract class CollationTestBase extends LuceneTestCase {
     searcher.close();
   }
  
-  public void testFarsiRangeQueryCollating(Analyzer analyzer, String firstBeg, 
-                                            String firstEnd, String secondBeg,
-                                            String secondEnd) throws Exception {
+  public void testFarsiRangeQueryCollating(Analyzer analyzer, BytesRef firstBeg, 
+                                            BytesRef firstEnd, BytesRef secondBeg,
+                                            BytesRef secondEnd) throws Exception {
     RAMDirectory ramDir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
@@ -126,8 +134,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     searcher.close();
   }
 
-  public void testFarsiTermRangeQuery(Analyzer analyzer, String firstBeg,
-      String firstEnd, String secondBeg, String secondEnd) throws Exception {
+  public void testFarsiTermRangeQuery(Analyzer analyzer, BytesRef firstBeg,
+      BytesRef firstEnd, BytesRef secondBeg, BytesRef secondEnd) throws Exception {
 
     RAMDirectory farsiIndex = new RAMDirectory();
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
@@ -248,5 +256,78 @@ public abstract class CollationTestBase extends LuceneTestCase {
       }
     }
     assertEquals(expectedResult, buff.toString());
+  }
+  
+  private String randomString() {
+    // ideally we could do this!
+    // return _TestUtil.randomUnicodeString(random);
+    //
+    // http://bugs.icu-project.org/trac/ticket/8060
+    // http://bugs.icu-project.org/trac/ticket/7732
+    // ...
+    // 
+    // as a workaround, just test the BMP for now (and avoid 0xFFFF etc)
+    int length = _TestUtil.nextInt(random, 0, 10);
+    char chars[] = new char[length];
+    for (int i = 0; i < length; i++) {
+      if (random.nextBoolean()) {
+        chars[i] = (char) _TestUtil.nextInt(random, 0, 0xD7FF);
+      } else {
+        chars[i] = (char) _TestUtil.nextInt(random, 0xE000, 0xFFFD);
+      }
+    }
+    return new String(chars, 0, length);
+  }
+
+  public void assertThreadSafe(final Analyzer analyzer) throws Exception {
+    int numTestPoints = 100;
+    int numThreads = _TestUtil.nextInt(random, 3, 5);
+    final HashMap<String,BytesRef> map = new HashMap<String,BytesRef>();
+    BytesRef spare = new BytesRef();
+    
+    // create a map<String,SortKey> up front.
+    // then with multiple threads, generate sort keys for all the keys in the map
+    // and ensure they are the same as the ones we produced in serial fashion.
+
+    for (int i = 0; i < numTestPoints; i++) {
+      String term = randomString();
+      TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
+      TermToBytesRefAttribute bytes = ts.addAttribute(TermToBytesRefAttribute.class);
+      ts.reset();
+      assertTrue(ts.incrementToken());
+      bytes.toBytesRef(spare);
+      // ensure we make a copy of the actual bytes too
+      map.put(term, new BytesRef(spare));
+    }
+    
+    Thread threads[] = new Thread[numThreads];
+    for (int i = 0; i < numThreads; i++) {
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          try {
+            BytesRef spare = new BytesRef();
+            for (Map.Entry<String,BytesRef> mapping : map.entrySet()) {
+              String term = mapping.getKey();
+              BytesRef expected = mapping.getValue();
+              TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
+              TermToBytesRefAttribute bytes = ts.addAttribute(TermToBytesRefAttribute.class);
+              ts.reset();
+              assertTrue(ts.incrementToken());
+              bytes.toBytesRef(spare);
+              assertEquals(expected, spare);
+            }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+    }
+    for (int i = 0; i < numThreads; i++) {
+      threads[i].start();
+    }
+    for (int i = 0; i < numThreads; i++) {
+      threads[i].join();
+    }
   }
 }

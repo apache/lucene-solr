@@ -24,6 +24,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
@@ -91,11 +92,30 @@ public class RandomIndexWriter implements Closeable {
     }
   } 
 
+  /**
+   * Adds a Document.
+   * @see IndexWriter#addDocument(Document)
+   */
   public void addDocument(Document doc) throws IOException {
     w.addDocument(doc);
     if (docCount++ == flushAt) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.addDocument: now doing a commit");
+      }
+      w.commit();
+      flushAt += _TestUtil.nextInt(r, 10, 1000);
+    }
+  }
+  
+  /**
+   * Updates a document.
+   * @see IndexWriter#updateDocument(Term, Document)
+   */
+  public void updateDocument(Term t, Document doc) throws IOException {
+    w.updateDocument(t, doc);
+    if (docCount++ == flushAt) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("RIW.updateDocument: now doing a commit");
       }
       w.commit();
       flushAt += _TestUtil.nextInt(r, 10, 1000);
@@ -127,17 +147,21 @@ public class RandomIndexWriter implements Closeable {
   }
 
   public IndexReader getReader() throws IOException {
+    return getReader(true);
+  }
+
+  public IndexReader getReader(boolean applyDeletions) throws IOException {
     getReaderCalled = true;
     if (r.nextInt(4) == 2)
       w.optimize();
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
-    if (!w.codecs.getDefaultFieldCodec().equals("PreFlex") && r.nextBoolean()) {
+    if (!applyDeletions || !w.codecs.getDefaultFieldCodec().equals("PreFlex") && r.nextBoolean()) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
-      return w.getReader();
+      return w.getReader(applyDeletions);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: open new reader");
@@ -147,6 +171,10 @@ public class RandomIndexWriter implements Closeable {
     }
   }
 
+  /**
+   * Close this writer.
+   * @see IndexWriter#close()
+   */
   public void close() throws IOException {
     // if someone isn't using getReader() API, we want to be sure to
     // maybeOptimize since presumably they might open a reader on the dir.
@@ -156,6 +184,13 @@ public class RandomIndexWriter implements Closeable {
     w.close();
   }
 
+  /**
+   * Forces an optimize.
+   * <p>
+   * NOTE: this should be avoided in tests unless absolutely necessary,
+   * as it will result in less test coverage.
+   * @see IndexWriter#optimize()
+   */
   public void optimize() throws IOException {
     w.optimize();
   }

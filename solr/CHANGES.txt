@@ -28,9 +28,10 @@ Apache Lucene trunk
 Apache Tika 0.8-SNAPSHOT
 Carrot2 3.4.2
 Velocity 1.6.4 and Velocity Tools 2.0
+Apache UIMA 2.3.1-SNAPSHOT
 
 
-Upgrading from Solr 3.1-dev
+Upgrading from Solr 3.2-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -52,14 +53,6 @@ Upgrading from Solr 3.1-dev
   If q.op is effectively "OR" then mm=0%.  Users who wish to force the
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
-
-* In previous releases, sorting on fields that are "multiValued" 
-  (either by explicit declaration in schema.xml or by implict behavior
-  because the "version" attribute on the schema was less then 1.2) did 
-  not generally work, but it would sometimes silently act as if it
-  succeeded and order the docs arbitrarily.  Solr will now fail on any
-  attempt to sort on a multivalued field
-
 
 
 Detailed Change List
@@ -161,26 +154,11 @@ Bug Fixes
 * SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
   (Erick Erickson via hossman)
 
-* SOLR-2307: fix bug in PHPSerializedResponseWriter (wt=phps) when
-  dealing with SolrDocumentList objects -- ie: sharded queries.
-  (Antonio Verni via hossman)
-  
-* SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
-  (Ephraim Ofir, Mark Miller)
-
-* SOLR-482: Provide more exception handling in CSVLoader (gsingers)
-
-* SOLR-2320: Fixed ReplicationHandler detail reporting for masters
-  (hossman)
-
-* SOLR-2085: Improve SolrJ behavior when FacetComponent comes before
-  QueryComponent (Tomas Salfischberger via hossman)
-
-* SOLR-1940: Fix SolrDispatchFilter behavior when Content-Type is
-  unknown (Lance Norskog and hossman)
-
-* SOLR-2339: Fix sorting to explicitly generate an error if you
-  attempt to sort on a multiValued field. (hossman)
+* SOLR-309: Fix FieldType so setting an analyzer on a FieldType that
+  doesn't expect it will generate an error.  Practically speaking this
+  means that Solr will now correctly generate an error on
+  initialization if the schema.xml contains an analyzer configuration
+  for a fieldType that does not use TextField.  (hossman) 
 
 Other Changes
 ----------------------
@@ -203,15 +181,29 @@ Other Changes
   using Generics where applicable in method/object declatations, and
   adding @SuppressWarnings("unchecked") when appropriate (hossman)
 
-* SOLR-2350: Since Solr no longer requires XML files to be in UTF-8
-  (see SOLR-96) SimplePostTool (aka: post.jar) has been improved to
-  work with files of any mime-type or charset. (hossman)
+* SOLR-2375: Suggester Lookup implementations now store trie data
+  and load it back on init. This means that large tries don't have to be
+  rebuilt on every commit or core reload. (ab)
+
+* SOLR-2413: Support for returning multi-valued fields w/o <arr> tag 
+  in the XMLResponseWriter was removed.  XMLResponseWriter only 
+  no longer work with values less then 2.2 (ryan)
+
 
 Documentation
 ----------------------
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
+
+==================  3.2.0-dev ==================
+Versions of Major Components
+---------------------
+Apache Lucene trunk
+Apache Tika 0.8-SNAPSHOT
+Carrot2 3.4.2
+
+(No Changes)
 
 ==================  3.1.0-dev ==================
 Versions of Major Components
@@ -264,6 +256,19 @@ Upgrading from Solr 1.4
 
 * readercycle script was removed. (SOLR-2046)
 
+* In previous releases, sorting or evaluating function queries on 
+  fields that were "multiValued" (either by explicit declaration in
+  schema.xml or by implict behavior because the "version" attribute on
+  the schema was less then 1.2) did not generally work, but it would
+  sometimes silently act as if it succeeded and order the docs
+  arbitrarily.  Solr will now fail on any attempt to sort, or apply a
+  function to, multi-valued fields 
+
+* The DataImportHandler jars are no longer included in the solr
+  WAR and should be added in Solr's lib directory, or referenced
+  via the <lib> directive in solrconfig.xml.
+
+
 Detailed Change List
 ----------------------
 
@@ -279,7 +284,7 @@ New Features
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,
   fielded queries, improved proximity boosting, and improved stopword
-  handling. (yonik)
+  handling. Note: status is experimental for now. (yonik)
 
 * SOLR-1574: Add many new functions from java Math (e.g. sin, cos) (yonik)
 
@@ -393,7 +398,7 @@ New Features
 * SOLR-1240: "Range Faceting" has been added.  This is a generalization
   of the existing "Date Faceting" logic so that it now supports any
   all stock numeric field types that support range queries in addition
-  to dates.  
+  to dates. facet.date is now deprecated in favor of this generalized mechanism.
   (Gijs Kunze, hossman)
 
 * SOLR-2021: Add SolrEncoder plugin to Highlighter. (koji)
@@ -669,6 +674,27 @@ Bug Fixes
 * SOLR-2261: fix velocity template layout.vm that referred to an older
   version of jquery.  (Eric Pugh via rmuir)
 
+* SOLR-2307: fix bug in PHPSerializedResponseWriter (wt=phps) when
+  dealing with SolrDocumentList objects -- ie: sharded queries.
+  (Antonio Verni via hossman)
+
+* SOLR-2127: Fixed serialization of default core and indentation of solr.xml when serializing.
+  (Ephraim Ofir, Mark Miller)
+
+* SOLR-2320: Fixed ReplicationHandler detail reporting for masters
+  (hossman)
+
+* SOLR-482: Provide more exception handling in CSVLoader (gsingers)
+
+* SOLR-1283: HTMLStripCharFilter sometimes threw a "Mark Invalid" exception. 
+  (Julien Coloos, hossman, yonik)
+
+* SOLR-2085: Improve SolrJ behavior when FacetComponent comes before
+  QueryComponent (Tomas Salfischberger via hossman)
+
+* SOLR-1940: Fix SolrDispatchFilter behavior when Content-Type is
+  unknown (Lance Norskog and hossman)
+
 * SOLR-1983: snappuller fails when modifiedConfFiles is not empty and
   full copy of index is needed. (Alexander Kanarsky via yonik)
 
@@ -677,7 +703,36 @@ Bug Fixes
 
 * SOLR-96: Fix XML parsing in XMLUpdateRequestHandler and
   DocumentAnalysisRequestHandler to respect charset from XML file and only
-  use HTTP header's "Content-Type" as a "hint". (Uwe Schindler)
+  use HTTP header's "Content-Type" as a "hint". (uschindler)
+
+* SOLR-2339: Fix sorting to explicitly generate an error if you
+  attempt to sort on a multiValued field. (hossman)
+
+* SOLR-2348: Fix field types to explicitly generate an error if you
+  attempt to get a ValueSource for a multiValued field. (hossman)
+
+* SOLR-1191: resolve DataImportHandler deltaQuery column against pk when pk
+  has a prefix (e.g. pk="book.id" deltaQuery="select id from ..."). More
+  useful error reporting when no match found (previously failed with a
+  NullPointerException in log and no clear user feedback). (gthb via yonik)
+
+* SOLR-2380: Distributed faceting could miss values when facet.sort=index
+  and when facet.offset was greater than 0. (yonik)
+  
+* SOLR-1656: XIncludes and other HREFs in XML files loaded by ResourceLoader
+  are fixed to be resolved using the URI standard (RFC 2396). The system 
+  identifier is no longer a plain filename with path, it gets initialized 
+  using a custom URI scheme "solrres:". This scheme is resolved using a 
+  EntityResolver that utilizes ResourceLoader 
+  (org.apache.solr.common.util.SystemIdResolver). This makes all relative 
+  pathes in Solr's config files behave like expected. This change 
+  introduces some backwards breaks in the API: Some config classes 
+  (Config, SolrConfig, IndexSchema) were changed to take 
+  org.xml.sax.InputSource instead of InputStream. There may also be some 
+  backwards breaks in existing config files, it is recommended to check 
+  your config files / XSLTs and replace all XIncludes/HREFs that were 
+  hacked to use absolute paths to use relative ones. (uschindler)
+
 
 Other Changes
 ----------------------
@@ -777,6 +832,31 @@ Other Changes
 * SOLR-2340: Add version infos to message in JavaBinCodec when throwing
   exception. (koji)
 
+* SOLR-2350: Since Solr no longer requires XML files to be in UTF-8
+  (see SOLR-96) SimplePostTool (aka: post.jar) has been improved to
+  work with files of any mime-type or charset. (hossman)
+
+* SOLR-2365: Move DIH jars out of solr.war (David Smiley via yonik)
+
+* SOLR-2381: Include a patched version of Jetty (6.1.26 + JETTY-1340) 
+  to fix problematic UTF-8 handling for supplementary characters.
+  (Bernd Fehling, uschindler, yonik, rmuir)
+
+* SOLR-2391: The preferred Content-Type for XML was changed to
+  application/xml. XMLResponseWriter now only delivers using this
+  type; updating documents and analyzing documents is still supported
+  using text/xml as Content-Type, too. If you have clients that are
+  hardcoded on text/xml as Content-Type, you have to change them.
+  (uschindler, rmuir)
+
+* SOLR-2414: All ResponseWriters now use only ServletOutputStreams
+  and wrap their own Writer around it when serializing. This fixes
+  the bug in PHPSerializedResponseWriter that produced wrong string
+  length if the servlet container had a broken UTF-8 encoding that was
+  in fact CESU-8 (see SOLR-1091). The system property to enable the
+  CESU-8 byte counting in PHPSerializesResponseWriters for broken
+  servlet containers was therefore removed and is now ignored if set.
+  Output is always UTF-8.  (uschindler, yonik, rmuir)
 
 Build
 ----------------------
@@ -792,7 +872,6 @@ Build
 
 * LUCENE-2657: Switch from using Maven POM templates to full POMs when
   generating Maven artifacts (Steven Rowe)
-
 
 Documentation
 ----------------------
@@ -911,8 +990,7 @@ New Features
  7. SOLR-680: Add StatsComponent. This gets simple statistics on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
-    7.1 SOLR-1380: Added support for multi-valued fields to stats component
-        (Harish Agarwal via gsingers)
+    7.1 SOLR-1380: Added support for multi-valued fields (Harish Agarwal via gsingers)
 
  8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
     as well as configuration replication and exposes detailed statistics and progress information

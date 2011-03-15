@@ -17,12 +17,8 @@ package org.apache.lucene.util.automaton.fst;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
+import java.io.*;
+import java.util.*;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -160,90 +156,171 @@ public final class Util {
       return output;
     }
   }
+  
+  /**
+   * Dumps an {@link FST} to a GraphViz's <code>dot</code> language description
+   * for visualization. Example of use:
+   * 
+   * <pre>
+   * PrintStream ps = new PrintStream(&quot;out.dot&quot;);
+   * fst.toDot(ps);
+   * ps.close();
+   * </pre>
+   * 
+   * and then, from command line:
+   * 
+   * <pre>
+   * dot -Tpng -o out.png out.dot
+   * </pre>
+   * 
+   * <p>
+   * Note: larger FSTs (a few thousand nodes) won't even render, don't bother.
+   * 
+   * @param sameRank
+   *          If <code>true</code>, the resulting <code>dot</code> file will try
+   *          to order states in layers of breadth-first traversal. This may
+   *          mess up arcs, but makes the output FST's structure a bit clearer.
+   * 
+   * @param labelStates
+   *          If <code>true</code> states will have labels equal to their offsets in their
+   *          binary format. Expands the graph considerably. 
+   * 
+   * @see "http://www.graphviz.org/"
+   */
+  public static <T> void toDot(FST<T> fst, Writer out, boolean sameRank, boolean labelStates) 
+    throws IOException {    
+    final String expandedNodeColor = "blue";
 
-
-  // NOTE: this consumes alot of RAM!
-  // arcs w/ NEXT opto are in blue
-  /*
-    eg:
-      PrintStream ps = new PrintStream("out.dot");
-      fst.toDot(ps);
-      ps.close();
-      System.out.println("SAVED out.dot");
-      
-    then dot -Tpng out.dot > /x/tmp/out.png
-  */
-
-  public static<T> void toDot(FST<T> fst, PrintStream out) throws IOException {
-    
+    // This is the start arc in the automaton (from the epsilon state to the first state 
+    // with outgoing transitions.
     final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());
 
-    final List<FST.Arc<T>> queue = new ArrayList<FST.Arc<T>>();
-    queue.add(startArc);
+    // A queue of transitions to consider for the next level.
+    final List<FST.Arc<T>> thisLevelQueue = new ArrayList<FST.Arc<T>>();
 
-    final Set<Integer> seen = new HashSet<Integer>();
-    seen.add(startArc.target);
+    // A queue of transitions to consider when processing the next level.
+    final List<FST.Arc<T>> nextLevelQueue = new ArrayList<FST.Arc<T>>();
+    nextLevelQueue.add(startArc);
     
-    out.println("digraph FST {");
-    out.println("  rankdir = LR;");
-    //out.println("  " + startNode + " [shape=circle label=" + startNode + "];");
-    out.println("  " + startArc.target + " [label=\"\" shape=circle];");
-    out.println("  initial [shape=point color=white label=\"\"];");
-    out.println("  initial -> " + startArc.target);
+    // A list of states on the same level (for ranking).
+    final List<Integer> sameLevelStates = new ArrayList<Integer>();
+
+    // A bitset of already seen states (target offset).
+    final BitSet seen = new BitSet();
+    seen.set(startArc.target);
+
+    // Shape for states.
+    final String stateShape = "circle";
+
+    // Emit DOT prologue.
+    out.write("digraph FST {\n");
+    out.write("  rankdir = LR; splines=true; concentrate=true; ordering=out; ranksep=2.5; \n");
+
+    if (!labelStates) {
+      out.write("  node [shape=circle, width=.2, height=.2, style=filled]\n");      
+    }
+
+    emitDotState(out, "initial", "point", "white", "");
+    emitDotState(out, Integer.toString(startArc.target), stateShape, 
+        fst.isExpandedTarget(startArc) ? expandedNodeColor : null, 
+        "");
+    out.write("  initial -> " + startArc.target + "\n");
 
     final T NO_OUTPUT = fst.outputs.getNoOutput();
+    int level = 0;
 
-    while(queue.size() != 0) {
-      FST.Arc<T> arc = queue.get(queue.size()-1);
-      queue.remove(queue.size()-1);
-      //System.out.println("dot cycle target=" + arc.target);
+    while (!nextLevelQueue.isEmpty()) {
+      // we could double buffer here, but it doesn't matter probably.
+      thisLevelQueue.addAll(nextLevelQueue);
+      nextLevelQueue.clear();
 
-      if (fst.targetHasArcs(arc)) {
-
-        // scan all arcs
-        final int node = arc.target;
-        fst.readFirstTargetArc(arc, arc);
-        while(true) {
-
-          //System.out.println("  cycle label=" + arc.label + " (" + (char) arc.label + ") target=" + arc.target);
-          if (!seen.contains(arc.target)) {
-            final String shape;
-            if (arc.target == -1) {
-              shape = "doublecircle";
-            } else {
-              shape = "circle";
-            }
-            out.println("  " + arc.target + " [shape=" + shape + "];");
-            seen.add(arc.target);
-            queue.add(new FST.Arc<T>().copyFrom(arc));
-            //System.out.println("    new!");
-          }
-          String outs;
-          if (arc.output != NO_OUTPUT) {
-            outs = "/" + fst.outputs.outputToString(arc.output);
-          } else {
-            outs = "";
-          }
-          final char cl;
-          if (arc.label == FST.END_LABEL) {
-            cl = '~';
-          } else {
-            cl = (char) arc.label;
-          }
-          out.println("  " + node + " -> " + arc.target + " [label=\"" + cl + outs + "\"]");
-          //if (arc.flag(FST.BIT_TARGET_NEXT)) {
-          //out.print(" color=blue");
-          //}
-          //out.println("];");
+      level++;
+      out.write("\n  // Transitions and states at level: " + level + "\n");
+      while (!thisLevelQueue.isEmpty()) {
+        final FST.Arc<T> arc = thisLevelQueue.remove(thisLevelQueue.size() - 1);
         
-          if (arc.isLast()) {
-            break;
-          } else {
+        if (fst.targetHasArcs(arc)) {
+          // scan all arcs
+          final int node = arc.target;
+          fst.readFirstTargetArc(arc, arc);
+          
+          while (true) {
+            // Emit the unseen state and add it to the queue for the next level.
+            if (arc.target >= 0 && !seen.get(arc.target)) {
+              final boolean isExpanded = fst.isExpandedTarget(arc);
+              emitDotState(out, Integer.toString(arc.target), stateShape, 
+                  isExpanded ?  expandedNodeColor : null, 
+                  labelStates ? Integer.toString(arc.target) : ""); 
+              seen.set(arc.target);
+              nextLevelQueue.add(new FST.Arc<T>().copyFrom(arc));
+              sameLevelStates.add(arc.target);
+            }
+
+            String outs;
+            if (arc.output != NO_OUTPUT) {
+              outs = "/" + fst.outputs.outputToString(arc.output);
+            } else {
+              outs = "";
+            }
+
+            final String cl;
+            if (arc.label == FST.END_LABEL) {
+              cl = "~";
+            } else {
+              cl = printableLabel(arc.label);
+            }
+
+            out.write("  " + node + " -> " + arc.target + " [label=\"" + cl + outs + "\"]\n");
+            
+            // Break the loop if we're on the last arc of this state.
+            if (arc.isLast()) {
+              break;
+            }
             fst.readNextArc(arc);
           }
         }
       }
+
+      // Emit state ranking information.
+      if (sameRank && sameLevelStates.size() > 1) {
+        out.write("  {rank=same; ");
+        for (int state : sameLevelStates) {
+          out.write(state + "; ");
+        }
+        out.write(" }\n");
+      }
+      sameLevelStates.clear();                
     }
-    out.println("}");
+
+    // Emit terminating state (always there anyway).
+    out.write("  -1 [style=filled, color=black, shape=circle, label=\"\"]\n\n");
+    out.write("  {rank=sink; -1 }\n");
+    
+    out.write("}\n");
+    out.flush();
+  }
+
+  /**
+   * Emit a single state in the <code>dot</code> language. 
+   */
+  private static void emitDotState(Writer out, String name, String shape,
+      String color, String label) throws IOException {
+    out.write("  " + name 
+        + " [" 
+        + (shape != null ? "shape=" + shape : "") + " "
+        + (color != null ? "color=" + color : "") + " "
+        + (label != null ? "label=\"" + label + "\"" : "label=\"\"") + " "
+        + "]\n");
+  }
+
+  /**
+   * Ensures an arc's label is indeed printable (dot uses US-ASCII). 
+   */
+  private static String printableLabel(int label) {
+    if (label >= 0x20 && label <= 0x7d) {
+      return Character.toString((char) label);
+    } else {
+      return "0x" + Integer.toHexString(label);
+    }
   }
 }

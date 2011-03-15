@@ -12,13 +12,11 @@
     </content>
     <orderEntry type="module" module-name="highlighter" />
     <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="remote" />
     <orderEntry type="module" module-name="lucene" />
     <orderEntry type="module" module-name="icu" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="memory" />
-    <orderEntry type="module" module-name="demo" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

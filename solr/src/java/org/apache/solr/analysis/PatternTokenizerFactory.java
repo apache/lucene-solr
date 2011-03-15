@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 
 
 /**
+ * Factory for {@link PatternTokenizer}.
  * This tokenizer uses regex pattern matching to construct distinct tokens
  * for the input stream.  It takes two arguments:  "pattern" and "group".
  * <p/>
@@ -52,6 +53,13 @@ import org.apache.solr.common.SolrException;
  * </p>
  * <p>NOTE: This Tokenizer does not output tokens that are of zero length.</p>
  *
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_ptn" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.PatternTokenizerFactory" pattern="\'([^\']+)\'" group="1"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
+ * 
  * @see PatternTokenizer
  * @since solr1.2
  * @version $Id$

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import static org.apache.solr.handler.dataimport.EntityProcessorBase.*;
 import static org.apache.solr.handler.dataimport.EntityProcessorBase.SKIP;
@@ -240,7 +241,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
           wrapAndThrow(SEVERE, e);
         } else {
           //SKIP is not really possible. If this calls the nextRow() again the Entityprocessor would be in an inconisttent state           
-          log.error("Exception in entity : "+ entityName, e);          
+          SolrException.log(log, "Exception in entity : "+ entityName, e);
           return null;
         }
       }

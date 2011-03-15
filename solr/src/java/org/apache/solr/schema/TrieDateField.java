@@ -79,16 +79,23 @@ public class TrieDateField extends DateField {
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     field.checkSortability();
-    return new SortField(new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ), top);
-  }
 
-  @Override
-  public ValueSource getValueSource(SchemaField field) {
-    return new TrieDateFieldSource( new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ));
+    int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS;
+    boolean sortMissingLast  = field.sortMissingLast();
+    boolean sortMissingFirst = field.sortMissingFirst();
+
+    Object missingValue = null;
+    if( sortMissingLast ) {
+      missingValue = top ? Long.MIN_VALUE : Long.MAX_VALUE;
+    } else if( sortMissingFirst ) {
+      missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
+    }
+    return new SortField(new LongValuesCreator(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, flags), top).setMissingValue(missingValue);
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+    field.checkFieldCacheSource(parser);
     return new TrieDateFieldSource( new LongValuesCreator( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, CachedArrayCreator.CACHE_VALUES_AND_BITS ));
   }
 

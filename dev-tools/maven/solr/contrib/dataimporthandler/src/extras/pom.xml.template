@@ -94,8 +94,8 @@
       <artifactId>slf4j-api</artifactId>
     </dependency> 
     <dependency>
-      <groupId>xerces</groupId>
-      <artifactId>xercesImpl</artifactId>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-xercesImpl</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

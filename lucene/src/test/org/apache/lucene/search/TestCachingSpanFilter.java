@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestCachingSpanFilter extends LuceneTestCase {
 
@@ -73,7 +74,9 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
 
-    // now delete the doc, refresh the reader, and see that it's not there
+    // now delete the doc, refresh the reader, and see that
+    // it's not there
+    _TestUtil.keepFullyDeletedSegments(writer.w);
     writer.deleteDocuments(new Term("id", "1"));
 
     reader = refreshReader(reader);

@@ -19,6 +19,7 @@ package org.apache.solr.response;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
@@ -44,8 +45,8 @@ public final class XMLWriter extends TextResponseWriter {
 
   private static final char[] XML_START1="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n".toCharArray();
 
-  private static final char[] XML_STYLESHEET="<?xml-stylesheet type=\"text/xsl\" href=\"/admin/".toCharArray();
-  private static final char[] XML_STYLESHEET_END=".xsl\"?>\n".toCharArray();
+  private static final char[] XML_STYLESHEET="<?xml-stylesheet type=\"text/xsl\" href=\"".toCharArray();
+  private static final char[] XML_STYLESHEET_END="\"?>\n".toCharArray();
 
   /***
   private static final char[] XML_START2_SCHEMA=(
@@ -76,9 +77,13 @@ public final class XMLWriter extends TextResponseWriter {
   public XMLWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
 
-    String version = req.getParams().get("version");
+    String version = req.getParams().get(CommonParams.VERSION);
     float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);
     this.version = (int)(ver*1000);
+    if( this.version < 2200 ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "XMLWriter does not support version: "+version );
+    }
   }
 
 
@@ -89,7 +94,7 @@ public final class XMLWriter extends TextResponseWriter {
     String stylesheet = req.getParams().get("stylesheet");
     if (stylesheet != null && stylesheet.length() > 0) {
       writer.write(XML_STYLESHEET);
-      writer.write(stylesheet);
+      XML.escapeAttributeValue(stylesheet, writer);
       writer.write(XML_STYLESHEET_END);
     }
 
@@ -109,28 +114,6 @@ public final class XMLWriter extends TextResponseWriter {
     if(omitHeader != null && omitHeader) lst.remove("responseHeader");
     int sz = lst.size();
     int start=0;
-
-    // special case the response header if the version is 2.1 or less
-    if (version<=2100 && sz>0) {
-      Object header = lst.getVal(0);
-      if (header instanceof NamedList && "responseHeader".equals(lst.getName(0))) {
-        writer.write("<responseHeader>");
-        incLevel();
-        NamedList nl = (NamedList)header;
-        for (int i=0; i<nl.size(); i++) {
-          String name = nl.getName(i);
-          Object val = nl.getVal(i);
-          if ("status".equals(name) || "QTime".equals(name)) {
-            writePrim(name,null,val.toString(),false);
-          } else {
-            writeVal(name,val);
-          }
-        }
-        decLevel();
-        writer.write("</responseHeader>");
-        start=1;
-      }
-    }
 
     for (int i=start; i<sz; i++) {
       writeVal(lst.getName(i),lst.getVal(i));
@@ -248,7 +231,7 @@ public final class XMLWriter extends TextResponseWriter {
       }
       if (fidx1+1 == fidx2) {
         // single field value
-        if (version>=2100 && sf.multiValued()) {
+        if (sf.multiValued()) {
           startTag("arr",fname,false);
           doIndent=false;
           sf.write(this, null, f1);
@@ -301,7 +284,7 @@ public final class XMLWriter extends TextResponseWriter {
       } else {
         // single valued... figure out if we should put <arr> tags around it anyway
         SchemaField sf = schema.getFieldOrNull(fname);
-        if (version>=2100 && sf!=null && sf.multiValued()) {
+        if (sf!=null && sf.multiValued()) {
           startTag("arr",fname,false);
           doIndent=false;
           writeVal(fname, val);
@@ -435,61 +418,6 @@ public final class XMLWriter extends TextResponseWriter {
     }, fields );
   }
 
-
-  @Override
-  public void writeVal(String name, Object val) throws IOException {
-
-    // if there get to be enough types, perhaps hashing on the type
-    // to get a handler might be faster (but types must be exact to do that...)
-
-    // go in order of most common to least common
-    if (val==null) {
-      writeNull(name);
-    } else if (val instanceof String) {
-      writeStr(name, (String)val, true);
-    } else if (val instanceof Integer) {
-      // it would be slower to pass the int ((Integer)val).intValue()
-      writeInt(name, val.toString());
-    } else if (val instanceof Boolean) {
-      // could be optimized... only two vals
-      writeBool(name, val.toString());
-    } else if (val instanceof Long) {
-      writeLong(name, val.toString());
-    } else if (val instanceof Date) {
-      writeDate(name,(Date)val);
-    } else if (val instanceof Float) {
-      // we pass the float instead of using toString() because
-      // it may need special formatting. same for double.
-      writeFloat(name, ((Float)val).floatValue());
-    } else if (val instanceof Double) {
-      writeDouble(name, ((Double)val).doubleValue());
-    } else if (val instanceof Document) {
-      writeDoc(name, (Document)val, returnFields, 0.0f, false);
-    } else if (val instanceof DocList) {
-      // requires access to IndexReader
-      writeDocList(name, (DocList)val, returnFields, null);
-    }else if (val instanceof SolrDocumentList) {
-        // requires access to IndexReader
-      writeSolrDocumentList(name, (SolrDocumentList)val, returnFields, null);
-    }else if (val instanceof DocSet) {
-      // how do we know what fields to read?
-      // todo: have a DocList/DocSet wrapper that
-      // restricts the fields to write...?
-    } else if (val instanceof Map) {
-      writeMap(name, (Map)val, false, true);
-    } else if (val instanceof NamedList) {
-      writeNamedList(name, (NamedList)val);
-    } else if (val instanceof Iterable) {
-      writeArray(name,((Iterable)val).iterator());
-    } else if (val instanceof Object[]) {
-      writeArray(name,(Object[])val);
-    } else if (val instanceof Iterator) {
-      writeArray(name,(Iterator)val);
-    } else {
-      // default...
-      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
-    }
-  }
 
   //
   // Generic compound types

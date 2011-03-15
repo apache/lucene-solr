@@ -84,6 +84,15 @@ public class TextField extends FieldType {
     return ByteUtils.UTF8toUTF16(term);
   }
 
+  @Override
+  public void setAnalyzer(Analyzer analyzer) {
+    this.analyzer = analyzer;
+  }
+
+  @Override
+  public void setQueryAnalyzer(Analyzer analyzer) {
+    this.queryAnalyzer = analyzer;
+  }
 
   static Query parseFieldQuery(QParser parser, Analyzer analyzer, String field, String queryText) {
     int phraseSlop = 0;

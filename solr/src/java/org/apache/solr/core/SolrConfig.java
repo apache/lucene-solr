@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -102,7 +103,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name
    *@param is the configuration stream
    */
-  public SolrConfig(String name, InputStream is)
+  public SolrConfig(String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     this( (SolrResourceLoader) null, name, is );
   }
@@ -112,7 +113,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name used by the loader if the stream is null
    *@param is the configuration stream 
    */
-  public SolrConfig(String instanceDir, String name, InputStream is)
+  public SolrConfig(String instanceDir, String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     this(new SolrResourceLoader(instanceDir), name, is);
   }
@@ -124,7 +125,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name
    *@param is the configuration stream
    */
-  SolrConfig(SolrResourceLoader loader, String name, InputStream is)
+  SolrConfig(SolrResourceLoader loader, String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     initLibs();

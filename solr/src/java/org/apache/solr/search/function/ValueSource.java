@@ -90,7 +90,6 @@ public abstract class ValueSource implements Serializable {
 
   /**
    * EXPERIMENTAL: This method is subject to change.
-   * <br>WARNING: Sorted function queries are not currently weighted.
    * <p>
    * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, IndexReader.AtomicReaderContext)}
    * to populate the SortField.

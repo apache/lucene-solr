@@ -21,7 +21,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 
 /**
- * A FilterFactory which reverses the input.
+ * Factory for {@link ReverseStringFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_rvsstr" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.ReverseStringFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  *
  * @version $Id$
  * @since solr 1.4

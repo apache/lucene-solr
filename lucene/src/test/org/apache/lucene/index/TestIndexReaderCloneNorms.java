@@ -211,7 +211,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader4C = (IndexReader) reader3C.clone();
     SegmentReader segmentReader4C = getOnlySegmentReader(reader4C);
     assertEquals(4, reader3CCNorm.bytesRef().get());
-    Similarity sim = new DefaultSimilarity().get("field1");
+    Similarity sim = new DefaultSimilarity();
     reader4C.setNorm(5, "field1", sim.encodeNormValue(0.33f));
     
     // generate a cannot update exception in reader1
@@ -272,7 +272,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       // System.out.println(" and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));
       modifiedNorms.set(k, Float.valueOf(origNorm));
-      Similarity sim = new DefaultSimilarity().get("f" + 1);
+      Similarity sim = new DefaultSimilarity();
       ir.setNorm(i, "f" + 1, sim.encodeNormValue(newNorm));
       ir.setNorm(k, "f" + 1, sim.encodeNormValue(origNorm));
       // System.out.println("setNorm i: "+i);
@@ -294,7 +294,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       assertEquals("number of norms mismatches", numDocNorms, b.length);
       ArrayList<Float> storedNorms = (i == 1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {
-        Similarity sim = new DefaultSimilarity().get(field);
+        Similarity sim = new DefaultSimilarity();
         float norm = sim.decodeNormValue(b[j]);
         float norm1 =  storedNorms.get(j).floatValue();
         assertEquals("stored norm value of " + field + " for doc " + j + " is "
@@ -334,7 +334,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   // return unique norm values that are unchanged by encoding/decoding
   private float nextNorm(String fname) {
     float norm = lastNorm + normDelta;
-    Similarity sim = new DefaultSimilarity().get(fname);
+    Similarity sim = new DefaultSimilarity();
     do {
       float norm1 = sim.decodeNormValue(
     		  sim.encodeNormValue(norm));

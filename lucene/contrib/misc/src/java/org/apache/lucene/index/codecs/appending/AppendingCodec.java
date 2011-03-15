@@ -71,7 +71,7 @@ public class AppendingCodec extends Codec {
     }
     success = false;
     try {
-      FieldsConsumer ret = new AppendingTermsDictWriter(indexWriter, state, docsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new AppendingTermsDictWriter(indexWriter, state, docsWriter);
       success = true;
       return ret;
     } finally {
@@ -111,7 +111,6 @@ public class AppendingCodec extends Codec {
               state.dir, state.fieldInfos, state.segmentInfo.name,
               docsReader,
               state.readBufferSize,
-              BytesRef.getUTF8SortedAsUnicodeComparator(),
               StandardCodec.TERMS_CACHE_SIZE,
               state.codecId);
       success = true;

@@ -28,6 +28,7 @@ import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
@@ -39,6 +40,7 @@ import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.*;
+import org.xml.sax.InputSource;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -101,22 +103,17 @@ public final class IndexSchema {
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(SolrConfig solrConfig, String name, InputStream is) {
+  public IndexSchema(SolrConfig solrConfig, String name, InputSource is) {
     this.solrConfig = solrConfig;
     if (name == null)
       name = DEFAULT_SCHEMA_FILE;
     this.resourceName = name;
     loader = solrConfig.getResourceLoader();
-    InputStream lis = is;
-    if (lis == null)
-      lis = loader.openSchema(name);
-    readSchema(lis);
-    if (lis != is) {
-      try {
-        lis.close();
-      }
-      catch(IOException xio) {} // ignore
+    if (is == null) {
+      is = new InputSource(loader.openSchema(name));
+      is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     }
+    readSchema(is);
     loader.inform( loader );
   }
   
@@ -353,7 +350,7 @@ public final class IndexSchema {
     }
   }
 
-  private void readSchema(InputStream is) {
+  private void readSchema(InputSource is) {
     log.info("Reading Solr Schema");
 
     try {

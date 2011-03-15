@@ -18,8 +18,13 @@ package org.apache.solr.handler.dataimport;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.io.IOUtils;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
@@ -50,6 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class XPathEntityProcessor extends EntityProcessorBase {
   private static final Logger LOG = LoggerFactory.getLogger(XPathEntityProcessor.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(LOG);
 
   private static final Map<String, Object> END_MARKER = new HashMap<String, Object>();
   
@@ -107,12 +113,27 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     if (xslt != null) {
       xslt = context.replaceTokens(xslt);
       try {
-        Source xsltSource = new StreamSource(xslt);
         // create an instance of TransformerFactory
         TransformerFactory transFact = TransformerFactory.newInstance();
-        xslTransformer = transFact.newTransformer(xsltSource);
-        LOG
-                .info("Using xslTransformer: "
+        final SolrCore core = context.getSolrCore();
+        final StreamSource xsltSource;
+        if (core != null) {
+          final ResourceLoader loader = core.getResourceLoader();
+          transFact.setURIResolver(new SystemIdResolver(loader).asURIResolver());
+          xsltSource = new StreamSource(loader.openResource(xslt),
+            SystemIdResolver.createSystemIdFromResourceName(xslt));
+        } else {
+          // fallback for tests
+          xsltSource = new StreamSource(xslt);
+        }
+        transFact.setErrorListener(xmllog);
+        try {
+          xslTransformer = transFact.newTransformer(xsltSource);
+        } finally {
+          // some XML parsers are broken and don't close the byte stream (but they should according to spec)
+          IOUtils.closeQuietly(xsltSource.getInputStream());
+        }
+        LOG.info("Using xslTransformer: "
                         + xslTransformer.getClass().getName());
       } catch (Exception e) {
         throw new DataImportHandlerException(SEVERE,

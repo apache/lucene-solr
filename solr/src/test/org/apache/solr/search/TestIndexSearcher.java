@@ -59,18 +59,18 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   public void testReopen() throws Exception {
 
-    assertU(adoc("id","1", "v_t","Hello Dude", "v_s","string1"));
-    assertU(adoc("id","2", "v_t","Hello Yonik", "v_s","string2"));
+    assertU(adoc("id","1", "v_t","Hello Dude", "v_s1","string1"));
+    assertU(adoc("id","2", "v_t","Hello Yonik", "v_s1","string2"));
     assertU(commit());
 
     SolrQueryRequest sr1 = req("q","foo");
     ReaderContext rCtx1 = sr1.getSearcher().getTopReaderContext();
 
-    String sval1 = getStringVal(sr1, "v_s",0);
+    String sval1 = getStringVal(sr1, "v_s1",0);
     assertEquals("string1", sval1);
 
-    assertU(adoc("id","3", "v_s","{!literal}"));
-    assertU(adoc("id","4", "v_s","other stuff"));
+    assertU(adoc("id","3", "v_s1","{!literal}"));
+    assertU(adoc("id","4", "v_s1","other stuff"));
     assertU(commit());
 
     SolrQueryRequest sr2 = req("q","foo");
@@ -81,7 +81,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertEquals(ReaderUtil.leaves(rCtx1)[0].reader, ReaderUtil.leaves(rCtx2)[0].reader);
 
     assertU(adoc("id","5", "v_f","3.14159"));
-    assertU(adoc("id","6", "v_f","8983", "v_s","string6"));
+    assertU(adoc("id","6", "v_f","8983", "v_s1","string6"));
     assertU(commit());
 
     SolrQueryRequest sr3 = req("q","foo");

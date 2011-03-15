@@ -167,7 +167,7 @@ public class BulkVIntCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
+      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter);
       success = true;
       return ret;
     } finally {
@@ -211,7 +211,6 @@ public class BulkVIntCodec extends Codec {
                                                 state.segmentInfo.name,
                                                 postingsReader,
                                                 state.readBufferSize,
-                                                BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                 StandardCodec.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;

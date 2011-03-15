@@ -261,9 +261,9 @@ such code.
 1.13. You (or Your) means an individual or a legal entity exercising rights
 under, and complying with all of the terms of, this License. For legal
 entities, You includes any entity which controls, is controlled by, or is under
-common control with You. For purposes of this definition, control means (a)�the
+common control with You. For purposes of this definition, control means (a) the
 power, direct or indirect, to cause the direction or management of such entity,
-whether by contract or otherwise, or (b)�ownership of more than fifty percent
+whether by contract or otherwise, or (b) ownership of more than fifty percent
 (50%) of the outstanding shares or beneficial ownership of such entity.
 
 2. License Grants.
@@ -278,12 +278,12 @@ with or without Modifications, and/or as part of a Larger Work; and (b) under
 Patent Claims infringed by the making, using or selling of Original Software,
 to make, have made, use, practice, sell, and offer for sale, and/or otherwise
 dispose of the Original Software (or portions thereof).  (c) The licenses
-granted in Sections�2.1(a) and (b) are effective on the date Initial Developer
+granted in Sections 2.1(a) and (b) are effective on the date Initial Developer
 first distributes or otherwise makes the Original Software available to a third
-party under the terms of this License.  (d) Notwithstanding Section�2.1(b)
-above, no patent license is granted: (1)�for code that You delete from the
-Original Software, or (2)�for infringements caused by: (i)�the modification of
-the Original Software, or (ii)�the combination of the Original Software with
+party under the terms of this License.  (d) Notwithstanding Section 2.1(b)
+above, no patent license is granted: (1) for code that You delete from the
+Original Software, or (2) for infringements caused by: (i) the modification of
+the Original Software, or (ii) the combination of the Original Software with
 other software or devices.
 
 2.2. Contributor Grant.  Conditioned upon Your compliance with Section 3.1
@@ -297,17 +297,17 @@ and/or as part of a Larger Work; and (b) under Patent Claims infringed by the
 making, using, or selling of Modifications made by that Contributor either
 alone and/or in combination with its Contributor Version (or portions of such
 combination), to make, use, sell, offer for sale, have made, and/or otherwise
-dispose of: (1)�Modifications made by that Contributor (or portions thereof);
-and (2)�the combination of Modifications made by that Contributor with its
+dispose of: (1) Modifications made by that Contributor (or portions thereof);
+and (2) the combination of Modifications made by that Contributor with its
 Contributor Version (or portions of such combination).  (c) The licenses
-granted in Sections�2.2(a) and 2.2(b) are effective on the date Contributor
+granted in Sections 2.2(a) and 2.2(b) are effective on the date Contributor
 first distributes or otherwise makes the Modifications available to a third
-party.  (d) Notwithstanding Section�2.2(b) above, no patent license is granted:
-(1)�for any code that Contributor has deleted from the Contributor Version;
-(2)�for infringements caused by: (i)�third party modifications of Contributor
-Version, or (ii)�the combination of Modifications made by that Contributor with
+party.  (d) Notwithstanding Section 2.2(b) above, no patent license is granted:
+(1) for any code that Contributor has deleted from the Contributor Version;
+(2) for infringements caused by: (i) third party modifications of Contributor
+Version, or (ii) the combination of Modifications made by that Contributor with
 other software (except as part of the Contributor Version) or other devices; or
-(3)�under Patent Claims infringed by Covered Software in the absence of
+(3) under Patent Claims infringed by Covered Software in the absence of
 Modifications made by that Contributor.
 
 3. Distribution Obligations.
@@ -389,9 +389,9 @@ License published by the license steward.  4.3. Modified Versions.
 
 When You are an Initial Developer and You want to create a new license for Your
 Original Software, You may create and use a modified version of this License if
-You: (a)�rename the license and remove any references to the name of the
+You: (a) rename the license and remove any references to the name of the
 license steward (except to note that the license differs from this License);
-and (b)�otherwise make it clear that the license contains terms which differ
+and (b) otherwise make it clear that the license contains terms which differ
 from this License.
 
 5. DISCLAIMER OF WARRANTY.
@@ -422,14 +422,14 @@ the Participant is a Contributor or the Original Software where the Participant
 is the Initial Developer) directly or indirectly infringes any patent, then any
 and all rights granted directly or indirectly to You by such Participant, the
 Initial Developer (if the Initial Developer is not the Participant) and all
-Contributors under Sections�2.1 and/or 2.2 of this License shall, upon 60 days
+Contributors under Sections 2.1 and/or 2.2 of this License shall, upon 60 days
 notice from Participant terminate prospectively and automatically at the
 expiration of such 60 day notice period, unless if within such 60 day period
 You withdraw Your claim with respect to the Participant Software against such
 Participant either unilaterally or pursuant to a written agreement with
 Participant.
 
-6.3. In the event of termination under Sections�6.1 or 6.2 above, all end user
+6.3. In the event of termination under Sections 6.1 or 6.2 above, all end user
 licenses that have been validly granted by You or any distributor hereunder
 prior to termination (excluding licenses granted to You by any distributor)
 shall survive termination.
@@ -453,9 +453,9 @@ LIMITATION MAY NOT APPLY TO YOU.
 8. U.S. GOVERNMENT END USERS.
 
 The Covered Software is a commercial item, as that term is defined in
-48�C.F.R.�2.101 (Oct. 1995), consisting of commercial computer software (as
-that term is defined at 48 C.F.R. �252.227-7014(a)(1)) and commercial computer
-software documentation as such terms are used in 48�C.F.R.�12.212 (Sept. 1995).
+48 C.F.R. 2.101 (Oct. 1995), consisting of commercial computer software (as
+that term is defined at 48 C.F.R. § 252.227-7014(a)(1)) and commercial computer
+software documentation as such terms are used in 48 C.F.R. 12.212 Sept. 1995).
 Consistent with 48 C.F.R. 12.212 and 48 C.F.R. 227.7202-1 through 227.7202-4
 (June 1995), all U.S. Government End Users acquire Covered Software with only
 those rights set forth herein. This U.S. Government Rights clause is in lieu
@@ -534,7 +534,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ==========================================================================
-The following license applies to easymock.jar
+The following license applies to easymock-2.2.jar
 --------------------------------------------------------------------------
 EasyMock 2 License (MIT License)
 Copyright (c) 2001-2007 OFFIS, Tammo Freese.

@@ -348,8 +348,14 @@ public class CheckIndex {
 
     if (format == DefaultSegmentInfosWriter.FORMAT_DIAGNOSTICS) {
       sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
+    } else if (format == DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
+      sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
+    } else if (format == DefaultSegmentInfosWriter.FORMAT_3_1) {
+      sFormat = "FORMAT_3_1 [Lucene 3.1]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_4_0) {
       sFormat = "FORMAT_4_0 [Lucene 4.0]";
+    } else if (format == DefaultSegmentInfosWriter.FORMAT_CURRENT) {
+      throw new RuntimeException("BUG: You should update this tool!");
     } else if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT) {
       sFormat = "int=" + format + " [newer version of Lucene than this tool supports]";
       skip = true;

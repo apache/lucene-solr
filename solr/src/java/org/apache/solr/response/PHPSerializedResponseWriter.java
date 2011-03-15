@@ -37,37 +37,15 @@ import org.apache.solr.common.SolrDocumentList;
 /**
  * A description of the PHP serialization format can be found here:
  * http://www.hurring.com/scott/code/perl/serialize/
- *
- * <p>
- * In order to support PHP Serialized strings with a proper byte count, This ResponseWriter
- * must know if the Writers passed to it will result in an output of CESU-8 (UTF-8 w/o support
- * for large code points outside of the BMP)
- * <p>
- * Currently Solr assumes that all Jetty servlet containers (detected using the "jetty.home"
- * system property) use CESU-8 instead of UTF-8 (verified to the current release of 6.1.20).
- * <p>
- * In installations where Solr auto-detects incorrectly, the Solr Administrator should set the
- * "solr.phps.cesu8" system property to either "true" or "false" accordingly.
  */
 public class PHPSerializedResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8="text/x-php-serialized;charset=UTF-8";
 
-  // Is this servlet container's UTF-8 encoding actually CESU-8 (i.e. lacks support for
-  // large characters outside the BMP).
-  boolean CESU8 = false;
   public void init(NamedList n) {
-    String cesu8Setting = System.getProperty("solr.phps.cesu8");
-    if (cesu8Setting != null) {
-      CESU8="true".equals(cesu8Setting);
-    } else {
-      // guess at the setting.
-      // Jetty up until 6.1.20 at least (and probably versions after) uses CESU8
-      CESU8 = System.getProperty("jetty.home") != null;
-    }
   }
   
  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    PHPSerializedWriter w = new PHPSerializedWriter(writer, req, rsp, CESU8);
+    PHPSerializedWriter w = new PHPSerializedWriter(writer, req, rsp);
     try {
       w.writeResponse();
     } finally {
@@ -81,13 +59,11 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
 }
 
 class PHPSerializedWriter extends JSONWriter {
-  final private boolean CESU8;
   final BytesRef utf8;
 
-  public PHPSerializedWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp, boolean CESU8) {
+  public PHPSerializedWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
-    this.CESU8 = CESU8;
-    this.utf8 = CESU8 ? null : new BytesRef();
+    this.utf8 = new BytesRef();
     // never indent serialized PHP data
     doIndent = false;
   }
@@ -397,23 +373,8 @@ class PHPSerializedWriter extends JSONWriter {
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // serialized PHP strings don't need to be escaped at all, however the 
     // string size reported needs be the number of bytes rather than chars.
-    int nBytes;
-    if (CESU8) {
-      nBytes = 0;
-      for (int i=0; i<val.length(); i++) {
-        char ch = val.charAt(i);
-        if (ch<='\u007f') {
-          nBytes += 1;
-        } else if (ch<='\u07ff') {
-          nBytes += 2;
-        } else {
-          nBytes += 3;
-        }
-      }
-    } else {
-      UnicodeUtil.UTF16toUTF8(val, 0, val.length(), utf8);
-      nBytes = utf8.length;
-    }
+    UnicodeUtil.UTF16toUTF8(val, 0, val.length(), utf8);
+    int nBytes = utf8.length;
 
     writer.write("s:");
     writer.write(Integer.toString(nBytes));

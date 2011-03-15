@@ -59,6 +59,12 @@
                 <p>The benchmark contribution contains tools for benchmarking Lucene using standard, freely available corpora.</p>
                 <p>See <a href="../api/contrib-benchmark/index.html">benchmark javadoc</a></p>
             </section>            
+        
+            <section id="demo"><title>demo</title>
+                <p>The demo contrib contains the Lucene demo: IndexFiles and SearchFiles, described under
+                   <a href="../gettingstarted.html">Getting Started</a>.</p>
+                <p>See <a href="../api/contrib-demo/index.html">demo javadoc</a></p>
+            </section>
             
             <section id="db"><title>db</title>
                 <p>Provides integration with Berkley DB.</p>

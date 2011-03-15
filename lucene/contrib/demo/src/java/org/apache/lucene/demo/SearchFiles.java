@@ -27,15 +27,11 @@ import java.util.Date;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
@@ -47,8 +43,7 @@ public class SearchFiles {
   /** Simple command-line based search demo. */
   public static void main(String[] args) throws Exception {
     String usage =
-      "Usage:\tjava org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] [-paging hitsPerPage]";
-    usage += "\n\tSpecify 'false' for hitsPerPage to use streaming instead of paging search.";
+      "Usage:\tjava org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-query string] [-raw] [-paging hitsPerPage]\n\nSee http://lucene.apache.org/java/4_0/demo.html for details.";
     if (args.length > 0 && ("-h".equals(args[0]) || "-help".equals(args[0]))) {
       System.out.println(usage);
       System.exit(0);
@@ -59,10 +54,10 @@ public class SearchFiles {
     String queries = null;
     int repeat = 0;
     boolean raw = false;
-    boolean paging = true;
+    String queryString = null;
     int hitsPerPage = 10;
     
-    for (int i = 0; i < args.length; i++) {
+    for(int i = 0;i < args.length;i++) {
       if ("-index".equals(args[i])) {
         index = args[i+1];
         i++;
@@ -72,28 +67,26 @@ public class SearchFiles {
       } else if ("-queries".equals(args[i])) {
         queries = args[i+1];
         i++;
+      } else if ("-query".equals(args[i])) {
+        queryString = args[i+1];
+        i++;
       } else if ("-repeat".equals(args[i])) {
         repeat = Integer.parseInt(args[i+1]);
         i++;
       } else if ("-raw".equals(args[i])) {
         raw = true;
       } else if ("-paging".equals(args[i])) {
-        if (args[i+1].equals("false")) {
-          paging = false;
-        } else {
-          hitsPerPage = Integer.parseInt(args[i+1]);
-          if (hitsPerPage == 0) {
-            paging = false;
-          }
+        hitsPerPage = Integer.parseInt(args[i+1]);
+        if (hitsPerPage <= 0) {
+          System.err.println("There must be at least 1 hit per page.");
+          System.exit(1);
         }
         i++;
       }
     }
     
-    IndexReader reader = IndexReader.open(FSDirectory.open(new File(index)), true); // only searching, so read-only=true
-
-    IndexSearcher searcher = new IndexSearcher(reader);
-    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(index)));
+    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
 
     BufferedReader in = null;
     if (queries != null) {
@@ -101,23 +94,25 @@ public class SearchFiles {
     } else {
       in = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
     }
-    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, field, analyzer);
+    QueryParser parser = new QueryParser(Version.LUCENE_40, field, analyzer);
     while (true) {
-      if (queries == null)                        // prompt the user
+      if (queries == null && queryString == null) {                        // prompt the user
         System.out.println("Enter query: ");
+      }
 
-      String line = in.readLine();
+      String line = queryString != null ? queryString : in.readLine();
 
-      if (line == null || line.length() == -1)
+      if (line == null || line.length() == -1) {
         break;
+      }
 
       line = line.trim();
-      if (line.length() == 0)
+      if (line.length() == 0) {
         break;
+      }
       
       Query query = parser.parse(line);
       System.out.println("Searching for: " + query.toString(field));
-
             
       if (repeat > 0) {                           // repeat & time as benchmark
         Date start = new Date();
@@ -128,52 +123,13 @@ public class SearchFiles {
         System.out.println("Time: "+(end.getTime()-start.getTime())+"ms");
       }
 
-      if (paging) {
-        doPagingSearch(in, searcher, query, hitsPerPage, raw, queries == null);
-      } else {
-        doStreamingSearch(searcher, query);
+      doPagingSearch(in, searcher, query, hitsPerPage, raw, queries == null && queryString == null);
+
+      if (queryString != null) {
+        break;
       }
     }
-    reader.close();
-  }
-  
-  /**
-   * This method uses a custom HitCollector implementation which simply prints out
-   * the docId and score of every matching document. 
-   * 
-   *  This simulates the streaming search use case, where all hits are supposed to
-   *  be processed, regardless of their relevance.
-   */
-  public static void doStreamingSearch(final IndexSearcher searcher, Query query) throws IOException {
-    Collector streamingHitCollector = new Collector() {
-      private Scorer scorer;
-      private int docBase;
-      
-      // simply print docId and score of every matching document
-      @Override
-      public void collect(int doc) throws IOException {
-        System.out.println("doc=" + doc + docBase + " score=" + scorer.score());
-      }
-
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return true;
-      }
-
-      @Override
-      public void setNextReader(AtomicReaderContext context)
-          throws IOException {
-        this.docBase = context.docBase;
-      }
-
-      @Override
-      public void setScorer(Scorer scorer) throws IOException {
-        this.scorer = scorer;
-      }
-      
-    };
-    
-    searcher.search(query, streamingHitCollector);
+    searcher.close();
   }
 
   /**
@@ -190,12 +146,10 @@ public class SearchFiles {
                                      int hitsPerPage, boolean raw, boolean interactive) throws IOException {
  
     // Collect enough docs to show 5 pages
-    TopScoreDocCollector collector = TopScoreDocCollector.create(
-        5 * hitsPerPage, false);
-    searcher.search(query, collector);
-    ScoreDoc[] hits = collector.topDocs().scoreDocs;
+    TopDocs results = searcher.search(query, 5 * hitsPerPage);
+    ScoreDoc[] hits = results.scoreDocs;
     
-    int numTotalHits = collector.getTotalHits();
+    int numTotalHits = results.totalHits;
     System.out.println(numTotalHits + " total matching documents");
 
     int start = 0;
@@ -210,9 +164,7 @@ public class SearchFiles {
           break;
         }
 
-        collector = TopScoreDocCollector.create(numTotalHits, false);
-        searcher.search(query, collector);
-        hits = collector.topDocs().scoreDocs;
+        hits = searcher.search(query, numTotalHits).scoreDocs;
       }
       
       end = Math.min(hits.length, start + hitsPerPage);
@@ -237,7 +189,7 @@ public class SearchFiles {
                   
       }
 
-      if (!interactive) {
+      if (!interactive || end == 0) {
         break;
       }
 
@@ -279,8 +231,6 @@ public class SearchFiles {
         if (quit) break;
         end = Math.min(numTotalHits, start + hitsPerPage);
       }
-      
     }
-
   }
 }

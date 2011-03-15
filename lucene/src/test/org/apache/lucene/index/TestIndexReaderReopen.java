@@ -617,9 +617,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     IndexReader reader2 = reader1.reopen();
     modifier = IndexReader.open(dir1, false);
-    SimilarityProvider sim = new DefaultSimilarity();
-    modifier.setNorm(1, "field1", sim.get("field1").encodeNormValue(50f));
-    modifier.setNorm(1, "field2", sim.get("field2").encodeNormValue(50f));
+    Similarity sim = new DefaultSimilarity();
+    modifier.setNorm(1, "field1", sim.encodeNormValue(50f));
+    modifier.setNorm(1, "field2", sim.encodeNormValue(50f));
     modifier.close();
     
     IndexReader reader3 = reader2.reopen();
@@ -712,7 +712,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       protected void modifyIndex(int i) throws IOException {
         if (i % 3 == 0) {
           IndexReader modifier = IndexReader.open(dir, false);
-          Similarity sim = new DefaultSimilarity().get("field1");
+          Similarity sim = new DefaultSimilarity();
           modifier.setNorm(i, "field1", sim.encodeNormValue(50f));
           modifier.close();
         } else if (i % 3 == 1) {
@@ -993,10 +993,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       case 1: {
         IndexReader reader = IndexReader.open(dir, false);
-        SimilarityProvider sim = new DefaultSimilarity();
-        reader.setNorm(4, "field1", sim.get("field1").encodeNormValue(123f));
-        reader.setNorm(44, "field2", sim.get("field2").encodeNormValue(222f));
-        reader.setNorm(44, "field4", sim.get("field4").encodeNormValue(22f));
+        Similarity sim = new DefaultSimilarity();
+        reader.setNorm(4, "field1", sim.encodeNormValue(123f));
+        reader.setNorm(44, "field2", sim.encodeNormValue(222f));
+        reader.setNorm(44, "field4", sim.encodeNormValue(22f));
         reader.close();
         break;
       }
@@ -1017,9 +1017,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       case 4: {
         IndexReader reader = IndexReader.open(dir, false);
-        SimilarityProvider sim = new DefaultSimilarity();
-        reader.setNorm(5, "field1", sim.get("field1").encodeNormValue(123f));
-        reader.setNorm(55, "field2", sim.get("field2").encodeNormValue(222f));
+        Similarity sim = new DefaultSimilarity();
+        reader.setNorm(5, "field1", sim.encodeNormValue(123f));
+        reader.setNorm(55, "field2", sim.encodeNormValue(222f));
         reader.close();
         break;
       }

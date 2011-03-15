@@ -432,7 +432,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   private static final class DocsQueue extends PriorityQueue<DocsAndPositionsEnum> {
     DocsQueue(List<DocsAndPositionsEnum> docsEnums) throws IOException {
-      initialize(docsEnums.size());
+      super(docsEnums.size());
 
       Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
       while (i.hasNext()) {

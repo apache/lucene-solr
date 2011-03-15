@@ -56,11 +56,19 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *  <li>strength: 'primary','secondary','tertiary', or 'identical' (optional)
  *  <li>decomposition: 'no','canonical', or 'full' (optional)
  * </ul>
- *
+ * 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_clltnky" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.CollationKeyFilterFactory" language="ja" country="JP"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * 
  * @see Collator
  * @see Locale
  * @see RuleBasedCollator
- * @since solr 1.5
+ * @since solr 3.1
  */
 public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   private Collator collator;

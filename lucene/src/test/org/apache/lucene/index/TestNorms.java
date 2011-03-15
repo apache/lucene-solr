@@ -170,7 +170,7 @@ public class TestNorms extends LuceneTestCase {
       //System.out.println("      and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));
       modifiedNorms.set(k, Float.valueOf(origNorm));
-      Similarity sim = new DefaultSimilarity().get("f"+1);
+      Similarity sim = new DefaultSimilarity();
       ir.setNorm(i, "f"+1, sim.encodeNormValue(newNorm)); 
       ir.setNorm(k, "f"+1, sim.encodeNormValue(origNorm)); 
     }

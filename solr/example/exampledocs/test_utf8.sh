@@ -53,12 +53,13 @@ else
 fi
 
 
-#A codepoint outside of the BMP
-CODEPOINT='\\U00100058'
+#A unicode character outside of the BMP (a circle with an x inside)
+CHAR="𐌈"
+CODEPOINT='0x10308'
 #URL encoded UTF8 of the codepoint
-URL_UTF8='%F4%80%81%98'
+URL_UTF8='%F0%90%8C%88'
 #expected return of the python writer (currently uses UTF-16 surrogates)
-EXPECTED='\\udbc0\\udc58'
+EXPECTED='\\ud800\\udf08'
 
 curl "$URL/select?q=$URL_UTF8&echoParams=explicit&wt=python" 2> /dev/null | grep $EXPECTED > /dev/null 2>&1
 if [ $? = 0 ]; then
@@ -80,4 +81,13 @@ if [ $? = 0 ]; then
 else
   echo "ERROR: HTTP POST + URL params is not accepting UTF-8 beyond the basic multilingual plane"
 fi
+
+#curl "$URL/select?q=$URL_UTF8&echoParams=explicit&wt=json" 2> /dev/null | od -tx1 -w1000 | sed 's/ //g' | grep 'f4808198' > /dev/null 2>&1
+curl "$URL/select?q=$URL_UTF8&echoParams=explicit&wt=json" 2> /dev/null | grep "$CHAR" > /dev/null 2>&1
+if [ $? = 0 ]; then
+  echo "Response correctly returns UTF-8 beyond the basic multilingual plane"
+else
+  echo "ERROR: Response can't return UTF-8 beyond the basic multilingual plane"
+fi
+
 

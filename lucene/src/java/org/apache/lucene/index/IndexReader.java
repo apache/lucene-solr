@@ -996,7 +996,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Returns the byte-encoded normalization factor for the named field of
-   * every document.  This is used by the search code to score documents.
+   *  every document.  This is used by the search code to score documents.
+   *  Returns null if norms were not indexed for this field.
    *
    * @see org.apache.lucene.document.Field#setBoost(float)
    */
