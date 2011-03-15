@@ -91,8 +91,8 @@
       <artifactId>solr-uima-an-wst</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-uima-core</artifactId>
+      <groupId>org.apache.uima</groupId>
+      <artifactId>uimaj-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

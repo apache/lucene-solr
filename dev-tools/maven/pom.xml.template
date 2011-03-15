@@ -278,9 +278,9 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-uima-core</artifactId>
-        <version>${project.version}</version>
+        <groupId>org.apache.uima</groupId>
+        <artifactId>uimaj-core</artifactId>
+        <version>2.3.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.velocity</groupId>
@@ -708,7 +708,7 @@
                   <artifactId>solr-uima-an-alchemy</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-alchemy.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar</file>
                 </configuration>  
               </execution>
               <execution>
@@ -722,7 +722,7 @@
                   <artifactId>solr-uima-an-calais</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-calais.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar</file>
                 </configuration>  
               </execution>
               <execution>
@@ -736,7 +736,7 @@
                   <artifactId>solr-uima-an-tagger</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-tagger.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar</file>
                 </configuration>  
               </execution>
               <execution>
@@ -750,21 +750,7 @@
                   <artifactId>solr-uima-an-wst</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-wst.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-solr-uima-core</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>solr-uima-core</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-core.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar</file>
                 </configuration>  
               </execution>
               <execution>

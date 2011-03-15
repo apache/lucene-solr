@@ -962,7 +962,6 @@
     <sign-maven-dependency-artifacts artifact.id="solr-uima-an-calais" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-uima-an-tagger" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-uima-an-wst" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-uima-core" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-war-artifacts artifact.id="solr" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-analysis-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
@@ -1007,20 +1006,17 @@
                                    jar.file="lib/apache-solr-noggit-r944541.jar" />
       
       <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-alchemy-pom.xml.template"
-                                   jar.file="contrib/uima/lib/uima-an-alchemy.jar" />
+                                   jar.file="contrib/uima/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar" />
 
       <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-calais-pom.xml.template"
-                                   jar.file="contrib/uima/lib/uima-an-calais.jar" />
+                                   jar.file="contrib/uima/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar" />
 
       <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-tagger-pom.xml.template"
-                                   jar.file="contrib/uima/lib/uima-an-tagger.jar" />
+                                   jar.file="contrib/uima/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar" />
 
       <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-wst-pom.xml.template"
-                                   jar.file="contrib/uima/lib/uima-an-wst.jar" />
+                                   jar.file="contrib/uima/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar" />
 
-      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-core-pom.xml.template"
-                                   jar.file="contrib/uima/lib/uima-core.jar" />
-      
       <!-- ========== SOLR ARTIFACTS ========== -->
 
       <m2-deploy pom.xml="contrib/dataimporthandler/src/pom.xml"
