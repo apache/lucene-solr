@@ -11,7 +11,10 @@ Such fields could be language, concepts, keywords, sentences, named entities, et
 
  UIMA Dependency
  ---------------
-uima-core, OpenCalaisAnnotator, WhitespaceTokenizer, HMMTagger, AlchemyAPIAnnotator
-Current Version:  2.3.1-SNAPSHOT rev. 999276
+uimaj-core          v2.3.1 
+OpenCalaisAnnotator v2.3.1-SNAPSHOT rev. 1062868
+HMMTagger           v2.3.1-SNAPSHOT rev. 1062868
+AlchemyAPIAnnotator v2.3.1-SNAPSHOT rev. 1062868
+WhitespaceTokenizer v2.3.1-SNAPSHOT rev. 1076132
 
 $Id$
