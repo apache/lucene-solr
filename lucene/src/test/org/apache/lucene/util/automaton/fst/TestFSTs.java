@@ -25,16 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -1098,7 +1089,7 @@ public class TestFSTs extends LuceneTestCase {
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
 
-    public void run(int limit) throws IOException {
+    public void run(int limit, boolean verify) throws IOException {
       BufferedReader is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), "UTF-8"), 65536);
       try {
         final IntsRef intsRef = new IntsRef(10);
@@ -1115,7 +1106,9 @@ public class TestFSTs extends LuceneTestCase {
 
           ord++;
           if (ord % 500000 == 0) {
-            System.out.println(((System.currentTimeMillis()-tStart)/1000.0) + "s: " + ord + "...");
+            System.out.println(
+                String.format(Locale.ENGLISH, 
+                    "%6.2fs: %9d...", ((System.currentTimeMillis() - tStart) / 1000.0), ord));
           }
           if (ord >= limit) {
             break;
@@ -1143,6 +1136,10 @@ public class TestFSTs extends LuceneTestCase {
         out.close();
 
         System.out.println("Saved FST to fst.bin.");
+
+        if (!verify) {
+          System.exit(0);
+        }
 
         System.out.println("\nNow verify...");
 
@@ -1194,6 +1191,7 @@ public class TestFSTs extends LuceneTestCase {
     int inputMode = 0;                             // utf8
     boolean storeOrds = false;
     boolean storeDocFreqs = false;
+    boolean verify = true;
     while(idx < args.length) {
       if (args[idx].equals("-prune")) {
         prune = Integer.valueOf(args[1+idx]);
@@ -1215,6 +1213,9 @@ public class TestFSTs extends LuceneTestCase {
       if (args[idx].equals("-ords")) {
         storeOrds = true;
       }
+      if (args[idx].equals("-noverify")) {
+        verify = false;
+      }
       idx++;
     }
 
@@ -1235,7 +1236,7 @@ public class TestFSTs extends LuceneTestCase {
           return new PairOutputs.Pair<Long,Long>(o1.get(ord),
                                                  o2.get(_TestUtil.nextInt(rand, 1, 5000)));
         }
-      }.run(limit);
+      }.run(limit, verify);
     } else if (storeOrds) {
       // Store only ords
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
@@ -1244,7 +1245,7 @@ public class TestFSTs extends LuceneTestCase {
         public Long getOutput(IntsRef input, int ord) {
           return outputs.get(ord);
         }
-      }.run(limit);
+      }.run(limit, verify);
     } else if (storeDocFreqs) {
       // Store only docFreq
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(false);
@@ -1257,7 +1258,7 @@ public class TestFSTs extends LuceneTestCase {
           }
           return outputs.get(_TestUtil.nextInt(rand, 1, 5000));
         }
-      }.run(limit);
+      }.run(limit, verify);
     } else {
       // Store nothing
       final NoOutputs outputs = NoOutputs.getSingleton();
@@ -1267,7 +1268,7 @@ public class TestFSTs extends LuceneTestCase {
         public Object getOutput(IntsRef input, int ord) {
           return NO_OUTPUT;
         }
-      }.run(limit);
+      }.run(limit, verify);
     }
   }
 
