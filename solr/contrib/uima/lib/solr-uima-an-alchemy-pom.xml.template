@@ -31,6 +31,6 @@
   <artifactId>solr-uima-an-alchemy</artifactId>
   <name>Solr Specific UIMA Alchemy Annotator</name>
   <version>@version@</version>
-  <description>Solr Specific UIMA Alchemy Annotator v2.3.1-SNAPSHOT</description>
+  <description>Solr Specific UIMA Alchemy Annotator v2.3.1-SNAPSHOT-r1062868</description>
   <packaging>jar</packaging>
 </project>
