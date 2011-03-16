@@ -150,10 +150,24 @@ public class RandomIndexWriter implements Closeable {
     return getReader(true);
   }
 
+  private void doRandomOptimize() throws IOException {
+    final int segCount = w.getSegmentCount();
+    if (r.nextBoolean() || segCount == 0) {
+      // full optimize
+      w.optimize();
+    } else {
+      // partial optimize
+      final int limit = _TestUtil.nextInt(r, 1, segCount);
+      w.optimize(limit);
+      assert w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
+    }
+  }
+
   public IndexReader getReader(boolean applyDeletions) throws IOException {
     getReaderCalled = true;
-    if (r.nextInt(4) == 2)
-      w.optimize();
+    if (r.nextInt(4) == 2) {
+      doRandomOptimize();
+    }
     // If we are writing with PreFlexRW, force a full
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
@@ -179,7 +193,7 @@ public class RandomIndexWriter implements Closeable {
     // if someone isn't using getReader() API, we want to be sure to
     // maybeOptimize since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(4) == 2) {
-      w.optimize();
+      doRandomOptimize();
     }
     w.close();
   }
