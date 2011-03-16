@@ -373,4 +373,28 @@ public class AutomatonTestUtil {
     a.removeDeadTransitions();
   }
 
+  /**
+   * Returns true if the language of this automaton is finite.
+   * <p>
+   * WARNING: this method is slow, it will blow up if the automaton is large.
+   * this is only used to test the correctness of our faster implementation.
+   */
+  public static boolean isFiniteSlow(Automaton a) {
+    if (a.isSingleton()) return true;
+    return isFiniteSlow(a.initial, new HashSet<State>());
+  }
+  
+  /**
+   * Checks whether there is a loop containing s. (This is sufficient since
+   * there are never transitions to dead states.)
+   */
+  // TODO: not great that this is recursive... in theory a
+  // large automata could exceed java's stack
+  private static boolean isFiniteSlow(State s, HashSet<State> path) {
+    path.add(s);
+    for (Transition t : s.getTransitions())
+      if (path.contains(t.to) || !isFiniteSlow(t.to, path)) return false;
+    path.remove(s);
+    return true;
+  }
 }
