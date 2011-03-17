@@ -67,7 +67,7 @@ customization is required.
     <section id="news">
       <title>News</title>
             <section>
-   <title>13 March 2011 - Solr 3.1 Released</title>
+   <title>March 2011 - Solr 3.1 Released</title>
    <p>
      Solr 3.1 has been released and is now available for public <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
      
@@ -75,6 +75,7 @@ customization is required.
  </p>
   <ul>
     <li>Improved geospatial support</li>
+    <li>Sorting by function queries</li>
     <li>A new termvector-based highlighter</li>
     <li>Improved spellchecking capabilities</li>
     <li>Improved integration with Apache Lucene</li>
