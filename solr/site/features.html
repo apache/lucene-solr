@@ -253,7 +253,7 @@ document.write("Last Published: " + document.lastModified);
 <h2 class="boxed">Solr in a Nutshell</h2>
 <div class="section">
 <p>
-  Solr is a standalone enterprise search server with a web-services like API. You put documents in it (called "indexing") via XML over HTTP. You query it via HTTP GET and receive XML results.
+  Solr is a standalone enterprise search server with a REST-like API. You put documents in it (called "indexing") via XML, JSON or binary over HTTP. You query it via HTTP GET and receive XML, JSON, or binary results.
   </p>
 <ul>
     
@@ -288,6 +288,8 @@ document.write("Last Published: " + document.lastModified);
     
 <li> Faceted Search and Filtering </li>
     
+<li> Geospatial Search </li>
+    
 <li> Advanced, Configurable Text Analysis </li>
     
 <li> Highly Configurable and User Extensible Caching </li>
@@ -304,11 +306,13 @@ document.write("Last Published: " + document.lastModified);
     
 <li> Highly Scalable Distributed search with sharded index across multiple hosts </li>
     
-<li> XML, CSV/delimited-text, and binary update formats </li>
+<li> JSON, XML, CSV/delimited-text, and binary update formats </li>
     
 <li> Easy ways to pull in data from databases and XML files from local disk and HTTP sources </li>
     
 <li> Rich Document Parsing and Indexing (PDF, Word, HTML, etc) using Apache Tika </li>
+    
+<li> Apache UIMA integration for configurable metadata extraction </li>
     
 <li> Multiple search indices </li>
   
@@ -316,10 +320,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
 
-<a name="N10069"></a><a name="Detailed+Features"></a>
+<a name="N1006F"></a><a name="Detailed+Features"></a>
 <h2 class="boxed">Detailed Features</h2>
 <div class="section">
-<a name="N1006F"></a><a name="Schema"></a>
+<a name="N10075"></a><a name="Schema"></a>
 <h3 class="boxed">Schema</h3>
 <ul>
       
@@ -340,19 +344,19 @@ document.write("Last Published: " + document.lastModified);
 <li>Many additional text analysis components including word splitting, regex and sounds-like filters</li>
     
 </ul>
-<a name="N10090"></a><a name="Query"></a>
+<a name="N10096"></a><a name="Query"></a>
 <h3 class="boxed">Query</h3>
 <ul>
       
 <li>HTTP interface with configurable response formats (XML/XSLT, JSON, Python, Ruby, PHP, Velocity, binary)</li>
       
-<li>Sort by any number of fields</li>
+<li>Sort by any number of fields, and by complex functions of numeric fields</li>
       
 <li>Advanced DisMax query parser for high relevancy results from user-entered queries</li> 
       
 <li>Highlighted context snippets</li>
       
-<li>Faceted Searching based on unique field values, explicit queries, or date ranges</li>
+<li>Faceted Searching based on unique field values, explicit queries, date ranges, and numeric ranges</li>
       
 <li>Multi-Select Faceting by tagging and selectively excluding filters</li>
       
@@ -373,14 +377,14 @@ document.write("Last Published: " + document.lastModified);
       
 <li>Combine queries derived from different syntaxes</li>
       
-<li>Auto-suggest functionality</li>
+<li>Auto-suggest functionality for completing user queries</li>
       
 <li>Allow configuration of top results for a query, overriding normal scoring and sorting</li>
       
 <li>Performance Optimizations</li>
     
 </ul>
-<a name="N100CC"></a><a name="Core"></a>
+<a name="N100D2"></a><a name="Core"></a>
 <h3 class="boxed">Core</h3>
 <ul>
       
@@ -405,7 +409,7 @@ document.write("Last Published: " + document.lastModified);
 <li>"Luke" request handler for corpus information</li>
     
 </ul>
-<a name="N100F3"></a><a name="Caching"></a>
+<a name="N100F9"></a><a name="Caching"></a>
 <h3 class="boxed">Caching</h3>
 <ul>
       
@@ -439,7 +443,7 @@ document.write("Last Published: " + document.lastModified);
 <li>User level caching with autowarming support</li>
     
 </ul>
-<a name="N10118"></a><a name="Replication"></a>
+<a name="N1011E"></a><a name="Replication"></a>
 <h3 class="boxed">Replication</h3>
 <ul>
       
@@ -452,7 +456,7 @@ document.write("Last Published: " + document.lastModified);
 <li>Replication and automatic reloading of configuration files</li>
     
 </ul>
-<a name="N1012D"></a><a name="Admin+Interface"></a>
+<a name="N10133"></a><a name="Admin+Interface"></a>
 <h3 class="boxed">Admin Interface</h3>
 <ul>
       

@@ -28,7 +28,7 @@
 <section>
 <title>Solr in a Nutshell</title>
   <p>
-  Solr is a standalone enterprise search server with a web-services like API. You put documents in it (called "indexing") via XML over HTTP. You query it via HTTP GET and receive XML results.
+  Solr is a standalone enterprise search server with a REST-like API. You put documents in it (called "indexing") via XML, JSON or binary over HTTP. You query it via HTTP GET and receive XML, JSON, or binary results.
   </p>
   <ul>
     <li> Advanced Full-Text Search Capabilities </li>
@@ -48,6 +48,7 @@
     <li> A Real Data Schema, with Numeric Types, Dynamic Fields, Unique Keys </li>
     <li> Powerful Extensions to the Lucene Query Language </li>
     <li> Faceted Search and Filtering </li>
+    <li> Geospatial Search </li>
     <li> Advanced, Configurable Text Analysis </li>
     <li> Highly Configurable and User Extensible Caching </li>
     <li> Performance Optimizations </li>
@@ -56,9 +57,10 @@
     <li> Monitorable Logging </li>
     <li> Fast Incremental Updates and Index Replication </li>
     <li> Highly Scalable Distributed search with sharded index across multiple hosts </li>
-    <li> XML, CSV/delimited-text, and binary update formats </li>
+    <li> JSON, XML, CSV/delimited-text, and binary update formats </li>
     <li> Easy ways to pull in data from databases and XML files from local disk and HTTP sources </li>
     <li> Rich Document Parsing and Indexing (PDF, Word, HTML, etc) using Apache Tika </li>
+    <li> Apache UIMA integration for configurable metadata extraction </li>
     <li> Multiple search indices </li>
   </ul>
 </section>
@@ -82,10 +84,10 @@
   <section><title>Query</title>
     <ul>
       <li>HTTP interface with configurable response formats (XML/XSLT, JSON, Python, Ruby, PHP, Velocity, binary)</li>
-      <li>Sort by any number of fields</li>
+      <li>Sort by any number of fields, and by complex functions of numeric fields</li>
       <li>Advanced DisMax query parser for high relevancy results from user-entered queries</li> 
       <li>Highlighted context snippets</li>
-      <li>Faceted Searching based on unique field values, explicit queries, or date ranges</li>
+      <li>Faceted Searching based on unique field values, explicit queries, date ranges, and numeric ranges</li>
       <li>Multi-Select Faceting by tagging and selectively excluding filters</li>
       <li>Spelling suggestions for user queries</li>
       <li>More Like This suggestions for given document</li>
@@ -96,7 +98,7 @@
       <li>Dynamic search results clustering using Carrot2</li>
       <li>Numeric field statistics such as min, max, average, standard deviation </li>
       <li>Combine queries derived from different syntaxes</li>
-      <li>Auto-suggest functionality</li>
+      <li>Auto-suggest functionality for completing user queries</li>
       <li>Allow configuration of top results for a query, overriding normal scoring and sorting</li>
       <li>Performance Optimizations</li>
     </ul>
