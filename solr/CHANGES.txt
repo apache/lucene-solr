@@ -26,7 +26,7 @@ on how to get started.
 Versions of Major Components
 ---------------------
 Apache Lucene 3x
-Apache Tika 0.8-SNAPSHOT
+Apache Tika 0.8
 Carrot2 3.4.2
 
 (No Changes)
@@ -36,7 +36,7 @@ Carrot2 3.4.2
 Versions of Major Components
 ---------------------
 Apache Lucene 3.1.0
-Apache Tika 0.8-SNAPSHOT
+Apache Tika 0.8
 Carrot2 3.4.2
 Velocity 1.6.1 and Velocity Tools 2.0-beta3
 Apache UIMA 2.3.1-SNAPSHOT
