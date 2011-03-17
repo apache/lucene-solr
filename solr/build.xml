@@ -791,7 +791,7 @@
     <tar destfile="${package.dir}/${fullnamever}-src.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir=".."
         prefix="${fullnamever}"
-        includes="*.txt *.xml dev-tools/*" />
+        includes="*.txt *.xml dev-tools/" />
       <tarfileset dir="." 
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt"/>
