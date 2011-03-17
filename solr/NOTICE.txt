@@ -240,6 +240,12 @@ Copyright (c) 2003-2005, www.fontbox.org
 Copyright (c) 1995-2005 International Business Machines Corporation and others
 
 Copyright (c) 2000-2005 INRIA, France Telecom
+
+Copyright 2001-2005 (C) MetaStuff, Ltd. All Rights Reserved.
+
+Copyright 2004 Sun Microsystems, Inc. (Rome JAR)
+
+Copyright 2002-2008 by John Cowan (TagSoup -- http://ccil.org/~cowan/XML/tagsoup/)
  
 
 =========================================================================
