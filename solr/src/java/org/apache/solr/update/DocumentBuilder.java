@@ -194,7 +194,7 @@ public class DocumentBuilder {
   }
 
 
-  private static void addField(Document doc, SchemaField field, String val, float boost) {
+  private static void addField(Document doc, SchemaField field, Object val, float boost) {
     if (field.isPolyField()) {
       Fieldable[] farr = field.getType().createFields(field, val, boost);
       for (Fieldable f : farr) {
@@ -257,30 +257,10 @@ public class DocumentBuilder {
           if( v == null ) {
             continue;
           }
-          String val = null;
           hasField = true;
-          boolean isBinaryField = false;
-          if (sfield != null && sfield.getType() instanceof BinaryField) {
-            isBinaryField = true;
-            BinaryField binaryField = (BinaryField) sfield.getType();
-            Fieldable f = binaryField.createField(sfield,v,boost);
-            if(f != null){
-              out.add(f);
-            }
+          if (sfield != null) {
             used = true;
-          } else {
-            // TODO!!! HACK -- date conversion
-            if (sfield != null && v instanceof Date && sfield.getType() instanceof DateField) {
-              DateField df = (DateField) sfield.getType();
-              val = df.toInternal((Date) v) + 'Z';
-            } else if (v != null) {
-              val = v.toString();
-            }
-  
-            if (sfield != null) {
-              used = true;
-              addField(out, sfield, val, boost);
-            }
+            addField(out, sfield, v, boost);
           }
   
           // Check if we should copy this field to any other fields.
@@ -292,21 +272,18 @@ public class DocumentBuilder {
             if (!destinationField.multiValued() && out.get(destinationField.getName()) != null) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                       "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
-                              destinationField.getName() + ": " + val);
+                              destinationField.getName() + ": " + v);
             }
   
             used = true;
-            //Don't worry about poly fields here
-            Fieldable [] fields = null;
-            if (isBinaryField) {
-              if (destinationField.getType() instanceof BinaryField) {
-                BinaryField binaryField = (BinaryField) destinationField.getType();
-                //TODO: safe to assume that binary fields only create one?
-                fields = new Fieldable[]{binaryField.createField(destinationField, v, boost)};
-              }
-            } else {
-              fields = destinationField.createFields(cf.getLimitedValue(val), boost);
+            
+            // Perhaps trim the length of a copy field
+            Object val = v;
+            if( val instanceof String && cf.getMaxChars() > 0 ) {
+              val = cf.getLimitedValue((String)val);
             }
+            
+            Fieldable [] fields = destinationField.createFields(val, boost);
             if (fields != null) { // null fields are not added
               for (Fieldable f : fields) {
                 out.add(f);

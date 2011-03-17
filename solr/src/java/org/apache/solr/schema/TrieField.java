@@ -482,7 +482,7 @@ public class TrieField extends FieldType {
   }
 
   @Override
-  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, Object value, float boost) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
 
@@ -500,27 +500,37 @@ public class TrieField extends FieldType {
 
     switch (type) {
       case INTEGER:
-        int i = Integer.parseInt(externalVal);
+        int i = (value instanceof Number)
+          ? ((Number)value).intValue()
+          : Integer.parseInt(value.toString());
         if (stored) arr = toArr(i);
         if (indexed) ts = new NumericTokenStream(ps).setIntValue(i);
         break;
       case FLOAT:
-        float f = Float.parseFloat(externalVal);
+        float f = (value instanceof Number)
+          ? ((Number)value).floatValue()
+          : Float.parseFloat(value.toString());
         if (stored) arr = toArr(f);
         if (indexed) ts = new NumericTokenStream(ps).setFloatValue(f);
         break;
       case LONG:
-        long l = Long.parseLong(externalVal);
+        long l = (value instanceof Number)
+          ? ((Number)value).longValue()
+          : Long.parseLong(value.toString());
         if (stored) arr = toArr(l);
         if (indexed) ts = new NumericTokenStream(ps).setLongValue(l);
         break;
       case DOUBLE:
-        double d = Double.parseDouble(externalVal);
+        double d = (value instanceof Number)
+          ? ((Number)value).doubleValue()
+          : Double.parseDouble(value.toString());
         if (stored) arr = toArr(d);
         if (indexed) ts = new NumericTokenStream(ps).setDoubleValue(d);
         break;
       case DATE:
-        long time = dateField.parseMath(null, externalVal).getTime();
+        long time = (value instanceof Date)
+          ? ((Date)value).getTime()
+          : dateField.parseMath(null, value.toString()).getTime();
         if (stored) arr = toArr(time);
         if (indexed) ts = new NumericTokenStream(ps).setLongValue(time);
         break;

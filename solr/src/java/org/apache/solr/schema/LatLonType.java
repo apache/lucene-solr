@@ -54,7 +54,8 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
+  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
+    String externalVal = value.toString();
     //we could have tileDiff + 3 fields (two for the lat/lon, one for storage)
     Fieldable[] f = new Fieldable[(field.indexed() ? 2 : 0) + (field.stored() ? 1 : 0)];
     if (field.indexed()) {
@@ -280,7 +281,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 

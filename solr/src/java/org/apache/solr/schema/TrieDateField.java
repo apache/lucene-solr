@@ -168,7 +168,7 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, Object value, float boost) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
 
@@ -183,7 +183,10 @@ public class TrieDateField extends DateField {
     byte[] arr=null;
     TokenStream ts=null;
 
-    long time = super.parseMath(null, externalVal).getTime();
+    long time = (value instanceof Date) 
+      ? ((Date)value).getTime() 
+      : super.parseMath(null, value.toString()).getTime();
+      
     if (stored) arr = TrieField.toArr(time);
     if (indexed) ts = new NumericTokenStream(ps).setLongValue(time);
 

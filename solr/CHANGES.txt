@@ -189,6 +189,10 @@ Other Changes
   in the XMLResponseWriter was removed.  XMLResponseWriter only 
   no longer work with values less then 2.2 (ryan)
 
+* SOLR-2423: FieldType argument changed from String to Object
+  Conversion from SolrInputDocument > Object > Fieldable is now managed
+  by FieldType rather then DocumentBuilder.  (ryan)
+
 
 Documentation
 ----------------------

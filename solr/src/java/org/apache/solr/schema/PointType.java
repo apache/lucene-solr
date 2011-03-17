@@ -68,7 +68,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   }
 
   @Override
-  public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
+  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
+    String externalVal = value.toString();
     String[] point = new String[0];
     try {
       point = DistanceUtils.parsePoint(null, externalVal, dimension);
@@ -112,7 +113,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
    *
    */
   @Override
-  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("PointType uses multiple fields.  field=" + field.getName());
   }
 

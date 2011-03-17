@@ -223,17 +223,18 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, Object value, float boost) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
       return null;
     }
+    
     String val;
     try {
-      val = toInternal(externalVal);
+      val = toInternal(value.toString());
     } catch (RuntimeException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "'", e, false);
     }
     if (val==null) return null;
 
@@ -276,11 +277,11 @@ public abstract class FieldType extends FieldProperties {
    * @param boost The boost to apply
    * @return An array of {@link org.apache.lucene.document.Fieldable}
    *
-   * @see #createField(SchemaField, String, float)
+   * @see #createField(SchemaField, Object, float)
    * @see #isPolyField()
    */
-  public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
-    Fieldable f = createField( field, externalVal, boost);
+  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
+    Fieldable f = createField( field, value, boost);
     return f==null ? new Fieldable[]{} : new Fieldable[]{f};
   }
 
