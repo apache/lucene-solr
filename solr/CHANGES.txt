@@ -25,7 +25,7 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
-Apache Tika 0.8-SNAPSHOT
+Apache Tika 0.8
 Carrot2 3.4.2
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1-SNAPSHOT
@@ -204,7 +204,7 @@ Documentation
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
-Apache Tika 0.8-SNAPSHOT
+Apache Tika 0.8
 Carrot2 3.4.2
 
 (No Changes)
@@ -213,7 +213,7 @@ Carrot2 3.4.2
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
-Apache Tika 0.8-SNAPSHOT
+Apache Tika 0.8
 Carrot2 3.4.2
 
 
