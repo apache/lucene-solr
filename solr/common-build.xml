@@ -22,6 +22,7 @@
   </description>
 
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
+  <import file="${common-solr.dir}/../common-build.xml"/>
   
   <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
   <property name="tests.luceneMatchVersion" value="4.0"/>

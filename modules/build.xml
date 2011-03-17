@@ -18,6 +18,7 @@
  -->
 
 <project name="modules" default="test" basedir=".">
+  <import file="../common-build.xml"/>
   <target name="test" description="Test all modules">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
@@ -27,7 +28,7 @@
     </sequential>
   </target>
 
-  <target name="compile" description="Compile all modules">
+  <target name="compile" description="Compile all modules" depends="validate-modules">
     <sequential>
       <subant target="compile" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />

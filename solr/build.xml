@@ -149,7 +149,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="compile-solrj,init-forrest-entities">
+          depends="validate-solr, compile-solrj,init-forrest-entities">
 
     <solr-javac destdir="${dest}/solr"
                 classpathref="compile.classpath.solrj">

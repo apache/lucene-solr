@@ -18,6 +18,7 @@
  -->
 
 <project name="lucene-solr" default="test" basedir=".">
+  <import file="common-build.xml"/>
   <target name="test" description="Test both Lucene and Solr">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
