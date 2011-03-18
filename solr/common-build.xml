@@ -573,5 +573,40 @@
     ##########################################################################
     </fail>
   </target>
+  <!-- Validation -->
+  <target name="validate" depends="validate-solr"/>
+  <target name="validate-solr" depends="check-legal-solr" unless="validated-solr"/>
+
+  <target name="check-legal-solr" depends="compile-test-framework">
+    <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
+      <classpath>
+        <path refid="validation.runtime.classpath" />
+      </classpath>
+      <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
+       long time.  This should be faster, but we could miss a directory
+       -->
+      <!-- Solr -->
+      <arg value="-c" />
+      <arg value="${basedir}/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/analysis-extras/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/clustering/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/dataimporthandler/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/extraction/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/uima/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/example/example-DIH/solr/db/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/example/example-DIH/solr/mail/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/example/example/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/src/test-files/solr/lib" />
+    </java>
+  </target>
 
 </project>

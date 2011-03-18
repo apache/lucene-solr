@@ -17,36 +17,15 @@
 
 <project name="all-common" default="validate" basedir="."
          xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
   <dirname file="${ant.file.all-common}" property="all.common.dir"/>
-  <target name="validate" description="Compile Validation tools" unless="validated">
+  <path id="validation.runtime.classpath">
+    <pathelement location="${all.common.dir}/lucene/build/classes/test-framework"/>
+  </path>
+  <target name="compile-test-framework" description="Compile the Test Framework and Validation tools">
     <sequential>
-      <subant target="validate" inheritall="false" failonerror="true">
-        <property name="validated" value="true"/>
-        <fileset dir="${all.common.dir}/dev-tools/validation" includes="build.xml" />
-      </subant>
-    </sequential>
-  </target>
-  <target name="validate-lucene" description="Compile Validation tools" unless="validated">
-    <sequential>
-      <subant target="validate-lucene" inheritall="false" failonerror="true">
-        <property name="validated" value="true"/>
-        <fileset dir="${all.common.dir}/dev-tools/validation" includes="build.xml" />
-      </subant>
-    </sequential>
-  </target>
-  <target name="validate-solr" description="Compile Validation tools" unless="validated">
-    <sequential>
-      <subant target="validate-solr" inheritall="false" failonerror="true">
-        <property name="validated" value="true"/>
-        <fileset dir="${all.common.dir}/dev-tools/validation" includes="build.xml" />
-      </subant>
-    </sequential>
-  </target>
-  <target name="validate-modules" description="Compile Validation tools" unless="validated">
-    <sequential>
-      <subant target="validate-modules" inheritall="false" failonerror="true">
-        <property name="validated" value="true"/>
-        <fileset dir="${all.common.dir}/dev-tools/validation" includes="build.xml" />
+      <subant target="compile-test-framework" inheritall="false" failonerror="true">
+        <fileset dir="${all.common.dir}/lucene" includes="build.xml" />
       </subant>
     </sequential>
   </target>

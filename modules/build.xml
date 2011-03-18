@@ -64,6 +64,25 @@
       </subant>
     </sequential>
   </target>
+  <target name="validate" depends="validate-modules"/>
+  <target name="validate-modules" depends="check-legal-modules" unless="validated-modules"/>
+  <target name="check-legal-modules" depends="compile-test-framework">
+    <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
+      <classpath>
+        <path refid="validation.runtime.classpath" />
+      </classpath>
+      <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
+       long time.  This should be faster, but we could miss a directory
+       -->
+      <!-- Modules -->
+      <arg value="-c" />
+      <arg value="${basedir}/analysis/icu/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/analysis/phonetic/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/benchmark/lib" />
+    </java>
+  </target>
 
   <target name="clean" description="Clean all modules">
     <sequential>
