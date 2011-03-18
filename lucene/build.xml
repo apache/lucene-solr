@@ -58,7 +58,7 @@
               includes="${final.name}*.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="docs/,*.txt,contrib/*/README*,**/CHANGES.txt"
+              includes="docs/,*.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd"
               excludes="BUILD.txt"
   />
 
