@@ -700,8 +700,6 @@ Build
 * LUCENE-2657: Switch from using Maven POM templates to full POMs when
   generating Maven artifacts (Steven Rowe)
 
-* SOLR-1902: Upgraded Tika to 0.8-SNAPSHOT (Tommaso Teofili, gsingers)
-
 Documentation
 ----------------------
 
