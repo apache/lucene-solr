@@ -24,7 +24,7 @@
   </description>
 
   <dirname file="${ant.file.common}" property="common.dir"/>
-
+  <import file="${common.dir}/../common-build.xml"/>
   <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
   <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
   <property name="maven.build.dir" value="${common.dir}/build/maven"/>
@@ -298,7 +298,7 @@
     </copy>
   </target>
 
-  <target name="compile" depends="compile-core">
+  <target name="compile" depends="compile-core, validate-lucene">
     <!-- convenience target to compile core -->
   </target>
 
@@ -782,6 +782,61 @@
       </javadoc>
    </sequential>
   </macrodef>
+
+
+  <!-- VALIDATION work -->
+  <!--
+   >find . -name lib
+./lucene/backwards/lib
+./lucene/contrib/ant/lib
+./lucene/contrib/benchmark/lib
+./lucene/contrib/db/bdb/lib
+./lucene/contrib/db/bdb-je/lib
+./lucene/contrib/icu/lib
+./lucene/contrib/lucli/lib
+./lucene/contrib/queries/lib
+./lucene/lib
+
+
+   -->
+  <target name="check-legal-lucene" depends="compile-test-framework">
+    <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
+      <classpath>
+        <path refid="validation.runtime.classpath" />
+      </classpath>
+      <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
+       long time.  This should be faster, but we could miss a directory
+       -->
+      <!-- Lucene  -->
+      <arg value="-c" />
+      <arg value="${basedir}/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/ant/lib" />
+      <!-- BDB libs are downloaded, don't check them -->
+      <!--<arg value="-c" />
+      <arg value="${toplevel.dir}/lucene/contrib/db/bdb/lib" />
+      <arg value="-c" />
+      <arg value="${toplevel.dir}/lucene/contrib/db/bdb-je/lib" />-->
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/benchmark/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/icu/lib" />
+
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/lucli/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/queries/lib" />
+    </java>
+  </target>
+
+  <target name="check-legal" depends="check-legal-lucene"/>
+
+  <target name="validate-lucene" depends="check-legal-lucene" unless="validated-lucene"/>
+
+
+  <!-- Generic placeholder target for if we add other validation tasks -->
+  <target name="validate" depends="validate-lucene"/>
+
 
 
 </project>
