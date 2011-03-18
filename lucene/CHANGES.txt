@@ -166,6 +166,10 @@ Changes in runtime behavior
 * LUCENE-2010: Segments with 100% deleted documents are now removed on
   IndexReader or IndexWriter commit.   (Uwe Schindler, Mike McCandless)
   
+* LUCENE-2960: Allow some changes to IndexWriterConfig to take effect
+  "live" (after an IW is instantiated), via
+  IndexWriter.getConfig().setXXX(...) (Shay Banon, Mike McCandless)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
