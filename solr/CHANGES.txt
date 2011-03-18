@@ -558,6 +558,9 @@ Bug Fixes
   initialization if the schema.xml contains an analyzer configuration
   for a fieldType that does not use TextField.  (hossman) 
 
+* SOLR-2192: StreamingUpdateSolrServer.blockUntilFinished was not
+  thread safe and could throw an exception. (yonik)
+
 Other Changes
 ----------------------
 
@@ -697,6 +700,8 @@ Build
 * LUCENE-2657: Switch from using Maven POM templates to full POMs when
   generating Maven artifacts (Steven Rowe)
 
+* SOLR-1902: Upgraded Tika to 0.8-SNAPSHOT (Tommaso Teofili, gsingers)
+
 Documentation
 ----------------------
 
@@ -705,53 +710,6 @@ Documentation
 
 * SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
   (hossman)
-
-================== 1.4.2-dev ==================
-Upgrading from Solr 1.4
------------------------
-
-This is a bug fix release - no changes are required when upgrading from Solr 1.4.
-However, a reindex is needed for some of the analysis fixes to take effect.
-
-Versions of Major Components
-----------------------------
-Apache Lucene 2.9.3
-Apache Tika 0.8-SNAPSHOT
-Carrot2 3.1.0
-
-Lucene Information
-----------------
-
-Since Solr is built on top of Lucene, many people add customizations to Solr
-that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_3/,
-especially http://lucene.apache.org/java/2_9_3/changes/Changes.html for more
-information on the version of Lucene used in Solr.
-
-Bug Fixes
-----------------------
-
-* SOLR-1902: Upgraded Tika to 0.8-SNAPSHOT (Tommaso Teofili, gsingers)
-
-* SOLR-2036: Avoid expensive fieldCache ram estimation for the
-  admin stats page. (yonik)
-
-* SOLR-2100: The replication handler backup command didn't save the commit
-  point and hence could fail when a newer commit caused the older commit point
-  to be removed before it was finished being copied.  This did not affect
-  normal master/slave replication.  (Peter Sturge via yonik)
-
-* SOLR-2180: It was possible for EmbeddedSolrServer to leave searchers
-  open if a request threw an exception. (yonik)
-
-* SOLR-2192: StreamingUpdateSolrServer.blockUntilFinished was not
-  thread safe and could throw an exception. (yonik)
-
-* SOLR-1667: PatternTokenizer does not reset attributes such as positionIncrement
-  (Robert Muir via shalin)
-
- * SOLR-1993: fix String cast assumption in JavaBinCodec - specific
-   addresses "commitWithin" option on Update requests.
-   (noble, hossman, and Maxim Valyanskiy)
 
 ================== Release 1.4.1 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.
