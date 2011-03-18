@@ -362,6 +362,10 @@ Bug fixes
 * LUCENE-2936: PhraseQuery score explanations were not correctly 
   identifying matches vs non-matches.  (hossman)
 
+* LUCENE-2960: Allow some changes to IndexWriterConfig to take effect
+  "live" (after an IW is instantiated), via
+  IndexWriter.getConfig().setXXX(...) (Shay Banon, Mike McCandless)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 (No changes)

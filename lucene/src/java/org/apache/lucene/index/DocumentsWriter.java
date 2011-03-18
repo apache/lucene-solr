@@ -266,17 +266,8 @@ final class DocumentsWriter {
 
   // How much RAM we can use before flushing.  This is 0 if
   // we are flushing by doc count instead.
-  private long ramBufferSize = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024);
-  private long waitQueuePauseBytes = (long) (ramBufferSize*0.1);
-  private long waitQueueResumeBytes = (long) (ramBufferSize*0.05);
 
-  // If we've allocated 5% over our RAM budget, we then
-  // free down to 95%
-  private long freeLevel = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024*0.95);
-
-  // Flush @ this number of docs.  If ramBufferSize is
-  // non-zero we will flush by RAM usage instead.
-  private int maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
+  private final IndexWriterConfig config;
 
   private boolean closed;
   private final FieldInfos fieldInfos;
@@ -284,16 +275,17 @@ final class DocumentsWriter {
   private final BufferedDeletesStream bufferedDeletesStream;
   private final IndexWriter.FlushControl flushControl;
 
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
+  DocumentsWriter(IndexWriterConfig config, Directory directory, IndexWriter writer, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.writer = writer;
     this.similarityProvider = writer.getConfig().getSimilarityProvider();
-    this.maxThreadStates = maxThreadStates;
+    this.maxThreadStates = config.getMaxThreadStates();
     this.fieldInfos = fieldInfos;
     this.bufferedDeletesStream = bufferedDeletesStream;
     flushControl = writer.flushControl;
 
-    consumer = indexingChain.getChain(this);
+    consumer = config.getIndexingChain().getChain(this);
+    this.config = config;
   }
 
   // Buffer a specific docID for deletion.  Currently only
@@ -361,45 +353,6 @@ final class DocumentsWriter {
     for(int i=0;i<threadStates.length;i++) {
       threadStates[i].docState.infoStream = infoStream;
     }
-  }
-
-  synchronized void setSimilarityProvider(SimilarityProvider similarity) {
-    this.similarityProvider = similarity;
-    for(int i=0;i<threadStates.length;i++) {
-      threadStates[i].docState.similarityProvider = similarity;
-    }
-  }
-
-  /** Set how much RAM we can use before flushing. */
-  synchronized void setRAMBufferSizeMB(double mb) {
-    if (mb == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-      ramBufferSize = IndexWriterConfig.DISABLE_AUTO_FLUSH;
-      waitQueuePauseBytes = 4*1024*1024;
-      waitQueueResumeBytes = 2*1024*1024;
-    } else {
-      ramBufferSize = (long) (mb*1024*1024);
-      waitQueuePauseBytes = (long) (ramBufferSize*0.1);
-      waitQueueResumeBytes = (long) (ramBufferSize*0.05);
-      freeLevel = (long) (0.95 * ramBufferSize);
-    }
-  }
-
-  synchronized double getRAMBufferSizeMB() {
-    if (ramBufferSize == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-      return ramBufferSize;
-    } else {
-      return ramBufferSize/1024./1024.;
-    }
-  }
-
-  /** Set max buffered docs, which means we will flush by
-   *  doc count instead of by RAM usage. */
-  void setMaxBufferedDocs(int count) {
-    maxBufferedDocs = count;
-  }
-
-  int getMaxBufferedDocs() {
-    return maxBufferedDocs;
   }
 
   /** Get current segment name we are writing. */
@@ -1024,6 +977,14 @@ final class DocumentsWriter {
 
     deletesRAMUsed = bufferedDeletesStream.bytesUsed();
 
+    final long ramBufferSize;
+    final double mb = config.getRAMBufferSizeMB();
+    if (mb == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
+      ramBufferSize = IndexWriterConfig.DISABLE_AUTO_FLUSH;
+    } else {
+      ramBufferSize = (long) (mb*1024*1024);
+    }
+
     synchronized(this) {
       if (ramBufferSize == IndexWriterConfig.DISABLE_AUTO_FLUSH || bufferIsFull) {
         return;
@@ -1051,6 +1012,8 @@ final class DocumentsWriter {
       // (freeLevel)
 
       boolean any = true;
+
+      final long freeLevel = (long) (0.95 * ramBufferSize);
 
       while(bytesUsed()+deletesRAMUsed > freeLevel) {
       
@@ -1117,10 +1080,24 @@ final class DocumentsWriter {
     }
 
     synchronized boolean doResume() {
+      final double mb = config.getRAMBufferSizeMB();
+      final long waitQueueResumeBytes;
+      if (mb == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
+        waitQueueResumeBytes = 2*1024*1024;
+      } else {
+        waitQueueResumeBytes = (long) (mb*1024*1024*0.05);
+      }
       return waitingBytes <= waitQueueResumeBytes;
     }
 
     synchronized boolean doPause() {
+      final double mb = config.getRAMBufferSizeMB();
+      final long waitQueuePauseBytes;
+      if (mb == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
+        waitQueuePauseBytes = 4*1024*1024;
+      } else {
+        waitQueuePauseBytes = (long) (mb*1024*1024*0.1);
+      }
       return waitingBytes > waitQueuePauseBytes;
     }
 

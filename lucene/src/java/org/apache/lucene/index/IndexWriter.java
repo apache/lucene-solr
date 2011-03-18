@@ -230,8 +230,6 @@ public class IndexWriter implements Closeable {
 
   private Lock writeLock;
 
-  private final int termIndexInterval;
-
   private boolean closed;
   private boolean closing;
 
@@ -689,10 +687,9 @@ public class IndexWriter implements Closeable {
 
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
-   * Note that the passed in {@link IndexWriterConfig} is cloned and thus making
-   * changes to it after IndexWriter has been instantiated will not affect
-   * IndexWriter. Additionally, calling {@link #getConfig()} and changing the
-   * parameters does not affect that IndexWriter instance.
+   * Note that the passed in {@link IndexWriterConfig} is
+   * privately cloned; if you need to make subsequent "live"
+   * changes to the configuration use {@link #getConfig}.
    * <p>
    * 
    * @param d
@@ -718,11 +715,9 @@ public class IndexWriter implements Closeable {
     directory = d;
     analyzer = conf.getAnalyzer();
     infoStream = defaultInfoStream;
-    termIndexInterval = conf.getTermIndexInterval();
     mergePolicy = conf.getMergePolicy();
     mergePolicy.setIndexWriter(this);
     mergeScheduler = conf.getMergeScheduler();
-    mergedSegmentWarmer = conf.getMergedSegmentWarmer();
     codecs = conf.getCodecProvider();
     
     bufferedDeletesStream = new BufferedDeletesStream(messageID);
@@ -791,7 +786,7 @@ public class IndexWriter implements Closeable {
 
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates(), getCurrentFieldInfos(), bufferedDeletesStream);
+      docWriter = new DocumentsWriter(config, directory, this, getCurrentFieldInfos(), bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
 
       // Default deleter (for backwards compatibility) is
@@ -808,10 +803,6 @@ public class IndexWriter implements Closeable {
         changeCount++;
         segmentInfos.changed();
       }
-
-      docWriter.setRAMBufferSizeMB(conf.getRAMBufferSizeMB());
-      docWriter.setMaxBufferedDocs(conf.getMaxBufferedDocs());
-      pushMaxBufferedDocs();
 
       if (infoStream != null) {
         message("init: create=" + create);
@@ -881,38 +872,20 @@ public class IndexWriter implements Closeable {
   }
 
   /**
-   * Returns the {@link IndexWriterConfig} that was passed to
-   * {@link #IndexWriter(Directory, IndexWriterConfig)}. This allows querying
-   * IndexWriter's settings.
+   * Returns the private {@link IndexWriterConfig}, cloned
+   * from the {@link IndexWriterConfig} passed to
+   * {@link #IndexWriter(Directory, IndexWriterConfig)}.
    * <p>
-   * <b>NOTE:</b> setting any parameter on the returned instance has not effect
-   * on the IndexWriter instance. If you need to change those settings after
-   * IndexWriter has been created, you need to instantiate a new IndexWriter.
+   * <b>NOTE:</b> some settings may be changed on the
+   * returned {@link IndexWriterConfig}, and will take
+   * effect in the current IndexWriter instance.  See the
+   * javadocs for the specific setters in {@link
+   * IndexWriterConfig} for details.
    */
   public IndexWriterConfig getConfig() {
     return config;
   }
   
-  /**
-   * If we are flushing by doc count (not by RAM usage), and
-   * using LogDocMergePolicy then push maxBufferedDocs down
-   * as its minMergeDocs, to keep backwards compatibility.
-   */
-  private void pushMaxBufferedDocs() {
-    if (docWriter.getMaxBufferedDocs() != IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-      final MergePolicy mp = mergePolicy;
-      if (mp instanceof LogDocMergePolicy) {
-        LogDocMergePolicy lmp = (LogDocMergePolicy) mp;
-        final int maxBufferedDocs = docWriter.getMaxBufferedDocs();
-        if (lmp.getMinMergeDocs() != maxBufferedDocs) {
-          if (infoStream != null)
-            message("now push maxBufferedDocs " + maxBufferedDocs + " to LogDocMergePolicy");
-          lmp.setMinMergeDocs(maxBufferedDocs);
-        }
-      }
-    }
-  }
-
   /** If non-null, this will be the default infoStream used
    * by a newly instantiated IndexWriter.
    * @see #setInfoStream
@@ -1476,8 +1449,8 @@ public class IndexWriter implements Closeable {
 
   /** If non-null, information about merges will be printed to this.
    */
-  private PrintStream infoStream = null;
-  private static PrintStream defaultInfoStream = null;
+  private PrintStream infoStream;
+  private static PrintStream defaultInfoStream;
 
   /**
    * Requests an "optimize" operation on an index, priming the index
@@ -2270,7 +2243,7 @@ public class IndexWriter implements Closeable {
 
     try {
       String mergedName = newSegmentName();
-      SegmentMerger merger = new SegmentMerger(directory, termIndexInterval,
+      SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, codecs, payloadProcessorProvider,
                                                ((FieldInfos) docWriter.getFieldInfos().clone()));
       
@@ -3163,7 +3136,7 @@ public class IndexWriter implements Closeable {
 
     SegmentInfos sourceSegments = merge.segments;
 
-    SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge,
+    SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
                                              codecs, payloadProcessorProvider,
                                              ((FieldInfos) docWriter.getFieldInfos().clone()));
 
@@ -3291,6 +3264,8 @@ public class IndexWriter implements Closeable {
 
         merge.info.setUseCompoundFile(true);
       }
+
+      final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
 
       final int termsIndexDivisor;
       final boolean loadDocStores;
@@ -3571,8 +3546,6 @@ public class IndexWriter implements Closeable {
   public static abstract class IndexReaderWarmer {
     public abstract void warm(IndexReader reader) throws IOException;
   }
-
-  private IndexReaderWarmer mergedSegmentWarmer;
 
   private void handleOOM(OutOfMemoryError oom, String location) {
     if (infoStream != null) {
