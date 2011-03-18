@@ -83,35 +83,6 @@
     </delete>
   </target>
 
-  <!-- Prepares an entity file for use in Forrest documentation -->
-  <target name="init-forrest-entities">
-    <!-- no description, don't advertise -->
-
-    <!-- Building off Lucene trunk, we don't need this
-    <available file="lib/lucene-core-${version}.jar"
-               property="lucene-version-ok-m2deploy-wont-fail" />
-    <fail unless="lucene-version-ok-m2deploy-wont-fail">
-      lib/lucene-core-${version}.jar Missing
-
-      lib/lucene-core-${version}.jar does not exist.
-      This will cause problems with m2-deploy later, so fail fast now.
-      
-      Probably cause: lucene jars were upgraded w/o modifying the
-      'version' property in common-build.xml
-    </fail>
-    -->
-    
-    <mkdir dir="${dest}" />
-  	
-  	<!-- A folder containing the expanded war file -->
-  	<mkdir dir="${dest}/web" />
-  	
-    <echo  file="${dest}/solr-specific-forrest-variables.ent" append="false">
-      &lt;!ENTITY solr.specversion "${specversion}"&gt;
-    </echo>
-  </target>
-
-
   <!-- ========================================================================= -->
   <!-- ===================== COMPILATION-RELATED TASKS ========================= -->
   <!-- ========================================================================= -->
@@ -126,7 +97,7 @@
 
   <target name="compile-solrj"
           description="Compile the java client."
-          depends="init-forrest-entities, compile-lucene">
+          depends="compile-lucene">
 
     <solr-javac destdir="${dest}/solrj"
                 classpathref="compile.classpath">
@@ -149,7 +120,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="validate-solr, compile-solrj,init-forrest-entities">
+          depends="validate-solr, compile-solrj">
 
     <solr-javac destdir="${dest}/solr"
                 classpathref="compile.classpath.solrj">
@@ -382,7 +353,7 @@
   <!-- Run core unit tests. -->
   <target name="test-core"
           description="Runs the core unit tests."
-          depends="init-forrest-entities, compileTests, junit" />
+          depends="compileTests, junit" />
 	
   <!-- Run contrib unit tests. -->
   <target name="test"
@@ -602,7 +573,7 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="init-forrest-entities, dist-solrj, dist-jar, dist-contrib, dist-war" />
+          depends="dist-solrj, dist-jar, dist-contrib, dist-war" />
 
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
@@ -724,7 +695,7 @@
 
   <target name="example" 
           description="Creates a runnable example configuration."
-          depends="init-forrest-entities,compile-lucene,dist-contrib,dist-war,example-contrib">
+          depends="compile-lucene,dist-contrib,dist-war,example-contrib">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
@@ -913,30 +884,21 @@
   </target>
 
 
-  	<target name="build-site" depends="svn-up, init-forrest-entities" description="Prototype Helper for Committers.  Assumes SVN is in the path">
-		<delete dir="src/site/build"/>
-		<exec executable="forrest" dir="src/site"/>
-		<copy todir="site">
-			<fileset dir="src/site/build/site"/>
-		</copy>
-		<exec executable="svn" dir="site">
-			<arg value="ci"/>
-			<arg value="-m"/>
-			<arg value="&quot;Forrest Entity updates&quot;"/>
-		</exec>
-    <exec executable="svn" dir="src/site">
-                    <arg value="ci"/>
-                    <arg value="-m"/>
-                    <arg value="&quot;Forrest Entity updates&quot;"/>
-            </exec>
+  <target name="build-site" depends="svn-up" 
+          description="Prototype Helper for Committers.  Assumes SVN is in the path">
+    <delete dir="src/site/build"/>
+    <exec executable="forrest" dir="src/site"/>
+    <copy todir="site">
+      <fileset dir="src/site/build/site"/>
+    </copy>
     <antcall target="svn-up"/>
-
+  
   </target>
-	<target name="svn-up">
-		<exec executable="svn">
-			<arg value="update"/>
-		</exec>
-	</target>
+  <target name="svn-up">
+    <exec executable="svn">
+      <arg value="update"/>
+    </exec>
+  </target>
 
   <target name="clean-package-signatures">
     <delete failonerror="false">
@@ -976,7 +938,7 @@
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
   </target>
 
-  <target name="prepare-release" depends="clean, svn-up, build-site, package, sign-artifacts" 
+  <target name="prepare-release" depends="clean, svn-up, package, sign-artifacts" 
           description="Prototype helper for Committers.  Assumes gpg is in the path"/>
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check,dist,dist-src,dist-javadoc">
