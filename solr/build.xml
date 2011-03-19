@@ -738,75 +738,50 @@
   <!-- make a distribution -->
   <target name="package" depends="package-src,create-package"/>
 
-  <!-- copied from lucene build.xml -->
-  <patternset id="src.dist.patterns"
-              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/,backwards/"
-              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/"
-  />
+  <property name="svn.export.dir" location="${dest}/svn-export"/>
 
-  <target name="package-src"
-          description="Packages the Solr Source Distribution"
-          depends="dist">
+  <!-- Makes a tarball from running "svn export" at the root level.    -->
+  <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
+  <target name="package-src" depends="svn-export-source"
+          description="Packages the Solr Source Distribution">
     <mkdir dir="${package.dir}"/>
-
-    <delete includeemptydirs="true">
-      <fileset dir="${example}/work" includes="**/*"/>
-    </delete>
-
-    <delete includeemptydirs="true" failonerror="false">
-      <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
-    </delete>
- 
-    <delete file="${package.dir}/${fullnamever}-src.tgz" failonerror="false" />
-    <delete file="${package.dir}/${fullnamever}-src.zip" failonerror="false" />
-
-    <tar destfile="${package.dir}/${fullnamever}-src.tgz" compression="gzip" longfile="gnu">
-      <tarfileset dir=".."
-        prefix="${fullnamever}"
-        includes="*.txt *.xml dev-tools/" />
-      <tarfileset dir="." 
-        prefix="${fullnamever}"
-        includes="LICENSE.txt NOTICE.txt"/>
-      <tarfileset dir="."
-        prefix="${fullnamever}/solr"
-        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/ site/"
-        excludes="${package.dir}/** ${dist}/** **/lucene-libs/** example/webapps/*.war example/exampledocs/post.jar lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/python client/javascript contrib/**/build/ **/*.iml **/*.ipr **/*.iws" />
-      <tarfileset dir="."
-        prefix="${fullnamever}/solr"
-        includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
-      <tarfileset dir="."
-        mode="755"
-        prefix="${fullnamever}/solr"
-        includes="**/*.sh **/bin/ src/scripts/" />
-      <tarfileset dir="../lucene" prefix="${fullnamever}/lucene">
-        <patternset refid="src.dist.patterns"/>
-      </tarfileset>
+    <property name="source.package.file"
+              value="${package.dir}/${fullnamever}-src.tgz"/>
+    <delete file="${source.package.file}" failonerror="false" />
+    <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset dir="${svn.export.dir}" prefix="${fullnamever}"/>
+      <tarfileset dir="${svn.export.dir}/solr" prefix="${fullnamever}"
+                  includes="NOTICE.txt,LICENSE.txt"/>
     </tar>
-    <solr-checksum file="${package.dir}/${fullnamever}-src.tgz"/>
-
-    <gunzip src="${package.dir}/${fullnamever}-src.tgz" dest="${dest}/${fullnamever}-src.tar"/>
-    <untar src="${dest}/${fullnamever}-src.tar" dest="${dest}"/>
-
-    <fixcrlf srcdir="${dest}/${fullnamever}"
-       encoding="UTF-8"
-       eol="crlf"
-       includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
-       excludes="**/stopwordsWrongEncoding.txt **/gb18030-example.xml"
-     />
-
-    <zip destfile="${package.dir}/${fullnamever}-src.zip">
-      <zipfileset dir="${dest}/${fullnamever}"
-        prefix="${fullnamever}" 
-        excludes="**/*.sh **/bin/ src/scripts/" />
-      <zipfileset dir="${dest}/${fullnamever}"
-        prefix="${fullnamever}"
-        includes="**/*.sh **/bin/ src/scripts/"
-        filemode="755" />
-    </zip>
-    <solr-checksum file="${package.dir}/${fullnamever}-src.zip"/>
-
+    <solr-checksum file="${source.package.file}"/>
   </target>
 
+  <!-- Runs "svn export" in build/svn-export/ with the same root-level URL -->
+  <!-- and revision as the current working copy.                           -->
+  <target name="svn-export-source" depends="get-svn-info">
+    <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
+    <mkdir dir="${dest}"/>
+    <exec dir="." executable="svn" failonerror="true">
+      <arg line="checkout -r ${svn.Revision} ${svn.URL} ${svn.export.dir}"/>
+    </exec>
+  </target>
+
+  <!-- Populates properties svn.URL and svn.Revision using "svn info" -->
+  <target name="get-svn-info">
+    <exec dir=".." executable="svn" outputproperty="svn.info" failonerror="true">
+      <arg value="info"/>
+    </exec>
+    <loadproperties>
+      <propertyresource name="svn.info"/>
+      <filterchain>
+        <linecontainsregexp>
+          <regexp pattern="(URL|Revision):"/>
+        </linecontainsregexp>
+        <replacestring from=": " to="="/>
+        <prefixlines prefix="svn."/>
+      </filterchain>
+    </loadproperties>
+  </target>
 
   <target name="create-package"
           description="Packages the Solr Binary Distribution"
@@ -913,7 +888,6 @@
     <sign-artifact input.file="${package.dir}/${fullnamever}.tgz" output.file="${package.dir}/${fullnamever}.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${package.dir}/${fullnamever}.zip" output.file="${package.dir}/${fullnamever}.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${package.dir}/${fullnamever}-src.tgz" output.file="${package.dir}/${fullnamever}-src.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${package.dir}/${fullnamever}-src.zip" output.file="${package.dir}/${fullnamever}-src.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- Maven artifacts -->
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv" gpg.passphrase="${gpg.passphrase}"/>
