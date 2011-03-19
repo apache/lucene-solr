@@ -33,9 +33,6 @@
                refid="additional.dependencies"
   />
 
-  <property name="src.dir" location="src"/>
-
-
   <import file="../contrib-build.xml"/>
 
   <target name="jar" depends="compile" description="Create JAR">
