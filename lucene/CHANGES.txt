@@ -761,6 +761,11 @@ Bug fixes
   been rounded down to 0 instead of being rounded up to the smallest
   positive number.  (yonik)
 
+* LUCENE-2975: A hotspot bug corrupts IndexInput#readVInt()/readVLong() if
+  the underlying readByte() is inlined (which happens e.g. in MMapDirectory).
+  The loop was unwinded which makes the hotspot bug disappear.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
