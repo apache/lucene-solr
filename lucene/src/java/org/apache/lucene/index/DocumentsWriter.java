@@ -278,7 +278,7 @@ final class DocumentsWriter {
   DocumentsWriter(IndexWriterConfig config, Directory directory, IndexWriter writer, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.writer = writer;
-    this.similarityProvider = writer.getConfig().getSimilarityProvider();
+    this.similarityProvider = config.getSimilarityProvider();
     this.maxThreadStates = config.getMaxThreadStates();
     this.fieldInfos = fieldInfos;
     this.bufferedDeletesStream = bufferedDeletesStream;
