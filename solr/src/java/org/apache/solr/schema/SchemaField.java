@@ -102,7 +102,7 @@ public final class SchemaField extends FieldProperties {
   }
 
   /**
-   * If true, then use {@link #createFields(String, float)}, else use {@link #createField} to save an extra allocation
+   * If true, then use {@link #createFields(Object, float)}, else use {@link #createField} to save an extra allocation
    * @return true if this field is a poly field
    */
   public boolean isPolyField(){

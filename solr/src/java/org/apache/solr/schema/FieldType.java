@@ -58,7 +58,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * The default poly field separator.
    *
-   * @see #createFields(SchemaField, String, float)
+   * @see #createFields(SchemaField, Object, float)
    * @see #isPolyField()
    */
   public static final String POLY_FIELD_SEPARATOR = "___";
@@ -85,9 +85,9 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method.  This is useful
+   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method.  This is useful
    * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by multiple different fields.
-   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method may return more than one field
+   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method may return more than one field
    */
   public boolean isPolyField(){
     return false;
@@ -273,7 +273,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.document.Fieldable} instances
    * @param field the {@link org.apache.solr.schema.SchemaField}
-   * @param externalVal The value to add to the field
+   * @param value The value to add to the field
    * @param boost The boost to apply
    * @return An array of {@link org.apache.lucene.document.Fieldable}
    *
