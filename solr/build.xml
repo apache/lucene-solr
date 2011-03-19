@@ -768,7 +768,7 @@
         includes="LICENSE.txt NOTICE.txt"/>
       <tarfileset dir="."
         prefix="${fullnamever}/solr"
-        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
+        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/ site/"
         excludes="${package.dir}/** ${dist}/** **/lucene-libs/** example/webapps/*.war example/exampledocs/post.jar lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/python client/javascript contrib/**/build/ **/*.iml **/*.ipr **/*.iws" />
       <tarfileset dir="."
         prefix="${fullnamever}/solr"
