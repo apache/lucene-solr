@@ -186,6 +186,7 @@
          <path refid="compile.classpath.solrj"/>
           <fileset dir="contrib">
             <include name="**/lib/**/*.jar"/>
+            <include name="**/lucene-libs/**/*.jar"/>
           </fileset>
          <pathelement location="${dest}/client/solrj"/>
       </path>
@@ -197,6 +198,7 @@
           <packageset dir="${src}/java" />
           <packageset dir="${src}/webapp/src" />
           <packageset dir="contrib/dataimporthandler/src/main/java" />
+          <packageset dir="contrib/dataimporthandler/src/extras/main/java" />
           <packageset dir="contrib/clustering/src/main/java" />
           <packageset dir="contrib/extraction/src/main/java" />
           <packageset dir="contrib/uima/src/main/java" />
