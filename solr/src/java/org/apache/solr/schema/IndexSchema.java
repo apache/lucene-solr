@@ -99,7 +99,7 @@ public final class IndexSchema {
    * Config path directory searching rules.
    *
    * @see Config#openResource
-   * @deprecated Use {@link #IndexSchema(SolrConfig, String, InputStream)} instead.
+   * @deprecated Use {@link #IndexSchema(SolrConfig, String, InputSource)} instead.
    */
   @Deprecated
   public IndexSchema(SolrConfig solrConfig, String name) {
