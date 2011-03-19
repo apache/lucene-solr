@@ -50,10 +50,6 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <patternset id="src.dist.patterns"
-              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/,backwards/"
-              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/,contrib/benchmark/work/"
-  />
   <patternset id="binary.build.dist.patterns"
               includes="${final.name}*.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
   />
@@ -352,57 +348,60 @@
         <mkdir dir="${dist.dir}"/>
         <mkdir dir="${maven.dist.dir}"/>
     </target>
-  <!-- ================================================================== -->
-  <!-- Packages the sources with zip                                      -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="package-zip-src" depends="init, init-dist"
-    description="--> Generates the Lucene sources as .zip">
-    <zip destfile="${dist.dir}/lucene-${version}-src.zip">
-      <zipfileset prefix="lucene-${version}" dir=".">
-        <patternset refid="src.dist.patterns"/>
-      </zipfileset>
-    </zip>
-	<lucene-checksum file="${dist.dir}/lucene-${version}-src.zip"/>
-  </target>
+
+
+  <property name="svn.export.dir" location="${build.dir}/svn-export"/>
 
   <!-- ================================================================== -->
-  <!-- Packages the sources with tar-gzip                                 -->
+  <!-- Packages the sources from "svn export" with tar-gzip               -->
   <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="package-tgz-src" depends="init, init-dist"
+  <target name="package-tgz-src" depends="init, init-dist, svn-export-source"
     description="--> Generates the Lucene distribution as .tar.gz">
-
-    <delete file="${build.dir}/lucene-${version}-src.tar"/>
-    <delete file="${dist.dir}/lucene-${version}-src.tar.gz"/>
-    <tar tarfile="${build.dir}/lucene-${version}-src.tar" longfile="gnu">
-      <tarfileset prefix="lucene-${version}" dir=".">
-        <patternset refid="src.dist.patterns"/>
-      </tarfileset>
+    <property name="source.package.file"
+              value="${dist.dir}/lucene-${version}-src.tar.gz"/>
+    <delete file="${source.package.file}"/>
+    <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset prefix="lucene-${version}" dir="${svn.export.dir}"/>
     </tar>
-
-    <gzip zipfile="${dist.dir}/lucene-${version}-src.tar.gz"
-          src="${build.dir}/lucene-${version}-src.tar"
-    />
-	<lucene-checksum file="${dist.dir}/lucene-${version}-src.tar.gz"/>
+  	<lucene-checksum file="${source.package.file}"/>
   </target>
 
   <!-- ================================================================== -->
-  <!-- Packages the sources with zip and tar-gzip                         -->
+  <!-- Runs "svn export" in build/svn-export/ with the same URL           -->
+  <!-- and revision as the current working copy.                          -->
   <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="package-all-src" depends="package-zip-src, package-tgz-src"
-    description="--> Generates the .tar.gz and .zip source distributions"/>
+  <target name="svn-export-source" depends="get-svn-info">
+    <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
+    <mkdir dir="${build.dir}"/>
+    <exec dir="." executable="svn" failonerror="true">
+      <arg line="export -r ${svn.Revision} ${svn.URL} ${svn.export.dir}"/>
+    </exec>
+  </target>
 
   <!-- ================================================================== -->
-  <!-- same as package-all-src. it is just here for compatibility.        -->
+  <!-- Populates properties svn.URL and svn.Revision using "svn info".    -->
   <!-- ================================================================== -->
-  <!--                                                                    -->
+  <target name="get-svn-info">
+    <exec dir="." executable="svn" outputproperty="svn.info" failonerror="true">
+      <arg value="info"/>
+    </exec>
+    <loadproperties>
+      <propertyresource name="svn.info"/>
+      <filterchain>
+        <linecontainsregexp>
+          <regexp pattern="(URL|Revision):"/>
+        </linecontainsregexp>
+        <replacestring from=": " to="="/>
+        <prefixlines prefix="svn."/>
+      </filterchain>
+    </loadproperties>
+  </target>
+
+
   <!-- ================================================================== -->
-  <target name="dist-src" depends="package-all-src"/>
+  <!-- same as package-tgz-src. it is just here for compatibility.        -->
+  <!-- ================================================================== -->
+  <target name="dist-src" depends="package-tgz-src"/>
 
   <target name="dist-all" depends="dist, dist-src"/>
 
