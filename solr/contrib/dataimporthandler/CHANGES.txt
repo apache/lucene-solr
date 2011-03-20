@@ -76,6 +76,18 @@ Bug Fixes
 
 * SOLR-1811: formatDate should use the current NOW value always (Sean Timm via noble)
 
+* SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
+  defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+
+* SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
+  (Drew Farris via koji)
+
+* SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. (koji)
+
+* SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
+  true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
+  (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
+
 * SOLR-2310: getTimeElapsedSince() returns incorrect hour value when the elapse is over 60 hours
   (tom liu via koji)
 
@@ -83,6 +95,11 @@ Bug Fixes
   (koji)
 
 * SOLR-2330: solrconfig.xml files in example-DIH are broken. (Matt Parker, koji)
+
+* SOLR-1191: resolve DataImportHandler deltaQuery column against pk when pk
+  has a prefix (e.g. pk="book.id" deltaQuery="select id from ..."). More
+  useful error reporting when no match found (previously failed with a
+  NullPointerException in log and no clear user feedback). (gthb via yonik)
 
 * SOLR-2116: Fix TikaConfig classloader bug in TikaEntityProcessor
   (Martijn van Groningen via hossman)

@@ -429,7 +429,7 @@ New Features
   Example: q=add($v1,$v2)&v1=mul(popularity,5)&v2=20.0
   (yonik)
 
-* SOLR-2133: Function query parser can now parse multiple coma separated
+* SOLR-2133: Function query parser can now parse multiple comma separated
   value sources.  It also now fails if there is extra unexpected text
   after parsing the functions, instead of silently ignoring it.
   This allows expressions like q=dist(2,vector(1,2),$pt)&pt=3,4   (yonik)
@@ -645,22 +645,10 @@ Bug Fixes
 
 * SOLR-2148: Highlighter doesn't support q.alt. (koji)
 
-* SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
-  defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
-
 * SOLR-2180: It was possible for EmbeddedSolrServer to leave searchers
   open if a request threw an exception. (yonik)
 
 * SOLR-2173: Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
-
-* SOLR-2057: DataImportHandler never calls UpdateRequestProcessor.finish()
-  (Drew Farris via koji)
-
-* SOLR-1973: Empty fields in XML update messages confuse DataImportHandler. (koji)
-
-* SOLR-2221: Use StrUtils.parseBool() to get values of boolean options in DIH.
-  true/on/yes (for TRUE) and false/off/no (for FALSE) can be used for sub-options
-  (debug, verbose, synchronous, commit, clean, optimize) for full/delta-import commands. (koji)
 
 * SOLR-2081: BaseResponseWriter.isStreamingDocs causes
   SingleResponseWriter.end to be called 2x 
@@ -714,11 +702,6 @@ Bug Fixes
 
 * SOLR-2348: Fix field types to explicitly generate an error if you
   attempt to get a ValueSource for a multiValued field. (hossman)
-
-* SOLR-1191: resolve DataImportHandler deltaQuery column against pk when pk
-  has a prefix (e.g. pk="book.id" deltaQuery="select id from ..."). More
-  useful error reporting when no match found (previously failed with a
-  NullPointerException in log and no clear user feedback). (gthb via yonik)
 
 * SOLR-2380: Distributed faceting could miss values when facet.sort=index
   and when facet.offset was greater than 0. (yonik)
