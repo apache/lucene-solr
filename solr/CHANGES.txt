@@ -336,8 +336,6 @@ New Features
 * SOLR-1379: Add RAMDirectoryFactory for non-persistent in memory index storage.
   (Alex Baranov via yonik)
 
-* SOLR-1769: Solr 1.4 Replication - Repeater throwing NullPointerException (Jörgen Rydenius via noble)  
-
 * SOLR-1857: Synced Solr analysis with Lucene 3.1. Added KeywordMarkerFilterFactory 
   and StemmerOverrideFilterFactory, which can be used to tune stemming algorithms. 
   Added factories for Bulgarian, Czech, Hindi, Turkish, and Wikipedia analysis. Improved the
@@ -479,6 +477,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
+* SOLR-1769: Solr 1.4 Replication - Repeater throwing NullPointerException (Jörgen Rydenius via noble)  
+
 * SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
   to the original ValueSource.getValues(reader) so custom sources
   will work. (yonik)
