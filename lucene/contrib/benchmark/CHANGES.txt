@@ -2,6 +2,10 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+03/20/2011
+  LUCENE-2963: Easier way to run benchmark, by calling Benmchmark.exec(alg-file).
+  (Doron Cohen)
+  
 03/10/2011
   LUCENE-2961: Removed lib/xml-apis.jar, since JVM 1.5+ already contains the
   JAXP 1.3 interface classes it provides.
