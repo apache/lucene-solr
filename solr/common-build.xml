@@ -35,7 +35,7 @@
   <property name="name" value="${ant.project.name}"/>
 
   <property name="dev-tools.dir" value="${solr-path}/../dev-tools"/>
-  <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
+  <property name="prettify.dir" value="${solr-path}/../lucene/src/tools/prettify"/>
   <property name="package.dir" location="package"/>
 
   <tstamp>
