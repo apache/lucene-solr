@@ -3,6 +3,13 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 03/21/2011
+  LUCENE-2958: WriteLineDocTask improvements - allow to emit line docs also for empty
+  docs, and be flexible about which fields are added to the line file. For this, a header
+  line was added to the line file. That header is examined by LineDocSource. Old line
+  files which have no header line are handled as before, imposing the default header.
+  (Doron Cohen, Shai Erera, Mike McCandless)
+  
+03/21/2011
   LUCENE-2964: Allow benchmark tasks from alternative packages,
   specified through a new property "alt.tasks.packages".
   (Doron Cohen, Shai Erera)
