@@ -269,7 +269,7 @@ public class DocumentBuilder {
           for (CopyField cf : copyFields) {
             SchemaField destinationField = cf.getDestination();
             // check if the copy field is a multivalued or not
-            if (!destinationField.multiValued() && out.get(destinationField.getName()) != null) {
+            if (!destinationField.multiValued() && out.getFieldable(destinationField.getName()) != null) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                       "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
                               destinationField.getName() + ": " + v);
