@@ -289,9 +289,6 @@ public class IndexWriter implements Closeable {
 
   private Lock writeLock;
 
-  // TODO 4.0: this should be made final once the setter is out
-  private /*final*/int termIndexInterval;
-
   private boolean closed;
   private boolean closing;
 
@@ -873,9 +870,6 @@ public class IndexWriter implements Closeable {
   @Deprecated
   public void setTermIndexInterval(int interval) {
     ensureOpen();
-    this.termIndexInterval = interval;
-    // Required so config.getTermIndexInterval returns the right value. But this
-    // will go away together with the method in 4.0.
     config.setTermIndexInterval(interval);
   }
 
@@ -888,7 +882,7 @@ public class IndexWriter implements Closeable {
   public int getTermIndexInterval() {
     // We pass false because this method is called by SegmentMerger while we are in the process of closing
     ensureOpen(false);
-    return termIndexInterval;
+    return config.getTermIndexInterval();
   }
 
   /**
@@ -1050,10 +1044,9 @@ public class IndexWriter implements Closeable {
 
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
-   * Note that the passed in {@link IndexWriterConfig} is cloned and thus making
-   * changes to it after IndexWriter has been instantiated will not affect
-   * IndexWriter. Additionally, calling {@link #getConfig()} and changing the
-   * parameters does not affect that IndexWriter instance.
+   * Note that the passed in {@link IndexWriterConfig} is
+   * privately cloned; if you need to make subsequent "live"
+   * changes to the configuration use {@link #getConfig}.
    * <p>
    * 
    * @param d
@@ -1079,13 +1072,11 @@ public class IndexWriter implements Closeable {
     directory = d;
     analyzer = conf.getAnalyzer();
     infoStream = defaultInfoStream;
-    termIndexInterval = conf.getTermIndexInterval();
     writeLockTimeout = conf.getWriteLockTimeout();
     similarity = conf.getSimilarity();
     mergePolicy = conf.getMergePolicy();
     mergePolicy.setIndexWriter(this);
     mergeScheduler = conf.getMergeScheduler();
-    mergedSegmentWarmer = conf.getMergedSegmentWarmer();
     bufferedDeletes = new BufferedDeletes(messageID);
     bufferedDeletes.setInfoStream(infoStream);
     poolReaders = conf.getReaderPooling();
@@ -1155,7 +1146,7 @@ public class IndexWriter implements Closeable {
 
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates(), getCurrentFieldInfos(), bufferedDeletes);
+      docWriter = new DocumentsWriter(config, directory, this, getCurrentFieldInfos(), bufferedDeletes);
       docWriter.setInfoStream(infoStream);
       docWriter.setMaxFieldLength(maxFieldLength);
 
@@ -1173,10 +1164,6 @@ public class IndexWriter implements Closeable {
         changeCount++;
         segmentInfos.changed();
       }
-
-      docWriter.setRAMBufferSizeMB(conf.getRAMBufferSizeMB());
-      docWriter.setMaxBufferedDocs(conf.getMaxBufferedDocs());
-      pushMaxBufferedDocs();
 
       if (infoStream != null) {
         messageState();
@@ -1245,13 +1232,15 @@ public class IndexWriter implements Closeable {
   }
 
   /**
-   * Returns the {@link IndexWriterConfig} that was passed to
-   * {@link #IndexWriter(Directory, IndexWriterConfig)}. This allows querying
-   * IndexWriter's settings.
+   * Returns the private {@link IndexWriterConfig}, cloned
+   * from the {@link IndexWriterConfig} passed to
+   * {@link #IndexWriter(Directory, IndexWriterConfig)}.
    * <p>
-   * <b>NOTE:</b> setting any parameter on the returned instance has not effect
-   * on the IndexWriter instance. If you need to change those settings after
-   * IndexWriter has been created, you need to instantiate a new IndexWriter.
+   * <b>NOTE:</b> some settings may be changed on the
+   * returned {@link IndexWriterConfig}, and will take
+   * effect in the current IndexWriter instance.  See the
+   * javadocs for the specific setters in {@link
+   * IndexWriterConfig} for details.
    */
   public IndexWriterConfig getConfig() {
     return config;
@@ -1458,17 +1447,10 @@ public class IndexWriter implements Closeable {
   @Deprecated
   public void setMaxBufferedDocs(int maxBufferedDocs) {
     ensureOpen();
-    if (maxBufferedDocs != DISABLE_AUTO_FLUSH && maxBufferedDocs < 2)
-      throw new IllegalArgumentException(
-          "maxBufferedDocs must at least be 2 when enabled");
-    if (maxBufferedDocs == DISABLE_AUTO_FLUSH
-        && getRAMBufferSizeMB() == DISABLE_AUTO_FLUSH)
-      throw new IllegalArgumentException(
-          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
-    docWriter.setMaxBufferedDocs(maxBufferedDocs);
     pushMaxBufferedDocs();
-    if (infoStream != null)
+    if (infoStream != null) {
       message("setMaxBufferedDocs " + maxBufferedDocs);
+    }
     // Required so config.getMaxBufferedDocs returns the right value. But this
     // will go away together with the method in 4.0.
     config.setMaxBufferedDocs(maxBufferedDocs);
@@ -1480,11 +1462,11 @@ public class IndexWriter implements Closeable {
    * as its minMergeDocs, to keep backwards compatibility.
    */
   private void pushMaxBufferedDocs() {
-    if (docWriter.getMaxBufferedDocs() != DISABLE_AUTO_FLUSH) {
+    if (config.getMaxBufferedDocs() != DISABLE_AUTO_FLUSH) {
       final MergePolicy mp = mergePolicy;
       if (mp instanceof LogDocMergePolicy) {
         LogDocMergePolicy lmp = (LogDocMergePolicy) mp;
-        final int maxBufferedDocs = docWriter.getMaxBufferedDocs();
+        final int maxBufferedDocs = config.getMaxBufferedDocs();
         if (lmp.getMinMergeDocs() != maxBufferedDocs) {
           if (infoStream != null)
             message("now push maxBufferedDocs " + maxBufferedDocs + " to LogDocMergePolicy");
@@ -1503,7 +1485,7 @@ public class IndexWriter implements Closeable {
   @Deprecated
   public int getMaxBufferedDocs() {
     ensureOpen();
-    return docWriter.getMaxBufferedDocs();
+    return config.getMaxBufferedDocs();
   }
 
   /** Determines the amount of RAM that may be used for
@@ -1547,18 +1529,9 @@ public class IndexWriter implements Closeable {
    */
   @Deprecated
   public void setRAMBufferSizeMB(double mb) {
-    if (mb > 2048.0) {
-      throw new IllegalArgumentException("ramBufferSize " + mb + " is too large; should be comfortably less than 2048");
-    }
-    if (mb != DISABLE_AUTO_FLUSH && mb <= 0.0)
-      throw new IllegalArgumentException(
-          "ramBufferSize should be > 0.0 MB when enabled");
-    if (mb == DISABLE_AUTO_FLUSH && getMaxBufferedDocs() == DISABLE_AUTO_FLUSH)
-      throw new IllegalArgumentException(
-          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
-    docWriter.setRAMBufferSizeMB(mb);
-    if (infoStream != null)
+    if (infoStream != null) {
       message("setRAMBufferSizeMB " + mb);
+    }
     // Required so config.getRAMBufferSizeMB returns the right value. But this
     // will go away together with the method in 4.0.
     config.setRAMBufferSizeMB(mb);
@@ -1570,7 +1543,7 @@ public class IndexWriter implements Closeable {
    */
   @Deprecated
   public double getRAMBufferSizeMB() {
-    return docWriter.getRAMBufferSizeMB();
+    return config.getRAMBufferSizeMB();
   }
 
   /**
@@ -1589,10 +1562,6 @@ public class IndexWriter implements Closeable {
   @Deprecated
   public void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
     ensureOpen();
-    if (maxBufferedDeleteTerms != DISABLE_AUTO_FLUSH
-        && maxBufferedDeleteTerms < 1)
-      throw new IllegalArgumentException(
-          "maxBufferedDeleteTerms must at least be 1 when enabled");
     if (infoStream != null)
       message("setMaxBufferedDeleteTerms " + maxBufferedDeleteTerms);
     // Required so config.getMaxBufferedDeleteTerms returns the right value. But
@@ -2282,8 +2251,8 @@ public class IndexWriter implements Closeable {
 
   /** If non-null, information about merges will be printed to this.
    */
-  private PrintStream infoStream = null;
-  private static PrintStream defaultInfoStream = null;
+  private PrintStream infoStream;
+  private static PrintStream defaultInfoStream;
 
   /**
    * Requests an "optimize" operation on an index, priming the index
@@ -2945,7 +2914,7 @@ public class IndexWriter implements Closeable {
 
     try {
       String mergedName = newSegmentName();
-      SegmentMerger merger = new SegmentMerger(directory, termIndexInterval,
+      SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
                                                ((FieldInfos) docWriter.getFieldInfos().clone()));
       
@@ -3923,7 +3892,7 @@ public class IndexWriter implements Closeable {
     SegmentInfos sourceSegments = merge.segments;
     final int numSegments = sourceSegments.size();
 
-    SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge,
+    SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
                                              payloadProcessorProvider,
                                              ((FieldInfos) docWriter.getFieldInfos().clone()));
 
@@ -4041,6 +4010,8 @@ public class IndexWriter implements Closeable {
 
         merge.info.setUseCompoundFile(true);
       }
+
+      final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
 
       final int termsIndexDivisor;
       final boolean loadDocStores;
@@ -4377,8 +4348,6 @@ public class IndexWriter implements Closeable {
     public abstract void warm(IndexReader reader) throws IOException;
   }
 
-  private IndexReaderWarmer mergedSegmentWarmer;
-
   /**
    * Set the merged segment warmer. See {@link IndexReaderWarmer}.
    * 
@@ -4388,10 +4357,7 @@ public class IndexWriter implements Closeable {
    */
   @Deprecated
   public void setMergedSegmentWarmer(IndexReaderWarmer warmer) {
-    mergedSegmentWarmer = warmer;
-    // Required so config.getMergedSegmentWarmer returns the right value. But
-    // this will go away together with the method in 4.0.
-    config.setMergedSegmentWarmer(mergedSegmentWarmer);
+    config.setMergedSegmentWarmer(warmer);
   }
 
   /**
@@ -4401,7 +4367,7 @@ public class IndexWriter implements Closeable {
    */
   @Deprecated
   public IndexReaderWarmer getMergedSegmentWarmer() {
-    return mergedSegmentWarmer;
+    return config.getMergedSegmentWarmer();
   }
 
   private void handleOOM(OutOfMemoryError oom, String location) {

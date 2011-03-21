@@ -24,12 +24,16 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Version;
 
 /**
- * Holds all the configuration of {@link IndexWriter}. This object is only used
- * while constructing a new IndexWriter. Those settings cannot be changed
- * afterwards, except instantiating a new IndexWriter.
+ * Holds all the configuration of {@link IndexWriter}.  You
+ * should instantiate this class, call the setters to set
+ * your configuration, then pass it to {@link IndexWriter}.
+ * Note that {@link IndexWriter} makes a private clone; if
+ * you need to subsequently change settings use {@link
+ * IndexWriter#getConfig}.
+ *
  * <p>
  * All setter methods return {@link IndexWriterConfig} to allow chaining
- * settings conveniently. Thus someone can do:
+ * settings conveniently, for example:
  * 
  * <pre>
  * IndexWriterConfig conf = new IndexWriterConfig(analyzer);
@@ -106,25 +110,24 @@ public final class IndexWriterConfig implements Cloneable {
     return WRITE_LOCK_TIMEOUT;
   }
 
-  private Analyzer analyzer;
-  private IndexDeletionPolicy delPolicy;
-  private IndexCommit commit;
-  private OpenMode openMode;
-  private Similarity similarity;
-  private int termIndexInterval;
-  private MergeScheduler mergeScheduler;
-  private long writeLockTimeout;
-  private int maxBufferedDeleteTerms;
-  private double ramBufferSizeMB;
-  private int maxBufferedDocs;
-  private IndexingChain indexingChain;
-  private IndexReaderWarmer mergedSegmentWarmer;
-  private MergePolicy mergePolicy;
-  private int maxThreadStates;
-  private boolean readerPooling;
-  private int readerTermsIndexDivisor;
+  private final Analyzer analyzer;
+  private volatile IndexDeletionPolicy delPolicy;
+  private volatile IndexCommit commit;
+  private volatile OpenMode openMode;
+  private volatile Similarity similarity;
+  private volatile int termIndexInterval;
+  private volatile MergeScheduler mergeScheduler;
+  private volatile long writeLockTimeout;
+  private volatile int maxBufferedDeleteTerms;
+  private volatile double ramBufferSizeMB;
+  private volatile int maxBufferedDocs;
+  private volatile IndexingChain indexingChain;
+  private volatile IndexReaderWarmer mergedSegmentWarmer;
+  private volatile MergePolicy mergePolicy;
+  private volatile int maxThreadStates;
+  private volatile boolean readerPooling;
+  private volatile int readerTermsIndexDivisor;
   
-  // required for clone
   private Version matchVersion;
 
   /**
@@ -158,7 +161,7 @@ public final class IndexWriterConfig implements Cloneable {
   @Override
   public Object clone() {
     // Shallow clone is the only thing that's possible, since parameters like
-    // analyzer, index commit etc. do not implemnt Cloneable.
+    // analyzer, index commit etc. do not implement Cloneable.
     try {
       return super.clone();
     } catch (CloneNotSupportedException e) {
@@ -172,7 +175,9 @@ public final class IndexWriterConfig implements Cloneable {
     return analyzer;
   }
 
-  /** Specifies {@link OpenMode} of that index. */
+  /** Specifies {@link OpenMode} of the index.
+   * 
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setOpenMode(OpenMode openMode) {
     this.openMode = openMode;
     return this;
@@ -197,6 +202,8 @@ public final class IndexWriterConfig implements Cloneable {
    * <p>
    * <b>NOTE:</b> the deletion policy cannot be null. If <code>null</code> is
    * passed, the deletion policy will be set to the default.
+   *
+   * <p>Only takes effect when IndexWriter is first created. 
    */
   public IndexWriterConfig setIndexDeletionPolicy(IndexDeletionPolicy delPolicy) {
     this.delPolicy = delPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : delPolicy;
@@ -215,7 +222,8 @@ public final class IndexWriterConfig implements Cloneable {
   /**
    * Expert: allows to open a certain commit point. The default is null which
    * opens the latest commit point.
-   */
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setIndexCommit(IndexCommit commit) {
     this.commit = commit;
     return this;
@@ -237,7 +245,8 @@ public final class IndexWriterConfig implements Cloneable {
    * the similarity will be set to the default.
    * 
    * @see Similarity#setDefault(Similarity)
-   */
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setSimilarity(Similarity similarity) {
     this.similarity = similarity == null ? Similarity.getDefault() : similarity;
     return this;
@@ -273,7 +282,9 @@ public final class IndexWriterConfig implements Cloneable {
    * must be scanned for each random term access.
    * 
    * @see #DEFAULT_TERM_INDEX_INTERVAL
-   */
+   *
+   * <p>Takes effect immediately, but only applies to newly
+   *  flushed/merged segments. */
   public IndexWriterConfig setTermIndexInterval(int interval) {
     this.termIndexInterval = interval;
     return this;
@@ -294,7 +305,8 @@ public final class IndexWriterConfig implements Cloneable {
    * <p>
    * <b>NOTE:</b> the merge scheduler cannot be null. If <code>null</code> is
    * passed, the merge scheduler will be set to the default.
-   */
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setMergeScheduler(MergeScheduler mergeScheduler) {
     this.mergeScheduler = mergeScheduler == null ? new ConcurrentMergeScheduler() : mergeScheduler;
     return this;
@@ -312,7 +324,8 @@ public final class IndexWriterConfig implements Cloneable {
    * Sets the maximum time to wait for a write lock (in milliseconds) for this
    * instance. You can change the default value for all instances by calling
    * {@link #setDefaultWriteLockTimeout(long)}.
-   */
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setWriteLockTimeout(long writeLockTimeout) {
     this.writeLockTimeout = writeLockTimeout;
     return this;
@@ -338,6 +351,9 @@ public final class IndexWriterConfig implements Cloneable {
    * @throws IllegalArgumentException if maxBufferedDeleteTerms
    * is enabled but smaller than 1
    * @see #setRAMBufferSizeMB
+   *
+   * <p>Takes effect immediately, but only the next time a
+   * document is added, updated or deleted.
    */
   public IndexWriterConfig setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
     if (maxBufferedDeleteTerms != DISABLE_AUTO_FLUSH
@@ -390,6 +406,9 @@ public final class IndexWriterConfig implements Cloneable {
    * <p>
    * The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.
    * 
+   * <p>Takes effect immediately, but only the next time a
+   * document is added, updated or deleted.
+   *
    * @throws IllegalArgumentException
    *           if ramBufferSize is enabled but non-positive, or it disables
    *           ramBufferSize when maxBufferedDocs is already disabled
@@ -429,6 +448,9 @@ public final class IndexWriterConfig implements Cloneable {
    * <p>
    * Disabled by default (writer flushes by RAM usage).
    * 
+   * <p>Takes effect immediately, but only the next time a
+   * document is added, updated or deleted.
+   *
    * @see #setRAMBufferSizeMB(double)
    * 
    * @throws IllegalArgumentException
@@ -457,7 +479,9 @@ public final class IndexWriterConfig implements Cloneable {
     return maxBufferedDocs;
   }
 
-  /** Set the merged segment warmer. See {@link IndexReaderWarmer}. */
+  /** Set the merged segment warmer. See {@link IndexReaderWarmer}.
+   *
+   * <p>Takes effect on the next merge. */
   public IndexWriterConfig setMergedSegmentWarmer(IndexReaderWarmer mergeSegmentWarmer) {
     this.mergedSegmentWarmer = mergeSegmentWarmer;
     return this;
@@ -474,7 +498,8 @@ public final class IndexWriterConfig implements Cloneable {
    * and return a {@link MergePolicy.MergeSpecification} describing the merges.
    * It also selects merges to do for optimize(). (The default is
    * {@link LogByteSizeMergePolicy}.
-   */
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setMergePolicy(MergePolicy mergePolicy) {
     this.mergePolicy = mergePolicy == null ? new LogByteSizeMergePolicy() : mergePolicy;
     return this;
@@ -494,7 +519,8 @@ public final class IndexWriterConfig implements Cloneable {
    * at once in IndexWriter. Values &lt; 1 are invalid and if passed
    * <code>maxThreadStates</code> will be set to
    * {@link #DEFAULT_MAX_THREAD_STATES}.
-   */
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setMaxThreadStates(int maxThreadStates) {
     this.maxThreadStates = maxThreadStates < 1 ? DEFAULT_MAX_THREAD_STATES : maxThreadStates;
     return this;
@@ -513,7 +539,9 @@ public final class IndexWriterConfig implements Cloneable {
    *  This method lets you enable pooling without getting a
    *  near-real-time reader.  NOTE: if you set this to
    *  false, IndexWriter will still pool readers once
-   *  {@link IndexWriter#getReader} is called. */
+   *  {@link IndexWriter#getReader} is called.
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setReaderPooling(boolean readerPooling) {
     this.readerPooling = readerPooling;
     return this;
@@ -525,7 +553,9 @@ public final class IndexWriterConfig implements Cloneable {
     return readerPooling;
   }
 
-  /** Expert: sets the {@link DocConsumer} chain to be used to process documents. */
+  /** Expert: sets the {@link DocConsumer} chain to be used to process documents.
+   *
+   * <p>Only takes effect when IndexWriter is first created. */
   IndexWriterConfig setIndexingChain(IndexingChain indexingChain) {
     this.indexingChain = indexingChain == null ? DocumentsWriter.defaultIndexingChain : indexingChain;
     return this;
@@ -542,7 +572,10 @@ public final class IndexWriterConfig implements Cloneable {
    *  IndexWriter#getReader}. If you pass -1, the terms index 
    *  won't be loaded by the readers. This is only useful in 
    *  advanced situations when you will only .next() through 
-   *  all terms; attempts to seek will hit an exception. */
+   *  all terms; attempts to seek will hit an exception.
+   *
+   * <p>Takes effect immediately, but only applies to
+   * readers opened after this call */
   public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
     if (divisor <= 0 && divisor != -1) {
       throw new IllegalArgumentException("divisor must be >= 1, or -1 (got " + divisor + ")");
