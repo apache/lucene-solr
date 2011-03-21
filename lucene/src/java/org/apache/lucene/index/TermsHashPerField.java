@@ -39,6 +39,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   final DocumentsWriter.DocState docState;
   final FieldInvertState fieldState;
   TermToBytesRefAttribute termAtt;
+  BytesRef termBytesRef;
 
   // Copied from our perThread
   final IntBlockPool intPool;
@@ -53,7 +54,6 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   final BytesRefHash bytesHash;
  
   ParallelPostingsArray postingsArray;
-  private final BytesRef termBytesRef;
   private final AtomicLong bytesUsed;
 
   public TermsHashPerField(DocInverterPerField docInverterPerField, final TermsHashPerThread perThread, final TermsHashPerThread nextPerThread, final FieldInfo fieldInfo) {
@@ -70,7 +70,6 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     bytesHash = new BytesRefHash(termBytePool, HASH_INIT_SIZE, byteStarts); 
     streamCount = consumer.getStreamCount();
     numPostingInt = 2*streamCount;
-    termBytesRef = perThread.termBytesRef;
     this.fieldInfo = fieldInfo;
     if (nextPerThread != null)
       nextPerField = (TermsHashPerField) nextPerThread.addField(docInverterPerField, fieldInfo);
@@ -119,6 +118,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   @Override
   void start(Fieldable f) {
     termAtt = fieldState.attributeSource.getAttribute(TermToBytesRefAttribute.class);
+    termBytesRef = termAtt.getBytesRef();
     consumer.start(f);
     if (nextPerField != null) {
       nextPerField.start(f);
@@ -181,7 +181,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     // Get the text & hash of this term.
     int termID;
     try{
-       termID = bytesHash.add(termBytesRef, termAtt.toBytesRef(termBytesRef));
+       termID = bytesHash.add(termBytesRef, termAtt.fillBytesRef());
     }catch (MaxBytesLengthExceededException e) {
       // Not enough room in current block
       // Just skip this term, to remain as robust as

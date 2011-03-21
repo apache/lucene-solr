@@ -58,11 +58,10 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
 			ArrayList<SpanQuery> clausesList=new ArrayList<SpanQuery>();
 			TokenStream ts=analyzer.tokenStream(fieldName,new StringReader(value));
 			TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-			
+      BytesRef bytes = termAtt.getBytesRef();
 	    while (ts.incrementToken()) {
-	        BytesRef term = new BytesRef();
-	        termAtt.toBytesRef(term);
-			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName, term));
+	        termAtt.fillBytesRef();
+			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName, new BytesRef(bytes)));
 			    clausesList.add(stq);
 			}
 			SpanOrQuery soq=new SpanOrQuery(clausesList.toArray(new SpanQuery[clausesList.size()]));

@@ -353,10 +353,10 @@ public class MemoryIndex {
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-      BytesRef ref = new BytesRef(10);
+      BytesRef ref = termAtt.getBytesRef();
       stream.reset();
       while (stream.incrementToken()) {
-        termAtt.toBytesRef(ref);
+        termAtt.fillBytesRef();
         if (ref.length == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;

@@ -156,10 +156,10 @@
       TermToBytesRefAttribute bytesAtt = tstream.getAttribute(TermToBytesRefAttribute.class);
       tstream.reset();
       matches = new HashSet<BytesRef>();
+      final BytesRef bytes = bytesAtt.getBytesRef();
       while (tstream.incrementToken()) {
-        final BytesRef bytes = new BytesRef();
-        bytesAtt.toBytesRef(bytes);
-        matches.add(bytes);
+        bytesAtt.fillBytesRef();
+        matches.add(new BytesRef(bytes));
       }
     }
 
@@ -273,14 +273,17 @@
   }
   
   private static class Tok {
-    final BytesRef bytes = new BytesRef();
+    final BytesRef bytes;
     final String rawText, text;
     final int pos;
     final List<ReflectItem> reflected = new ArrayList<ReflectItem>();
     
     Tok(AttributeSource token, int pos, FieldType ft) {
       this.pos = pos;
-      token.getAttribute(TermToBytesRefAttribute.class).toBytesRef(bytes);
+      TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
+      BytesRef spare = termAtt.getBytesRef();
+	  termAtt.fillBytesRef();
+	  bytes = new BytesRef(spare);
       rawText = (token.hasAttribute(CharTermAttribute.class)) ?
         token.getAttribute(CharTermAttribute.class).toString() : null;
       final CharArr textBuf = new CharArr(bytes.length);

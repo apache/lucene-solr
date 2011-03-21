@@ -60,16 +60,16 @@ public class TermsQueryBuilder implements QueryBuilder {
 		{
 		  TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
 			Term term = null;
+      BytesRef bytes = termAtt.getBytesRef();
 			while (ts.incrementToken()) {
-        BytesRef bytes = new BytesRef();
-        termAtt.toBytesRef(bytes);
+        termAtt.fillBytesRef();
 				if (term == null)
 				{
-					term = new Term(fieldName, bytes);
+					term = new Term(fieldName, new BytesRef(bytes));
 				} else
 				{
 //					 create from previous to save fieldName.intern overhead
-					term = term.createTerm(bytes); 
+					term = term.createTerm(new BytesRef(bytes)); 
 				}
 				bq.add(new BooleanClause(new TermQuery(term),BooleanClause.Occur.SHOULD));
 			}

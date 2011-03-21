@@ -30,7 +30,7 @@ import com.ibm.icu.text.RawCollationKey;
 public class ICUCollatedTermAttributeImpl extends CharTermAttributeImpl {
   private final Collator collator;
   private final RawCollationKey key = new RawCollationKey();
-  
+
   /**
    * Create a new ICUCollatedTermAttributeImpl
    * @param collator Collation key generator
@@ -43,13 +43,14 @@ public class ICUCollatedTermAttributeImpl extends CharTermAttributeImpl {
       throw new RuntimeException(e);
     }
   }
-  
+
   @Override
-  public int toBytesRef(BytesRef target) {
+  public int fillBytesRef() {
+    BytesRef bytes = getBytesRef();
     collator.getRawCollationKey(toString(), key);
-    target.bytes = key.bytes;
-    target.offset = 0;
-    target.length = key.size;
-    return target.hashCode();
+    bytes.bytes = key.bytes;
+    bytes.offset = 0;
+    bytes.length = key.size;
+    return bytes.hashCode();
   }
 }

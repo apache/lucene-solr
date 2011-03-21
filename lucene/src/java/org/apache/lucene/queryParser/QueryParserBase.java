@@ -532,18 +532,19 @@ public abstract class QueryParserBase {
       // ignore
     }
 
+    BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
+
     if (numTokens == 0)
       return null;
     else if (numTokens == 1) {
-      BytesRef term = new BytesRef();
       try {
         boolean hasNext = buffer.incrementToken();
         assert hasNext == true;
-        termAtt.toBytesRef(term);
+        termAtt.fillBytesRef();
       } catch (IOException e) {
         // safe to ignore, because we know the number of tokens
       }
-      return newTermQuery(new Term(field, term));
+      return newTermQuery(new Term(field, new BytesRef(bytes)));
     } else {
       if (severalTokensAtSamePosition || (!quoted && !autoGeneratePhraseQueries)) {
         if (positionCount == 1 || (!quoted && !autoGeneratePhraseQueries)) {
@@ -554,17 +555,15 @@ public abstract class QueryParserBase {
             BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
 
           for (int i = 0; i < numTokens; i++) {
-            BytesRef term = new BytesRef();
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              termAtt.toBytesRef(term);
+              termAtt.fillBytesRef();
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
             }
-
             Query currentQuery = newTermQuery(
-                new Term(field, term));
+                new Term(field, new BytesRef(bytes)));
             q.add(currentQuery, occur);
           }
           return q;
@@ -576,12 +575,11 @@ public abstract class QueryParserBase {
           List<Term> multiTerms = new ArrayList<Term>();
           int position = -1;
           for (int i = 0; i < numTokens; i++) {
-            BytesRef term = new BytesRef();
             int positionIncrement = 1;
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              termAtt.toBytesRef(term);
+              termAtt.fillBytesRef();
               if (posIncrAtt != null) {
                 positionIncrement = posIncrAtt.getPositionIncrement();
               }
@@ -598,7 +596,7 @@ public abstract class QueryParserBase {
               multiTerms.clear();
             }
             position += positionIncrement;
-            multiTerms.add(new Term(field, term));
+            multiTerms.add(new Term(field, new BytesRef(bytes)));
           }
           if (enablePositionIncrements) {
             mpq.add(multiTerms.toArray(new Term[0]),position);
@@ -613,15 +611,13 @@ public abstract class QueryParserBase {
         pq.setSlop(phraseSlop);
         int position = -1;
 
-
         for (int i = 0; i < numTokens; i++) {
-          BytesRef term = new BytesRef();
           int positionIncrement = 1;
 
           try {
             boolean hasNext = buffer.incrementToken();
             assert hasNext == true;
-            termAtt.toBytesRef(term);
+            termAtt.fillBytesRef();
             if (posIncrAtt != null) {
               positionIncrement = posIncrAtt.getPositionIncrement();
             }
@@ -631,9 +627,9 @@ public abstract class QueryParserBase {
 
           if (enablePositionIncrements) {
             position += positionIncrement;
-            pq.add(new Term(field, term),position);
+            pq.add(new Term(field, new BytesRef(bytes)),position);
           } else {
-            pq.add(new Term(field, term));
+            pq.add(new Term(field, new BytesRef(bytes)));
           }
         }
         return pq;
@@ -796,13 +792,13 @@ public abstract class QueryParserBase {
       source = analyzer.tokenStream(field, new StringReader(part));
     }
       
-    BytesRef result = new BytesRef();
     TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-      
+    BytesRef bytes = termAtt.getBytesRef();
+
     try {
       if (!source.incrementToken())
         throw new IllegalArgumentException("analyzer returned no terms for range part: " + part);
-      termAtt.toBytesRef(result);
+      termAtt.fillBytesRef();
       if (source.incrementToken())
         throw new IllegalArgumentException("analyzer returned too many terms for range part: " + part);
     } catch (IOException e) {
@@ -812,8 +808,8 @@ public abstract class QueryParserBase {
     try {
       source.close();
     } catch (IOException ignored) {}
-      
-    return result;
+    
+    return new BytesRef(bytes);
   }
 
   /**
