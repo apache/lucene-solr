@@ -803,7 +803,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/**/lib/ contrib/**/lucene-libs/ contrib/**/README.txt contrib/**/CHANGES.txt"
-        excludes="${package.dir}/** ${dist}/** lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/** src/site/build/** **/target/** client/ruby/flare/** client/python/** client/javascript/** contrib/**/build/** **/*.iml **/*.ipr **/*.iws" />
+        excludes="${package.dir}/** ${dist}/** lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/** src/site/build/** **/target/** client/ruby/flare/** client/python/** client/javascript/** contrib/**/build/** **/*.iml **/*.ipr **/*.iws **/*pom.xml.template" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
