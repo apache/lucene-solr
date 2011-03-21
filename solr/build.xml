@@ -831,12 +831,12 @@
     <fixcrlf srcdir="${dest}/${fullnamever}"
        encoding="UTF-8"
        eol="crlf"
-       includes="**/*.alg **/*.cgi **/*.cpp **/*.css **/*.csv **/*.dtd **/*.erb
-                 **/*.fcgi **/.htaccess **/*.htm **/*.html **/*.incl **/*.java
-                 **/*.javacc **/*.jflex **/*.jflex-macro **/*.jj **/*.js
-                 **/*.json **/*.jsp **/*LICENSE **/*.pl **/*.pom
-                 **/*pom.xml.template **/*.properties **/*.py **/*.rake
-                 **/Rakefile **/*.rb **/*.rbbi **/README **/README.* **/*.rhtml
+       includes="**/*.alg **/*.cfg **/*.cgi **/*.cpp **/*.css **/*.csv **/*.dtd
+                 **/*.erb **/*.fcgi **/.htaccess **/*.htm **/*.html **/*.incl
+                 **/*.java **/*.javacc **/*.jflex **/*.jflex-macro **/*.jj
+                 **/*.js **/*.json **/*.jsp **/*LICENSE **/package-list **/*.pl
+                 **/*.pom **/*pom.xml.template **/*.properties **/*.py
+                 **/*.rake **/Rakefile **/*.rb **/*.rbbi **/README* **/*.rhtml
                  **/*.rslp **/*.rxml **/*.script **/*.svg **/*.tsv **/*.txt
                  **/UPGRADING **/USAGE **/*.uxf **/*.vm **/*.xcat **/*.xml
                  **/*.xsl **/*.xslt **/*.yml"
