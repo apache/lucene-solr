@@ -839,7 +839,7 @@
                  **/*.rake **/Rakefile **/*.rb **/*.rbbi **/README* **/*.rhtml
                  **/*.rslp **/*.rxml **/*.script **/*.svg **/*.tsv **/*.txt
                  **/UPGRADING **/USAGE **/*.uxf **/*.vm **/*.xcat **/*.xml
-                 **/*.xsl **/*.xslt **/*.yml"       
+                 **/*.xsl **/*.xslt **/*.yml"
        excludes="**/stopwordsWrongEncoding.txt **/gb18030-example.xml"
      />
 
