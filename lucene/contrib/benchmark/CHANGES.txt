@@ -2,6 +2,11 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+03/21/2011
+  LUCENE-2964: Allow benchmark tasks from alternative packages,
+  specified through a new property "alt.tasks.packages".
+  (Doron Cohen, Shai Erera)
+  
 03/20/2011
   LUCENE-2963: Easier way to run benchmark, by calling Benmchmark.exec(alg-file).
   (Doron Cohen)
