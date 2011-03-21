@@ -170,6 +170,9 @@ with the benchmark.ext.classpath property:
       <font color="#FF0000">-Dbenchmark.ext.classpath=/mydir/classes
       </font> -Dtask.mem=512M</li>
 </ul>
+<u>External tasks</u>: When writing your own tasks under a package other than 
+<b>org.apache.lucene.benchmark.byTask.tasks</b> specify that package thru the
+<font color="#FF0000">alt.tasks.packages</font> property.
 </p>
 
 <a name="algorithm"></a>
@@ -589,6 +592,14 @@ Here is a list of currently defined properties:
   <li><b>Doc deletion</b>:
     <ul><li>doc.delete.step
     </li></ul>
+  </li>
+  
+  <li><b>Task alternative packages</b>:
+    <ul><li>alt.tasks.packages
+      - comma separated list of additional packages where tasks classes will be looked for
+      when not found in the default package (that of PerfTask).  If the same task class 
+      appears in more than one package, the package indicated first in this list will be used.
+    </li></ul> 
   </li>
 
 </ol>
