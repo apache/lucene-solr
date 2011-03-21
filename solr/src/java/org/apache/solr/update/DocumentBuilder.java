@@ -18,12 +18,10 @@
 package org.apache.solr.update;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -286,7 +284,7 @@ public class DocumentBuilder {
             Fieldable [] fields = destinationField.createFields(val, boost);
             if (fields != null) { // null fields are not added
               for (Fieldable f : fields) {
-                out.add(f);
+                if(f != null) out.add(f);
               }
             }
           }
