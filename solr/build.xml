@@ -762,7 +762,7 @@
     <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
     <mkdir dir="${dest}"/>
     <exec dir="." executable="svn" failonerror="true">
-      <arg line="checkout -r ${svn.Revision} ${svn.URL} ${svn.export.dir}"/>
+      <arg line="export --native-eol LF -r ${svn.Revision} ${svn.URL} ${svn.export.dir}"/>
     </exec>
   </target>
 
