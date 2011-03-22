@@ -361,7 +361,13 @@
     <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
     <mkdir dir="${build.dir}"/>
     <exec dir="." executable="svn" failonerror="true">
-      <arg line="export --native-eol LF -r ${svn.Revision} ${svn.URL} ${svn.export.dir}"/>
+      <arg value="export"/>
+      <arg value="--native-eol"/>
+      <arg value="LF"/>
+      <arg value="-r"/>
+      <arg value="${svn.Revision}"/>
+      <arg value="${svn.URL}"/>
+      <arg value="${svn.export.dir}"/>
     </exec>
   </target>
 
