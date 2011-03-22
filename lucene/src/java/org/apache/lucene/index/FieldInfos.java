@@ -17,15 +17,22 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-import java.util.*;
 
 /** Access to the Fieldable Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
@@ -34,8 +41,159 @@ import java.util.*;
  *  accessing this object.
  *  @lucene.experimental
  */
-public final class FieldInfos {
+public final class FieldInfos implements Iterable<FieldInfo> {
+  static final class FieldNumberBiMap {
+    
+    final static String CODEC_NAME = "GLOBAL_FIELD_MAP";
+    
+    // Initial format
+    private static final int VERSION_START = 0;
 
+    private static final int VERSION_CURRENT = VERSION_START;
+
+    private final Map<Integer,String> numberToName;
+    private final Map<String,Integer> nameToNumber;
+    private int lowestUnassignedFieldNumber = -1;
+    private long lastVersion = 0;
+    private long version = 0;
+    
+    FieldNumberBiMap() {
+      this.nameToNumber = new HashMap<String, Integer>();
+      this.numberToName = new HashMap<Integer, String>();
+    }
+    
+    /**
+     * Returns the global field number for the given field name. If the name
+     * does not exist yet it tries to add it with the given preferred field
+     * number assigned if possible otherwise the first unassigned field number
+     * is used as the field number.
+     */
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber) {
+      Integer fieldNumber = nameToNumber.get(fieldName);
+      if (fieldNumber == null) {
+        final Integer preferredBoxed = Integer.valueOf(preferredFieldNumber);
+
+        if (preferredFieldNumber != -1 && !numberToName.containsKey(preferredBoxed)) {
+            // cool - we can use this number globally
+            fieldNumber = preferredBoxed;
+        } else {
+          // find a new FieldNumber
+          while (numberToName.containsKey(++lowestUnassignedFieldNumber)) {
+            // might not be up to date - lets do the work once needed
+          }
+          fieldNumber = lowestUnassignedFieldNumber;
+        }
+        
+        version++;
+        numberToName.put(fieldNumber, fieldName);
+        nameToNumber.put(fieldName, fieldNumber);
+        
+      }
+
+      return fieldNumber.intValue();
+    }
+
+    /**
+     * Sets the given field number and name if not yet set. 
+     */
+    synchronized void setIfNotSet(int fieldNumber, String fieldName) {
+      final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
+      if (!numberToName.containsKey(boxedFieldNumber)
+          && !nameToNumber.containsKey(fieldName)) {
+        version++;
+        numberToName.put(boxedFieldNumber, fieldName);
+        nameToNumber.put(fieldName, boxedFieldNumber);
+      } else {
+        assert containsConsistent(boxedFieldNumber, fieldName);
+      }
+    }
+    
+    /**
+     * Writes this {@link FieldNumberBiMap} to the given output and returns its
+     * version.
+     */
+    public synchronized long write(IndexOutput output) throws IOException{
+      Set<Entry<String, Integer>> entrySet = nameToNumber.entrySet();
+      CodecUtil.writeHeader(output, CODEC_NAME, VERSION_CURRENT); 
+      output.writeVInt(entrySet.size());
+      for (Entry<String, Integer> entry : entrySet) {
+        output.writeVInt(entry.getValue().intValue());
+        output.writeString(entry.getKey());
+      }
+      return version;
+    }
+
+    /**
+     * Reads the {@link FieldNumberBiMap} from the given input and resets the
+     * version to 0.
+     */
+    public synchronized void read(IndexInput input) throws IOException{
+      CodecUtil.checkHeader(input, CODEC_NAME,
+          VERSION_START,
+          VERSION_CURRENT);
+      final int size = input.readVInt();
+      for (int i = 0; i < size; i++) {
+        final int num = input.readVInt();
+        final String name = input.readString();
+        setIfNotSet(num, name);
+      }
+      version = lastVersion = 0;
+    }
+    
+    /**
+     * Returns a new {@link FieldInfos} instance with this as the global field
+     * map
+     * 
+     * @return a new {@link FieldInfos} instance with this as the global field
+     *         map
+     */
+    public FieldInfos newFieldInfos() {
+      return new FieldInfos(this);
+    }
+
+    /**
+     * Returns <code>true</code> iff the last committed version differs from the
+     * current version, otherwise <code>false</code>
+     * 
+     * @return <code>true</code> iff the last committed version differs from the
+     *         current version, otherwise <code>false</code>
+     */
+    public synchronized boolean isDirty() {
+      return lastVersion != version;
+    }
+    
+    /**
+     * commits the given version if the given version is greater than the previous committed version
+     * 
+     * @param version
+     *          the version to commit
+     * @return <code>true</code> iff the version was successfully committed otherwise <code>false</code>
+     * @see #write(IndexOutput)
+     */
+    public synchronized boolean commitLastVersion(long version) {
+      if (version > lastVersion) {
+        lastVersion = version;
+        return true;
+      }
+      return false;
+    }
+    
+    // just for testing
+    Set<Entry<String, Integer>> entries() {
+      return new HashSet<Entry<String, Integer>>(nameToNumber.entrySet());
+    }
+    
+    // used by assert
+    boolean containsConsistent(Integer number, String name) {
+      return name.equals(numberToName.get(number))
+          && number.equals(nameToNumber.get(name));
+    }
+  }
+  
+  private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
+  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+  private final FieldNumberBiMap globalFieldNumbers;
+  
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
   public static final int FORMAT_PER_FIELD_CODEC = -3;
@@ -52,12 +210,19 @@ public final class FieldInfos {
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
-  
-  private final ArrayList<FieldInfo> byNumber = new ArrayList<FieldInfo>();
-  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+
   private int format;
 
   public FieldInfos() {
+    this(new FieldNumberBiMap());
+  }
+  
+  FieldInfos(FieldInfos other) {
+    this(other.globalFieldNumbers);
+  }
+
+  FieldInfos(FieldNumberBiMap globalFieldNumbers) {
+    this.globalFieldNumbers = globalFieldNumbers;
   }
 
   /**
@@ -68,6 +233,14 @@ public final class FieldInfos {
    * @throws IOException
    */
   public FieldInfos(Directory d, String name) throws IOException {
+    this(new FieldNumberBiMap());
+    /*
+     * TODO: in the read case we create a FNBM for each FIs which is a wast of resources.
+     * Yet, we must not seed this with a global map since due to addIndexes(Dir) we could
+     * have non-matching field numbers. we should use a null FNBM here and set the FIs 
+     * to READ-ONLY once this ctor is done. Each modificator should check if we are readonly
+     * with an assert
+     */
     IndexInput input = d.openInput(name);
     try {
       read(input, name);
@@ -75,36 +248,45 @@ public final class FieldInfos {
       input.close();
     }
   }
+  
+  /**
+   * adds the given field to this FieldInfos name / number mapping. The given FI
+   * must be present in the global field number mapping before this method it
+   * called
+   */
+  private void putInternal(FieldInfo fi) {
+    assert !byNumber.containsKey(fi.number);
+    assert !byName.containsKey(fi.name);
+    assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
+    byNumber.put(fi.number, fi);
+    byName.put(fi.name, fi);
+  }
+  
+  private int nextFieldNumber(String name, int preferredFieldNumber) {
+    // get a global number for this field
+    final int fieldNumber = globalFieldNumbers.addOrGet(name,
+        preferredFieldNumber);
+    assert byNumber.get(fieldNumber) == null : "field number " + fieldNumber
+        + " already taken";
+    return fieldNumber;
+  }
 
   /**
    * Returns a deep clone of this FieldInfos instance.
    */
   @Override
   synchronized public Object clone() {
-    FieldInfos fis = new FieldInfos();
-    final int numField = byNumber.size();
-    for(int i=0;i<numField;i++) {
-      FieldInfo fi = (FieldInfo) ( byNumber.get(i)).clone();
-      fis.byNumber.add(fi);
-      fis.byName.put(fi.name, fi);
+    FieldInfos fis = new FieldInfos(globalFieldNumbers);
+    for (FieldInfo fi : this) {
+      FieldInfo clone = (FieldInfo) (fi).clone();
+      fis.putInternal(clone);
     }
     return fis;
   }
 
-  /** Adds field info for a Document. */
-  synchronized public void add(Document doc) {
-    List<Fieldable> fields = doc.getFields();
-    for (Fieldable field : fields) {
-      add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
-    }
-  }
-
   /** Returns true if any fields do not omitTermFreqAndPositions */
   public boolean hasProx() {
-    final int numFields = byNumber.size();
-    for(int i=0;i<numFields;i++) {
-      final FieldInfo fi = fieldInfo(i);
+    for (FieldInfo fi : this) {
       if (fi.isIndexed && !fi.omitTermFreqAndPositions) {
         return true;
       }
@@ -215,9 +397,18 @@ public final class FieldInfos {
   synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
                        boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
+                               storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+  }
+
+  synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
+      boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
+      boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
+      return addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     }
@@ -225,20 +416,23 @@ public final class FieldInfos {
   }
 
   synchronized public FieldInfo add(FieldInfo fi) {
-    return add(fi.name, fi.isIndexed, fi.storeTermVector,
+    // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
+    return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
                fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
                fi.omitTermFreqAndPositions);
   }
 
-  private FieldInfo addInternal(String name, boolean isIndexed,
+  private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     name = StringHelper.intern(name);
-    FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
+    globalFieldNumbers.setIfNotSet(fieldNumber, name);
+    FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
                                  storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-    byNumber.add(fi);
-    byName.put(name, fi);
+
+    assert byNumber.get(fi.number) == null;
+    putInternal(fi);
     return fi;
   }
 
@@ -248,7 +442,7 @@ public final class FieldInfos {
   }
 
   public FieldInfo fieldInfo(String fieldName) {
-    return  byName.get(fieldName);
+    return byName.get(fieldName);
   }
 
   /**
@@ -273,13 +467,18 @@ public final class FieldInfos {
 	return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
 
+  public Iterator<FieldInfo> iterator() {
+    return byNumber.values().iterator();
+  }
+
   public int size() {
+    assert byNumber.size() == byName.size();
     return byNumber.size();
   }
 
   public boolean hasVectors() {
-    for (int i = 0; i < size(); i++) {
-      if (fieldInfo(i).storeTermVector) {
+    for (FieldInfo fi : this) {
+      if (fi.storeTermVector) {
         return true;
       }
     }
@@ -287,8 +486,8 @@ public final class FieldInfos {
   }
 
   public boolean hasNorms() {
-    for (int i = 0; i < size(); i++) {
-      if (!fieldInfo(i).omitNorms) {
+    for (FieldInfo fi : this) {
+      if (!fi.omitNorms) {
         return true;
       }
     }
@@ -307,8 +506,7 @@ public final class FieldInfos {
   public void write(IndexOutput output) throws IOException {
     output.writeVInt(FORMAT_CURRENT);
     output.writeVInt(size());
-    for (int i = 0; i < size(); i++) {
-      FieldInfo fi = fieldInfo(i);
+    for (FieldInfo fi : this) {
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
@@ -318,7 +516,8 @@ public final class FieldInfos {
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
       if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
       output.writeString(fi.name);
-      output.writeInt(fi.codecId);
+      output.writeInt(fi.number);
+      output.writeInt(fi.getCodecId());
       output.writeByte(bits);
     }
   }
@@ -338,6 +537,7 @@ public final class FieldInfos {
     for (int i = 0; i < size; i++) {
       String name = StringHelper.intern(input.readString());
       // if this is a previous format codec 0 will be preflex!
+      final int fieldNumber = format <= FORMAT_PER_FIELD_CODEC? input.readInt():i;
       final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
@@ -347,8 +547,8 @@ public final class FieldInfos {
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
-      final FieldInfo addInternal = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-      addInternal.codecId = codecId;
+      final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      addInternal.setCodecId(codecId);
     }
 
     if (input.getFilePointer() != input.length()) {

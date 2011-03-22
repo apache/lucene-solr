@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
@@ -40,7 +41,7 @@ public class TestFieldInfos extends LuceneTestCase {
     //Positive test of FieldInfos
     assertTrue(testDoc != null);
     FieldInfos fieldInfos = new FieldInfos();
-    fieldInfos.add(testDoc);
+    _TestUtil.add(testDoc, fieldInfos);
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     Directory dir = newDirectory();

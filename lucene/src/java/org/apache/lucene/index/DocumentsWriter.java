@@ -186,7 +186,6 @@ final class DocumentsWriter {
   /**
    * RAMFile buffer for DocWriters.
    */
-  @SuppressWarnings("serial")
   class PerDocBuffer extends RAMFile {
     
     /**
@@ -270,12 +269,13 @@ final class DocumentsWriter {
   private final IndexWriterConfig config;
 
   private boolean closed;
-  private final FieldInfos fieldInfos;
+  private FieldInfos fieldInfos;
 
   private final BufferedDeletesStream bufferedDeletesStream;
   private final IndexWriter.FlushControl flushControl;
 
-  DocumentsWriter(IndexWriterConfig config, Directory directory, IndexWriter writer, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
+  DocumentsWriter(IndexWriterConfig config, Directory directory, IndexWriter writer, IndexingChain indexingChain, FieldInfos fieldInfos,
+      BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.writer = writer;
     this.similarityProvider = config.getSimilarityProvider();
@@ -340,10 +340,6 @@ final class DocumentsWriter {
       pendingDeletes.addTerm(term, numDocs);
     }
     return doFlush;
-  }
-
-  public FieldInfos getFieldInfos() {
-    return fieldInfos;
   }
 
   /** If non-null, various details of indexing are printed
@@ -435,9 +431,14 @@ final class DocumentsWriter {
   private void doAfterFlush() throws IOException {
     // All ThreadStates should be idle when we are called
     assert allThreadsIdle();
+    for (DocumentsWriterThreadState threadState : threadStates) {
+      threadState.consumer.doAfterFlush();
+    }
+
     threadBindings.clear();
     waitQueue.reset();
     segment = null;
+    fieldInfos = new FieldInfos(fieldInfos);
     numDocs = 0;
     nextDocID = 0;
     bufferIsFull = false;
@@ -555,7 +556,7 @@ final class DocumentsWriter {
         pendingDeletes.docIDs.clear();
       }
 
-      newSegment = new SegmentInfo(segment, numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false);
+      newSegment = new SegmentInfo(segment, numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false, fieldInfos);
 
       Collection<DocConsumerPerThread> threads = new HashSet<DocConsumerPerThread>();
       for (DocumentsWriterThreadState threadState : threadStates) {
@@ -749,7 +750,7 @@ final class DocumentsWriter {
       // work
       final DocWriter perDoc;
       try {
-        perDoc = state.consumer.processDocument();
+        perDoc = state.consumer.processDocument(fieldInfos);
       } finally {
         docState.clear();
       }

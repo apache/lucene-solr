@@ -34,16 +34,13 @@ import java.util.HashMap;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocumentsWriter docWriter;
-  final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
 
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
     this.docWriter = docWriter;
     this.consumer = consumer;
-    fieldInfos = docWriter.getFieldInfos();
-    consumer.setFieldInfos(fieldInfos);
-    fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
+    fieldsWriter = new StoredFieldsWriter(docWriter);
   }
 
   @Override
@@ -53,7 +50,6 @@ final class DocFieldProcessor extends DocConsumer {
     for ( DocConsumerPerThread thread : threads) {
       DocFieldProcessorPerThread perThread = (DocFieldProcessorPerThread) thread;
       childThreadsAndFields.put(perThread.consumer, perThread.fields());
-      perThread.trimFields(state);
     }
     fieldsWriter.flush(state);
     consumer.flush(childThreadsAndFields, state);
@@ -63,7 +59,7 @@ final class DocFieldProcessor extends DocConsumer {
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
-    fieldInfos.write(state.directory, fileName);
+    state.fieldInfos.write(state.directory, fileName);
   }
 
   @Override

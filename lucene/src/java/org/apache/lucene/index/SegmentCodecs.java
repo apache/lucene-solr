@@ -74,22 +74,20 @@ final class SegmentCodecs implements Cloneable {
   }
 
   static SegmentCodecs build(FieldInfos infos, CodecProvider provider) {
-    final int size = infos.size();
     final Map<Codec, Integer> codecRegistry = new IdentityHashMap<Codec, Integer>();
     final ArrayList<Codec> codecs = new ArrayList<Codec>();
 
-    for (int i = 0; i < size; i++) {
-      final FieldInfo info = infos.fieldInfo(i);
-      if (info.isIndexed) {
+    for (FieldInfo fi : infos) {
+      if (fi.isIndexed) {
         final Codec fieldCodec = provider.lookup(provider
-            .getFieldCodec(info.name));
+            .getFieldCodec(fi.name));
         Integer ord = codecRegistry.get(fieldCodec);
         if (ord == null) {
           ord = Integer.valueOf(codecs.size());
           codecRegistry.put(fieldCodec, ord);
           codecs.add(fieldCodec);
         }
-        info.codecId = ord.intValue();
+        fi.setCodecId(ord.intValue());
       }
     }
     return new SegmentCodecs(provider, codecs.toArray(Codec.EMPTY));

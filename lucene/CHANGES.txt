@@ -162,6 +162,13 @@ Changes in Runtime Behavior
   say "in order".  If this is a problem then you can use either of the
   LogMergePolicy impls, and call setRequireContiguousMerge(true).
   (Mike McCandless)
+  
+* LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
+  per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
+  properties from all previous segments combined. Field numbers are now tracked
+  globally across IndexWriter sessions and persisted into a X.fnx file on
+  successful commit. The corresponding file format changes are backwards-
+  compatible. (Michael Busch, Simon Willnauer)
 
 API Changes
 
