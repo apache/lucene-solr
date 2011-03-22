@@ -762,7 +762,7 @@
   <target name="svn-export-source" depends="get-svn-info">
     <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
     <mkdir dir="${dest}"/>
-    <exec dir="." executable="svn" failonerror="true">
+    <exec dir="." executable="${svn.exe}" failonerror="true">
       <arg value="export"/>
       <arg value="--native-eol"/>
       <arg value="LF"/>
@@ -775,7 +775,7 @@
 
   <!-- Populates properties svn.URL and svn.Revision using "svn info" -->
   <target name="get-svn-info">
-    <exec dir=".." executable="svn" outputproperty="svn.info" failonerror="true">
+    <exec dir=".." executable="${svn.exe}" outputproperty="svn.info" failonerror="true">
       <arg value="info"/>
     </exec>
     <loadproperties>
@@ -875,7 +875,7 @@
   
   </target>
   <target name="svn-up">
-    <exec executable="svn">
+    <exec executable="${svn.exe}">
       <arg value="update"/>
     </exec>
   </target>
