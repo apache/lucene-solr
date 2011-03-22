@@ -424,6 +424,14 @@
   						test.classpath="test.classpath"/>
   </target>
 
+  <target name="compile-tools">
+    <compile
+      srcdir="${common.dir}/src/tools/java"
+      destdir="${build.dir}/classes/tools">
+      <classpath refid="classpath"/>
+    </compile>
+  </target>
+
   <target name="compile-test" depends="compile-test-framework">
   	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
   						test.classpath="test.classpath"/>
@@ -794,10 +802,10 @@
 
   <!-- VALIDATION work -->
 
-  <target name="check-legal-lucene" depends="compile-test-framework">
+  <target name="check-legal-lucene" depends="compile-tools">
     <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
       <classpath>
-        <path refid="validation.runtime.classpath" />
+        <path refid="tools.runtime.classpath" />
       </classpath>
       <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
        long time.  This should be faster, but we could miss a directory
