@@ -1064,38 +1064,21 @@
 
 <uimaConfig>
    <runtimeParameters>
-      <keyword_apikey>04490000a72fe7ec5cb3497f14e77f338c86f2fe</keyword_apikey>
-      <concept_apikey>04490000a72fe7ec5cb3497f14e77f338c86f2fe</concept_apikey>
-      <lang_apikey>04490000a72fe7ec5cb3497f14e77f338c86f2fe</lang_apikey>
-      <cat_apikey>04490000a72fe7ec5cb3497f14e77f338c86f2fe</cat_apikey>
-      <entities_apikey>04490000a72fe7ec5cb3497f14e77f338c86f2fe</entities_apikey>
-      <oc_licenseID>g6h9zamsdtwhb93nc247ecrs</oc_licenseID>
+     <ngramsize>3</ngramsize>
   </runtimeParameters>
   <analysisEngine>/TestAE.xml</analysisEngine>
   <analyzeFields merge="false">text</analyzeFields>
   <fieldMapping>
-    <type name="org.apache.uima.alchemy.ts.categorization.Category">
-      <map feature="text" field="suggested_category"/>
-    </type>
-    <type name="org.apache.uima.alchemy.ts.concept.ConceptFS">
-      <map feature="text" field="concept"/>
-    </type>
-    <type name="org.apache.uima.alchemy.ts.entity.BaseEntity">
-      <map feature="text" field="entity"/>
-    </type>
-    <type name="org.apache.uima.calais.BaseType">
-      <map feature="coveredText" field="entity"/>
-    </type>
-    <type name="org.apache.uima.alchemy.ts.keywords.KeywordFS">
-      <map feature="text" field="keyword"/>
-    </type>
-    <type name="org.apache.uima.alchemy.ts.language.LanguageFS">
-      <map feature="language" field="language"/>
-    </type>
     <type name="org.apache.uima.SentenceAnnotation">
       <map feature="coveredText" field="sentence"/>
     </type>
+    <type name="org.apache.solr.uima.ts.SentimentAnnotation">
+      <map feature="mood" field="sentiment"/>
+    </type>
+    <type name="org.apache.solr.uima.ts.EntityAnnotation">
+      <map feature="coveredText" field="entity"/>
+    </type>
   </fieldMapping>
 </uimaConfig>
-  
+
 </config>

@@ -14,51 +14,35 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-
+-->
 <analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
   <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
-  <primitive>false</primitive>
-  <delegateAnalysisEngineSpecifiers>
-    <delegateAnalysisEngine key="AggregateSentenceAE">
-      <import location="AggregateSentenceAE.xml"/>
-    </delegateAnalysisEngine>
-    <delegateAnalysisEngine key="DummyEntityAEDescriptor">
-      <import location="DummyEntityAEDescriptor.xml"/>
-    </delegateAnalysisEngine>
-    <delegateAnalysisEngine key="DummySentimentAnalysisAEDescriptor">
-      <import location="DummySentimentAnalysisAEDescriptor.xml"/>
-    </delegateAnalysisEngine>
-  </delegateAnalysisEngineSpecifiers>
+  <primitive>true</primitive>
+  <annotatorImplementationName>org.apache.solr.uima.processor.an.DummyEntityAnnotator</annotatorImplementationName>
   <analysisEngineMetaData>
-    <name>TestAE</name>
+    <name>DummyEntityAEDescriptor</name>
     <description/>
     <version>1.0</version>
-    <vendor/>
-    <configurationParameters>
-      <configurationParameter>
-        <name>ngramsize</name>
-        <type>Integer</type>
-        <multiValued>false</multiValued>
-        <mandatory>false</mandatory>
-        <overrides>
-          <parameter>AggregateSentenceAE/ngramsize</parameter>
-        </overrides>
-      </configurationParameter>
-    </configurationParameters>
+    <vendor>ASF</vendor>
+    <configurationParameters/>
     <configurationParameterSettings/>
-    <flowConstraints>
-      <fixedFlow>
-        <node>AggregateSentenceAE</node>
-        <node>DummyEntityAEDescriptor</node>
-        <node>DummySentimentAnalysisAEDescriptor</node>
-      </fixedFlow>
-    </flowConstraints>
+    <typeSystemDescription>
+      <types>
+        <typeDescription>
+          <name>org.apache.solr.uima.ts.EntityAnnotation</name>
+          <description/>
+          <supertypeName>uima.tcas.Annotation</supertypeName>
+        </typeDescription>
+      </types>
+    </typeSystemDescription>
+    <typePriorities/>
     <fsIndexCollection/>
     <capabilities>
       <capability>
         <inputs/>
-        <outputs/>
+        <outputs>
+          <type allAnnotatorFeatures="true">org.apache.solr.uima.ts.EntityAnnotation</type>
+        </outputs>
         <languagesSupported/>
       </capability>
     </capabilities>
