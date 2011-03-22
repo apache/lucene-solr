@@ -749,7 +749,7 @@
               value="${package.dir}/${fullnamever}-src.tgz"/>
     <delete file="${source.package.file}" failonerror="false" />
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
-      <tarfileset dir="${svn.export.dir}" prefix="${fullnamever}"/>
+      <tarfileset dir="${svn.export.dir}" prefix="${fullnamever}" excludes="dev-tools/"/>
       <tarfileset dir="${svn.export.dir}/solr" prefix="${fullnamever}"
                   includes="NOTICE.txt,LICENSE.txt"/>
     </tar>
