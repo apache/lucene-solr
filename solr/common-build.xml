@@ -81,6 +81,7 @@
     default PATH. (this is useful for Hudson)
   -->
   <property name="svnversion.exe" value="svnversion" />
+  <property name="svn.exe" value="svn" />
 
   <!-- Java Version we are compatible with -->
   <property name="java.compat.version" value="1.5" />
