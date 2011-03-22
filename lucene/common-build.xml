@@ -116,6 +116,8 @@
   <property name="tests.src.dir" location="src/test"/>
   <property name="tests-framework.src.dir" location="${common.dir}/src/test-framework"/>
   <property name="build.dir" location="build"/>
+  <!-- Needed in case a contrib needs the original build, also for compile-tools to be called from contrib -->
+  <property name="common.build.dir" location="${common.dir}/build"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
@@ -425,9 +427,10 @@
   </target>
 
   <target name="compile-tools">
+    <echo>Common dir: ${common.dir}, build: ${build.dir}</echo>
     <compile
       srcdir="${common.dir}/src/tools/java"
-      destdir="${build.dir}/classes/tools">
+      destdir="${common.build.dir}/classes/tools">
       <classpath refid="classpath"/>
     </compile>
   </target>
@@ -717,6 +720,8 @@
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
+      <echo>@{srcdir}</echo>
+      <echo>@{destdir}</echo>
       <mkdir dir="@{destdir}"/>
       <javac
         includeAntRuntime="${javac.includeAntRuntime}"
