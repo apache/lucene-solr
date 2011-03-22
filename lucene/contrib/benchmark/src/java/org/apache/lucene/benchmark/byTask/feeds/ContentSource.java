@@ -55,15 +55,13 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  */
 public abstract class ContentSource {
   
-  private static final int BZIP = 0;
-  private static final int GZIP = 1;
-  private static final int OTHER = 2;
-  private static final Map<String,Integer> extensionToType = new HashMap<String,Integer>();
+  private static final Map<String,String> extensionToType = new HashMap<String,String>();
   static {
-    extensionToType.put(".bz2", Integer.valueOf(BZIP));
-    extensionToType.put(".bzip", Integer.valueOf(BZIP));
-    extensionToType.put(".gz", Integer.valueOf(GZIP));
-    extensionToType.put(".gzip", Integer.valueOf(GZIP));
+  	// these in are lower case, we will lower case at the test as well
+    extensionToType.put(".bz2", CompressorStreamFactory.BZIP2);
+    extensionToType.put(".bzip", CompressorStreamFactory.BZIP2);
+    extensionToType.put(".gz", CompressorStreamFactory.GZIP);
+    extensionToType.put(".gzip", CompressorStreamFactory.GZIP);
   }
   
   protected static final int BUFFER_SIZE = 1 << 16; // 64K
@@ -128,28 +126,15 @@ public abstract class ContentSource {
     
     String fileName = file.getName();
     int idx = fileName.lastIndexOf('.');
-    int type = OTHER;
+    String type = null;
     if (idx != -1) {
-      Integer typeInt = extensionToType.get(fileName.substring(idx));
-      if (typeInt != null) {
-        type = typeInt.intValue();
-      }
+      type = extensionToType.get(fileName.substring(idx));
     }
     
     try {
-      switch (type) {
-        case BZIP:
-          // According to BZip2CompressorInputStream's code, it reads the first 
-          // two file header chars ('B' and 'Z'). It is important to wrap the
-          // underlying input stream with a buffered one since
-          // Bzip2CompressorInputStream uses the read() method exclusively.
-          is = csFactory.createCompressorInputStream("bzip2", is);
-          break;
-        case GZIP:
-          is = csFactory.createCompressorInputStream("gz", is);
-          break;
-        default: // Do nothing, stay with FileInputStream
-      }
+      if (type!=null) { // bzip or gzip
+        return csFactory.createCompressorInputStream(type, is);
+      } 
     } catch (CompressorException e) {
       IOException ioe = new IOException(e.getMessage());
       ioe.initCause(e);

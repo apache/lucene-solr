@@ -3,15 +3,15 @@
 	<classpathentry kind="src" path="lucene/src/java"/>
 	<classpathentry kind="src" path="lucene/src/test-framework"/>
 	<classpathentry kind="src" path="lucene/src/test"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/common/src/java"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/common/src/resources"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/common/src/test"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/java"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/resources"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/test"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/stempel/src/java"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/stempel/src/resources"/>
-        <classpathentry kind="src" path="lucene/contrib/analyzers/stempel/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/resources"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/common/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/resources"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/smartcn/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/stempel/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/stempel/src/resources"/>
+	<classpathentry kind="src" path="lucene/contrib/analyzers/stempel/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/ant/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/ant/src/resources"/>
 	<classpathentry kind="src" path="lucene/contrib/ant/src/test"/>
@@ -84,7 +84,7 @@
 	<classpathentry kind="lib" path="lucene/contrib/ant/lib/jtidy-r938.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-collections-3.1.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-compress-1.0.jar"/>
+	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-compress-1.1.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
