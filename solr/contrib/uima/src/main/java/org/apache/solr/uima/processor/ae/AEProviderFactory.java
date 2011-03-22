@@ -43,7 +43,7 @@ public class AEProviderFactory {
   }
 
   public synchronized AEProvider getAEProvider(String core, String aePath,
-          Map<String, String> runtimeParameters) {
+          Map<String, Object> runtimeParameters) {
     String key = new StringBuilder(core).append(aePath).toString();
     if (providerCache.get(key) == null) {
       providerCache.put(key, new OverridingParamsAEProvider(aePath, runtimeParameters));
