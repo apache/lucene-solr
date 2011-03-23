@@ -2,10 +2,10 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
-03/22/2011
+03/23/2011
   LUCENE-2980: Benchmark's ContentSource no more requires lower case file suffixes 
   for detecting file type (gzip/bzip2/text). As part of this fix worked around an 
-  issue with gzip/bzip input streams which were remaining open (See COMPRESS-127).
+  issue with gzip input streams which were remaining open (See COMPRESS-127).
   (Doron Cohen) 
 
 03/22/2011
