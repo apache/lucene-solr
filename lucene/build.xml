@@ -607,14 +607,6 @@
     </java>
   </target>
 
-  <target name="compile-tools">
-    <compile
-      srcdir="src/tools/java"
-      destdir="${build.dir}/classes/tools">
-      <classpath refid="classpath"/>
-    </compile>
-  </target>
-
   <target name="clean-jflex">
     <delete>
       <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
