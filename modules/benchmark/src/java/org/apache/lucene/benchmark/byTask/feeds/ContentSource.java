@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.compress.compressors.CompressorException;
@@ -128,23 +129,49 @@ public abstract class ContentSource {
     int idx = fileName.lastIndexOf('.');
     String type = null;
     if (idx != -1) {
-      type = extensionToType.get(fileName.substring(idx));
+      type = extensionToType.get(fileName.substring(idx).toLowerCase(Locale.ENGLISH));
     }
     
-    try {
-      if (type!=null) { // bzip or gzip
-        return csFactory.createCompressorInputStream(type, is);
-      } 
-    } catch (CompressorException e) {
-      IOException ioe = new IOException(e.getMessage());
-      ioe.initCause(e);
-      throw ioe;
-    }
+    if (type!=null) { // bzip or gzip
+    	try {
+    		return closableCompressorInputStream(type,is);
+    	} catch (CompressorException e) {
+    		IOException ioe = new IOException(e.getMessage());
+    		ioe.initCause(e);
+    		throw ioe;
+    	}
+    } 
     
     return is;
   }
   
   /**
+   * Wrap the compressor input stream so that calling close will also close
+   * the underlying stream - workaround for CommonsCompress bug (COMPRESS-127). 
+   */
+  private InputStream closableCompressorInputStream(String type, final InputStream is) throws CompressorException {
+    final InputStream delegee = csFactory.createCompressorInputStream(type, is);
+    if (!type.equals(CompressorStreamFactory.GZIP)) {
+    	return delegee; //compressor bug affects only gzip
+    }
+    return new InputStream() {
+			@Override	public int read() throws IOException { return delegee.read();	}
+			@Override	public int read(byte[] b) throws IOException { return delegee.read(b);	}
+			@Override	public int available() throws IOException {	return delegee.available();	}
+			@Override	public synchronized void mark(int readlimit) { delegee.mark(readlimit);	}
+			@Override	public boolean markSupported() { return delegee.markSupported(); }
+			@Override	public int read(byte[] b, int off, int len) throws IOException { return delegee.read(b, off, len); }
+			@Override	public synchronized void reset() throws IOException {	delegee.reset(); }
+			@Override	public long skip(long n) throws IOException {	return delegee.skip(n);	}
+			@Override	
+			public void close() throws IOException { 
+				delegee.close();
+				is.close();
+			}
+    };
+	}
+
+	/**
    * Returns true whether it's time to log a message (depending on verbose and
    * the number of documents generated).
    */
