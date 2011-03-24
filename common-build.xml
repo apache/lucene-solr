@@ -15,7 +15,7 @@
   limitations under the License.
   -->
 
-<project name="all-common" default="validate" basedir="."
+<project name="all-common" basedir="."
          xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <dirname file="${ant.file.all-common}" property="all.common.dir"/>
