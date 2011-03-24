@@ -2,6 +2,11 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+03/24/2011
+  LUCENE-2977: WriteLineDocTask now automatically detects how to write -
+  GZip or BZip2 or Plain-text - according to the output file extension.
+  Property bzip.compression of WriteLineDocTask was canceled. (Doron Cohen)
+  
 03/23/2011
   LUCENE-2980: Benchmark's ContentSource no more requires lower case file suffixes 
   for detecting file type (gzip/bzip2/text). As part of this fix worked around an 

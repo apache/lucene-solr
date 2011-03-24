@@ -28,6 +28,7 @@ import java.util.Properties;
 
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 
 /**
  * A {@link ContentSource} reading one line at a time as a
@@ -178,8 +179,8 @@ public class LineDocSource extends ContentSource {
       if (reader != null) {
         reader.close();
       }
-      InputStream is = getInputStream(file);
-      reader = new BufferedReader(new InputStreamReader(is, encoding), BUFFER_SIZE);
+      InputStream is = StreamUtils.inputStream(file);
+      reader = new BufferedReader(new InputStreamReader(is, encoding), StreamUtils.BUFFER_SIZE);
       if (skipHeaderLine) {
         reader.readLine(); // skip one line - the header line - already handled that info
       }
