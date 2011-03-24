@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -165,7 +166,7 @@ public class XMLResponseParser extends ResponseParser
       @Override 
       public Date read( String txt ) { 
         try {
-          return ClientUtils.parseDate(txt);      
+          return DateUtil.parseDate(txt);      
         }
         catch( Exception ex ) {
           ex.printStackTrace();
