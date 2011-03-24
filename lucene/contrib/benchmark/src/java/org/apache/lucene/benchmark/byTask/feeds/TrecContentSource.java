@@ -32,6 +32,7 @@ import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.benchmark.byTask.utils.StringBuilderReader;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -194,8 +195,8 @@ public class TrecContentSource extends ContentSource {
         System.out.println("opening: " + f + " length: " + f.length());
       }
       try {
-        InputStream inputStream = getInputStream(f); // support either gzip, bzip2, or regular text file, by extension  
-        reader = new BufferedReader(new InputStreamReader(inputStream, encoding), BUFFER_SIZE);
+        InputStream inputStream = StreamUtils.inputStream(f); // support either gzip, bzip2, or regular text file, by extension  
+        reader = new BufferedReader(new InputStreamReader(inputStream, encoding), StreamUtils.BUFFER_SIZE);
         currPathType = TrecDocParser.pathType(f);
         return;
       } catch (Exception e) {

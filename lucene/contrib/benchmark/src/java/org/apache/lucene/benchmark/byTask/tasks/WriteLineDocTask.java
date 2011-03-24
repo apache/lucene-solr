@@ -17,9 +17,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
+import java.io.File;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -28,10 +27,10 @@ import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -40,14 +39,17 @@ import org.apache.lucene.document.Field;
  * following format: title &lt;TAB&gt; date &lt;TAB&gt; body. The output of this
  * task can be consumed by
  * {@link org.apache.lucene.benchmark.byTask.feeds.LineDocSource} and is intended
- * to save the IO overhead of opening a file per document to be indexed.<br>
+ * to save the IO overhead of opening a file per document to be indexed.
+ * <p>
+ * The format of the output is set according to the output file extension.
+ * Compression is recommended when the output file is expected to be large.
+ * See info on file extensions in {@link StreamUtils.Type}
+ * <p> 
  * Supports the following parameters:
  * <ul>
- * <li><b>line.file.out<b> - the name of the file to write the output to. That
+ * <li><b>line.file.out</b> - the name of the file to write the output to. That
  * parameter is mandatory. <b>NOTE:</b> the file is re-created.
- * <li><b>bzip.compression<b> - whether the output should be bzip-compressed. This is
- * recommended when the output file is expected to be large. 
- * <li><b>line.fields<b> - which fields should be written in each line.
+ * <li><b>line.fields</b> - which fields should be written in each line.
  * (optional, default: {@link #DEFAULT_FIELDS}).
  * <li><b>sufficient.fields</b> - list of field names, separated by comma, which, 
  * if all of them are missing, the document will be skipped. For example, to require 
@@ -91,30 +93,12 @@ public class WriteLineDocTask extends PerfTask {
   public WriteLineDocTask(PerfRunData runData) throws Exception {
     super(runData);
     Config config = runData.getConfig();
-    String fileName = config.get("line.file.out", null);
-    if (fileName == null) {
+    String fname = config.get("line.file.out", null);
+    if (fname == null) {
       throw new IllegalArgumentException("line.file.out must be set");
     }
-
-    OutputStream out = new FileOutputStream(fileName);
-    boolean doBzipCompression = false;
-    String doBZCompress = config.get("bzip.compression", null);
-    if (doBZCompress != null) {
-      // Property was set, use the value.
-      doBzipCompression = Boolean.valueOf(doBZCompress).booleanValue();
-    } else {
-      // Property was not set, attempt to detect based on file's extension
-      doBzipCompression = fileName.endsWith("bz2");
-    }
-
-    if (doBzipCompression) {
-      // Wrap with BOS since BZip2CompressorOutputStream calls out.write(int) 
-      // and does not use the write(byte[]) version. This proved to speed the 
-      // compression process by 70% !
-      out = new BufferedOutputStream(out, 1 << 16);
-      out = new CompressorStreamFactory().createCompressorOutputStream("bzip2", out);
-    }
-    lineFileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, "UTF-8"), 1 << 16));
+    OutputStream out = StreamUtils.outputStream(new File(fname));
+    lineFileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, "UTF-8"), StreamUtils.BUFFER_SIZE));
     docMaker = runData.getDocMaker();
     
     // init fields 

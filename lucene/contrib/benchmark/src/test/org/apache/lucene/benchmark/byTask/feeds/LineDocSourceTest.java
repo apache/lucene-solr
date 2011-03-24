@@ -103,23 +103,19 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     writer.close();
   }
   
-  private void doIndexAndSearchTest(File file, boolean setBZCompress,
-      String bz2CompressVal, Class<? extends LineParser> lineParserClass, String storedField) throws Exception {
-    doIndexAndSearchTestWithRepeats(file, setBZCompress, bz2CompressVal, lineParserClass, 1, storedField); // no extra repetitions
-    doIndexAndSearchTestWithRepeats(file, setBZCompress, bz2CompressVal, lineParserClass, 2, storedField); // 1 extra repetition
-    doIndexAndSearchTestWithRepeats(file, setBZCompress, bz2CompressVal, lineParserClass, 4, storedField); // 3 extra repetitions
+  private void doIndexAndSearchTest(File file, Class<? extends LineParser> lineParserClass, String storedField) throws Exception {
+    doIndexAndSearchTestWithRepeats(file, lineParserClass, 1, storedField); // no extra repetitions
+    doIndexAndSearchTestWithRepeats(file, lineParserClass, 2, storedField); // 1 extra repetition
+    doIndexAndSearchTestWithRepeats(file, lineParserClass, 4, storedField); // 3 extra repetitions
   }
   
-  private void doIndexAndSearchTestWithRepeats(File file, boolean setBZCompress,
-      String bz2CompressVal, Class<? extends LineParser> lineParserClass, int numAdds, String storedField) throws Exception {
+  private void doIndexAndSearchTestWithRepeats(File file, 
+      Class<? extends LineParser> lineParserClass, int numAdds, String storedField) throws Exception {
 
     Properties props = new Properties();
     
     // LineDocSource specific settings.
     props.setProperty("docs.file", file.getAbsolutePath());
-    if (setBZCompress) {
-      props.setProperty("bzip.compression", bz2CompressVal);
-    }
     if (lineParserClass != null) {
       props.setProperty("line.parser", lineParserClass.getName());
     }
@@ -160,37 +156,31 @@ public class LineDocSourceTest extends BenchmarkTestCase {
   public void testBZip2() throws Exception {
     File file = new File(getWorkDir(), "one-line.bz2");
     createBZ2LineFile(file,true);
-    doIndexAndSearchTest(file, true, "true", null, null);
+    doIndexAndSearchTest(file, null, null);
   }
 
   public void testBZip2NoHeaderLine() throws Exception {
     File file = new File(getWorkDir(), "one-line.bz2");
     createBZ2LineFile(file,false);
-    doIndexAndSearchTest(file, true, "true", null, null);
-  }
-  
-  public void testBZip2AutoDetect() throws Exception {
-    File file = new File(getWorkDir(), "one-line.bz2");
-    createBZ2LineFile(file,false);
-    doIndexAndSearchTest(file, false, null, null, null);
+    doIndexAndSearchTest(file, null, null);
   }
   
   public void testRegularFile() throws Exception {
     File file = new File(getWorkDir(), "one-line");
     createRegularLineFile(file,true);
-    doIndexAndSearchTest(file, false, null, null, null);
+    doIndexAndSearchTest(file, null, null);
   }
 
   public void testRegularFileSpecialHeader() throws Exception {
     File file = new File(getWorkDir(), "one-line");
     createRegularLineFile(file,true);
-    doIndexAndSearchTest(file, false, null, HeaderLineParser.class, null);
+    doIndexAndSearchTest(file, HeaderLineParser.class, null);
   }
 
   public void testRegularFileNoHeaderLine() throws Exception {
     File file = new File(getWorkDir(), "one-line");
     createRegularLineFile(file,false);
-    doIndexAndSearchTest(file, false, null, null, null);
+    doIndexAndSearchTest(file, null, null);
   }
 
   public void testInvalidFormat() throws Exception {
@@ -210,7 +200,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
       writer.newLine();
       writer.close();
       try {
-        doIndexAndSearchTest(file, false, null, null, null);
+        doIndexAndSearchTest(file, null, null);
         fail("Some exception should have been thrown for: [" + testCases[i] + "]");
       } catch (Exception e) {
         // expected.
@@ -222,7 +212,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
   public void testWithDocsName()  throws Exception {
     File file = new File(getWorkDir(), "one-line");
     createRegularLineFileWithMoreFields(file, DocMaker.NAME_FIELD);
-    doIndexAndSearchTest(file, false, null, null, DocMaker.NAME_FIELD);
+    doIndexAndSearchTest(file, null, DocMaker.NAME_FIELD);
   }
 
   /** Use fields names that are not defined in Docmaker and so will go to Properties */
@@ -230,7 +220,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     File file = new File(getWorkDir(), "one-line");
     String specialField = "mySpecialField";
     createRegularLineFileWithMoreFields(file, specialField);
-    doIndexAndSearchTest(file, false, null, null, specialField);
+    doIndexAndSearchTest(file, null, specialField);
   }
   
 }

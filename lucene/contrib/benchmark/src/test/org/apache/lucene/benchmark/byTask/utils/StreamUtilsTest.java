@@ -1,4 +1,4 @@
-package org.apache.lucene.benchmark.byTask.feeds;
+package org.apache.lucene.benchmark.byTask.utils;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,39 +30,63 @@ import java.io.OutputStreamWriter;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
+import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.util._TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ContentSourceTest extends BenchmarkTestCase {
+public class StreamUtilsTest extends BenchmarkTestCase {
   private static final String TEXT = "Some-Text..."; 
   private File testDir;
-  private CompressorStreamFactory csFactory = new CompressorStreamFactory();
   
   @Test
   public void testGetInputStreamPlainText() throws Exception {
-    assertReadText(textFile("txt"));
-    assertReadText(textFile("TXT"));
+    assertReadText(rawTextFile("txt"));
+    assertReadText(rawTextFile("TXT"));
   }
 
   @Test
   public void testGetInputStreamGzip() throws Exception {
-    assertReadText(gzipFile("gz"));
-    assertReadText(gzipFile("gzip"));
-    assertReadText(gzipFile("GZ"));
-    assertReadText(gzipFile("GZIP"));
+    assertReadText(rawGzipFile("gz"));
+    assertReadText(rawGzipFile("gzip"));
+    assertReadText(rawGzipFile("GZ"));
+    assertReadText(rawGzipFile("GZIP"));
   }
 
   @Test
   public void testGetInputStreamBzip2() throws Exception {
-  	assertReadText(bzip2File("bz2"));
-  	assertReadText(bzip2File("bzip"));
-  	assertReadText(bzip2File("BZ2"));
-  	assertReadText(bzip2File("BZIP"));
+  	assertReadText(rawBzip2File("bz2"));
+  	assertReadText(rawBzip2File("bzip"));
+  	assertReadText(rawBzip2File("BZ2"));
+  	assertReadText(rawBzip2File("BZIP"));
+  }
+
+  @Test
+  public void testGetOutputStreamBzip2() throws Exception {
+  	assertReadText(autoOutFile("bz2"));
+  	assertReadText(autoOutFile("bzip"));
+  	assertReadText(autoOutFile("BZ2"));
+  	assertReadText(autoOutFile("BZIP"));
   }
   
-  private File textFile(String ext) throws Exception {
+  @Test
+  public void testGetOutputStreamGzip() throws Exception {
+  	assertReadText(autoOutFile("gz"));
+  	assertReadText(autoOutFile("gzip"));
+  	assertReadText(autoOutFile("GZ"));
+  	assertReadText(autoOutFile("GZIP"));
+  }
+
+  @Test
+  public void testGetOutputStreamPlain() throws Exception {
+  	assertReadText(autoOutFile("txt"));
+  	assertReadText(autoOutFile("text"));
+  	assertReadText(autoOutFile("TXT"));
+  	assertReadText(autoOutFile("TEXT"));
+  }
+  
+  private File rawTextFile(String ext) throws Exception {
     File f = new File(testDir,"testfile." +	ext);
     BufferedWriter w = new BufferedWriter(new FileWriter(f));
     w.write(TEXT);
@@ -71,38 +95,36 @@ public class ContentSourceTest extends BenchmarkTestCase {
     return f;
   }
   
-  private File gzipFile(String ext) throws Exception {
+  private File rawGzipFile(String ext) throws Exception {
     File f = new File(testDir,"testfile." +	ext);
-    OutputStream os = csFactory.createCompressorOutputStream(CompressorStreamFactory.GZIP, new FileOutputStream(f));
-    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(os));
-    w.write(TEXT);
-    w.newLine();
-    w.close();
+    OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.GZIP, new FileOutputStream(f));
+    writeText(os);
     return f;
   }
 
-  private File bzip2File(String ext) throws Exception {
+  private File rawBzip2File(String ext) throws Exception {
   	File f = new File(testDir,"testfile." +	ext);
-  	OutputStream os = csFactory.createCompressorOutputStream(CompressorStreamFactory.BZIP2, new FileOutputStream(f));
-  	BufferedWriter w = new BufferedWriter(new OutputStreamWriter(os));
-  	w.write(TEXT);
-  	w.newLine();
-  	w.close();
+  	OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, new FileOutputStream(f));
+  	writeText(os);
   	return f;
   }
 
+  private File autoOutFile(String ext) throws Exception {
+  	File f = new File(testDir,"testfile." +	ext);
+  	OutputStream os = StreamUtils.outputStream(f);
+  	writeText(os);
+  	return f;
+  }
+
+	private void writeText(OutputStream os) throws IOException {
+		BufferedWriter w = new BufferedWriter(new OutputStreamWriter(os));
+  	w.write(TEXT);
+  	w.newLine();
+  	w.close();
+	}
+
   private void assertReadText(File f) throws Exception {
-    ContentSource src = new ContentSource() {
-      @Override
-      public void close() throws IOException { 
-      }
-      @Override
-      public DocData getNextDocData(DocData docData) throws NoMoreDataException,
-      IOException { 
-        return null;
-      }
-    };
-    InputStream ir = src.getInputStream(f);
+    InputStream ir = StreamUtils.inputStream(f);
     InputStreamReader in = new InputStreamReader(ir);
     BufferedReader r = new BufferedReader(in);
     String line = r.readLine();
