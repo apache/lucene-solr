@@ -493,6 +493,8 @@
               <sysproperty key="tests.seed" value="${tests.seed}"/>
               <!-- set the Version that tests should run against -->
               <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
+              <!-- for lucene we can be strict, and we don't want false fails even across methods -->
+              <sysproperty key="tests.cleanthreads" value="perMethod"/>
               <!-- logging config file -->
               <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
           <!-- set whether or not nightly tests should run -->
