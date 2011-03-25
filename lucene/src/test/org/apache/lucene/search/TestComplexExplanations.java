@@ -44,8 +44,8 @@ public class TestComplexExplanations extends TestExplanations {
   }
 
   // must be static for weight serialization tests 
-  private static DefaultSimilarity createQnorm1Similarity() {
-    return new DefaultSimilarity() {
+  private static DefaultSimilarityProvider createQnorm1Similarity() {
+    return new DefaultSimilarityProvider() {
         @Override
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f; // / (float) Math.sqrt(1.0f + sumOfSquaredWeights);

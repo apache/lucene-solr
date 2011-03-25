@@ -27,6 +27,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.DefaultSimilarityProvider;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -46,7 +48,12 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
                                                     new MockAnalyzer(MockTokenizer.SIMPLE, true)).setMergePolicy(newInOrderLogMergePolicy());
-    config.setSimilarityProvider(new TestSimilarity());
+    config.setSimilarityProvider(new DefaultSimilarityProvider() {
+      @Override
+      public Similarity get(String field) {
+        return new TestSimilarity();
+      }
+    });
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", Field.Store.NO, Field.Index.ANALYZED);

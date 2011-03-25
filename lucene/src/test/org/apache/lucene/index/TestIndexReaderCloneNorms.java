@@ -31,6 +31,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
@@ -41,17 +42,22 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
-  private class SimilarityOne extends DefaultSimilarity {
+  private class SimilarityProviderOne extends DefaultSimilarityProvider {
     @Override
-    public float computeNorm(FieldInvertState state) {
-      // diable length norm
-      return state.getBoost();
-    }
+    public Similarity get(String field) {
+      return new DefaultSimilarity() {
+        @Override
+        public float computeNorm(FieldInvertState state) {
+          // diable length norm
+          return state.getBoost();
+        }
+      };
+    } 
   }
 
   private static final int NUM_FIELDS = 10;
 
-  private SimilarityProvider similarityOne;
+  private SimilarityProvider similarityProviderOne;
 
   private Analyzer anlzr;
 
@@ -68,7 +74,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    similarityOne = new SimilarityOne();
+    similarityProviderOne = new SimilarityProviderOne();
     anlzr = new MockAnalyzer();
   }
   
@@ -249,7 +255,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     }
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newLogMergePolicy()));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newLogMergePolicy()));
 
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
@@ -307,7 +313,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       throws IOException {
     IndexWriterConfig conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-            .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newLogMergePolicy());
+            .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newLogMergePolicy());
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);

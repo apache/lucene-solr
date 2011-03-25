@@ -296,25 +296,30 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(new DefaultSimilarity() {
-      
+    searcher.setSimilarityProvider(new DefaultSimilarityProvider() {
       @Override
-      public IDFExplanation idfExplain(Collection<Term> terms,
-          IndexSearcher searcher) throws IOException {
-        return new IDFExplanation() {
-
-          @Override
-          public float getIdf() {
-            return 10f;
-          }
-
-          @Override
-          public String explain() {
-            return "just a test";
-          }
+      public Similarity get(String field) {
+        return new DefaultSimilarity() {
           
+          @Override
+          public IDFExplanation idfExplain(Collection<Term> terms,
+              IndexSearcher searcher) throws IOException {
+            return new IDFExplanation() {
+
+              @Override
+              public float getIdf() {
+                return 10f;
+              }
+
+              @Override
+              public String explain() {
+                return "just a test";
+              }
+              
+            };
+          } 
         };
-      }   
+      }
     });
     
     MultiPhraseQuery query = new MultiPhraseQuery();

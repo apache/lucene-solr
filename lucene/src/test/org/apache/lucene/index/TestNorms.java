@@ -29,6 +29,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
@@ -40,17 +41,22 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestNorms extends LuceneTestCase {
 
-  private class SimilarityOne extends DefaultSimilarity {
+  private class SimilarityProviderOne extends DefaultSimilarityProvider {
     @Override
-    public float computeNorm(FieldInvertState state) {
-      // Disable length norm
-      return state.getBoost();
-    }
+    public Similarity get(String field) {
+      return new DefaultSimilarity() {
+        @Override
+        public float computeNorm(FieldInvertState state) {
+          // diable length norm
+          return state.getBoost();
+        }
+      };
+    } 
   }
 
   private static final int NUM_FIELDS = 10;
   
-  private SimilarityProvider similarityOne;
+  private SimilarityProvider similarityProviderOne;
   private Analyzer anlzr;
   private int numDocNorms;
   private ArrayList<Float> norms; 
@@ -61,7 +67,7 @@ public class TestNorms extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    similarityOne = new SimilarityOne();
+    similarityProviderOne = new SimilarityProviderOne();
     anlzr = new MockAnalyzer();
   }
 
@@ -152,7 +158,7 @@ public class TestNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newInOrderLogMergePolicy()));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newInOrderLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
@@ -186,7 +192,7 @@ public class TestNorms extends LuceneTestCase {
       assertEquals("number of norms mismatches",numDocNorms,b.length);
       ArrayList<Float> storedNorms = (i==1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {
-        float norm = similarityOne.get(field).decodeNormValue(b[j]);
+        float norm = similarityProviderOne.get(field).decodeNormValue(b[j]);
         float norm1 = storedNorms.get(j).floatValue();
         assertEquals("stored norm value of "+field+" for doc "+j+" is "+norm+" - a mismatch!", norm, norm1, 0.000001);
       }
@@ -197,7 +203,7 @@ public class TestNorms extends LuceneTestCase {
   private void addDocs(Random random, Directory dir, int ndocs, boolean compound) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityOne).setMergePolicy(newInOrderLogMergePolicy()));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newInOrderLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
@@ -222,7 +228,7 @@ public class TestNorms extends LuceneTestCase {
   // return unique norm values that are unchanged by encoding/decoding
   private float nextNorm(String fname) {
     float norm = lastNorm + normDelta;
-    Similarity similarity = similarityOne.get(fname);
+    Similarity similarity = similarityProviderOne.get(fname);
     do {
 			float norm1 = similarity.decodeNormValue(similarity.encodeNormValue(norm));
       if (norm1 > lastNorm) {
@@ -261,7 +267,12 @@ public class TestNorms extends LuceneTestCase {
   public void testCustomEncoder() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
-    config.setSimilarityProvider(new CustomNormEncodingSimilarity());
+    config.setSimilarityProvider(new DefaultSimilarityProvider() {
+      @Override
+      public Similarity get(String field) {
+        return new CustomNormEncodingSimilarity();
+      }
+    });
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     Document doc = new Document();
     Field foo = newField("foo", "", Field.Store.NO, Field.Index.ANALYZED);

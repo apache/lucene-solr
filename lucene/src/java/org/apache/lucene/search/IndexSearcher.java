@@ -72,7 +72,7 @@ public class IndexSearcher {
   private final ExecutorService executor;
 
   // the default SimilarityProvider
-  private static final SimilarityProvider defaultProvider = new DefaultSimilarity();
+  private static final SimilarityProvider defaultProvider = new DefaultSimilarityProvider();
   
   /**
    * Expert: returns a default SimilarityProvider instance.

@@ -1,3 +1,5 @@
+package org.apache.lucene.search;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,18 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
 
-import org.apache.lucene.search.DefaultSimilarityProvider;
-
-public class MockConfigurableSimilarity extends DefaultSimilarityProvider {
-  private String passthrough;
-
-  public MockConfigurableSimilarity(String passthrough) {
-    this.passthrough = passthrough;
+/** 
+ * Expert: Default scoring provider. 
+ * <p>
+ * Returns {@link DefaultSimilarity} for every field
+ */
+public class DefaultSimilarityProvider implements SimilarityProvider {
+  private static final Similarity impl = new DefaultSimilarity();
+  
+  /** Implemented as <code>overlap / maxOverlap</code>. */
+  public float coord(int overlap, int maxOverlap) {
+    return overlap / (float)maxOverlap;
   }
 
-  public String getPassthrough() {
-    return passthrough;
+  /** Implemented as <code>1/sqrt(sumOfSquaredWeights)</code>. */
+  public float queryNorm(float sumOfSquaredWeights) {
+    return (float)(1.0 / Math.sqrt(sumOfSquaredWeights));
+  }
+
+  public Similarity get(String field) {
+    return impl;
   }
 }
