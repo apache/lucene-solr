@@ -131,7 +131,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
-                                         .setMaxBufferedDocs(101).setMergePolicy(new LogDocMergePolicy()).setMergeScheduler(new SerialMergeScheduler()));
+        .setMaxBufferedDocs(101).setMergePolicy(new LogDocMergePolicy()));
 
     // leftmost* segment has 1 doc
     // rightmost* segment has 100 docs
@@ -153,7 +153,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     ldmp.setMergeFactor(10);
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
         new MockAnalyzer()).setOpenMode(
-        OpenMode.APPEND).setMaxBufferedDocs(10).setMergePolicy(ldmp).setMergeScheduler(new SerialMergeScheduler()));
+        OpenMode.APPEND).setMaxBufferedDocs(10).setMergePolicy(ldmp).setMergeScheduler(new ConcurrentMergeScheduler()));
 
     // merge policy only fixes segments on levels where merges
     // have been triggered, so check invariants after all adds
