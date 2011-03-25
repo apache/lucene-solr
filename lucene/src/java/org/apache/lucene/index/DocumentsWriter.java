@@ -283,7 +283,6 @@ final class DocumentsWriter {
     this.fieldInfos = fieldInfos;
     this.bufferedDeletesStream = bufferedDeletesStream;
     flushControl = writer.flushControl;
-
     consumer = config.getIndexingChain().getChain(this);
     this.config = config;
   }
@@ -539,10 +538,10 @@ final class DocumentsWriter {
       if (infoStream != null) {
         message("flush postings as segment " + segment + " numDocs=" + numDocs);
       }
-
+      
       final SegmentWriteState flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
                                                                  numDocs, writer.getConfig().getTermIndexInterval(),
-                                                                 SegmentCodecs.build(fieldInfos, writer.codecs),
+                                                                 fieldInfos.buildSegmentCodecs(true),
                                                                  pendingDeletes);
       // Apply delete-by-docID now (delete-byDocID only
       // happens when an exception is hit processing that

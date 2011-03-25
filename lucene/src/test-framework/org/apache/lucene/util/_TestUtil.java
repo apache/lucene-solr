@@ -334,7 +334,7 @@ public class _TestUtil {
   public static void add(Document doc, FieldInfos fieldInfos) {
     List<Fieldable> fields = doc.getFields();
     for (Fieldable field : fields) {
-      fieldInfos.add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
+      fieldInfos.addOrUpdate(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
               field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
     }
   }

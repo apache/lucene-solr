@@ -28,6 +28,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -147,8 +149,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
      * @return a new {@link FieldInfos} instance with this as the global field
      *         map
      */
-    public FieldInfos newFieldInfos() {
-      return new FieldInfos(this);
+    public FieldInfos newFieldInfos(SegmentCodecsBuilder segmentCodecsBuilder) {
+      return new FieldInfos(this, segmentCodecsBuilder);
     }
 
     /**
@@ -193,6 +195,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private final FieldNumberBiMap globalFieldNumbers;
+  private final SegmentCodecsBuilder segmentCodecsBuilder;
   
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
@@ -215,14 +218,15 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
   /**
    * Creates a new {@link FieldInfos} instance with a private
-   * {@link FieldNumberBiMap}.
+   * {@link FieldNumberBiMap} and a default {@link SegmentCodecsBuilder}
+   * initialized with {@link CodecProvider#getDefault()}.
    * <p>
    * Note: this ctor should not be used during indexing use
    * {@link FieldInfos#FieldInfos(FieldInfos)} or
    * {@link FieldInfos#FieldInfos(FieldNumberBiMap)} instead.
    */
   public FieldInfos() {
-    this(new FieldNumberBiMap());
+    this(new FieldNumberBiMap(), SegmentCodecsBuilder.create(CodecProvider.getDefault()));
   }
   
   /**
@@ -232,7 +236,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @see #isReadOnly()
    */
   FieldInfos(FieldInfos other) {
-    this(other.globalFieldNumbers);
+    this(other.globalFieldNumbers, other.segmentCodecsBuilder);
   }
   
   /**
@@ -240,8 +244,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
    * @see #isReadOnly()
    */
-  FieldInfos(FieldNumberBiMap globalFieldNumbers) {
+  FieldInfos(FieldNumberBiMap globalFieldNumbers, SegmentCodecsBuilder segmentCodecsBuilder) {
     this.globalFieldNumbers = globalFieldNumbers;
+    this.segmentCodecsBuilder = segmentCodecsBuilder;
   }
 
   /**
@@ -255,7 +260,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @throws IOException
    */
   public FieldInfos(Directory d, String name) throws IOException {
-    this((FieldNumberBiMap)null); // use null here to make this FIs Read-Only
+    this((FieldNumberBiMap)null, null); // use null here to make this FIs Read-Only
     IndexInput input = d.openInput(name);
     try {
       read(input, name);
@@ -291,7 +296,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   @Override
   synchronized public Object clone() {
-    FieldInfos fis = new FieldInfos(globalFieldNumbers);
+    FieldInfos fis = new FieldInfos(globalFieldNumbers, segmentCodecsBuilder);
     for (FieldInfo fi : this) {
       FieldInfo clone = (FieldInfo) (fi).clone();
       fis.putInternal(clone);
@@ -310,17 +315,17 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
   
   /**
-   * Add fields that are indexed. Whether they have termvectors has to be specified.
+   * Adds or updates fields that are indexed. Whether they have termvectors has to be specified.
    * 
    * @param names The names of the fields
    * @param storeTermVectors Whether the fields store term vectors or not
    * @param storePositionWithTermVector true if positions should be stored.
    * @param storeOffsetWithTermVector true if offsets should be stored
    */
-  synchronized public void addIndexed(Collection<String> names, boolean storeTermVectors, boolean storePositionWithTermVector, 
+  synchronized public void addOrUpdateIndexed(Collection<String> names, boolean storeTermVectors, boolean storePositionWithTermVector, 
                          boolean storeOffsetWithTermVector) {
     for (String name : names) {
-      add(name, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector);
+      addOrUpdate(name, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector);
     }
   }
 
@@ -330,11 +335,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param names The names of the fields
    * @param isIndexed Whether the fields are indexed or not
    * 
-   * @see #add(String, boolean)
+   * @see #addOrUpdate(String, boolean)
    */
-  synchronized public void add(Collection<String> names, boolean isIndexed) {
+  synchronized public void addOrUpdate(Collection<String> names, boolean isIndexed) {
     for (String name : names) {
-      add(name, isIndexed);
+      addOrUpdate(name, isIndexed);
     }
   }
 
@@ -343,10 +348,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * 
    * @param name The name of the Fieldable
    * @param isIndexed true if the field is indexed
-   * @see #add(String, boolean, boolean, boolean, boolean)
+   * @see #addOrUpdate(String, boolean, boolean, boolean, boolean)
    */
-  synchronized public void add(String name, boolean isIndexed) {
-    add(name, isIndexed, false, false, false, false);
+  synchronized public void addOrUpdate(String name, boolean isIndexed) {
+    addOrUpdate(name, isIndexed, false, false, false, false);
   }
 
   /**
@@ -356,8 +361,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param isIndexed  true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
    */
-  synchronized public void add(String name, boolean isIndexed, boolean storeTermVector){
-    add(name, isIndexed, storeTermVector, false, false, false);
+  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector){
+    addOrUpdate(name, isIndexed, storeTermVector, false, false, false);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -371,10 +376,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param storePositionWithTermVector true if the term vector with positions should be stored
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    */
-  synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
+  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector) {
 
-    add(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, false);
+    addOrUpdate(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, false);
   }
 
     /** If the field is not yet known, adds it. If it is known, checks to make
@@ -389,9 +394,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    */
-  synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
+  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
-    add(name, isIndexed, storeTermVector, storePositionWithTermVector,
+    addOrUpdate(name, isIndexed, storeTermVector, storePositionWithTermVector,
         storeOffsetWithTermVector, omitNorms, false, false);
   }
   
@@ -409,7 +414,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param storePayloads true if payloads should be stored for this field
    * @param omitTermFreqAndPositions true if term freqs should be omitted for this field
    */
-  synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
+  synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
                        boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
@@ -422,12 +427,16 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
-    final FieldInfo fi = fieldInfo(name);
+    assert segmentCodecsBuilder != null : "SegmentCodecsBuilder is set to null but FieldInfos is not read-only";
+    FieldInfo fi = fieldInfo(name);
     if (fi == null) {
       final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
-      return addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+    }
+    if (fi.isIndexed && fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
+      segmentCodecsBuilder.tryAddAndSet(fi);
     }
     return fi;
   }
@@ -514,6 +523,22 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       }
     }
     return false;
+  }
+  
+  /**
+   * Builds the {@link SegmentCodecs} mapping for this {@link FieldInfos} instance.
+   * @param clearBuilder <code>true</code> iff the internal {@link SegmentCodecsBuilder} must be cleared otherwise <code>false</code>
+   */
+  public SegmentCodecs buildSegmentCodecs(boolean clearBuilder) {
+    if (globalFieldNumbers == null) {
+      throw new IllegalStateException("FieldInfos are read-only no SegmentCodecs available");
+    }
+    assert segmentCodecsBuilder != null;
+    final SegmentCodecs segmentCodecs = segmentCodecsBuilder.build();
+    if (clearBuilder) {
+      segmentCodecsBuilder.clear();
+    }
+    return segmentCodecs;
   }
 
   public void write(Directory d, String name) throws IOException {

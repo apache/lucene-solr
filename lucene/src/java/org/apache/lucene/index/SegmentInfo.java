@@ -209,13 +209,12 @@ public final class SegmentInfo {
     hasProx = input.readByte() == YES;
     
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
-    segmentCodecs = new SegmentCodecs(codecs);
     if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
-      segmentCodecs.read(input);
+      segmentCodecs = new SegmentCodecs(codecs, input);
     } else {
       // codec ID on FieldInfo is 0 so it will simply use the first codec available
       // TODO what todo if preflex is not available in the provider? register it or fail?
-      segmentCodecs.codecs = new Codec[] { codecs.lookup("PreFlex")};
+      segmentCodecs = new SegmentCodecs(codecs, new Codec[] { codecs.lookup("PreFlex")});
     }
     diagnostics = input.readStringStringMap();
     

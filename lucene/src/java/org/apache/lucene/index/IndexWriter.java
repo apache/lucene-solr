@@ -38,6 +38,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -790,7 +791,7 @@ public class IndexWriter implements Closeable {
       // start with previous field numbers, but new FieldInfos
       globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap(directory);
       docWriter = new DocumentsWriter(config, directory, this, conf.getIndexingChain(),
-          globalFieldNumberMap.newFieldInfos(), bufferedDeletesStream);
+          globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)), bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
 
       // Default deleter (for backwards compatibility) is
@@ -2208,7 +2209,7 @@ public class IndexWriter implements Closeable {
       String mergedName = newSegmentName();
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, codecs, payloadProcessorProvider,
-                                               globalFieldNumberMap.newFieldInfos());
+                                               globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
       
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -2951,7 +2952,7 @@ public class IndexWriter implements Closeable {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false, globalFieldNumberMap.newFieldInfos());
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false, globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);

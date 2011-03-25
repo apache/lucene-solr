@@ -109,33 +109,33 @@ public class TestFieldInfos extends LuceneTestCase {
     }
     
     try {
-      readOnly.add("bogus", random.nextBoolean());
+      readOnly.addOrUpdate("bogus", random.nextBoolean());
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected
     }
     try {
-      readOnly.add("bogus", random.nextBoolean(), random.nextBoolean());
+      readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean());
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected
     }
     try {
-      readOnly.add("bogus", random.nextBoolean(), random.nextBoolean(),
+      readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
           random.nextBoolean(), random.nextBoolean());
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected
     }
     try {
-      readOnly.add("bogus", random.nextBoolean(), random.nextBoolean(),
+      readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
           random.nextBoolean(), random.nextBoolean(), random.nextBoolean());
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected
     }
     try {
-      readOnly.add("bogus", random.nextBoolean(), random.nextBoolean(),
+      readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
           random.nextBoolean(), random.nextBoolean(), random.nextBoolean(),
           random.nextBoolean(), random.nextBoolean());
       fail("instance should be read only");
@@ -143,7 +143,7 @@ public class TestFieldInfos extends LuceneTestCase {
       // expected
     }
     try {
-      readOnly.add(Arrays.asList("a", "b", "c"), random.nextBoolean());
+      readOnly.addOrUpdate(Arrays.asList("a", "b", "c"), random.nextBoolean());
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected
