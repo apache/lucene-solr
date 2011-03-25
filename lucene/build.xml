@@ -706,6 +706,7 @@
 	<sequential>
       <mkdir dir="${javadoc.dir}/test-framework"/>
       <invoke-javadoc
+          overview="src/test-framework/overview.html"
           destdir="${javadoc.dir}/test-framework"
           title="${Name} ${version} Test Framework API">
         <sources>

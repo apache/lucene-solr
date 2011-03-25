@@ -744,12 +744,13 @@
     <element name="sources" optional="yes"/>
     <attribute name="destdir"/>
   	<attribute name="title" default="${Name} ${version} API"/>
+    <attribute name="overview" default="${src.dir}/overview.html"/>
     <sequential>
       <copy todir="@{destdir}/../prettify" overwrite="false">
         <fileset dir="${prettify.dir}"/>
       </copy>
       <javadoc
-          overview="${src.dir}/overview.html"
+          overview="@{overview}"
           packagenames="org.apache.lucene.*"
           destdir="@{destdir}"
           access="${javadoc.access}"
