@@ -26,6 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.util.NamedList;
+
 
 /**
  * A concrete representation of a document within a Solr index.  Unlike a lucene
@@ -86,6 +88,9 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
       value = new ArrayList(Arrays.asList( (Object[])value ));
     }
     else if( value instanceof Collection ) {
+      // nothing
+    }
+    else if( value instanceof NamedList ) {
       // nothing
     }
     else if( value instanceof Iterable ) {

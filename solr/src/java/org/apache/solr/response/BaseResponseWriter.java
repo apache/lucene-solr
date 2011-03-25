@@ -38,10 +38,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 import java.util.ArrayList;
 
 /**
+ * THIS HAS NO TESTS and is not used anywhere....  no idea how or if it should work...
+ * 
+ * I think we should drop it - along with {@link GenericBinaryResponseWriter} and {@link GenericBinaryResponseWriter}
+ * 
+ * unless I'm missing something (ryan, March 2011)
  * 
  * 
  * This class serves as a basis from which {@link QueryResponseWriter}s can be
@@ -60,7 +64,6 @@ public abstract class BaseResponseWriter {
   private static final Logger LOG = LoggerFactory
       .getLogger(BaseResponseWriter.class);
 
-  private static final String SCORE_FIELD = "score";
 
   /**
    * 
@@ -110,9 +113,6 @@ public abstract class BaseResponseWriter {
           responseWriter.startDocumentList(name,info);
           for (int j = 0; j < sz; j++) {
             SolrDocument sdoc = getDoc(iterator.nextDoc(), idxInfo);
-            if (idxInfo.includeScore && docList.hasScores()) {
-              sdoc.addField(SCORE_FIELD, iterator.score());
-            }
             responseWriter.writeDoc(sdoc);
           }
         } else {
@@ -120,9 +120,6 @@ public abstract class BaseResponseWriter {
               .size());
           for (int j = 0; j < sz; j++) {
             SolrDocument sdoc = getDoc(iterator.nextDoc(), idxInfo);
-            if (idxInfo.includeScore && docList.hasScores()) {
-              sdoc.addField(SCORE_FIELD, iterator.score());
-            }
             list.add(sdoc);
           }
           responseWriter.writeAllDocs(info, list);
@@ -144,22 +141,13 @@ public abstract class BaseResponseWriter {
   private static class IdxInfo {
     IndexSchema schema;
     SolrIndexSearcher searcher;
-    Set<String> returnFields;
-    boolean includeScore;
+    ReturnFields returnFields;
 
     private IdxInfo(IndexSchema schema, SolrIndexSearcher searcher,
-        Set<String> returnFields) {
+        ReturnFields returnFields) {
       this.schema = schema;
       this.searcher = searcher;
-      this.includeScore = returnFields != null
-              && returnFields.contains(SCORE_FIELD);
-      if (returnFields != null) {
-        if (returnFields.size() == 0 || (returnFields.size() == 1 && includeScore) || returnFields.contains("*")) {
-          returnFields = null;  // null means return all stored fields
-        }
-      }
       this.returnFields = returnFields;
-
     }
   }
 

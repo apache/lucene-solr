@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -263,7 +264,9 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
         if (last != null) {
           // we only test if the same docs matched since some queries will include factors like idf, etc.
-          sameDocs((DocSet)qr.getValues().get("response"), (DocSet)last.getValues().get("response"));
+          DocList rA = ((ResultContext)qr.getValues().get("response")).docs;
+          DocList rB = ((ResultContext)last.getValues().get("response")).docs;
+          sameDocs( rA, rB );
         }
         req.close();
         last = qr;

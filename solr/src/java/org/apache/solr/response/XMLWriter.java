@@ -17,26 +17,22 @@
 
 package org.apache.solr.response;
 
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSet;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TextField;
-
-import java.io.Writer;
-import java.io.IOException;
-import java.util.*;
-
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Document;
 
 
 public final class XMLWriter extends TextResponseWriter {
@@ -166,257 +162,59 @@ public final class XMLWriter extends TextResponseWriter {
     }
   }
 
-  private static final Comparator fieldnameComparator = new Comparator() {
-    public int compare(Object o, Object o1) {
-      Fieldable f1 = (Fieldable)o; Fieldable f2 = (Fieldable)o1;
-      int cmp = f1.name().compareTo(f2.name());
-      return cmp;
-      // note - the sort is stable, so this should not have affected the ordering
-      // of fields with the same name w.r.t eachother.
-    }
-  };
 
   @Override
-  public final void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException {
-    startTag("doc", name, false);
-    incLevel();
-
-    if (includeScore) {
-      writeFloat("score", score);
-    }
-
-
-    // Lucene Documents have multivalued types as multiple fields
-    // with the same name.
-    // The XML needs to represent these as
-    // an array.  The fastest way to detect multiple fields
-    // with the same name is to sort them first.
-
-
-    // using global tlst here, so we shouldn't call any other
-    // function that uses it until we are done.
-    tlst.clear();
-    for (Object obj : doc.getFields()) {
-      Fieldable ff = (Fieldable)obj;
-      // skip this field if it is not a field to be returned.
-      if (returnFields!=null && !returnFields.contains(ff.name())) {
-        continue;
-      }
-      tlst.add(ff);
-    }
-    Collections.sort(tlst, fieldnameComparator);
-
-    int sz = tlst.size();
-    int fidx1 = 0, fidx2 = 0;
-    while (fidx1 < sz) {
-      Fieldable f1 = (Fieldable)tlst.get(fidx1);
-      String fname = f1.name();
-
-      // find the end of fields with this name
-      fidx2 = fidx1+1;
-      while (fidx2 < sz && fname.equals(((Fieldable)tlst.get(fidx2)).name()) ) {
-        fidx2++;
-      }
-
-      /***
-      // more efficient to use getFieldType instead of
-      // getField since that way dynamic fields won't have
-      // to create a SchemaField on the fly.
-      FieldType ft = schema.getFieldType(fname);
-      ***/
-
-      SchemaField sf = schema.getFieldOrNull(fname);
-      if( sf == null ) {
-        sf = new SchemaField( fname, new TextField() );
-      }
-      if (fidx1+1 == fidx2) {
-        // single field value
-        if (sf.multiValued()) {
-          startTag("arr",fname,false);
-          doIndent=false;
-          sf.write(this, null, f1);
-          writer.write("</arr>");
-          doIndent=defaultIndent;
-        } else {
-          sf.write(this, f1.name(), f1);
-        }
-      } else {
-        // multiple fields with same name detected
-
-        startTag("arr",fname,false);
-        incLevel();
-        doIndent=false;
-        int cnt=0;
-        for (int i=fidx1; i<fidx2; i++) {
-          if (defaultIndent && ++cnt==4) { // only indent every 4th item
-            indent();
-            cnt=0;
-          }
-          sf.write(this, null, (Fieldable)tlst.get(i));
-        }
-        decLevel();
-        // if (doIndent) indent();
-        writer.write("</arr>");
-        // doIndent=true;
-        doIndent=defaultIndent;
-      }
-      fidx1 = fidx2;
-    }
-
-    decLevel();
-    if (doIndent) indent();
-    writer.write("</doc>");
-  }
-
-  @Override
-  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
-    startTag("doc", name, false);
-    incLevel();
-
-    for (String fname : doc.getFieldNames()) {
-      if (returnFields!=null && !returnFields.contains(fname)) {
-        continue;
-      }
-      Object val = doc.getFieldValue(fname);
-
-      if (val instanceof Collection) {
-        writeVal(fname, val);
-      } else {
-        // single valued... figure out if we should put <arr> tags around it anyway
-        SchemaField sf = schema.getFieldOrNull(fname);
-        if (sf!=null && sf.multiValued()) {
-          startTag("arr",fname,false);
-          doIndent=false;
-          writeVal(fname, val);
-          writer.write("</arr>");
-          doIndent=defaultIndent;
-        } else {
-          writeVal(fname, val);
-        }
-      }
-    }
-
-    if (pseudoFields != null) {
-      for (Object fname : pseudoFields.keySet()) {
-        writeVal(fname.toString(), pseudoFields.get(fname));
-      }
-    }
-
-    decLevel();
-    if (doIndent) indent();
-    writer.write("</doc>");
-  }
-
-
-  private static interface DocumentListInfo {
-    Float getMaxScore();
-    int getCount();
-    long getNumFound();
-    long getStart();
-    void writeDocs( boolean includeScore, Set<String> fields ) throws IOException;
-  }
-
-  private final void writeDocuments(
-      String name,
-      DocumentListInfo docs,
-      Set<String> fields) throws IOException
+  public void writeStartDocumentList(String name, 
+      long start, int size, long numFound, Float maxScore) throws IOException
   {
-    boolean includeScore=false;
-    if (fields!=null) {
-      includeScore = fields.contains("score");
-      if (fields.size()==0 || (fields.size()==1 && includeScore) || fields.contains("*")) {
-        fields=null;  // null means return all stored fields
-      }
-    }
-
-    int sz=docs.getCount();
     if (doIndent) indent();
 
     writer.write("<result");
     writeAttr("name",name);
-    writeAttr("numFound",Long.toString(docs.getNumFound()));
-    writeAttr("start",Long.toString(docs.getStart()));
-    if (includeScore && docs.getMaxScore()!=null) {
-      writeAttr("maxScore",Float.toString(docs.getMaxScore()));
+    writeAttr("numFound",Long.toString(numFound));
+    writeAttr("start",Long.toString(start));
+    if(maxScore!=null) {
+      writeAttr("maxScore",Float.toString(maxScore));
     }
-    if (sz==0) {
-      writer.write("/>");
-      return;
-    } else {
-      writer.write('>');
-    }
-
+    writer.write(">");
+    
     incLevel();
-    docs.writeDocs(includeScore, fields);
-    decLevel();
+  }
 
+
+  /**
+   * The SolrDocument should already have multivalued fields implemented as
+   * Collections -- this will not rewrite to <arr>
+   */ 
+  @Override
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
+    startTag("doc", name, false);
+    incLevel();
+
+    for (String fname : doc.getFieldNames()) {
+      if (!returnFields.contains(fname)) {
+        continue;
+      }
+      
+      Object val = doc.getFieldValue(fname);
+      if( "_explain_".equals( fname ) ) {
+        System.out.println( val );
+      }
+      writeVal(fname, val);
+    }
+    
+    decLevel();
+    writer.write("</doc>");
+  }
+  
+  @Override
+  public void writeEndDocumentList() throws IOException
+  {
+    decLevel();
     if (doIndent) indent();
     writer.write("</result>");
   }
 
-  @Override
-  public final void writeSolrDocumentList(String name, final SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException
-  {
-    this.writeDocuments( name, new DocumentListInfo()
-    {
-      public int getCount() {
-        return docs.size();
-      }
-
-      public Float getMaxScore() {
-        return docs.getMaxScore();
-      }
-
-      public long getNumFound() {
-        return docs.getNumFound();
-      }
-
-      public long getStart() {
-        return docs.getStart();
-      }
-
-      public void writeDocs(boolean includeScore, Set<String> fields) throws IOException {
-        for( SolrDocument doc : docs ) {
-          writeSolrDocument(null, doc, fields, null);
-        }
-      }
-    }, fields );
-  }
-
-  @Override
-  public void writeDocList(String name, final DocList ids, Set<String> fields, Map otherFields) throws IOException
-  {
-    this.writeDocuments( name, new DocumentListInfo()
-    {
-      public int getCount() {
-        return ids.size();
-      }
-
-      public Float getMaxScore() {
-        return ids.maxScore();
-      }
-
-      public long getNumFound() {
-        return ids.matches();
-      }
-
-      public long getStart() {
-        return ids.offset();
-      }
-
-      public void writeDocs(boolean includeScore, Set<String> fields) throws IOException {
-        SolrIndexSearcher searcher = req.getSearcher();
-        DocIterator iterator = ids.iterator();
-        int sz = ids.size();
-        includeScore = includeScore && ids.hasScores();
-        for (int i=0; i<sz; i++) {
-          int id = iterator.nextDoc();
-          Document doc = searcher.doc(id, fields);
-          writeDoc(null, doc, fields, (includeScore ? iterator.score() : 0.0f), includeScore);
-        }
-      }
-    }, fields );
-  }
 
 
   //

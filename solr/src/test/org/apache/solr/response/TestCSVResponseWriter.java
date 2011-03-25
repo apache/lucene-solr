@@ -22,7 +22,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.SolrPluginUtils;
 import org.junit.*;
 
 import java.io.StringWriter;
@@ -129,19 +128,19 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     rsp.add("response", sdl);
     QueryResponseWriter w = new CSVResponseWriter();
     
-    SolrPluginUtils.setReturnFields("id,foo_s", rsp);
+    rsp.setReturnFields( ReturnFields.getReturnFields("id,foo_s", req) );
     StringWriter buf = new StringWriter();
     w.write(buf, req, rsp);
     assertEquals("id,foo_s\n1,hi\n2,\n", buf.toString());
 
     // try scores
-    SolrPluginUtils.setReturnFields("id,score,foo_s", rsp);
+    rsp.setReturnFields( ReturnFields.getReturnFields("id,score,foo_s", req) );
     buf = new StringWriter();
     w.write(buf, req, rsp);
     assertEquals("id,score,foo_s\n1,2.718,hi\n2,89.83,\n", buf.toString());
 
     // get field values from docs... should be ordered and not include score unless requested
-    SolrPluginUtils.setReturnFields("*", rsp);
+    rsp.setReturnFields( ReturnFields.getReturnFields("*", req) );
     buf = new StringWriter();
     w.write(buf, req, rsp);
     assertEquals("id,foo_i,foo_s,foo_l,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss\n" +
@@ -151,7 +150,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     
 
     // get field values and scores - just check that the scores are there... we don't guarantee where
-    SolrPluginUtils.setReturnFields("*,score", rsp);
+    rsp.setReturnFields( ReturnFields.getReturnFields("*,score", req) );
     buf = new StringWriter();
     w.write(buf, req, rsp);
     String s = buf.toString();

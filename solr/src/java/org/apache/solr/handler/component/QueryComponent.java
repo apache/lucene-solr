@@ -39,6 +39,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.ReturnFields;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -72,13 +74,14 @@ public class QueryComponent extends SearchComponent
     }
     SolrQueryResponse rsp = rb.rsp;
 
-    // Set field flags
-    String fl = params.get(CommonParams.FL);
-    int fieldFlags = 0;
-    if (fl != null) {
-      fieldFlags |= SolrPluginUtils.setReturnFields(fl, rsp);
+    // Set field flags    
+    ReturnFields returnFields = ReturnFields.getReturnFields( req );
+    rsp.setReturnFields( returnFields );
+    int flags = 0;
+    if (returnFields.getWantsScore()) {
+      flags |= SolrIndexSearcher.GET_SCORES;
     }
-    rb.setFieldFlags( fieldFlags );
+    rb.setFieldFlags( flags );
 
     String defType = params.get(QueryParsing.DEFTYPE,QParserPlugin.DEFAULT_QTYPE);
 
@@ -294,7 +297,11 @@ public class QueryComponent extends SearchComponent
         res.docSet = searcher.getDocSet(queries);
       }
       rb.setResults(res);
-      rsp.add("response",rb.getResults().docList);
+      
+      ResultContext ctx = new ResultContext();
+      ctx.docs = rb.getResults().docList;
+      ctx.query = null; // anything?
+      rsp.add("response", ctx);
       return;
     }
 
@@ -416,7 +423,10 @@ public class QueryComponent extends SearchComponent
         // TODO: get "hits" a different way to log
 
         if (grouping.mainResult != null) {
-          rsp.add("response",grouping.mainResult);
+          ResultContext ctx = new ResultContext();
+          ctx.docs = grouping.mainResult;
+          ctx.query = null; // TODO? add the query?
+          rsp.add("response", ctx);
           rsp.getToLog().add("hits", grouping.mainResult.matches());
         }
 
@@ -431,7 +441,11 @@ public class QueryComponent extends SearchComponent
     searcher.search(result,cmd);
     rb.setResult( result );
 
-    rsp.add("response",rb.getResults().docList);
+
+    ResultContext ctx = new ResultContext();
+    ctx.docs = rb.getResults().docList;
+    ctx.query = rb.getQuery();
+    rsp.add("response", ctx);
     rsp.getToLog().add("hits", rb.getResults().docList.matches());
 
     doFieldSortValues(rb, searcher);

@@ -108,6 +108,11 @@ New Features
   Adding a parameter NOW=<time_in_ms> to the request will override the
   current time.  (Peter Sturge, yonik)
 
+* SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
+  for more complex results in responses and open the door for function queries
+  as results. (ryan)
+
+
 Optimizations
 ----------------------
 
