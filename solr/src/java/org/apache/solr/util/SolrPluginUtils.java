@@ -37,7 +37,6 @@ import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.ReturnFields;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -147,8 +146,8 @@ public class SolrPluginUtils {
     }
 
     ReturnFields returnFields = res.getReturnFields();
-    if(returnFields.getFieldNames() != null) {
-      Set<String> fieldFilter = returnFields.getFieldNames();
+    if(returnFields.getLuceneFieldNames() != null) {
+      Set<String> fieldFilter = returnFields.getLuceneFieldNames();
 
       if (rb.doHighlights) {
         // copy return fields list

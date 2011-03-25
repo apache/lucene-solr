@@ -16,59 +16,30 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.Explanation;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.util.SolrPluginUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.solr.common.util.NamedList;
 
 /**
- * Add query explain info directly to Document
+ * Return a field with a name that is different that what is indexed
  *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  * @since solr 4.0
  */
-public class ExplainAugmenter extends TransformerWithContext
+public class RenameFieldsTransformer extends DocTransformer
 {
-  public static enum Style {
-    NL,
-    TEXT,
-    HTML
-  };
-  
-  final String name;
-  final Style style;
-  
-  public ExplainAugmenter( String display )
-  {
-    this( display, Style.TEXT );
-  }
+  final NamedList<String> rename;
 
-  public ExplainAugmenter( String display, Style style )
+  public RenameFieldsTransformer( NamedList<String> rename )
   {
-    this.name = display;
-    this.style = style;
+    this.rename = rename;
   }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    if( context != null && context.query != null ) {
-      try {
-        Explanation exp = context.searcher.explain(context.query, docid);
-        if( style == Style.NL ) {
-          doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
-        }
-        else if( style == Style.NL ) {
-          doc.setField( name, exp.toHtml() );
-        }
-        else {
-          doc.setField( name, exp.toString() );
-        }
-      }
-      catch (IOException e) {
-        e.printStackTrace();
+    for( int i=0; i<rename.size(); i++ ) {
+      Object v = doc.remove( rename.getName(i) );
+      if( v != null ) {
+        doc.setField(rename.getVal(i), v);
       }
     }
   }

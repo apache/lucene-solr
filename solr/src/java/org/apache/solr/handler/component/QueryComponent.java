@@ -40,7 +40,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
-import org.apache.solr.response.ReturnFields;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -75,10 +74,10 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
 
     // Set field flags    
-    ReturnFields returnFields = ReturnFields.getReturnFields( req );
+    ReturnFields returnFields = new ReturnFields( req );
     rsp.setReturnFields( returnFields );
     int flags = 0;
-    if (returnFields.getWantsScore()) {
+    if (returnFields.wantsScore()) {
       flags |= SolrIndexSearcher.GET_SCORES;
     }
     rb.setFieldFlags( flags );

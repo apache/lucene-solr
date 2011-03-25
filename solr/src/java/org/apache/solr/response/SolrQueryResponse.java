@@ -19,6 +19,7 @@ package org.apache.solr.response;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.search.ReturnFields;
 
 import java.util.*;
 

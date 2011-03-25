@@ -33,6 +33,7 @@ import org.apache.solr.response.transform.TransformContext;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
 
 /** Base class for text-oriented response writers.
  *
@@ -230,7 +231,7 @@ public abstract class TextResponseWriter {
     DocList ids = res.docs;
     TransformContext context = new TransformContext();
     context.query = res.query;
-    context.wantsScores = fields.getWantsScore() && ids.hasScores();
+    context.wantsScores = fields.wantsScore() && ids.hasScores();
     writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(), 
         context.wantsScores ? new Float(ids.maxScore()) : null );
     
@@ -241,7 +242,7 @@ public abstract class TextResponseWriter {
       transformer.setContext( context );
     }
     int sz = ids.size();
-    Set<String> fnames = fields.getFieldNames();
+    Set<String> fnames = fields.getLuceneFieldNames();
     for (int i=0; i<sz; i++) {
       int id = context.iterator.nextDoc();
       Document doc = context.searcher.doc(id, fnames);

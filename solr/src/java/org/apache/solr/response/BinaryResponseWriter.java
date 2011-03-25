@@ -28,6 +28,7 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformContext;
 import org.apache.solr.schema.*;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +93,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         // This typically happens when distributed search adds extra fields to an internal request
         SolrDocument doc = (SolrDocument)o;
         for( String fname : doc.getFieldNames() ) {
-          if( !returnFields.contains( fname ) ) {
+          if( !returnFields.wantsField( fname ) ) {
             doc.removeFields( fname );
           }
         }
@@ -106,7 +107,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       DocList ids = res.docs;
       TransformContext context = new TransformContext();
       context.query = res.query;
-      context.wantsScores = returnFields.getWantsScore() && ids.hasScores();
+      context.wantsScores = returnFields.wantsScore() && ids.hasScores();
       
       int sz = ids.size();
       codec.writeTag(JavaBinCodec.ARR, sz);
@@ -119,7 +120,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         transformer.setContext( context );
       }
       
-      Set<String> fnames = returnFields.getFieldNames();
+      Set<String> fnames = returnFields.getLuceneFieldNames();
       context.iterator = ids.iterator();
       for (int i = 0; i < sz; i++) {
         int id = context.iterator.nextDoc();
@@ -137,7 +138,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
-      boolean wantsScores = returnFields.getWantsScore() && ctx.docs.hasScores();
+      boolean wantsScores = returnFields.wantsScore() && ctx.docs.hasScores();
       List l = new ArrayList(3);
       l.add((long) ctx.docs.matches());
       l.add((long) ctx.docs.offset());
@@ -157,7 +158,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       SolrDocument solrDoc = new SolrDocument();
       for (Fieldable f : doc.getFields()) {
         String fieldName = f.name();
-        if( !returnFields.contains(fieldName) ) 
+        if( !returnFields.wantsField(fieldName) ) 
           continue;
         SchemaField sf = schema.getFieldOrNull(fieldName);
         FieldType ft = null;

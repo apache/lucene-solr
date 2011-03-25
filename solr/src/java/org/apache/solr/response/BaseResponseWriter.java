@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.schema.FieldType;
@@ -156,7 +157,7 @@ public abstract class BaseResponseWriter {
     SolrDocument solrDoc = new SolrDocument();
     for (Fieldable f : doc.getFields()) {
       String fieldName = f.name();
-      if (info.returnFields != null && !info.returnFields.contains(fieldName))
+      if (info.returnFields != null && !info.returnFields.wantsField(fieldName))
         continue;
       SchemaField sf = info.schema.getFieldOrNull(fieldName);
       FieldType ft = null;

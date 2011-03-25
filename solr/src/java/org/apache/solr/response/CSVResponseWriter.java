@@ -34,6 +34,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.CharArrayWriter;
@@ -235,7 +236,7 @@ class CSVWriter extends TextResponseWriter {
       // encapsulator will already be disabled if it wasn't specified
     }
 
-    Collection<String> fields = returnFields.getFieldNames();
+    Collection<String> fields = returnFields.getLuceneFieldNames();
     Object responseObj = rsp.getValues().get("response");
     if (fields==null) {
       if (responseObj instanceof SolrDocumentList) {
@@ -248,7 +249,7 @@ class CSVWriter extends TextResponseWriter {
         // get the list of fields from the index
         fields = req.getSearcher().getFieldNames();
       }
-      if (returnFields.getWantsScore()) {
+      if (returnFields.wantsScore()) {
         fields.add("score");
       } else {
         fields.remove("score");

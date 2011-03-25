@@ -34,6 +34,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.ReturnFields;
 
 /**
  * @version $Id$
@@ -321,7 +322,7 @@ class JSONWriter extends TextResponseWriter {
 
     boolean first=true;
     for (String fname : doc.getFieldNames()) {
-      if (!returnFields.contains(fname)) {
+      if (!returnFields.wantsField(fname)) {
         continue;
       }
       

@@ -47,7 +47,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.ReturnFields;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -78,10 +77,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     SolrParams params = req.getParams();
 
     // Set field flags
-    ReturnFields returnFields = ReturnFields.getReturnFields( req );
+    ReturnFields returnFields = new ReturnFields( req );
     rsp.setReturnFields( returnFields );
     int flags = 0;
-    if (returnFields.getWantsScore()) {
+    if (returnFields.wantsScore()) {
       flags |= SolrIndexSearcher.GET_SCORES;
     }
 

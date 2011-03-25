@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.ReturnFields;
 
 
 /**
@@ -113,7 +114,7 @@ class PHPSerializedWriter extends JSONWriter {
     LinkedHashMap <String,Object> multi = new LinkedHashMap<String, Object>();
 
     for (String fname : doc.getFieldNames()) {
-      if(!returnFields.contains(fname)){
+      if(!returnFields.wantsField(fname)){
         continue;
       }
 

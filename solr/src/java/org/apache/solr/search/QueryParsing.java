@@ -582,7 +582,7 @@ public class QueryParsing {
 
     boolean opt(char ch) {
       eatws();
-      if (val.charAt(pos) == ch) {
+      if (pos < end && val.charAt(pos) == ch) {
         pos++;
         return true;
       }
@@ -694,6 +694,28 @@ public class QueryParsing {
         while (pos < end) {
           ch = val.charAt(pos);
           if (!Character.isJavaIdentifierPart(ch) && ch != '.') {
+            break;
+          }
+          pos++;
+        }
+        return val.substring(id_start, pos);
+      }
+
+      if (errMessage != null) {
+        throw new ParseException(errMessage + " at pos " + pos + " str='" + val + "'");
+      }
+      return null;
+    }
+
+    public String getGlobbedId(String errMessage) throws ParseException {
+      eatws();
+      int id_start = pos;
+      char ch;
+      if (pos < end && (ch = val.charAt(pos)) != '$' && (Character.isJavaIdentifierStart(ch) || ch=='?' || ch=='*')) {
+        pos++;
+        while (pos < end) {
+          ch = val.charAt(pos);
+          if (!(Character.isJavaIdentifierPart(ch) || ch=='?' || ch=='*') && ch != '.') {
             break;
           }
           pos++;

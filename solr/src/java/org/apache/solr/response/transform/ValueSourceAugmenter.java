@@ -17,29 +17,35 @@
 package org.apache.solr.response.transform;
 
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.function.ValueSource;
 
 /**
  * Add values from a ValueSource (function query etc)
+ * 
+ * NOT really sure how or if this could work...
  *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  * @since solr 4.0
  */
-public class DocValuesAugmenter extends DocTransformer
+public class ValueSourceAugmenter extends DocTransformer
 {
-  final String name;
-  final DocValues values;
+  public final String name;
+  public final QParser qparser;
+  public final ValueSource values;
 
-  public DocValuesAugmenter( String name, DocValues values )
+  public ValueSourceAugmenter( String name, QParser qparser, ValueSource values )
   {
     this.name = name;
+    this.qparser = qparser;
     this.values = values;
   }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
     // TODO, should know what the real type is -- not always string
-    Object v = values.strVal( docid );
+    // how do we get to docvalues?
+    Object v = "now what..."; //values.g.strVal( docid );
     doc.setField( name, v );
   }
 }

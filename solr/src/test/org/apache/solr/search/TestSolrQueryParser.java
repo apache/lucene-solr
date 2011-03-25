@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.response.transform.ExplainAugmenter;
+import org.apache.solr.response.transform.ScoreAugmenter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,4 +51,40 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testReturnFields() {
+    ReturnFields rf = new ReturnFields( req("fl", "id,score") );
+    assertTrue( rf.wantsScore() );
+    assertTrue( rf.wantsField( "score" ) );
+    assertTrue( rf.wantsField( "id" ) );
+    assertFalse( rf.wantsField( "xxx" ) );
+    assertTrue( rf.getTransformer() instanceof ScoreAugmenter );
+    
+    rf = new ReturnFields( req("fl", "*") );
+    assertFalse( rf.wantsScore() );
+    assertTrue( rf.wantsField( "xxx" ) );
+    assertTrue( rf.wantsAllFields() );
+    assertNull( rf.getTransformer() );
+    
+    rf = new ReturnFields( req("fl", "_explain_") );
+    assertFalse( rf.wantsScore() );
+    assertFalse( rf.wantsField( "id" ) );
+    assertTrue( rf.getTransformer() instanceof ExplainAugmenter );
+
+    // Check that we want wildcards
+    rf = new ReturnFields( req("fl", "id,aaa*,*bbb") );
+    assertTrue( rf.wantsField( "id" ) );
+    assertTrue( rf.wantsField( "aaaa" ) );
+    assertTrue( rf.wantsField( "xxxbbb" ) );
+    assertFalse( rf.wantsField( "aa" ) );
+    assertFalse( rf.wantsField( "bb" ) );
+
+    
+    // From ConvertedLegacyTest, maybe we drop support?
+    rf = new ReturnFields( req("fl", "  ") );
+    assertTrue( rf.wantsScore() );
+    assertTrue( rf.wantsField( "xxx" ) );
+    assertTrue( rf.wantsAllFields() );
+    assertTrue( rf.getTransformer() instanceof ScoreAugmenter );
+  }
 }
