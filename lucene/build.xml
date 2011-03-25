@@ -413,7 +413,7 @@
 
   <target name="dist-all" depends="dist, dist-src"/>
   <property name="rc" value="rc0"/>
-  <property name="remote.staging.dir" value="public_html/staging_area/${rc}/${version}"/>
+  <property name="remote.staging.dir" value="public_html/staging_area/${rc}/lucene/${version}"/>
   <property name="keyfile" value="${user.home}/.ssh/id_rsa"/>
   <property name="scp.user" value="${user.name}"/>
   <!--keys.dir is the location of the https://svn.apache.org/repos/asf/lucene/java/dist/ directory-->
