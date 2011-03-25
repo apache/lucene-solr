@@ -373,8 +373,14 @@
   <target name="svn-export-source" depends="get-svn-info">
     <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
     <mkdir dir="${build.dir}"/>
-    <exec dir="." executable="svn" failonerror="true">
-      <arg line="export --native-eol LF -r ${svn.Revision} ${svn.URL} ${svn.export.dir}"/>
+    <exec dir="." executable="${svn.exe}" failonerror="true">
+      <arg value="export"/>
+      <arg value="--native-eol"/>
+      <arg value="LF"/>
+      <arg value="-r"/>
+      <arg value="${svn.Revision}"/>
+      <arg value="${svn.URL}"/>
+      <arg value="${svn.export.dir}"/>
     </exec>
     <build-changes changes.src.dir="${svn.export.dir}/src/site/changes" changes.target.dir="${svn.export.dir}/docs/changes"/>
   </target>
@@ -383,7 +389,7 @@
   <!-- Populates properties svn.URL and svn.Revision using "svn info".    -->
   <!-- ================================================================== -->
   <target name="get-svn-info">
-    <exec dir="." executable="svn" outputproperty="svn.info" failonerror="true">
+    <exec dir="." executable="${svn.exe}" outputproperty="svn.info" failonerror="true">
       <arg value="info"/>
     </exec>
     <loadproperties>
