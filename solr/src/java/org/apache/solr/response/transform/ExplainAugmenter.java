@@ -32,12 +32,24 @@ import org.slf4j.LoggerFactory;
  */
 public class ExplainAugmenter extends TransformerWithContext
 {
-  static final Logger log = LoggerFactory.getLogger( ExplainAugmenter.class );
+  static enum Style {
+    NL,
+    TEXT,
+    HTML
+  };
+  
   final String name;
-
+  final Style style;
+  
   public ExplainAugmenter( String display )
   {
+    this( display, Style.TEXT );
+  }
+
+  public ExplainAugmenter( String display, Style style )
+  {
     this.name = display;
+    this.style = style;
   }
 
   @Override
@@ -45,7 +57,15 @@ public class ExplainAugmenter extends TransformerWithContext
     if( context != null && context.query != null ) {
       try {
         Explanation exp = context.searcher.explain(context.query, docid);
-        doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
+        if( style == Style.NL ) {
+          doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
+        }
+        else if( style == Style.NL ) {
+          doc.setField( name, exp.toHtml() );
+        }
+        else {
+          doc.setField( name, exp.toString() );
+        }
       }
       catch (IOException e) {
         e.printStackTrace();
