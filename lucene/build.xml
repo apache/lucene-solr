@@ -416,7 +416,7 @@
 	    keyfile="${keyfile}"
       verbose="true"
         >
-      <!--<fileset dir="dist"/>-->
+      <fileset dir="dist"/>
       <fileset dir="${keys.dir}">
         <include name="KEYS"/>
       </fileset>
