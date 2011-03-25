@@ -51,7 +51,8 @@
   </path>
 
   <patternset id="binary.build.dist.patterns"
-              includes="${final.name}*.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
+              includes="${final.name}*.jar,lucene-test-framework*.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
+              excludes="*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
               includes="docs/,*.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd"
@@ -451,40 +452,16 @@
                   classifier="sources"/>
           <attach file="${build.dir}/${final.name}-javadoc.jar"
                   classifier="javadoc"/>
-          <attach file="${build.dir}/${final.name}-tests.jar"
-                  classifier="tests"/>
         </artifact-attachments>
       </m2-deploy>
-
-      <!--
-        For the purposes of the generated artifacts, change the <packaging>
-        in the test-framework POM from "jar" to "test-jar" - this allows
-        artifact:deploy to properly name the artifact.  The Maven build doesn't
-        have a lifecycle mapping for the "test-jar" packaging, though, so the
-        POM in src/test-framework/ is left with the "jar" packaging.
-      -->
-      <property name="test-jar-packaging-test-framework-pom"
-                location="${build.dir}/test-jar-packaging-test-framework,pom"/>
-      <copy file="src/test-framework/pom.xml"
-            tofile="${test-jar-packaging-test-framework-pom}">
-        <filterset begintoken="&lt;packaging&gt;" endtoken="&lt;/packaging&gt;">
-          <filter token="jar"
-                  value="&lt;packaging&gt;test-jar&lt;/packaging&gt;"/>
-        </filterset>
-      </copy>
-      <artifact:pom id="test-framework-pom"
-                    file="${test-jar-packaging-test-framework-pom}"/>
-      <artifact:deploy file="${build.dir}/${final.name}-tests.jar">
-        <attach file="${build.dir}/${final.name}-tests-src.jar"
-                classifier="test-sources"/>
-        <attach file="${build.dir}/${final.name}-tests-javadoc.jar"
-                classifier="test-javadoc"/>
-        <remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}"
-                          privateKey="${m2.repository.private.key}"/>
-        </remoteRepository>
-        <pom refid="test-framework-pom"/>
-      </artifact:deploy>
+      <m2-deploy pom.xml="src/test-framework/pom.xml">
+        <artifact-attachments>
+          <attach file="${build.dir}/lucene-test-framework-${version}-src.jar"
+                  classifier="sources"/>
+          <attach file="${build.dir}/lucene-test-framework-${version}-javadoc.jar"
+                  classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
 
       <contrib-crawl target="dist-maven"/>
     </sequential>
@@ -714,7 +691,7 @@
   </target>
 
   <target name="jar-test-framework" depends="compile-test-framework">
-    <jarify basedir="${build.dir}/classes/test-framework" destfile="${build.dir}/${final.name}-tests.jar"
+    <jarify basedir="${build.dir}/classes/test-framework" destfile="${build.dir}/lucene-test-framework-${version}.jar"
             title="Lucene Search Engine: Test Framework" />
   </target>
 
@@ -729,13 +706,13 @@
           <link href=""/>
         </sources>
       </invoke-javadoc>
-      <jarify basedir="${javadoc.dir}/test-framework" destfile="${build.dir}/${final.name}-tests-javadoc.jar"
+      <jarify basedir="${javadoc.dir}/test-framework" destfile="${build.dir}/lucene-test-framework-${version}-javadoc.jar"
 	          title="Lucene Search Engine: Test Framework" />
     </sequential>
   </target>
 
   <target name="jar-test-framework-src" depends="init">
-    <jarify basedir="${tests-framework.src.dir}" destfile="${build.dir}/${final.name}-tests-src.jar"
+    <jarify basedir="${tests-framework.src.dir}" destfile="${build.dir}/lucene-test-framework-${version}-src.jar"
             title="Lucene Search Engine: Test Framework" />
   </target>
 
