@@ -15,7 +15,16 @@ Please join the Lucene-User mailing list by sending a message to:
 Files in a binary distribution:
 
 lucene-core-XX.jar
-  The compiled lucene library.
+  The compiled Lucene library.
+
+lucene-core-XX-javadoc.jar
+  The Javadoc jar for the compiled Lucene library.
+  
+lucene-test-framework-XX.jar
+  The compiled Lucene test-framework library.
+
+lucene-test-framework-XX-javadoc.jar
+  The Javadoc jar for the compiled Lucene test-framework library.
 
 contrib/demo/lucene-demo-XX.jar
   The compiled simple example code.
@@ -29,7 +38,5 @@ docs/index.html
   The contents of the Lucene website.
 
 docs/api/index.html
-  The Javadoc Lucene API documentation.  This includes the core
-  library, the demo, as well as all of the contrib modules.
-
-See BUILD.txt for building a source distribution
+  The Javadoc Lucene API documentation.  This includes the core library, 
+  the test framework, and the demo, as well as all of the contrib modules.
