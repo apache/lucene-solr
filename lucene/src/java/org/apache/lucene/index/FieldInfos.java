@@ -213,34 +213,49 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
   private int format;
 
+  /**
+   * Creates a new {@link FieldInfos} instance with a private
+   * {@link FieldNumberBiMap}.
+   * <p>
+   * Note: this ctor should not be used during indexing use
+   * {@link FieldInfos#FieldInfos(FieldInfos)} or
+   * {@link FieldInfos#FieldInfos(FieldNumberBiMap)} instead.
+   */
   public FieldInfos() {
     this(new FieldNumberBiMap());
   }
   
+  /**
+   * Creates a new {@link FieldInfo} instance from the given instance. If the given instance is
+   * read-only this instance will be read-only too.
+   * 
+   * @see #isReadOnly()
+   */
   FieldInfos(FieldInfos other) {
     this(other.globalFieldNumbers);
   }
-
+  
+  /**
+   * Creates a new FieldInfos instance with the given {@link FieldNumberBiMap}. 
+   * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
+   * @see #isReadOnly()
+   */
   FieldInfos(FieldNumberBiMap globalFieldNumbers) {
     this.globalFieldNumbers = globalFieldNumbers;
   }
 
   /**
    * Construct a FieldInfos object using the directory and the name of the file
-   * IndexInput
+   * IndexInput. 
+   * <p>
+   * Note: The created instance will be read-only
+   * 
    * @param d The directory to open the IndexInput from
    * @param name The name of the file to open the IndexInput from in the Directory
    * @throws IOException
    */
   public FieldInfos(Directory d, String name) throws IOException {
-    this(new FieldNumberBiMap());
-    /*
-     * TODO: in the read case we create a FNBM for each FIs which is a wast of resources.
-     * Yet, we must not seed this with a global map since due to addIndexes(Dir) we could
-     * have non-matching field numbers. we should use a null FNBM here and set the FIs 
-     * to READ-ONLY once this ctor is done. Each modificator should check if we are readonly
-     * with an assert
-     */
+    this((FieldNumberBiMap)null); // use null here to make this FIs Read-Only
     IndexInput input = d.openInput(name);
     try {
       read(input, name);
@@ -257,7 +272,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   private void putInternal(FieldInfo fi) {
     assert !byNumber.containsKey(fi.number);
     assert !byName.containsKey(fi.name);
-    assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
+    assert globalFieldNumbers == null || globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
     byNumber.put(fi.number, fi);
     byName.put(fi.name, fi);
   }
@@ -404,10 +419,12 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
       boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
-
-    FieldInfo fi = fieldInfo(name);
+    if (globalFieldNumbers == null) {
+      throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
+    }
+    final FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
+      final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
       return addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
@@ -422,16 +439,21 @@ public final class FieldInfos implements Iterable<FieldInfo> {
                fi.omitNorms, fi.storePayloads,
                fi.omitTermFreqAndPositions);
   }
-
+  
+  /*
+   * NOTE: if you call this method from a public method make sure you check if we are modifiable and throw an exception otherwise
+   */
   private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+    // don't check modifiable here since we use that to initially build up FIs
     name = StringHelper.intern(name);
-    globalFieldNumbers.setIfNotSet(fieldNumber, name);
-    FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
+    if (globalFieldNumbers != null) {
+      globalFieldNumbers.setIfNotSet(fieldNumber, name);
+    } 
+    final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
                                  storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
 
-    assert byNumber.get(fi.number) == null;
     putInternal(fi);
     return fi;
   }
@@ -453,8 +475,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * with the given number doesn't exist.
    */  
   public String fieldName(int fieldNumber) {
-	FieldInfo fi = fieldInfo(fieldNumber);
-	return (fi != null) ? fi.name : "";
+  	FieldInfo fi = fieldInfo(fieldNumber);
+  	return (fi != null) ? fi.name : "";
   }
 
   /**
@@ -501,6 +523,16 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     } finally {
       output.close();
     }
+  }
+  
+  /**
+   * Returns <code>true</code> iff this instance is not backed by a
+   * {@link FieldNumberBiMap}. Instances read from a directory via
+   * {@link FieldInfos#FieldInfos(Directory, String)} will always be read-only
+   * since no {@link FieldNumberBiMap} is supplied, otherwise <code>false</code>.
+   */
+  public final boolean isReadOnly() {
+    return globalFieldNumbers == null;
   }
 
   public void write(IndexOutput output) throws IOException {
