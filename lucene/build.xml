@@ -435,7 +435,8 @@
       </fileset>
     </scp>
   </target>
-  <target name="stage" depends="dist-all, generate-maven-artifacts, sign-artifacts, copy-to-stage">
+  <target name="prepare-release" depends="dist-all, generate-maven-artifacts, sign-artifacts"/>
+  <target name="stage" depends="prepare-release, copy-to-stage">
 
   </target>
 
