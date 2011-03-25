@@ -147,7 +147,9 @@ public abstract class LuceneTestCase extends Assert {
   public static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
   /** the line file used by LineFileDocs */
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
-  
+  /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
+  public static final String TEST_CLEAN_THREADS = System.getProperty("tests.cleanthreads", "perClass");
+
   /**
    * A random multiplier which you should use when writing random tests:
    * multiply it by the number of iterations
@@ -226,10 +228,12 @@ public abstract class LuceneTestCase extends Assert {
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    int rogueThreads = threadCleanup("test class");
-    if (rogueThreads > 0) {
-      // TODO: fail here once the leaks are fixed.
-      System.err.println("RESOURCE LEAK: test class left " + rogueThreads + " thread(s) running");
+    if (! "false".equals(TEST_CLEAN_THREADS)) {
+      int rogueThreads = threadCleanup("test class");
+      if (rogueThreads > 0) {
+        // TODO: fail here once the leaks are fixed.
+        System.err.println("RESOURCE LEAK: test class left " + rogueThreads + " thread(s) running");
+      }
     }
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
@@ -359,7 +363,7 @@ public abstract class LuceneTestCase extends Assert {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-    if (!getClass().getName().startsWith("org.apache.solr")) {
+    if ("perMethod".equals(TEST_CLEAN_THREADS)) {
       int rogueThreads = threadCleanup("test method: '" + getName() + "'");
       if (rogueThreads > 0) {
         System.err.println("RESOURCE LEAK: test method: '" + getName() 
