@@ -583,7 +583,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     if (ft == null) ft = new StrField();
 
     if (ft instanceof TextField) {
-      // need to do analyisis on the term
+      // need to do analysis on the term
       String indexedVal = tinfo.val;
       Query q = ft.getFieldQuery(fp, fp.getReq().getSchema().getFieldOrNull(tinfo.field), tinfo.val);
       if (q instanceof TermQuery) {
