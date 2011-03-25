@@ -1378,6 +1378,11 @@ public class IndexWriter implements Closeable {
   }
 
   // for test purpose
+  final synchronized Collection<String> getIndexFileNames() throws IOException {
+    return segmentInfos.files(directory, true);
+  }
+
+  // for test purpose
   final synchronized int getDocCount(int i) {
     if (i >= 0 && i < segmentInfos.size()) {
       return segmentInfos.info(i).docCount;

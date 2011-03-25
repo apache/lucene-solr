@@ -54,12 +54,11 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         d.add(new Field("f2", "d1 second field", Store.YES, Index.ANALYZED,
             TermVector.NO));
         writer.addDocument(d);
-        Collection<String> files = writer.segmentInfos.files(dir, true);
-        for (String string : files) {
+        for (String string : writer.getIndexFileNames()) {
           assertFalse(string.endsWith(".fnx"));
         }
         writer.commit();
-        files = writer.segmentInfos.files(dir, true);
+        Collection<String> files = writer.getIndexFileNames();
         files.remove("1.fnx");
         for (String string : files) {
           assertFalse(string.endsWith(".fnx"));
@@ -72,7 +71,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         d.add(new Field("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.commit();
-        files = writer.segmentInfos.files(dir, true);
+        files = writer.getIndexFileNames();
         files.remove("2.fnx");
         for (String string : files) {
           assertFalse(string.endsWith(".fnx"));
@@ -93,7 +92,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         d.add(new Field("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
-        Collection<String> files = writer.segmentInfos.files(dir, true);
+        Collection<String> files = writer.getIndexFileNames();
         files.remove("2.fnx");
         for (String string : files) {
           assertFalse(string.endsWith(".fnx"));
@@ -464,15 +463,14 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       SegmentInfos segmentInfos = writer.segmentInfos;
       assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
       assertEquals(0, segmentInfos.getGlobalFieldMapVersion());
-      Collection<String> files = segmentInfos.files(dir, true);
-      for (String string : files) {
+      for (String string : writer.getIndexFileNames()) {
         assertFalse(string.endsWith(".fnx"));
       }
       writer.commit();
       
       assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
       assertEquals(0, segmentInfos.getGlobalFieldMapVersion());
-      files = segmentInfos.files(dir, true);
+      Collection<String> files = writer.getIndexFileNames();
       for (String string : files) {
         assertFalse(string.endsWith(".fnx"));
       }
@@ -486,7 +484,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
       assertEquals(0, segmentInfos.getLastGlobalFieldMapVersion());
       assertEquals(1, segmentInfos.getGlobalFieldMapVersion());
-      files = segmentInfos.files(dir, true);
+      files = writer.getIndexFileNames();
       for (String string : files) {
         assertFalse(string.endsWith(".fnx"));
       }
@@ -497,7 +495,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
       assertEquals(1, segmentInfos.getGlobalFieldMapVersion());
       assertEquals(1, segmentInfos.getLastGlobalFieldMapVersion());
-      files = segmentInfos.files(dir, true);
+      files = writer.getIndexFileNames();
       assertTrue(files.remove("1.fnx"));
       for (String string : files) {
         assertFalse(string.endsWith(".fnx"));
