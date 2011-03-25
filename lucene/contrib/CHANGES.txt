@@ -1,6 +1,6 @@
 Lucene contrib change Log
 
-======================= Lucene 3.1.0 2011-03-13 =======================
+======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
 
