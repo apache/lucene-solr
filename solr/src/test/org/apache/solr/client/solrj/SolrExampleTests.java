@@ -394,14 +394,13 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     doc.addField( "name", "doc1", 1.0f );
     doc.addField( "price", 11 );
     server.add( doc );
+    server.commit(); // make sure this gets in first
     
     doc = new SolrInputDocument();
     doc.addField( "id", "222", 1.0f );
     doc.addField( "name", "doc2", 1.0f );
     doc.addField( "price", 22 );
     server.add( doc );
-    
-    // Add the documents
     server.commit();
     
     SolrQuery query = new SolrQuery();
@@ -422,7 +421,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     // check that the docid is one bigger
     int id1 = (Integer)out1.getFieldValue( "_docid_" );
     int id2 = (Integer)out2.getFieldValue( "_docid_" );
-    assertEquals( "should be one bigger ["+id1+","+id2+"]", id1, id2-1 );
+    assertTrue( "should be bigger ["+id1+","+id2+"]", id2 > id1 );
     
     // The score from explain should be the same as the score
     NamedList explain = (NamedList)out1.getFieldValue( "_explain_" );
