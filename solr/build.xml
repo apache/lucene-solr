@@ -917,8 +917,34 @@
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
   </target>
 
-  <target name="prepare-release" depends="clean, svn-up, package, sign-artifacts" 
+  <property name="rc" value="rc0"/>
+  <property name="remote.staging.dir" value="public_html/staging_area/${rc}/${version}"/>
+  <property name="keyfile" value="${user.home}/.ssh/id_rsa"/>
+  <property name="scp.user" value="${user.name}"/>
+  <!--keys.dir is the location of the https://svn.apache.org/repos/asf/lucene/java/dist/ directory-->
+  <property name="keys.dir" value="${common-solr.dir}/../../dist"/>
+  <target name="copy-to-stage">
+    <sshexec host="people.apache.org"
+	    username="${scp.user}"
+	    keyfile="${keyfile}"
+	    command="mkdir -p ${remote.staging.dir}"/>
+    <echo>Uploading artifacts to ${scp.user}@people.apache.org:${remote.staging.dir}</echo>
+    <scp todir="${scp.user}@people.apache.org:${remote.staging.dir}"
+         username="${scp.user}"
+	    keyfile="${keyfile}"
+      verbose="true"
+        >
+      <fileset dir="dist"/>
+      <fileset dir="${keys.dir}">
+        <include name="KEYS"/>
+      </fileset>
+    </scp>
+  </target>
+
+  <target name="prepare-release" depends="clean, svn-up, package, sign-artifacts"
           description="Prototype helper for Committers.  Assumes gpg is in the path"/>
+
+  <target name="stage" depends="prepare-release, copy-to-stage"/>
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check,dist,dist-src,dist-javadoc">
     <sequential>
