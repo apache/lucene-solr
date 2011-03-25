@@ -197,9 +197,6 @@ public class ReturnFields
                 // TODO? pass params to transformers?
                 augmenters.addTransformer( new ExplainAugmenter( disp, ExplainAugmenter.Style.NL ) );
               }
-              else if( key != null ){
-                rename.add(field, key);
-              }
               continue;
             }
             // an invalid field name... reset the position pointer to retry
@@ -208,8 +205,8 @@ public class ReturnFields
           }
         }
 
-        if (field == null && sp.pos > start) {
-          // if we are here, we must have read "key = "
+        if (key != null) {
+          // we read "key = "
           field = sp.getId(null);
           ch = sp.ch();
           if (field != null && (ch==' ' || ch == ',' || ch==0)) {
