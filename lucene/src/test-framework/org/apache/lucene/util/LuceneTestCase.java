@@ -534,7 +534,7 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private final static int THREAD_STOP_GRACE_MSEC = 1000;
+  private final static int THREAD_STOP_GRACE_MSEC = 50;
   // jvm-wide list of 'rogue threads' we found, so they only get reported once.
   private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
   
@@ -588,9 +588,6 @@ public abstract class LuceneTestCase extends Assert {
           Thread.setDefaultUncaughtExceptionHandler(null);
           if (!t.getName().startsWith("SyncThread")) // avoid zookeeper jre crash
             t.interrupt();
-          try {
-            t.join(THREAD_STOP_GRACE_MSEC);
-          } catch (InterruptedException e) { e.printStackTrace(); }
         }
       }
     }
