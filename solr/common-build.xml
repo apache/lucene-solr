@@ -414,6 +414,8 @@
     </sequential>
   </macrodef>
 
+  <property name="gpg.exe" value="gpg" />
+  <property name="gpg.key" value="CODE SIGNING KEY" />
   <macrodef name="sign-artifact" description="Signs the artifact">
     <attribute name="input.file"/>
     <attribute name="output.file" default="@{input.file}.asc"/>
@@ -421,10 +423,13 @@
     <sequential>
       <echo >Signing @{input.file} Sig File: @{output.file}</echo>
 
-      <exec executable="gpg" >
+      <exec executable="${gpg.exe}" >
+        <arg value="--batch"/>
         <arg value="--armor"/>
         <arg value="--output"/>
         <arg value="@{output.file}"/>
+        <arg value="--default-key"/>
+        <arg value="${gpg.key}"/>
         <arg value="--passphrase"/>
         <arg value="@{gpg.passphrase}"/>
         <arg value="--detach-sig"/>

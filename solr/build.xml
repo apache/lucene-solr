@@ -888,8 +888,11 @@
   </target>
   <target name="sign-artifacts" depends="clean-package-signatures"> 
     <!--<property file="${user.home}/.solr/build.properties" />-->
-    <input message="password:>" addproperty="gpg.passphrase">
-      <handler classname="org.apache.tools.ant.input.SecureInputHandler" />
+    <available property="gpg.input.handler" classname="org.apache.tools.ant.input.SecureInputHandler"
+      value="org.apache.tools.ant.input.SecureInputHandler"/>
+    <!--else:--><property name="gpg.input.handler" value="org.apache.tools.ant.input.DefaultInputHandler"/>
+      <input message="Enter GPG keystore password: >" addproperty="gpg.passphrase">
+      <handler classname="${gpg.input.handler}" />
     </input>
     <sign-artifact input.file="${package.dir}/${fullnamever}.tgz" output.file="${package.dir}/${fullnamever}.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${package.dir}/${fullnamever}.zip" output.file="${package.dir}/${fullnamever}.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
@@ -934,14 +937,14 @@
 	    keyfile="${keyfile}"
       verbose="true"
         >
-      <fileset dir="dist"/>
+      <fileset dir="package"/>
       <fileset dir="${keys.dir}">
         <include name="KEYS"/>
       </fileset>
     </scp>
   </target>
 
-  <target name="prepare-release" depends="clean, svn-up, package, sign-artifacts"
+  <target name="prepare-release" depends="clean, svn-up, package, generate-maven-artifacts, sign-artifacts"
           description="Prototype helper for Committers.  Assumes gpg is in the path"/>
 
   <target name="stage" depends="prepare-release, copy-to-stage"/>
