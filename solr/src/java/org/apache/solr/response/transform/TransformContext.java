@@ -22,7 +22,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * Environment variables for the transformed documents
- * 
+ *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  * @since solr 4.0
  */

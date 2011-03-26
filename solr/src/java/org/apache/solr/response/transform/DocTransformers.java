@@ -19,18 +19,35 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.common.SolrDocument;
 
 /**
  * Transform a document before it gets sent out
- * 
+ *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  */
 public class DocTransformers extends DocTransformer
 {
   final List<DocTransformer> children = new ArrayList<DocTransformer>();
+
+  @Override
+  public String getName()
+  {
+    StringBuilder str = new StringBuilder();
+    str.append( "Transformers[" );
+    Iterator<DocTransformer> iter = children.iterator();
+    while( iter.hasNext() ) {
+      str.append( iter.next().getName() );
+      if( iter.hasNext() ) {
+        str.append( "," );
+      }
+    }
+    str.append( "]" );
+    return str.toString();
+  }
 
   public void addTransformer( DocTransformer a ) {
     children.add( a );

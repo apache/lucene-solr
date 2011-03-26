@@ -22,7 +22,7 @@ import org.apache.solr.search.function.ValueSource;
 
 /**
  * Add values from a ValueSource (function query etc)
- * 
+ *
  * NOT really sure how or if this could work...
  *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
@@ -39,6 +39,17 @@ public class ValueSourceAugmenter extends DocTransformer
     this.name = name;
     this.qparser = qparser;
     this.values = values;
+  }
+
+  @Override
+  public String getName()
+  {
+    return name;
+  }
+
+  @Override
+  public void setContext( TransformContext context ) {
+    // maybe we do something here?
   }
 
   @Override

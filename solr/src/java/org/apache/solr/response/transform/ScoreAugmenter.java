@@ -34,6 +34,12 @@ public class ScoreAugmenter extends TransformerWithContext
   }
 
   @Override
+  public String getName()
+  {
+    return name;
+  }
+
+  @Override
   public void transform(SolrDocument doc, int docid) {
     if( context != null && context.wantsScores ) {
       if( context.iterator != null ) {

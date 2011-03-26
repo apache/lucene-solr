@@ -35,6 +35,21 @@ public class RenameFieldsTransformer extends DocTransformer
   }
 
   @Override
+  public String getName()
+  {
+    StringBuilder str = new StringBuilder();
+    str.append( "Rename[" );
+    for( int i=0; i< rename.size(); i++ ) {
+      if( i > 0 ) {
+        str.append( "," );
+      }
+      str.append( rename.getName(i) ).append( ">>" ).append( rename.getVal( i ) );
+    }
+    str.append( "]" );
+    return str.toString();
+  }
+
+  @Override
   public void transform(SolrDocument doc, int docid) {
     for( int i=0; i<rename.size(); i++ ) {
       Object v = doc.remove( rename.getName(i) );

@@ -23,11 +23,17 @@ import org.apache.solr.common.SolrDocument;
 
 /**
  * New instance for each request
- * 
+ *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  */
 public abstract class DocTransformer
 {
+  public abstract String getName();
   public void setContext( TransformContext context ) {}
   public abstract void transform(SolrDocument doc, int docid) throws IOException;
+
+  @Override
+  public String toString() {
+    return getName();
+  }
 }

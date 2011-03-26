@@ -16,27 +16,19 @@
  */
 package org.apache.solr.response.transform;
 
-import org.apache.solr.common.SolrDocument;
 
 /**
- * Simple Transformer to add the lucene docid
- *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  * @since solr 4.0
  */
-public class DocIdAugmenter extends DocTransformer
+public class ShardAugmenterFactory extends TransformerFactory
 {
-  final String name;
-
-  public DocIdAugmenter( String display )
-  {
-    this.name = display;
-  }
-
   @Override
-  public void transform(SolrDocument doc, int docid) {
-    if( docid >= 0 ) {
-      doc.setField( name, docid );
-    }
+  public DocTransformer create(String field, String arg) {
+    String id = "TODO... find ID";
+    // Maybe it is stored in the context?
+    // is it a request variable?
+    return new ValueAugmenter( field, id );
   }
 }
+

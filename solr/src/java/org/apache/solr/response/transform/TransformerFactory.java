@@ -14,27 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.response.transform;
 
-import org.apache.solr.common.SolrDocument;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
+ * New instance for each request
+ *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
- * @since solr 4.0
  */
-public class ValueAugmenter extends DocTransformer
+public abstract class TransformerFactory implements NamedListInitializedPlugin
 {
-  final String name;
-  final Object value;
+  protected String defaultUserArgs = null;
 
-  public ValueAugmenter( String name, Object value )
-  {
-    this.name = name;
-    this.value = value;
+  public void init(NamedList args) {
+    defaultUserArgs = (String)args.get( "args" );
   }
 
-  @Override
-  public void transform(SolrDocument doc, int docid) {
-    doc.setField( name, value );
+  public abstract DocTransformer create(String field, String args);
+
+  public static final Map<String,TransformerFactory> defaultFactories = new HashMap<String,TransformerFactory>();
+  static {
+    defaultFactories.put( "explain", new ExplainAugmenterFactory() );
+    defaultFactories.put( "value", new ValueAugmenterFactory() );
+    defaultFactories.put( "docid", new DocIdAugmenterFactory() );
+    defaultFactories.put( "shard", new ShardAugmenterFactory() );
   }
 }

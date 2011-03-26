@@ -33,16 +33,7 @@ import org.apache.solr.handler.component.*;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.*;
 import org.apache.solr.response.*;
-import org.apache.solr.response.BinaryResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.XMLResponseWriter;
+import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
@@ -507,6 +498,7 @@ public final class SolrCore implements SolrInfoMBean {
     initWriters();
     initQParsers();
     initValueSourceParsers();
+    initTransformerFactories();
 
     this.searchComponents = Collections.unmodifiableMap(loadSearchComponents());
 
@@ -1455,6 +1447,34 @@ public final class SolrCore implements SolrInfoMBean {
       }
     }
   }
+  
+
+  private final HashMap<String, TransformerFactory> transformerFactories = new HashMap<String, TransformerFactory>();
+  
+  /** Configure the TransformerFactory plugins */
+  private void initTransformerFactories() {
+    // Load any transformer factories
+    initPlugins(transformerFactories,TransformerFactory.class);
+    
+    // Tell each transformer what its name is
+    for( Map.Entry<String, TransformerFactory> entry : TransformerFactory.defaultFactories.entrySet() ) {
+      try {
+        String name = entry.getKey();
+        if (null == valueSourceParsers.get(name)) {
+          TransformerFactory f = entry.getValue();
+          transformerFactories.put(name, f);
+          // f.init(null); default ones don't need init
+        }
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    }
+  }
+  
+  public TransformerFactory getTransformerFactory(String name) {
+    return transformerFactories.get(name);
+  }
+  
 
   /**
    * @param registry The map to which the instance should be added to. The key is the name attribute

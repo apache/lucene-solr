@@ -1494,6 +1494,28 @@
      <valueSourceParser name="myfunc" 
                         class="com.mycompany.MyValueSourceParser" />
     -->
+    
+  
+  <!-- Document Transformers
+       http://wiki.apache.org/solr/DocTransformers
+    -->
+  <!--
+     Could be something like:
+     <transformer name="db" class="com.mycompany.LoadFromDatabaseTransformer" >
+       <int name="connection">jdbc://....</int>
+     </transformer>
+     
+     To add a constant value to all docs, use:
+     <transformer name="mytrans2" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
+       <int name="value">5</int>
+     </transformer>
+     
+     If you want the user to still be able to change it with _value:something_ use this:
+     <transformer name="mytrans3" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
+       <double name="defaultValue">5</double>
+     </transformer>
+    -->
+    
 
   <!-- Legacy config for the admin interface -->
   <admin>

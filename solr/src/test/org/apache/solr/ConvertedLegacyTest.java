@@ -1122,12 +1122,12 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             ,"//float[.='1.4142135']"
             );
     args = new HashMap<String,String>();
-    args.put("fl","  ");
+    args.put("fl","fname_s,score");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44",
                                     "standard", 0, 10, args);
     assertQ(req
-            ,"//str[.='Yonik']  "
-            ,"//float[.='1.4142135']"
+            ,"//str[.='Yonik']"
+            ,"//float[.='2.9459102']"
             );
 
     // test addition of score field

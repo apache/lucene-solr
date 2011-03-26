@@ -693,7 +693,7 @@ public class QueryParsing {
         pos++;
         while (pos < end) {
           ch = val.charAt(pos);
-          if (!Character.isJavaIdentifierPart(ch) && ch != '.') {
+          if (!Character.isJavaIdentifierPart(ch) && ch != '.' && ch != ':') {
             break;
           }
           pos++;

@@ -27,17 +27,15 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.DocIdAugmenter;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
-import org.apache.solr.response.transform.ExplainAugmenter;
 import org.apache.solr.response.transform.RenameFieldsTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
-import org.apache.solr.response.transform.ValueAugmenter;
+import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
 import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.QueryValueSource;
@@ -47,26 +45,21 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A class representing the return fields
- * 
+ *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  * @since solr 4.0
  */
 public class ReturnFields
 {
   static final Logger log = LoggerFactory.getLogger( ReturnFields.class );
-  
+
   // Special Field Keys
   public static final String SCORE = "score";
-  // some special syntax for these guys?
-  // Should these have factories... via plugin utils...
-  public static final String DOCID = "_docid_";
-  public static final String SHARD = "_shard_";
-  public static final String EXPLAIN = "_explain_";
 
   private final List<String> globs = new ArrayList<String>(1);
   private final Set<String> fields = new LinkedHashSet<String>(); // order is important for CSVResponseWriter
   private Set<String> okFieldNames = new HashSet<String>(); // Collection of everything that could match
-  
+
   private DocTransformer transformer;
   private boolean _wantsScore = false;
   private boolean _wantsAllFields = false;
@@ -76,7 +69,7 @@ public class ReturnFields
   }
 
   public ReturnFields(SolrQueryRequest req) {
-    this( req.getParams().get(CommonParams.FL), req );
+    this( req.getParams().getParams(CommonParams.FL), req );
   }
 
   public ReturnFields(String fl, SolrQueryRequest req) {
@@ -97,12 +90,12 @@ public class ReturnFields
         parseFieldList( new String[]{fl}, req);
       }
     }
-    req.getCore().log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);  
+    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
   public ReturnFields(String[] fl, SolrQueryRequest req) {
     parseFieldList(fl, req);
-    req.getCore().log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);  
+    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
@@ -124,12 +117,12 @@ public class ReturnFields
       }
       augmenters.addTransformer( new RenameFieldsTransformer( rename ) );
     }
-    
+
     // Legacy behavior? "score" == "*,score"  Distributed tests for this
     if( fields.size() == 1 && _wantsScore ) {
       _wantsAllFields = true;
     }
-    
+
     if( !_wantsAllFields ) {
       if( !globs.isEmpty() ) {
         // TODO??? need to fill up the fields with matching field names in the index
@@ -140,7 +133,7 @@ public class ReturnFields
       }
       okFieldNames.addAll( fields );
     }
-        
+
     if( augmenters.size() == 1 ) {
       transformer = augmenters.getTransformer(0);
     }
@@ -177,26 +170,7 @@ public class ReturnFields
             start = sp.pos;
           } else {
             if (ch==' ' || ch == ',' || ch==0) {
-              String disp = (key==null) ? field : key; 
-              fields.add( field ); // need to put in the map to maintain order for things like CSVResponseWriter
-              okFieldNames.add( field );
-              okFieldNames.add( key );
-              // a valid field name
-              if(SCORE.equals(field)) {
-                _wantsScore = true;
-                augmenters.addTransformer( new ScoreAugmenter( disp ) );
-              }
-              else if( DOCID.equals( field ) ) {
-                augmenters.addTransformer( new DocIdAugmenter( disp ) );
-              }
-              else if( SHARD.equals( field ) ) {
-                String id = "TODO! getshardid???";
-                augmenters.addTransformer( new ValueAugmenter( disp, id ) );
-              }
-              else if( EXPLAIN.equals( field ) ) {
-                // TODO? pass params to transformers?
-                augmenters.addTransformer( new ExplainAugmenter( disp, ExplainAugmenter.Style.NL ) );
-              }
+              addField( field, key, augmenters, req );
               continue;
             }
             // an invalid field name... reset the position pointer to retry
@@ -211,8 +185,7 @@ public class ReturnFields
           ch = sp.ch();
           if (field != null && (ch==' ' || ch == ',' || ch==0)) {
             rename.add(field, key);
-            okFieldNames.add( field );
-            okFieldNames.add( key );
+            addField( field, key, augmenters, req );
             continue;
           }
           // an invalid field name... reset the position pointer to retry
@@ -296,7 +269,7 @@ public class ReturnFields
               key = sp.val.substring(start, sp.pos);
             }
           }
-          
+
           augmenters.addTransformer( new ValueSourceAugmenter( key, parser, vs ) );
         }
         catch (ParseException e) {
@@ -322,7 +295,40 @@ public class ReturnFields
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname", e);
     }
   }
-  
+
+  private void addField( String field, String key, DocTransformers augmenters, SolrQueryRequest req )
+  {
+    String disp = (key==null) ? field : key;
+    fields.add( field ); // need to put in the map to maintain order for things like CSVResponseWriter
+    okFieldNames.add( field );
+    okFieldNames.add( key );
+    // a valid field name
+    if(SCORE.equals(field)) {
+      _wantsScore = true;
+      augmenters.addTransformer( new ScoreAugmenter( disp ) );
+    }
+    else if( field.charAt(0)=='_'&& field.charAt(field.length()-1)=='_' ) {
+      String name = field;
+      String args = null;
+      int idx = field.indexOf( ':' );
+      if( idx > 0 ) {
+        name = field.substring(1,idx);
+        args = field.substring(idx+1,field.length()-1);
+      }
+      else {
+        name = field.substring(1,field.length()-1 );
+      }
+
+      TransformerFactory factory = req.getCore().getTransformerFactory( name );
+      if( factory != null ) {
+        augmenters.addTransformer( factory.create(disp, args) );
+      }
+      else {
+        // unknown field?
+      }
+    }
+  }
+
   public Set<String> getLuceneFieldNames()
   {
     return (_wantsAllFields || fields.isEmpty()) ? null : fields;
@@ -332,7 +338,7 @@ public class ReturnFields
   {
     return _wantsAllFields;
   }
-  
+
   public boolean wantsScore()
   {
     return _wantsScore;

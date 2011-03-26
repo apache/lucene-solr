@@ -16,60 +16,47 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.Explanation;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.util.SolrPluginUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * Add query explain info directly to Document
- *
  * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
  * @since solr 4.0
  */
-public class ExplainAugmenter extends TransformerWithContext
+public class DocIdAugmenterFactory extends TransformerFactory
 {
-  public static enum Style {
-    NL,
-    TEXT,
-    HTML
-  };
-  
-  final String name;
-  final Style style;
-  
-  public ExplainAugmenter( String display )
-  {
-    this( display, Style.TEXT );
+  @Override
+  public DocTransformer create(String field, String arg) {
+    if( arg != null ) {
+      throw new SolrException( ErrorCode.BAD_REQUEST,
+          "DocIdAugmenter does not take any arguments" );
+    }
+    return new DocIdAugmenter( field );
   }
+}
 
-  public ExplainAugmenter( String display, Style style )
+class DocIdAugmenter extends DocTransformer
+{
+  final String name;
+
+  public DocIdAugmenter( String display )
   {
     this.name = display;
-    this.style = style;
+  }
+
+  @Override
+  public String getName()
+  {
+    return name;
   }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    if( context != null && context.query != null ) {
-      try {
-        Explanation exp = context.searcher.explain(context.query, docid);
-        if( style == Style.NL ) {
-          doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
-        }
-        else if( style == Style.HTML ) {
-          doc.setField( name, exp.toHtml() );
-        }
-        else {
-          doc.setField( name, exp.toString() );
-        }
-      }
-      catch (IOException e) {
-        e.printStackTrace();
-      }
+    if( docid >= 0 ) {
+      doc.setField( name, docid );
     }
   }
 }
+
+
