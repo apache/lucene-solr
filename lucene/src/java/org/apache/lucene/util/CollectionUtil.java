@@ -100,7 +100,9 @@ public final class CollectionUtil {
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T> void quickSort(List<T> list, Comparator<? super T> comp) {
-    getSorter(list, comp).quickSort(0, list.size()-1);
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list, comp).quickSort(0, size-1);
   }
   
   /**
@@ -110,7 +112,9 @@ public final class CollectionUtil {
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T extends Comparable<? super T>> void quickSort(List<T> list) {
-    getSorter(list).quickSort(0, list.size()-1);
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list).quickSort(0, size-1);
   }
 
   // mergeSorts:
@@ -122,7 +126,9 @@ public final class CollectionUtil {
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T> void mergeSort(List<T> list, Comparator<? super T> comp) {
-    getSorter(list, comp).mergeSort(0, list.size()-1);
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list, comp).mergeSort(0, size-1);
   }
   
   /**
@@ -132,7 +138,9 @@ public final class CollectionUtil {
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T extends Comparable<? super T>> void mergeSort(List<T> list) {
-    getSorter(list).mergeSort(0, list.size()-1);
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list).mergeSort(0, size-1);
   }
 
   // insertionSorts:
@@ -144,7 +152,9 @@ public final class CollectionUtil {
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T> void insertionSort(List<T> list, Comparator<? super T> comp) {
-    getSorter(list, comp).insertionSort(0, list.size()-1);
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list, comp).insertionSort(0, size-1);
   }
   
   /**
@@ -154,7 +164,9 @@ public final class CollectionUtil {
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T extends Comparable<? super T>> void insertionSort(List<T> list) {
-    getSorter(list).insertionSort(0, list.size()-1);
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list).insertionSort(0, size-1);
   }
   
 }

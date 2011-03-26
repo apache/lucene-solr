@@ -9,6 +9,11 @@ Changes in backwards compatibility policy
   a method getHeapArray() was added to retrieve the internal heap array as a
   non-generic Object[].  (Uwe Schindler, Yonik Seeley)
 
+Optimizations
+
+* LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
+  on empty or one-element lists/arrays.  (Uwe Schindler)
+
 ======================= Lucene 3.1 (not yet released) =======================
 
 Changes in backwards compatibility policy
