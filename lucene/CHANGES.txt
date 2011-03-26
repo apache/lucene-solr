@@ -209,11 +209,8 @@ API Changes
   which takes Analyzer as a parameter, for easier customization by subclasses.
   (Robert Muir)
 
-* LUCENE-2953: PriorityQueue's internal heap was made private, as subclassing
-  with generics can lead to ClassCastException. For advanced use (e.g. in Solr)
-  a method getHeapArray() was added to retrieve the internal heap array as a
-  non-generic Object[]. Also the initialize(int) function was moved into the
-  ctor. (Uwe Schindler, Yonik Seeley)
+* LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
+  function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
 
 New features
 
@@ -371,7 +368,17 @@ Bug fixes
 
 ======================= Lucene 3.x (not yet released) =======================
 
-(No changes)
+Changes in backwards compatibility policy
+
+* LUCENE-2953: PriorityQueue's internal heap was made private, as subclassing
+  with generics can lead to ClassCastException. For advanced use (e.g. in Solr)
+  a method getHeapArray() was added to retrieve the internal heap array as a
+  non-generic Object[].  (Uwe Schindler, Yonik Seeley)
+
+Optimizations
+
+* LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
+  on empty or one-element lists/arrays.  (Uwe Schindler)
 
 ======================= Lucene 3.1 (not yet released) =======================
 
