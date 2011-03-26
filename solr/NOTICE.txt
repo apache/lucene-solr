@@ -38,6 +38,8 @@ License: Common Development and Distribution License (CDDL) v1.0 (https://glassf
 This product includes the HSQL Database (HSQLDB) 1.8.0.10 jar: http://hsqldb.org/
 License: http://hsqldb.org/web/hsqlLicense.html
 
+This product includes code (JaspellTernarySearchTrie) from Java Spelling Checking Package (jaspell): http://jaspell.sourceforge.net/
+License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
 
 =========================================================================
 ==  Apache Lucene Notice                                               ==
