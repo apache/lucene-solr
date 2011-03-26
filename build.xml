@@ -64,7 +64,7 @@
     </sequential>
   </target>
 
-  <target name="eclipse" description="Setup Eclipse configuration">
+  <target name="eclipse" description="Setup Eclipse configuration -- Only available with SVN checkout">
     <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
     <mkdir dir=".settings"/>
     <copy file="dev-tools/eclipse/resources.prefs" 
@@ -82,7 +82,7 @@
     </echo>
   </target>
 
-  <target name="idea" description="Setup IntelliJ IDEA configuration">
+  <target name="idea" description="Setup IntelliJ IDEA configuration -- Only available with SVN checkout">
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
     </copy>
@@ -100,7 +100,7 @@
     </echo>
   </target>
   <target name="clean-idea"
-          description="Removes all IntelliJ IDEA configuration files">
+          description="Removes all IntelliJ IDEA configuration files -- Only available with SVN checkout">
     <delete dir=".idea" failonerror="true"/>
     <delete failonerror="true">
       <fileset dir="." includes="*.iml,*.ipr,*.iws"/>
