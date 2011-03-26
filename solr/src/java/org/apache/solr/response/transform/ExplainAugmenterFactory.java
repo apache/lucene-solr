@@ -26,7 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
+ * @version $Id$
  * @since solr 4.0
  */
 public class ExplainAugmenterFactory extends TransformerFactory

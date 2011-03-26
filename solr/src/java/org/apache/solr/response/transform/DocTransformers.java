@@ -27,7 +27,7 @@ import org.apache.solr.common.SolrDocument;
 /**
  * Transform a document before it gets sent out
  *
- * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
+ * @version $Id$
  */
 public class DocTransformers extends DocTransformer
 {

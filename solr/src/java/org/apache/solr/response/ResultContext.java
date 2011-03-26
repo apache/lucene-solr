@@ -23,7 +23,7 @@ import org.apache.solr.search.DocList;
 /**
  * A class to hold the QueryResult and the Query
  * 
- * @version $Id: JSONResponseWriter.java 1065304 2011-01-30 15:10:15Z rmuir $
+ * @version $Id$
  */
 public class ResultContext {
   public Query query;
