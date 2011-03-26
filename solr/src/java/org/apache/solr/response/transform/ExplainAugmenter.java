@@ -60,7 +60,7 @@ public class ExplainAugmenter extends TransformerWithContext
         if( style == Style.NL ) {
           doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
         }
-        else if( style == Style.NL ) {
+        else if( style == Style.HTML ) {
           doc.setField( name, exp.toHtml() );
         }
         else {
