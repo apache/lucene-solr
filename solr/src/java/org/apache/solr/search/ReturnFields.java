@@ -97,12 +97,12 @@ public class ReturnFields
         parseFieldList( new String[]{fl}, req);
       }
     }
-    req.getCore().log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);  // nocommit
+    req.getCore().log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);  
   }
 
   public ReturnFields(String[] fl, SolrQueryRequest req) {
     parseFieldList(fl, req);
-    req.getCore().log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);  // nocommit
+    req.getCore().log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);  
   }
 
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
