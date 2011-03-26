@@ -44,7 +44,7 @@ public class ValueSourceAugmenter extends DocTransformer
   @Override
   public String getName()
   {
-    return name;
+    return "function("+name+")";
   }
 
   @Override

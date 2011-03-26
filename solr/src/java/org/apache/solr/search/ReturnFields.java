@@ -260,16 +260,10 @@ public class ReturnFields
           }
 
           if (key==null) {
-            SolrParams localParams = parser.getLocalParams();
-            if (localParams != null) {
-              key = localParams.get("key");
-            }
-            if (key == null) {
-              // use the function name itself as the field name
-              key = sp.val.substring(start, sp.pos);
-            }
+            key = funcStr;
           }
-
+          okFieldNames.add( key );
+          okFieldNames.add( funcStr );
           augmenters.addTransformer( new ValueSourceAugmenter( key, parser, vs ) );
         }
         catch (ParseException e) {
