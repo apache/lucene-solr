@@ -98,7 +98,7 @@ public class MockLMSimilarity extends Similarity {
     
     for (final PerReaderTermState stat : termStats ) {
       final long totalTermFrequency = stat.totalTermFreq();
-      value += 1 / (mu * (totalTermFrequency+1L/(double)(sumOfTotalTermFreq+1L)));
+      value += 1 / (mu * ((totalTermFrequency+1L)/(double)(sumOfTotalTermFreq+1L)));
       exp.append(" ");
       exp.append(totalTermFrequency);
     }
