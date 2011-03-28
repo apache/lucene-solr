@@ -2913,6 +2913,10 @@ public class IndexWriter implements Closeable {
     ensureOpen();
 
     try {
+      if (infoStream != null)
+        message("flush at addIndexes(IndexReader...)");
+      flush(false, true);
+
       String mergedName = newSegmentName();
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,

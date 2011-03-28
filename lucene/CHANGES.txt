@@ -14,6 +14,12 @@ Optimizations
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
   on empty or one-element lists/arrays.  (Uwe Schindler)
 
+Bug fixes
+
+* LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
+  indexes, causing existing deletions to be applied on the incoming indexes as 
+  well. (Shai Erera, Mike McCandless)
+
 ======================= Lucene 3.1 (not yet released) =======================
 
 Changes in backwards compatibility policy
