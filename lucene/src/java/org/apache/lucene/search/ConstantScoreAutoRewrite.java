@@ -141,9 +141,9 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
       assert termState != null;
       if (pos < 0) {
         pos = (-pos)-1;
-        array.termState[pos].register(termState, readerContext.ord, termsEnum.docFreq());
+        array.termState[pos].register(termState, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
       } else {
-        array.termState[pos] = new PerReaderTermState(topReaderContext, termState, readerContext.ord, termsEnum.docFreq());
+        array.termState[pos] = new PerReaderTermState(topReaderContext, termState, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
       }
       return true;
     }

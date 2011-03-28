@@ -21,6 +21,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.util.ByteUtils;
 
@@ -42,10 +43,16 @@ public class IDFValueSource extends DocFreqValueSource {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     Similarity sim = searcher.getSimilarityProvider().get(field);
+    // nocommit:
+    // what to do? its an idf valuesource... we could generalize to sim.computeWeight though 
+    // (which is idf for TF/IDF and something like it elsewhere)
+    if (!(sim instanceof TFIDFSimilarity)) {
+      throw new UnsupportedOperationException("only works with TF/IDF Similarity");
+    }
     // todo: we need docFreq that takes a BytesRef
     String strVal = ByteUtils.UTF8toUTF16(indexedBytes);
     int docfreq = searcher.docFreq(new Term(indexedField, strVal));
-    float idf = sim.idf(docfreq, searcher.maxDoc());
+    float idf = ((TFIDFSimilarity)sim).idf(docfreq, searcher.maxDoc());
     return new ConstDoubleDocValues(idf, this);
   }
 }

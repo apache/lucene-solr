@@ -101,14 +101,14 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
         if (t != null) {
           // if the term is already in the PQ, only update docFreq of term in PQ
           assert t.boost == boost : "boost should be equal in all segment TermsEnums";
-          t.termState.register(state, readerContext.ord, termsEnum.docFreq());
+          t.termState.register(state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
         } else {
           // add new entry in PQ, we must clone the term, else it may get overwritten!
           st.bytes.copy(bytes);
           st.boost = boost;
           visitedTerms.put(st.bytes, st);
           assert st.termState.docFreq() == 0;
-          st.termState.register(state, readerContext.ord, termsEnum.docFreq());
+          st.termState.register(state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
           stQueue.offer(st);
           // possibly drop entries from queue
           if (stQueue.size() > maxSize) {

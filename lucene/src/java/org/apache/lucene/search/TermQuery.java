@@ -50,16 +50,12 @@ public class TermQuery extends Query {
     private final IDFExplanation idfExp;
     private transient PerReaderTermState termStates;
 
-    public TermWeight(IndexSearcher searcher, PerReaderTermState termStates, int docFreq)
+    public TermWeight(IndexSearcher searcher, PerReaderTermState termStates)
       throws IOException {
       assert termStates != null : "PerReaderTermState must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarityProvider().get(term.field());
-      if (docFreq != -1) {
-        idfExp = similarity.idfExplain(term, searcher, docFreq);
-      } else {
-        idfExp = similarity.idfExplain(term, searcher);
-      }
+      idfExp = similarity.computeWeight(searcher, term.field(), termStates);
       idf = idfExp.getIdf();
     }
 
@@ -98,7 +94,7 @@ public class TermQuery extends Query {
       }
       final DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), field, term.bytes(), state);
       assert docs != null;
-      return new TermScorer(this, docs, similarity, context.reader.norms(field));
+      return new TermScorer(this, docs, similarity, field, context);
     }
     
     private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
@@ -110,6 +106,11 @@ public class TermQuery extends Query {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
+      //nocommit: fix explains
+      if (!(similarity instanceof TFIDFSimilarity))
+        return new ComplexExplanation();
+      final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
+      
       final IndexReader reader = context.reader;
 
       ComplexExplanation result = new ComplexExplanation();
@@ -214,20 +215,20 @@ public class TermQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     final ReaderContext context = searcher.getTopReaderContext();
-    final int weightDocFreq;
     final PerReaderTermState termState;
     if (perReaderTermState == null || perReaderTermState.topReaderContext != context) {
       // make TermQuery single-pass if we don't have a PRTS or if the context differs!
       termState = PerReaderTermState.build(context, term, true); // cache term lookups!
-      // we must not ignore the given docFreq - if set use the given value
-      weightDocFreq = docFreq == -1 ? termState.docFreq() : docFreq;
     } else {
      // PRTS was pre-build for this IS
      termState = this.perReaderTermState;
-     weightDocFreq = docFreq;
     }
+
+    // we must not ignore the given docFreq - if set use the given value (lie)
+    if (docFreq != -1)
+      termState.setDocFreq(docFreq);
     
-    return new TermWeight(searcher, termState, weightDocFreq);
+    return new TermWeight(searcher, termState);
   }
 
   @Override

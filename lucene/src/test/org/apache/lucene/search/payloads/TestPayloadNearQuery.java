@@ -17,7 +17,6 @@ package org.apache.lucene.search.payloads;
  */
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -45,6 +44,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.PerReaderTermState;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 
 
@@ -338,7 +338,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     
         // idf used for phrase queries
         @Override 
-        public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
+        public IDFExplanation idfExplain(PerReaderTermState states[], IndexSearcher searcher) throws IOException {
           return new IDFExplanation() {
             @Override
             public float getIdf() {

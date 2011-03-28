@@ -187,8 +187,8 @@ final class JustCompileSearch {
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
     JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-        Similarity similarity, byte[] norms) {
-      super(weight, postings, similarity, norms);
+        Similarity similarity, String field, AtomicReaderContext context) throws IOException {
+      super(weight, postings, similarity, field, context);
     }
 
     @Override
@@ -240,7 +240,8 @@ final class JustCompileSearch {
     }
   }
   
-  static final class JustCompileSimilarity extends Similarity {
+  // nocommit: extend the Base Similarity here?
+  static final class JustCompileSimilarity extends TFIDFSimilarity {
 
     @Override
     public float idf(int docFreq, int numDocs) {

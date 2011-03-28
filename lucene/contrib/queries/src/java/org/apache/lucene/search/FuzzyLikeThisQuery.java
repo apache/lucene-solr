@@ -51,7 +51,8 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public class FuzzyLikeThisQuery extends Query
 {
-    static Similarity sim=new DefaultSimilarity();
+    //nocommit? this query is pretty much hardcoded at TF/IDF
+    static TFIDFSimilarity sim=new DefaultSimilarity();
     Query rewrittenQuery=null;
     ArrayList<FieldVals> fieldVals=new ArrayList<FieldVals>();
     Analyzer analyzer;

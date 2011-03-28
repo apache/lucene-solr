@@ -105,7 +105,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
   }
   
-  private class Sim1 extends Similarity {
+  private class Sim1 extends TFIDFSimilarity {
     @Override
     public float computeNorm(FieldInvertState state) {
       return 1f;
@@ -127,7 +127,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
   }
   
-  private class Sim2 extends Similarity {
+  private class Sim2 extends TFIDFSimilarity {
     @Override
     public float computeNorm(FieldInvertState state) {
       return 10f;

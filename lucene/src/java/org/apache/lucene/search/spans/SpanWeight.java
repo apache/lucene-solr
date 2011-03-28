@@ -18,13 +18,15 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.apache.lucene.util.PerReaderTermState;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Expert-only.  Public for use by other weight implementations
@@ -45,10 +47,14 @@ public class SpanWeight extends Weight {
     this.similarity = searcher.getSimilarityProvider().get(query.getField());
     this.query = query;
     
-    terms=new HashSet<Term>();
+    terms=new TreeSet<Term>();
     query.extractTerms(terms);
-    
-    idfExp = similarity.idfExplain(terms, searcher);
+    final ReaderContext context = searcher.getTopReaderContext();
+    final PerReaderTermState states[] = new PerReaderTermState[terms.size()];
+    int i = 0;
+    for (Term term : terms)
+      states[i++] = PerReaderTermState.build(context, term, true);
+    idfExp = similarity.computeWeight(searcher, query.getField(), states);
     idf = idfExp.getIdf();
   }
 
@@ -73,8 +79,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-    return new SpanScorer(query.getSpans(context), this, similarity, context.reader
-        .norms(query.getField()));
+    return new SpanScorer(query.getSpans(context), this, similarity, query.getField(), context);
   }
 
   @Override

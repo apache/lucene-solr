@@ -20,25 +20,22 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
   private DocsEnum docsEnum;
-  private byte[] norms;
-  private float weightValue;
   private int doc = -1;
   private int freq;
 
   private int pointer;
   private int pointerMax;
 
-  private static final int SCORE_CACHE_SIZE = 32;
-  private float[] scoreCache = new float[SCORE_CACHE_SIZE];
   private int[] docs;
   private int[] freqs;
   private final DocsEnum.BulkReadResult bulkResult;
-  private final Similarity similarity;
+  private final Similarity.ExactDocScorer docScorer;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -53,16 +50,11 @@ final class TermScorer extends Scorer {
    * @param norms
    *          The field norms of the document fields for the <code>Term</code>.
    */
-  TermScorer(Weight weight, DocsEnum td, Similarity similarity, byte[] norms) {
+  TermScorer(Weight weight, DocsEnum td, Similarity similarity, String fieldName, AtomicReaderContext context) throws IOException {
     super(weight);
-    this.similarity = similarity;
+    this.docScorer = similarity.exactDocScorer(weight, fieldName, context);
     this.docsEnum = td;
-    this.norms = norms;
-    this.weightValue = weight.getValue();
     bulkResult = td.getBulkResult();
-
-    for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-      scoreCache[i] = similarity.tf(i) * weightValue;
   }
 
   @Override
@@ -134,12 +126,7 @@ final class TermScorer extends Scorer {
   @Override
   public float score() {
     assert doc != NO_MORE_DOCS;
-    float raw =                                   // compute tf(f)*weight
-      freq < SCORE_CACHE_SIZE                        // check cache
-      ? scoreCache[freq]                             // cache hit
-      : similarity.tf(freq)*weightValue;        // cache miss
-
-    return norms == null ? raw : raw * similarity.decodeNormValue(norms[doc]); // normalize for field
+    return docScorer.score(doc, freq);  
   }
 
   /**

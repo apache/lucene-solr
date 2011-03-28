@@ -21,6 +21,7 @@ package org.apache.lucene.misc;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.FieldInvertState;
@@ -170,8 +171,8 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
   
     SweetSpotSimilarity ss = new SweetSpotSimilarity();
 
-    Similarity d = new DefaultSimilarity();
-    Similarity s = ss;
+    TFIDFSimilarity d = new DefaultSimilarity();
+    TFIDFSimilarity s = ss;
     
     // tf equal
 
@@ -222,7 +223,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
       };
     ss.setHyperbolicTfFactors(3.3f, 7.7f, Math.E, 5.0f);
     
-    Similarity s = ss;
+    TFIDFSimilarity s = ss;
 
     for (int i = 1; i <=1000; i++) {
       assertTrue("MIN tf: i="+i+" : s="+s.tf(i),

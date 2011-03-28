@@ -43,6 +43,7 @@ public final class PerReaderTermState {
   public final ReaderContext topReaderContext; // for asserting!
   private final TermState[] states;
   private int docFreq;
+  private long totalTermFreq;
 
   /**
    * Creates an empty {@link PerReaderTermState} from a {@link ReaderContext}
@@ -64,9 +65,9 @@ public final class PerReaderTermState {
    * Creates a {@link PerReaderTermState} with an initial {@link TermState},
    * {@link IndexReader} pair.
    */
-  public PerReaderTermState(ReaderContext context, TermState state, int ord, int docFreq) {
+  public PerReaderTermState(ReaderContext context, TermState state, int ord, int docFreq, long totalTermFreq) {
     this(context);
-    register(state, ord, docFreq);
+    register(state, ord, docFreq, totalTermFreq);
   }
 
   /**
@@ -92,7 +93,7 @@ public final class PerReaderTermState {
           final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
           if (SeekStatus.FOUND == termsEnum.seek(bytes, cache)) { 
             final TermState termState = termsEnum.termState();
-            perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq());
+            perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
           }
         }
       }
@@ -113,12 +114,16 @@ public final class PerReaderTermState {
    * Registers and associates a {@link TermState} with an leaf ordinal. The leaf ordinal
    * should be derived from a {@link ReaderContext}'s leaf ord.
    */
-  public void register(TermState state, final int ord, final int docFreq) {
+  public void register(TermState state, final int ord, final int docFreq, final long totalTermFreq) {
     assert state != null : "state must not be null";
     assert ord >= 0 && ord < states.length;
     assert states[ord] == null : "state for ord: " + ord
         + " already registered";
     this.docFreq += docFreq;
+    if (this.totalTermFreq >= 0 && totalTermFreq >= 0)
+      this.totalTermFreq += totalTermFreq;
+    else
+      this.totalTermFreq = -1;
     states[ord] = state;
   }
 
@@ -138,11 +143,27 @@ public final class PerReaderTermState {
 
   /**
    *  Returns the accumulated document frequency of all {@link TermState}
-   *         instances passed to {@link #register(TermState, int, int)}.
+   *         instances passed to {@link #register(TermState, int, int, long)}.
    * @return the accumulated document frequency of all {@link TermState}
-   *         instances passed to {@link #register(TermState, int, int)}.
+   *         instances passed to {@link #register(TermState, int, int, long)}.
    */
   public int docFreq() {
     return docFreq;
+  }
+  
+  /**
+   *  Returns the accumulated term frequency of all {@link TermState}
+   *         instances passed to {@link #register(TermState, int, int, long)}.
+   * @return the accumulated term frequency of all {@link TermState}
+   *         instances passed to {@link #register(TermState, int, int, long)}.
+   */
+  public long totalTermFreq() {
+    return totalTermFreq;
+  }
+  
+  /** expert: only available for queries that want to lie about docfreq
+   * @lucene.internal */
+  public void setDocFreq(int docFreq) {
+    this.docFreq = docFreq;
   }
 }

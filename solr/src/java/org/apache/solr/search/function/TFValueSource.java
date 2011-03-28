@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 
@@ -42,8 +43,14 @@ public class TFValueSource extends TermFreqValueSource {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader.fields();
     final Terms terms = fields.terms(field);
-    final Similarity similarity = ((IndexSearcher)context.get("searcher")).getSimilarityProvider().get(field);
-
+    // nocommit:
+    // what to do? its a TF valuesource... 
+    final Similarity sim = ((IndexSearcher)context.get("searcher")).getSimilarityProvider().get(field);
+    if (!(sim instanceof TFIDFSimilarity)) {
+      throw new UnsupportedOperationException("only works with TF/IDF Similarity");
+    }
+    final TFIDFSimilarity similarity = (TFIDFSimilarity) sim;
+    
     return new FloatDocValues(this) {
       DocsEnum docs ;
       int atDoc;

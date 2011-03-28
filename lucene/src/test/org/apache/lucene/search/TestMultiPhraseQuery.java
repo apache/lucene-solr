@@ -25,6 +25,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PerReaderTermState;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -302,7 +303,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
         return new DefaultSimilarity() {
           
           @Override
-          public IDFExplanation idfExplain(Collection<Term> terms,
+          public IDFExplanation idfExplain(PerReaderTermState stats[],
               IndexSearcher searcher) throws IOException {
             return new IDFExplanation() {
 

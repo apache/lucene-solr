@@ -151,12 +151,12 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       if (e < 0 ) {
         // duplicate term: update docFreq
         final int pos = (-e)-1;
-        array.termState[pos].register(state, readerContext.ord, termsEnum.docFreq());
+        array.termState[pos].register(state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
         assert array.boost[pos] == boostAtt.getBoost() : "boost should be equal in all segment TermsEnums";
       } else {
         // new entry: we populate the entry initially
         array.boost[e] = boostAtt.getBoost();
-        array.termState[e] = new PerReaderTermState(topReaderContext, state, readerContext.ord, termsEnum.docFreq());
+        array.termState[e] = new PerReaderTermState(topReaderContext, state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
         ScoringRewrite.this.checkMaxClauseCount(terms.size());
       }
       return true;

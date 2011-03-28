@@ -22,12 +22,14 @@ import java.util.*;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PerReaderTermState;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.Bits;
@@ -140,15 +142,16 @@ public class MultiPhraseQuery extends Query {
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = searcher.getSimilarityProvider().get(field);
-
+      final ReaderContext context = searcher.getTopReaderContext();
+      
       // compute idf
-      ArrayList<Term> allTerms = new ArrayList<Term>();
+      ArrayList<PerReaderTermState> allTerms = new ArrayList<PerReaderTermState>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          allTerms.add(term);
+          allTerms.add(PerReaderTermState.build(context, term, true));
         }
       }
-      idfExp = similarity.idfExplain(allTerms, searcher);
+      idfExp = similarity.computeWeight(searcher, field, allTerms.toArray(new PerReaderTermState[allTerms.size()]));
       idf = idfExp.getIdf();
     }
 
@@ -223,8 +226,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
-            reader.norms(field));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity, field, context);
         if (s.noDocs) {
           return null;
         } else {
@@ -232,13 +234,18 @@ public class MultiPhraseQuery extends Query {
         }
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, similarity,
-                                      slop, reader.norms(field));
+                                      slop, field, context);
       }
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
+      //nocommit: fix explains
+      if (!(similarity instanceof TFIDFSimilarity))
+        return new ComplexExplanation();
+      final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
+      
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 

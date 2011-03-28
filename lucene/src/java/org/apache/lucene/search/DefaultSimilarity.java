@@ -20,7 +20,7 @@ import org.apache.lucene.index.FieldInvertState;
  */
 
 /** Expert: Default scoring implementation. */
-public class DefaultSimilarity extends Similarity {
+public class DefaultSimilarity extends TFIDFSimilarity {
 
   /** Implemented as
    *  <code>state.getBoost()*lengthNorm(numTerms)</code>, where
@@ -39,7 +39,7 @@ public class DefaultSimilarity extends Similarity {
       numTerms = state.getLength();
     return state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms)));
   }
-  
+
   /** Implemented as <code>sqrt(freq)</code>. */
   @Override
   public float tf(float freq) {

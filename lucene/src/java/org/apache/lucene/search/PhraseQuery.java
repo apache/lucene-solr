@@ -22,10 +22,14 @@ import java.util.Set;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.apache.lucene.util.PerReaderTermState;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -143,12 +147,16 @@ public class PhraseQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     private IDFExplanation idfExp;
+    private transient PerReaderTermState states[];
 
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = searcher.getSimilarityProvider().get(field);
-
-      idfExp = similarity.idfExplain(terms, searcher);
+      final ReaderContext context = searcher.getTopReaderContext();
+      states = new PerReaderTermState[terms.size()];
+      for (int i = 0; i < terms.size(); i++)
+        states[i] = PerReaderTermState.build(context, terms.get(i), true);
+      idfExp = similarity.computeWeight(searcher, field, states);
       idf = idfExp.getIdf();
     }
 
@@ -183,21 +191,29 @@ public class PhraseQuery extends Query {
       final Bits delDocs = reader.getDeletedDocs();
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
+        final TermState state = states[i].get(context.ord);
+        if (state == null) /* term doesnt exist in this segment */
+          return null;
         DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(delDocs,
                                                                      t.field(),
-                                                                     t.bytes());
+                                                                     t.bytes(),
+                                                                     state);
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (reader.termDocsEnum(delDocs, t.field(), t.bytes()) != null) {
+          if (reader.termDocsEnum(delDocs, t.field(), t.bytes(), state) != null) {
             // term does exist, but has no positions
             throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
           } else {
             // term does not exist
+            // nocommit: should be impossible, state should be null?
             return null;
           }
         }
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, reader.docFreq(t.field(), t.bytes()), positions.get(i).intValue());
+        // get the docFreq without seeking
+        TermsEnum te = reader.fields().terms(field).getThreadTermsEnum();
+        te.seek(t.bytes(), state);
+        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, te.docFreq(), positions.get(i).intValue());
       }
 
       // sort by increasing docFreq order
@@ -206,8 +222,7 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {				  // optimize exact case
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
-            reader.norms(field));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity, field, context);
         if (s.noDocs) {
           return null;
         } else {
@@ -215,15 +230,18 @@ public class PhraseQuery extends Query {
         }
       } else {
         return
-          new SloppyPhraseScorer(this, postingsFreqs, similarity, slop,
-              reader.norms(field));
+          new SloppyPhraseScorer(this, postingsFreqs, similarity, slop, field, context);
       }
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
       throws IOException {
-
+      //nocommit: fix explains
+      if (!(similarity instanceof TFIDFSimilarity))
+        return new ComplexExplanation();
+      final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
+      
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 

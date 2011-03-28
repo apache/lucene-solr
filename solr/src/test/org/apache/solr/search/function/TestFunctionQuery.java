@@ -20,7 +20,7 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -290,7 +290,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", "{!func}docfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}docfreq($field,$value)", "fq","id:6", "field","a_t", "value","cow"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}termfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='5.0'");
-    Similarity similarity = new DefaultSimilarity();
+    TFIDFSimilarity similarity = new DefaultSimilarity();
     assertQ(req("fl","*,score","q", "{!func}idf(a_t,cow)", "fq","id:6"),
         "//float[@name='score']='" + similarity.idf(3,6)  + "'");
     assertQ(req("fl","*,score","q", "{!func}tf(a_t,cow)", "fq","id:6"),

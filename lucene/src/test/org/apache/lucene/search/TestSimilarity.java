@@ -18,8 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.PerReaderTermState;
+
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
@@ -43,12 +44,12 @@ public class TestSimilarity extends LuceneTestCase {
     public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
     public Similarity get(String field) {
-      return new Similarity() {
+      return new DefaultSimilarity() {
         @Override public float computeNorm(FieldInvertState state) { return state.getBoost(); }
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-        @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
+        @Override public IDFExplanation idfExplain(PerReaderTermState[] stats, IndexSearcher searcher) throws IOException {
           return new IDFExplanation() {
             @Override
             public float getIdf() {

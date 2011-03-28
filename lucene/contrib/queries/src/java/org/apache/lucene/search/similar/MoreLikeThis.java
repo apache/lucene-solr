@@ -44,6 +44,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
@@ -284,7 +285,8 @@ public final class MoreLikeThis {
     /**
      * For idf() calculations.
      */
-    private Similarity similarity;// = new DefaultSimilarity();
+    // nocommit? this is pretty much wired to tf-idf things...
+    private TFIDFSimilarity similarity;// = new DefaultSimilarity();
 
     /**
      * IndexReader to use
@@ -319,17 +321,17 @@ public final class MoreLikeThis {
         this(ir, new DefaultSimilarity());
     }
 
-    public MoreLikeThis(IndexReader ir, Similarity sim){
+    public MoreLikeThis(IndexReader ir, TFIDFSimilarity sim){
       this.ir = ir;
       this.similarity = sim;
     }
 
 
-  public Similarity getSimilarity() {
+  public TFIDFSimilarity getSimilarity() {
     return similarity;
   }
 
-  public void setSimilarity(Similarity similarity) {
+  public void setSimilarity(TFIDFSimilarity similarity) {
     this.similarity = similarity;
   }
 

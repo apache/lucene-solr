@@ -135,8 +135,8 @@ final class JustCompileSearchSpans {
   static final class JustCompileSpanScorer extends SpanScorer {
 
     protected JustCompileSpanScorer(Spans spans, Weight weight,
-        Similarity similarity, byte[] norms) throws IOException {
-      super(spans, weight, similarity, norms);
+        Similarity similarity, String field, AtomicReaderContext context) throws IOException {
+      super(spans, weight, similarity, field, context);
     }
 
     @Override
