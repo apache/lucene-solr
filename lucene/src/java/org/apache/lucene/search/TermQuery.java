@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -39,7 +39,7 @@ import org.apache.lucene.util.ToStringUtils;
 public class TermQuery extends Query {
   private final Term term;
   private int docFreq;
-  private transient PerReaderTermState perReaderTermState;
+  private transient TermContext perReaderTermState;
 
   private class TermWeight extends Weight {
     private final Similarity similarity;
@@ -48,11 +48,11 @@ public class TermQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     private final IDFExplanation idfExp;
-    private transient PerReaderTermState termStates;
+    private transient TermContext termStates;
 
-    public TermWeight(IndexSearcher searcher, PerReaderTermState termStates)
+    public TermWeight(IndexSearcher searcher, TermContext termStates)
       throws IOException {
-      assert termStates != null : "PerReaderTermState must not be null";
+      assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarityProvider().get(term.field());
       idfExp = similarity.computeWeight(searcher, term.field(), termStates);
@@ -202,7 +202,7 @@ public class TermQuery extends Query {
   /** Expert: constructs a TermQuery that will use the
    *  provided docFreq instead of looking up the docFreq
    *  against the searcher. */
-  public TermQuery(Term t, PerReaderTermState states) {
+  public TermQuery(Term t, TermContext states) {
     assert states != null;
     term = t;
     docFreq = states.docFreq();
@@ -215,10 +215,10 @@ public class TermQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     final ReaderContext context = searcher.getTopReaderContext();
-    final PerReaderTermState termState;
+    final TermContext termState;
     if (perReaderTermState == null || perReaderTermState.topReaderContext != context) {
       // make TermQuery single-pass if we don't have a PRTS or if the context differs!
-      termState = PerReaderTermState.build(context, term, true); // cache term lookups!
+      termState = TermContext.build(context, term, true); // cache term lookups!
     } else {
      // PRTS was pre-build for this IS
      termState = this.perReaderTermState;

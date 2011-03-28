@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -45,7 +45,7 @@ public class TestOmitTf extends LuceneTestCase {
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-        @Override public IDFExplanation idfExplain(PerReaderTermState[] terms, IndexSearcher searcher) throws IOException {
+        @Override public IDFExplanation idfExplain(TermContext[] terms, IndexSearcher searcher) throws IOException {
           return new IDFExplanation() {
             @Override
             public float getIdf() {

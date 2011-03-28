@@ -44,7 +44,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 
 
@@ -338,7 +338,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     
         // idf used for phrase queries
         @Override 
-        public IDFExplanation idfExplain(PerReaderTermState states[], IndexSearcher searcher) throws IOException {
+        public IDFExplanation idfExplain(TermContext states[], IndexSearcher searcher) throws IOException {
           return new IDFExplanation() {
             @Override
             public float getIdf() {

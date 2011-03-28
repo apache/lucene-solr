@@ -23,7 +23,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Explanation.IDFExplanation;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
 
 /**
@@ -91,12 +91,12 @@ public class MockLMSimilarity extends Similarity {
   // nocommit: nuke IDFExplanation!
   // nocommit: evil how we shove this crap in weight and unsquare it.. need to generalize weight
   @Override
-  public IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, PerReaderTermState... termStats) throws IOException {
+  public IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, TermContext... termStats) throws IOException {
     float value = 0.0f;
     final StringBuilder exp = new StringBuilder();
     final long sumOfTotalTermFreq = MultiFields.getTerms(searcher.getIndexReader(), fieldName).getSumTotalTermFreq();
     
-    for (final PerReaderTermState stat : termStats ) {
+    for (final TermContext stat : termStats ) {
       final long totalTermFrequency = stat.totalTermFreq();
       value += 1 / (mu * ((totalTermFrequency+1L)/(double)(sumOfTotalTermFreq+1L)));
       exp.append(" ");

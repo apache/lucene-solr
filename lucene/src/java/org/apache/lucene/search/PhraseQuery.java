@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Explanation.IDFExplanation;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -147,15 +147,15 @@ public class PhraseQuery extends Query {
     private float queryNorm;
     private float queryWeight;
     private IDFExplanation idfExp;
-    private transient PerReaderTermState states[];
+    private transient TermContext states[];
 
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = searcher.getSimilarityProvider().get(field);
       final ReaderContext context = searcher.getTopReaderContext();
-      states = new PerReaderTermState[terms.size()];
+      states = new TermContext[terms.size()];
       for (int i = 0; i < terms.size(); i++)
-        states[i] = PerReaderTermState.build(context, terms.get(i), true);
+        states[i] = TermContext.build(context, terms.get(i), true);
       idfExp = similarity.computeWeight(searcher, field, states);
       idf = idfExp.getIdf();
     }

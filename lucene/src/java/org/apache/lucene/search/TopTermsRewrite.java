@@ -29,7 +29,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 
 /**
  * Base rewrite method for collecting only the top terms
@@ -80,7 +80,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
         this.termComp = termsEnum.getComparator();
         // lazy init the initial ScoreTerm because comparator is not known on ctor:
         if (st == null)
-          st = new ScoreTerm(this.termComp, new PerReaderTermState(topReaderContext));
+          st = new ScoreTerm(this.termComp, new TermContext(topReaderContext));
         boostAtt = termsEnum.attributes().addAttribute(BoostAttribute.class);
       }
     
@@ -116,7 +116,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
             visitedTerms.remove(st.bytes);
             st.termState.clear(); // reset the termstate! 
           } else {
-            st = new ScoreTerm(termComp, new PerReaderTermState(topReaderContext));
+            st = new ScoreTerm(termComp, new TermContext(topReaderContext));
           }
           assert stQueue.size() <= maxSize : "the PQ size must be limited to maxSize";
           // set maxBoostAtt with values to help FuzzyTermsEnum to optimize
@@ -172,8 +172,8 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     public final Comparator<BytesRef> termComp;
     public final BytesRef bytes = new BytesRef();
     public float boost;
-    public final PerReaderTermState termState;
-    public ScoreTerm(Comparator<BytesRef> termComp, PerReaderTermState termState) {
+    public final TermContext termState;
+    public ScoreTerm(Comparator<BytesRef> termComp, TermContext termState) {
       this.termComp = termComp;
       this.termState = termState;
     }

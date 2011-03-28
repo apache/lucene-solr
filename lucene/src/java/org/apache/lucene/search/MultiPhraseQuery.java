@@ -29,7 +29,7 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.Bits;
@@ -145,13 +145,13 @@ public class MultiPhraseQuery extends Query {
       final ReaderContext context = searcher.getTopReaderContext();
       
       // compute idf
-      ArrayList<PerReaderTermState> allTerms = new ArrayList<PerReaderTermState>();
+      ArrayList<TermContext> allTerms = new ArrayList<TermContext>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          allTerms.add(PerReaderTermState.build(context, term, true));
+          allTerms.add(TermContext.build(context, term, true));
         }
       }
-      idfExp = similarity.computeWeight(searcher, field, allTerms.toArray(new PerReaderTermState[allTerms.size()]));
+      idfExp = similarity.computeWeight(searcher, field, allTerms.toArray(new TermContext[allTerms.size()]));
       idf = idfExp.getIdf();
     }
 

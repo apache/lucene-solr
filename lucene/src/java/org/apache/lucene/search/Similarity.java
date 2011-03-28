@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Explanation.IDFExplanation;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 
 
 /** 
@@ -114,7 +114,7 @@ public abstract class Similarity {
     return 1;
   }
   
-  public abstract IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, PerReaderTermState... termStats) throws IOException;
+  public abstract IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, TermContext... termStats) throws IOException;
   
   public abstract ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException;
   public abstract SloppyDocScorer sloppyDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException;

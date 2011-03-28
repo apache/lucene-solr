@@ -24,7 +24,7 @@ import java.io.Serializable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation.IDFExplanation;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
 
 
@@ -585,7 +585,7 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
              and an explanation for the term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(PerReaderTermState stats, final IndexSearcher searcher) throws IOException {
+  public IDFExplanation idfExplain(TermContext stats, final IndexSearcher searcher) throws IOException {
     final int df = stats.docFreq();
     final int max = searcher.maxDoc();
     final float idf = idf(df, max);
@@ -615,11 +615,11 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
    *         for each term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(final PerReaderTermState stats[], IndexSearcher searcher) throws IOException {
+  public IDFExplanation idfExplain(final TermContext stats[], IndexSearcher searcher) throws IOException {
     final int max = searcher.maxDoc();
     float idf = 0.0f;
     final StringBuilder exp = new StringBuilder();
-    for (final PerReaderTermState stat : stats ) {
+    for (final TermContext stat : stats ) {
       final int df = stat.docFreq();
       idf += idf(df, max);
       exp.append(" ");
@@ -689,7 +689,7 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
  
   @Override
   public final IDFExplanation computeWeight(IndexSearcher searcher, String fieldName,
-      PerReaderTermState... termStats) throws IOException {
+      TermContext... termStats) throws IOException {
     return termStats.length == 1
     ? idfExplain(termStats[0], searcher)
     : idfExplain(termStats, searcher);

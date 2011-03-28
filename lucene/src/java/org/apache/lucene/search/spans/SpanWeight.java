@@ -22,7 +22,7 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Explanation.IDFExplanation;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
 import java.util.Set;
@@ -50,10 +50,10 @@ public class SpanWeight extends Weight {
     terms=new TreeSet<Term>();
     query.extractTerms(terms);
     final ReaderContext context = searcher.getTopReaderContext();
-    final PerReaderTermState states[] = new PerReaderTermState[terms.size()];
+    final TermContext states[] = new TermContext[terms.size()];
     int i = 0;
     for (Term term : terms)
-      states[i++] = PerReaderTermState.build(context, term, true);
+      states[i++] = TermContext.build(context, term, true);
     idfExp = similarity.computeWeight(searcher, query.getField(), states);
     idf = idfExp.getIdf();
   }
