@@ -44,7 +44,8 @@ import org.apache.lucene.util.SmallFloat;
  * </code>
  * <p>
  * NOTE: to use this Similarity, use MockLMSimilarityProvider (as this formula already incorporates coord()
- * and currently depends upon a disabled queryNorm) 
+ * and currently depends upon a disabled queryNorm)
+ * WARNING: doesn't work with preflex codec
  */
 public class MockLMSimilarity extends Similarity {
   // TODO: the norm table can probably be per-sim so you can configure this.

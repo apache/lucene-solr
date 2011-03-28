@@ -368,6 +368,12 @@ public class FilterIndexReader extends IndexReader {
   }
 
   @Override
+  public long getSumOfNorms(String field) throws IOException {
+    ensureOpen();
+    return in.getSumOfNorms(field);
+  }
+
+  @Override
   protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
     in.setNorm(d, f, b);
   }

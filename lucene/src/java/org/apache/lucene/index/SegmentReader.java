@@ -271,6 +271,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     private boolean dirty;
     private int number;
     private boolean rollbackDirty;
+    private long sum;
     
     public Norm(IndexInput in, int number, long normSeek) {
       this.in = in;
@@ -335,6 +336,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           bytes = origNorm.bytes();
           bytesRef = origNorm.bytesRef;
           bytesRef.incrementAndGet();
+          sum = origNorm.sum;
 
           // Once we've loaded the bytes we no longer need
           // origNorm:
@@ -354,6 +356,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
           synchronized(in) {
             in.seek(normSeek);
             in.readBytes(bytes, 0, count, false);
+            // nocommit: version the file, and add this sum.
+            sum = 0;
+            for (int i = 0; i < count; i++) {
+              sum += (bytes[i] & 0xff);
+            }
           }
 
           bytesRef = new AtomicInteger(1);
@@ -938,6 +945,15 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   @Override
+  public synchronized long getSumOfNorms(String field) throws IOException {
+    ensureOpen();
+    Norm norm = norms.get(field);
+    if (norm == null) return 0; // not indexed, or norms not stored
+    norm.bytes(); // load norms if not loaded
+    return norm.sum;
+  }
+
+  @Override
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
     Norm norm = norms.get(field);
@@ -946,6 +962,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
     normsDirty = true;
     norm.copyOnWrite()[doc] = value;                    // set the value
+    // TODO: maybe we should update the norm sum here,
+    // but its probably ok not to: in general reader changes
+    // like deleting docs don't update docfreq, etc.
   }
 
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {

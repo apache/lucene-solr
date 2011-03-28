@@ -447,6 +447,18 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
+  public long getSumOfNorms(String field) throws IOException {
+    ensureOpen();
+    IndexReader reader = fieldToReader.get(field);
+
+    if (reader == null) {
+      return 0;
+    } else {
+      return reader.getSumOfNorms(field);
+    }
+  }
+  
+  @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     IndexReader reader = fieldToReader.get(field);

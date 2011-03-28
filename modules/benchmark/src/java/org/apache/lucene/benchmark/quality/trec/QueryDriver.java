@@ -21,7 +21,6 @@ import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.benchmark.quality.*;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MockLMSimilarityProvider;
 import org.apache.lucene.store.FSDirectory;
 
 import java.io.BufferedReader;
@@ -56,7 +55,8 @@ public class QueryDriver {
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     IndexSearcher searcher = new IndexSearcher(dir, true);
     // nocommit
-    // searcher.setSimilarityProvider(new MockLMSimilarityProvider());
+    //searcher.setSimilarityProvider(new MockLMSimilarityProvider());
+    //searcher.setSimilarityProvider(new MockBM25SimilarityProvider());
     int maxResults = 1000;
     String docNameField = "docname";
 

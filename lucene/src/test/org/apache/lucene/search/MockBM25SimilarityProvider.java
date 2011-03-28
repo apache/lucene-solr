@@ -17,26 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-/**
- * SimilarityProvider for {@link MockLMSimilarity}
- * <ul>
- *   <li> disables coord, because its already factored into the formula
- *   <li> disables queryNorm, because we (currently) shove part of the formula in there as "idf"
- * </ul>
- * WARNING: doesn't work with preflex codec
- */
-public class MockLMSimilarityProvider implements SimilarityProvider {
-  private static final Similarity impl = new MockLMSimilarity();
-  
-  public float coord(int overlap, int maxOverlap) {
-    return 1f;
-  }
+public class MockBM25SimilarityProvider extends DefaultSimilarityProvider {
 
-  public float queryNorm(float sumOfSquaredWeights) {
-    return 1f;
-  }
+  private final Similarity impl = new MockBM25Similarity();
 
   public Similarity get(String field) {
     return impl;
+  }
+
+  //nocommit: maybe ok given how bm25 works?
+  public float queryNorm(float sumOfSquaredWeights) {
+    return 1f;
   }
 }
