@@ -210,7 +210,7 @@ public class TestBoolean2 extends LuceneTestCase {
     int[] expDocNrs = {2, 3};
     SimilarityProvider oldSimilarity = searcher.getSimilarityProvider();
     try {
-      searcher.setSimilarityProvider(new DefaultSimilarity(){
+      searcher.setSimilarityProvider(new DefaultSimilarityProvider(){
         @Override
         public float coord(int overlap, int maxOverlap) {
           return overlap / ((float)maxOverlap - 1);

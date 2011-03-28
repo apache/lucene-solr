@@ -55,7 +55,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -71,8 +70,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.ibm.icu</groupId>
-      <artifactId>icu4j</artifactId>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-icu4j</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

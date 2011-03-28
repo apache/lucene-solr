@@ -20,7 +20,18 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pt.PortugueseStemFilter;
 
-/** Factory for {@link PortugueseStemFilter} */
+/** 
+ * Factory for {@link PortugueseStemFilter}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_ptstem" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *     &lt;filter class="solr.PortugueseStemFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
+ */
 public class PortugueseStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new PortugueseStemFilter(input);

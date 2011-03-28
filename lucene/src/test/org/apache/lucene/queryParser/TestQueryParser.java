@@ -577,50 +577,6 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("[\\* TO \"*\"]",null,"[\\* TO \\*]");
  }
     
-  public void testFarsiRangeCollating() throws Exception {
-    Directory ramDir = newDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
-    Document doc = new Document();
-    doc.add(newField("content","\u0633\u0627\u0628", 
-                      Field.Store.YES, Field.Index.NOT_ANALYZED));
-    iw.addDocument(doc);
-    iw.close();
-    IndexSearcher is = new IndexSearcher(ramDir, true);
-
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "content", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
-
-    // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
-    // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
-    // characters properly.
-    Collator c = Collator.getInstance(new Locale("ar"));
-    qp.setRangeCollator(c);
-
-    // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
-    // orders the U+0698 character before the U+0633 character, so the single
-    // index Term below should NOT be returned by a ConstantScoreRangeQuery
-    // with a Farsi Collator (or an Arabic one for the case when Farsi is not
-    // supported).
-      
-    // Test ConstantScoreRangeQuery
-    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
-    ScoreDoc[] result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should not be included.", 0, result.length);
-
-    result = is.search(qp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should be included.", 1, result.length);
-
-    // Test TermRangeQuery
-    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should not be included.", 0, result.length);
-
-    result = is.search(qp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should be included.", 1, result.length);
-
-    is.close();
-    ramDir.close();
-  }
-  
   private String escapeDateString(String s) {
     if (s.indexOf(" ") > -1) {
       return "\"" + s + "\"";
@@ -1259,5 +1215,42 @@ public class TestQueryParser extends LuceneTestCase {
     
     Query unexpanded = new TermQuery(new Term("field", "dogs"));
     assertEquals(unexpanded, smart.parse("\"dogs\""));
+  }
+  
+  /**
+   * Mock collation analyzer: indexes terms as "collated" + term
+   */
+  private class MockCollationFilter extends TokenFilter {
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+    protected MockCollationFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        String term = termAtt.toString();
+        termAtt.setEmpty().append("collated").append(term);
+        return true;
+      } else {
+        return false;
+      }
+    }
+    
+  }
+  private class MockCollationAnalyzer extends Analyzer {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new MockCollationFilter(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+    }
+  }
+  
+  public void testCollatedRange() throws Exception {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockCollationAnalyzer());
+    qp.setAnalyzeRangeTerms(true);
+    Query expected = TermRangeQuery.newStringRange("field", "collatedabc", "collateddef", true, true);
+    Query actual = qp.parse("[abc TO def]");
+    assertEquals(expected, actual);
   }
 }

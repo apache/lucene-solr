@@ -24,9 +24,10 @@
   </description>
 
   <dirname file="${ant.file.common}" property="common.dir"/>
-
+  <import file="${common.dir}/../common-build.xml"/>
   <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
-  <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
+  <property name="prettify.dir" value="${common.dir}/src/tools/prettify"/>
+  <property name="maven.build.dir" value="${common.dir}/build/maven"/>
 
   <!-- Give user a chance to override without editing this file
       (and without typing -D each time it compiles it -->
@@ -115,6 +116,8 @@
   <property name="tests.src.dir" location="src/test"/>
   <property name="tests-framework.src.dir" location="${common.dir}/src/test-framework"/>
   <property name="build.dir" location="build"/>
+  <!-- Needed in case a contrib needs the original build, also for compile-tools to be called from contrib -->
+  <property name="common.build.dir" location="${common.dir}/build"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
@@ -303,7 +306,7 @@
     </copy>
   </target>
 
-  <target name="compile" depends="compile-core">
+  <target name="compile" depends="compile-core, validate-lucene">
     <!-- convenience target to compile core -->
   </target>
 
@@ -313,13 +316,17 @@
   </target>
 
   <target name="maven.ant.tasks-check">
-	<fail unless="maven.ant.tasks.present">
-	  ##################################################################
+    <fail unless="maven.ant.tasks.present">#
+    ##########################################################################
       Maven ant tasks not found.
-      Please make sure the maven-ant-tasks jar is in ANT_HOME/lib, or made 
-      available to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-  	</fail>
+
+      Please download the Maven ant tasks JAR (maven-ant-tasks-2.1.1.jar)
+      from http://maven.apache.org/ant-tasks/download.html and add it to your
+      $$HOME/.ant/lib/ directory, or to your $$ANT_HOME/lib/ directory, or
+      to your $$CLASSPATH, or add "-lib /path/to/maven-ant-tasks-2.1.1.jar"
+      to the ant command.
+    ##########################################################################
+    </fail>
   </target>
 
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
@@ -336,7 +343,27 @@
         <pom refid="maven.project"/>
       </artifact:deploy>
     </sequential>
-  </macrodef>  	
+  </macrodef>
+  
+  <macrodef name="m2-deploy-with-pom-template" description="Builds a Maven artifact given a POM template">
+    <attribute name="pom.xml"/>
+    <attribute name="jar.file"/>
+    <sequential>
+      <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
+        <filterset begintoken="@" endtoken="@">
+          <filter token="version" value="${version}"/>
+        </filterset>
+      </copy>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />
+      <artifact:deploy file="@{jar.file}">
+        <remoteRepository url="${m2.repository.url}">
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+        </remoteRepository>
+        <pom refid="maven.project"/>
+      </artifact:deploy>
+    </sequential>
+  </macrodef>
 	
   <macrodef name="build-manifest" description="Builds a manifest file">
   	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}" />
@@ -397,6 +424,14 @@
   <target name="compile-test-framework" depends="compile-core">
   	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test.classpath"/>
+  </target>
+
+  <target name="compile-tools">
+    <compile
+      srcdir="${common.dir}/src/tools/java"
+      destdir="${common.build.dir}/classes/tools">
+      <classpath refid="classpath"/>
+    </compile>
   </target>
 
   <target name="compile-test" depends="compile-test-framework">
@@ -476,6 +511,8 @@
               <sysproperty key="tests.seed" value="${tests.seed}"/>
               <!-- set the Version that tests should run against -->
               <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
+              <!-- for lucene we can be strict, and we don't want false fails even across methods -->
+              <sysproperty key="tests.cleanthreads" value="perMethod"/>
               <!-- logging config file -->
               <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
           <!-- set whether or not nightly tests should run -->
@@ -717,7 +754,7 @@
           javacchome="${javacc.home}"
           jdkversion="${javac.source}"
       />
-      <fixcrlf srcdir="@{outputDir}" includes="*.java">
+      <fixcrlf srcdir="@{outputDir}" includes="*.java" encoding="UTF-8">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fixcrlf>
     </sequential>
@@ -727,12 +764,13 @@
     <element name="sources" optional="yes"/>
     <attribute name="destdir"/>
   	<attribute name="title" default="${Name} ${version} API"/>
+    <attribute name="overview" default="${src.dir}/overview.html"/>
     <sequential>
       <copy todir="@{destdir}/../prettify" overwrite="false">
         <fileset dir="${prettify.dir}"/>
       </copy>
       <javadoc
-          overview="${src.dir}/overview.html"
+          overview="@{overview}"
           packagenames="org.apache.lucene.*"
           destdir="@{destdir}"
           access="${javadoc.access}"
@@ -765,6 +803,43 @@
       </javadoc>
    </sequential>
   </macrodef>
+
+
+  <!-- VALIDATION work -->
+
+  <target name="check-legal-lucene" depends="compile-tools">
+    <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
+      <classpath>
+        <path refid="tools.runtime.classpath" />
+      </classpath>
+      <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
+       long time.  This should be faster, but we could miss a directory
+       -->
+      <!-- Lucene  -->
+      <arg value="-c" />
+      <arg value="${basedir}/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/ant/lib" />
+      <!-- BDB libs are downloaded, don't check them -->
+      <!--<arg value="-c" />
+      <arg value="${toplevel.dir}/lucene/contrib/db/bdb/lib" />
+      <arg value="-c" />
+      <arg value="${toplevel.dir}/lucene/contrib/db/bdb-je/lib" />-->
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/lucli/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/queries/lib" />
+    </java>
+  </target>
+
+  <target name="check-legal" depends="check-legal-lucene"/>
+
+  <target name="validate-lucene" depends="check-legal-lucene" unless="validated-lucene"/>
+
+
+  <!-- Generic placeholder target for if we add other validation tasks -->
+  <target name="validate" depends="validate-lucene"/>
+
 
 
 </project>

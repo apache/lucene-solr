@@ -17,24 +17,24 @@
 
 package org.apache.solr.response;
 
-import org.apache.lucene.document.Document;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TextField;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.SolrIndexSearcher;
-
-import java.io.IOException;
-import java.io.Writer;
-import java.util.*;
+import org.apache.solr.search.ReturnFields;
 
 /**
  * @version $Id$
@@ -72,7 +72,6 @@ class JSONWriter extends TextResponseWriter {
   private static final String JSON_NL_ARROFARR="arrarr";
   private static final String JSON_NL_ARROFMAP="arrmap";
   private static final String JSON_WRAPPER_FUNCTION="json.wrf";
-
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
@@ -312,94 +311,21 @@ class JSONWriter extends TextResponseWriter {
     }
   }
 
-  public void writeDoc(String name, Collection<Fieldable> fields, Set<String> returnFields, Map pseudoFields) throws IOException {
-    writeMapOpener(-1); // no trivial way to determine map size
-    incLevel();
-
-    HashMap<String, MultiValueField> multi = new HashMap<String, MultiValueField>();
-
-    boolean first=true;
-
-    for (Fieldable ff : fields) {
-      String fname = ff.name();
-      if (returnFields!=null && !returnFields.contains(fname)) {
-        continue;
-      }
-
-      // if the field is multivalued, it may have other values further on... so
-      // build up a list for each multi-valued field.
-      SchemaField sf = schema.getField(fname);
-      if (sf.multiValued()) {
-        MultiValueField mf = multi.get(fname);
-        if (mf==null) {
-          mf = new MultiValueField(sf, ff);
-          multi.put(fname, mf);
-        } else {
-          mf.fields.add(ff);
-        }
-      } else {
-        // not multi-valued, so write it immediately.
-        if (first) {
-          first=false;
-        } else {
-          writeMapSeparator();
-        }
-        indent();
-        writeKey(fname,true);
-        sf.write(this, fname, ff);
-      }
-    }
-
-    for(MultiValueField mvf : multi.values()) {
-      if (first) {
-        first=false;
-      } else {
-        writeMapSeparator();
-      }
-
-      indent();
-      writeKey(mvf.sfield.getName(), true);
-
-      boolean indentArrElems=false;
-      if (doIndent) {
-        // heuristic... TextField is probably the only field type likely to be long enough
-        // to warrant indenting individual values.
-        indentArrElems = (mvf.sfield.getType() instanceof TextField);
-      }
-
-      writeArrayOpener(-1); // no trivial way to determine array size
-      boolean firstArrElem=true;
-      incLevel();
-
-      for (Fieldable ff : mvf.fields) {
-        if (firstArrElem) {
-          firstArrElem=false;
-        } else {
-          writeArraySeparator();
-        }
-        if (indentArrElems) indent();
-        mvf.sfield.write(this, null, ff);
-      }
-      writeArrayCloser();
-      decLevel();
-    }
-
-    if (pseudoFields !=null && pseudoFields.size()>0) {
-      writeMap(null,pseudoFields,true,first);
-    }
-
-    decLevel();
-    writeMapCloser();
-  }
-
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
-    writeMapOpener(-1); // no trivial way to determine map size
-    // TODO: could easily figure out size for SolrDocument if needed...
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException {
+    if( idx > 0 ) {
+      writeArraySeparator();
+    }
+    
+    writeMapOpener(doc.size()); 
     incLevel();
 
     boolean first=true;
     for (String fname : doc.getFieldNames()) {
+      if (!returnFields.wantsField(fname)) {
+        continue;
+      }
+      
       if (first) {
         first=false;
       }
@@ -424,143 +350,42 @@ class JSONWriter extends TextResponseWriter {
           writeVal(fname, val);
         }
       }
-
-      if (pseudoFields !=null && pseudoFields.size()>0) {
-        writeMap(null,pseudoFields,true,first);
-      }
     }
-
+    
     decLevel();
     writeMapCloser();
   }
 
-
-  // reusable map to store the "score" pseudo-field.
-  // if a Doc can ever contain another doc, this optimization would have to go.
-  private final HashMap scoreMap = new HashMap(1);
-
   @Override
-  public void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException {
-    Map other = null;
-    if (includeScore) {
-      other = scoreMap;
-      scoreMap.put("score",score);
-    }
-    writeDoc(name, doc.getFields(), returnFields, other);
-  }
-
-  @Override
-  public void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException {
-    boolean includeScore=false;
-    if (fields!=null) {
-      includeScore = fields.contains("score");
-      if (fields.size()==0 || (fields.size()==1 && includeScore) || fields.contains("*")) {
-        fields=null;  // null means return all stored fields
-      }
-    }
-
-    int sz=ids.size();
-
-    writeMapOpener(includeScore ? 4 : 3);
+  public void writeStartDocumentList(String name, 
+      long start, int size, long numFound, Float maxScore) throws IOException
+  {
+    writeMapOpener((maxScore==null) ? 3 : 4);
     incLevel();
     writeKey("numFound",false);
-    writeInt(null,ids.matches());
+    writeLong(null,numFound);
     writeMapSeparator();
     writeKey("start",false);
-    writeInt(null,ids.offset());
+    writeLong(null,start);
 
-    if (includeScore) {
+    if (maxScore!=null) {
       writeMapSeparator();
       writeKey("maxScore",false);
-      writeFloat(null,ids.maxScore());
+      writeFloat(null,maxScore);
     }
     writeMapSeparator();
     // indent();
     writeKey("docs",false);
-    writeArrayOpener(sz);
+    writeArrayOpener(size);
 
     incLevel();
-    boolean first=true;
-
-    SolrIndexSearcher searcher = req.getSearcher();
-    // be defensive... write out the doc even if we don't have the scores like we should
-    includeScore = includeScore && ids.hasScores();
-    DocIterator iterator = ids.iterator();
-    for (int i=0; i<sz; i++) {
-      int id = iterator.nextDoc();
-      Document doc = searcher.doc(id, fields);
-
-      if (first) {
-        first=false;
-      } else {
-        writeArraySeparator();
-      }
-      indent();
-      writeDoc(null, doc, fields, (includeScore ? iterator.score() : 0.0f), includeScore);
-    }
-    decLevel();
-    writeArrayCloser();
-
-    if (otherFields !=null) {
-      writeMap(null, otherFields, true, false);
-    }
-
-    decLevel();
-    indent();
-    writeMapCloser();
   }
 
-
   @Override
-  public void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException {
-    boolean includeScore=false;
-    if (fields!=null) {
-      includeScore = fields.contains("score");
-      if (fields.size()==0 || (fields.size()==1 && includeScore) || fields.contains("*")) {
-        fields=null;  // null means return all stored fields
-      }
-    }
-
-    int sz=docs.size();
-
-    writeMapOpener(includeScore ? 4 : 3);
-    incLevel();
-    writeKey("numFound",false);
-    writeLong(null,docs.getNumFound());
-    writeMapSeparator();
-    writeKey("start",false);
-    writeLong(null,docs.getStart());
-
-    if (includeScore && docs.getMaxScore() != null) {
-      writeMapSeparator();
-      writeKey("maxScore",false);
-      writeFloat(null,docs.getMaxScore());
-    }
-    writeMapSeparator();
-    // indent();
-    writeKey("docs",false);
-    writeArrayOpener(sz);
-
-    incLevel();
-    boolean first=true;
-
-    SolrIndexSearcher searcher = req.getSearcher();
-    for (SolrDocument doc : docs) {
-
-      if (first) {
-        first=false;
-      } else {
-        writeArraySeparator();
-      }
-      indent();      
-      writeSolrDocument(null, doc, fields, otherFields);
-    }
+  public void writeEndDocumentList() throws IOException
+  {
     decLevel();
     writeArrayCloser();
-
-    if (otherFields !=null) {
-      writeMap(null, otherFields, true, false);
-    }
 
     decLevel();
     indent();

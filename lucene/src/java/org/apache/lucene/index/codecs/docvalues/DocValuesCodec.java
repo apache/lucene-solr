@@ -18,13 +18,14 @@ package org.apache.lucene.index.codecs.docvalues;
  */
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -76,7 +77,6 @@ public class DocValuesCodec extends Codec {
     private FieldsConsumer wrappedConsumer;
     private final Codec other;
     private final Comparator<BytesRef> comparator;
-    private DocValuesCodecInfo info;
 
     public WrappingFieldsConsumer(Codec other, Comparator<BytesRef> comparator, SegmentWriteState state) {
       this.other = other;
@@ -87,10 +87,6 @@ public class DocValuesCodec extends Codec {
     @Override
     public void close() throws IOException {
       synchronized (this) {
-        if (info != null) {
-          info.write(state);
-          info = null;
-        }
         if (wrappedConsumer != null) {
           wrappedConsumer.close();
         } 
@@ -101,15 +97,10 @@ public class DocValuesCodec extends Codec {
     @Override
     public synchronized DocValuesConsumer addValuesField(FieldInfo field)
         throws IOException {
-      if(info == null) {
-        info = new DocValuesCodecInfo();
-      }
-      final DocValuesConsumer consumer = Writer.create(field.getDocValues(), info.docValuesId(state.segmentName, state.codecId, ""
-          + field.number),
+      final DocValuesConsumer consumer = Writer.create(field.getDocValues(), docValuesId(state.segmentName, state.codecId, field.number),
       // TODO can we have a compound file per segment and codec for
           // docvalues?
           state.directory, comparator, state.bytesUsed);
-      info.add(field.number);
       return consumer;
     }
 
@@ -126,27 +117,68 @@ public class DocValuesCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
-    Directory dir = state.dir;
-    Set<String> files = new HashSet<String>();
-
-    other.files(dir, state.segmentInfo, state.codecId, files);
-    for (String string : files) { // for now we just check if one of the files
-                                  // exists and open the producer
-      if (dir.fileExists(string))
-        return new WrappingFielsdProducer(state, other.fieldsProducer(state));
+    final FieldInfos fieldInfos = state.fieldInfos;
+    boolean indexed = false;
+    boolean docValues = false;
+    for (FieldInfo fieldInfo : fieldInfos) {
+      if (fieldInfo.getCodecId() == state.codecId) {
+        indexed |= fieldInfo.isIndexed;
+        docValues |= fieldInfo.hasDocValues();
+        if (indexed && docValues)
+          break;
+      }
     }
-    return new WrappingFielsdProducer(state, FieldsProducer.EMPTY);
+    final FieldsProducer indexedProducer = indexed ? other.fieldsProducer(state) : FieldsProducer.EMPTY;
+    if (docValues) {
+      return new WrappingFielsdProducer(state, indexedProducer);
+    } else {
+      return FieldsProducer.EMPTY;
+    }
+  }
+  
+  static String docValuesId(String segmentsName, int codecID, int fieldId) {
+    return segmentsName + "_" + codecID + "-" + fieldId;
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String codecId,
+  public void files(Directory dir, SegmentInfo segmentInfo, int codecId,
       Set<String> files) throws IOException {
-    other.files(dir, segmentInfo, codecId, files);
-    // TODO can we have a compound file per segment and codec for docvalues?
-    DocValuesCodecInfo info = new DocValuesCodecInfo(); // TODO can we do that
-                                                        // only once?
-    info.read(dir, segmentInfo, codecId);
-    info.files(dir, segmentInfo, codecId, files);
+    FieldInfos fieldInfos = segmentInfo.getFieldInfos();
+    boolean indexed = false;
+    for (FieldInfo fieldInfo : fieldInfos) {
+      if (fieldInfo.getCodecId() == codecId) {
+        indexed |= fieldInfo.isIndexed;
+        if (fieldInfo.hasDocValues()) {
+          String filename = docValuesId(segmentInfo.name, codecId, fieldInfo.number);
+          switch (fieldInfo.getDocValues()) {
+          case BYTES_FIXED_DEREF:
+          case BYTES_VAR_DEREF:
+          case BYTES_VAR_SORTED:
+          case BYTES_FIXED_SORTED:
+          case BYTES_VAR_STRAIGHT:
+            files.add(IndexFileNames.segmentFileName(filename, "",
+                Writer.INDEX_EXTENSION));
+            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
+                Writer.INDEX_EXTENSION));
+          case BYTES_FIXED_STRAIGHT:
+          case FLOAT_32:
+          case FLOAT_64:
+          case INTS:
+            files.add(IndexFileNames.segmentFileName(filename, "",
+                Writer.DATA_EXTENSION));
+            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
+                Writer.DATA_EXTENSION));
+            break;
+           default:
+             assert false;
+          }
+        }
+
+      }
+    }
+    if (indexed) {
+      other.files(dir, segmentInfo, codecId, files);
+    }
   }
 
   @Override
@@ -154,7 +186,6 @@ public class DocValuesCodec extends Codec {
     other.getExtensions(extensions);
     extensions.add(Writer.DATA_EXTENSION);
     extensions.add(Writer.INDEX_EXTENSION);
-    extensions.add(DocValuesCodecInfo.INFO_FILE_EXT);
   }
 
   static class WrappingFielsdProducer extends DocValuesProducerBase {

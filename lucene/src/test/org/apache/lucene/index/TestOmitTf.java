@@ -35,27 +35,29 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 
 public class TestOmitTf extends LuceneTestCase {
   
-  public static class SimpleSimilarity extends Similarity implements SimilarityProvider {
-    @Override public float computeNorm(FieldInvertState state) { return state.getBoost(); }
-    @Override public float tf(float freq) { return freq; }
-    @Override public float sloppyFreq(int distance) { return 2.0f; }
-    @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-    @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
-      return new IDFExplanation() {
-        @Override
-        public float getIdf() {
-          return 1.0f;
-        }
-        @Override
-        public String explain() {
-          return "Inexplicable";
-        }
-      };
-    }
+  public static class SimpleSimilarityProvider implements SimilarityProvider {
     public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
     public Similarity get(String field) {
-      return this;
+      return new Similarity() {
+
+        @Override public float computeNorm(FieldInvertState state) { return state.getBoost(); }
+        @Override public float tf(float freq) { return freq; }
+        @Override public float sloppyFreq(int distance) { return 2.0f; }
+        @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
+        @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
+          return new IDFExplanation() {
+            @Override
+            public float getIdf() {
+              return 1.0f;
+            }
+            @Override
+            public String explain() {
+              return "Inexplicable";
+            }
+          };
+        }
+      };
     }
   }
 
@@ -254,7 +256,7 @@ public class TestOmitTf extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
             setMaxBufferedDocs(2).
-            setSimilarityProvider(new SimpleSimilarity()).
+            setSimilarityProvider(new SimpleSimilarityProvider()).
             setMergePolicy(newInOrderLogMergePolicy(2))
     );
     writer.setInfoStream(VERBOSE ? System.out : null);
@@ -285,7 +287,7 @@ public class TestOmitTf extends LuceneTestCase {
      * Verify the index
      */         
     IndexSearcher searcher = new IndexSearcher(dir, true);
-    searcher.setSimilarityProvider(new SimpleSimilarity());
+    searcher.setSimilarityProvider(new SimpleSimilarityProvider());
         
     Term a = new Term("noTf", term);
     Term b = new Term("tf", term);

@@ -103,22 +103,22 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
 
   public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory) throws IOException {
     super();
-
-    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, DOC_EXTENSION);
+    final String codecIdAsString = state.codecIdAsString();
+    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, DOC_EXTENSION);
     docOut = factory.createOutput(state.directory, docFileName);
     docIndex = docOut.index();
 
     if (state.fieldInfos.hasProx()) {
-      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, FREQ_EXTENSION);
+      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, FREQ_EXTENSION);
       freqOut = factory.createOutput(state.directory, frqFileName);
       freqIndex = freqOut.index();
 
-      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, POS_EXTENSION);
+      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, POS_EXTENSION);
       posOut = factory.createOutput(state.directory, posFileName);
       posIndex = posOut.index();
 
       // TODO: -- only if at least one field stores payloads?
-      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, PAYLOAD_EXTENSION);
+      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, PAYLOAD_EXTENSION);
       payloadOut = state.directory.createOutput(payloadFileName);
 
     } else {
@@ -129,7 +129,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       payloadOut = null;
     }
 
-    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SKIP_EXTENSION);
+    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, SKIP_EXTENSION);
     skipOut = state.directory.createOutput(skipFileName);
 
     totalNumDocs = state.numDocs;

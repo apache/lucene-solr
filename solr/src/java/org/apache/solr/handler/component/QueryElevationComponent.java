@@ -67,6 +67,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.request.SolrQueryRequest;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -230,7 +231,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         log.info( "Loading QueryElevation from data dir: "+f );
 
         InputStream is = VersionedFile.getLatestFile( core.getDataDir(), f );
-        Config cfg = new Config( core.getResourceLoader(), f, is, null );
+        Config cfg = new Config( core.getResourceLoader(), f, new InputSource(is), null );
         map = loadElevationMap( cfg );
         elevationCache.put( reader, map );
       }

@@ -35,13 +35,13 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
     final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
-    final BytesRef bytes = new BytesRef();
+    final BytesRef bytes = bytesAtt.getBytesRef();
     stream.reset();
     assertEquals(64, numericAtt.getValueSize());
     for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value wrong", shift, numericAtt.getShift());
-      final int hash = bytesAtt.toBytesRef(bytes);
+      final int hash = bytesAtt.fillBytesRef();
       assertEquals("Hash incorrect", bytes.hashCode(), hash);
       assertEquals("Term is incorrectly encoded", lvalue & ~((1L << shift) - 1L), NumericUtils.prefixCodedToLong(bytes));
       assertEquals("Term raw value is incorrectly encoded", lvalue & ~((1L << shift) - 1L), numericAtt.getRawValue());
@@ -58,13 +58,13 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
     final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
-    final BytesRef bytes = new BytesRef();
+    final BytesRef bytes = bytesAtt.getBytesRef();
     stream.reset();
     assertEquals(32, numericAtt.getValueSize());
     for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value wrong", shift, numericAtt.getShift());
-      final int hash = bytesAtt.toBytesRef(bytes);
+      final int hash = bytesAtt.fillBytesRef();
       assertEquals("Hash incorrect", bytes.hashCode(), hash);
       assertEquals("Term is incorrectly encoded", ivalue & ~((1 << shift) - 1), NumericUtils.prefixCodedToInt(bytes));
       assertEquals("Term raw value is incorrectly encoded", ((long) ivalue) & ~((1L << shift) - 1L), numericAtt.getRawValue());

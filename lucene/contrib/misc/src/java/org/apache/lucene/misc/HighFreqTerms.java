@@ -255,7 +255,7 @@ final class TotalTermFreqComparatorSortDescending implements Comparator<TermStat
  **/
 final class TermStatsQueue extends PriorityQueue<TermStats> {
   TermStatsQueue(int size) {
-    initialize(size);
+    super(size);
   }
   
   @Override

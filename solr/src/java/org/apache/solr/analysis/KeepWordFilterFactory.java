@@ -28,6 +28,14 @@ import java.util.Set;
 import java.io.IOException;
 
 /**
+ * Factory for {@link KeepWordFilter}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_keepword" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.KeepWordFilterFactory" words="keepwords.txt" ignoreCase="false" enablePositionIncrements="false"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre> 
  * @version $Id$
  */
 public class KeepWordFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {

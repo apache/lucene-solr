@@ -45,7 +45,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -84,12 +83,8 @@
       <artifactId>commons-logging</artifactId>
     </dependency>
     <dependency>
-      <groupId>xerces</groupId>
-      <artifactId>xercesImpl</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>xml-apis</groupId>
-      <artifactId>xml-apis</artifactId>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-xercesImpl</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

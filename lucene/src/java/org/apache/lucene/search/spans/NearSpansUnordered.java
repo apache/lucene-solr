@@ -53,7 +53,7 @@ public class NearSpansUnordered extends Spans {
 
   private class CellQueue extends PriorityQueue<SpansCell> {
     public CellQueue(int size) {
-      initialize(size);
+      super(size);
     }
     
     @Override

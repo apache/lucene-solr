@@ -130,7 +130,7 @@ There are many post tokenization steps that can be done, including (but not limi
     </li>
   </ul>
   However an application might invoke Analysis of any text for testing or for any other purpose, something like:
-  <PRE>
+  <PRE class="prettyprint">
       Analyzer analyzer = new StandardAnalyzer(); // or any other analyzer
       TokenStream ts = analyzer.tokenStream("myfield",new StringReader("some text goes here"));
       while (ts.incrementToken()) {
@@ -182,7 +182,7 @@ the source code of any one of the many samples located in this package.
   This allows phrase search and proximity search to seamlessly cross 
   boundaries between these "sections".
   In other words, if a certain field "f" is added like this:
-  <PRE>
+  <PRE class="prettyprint">
       document.add(new Field("f","first ends",...);
       document.add(new Field("f","starts two",...);
       indexWriter.addDocument(document);
@@ -191,7 +191,7 @@ the source code of any one of the many samples located in this package.
   Where desired, this behavior can be modified by introducing a "position gap" between consecutive field "sections", 
   simply by overriding 
   {@link org.apache.lucene.analysis.Analyzer#getPositionIncrementGap(java.lang.String) Analyzer.getPositionIncrementGap(fieldName)}:
-  <PRE>
+  <PRE class="prettyprint">
       Analyzer myAnalyzer = new StandardAnalyzer() {
          public int getPositionIncrementGap(String fieldName) {
            return 10;
@@ -220,7 +220,7 @@ the source code of any one of the many samples located in this package.
    tokens following a removed stop word, using
    {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute#setPositionIncrement(int)}.
    This can be done with something like:
-   <PRE>
+   <PRE class="prettyprint">
       public TokenStream tokenStream(final String fieldName, Reader reader) {
         final TokenStream ts = someAnalyzer.tokenStream(fieldName, reader);
         TokenStream res = new TokenStream() {
@@ -334,7 +334,7 @@ here to illustrate the usage of the new TokenStream API.<br>
 Then we will develop a custom Attribute, a PartOfSpeechAttribute, and add another filter to the chain which
 utilizes the new custom attribute, and call it PartOfSpeechTaggingFilter.
 <h4>Whitespace tokenization</h4>
-<pre>
+<pre class="prettyprint">
 public class MyAnalyzer extends Analyzer {
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -381,7 +381,7 @@ API
 <h4>Adding a LengthFilter</h4>
 We want to suppress all tokens that have 2 or less characters. We can do that easily by adding a LengthFilter 
 to the chain. Only the tokenStream() method in our analyzer needs to be changed:
-<pre>
+<pre class="prettyprint">
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream stream = new WhitespaceTokenizer(reader);
     stream = new LengthFilter(stream, 3, Integer.MAX_VALUE);
@@ -398,7 +398,7 @@ TokenStream
 API
 </pre>
 Now let's take a look how the LengthFilter is implemented (it is part of Lucene's core):
-<pre>
+<pre class="prettyprint">
 public final class LengthFilter extends TokenFilter {
 
   final int min;
@@ -448,7 +448,7 @@ is neccessary. The same is true for the consumer, which can simply use local ref
 <h4>Adding a custom Attribute</h4>
 Now we're going to implement our own custom Attribute for part-of-speech tagging and call it consequently 
 <code>PartOfSpeechAttribute</code>. First we need to define the interface of the new Attribute:
-<pre>
+<pre class="prettyprint">
   public interface PartOfSpeechAttribute extends Attribute {
     public static enum PartOfSpeech {
       Noun, Verb, Adjective, Adverb, Pronoun, Preposition, Conjunction, Article, Unknown
@@ -470,7 +470,7 @@ and returns an actual instance. You can implement your own factory if you need t
 Now here is the actual class that implements our new Attribute. Notice that the class has to extend
 {@link org.apache.lucene.util.AttributeImpl}:
 
-<pre>
+<pre class="prettyprint">
 public final class PartOfSpeechAttributeImpl extends AttributeImpl 
                             implements PartOfSpeechAttribute{
   
@@ -513,7 +513,7 @@ This is a simple Attribute implementation has only a single variable that stores
 new <code>AttributeImpl</code> class and therefore implements its abstract methods <code>clear(), copyTo(), equals(), hashCode()</code>.
 Now we need a TokenFilter that can set this new PartOfSpeechAttribute for each token. In this example we show a very naive filter
 that tags every word with a leading upper-case letter as a 'Noun' and all other words as 'Unknown'.
-<pre>
+<pre class="prettyprint">
   public static class PartOfSpeechTaggingFilter extends TokenFilter {
     PartOfSpeechAttribute posAtt;
     CharTermAttribute termAtt;
@@ -544,7 +544,7 @@ Just like the LengthFilter, this new filter accesses the attributes it needs in 
 stores references in instance variables. Notice how you only need to pass in the interface of the new
 Attribute and instantiating the correct class is automatically been taken care of.
 Now we need to add the filter to the chain:
-<pre>
+<pre class="prettyprint">
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream stream = new WhitespaceTokenizer(reader);
     stream = new LengthFilter(stream, 3, Integer.MAX_VALUE);
@@ -564,7 +564,7 @@ API
 Apparently it hasn't changed, which shows that adding a custom attribute to a TokenStream/Filter chain does not
 affect any existing consumers, simply because they don't know the new Attribute. Now let's change the consumer
 to make use of the new PartOfSpeechAttribute and print it out:
-<pre>
+<pre class="prettyprint">
   public static void main(String[] args) throws IOException {
     // text to tokenize
     final String text = "This is a demo of the new TokenStream API";
@@ -606,7 +606,7 @@ API the reader could now write an Attribute and TokenFilter that can specify for
 of a sentence or not. Then the PartOfSpeechTaggingFilter can make use of this knowledge and only tag capitalized words
 as nouns if not the first word of a sentence (we know, this is still not a correct behavior, but hey, it's a good exercise). 
 As a small hint, this is how the new Attribute class could begin:
-<pre>
+<pre class="prettyprint">
   public class FirstTokenOfSentenceAttributeImpl extends Attribute
                    implements FirstTokenOfSentenceAttribute {
     

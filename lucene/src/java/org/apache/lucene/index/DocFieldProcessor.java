@@ -38,7 +38,6 @@ import org.apache.lucene.store.Directory;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocumentsWriter docWriter;
-  final FieldInfos fieldInfos;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
   final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
@@ -59,7 +58,7 @@ final class DocFieldProcessor extends DocConsumer {
          * the SegmentsWriteState passed in right at the moment when the segment is flushed (doccount etc) but we need the consumer earlier 
          * to support docvalues and later on stored fields too.  
          */
-      docValuesConsumerState = docWriter.segWriteState();
+      docValuesConsumerState = docWriter.segWriteState(false);
       fieldsConsumer = docValuesConsumerState.segmentCodecs.codec().fieldsConsumer(docValuesConsumerState);
       }
       valuesConsumer = fieldsConsumer.addValuesField(fieldInfo);
@@ -73,9 +72,7 @@ final class DocFieldProcessor extends DocConsumer {
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
     this.docWriter = docWriter;
     this.consumer = consumer;
-    fieldInfos = docWriter.getFieldInfos();
-    consumer.setFieldInfos(fieldInfos);
-    fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
+    fieldsWriter = new StoredFieldsWriter(docWriter);
   }
 
   @Override
@@ -85,7 +82,6 @@ final class DocFieldProcessor extends DocConsumer {
     for ( DocConsumerPerThread thread : threads) {
       DocFieldProcessorPerThread perThread = (DocFieldProcessorPerThread) thread;
       childThreadsAndFields.put(perThread.consumer, perThread.fields());
-      perThread.trimFields(state);
     }
     fieldsWriter.flush(state);
     consumer.flush(childThreadsAndFields, state);
@@ -93,13 +89,11 @@ final class DocFieldProcessor extends DocConsumer {
     for(DocValuesConsumer p : docValues.values()) {
       if (p != null) {
         p.finish(state.numDocs);
-        p.files(state.flushedFiles);
       }
     }
     docValues.clear();
     if(fieldsConsumer != null) {
       fieldsConsumer.close(); // TODO remove this once docvalues are fully supported by codecs
-      state.flushedFiles.addAll(docValuesConsumerState.flushedFiles);
       docValuesConsumerState = null;
       fieldsConsumer = null;
     }
@@ -109,7 +103,7 @@ final class DocFieldProcessor extends DocConsumer {
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
-    fieldInfos.write(state.directory, fileName);
+    state.fieldInfos.write(state.directory, fileName);
   }
 
   @Override

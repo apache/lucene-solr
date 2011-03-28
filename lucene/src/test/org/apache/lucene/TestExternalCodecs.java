@@ -506,7 +506,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
+    public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) {
     }
   }
 

@@ -44,7 +44,7 @@ import org.apache.solr.util.xslt.TransformerProvider;
  */
 public class XSLTResponseWriter implements QueryResponseWriter {
 
-  public static final String DEFAULT_CONTENT_TYPE = "text/xml";
+  public static final String DEFAULT_CONTENT_TYPE = "application/xml";
   public static final String TRANSFORM_PARAM = "tr";
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
   
@@ -70,14 +70,23 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       throw new RuntimeException("getTransformer fails in getContentType",e);
     }
     
-    final String mediaTypeFromXslt = t.getOutputProperty("media-type");
-    if(mediaTypeFromXslt == null || mediaTypeFromXslt.length()==0) {
+    String mediaType = t.getOutputProperty("media-type");
+    if (mediaType == null || mediaType.length()==0) {
       // This did not happen in my tests, mediaTypeFromXslt is set to "text/xml"
       // if the XSLT transform does not contain an xsl:output element. Not sure
       // if this is standard behavior or if it's just my JVM/libraries
-      return DEFAULT_CONTENT_TYPE;
+      mediaType = DEFAULT_CONTENT_TYPE;
     }
-    return mediaTypeFromXslt;
+    
+    if (!mediaType.contains("charset")) {
+      String encoding = t.getOutputProperty("encoding");
+      if (encoding == null || encoding.length()==0) {
+        encoding = "UTF-8";
+      }
+      mediaType = mediaType + "; charset=" + encoding;
+    }
+    
+    return mediaType;
   }
 
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {

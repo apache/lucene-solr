@@ -129,8 +129,11 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="api/core/index.html">Core</a>
 </div>
-<div onclick="SwitchMenu('menu_1.1.3.3', 'skin/')" id="menu_1.1.3.3Title" class="menutitle">Contrib</div>
-<div id="menu_1.1.3.3" class="menuitemgroup">
+<div class="menuitem">
+<a href="api/test-framework/index.html">Test Framework</a>
+</div>
+<div onclick="SwitchMenu('menu_1.1.3.4', 'skin/')" id="menu_1.1.3.4Title" class="menutitle">Contrib</div>
+<div id="menu_1.1.3.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="api/contrib-ant/index.html">Ant</a>
 </div>
@@ -271,7 +274,11 @@ how to use Lucene in their applications.
 <h2 class="boxed">Location of the source</h2>
 <div class="section">
 <p>
-Relative to the directory created when you extracted Lucene or retrieved it from Subversion, you
+NOTE: to examine the sources, you need to download and extract a source checkout of 
+Lucene: (lucene-{version}-src.zip).
+</p>
+<p>
+Relative to the directory created when you extracted Lucene, you
 should see a directory called <span class="codefrag">lucene/contrib/demo/</span>.  This is the root for the Lucene
 demo.  Under this directory is <span class="codefrag">src/java/org/apache/lucene/demo/</span>.  This is where all
 the Java sources for the demo live.
@@ -283,7 +290,7 @@ Bring it up in <span class="codefrag">vi</span> or your editor of choice and let
 </div>
 
 
-<a name="N10034"></a><a name="IndexFiles"></a>
+<a name="N10037"></a><a name="IndexFiles"></a>
 <h2 class="boxed">IndexFiles</h2>
 <div class="section">
 <p>
@@ -318,7 +325,7 @@ first wipe the slate clean before indexing any documents.
 <p>
 Lucene <a href="api/core/org/apache/lucene/store/Directory.html">Directory</a>s are used by the
 <span class="codefrag">IndexWriter</span> to store information in the index.  In addition to the 
-<a href="api/core/org/apache/lucen/store/FSDirectory.html">FSDirectory</a> implementation we are using,
+<a href="api/core/org/apache/lucene/store/FSDirectory.html">FSDirectory</a> implementation we are using,
 there are several other <span class="codefrag">Directory</span> subclasses that can write to RAM, to databases, etc.
 </p>
 <p>
@@ -331,8 +338,8 @@ Standard Annex #29</a>; converts tokens to lowercase; and then filters out stopw
 common language words such as articles (a, an, the, etc.) and other tokens that may have less value for
 searching.  It should be noted that there are different rules for every language, and you should use the
 proper analyzer for each.  Lucene currently provides Analyzers for a number of different languages (see
-the <span class="codefrag">*Analyzer.java</span> sources under 
-<a href="http://svn.apache.org/repos/asf/lucene/dev/trunk/modules/analysis/common/src/java/org/apache/lucene/analysis/">modules/analysis/common/src/java/org/apache/lucene/analysis</a>).
+the javadocs under 
+<a href="api/module-analysis-common/org/apache/lucene/analysis/package-summary.html">modules/analysis/common/src/java/org/apache/lucene/analysis</a>).
 </p>
 <p>
 The <span class="codefrag">IndexWriterConfig</span> instance holds all configuration for <span class="codefrag">IndexWriter</span>.  For
@@ -374,18 +381,14 @@ to the searcher.  Note that it's also possible to programmatically construct a r
 <a href="api/core/org/apache/lucene/search/Query.html">Query</a> object without using the query
 parser.  The query parser just enables decoding the <a href="queryparsersyntax.html">Lucene query
 syntax</a> into the corresponding <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
-object. Search can be executed in two different ways:
+object.
 </p>
-<ul>
+<p>
 
-<li>Streaming: A <a href="api/core/org/apache/lucene/search/Collector.html">Collector</a> subclass
-simply prints out the document ID and score for each matching document.</li>
-
-<li>Paging: Using the <span class="codefrag">IndexSearcher.search(query,n)</span> method that returns 
-<a href="api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max <span class="codefrag">n</span> hits,
-the search results are printed in pages, sorted by score (i.e. relevance).</li>
-
-</ul>
+<span class="codefrag">SearchFiles</span> uses the <span class="codefrag">IndexSearcher.search(query,n)</span> method that returns
+<a href="api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max <span class="codefrag">n</span> hits.
+The results are printed in pages, sorted by score (i.e. relevance).
+</p>
 </div>
 
 </div>

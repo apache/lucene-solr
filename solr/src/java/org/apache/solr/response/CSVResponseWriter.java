@@ -34,6 +34,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.CharArrayWriter;
@@ -159,7 +160,6 @@ class CSVWriter extends TextResponseWriter {
   ResettableFastWriter mvWriter = new ResettableFastWriter();  // writer used for multi-valued fields
 
   String NullValue;
-  boolean returnScore = false;
 
 
   public CSVWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -236,12 +236,9 @@ class CSVWriter extends TextResponseWriter {
       // encapsulator will already be disabled if it wasn't specified
     }
 
-    returnScore = returnFields != null && returnFields.contains("score");
-    boolean needListOfFields = returnFields==null || returnFields.size()==0 || (returnFields.size()==1 && returnScore) || returnFields.contains("*");
-    Collection<String> fields = returnFields;
-
+    Collection<String> fields = returnFields.getLuceneFieldNames();
     Object responseObj = rsp.getValues().get("response");
-    if (needListOfFields) {
+    if (fields==null) {
       if (responseObj instanceof SolrDocumentList) {
         // get the list of fields from the SolrDocumentList
         fields = new LinkedHashSet<String>();
@@ -252,7 +249,7 @@ class CSVWriter extends TextResponseWriter {
         // get the list of fields from the index
         fields = req.getSearcher().getFieldNames();
       }
-      if (returnScore) {
+      if (returnFields.wantsScore()) {
         fields.add("score");
       } else {
         fields.remove("score");
@@ -327,11 +324,15 @@ class CSVWriter extends TextResponseWriter {
       printer.println();
     }
 
-
-    if (responseObj instanceof DocList) {
-      writeDocList(null, (DocList)responseObj, null, null);
+    if (responseObj instanceof ResultContext ) {
+      writeDocuments(null, (ResultContext)responseObj, returnFields );
+    }
+    else if (responseObj instanceof DocList) {
+      ResultContext ctx = new ResultContext();
+      ctx.docs =  (DocList)responseObj;
+      writeDocuments(null, ctx, returnFields );
     } else if (responseObj instanceof SolrDocumentList) {
-      writeSolrDocumentList(null, (SolrDocumentList)responseObj, null, null);
+      writeSolrDocumentList(null, (SolrDocumentList)responseObj, returnFields );
     }
 
   }
@@ -346,56 +347,21 @@ class CSVWriter extends TextResponseWriter {
   public void writeNamedList(String name, NamedList val) throws IOException {
   }
 
-  @Override
-  public void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException {
-    pass++;
+  public void writeStartDocumentList(String name, 
+      long start, int size, long numFound, Float maxScore) throws IOException
+  {
+    // nothing
+  }
 
-    for (Fieldable field: doc.getFields()) {
-      CSVField csvField = csvFields.get(field.name());
-      if (csvField == null) continue;
-      if (csvField.tmp != pass) {
-        csvField.tmp = pass;
-        csvField.values.clear();
-      }
-      csvField.values.add(field);
-    }
-
-    for (CSVField csvField : csvFields.values()) {
-      if (csvField.name.equals("score")) {
-        writeFloat("score", score);
-        continue;
-      }
-      if (csvField.tmp != pass) {
-        writeNull(csvField.name);
-        continue;
-      }
-
-      if (csvField.sf.multiValued() || csvField.values.size() > 1) {
-        mvWriter.reset();
-        csvField.mvPrinter.reset();
-        // switch the printer to use the multi-valued one
-        CSVPrinter tmp = printer;
-        printer = csvField.mvPrinter;
-        for (Fieldable fval : csvField.values) {
-          csvField.sf.getType().write(this, csvField.name, fval);
-        }
-        printer = tmp;  // restore the original printer
-
-        mvWriter.freeze();
-        printer.print(mvWriter.getFrozenBuf(), 0, mvWriter.getFrozenSize(), true);
-      } else {
-        assert csvField.values.size() == 1;
-        csvField.sf.getType().write(this,csvField.name,csvField.values.get(0));
-      }
-    }
-
-    printer.println();
+  public void writeEndDocumentList() throws IOException
+  {
+    // nothing
   }
 
   //NOTE: a document cannot currently contain another document
   List tmpList;
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     if (tmpList == null) {
       tmpList = new ArrayList(1);
       tmpList.add(null);
@@ -443,26 +409,6 @@ class CSVWriter extends TextResponseWriter {
     }
 
     printer.println();
-  }
-
-  @Override
-  public void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException {
-    int sz=ids.size();
-    SolrIndexSearcher searcher = req.getSearcher();
-    DocIterator iterator = ids.iterator();
-    for (int i=0; i<sz; i++) {
-      int id = iterator.nextDoc();
-      Document doc = searcher.doc(id, fields);
-      writeDoc(null, doc, fields, (returnScore ? iterator.score() : 0.0f), returnScore);
-    }
-  }
-
-  Map scoreMap = new HashMap(1);
-  @Override
-  public void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException {
-    for (SolrDocument doc : docs) {
-      writeSolrDocument(name, doc, fields, otherFields);
-    }
   }
 
   @Override

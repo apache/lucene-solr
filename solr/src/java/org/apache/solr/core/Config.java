@@ -17,32 +17,40 @@
 
 package org.apache.solr.core;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.apache.commons.io.IOUtils;
 
-import javax.xml.parsers.*;
+import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathFactory;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.namespace.QName;
-import java.io.*;
+import javax.xml.xpath.XPathFactory;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.lucene.util.Version;
 
 /**
  * @version $Id$
  */
 public class Config {
   public static final Logger log = LoggerFactory.getLogger(Config.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
@@ -63,7 +71,7 @@ public class Config {
   {
     this( loader, name, null, null );
   }
-  
+    
   /**
    * Builds a config:
    * <p>
@@ -77,13 +85,13 @@ public class Config {
    * </p>
    * @param loader the resource loader used to obtain an input stream if 'is' is null
    * @param name the resource name used if the input stream 'is' is null
-   * @param is the resource as a stream
+   * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be preprended to all non-absolute xpath expressions
    * @throws javax.xml.parsers.ParserConfigurationException
    * @throws java.io.IOException
    * @throws org.xml.sax.SAXException
    */
-  public Config(SolrResourceLoader loader, String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 
   {
     if( loader == null ) {
       loader = new SolrResourceLoader( null );
@@ -91,21 +99,35 @@ public class Config {
     this.loader = loader;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
-    InputStream lis = is;
     try {
-      if (lis == null) {
-        lis = loader.openConfig(name);
-      }
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      try {
-        dbf.setXIncludeAware(true);
-        dbf.setNamespaceAware(true);
-      } catch(UnsupportedOperationException e) {
-        log.warn(name + " XML parser doesn't support XInclude option");
+      
+      if (is == null) {
+        is = new InputSource(loader.openConfig(name));
+        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       }
-      doc = dbf.newDocumentBuilder().parse(lis);
 
-        DOMUtil.substituteProperties(doc, loader.getCoreProperties());
+      // only enable xinclude, if a SystemId is available
+      if (is.getSystemId() != null) {
+        try {
+          dbf.setXIncludeAware(true);
+          dbf.setNamespaceAware(true);
+        } catch(UnsupportedOperationException e) {
+          log.warn(name + " XML parser doesn't support XInclude option");
+        }
+      }
+      
+      final DocumentBuilder db = dbf.newDocumentBuilder();
+      db.setEntityResolver(new SystemIdResolver(loader));
+      db.setErrorHandler(xmllog);
+      try {
+        doc = db.parse(is);
+      } finally {
+        // some XML parsers are broken and don't close the byte stream (but they should according to spec)
+        IOUtils.closeQuietly(is.getByteStream());
+      }
+
+      DOMUtil.substituteProperties(doc, loader.getCoreProperties());
     } catch (ParserConfigurationException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw e;
@@ -115,9 +137,6 @@ public class Config {
     } catch( SolrException e ){
     	SolrException.log(log,"Error in "+name,e);
     	throw e;
-    } finally {
-      // if this opens the resource, it also closes it
-      if (lis != is)  lis.close();
     }
   }
 

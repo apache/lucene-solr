@@ -335,7 +335,7 @@ public class FuzzyLikeThisQuery extends Query
       
       private static class ScoreTermQueue extends PriorityQueue<ScoreTerm> {        
         public ScoreTermQueue(int size){
-          initialize(size);
+          super(size);
         }
         
         /* (non-Javadoc)

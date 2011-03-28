@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.text.Collator;
 import java.util.Comparator;
 
 import org.apache.lucene.index.TermsEnum;
@@ -33,11 +32,8 @@ import org.apache.lucene.util.BytesRef;
  */
 public class TermRangeTermsEnum extends FilteredTermsEnum {
 
-  private Collator collator;
-  private String upperTermText;
-  private String lowerTermText;
-  private boolean includeLower;
-  private boolean includeUpper;
+  final private boolean includeLower;
+  final private boolean includeUpper;
   final private BytesRef lowerBytesRef;
   final private BytesRef upperBytesRef;
   private final Comparator<BytesRef> termComp;
@@ -53,79 +49,61 @@ public class TermRangeTermsEnum extends FilteredTermsEnum {
    * 
    * @param tenum
    *          TermsEnum to filter
-   * @param lowerTermText
+   * @param lowerTerm
    *          The term text at the lower end of the range
-   * @param upperTermText
+   * @param upperTerm
    *          The term text at the upper end of the range
    * @param includeLower
    *          If true, the <code>lowerTerm</code> is included in the range.
    * @param includeUpper
    *          If true, the <code>upperTerm</code> is included in the range.
-   * @param collator
-   *          The collator to use to collate index Terms, to determine their
-   *          membership in the range bounded by <code>lowerTerm</code> and
-   *          <code>upperTerm</code>.
    * 
    * @throws IOException
    */
-  public TermRangeTermsEnum(TermsEnum tenum, String lowerTermText, String upperTermText, 
-    boolean includeLower, boolean includeUpper, Collator collator) throws IOException {
+  public TermRangeTermsEnum(TermsEnum tenum, BytesRef lowerTerm, BytesRef upperTerm, 
+    boolean includeLower, boolean includeUpper) throws IOException {
     super(tenum);
-    this.collator = collator;
-    this.upperTermText = upperTermText;
-    this.lowerTermText = lowerTermText;
-    this.includeLower = includeLower;
-    this.includeUpper = includeUpper;
 
     // do a little bit of normalization...
     // open ended range queries should always be inclusive.
-    if (this.lowerTermText == null) {
-      this.lowerTermText = "";
+    if (lowerTerm == null) {
+      this.lowerBytesRef = new BytesRef();
       this.includeLower = true;
+    } else {
+      this.lowerBytesRef = lowerTerm;
+      this.includeLower = includeLower;
     }
-    lowerBytesRef = new BytesRef(this.lowerTermText);
 
-    if (this.upperTermText == null) {
+    if (upperTerm == null) {
       this.includeUpper = true;
       upperBytesRef = null;
     } else {
-      upperBytesRef = new BytesRef(upperTermText);
+      this.includeUpper = includeUpper;
+      upperBytesRef = upperTerm;
     }
 
-    BytesRef startBytesRef = (collator == null) ? lowerBytesRef : new BytesRef("");
-    setInitialSeekTerm(startBytesRef);
+    setInitialSeekTerm(lowerBytesRef);
     termComp = getComparator();
   }
 
   @Override
   protected AcceptStatus accept(BytesRef term) {
-    if (collator == null) {
-      if (!this.includeLower && term.equals(lowerBytesRef))
-        return AcceptStatus.NO;
-      // Use this field's default sort ordering
-      if (upperBytesRef != null) {
-        final int cmp = termComp.compare(upperBytesRef, term);
-        /*
-         * if beyond the upper term, or is exclusive and this is equal to
-         * the upper term, break out
-         */
-        if ((cmp < 0) ||
-            (!includeUpper && cmp==0)) {
-          return AcceptStatus.END;
-        }
-      }
-      return AcceptStatus.YES;
-    } else {
-      if ((includeLower
-           ? collator.compare(term.utf8ToString(), lowerTermText) >= 0
-           : collator.compare(term.utf8ToString(), lowerTermText) > 0)
-          && (upperTermText == null
-              || (includeUpper
-                  ? collator.compare(term.utf8ToString(), upperTermText) <= 0
-                  : collator.compare(term.utf8ToString(), upperTermText) < 0))) {
-        return AcceptStatus.YES;
-      }
+    if (!this.includeLower && term.equals(lowerBytesRef))
       return AcceptStatus.NO;
+    
+    // Use this field's default sort ordering
+    if (upperBytesRef != null) {
+      final int cmp = termComp.compare(upperBytesRef, term);
+      /*
+       * if beyond the upper term, or is exclusive and this is equal to
+       * the upper term, break out
+       */
+      if ((cmp < 0) ||
+          (!includeUpper && cmp==0)) {
+        return AcceptStatus.END;
+      }
     }
+
+    return AcceptStatus.YES;
   }
 }

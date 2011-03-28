@@ -2,12 +2,54 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+03/24/2011
+  LUCENE-2977: WriteLineDocTask now automatically detects how to write -
+  GZip or BZip2 or Plain-text - according to the output file extension.
+  Property bzip.compression of WriteLineDocTask was canceled. (Doron Cohen)
+  
+03/23/2011
+  LUCENE-2980: Benchmark's ContentSource no more requires lower case file suffixes 
+  for detecting file type (gzip/bzip2/text). As part of this fix worked around an 
+  issue with gzip input streams which were remaining open (See COMPRESS-127).
+  (Doron Cohen) 
+
+03/22/2011
+  LUCENE-2978: Upgrade benchmark's commons-compress from 1.0 to 1.1 as 
+  the move of gzip decompression in LUCENE-1540 from Java's GZipInputStream
+  to commons-compress 1.0 made it 15 times slower. In 1.1 no such slow-down
+  is observed. (Doron Cohen)   
+  
+03/21/2011
+  LUCENE-2958: WriteLineDocTask improvements - allow to emit line docs also for empty
+  docs, and be flexible about which fields are added to the line file. For this, a header
+  line was added to the line file. That header is examined by LineDocSource. Old line
+  files which have no header line are handled as before, imposing the default header.
+  (Doron Cohen, Shai Erera, Mike McCandless)
+  
+03/21/2011
+  LUCENE-2964: Allow benchmark tasks from alternative packages,
+  specified through a new property "alt.tasks.packages".
+  (Doron Cohen, Shai Erera)
+  
+03/20/2011
+  LUCENE-2963: Easier way to run benchmark, by calling Benmchmark.exec(alg-file).
+  (Doron Cohen)
+  
+03/10/2011
+  LUCENE-2961: Removed lib/xml-apis.jar, since JVM 1.5+ already contains the
+  JAXP 1.3 interface classes it provides.
+
 02/05/2011
   LUCENE-1540: Improvements to contrib.benchmark for TREC collections. 
   ContentSource can now process plain text files, gzip files, and bzip2 files.
   TREC doc parsing now handles the TREC gov2 collection and TREC disks 4&5-CR 
   collection (both used by many TREC tasks). (Shai Erera, Doron Cohen)
-  
+
+01/31/2011
+  LUCENE-1591: Rollback to xerces-2.9.1-patched-XERCESJ-1257.jar to workaround
+  XERCESJ-1257, which we hit on current Wikipedia XML export
+  (ENWIKI-20110115-pages-articles.xml) with xerces-2.10.0.jar.   (Mike McCandless)
+
 01/26/2011
   LUCENE-929: ExtractReuters first extracts to a tmp dir and then renames. That 
   way, if a previous extract attempt failed, "ant extract-reuters" will still 
@@ -33,7 +75,7 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 4/27/2010: WriteLineDocTask now supports multi-threading. Also, 
   StringBufferReader was renamed to StringBuilderReader and works on 
-  StringBuilder now. In addition, LongToEnglishCountentSource starts from 0
+  StringBuilder now. In addition, LongToEnglishContentSource starts from 0
   (instead of Long.MIN_VAL+10) and wraps around to MIN_VAL (if you ever hit 
   Long.MAX_VAL). (Shai Erera)
 

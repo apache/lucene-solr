@@ -1045,8 +1045,8 @@ public class TestAddIndexes extends LuceneTestCase {
     IndexWriter w3 = new IndexWriter(dir, conf);
     w3.addIndexes(readers);
     w3.close();
-    
-    assertEquals("Only one compound segment should exist", 3, dir.listAll().length);
+    // we should now see segments_X, segments.gen,_Y.cfs, _Z.fnx
+    assertEquals("Only one compound segment should exist", 4, dir.listAll().length);
   }
   
 }

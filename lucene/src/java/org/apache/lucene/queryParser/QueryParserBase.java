@@ -78,9 +78,9 @@ public abstract class QueryParserBase {
   // maps field names to date resolutions
   Map<String,DateTools.Resolution> fieldToDateResolution = null;
 
-  // The collator to use when determining range inclusion,
-  // for use when constructing RangeQuerys.
-  Collator rangeCollator = null;
+  //Whether or not to analyze range terms when constructing RangeQuerys
+  // (For example, analyzing terms into collation keys for locale-sensitive RangeQuery)
+  boolean analyzeRangeTerms = false;
 
   boolean autoGeneratePhraseQueries;
 
@@ -391,27 +391,21 @@ public abstract class QueryParserBase {
   }
 
   /**
-   * Sets the collator used to determine index term inclusion in ranges
-   * for RangeQuerys.
-   * <p/>
-   * <strong>WARNING:</strong> Setting the rangeCollator to a non-null
-   * collator using this method will cause every single index Term in the
-   * Field referenced by lowerTerm and/or upperTerm to be examined.
-   * Depending on the number of index Terms in this Field, the operation could
-   * be very slow.
-   *
-   *  @param rc  the collator to use when constructing RangeQuerys
+   * Set whether or not to analyze range terms when constructing RangeQuerys.
+   * For example, setting this to true can enable analyzing terms into 
+   * collation keys for locale-sensitive RangeQuery.
+   * 
+   * @param analyzeRangeTerms whether or not terms should be analyzed for RangeQuerys
    */
-  public void setRangeCollator(Collator rc) {
-    rangeCollator = rc;
+  public void setAnalyzeRangeTerms(boolean analyzeRangeTerms) {
+    this.analyzeRangeTerms = analyzeRangeTerms;
   }
 
   /**
-   * @return the collator used to determine index term inclusion in ranges
-   * for RangeQuerys.
+   * @return whether or not to analyze range terms when constructing RangeQuerys.
    */
-  public Collator getRangeCollator() {
-    return rangeCollator;
+  public boolean getAnalyzeRangeTerms() {
+    return analyzeRangeTerms;
   }
 
   protected void addClause(List<BooleanClause> clauses, int conj, int mods, Query q) {
@@ -538,18 +532,19 @@ public abstract class QueryParserBase {
       // ignore
     }
 
+    BytesRef bytes = termAtt == null ? null : termAtt.getBytesRef();
+
     if (numTokens == 0)
       return null;
     else if (numTokens == 1) {
-      BytesRef term = new BytesRef();
       try {
         boolean hasNext = buffer.incrementToken();
         assert hasNext == true;
-        termAtt.toBytesRef(term);
+        termAtt.fillBytesRef();
       } catch (IOException e) {
         // safe to ignore, because we know the number of tokens
       }
-      return newTermQuery(new Term(field, term));
+      return newTermQuery(new Term(field, new BytesRef(bytes)));
     } else {
       if (severalTokensAtSamePosition || (!quoted && !autoGeneratePhraseQueries)) {
         if (positionCount == 1 || (!quoted && !autoGeneratePhraseQueries)) {
@@ -560,17 +555,15 @@ public abstract class QueryParserBase {
             BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
 
           for (int i = 0; i < numTokens; i++) {
-            BytesRef term = new BytesRef();
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              termAtt.toBytesRef(term);
+              termAtt.fillBytesRef();
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
             }
-
             Query currentQuery = newTermQuery(
-                new Term(field, term));
+                new Term(field, new BytesRef(bytes)));
             q.add(currentQuery, occur);
           }
           return q;
@@ -582,12 +575,11 @@ public abstract class QueryParserBase {
           List<Term> multiTerms = new ArrayList<Term>();
           int position = -1;
           for (int i = 0; i < numTokens; i++) {
-            BytesRef term = new BytesRef();
             int positionIncrement = 1;
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              termAtt.toBytesRef(term);
+              termAtt.fillBytesRef();
               if (posIncrAtt != null) {
                 positionIncrement = posIncrAtt.getPositionIncrement();
               }
@@ -604,7 +596,7 @@ public abstract class QueryParserBase {
               multiTerms.clear();
             }
             position += positionIncrement;
-            multiTerms.add(new Term(field, term));
+            multiTerms.add(new Term(field, new BytesRef(bytes)));
           }
           if (enablePositionIncrements) {
             mpq.add(multiTerms.toArray(new Term[0]),position);
@@ -619,15 +611,13 @@ public abstract class QueryParserBase {
         pq.setSlop(phraseSlop);
         int position = -1;
 
-
         for (int i = 0; i < numTokens; i++) {
-          BytesRef term = new BytesRef();
           int positionIncrement = 1;
 
           try {
             boolean hasNext = buffer.incrementToken();
             assert hasNext == true;
-            termAtt.toBytesRef(term);
+            termAtt.fillBytesRef();
             if (posIncrAtt != null) {
               positionIncrement = posIncrAtt.getPositionIncrement();
             }
@@ -637,9 +627,9 @@ public abstract class QueryParserBase {
 
           if (enablePositionIncrements) {
             position += positionIncrement;
-            pq.add(new Term(field, term),position);
+            pq.add(new Term(field, new BytesRef(bytes)),position);
           } else {
-            pq.add(new Term(field, term));
+            pq.add(new Term(field, new BytesRef(bytes)));
           }
         }
         return pq;
@@ -792,6 +782,36 @@ public abstract class QueryParserBase {
     return new FuzzyQuery(term,minimumSimilarity,prefixLength);
   }
 
+  private BytesRef analyzeRangePart(String field, String part) {
+    TokenStream source;
+      
+    try {
+      source = analyzer.reusableTokenStream(field, new StringReader(part));
+      source.reset();
+    } catch (IOException e) {
+      source = analyzer.tokenStream(field, new StringReader(part));
+    }
+      
+    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+
+    try {
+      if (!source.incrementToken())
+        throw new IllegalArgumentException("analyzer returned no terms for range part: " + part);
+      termAtt.fillBytesRef();
+      if (source.incrementToken())
+        throw new IllegalArgumentException("analyzer returned too many terms for range part: " + part);
+    } catch (IOException e) {
+      throw new RuntimeException("error analyzing range part: " + part, e);
+    }
+      
+    try {
+      source.close();
+    } catch (IOException ignored) {}
+    
+    return new BytesRef(bytes);
+  }
+
   /**
    * Builds a new TermRangeQuery instance
    * @param field Field
@@ -802,7 +822,23 @@ public abstract class QueryParserBase {
    * @return new TermRangeQuery instance
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) {
-    final TermRangeQuery query = new TermRangeQuery(field, part1, part2, startInclusive, endInclusive, rangeCollator);
+    final BytesRef start;
+    final BytesRef end;
+     
+    if (part1 == null) {
+      start = null;
+    } else {
+      start = analyzeRangeTerms ? analyzeRangePart(field, part1) : new BytesRef(part1);
+    }
+     
+    if (part2 == null) {
+      end = null;
+    } else {
+      end = analyzeRangeTerms ? analyzeRangePart(field, part2) : new BytesRef(part2);
+    }
+      
+    final TermRangeQuery query = new TermRangeQuery(field, start, end, startInclusive, endInclusive);
+
     query.setRewriteMethod(multiTermRewriteMethod);
     return query;
   }

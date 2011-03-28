@@ -64,6 +64,9 @@ public class Benchmark {
     }
   }
   
+  /**
+   * Execute this benchmark 
+   */
   public synchronized void  execute() throws Exception {
     if (executed) {
       throw new IllegalStateException("Benchmark was already executed");
@@ -78,6 +81,14 @@ public class Benchmark {
    * @param args benchmark config and algorithm files
    */
   public static void main(String[] args) {
+    exec(args);
+  }
+
+  /**
+   * Utility: execute benchmark from command line
+   * @param args single argument is expected: algorithm-file
+   */
+  public static void exec(String[] args) {
     // verify command line args
     if (args.length < 1) {
       System.err.println("Usage: java Benchmark <algorithm file>");
@@ -115,7 +126,6 @@ public class Benchmark {
     System.out.println("####################");
     System.out.println("###  D O N E !!! ###");
     System.out.println("####################");
-
   }
 
   /**

@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.nio.CharBuffer;
 import java.nio.ByteBuffer;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute; // javadoc
 
 /**
  * Provides support for converting byte sequences to Strings and back again.
@@ -39,7 +40,10 @@ import java.nio.ByteBuffer;
  * <p/>
  *
  * @lucene.experimental
+ * @deprecated Implement {@link TermToBytesRefAttribute} and store bytes directly
+ * instead. This class will be removed in Lucene 5.0
  */
+@Deprecated
 public final class IndexableBinaryStringTools {
 
   private static final CodingCase[] CODING_CASES = {

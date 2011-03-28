@@ -21,7 +21,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 final class PhraseQueue extends PriorityQueue<PhrasePositions> {
   PhraseQueue(int size) {
-    initialize(size);
+    super(size);
   }
 
   @Override

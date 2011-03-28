@@ -36,6 +36,8 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -50,7 +52,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory directory;
-  private BoostingSimilarity similarity = new BoostingSimilarity();
+  private BoostingSimilarityProvider similarityProvider = new BoostingSimilarityProvider();
   private byte[] payload2 = new byte[]{2};
   private byte[] payload4 = new byte[]{4};
 
@@ -105,7 +107,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
-        .setSimilarityProvider(similarity));
+        .setSimilarityProvider(similarityProvider));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -118,7 +120,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     writer.close();
 
     searcher = newSearcher(reader);
-    searcher.setSimilarityProvider(similarity);
+    searcher.setSimilarityProvider(similarityProvider);
   }
 
   @Override
@@ -297,43 +299,57 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
 
   // must be static for weight serialization tests 
-  static class BoostingSimilarity extends DefaultSimilarity {
+  static class BoostingSimilarityProvider implements SimilarityProvider {
 
-    @Override public float scorePayload(int docId, int start, int end, byte[] payload, int offset, int length) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload[offset];
-    }
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //Make everything else 1 so we see the effect of the payload
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    @Override public float computeNorm(FieldInvertState state) {
-      return state.getBoost();
-    }
-
-    @Override public float queryNorm(float sumOfSquaredWeights) {
+    public float queryNorm(float sumOfSquaredWeights) {
       return 1.0f;
     }
+    
+    public float coord(int overlap, int maxOverlap) {
+      return 1.0f;
+    }
+    
+    public Similarity get(String field) {
+      return new DefaultSimilarity() {
+    
+        @Override 
+        public float scorePayload(int docId, int start, int end, byte[] payload, int offset, int length) {
+          //we know it is size 4 here, so ignore the offset/length
+          return payload[offset];
+        }
+    
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //Make everything else 1 so we see the effect of the payload
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        @Override 
+        public float computeNorm(FieldInvertState state) {
+          return state.getBoost();
+        }
 
-    @Override public float sloppyFreq(int distance) {
-      return 1.0f;
-    }
-
-    @Override public float coord(int overlap, int maxOverlap) {
-      return 1.0f;
-    }
-    @Override public float tf(float freq) {
-      return 1.0f;
-    }
-    // idf used for phrase queries
-    @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
-      return new IDFExplanation() {
-        @Override
-        public float getIdf() {
+        @Override 
+        public float sloppyFreq(int distance) {
           return 1.0f;
         }
-        @Override
-        public String explain() {
-          return "Inexplicable";
+
+        @Override 
+        public float tf(float freq) {
+          return 1.0f;
+        }
+    
+        // idf used for phrase queries
+        @Override 
+        public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
+          return new IDFExplanation() {
+            @Override
+            public float getIdf() {
+              return 1.0f;
+            }
+        
+            @Override
+            public String explain() {
+              return "Inexplicable";
+            }
+          };
         }
       };
     }

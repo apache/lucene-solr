@@ -427,7 +427,7 @@ public final class MultiTermsEnum extends TermsEnum {
   private final static class TermMergeQueue extends PriorityQueue<TermsEnumWithSlice> {
     Comparator<BytesRef> termComp;
     TermMergeQueue(int size) {
-      initialize(size);
+      super(size);
     }
 
     @Override

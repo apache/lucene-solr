@@ -26,14 +26,14 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class TestIndexWriterConfig extends LuceneTestCase {
 
-  private static final class MySimilarity extends DefaultSimilarity {
+  private static final class MySimilarityProvider extends DefaultSimilarityProvider {
     // Does not implement anything - used only for type checking on IndexWriterConfig.
   }
   
@@ -177,8 +177,8 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     // Test Similarity: 
     // we shouldnt assert what the default is, just that its not null.
     assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
-    conf.setSimilarityProvider(new MySimilarity());
-    assertEquals(MySimilarity.class, conf.getSimilarityProvider().getClass());
+    conf.setSimilarityProvider(new MySimilarityProvider());
+    assertEquals(MySimilarityProvider.class, conf.getSimilarityProvider().getClass());
     conf.setSimilarityProvider(null);
     assertTrue(IndexSearcher.getDefaultSimilarityProvider() == conf.getSimilarityProvider());
 

@@ -66,7 +66,7 @@ public class PreFlexCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, String id, Set<String> files) throws IOException {
+  public void files(Directory dir, SegmentInfo info, int id, Set<String> files) throws IOException {
     // preflex fields have no codec ID - we ignore it here
     PreFlexFields.files(dir, info, files);
   }

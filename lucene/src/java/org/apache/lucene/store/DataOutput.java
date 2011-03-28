@@ -82,7 +82,7 @@ public abstract class DataOutput {
     writeInt((int) i);
   }
 
-  /** Writes an long in a variable-length format.  Writes between one and five
+  /** Writes an long in a variable-length format.  Writes between one and nine
    * bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported.
    * @see DataInput#readVLong()

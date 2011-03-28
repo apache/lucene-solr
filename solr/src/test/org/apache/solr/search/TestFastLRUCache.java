@@ -254,6 +254,18 @@ public class TestFastLRUCache extends LuceneTestCase {
     cache.destroy();
   }
 
+  // enough randomness to exercise all of the different cache purging phases
+  public void testRandom() {
+    int sz = random.nextInt(100)+5;
+    int lowWaterMark = random.nextInt(sz-3)+1;
+    int keyrange = random.nextInt(sz*3)+1;
+    ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<Integer, String>(sz, lowWaterMark);
+    for (int i=0; i<10000; i++) {
+      cache.put(random.nextInt(keyrange), "");
+      cache.get(random.nextInt(keyrange));
+    }
+  }
+
   void doPerfTest(int iter, int cacheSize, int maxKey) {
     long start = System.currentTimeMillis();
 

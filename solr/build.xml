@@ -30,7 +30,7 @@
   <property name="src" location="src" />
   <property name="web.xml" location="${src}/webapp/web/WEB-INF/web.xml"/>
 
-  <!-- Destination for distribution files (demo WAR, src distro, etc.) -->
+  <!-- Destination for distribution files (demo WAR, contrib JARs, etc.) -->
   <property name="dist" location="dist" />
 
   <property name="clover.db.dir" location="${dest}/tests/clover/db"/>
@@ -57,6 +57,7 @@
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
+    <echo message="Use 'ant javadoc' to build javadoc under build/docs/api" />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
     <echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />
@@ -68,47 +69,19 @@
           description="Cleans compiled files and other temporary artifacts.">
     <delete dir="${dest}" />
     <delete dir="${dist}" />
+    <delete dir="${package.dir}" />
     <delete dir="example/solr/lib" />
     <delete dir="${lucene-libs}" />
   </target>
 
   <target name="clean-dest"
-          description="Cleans out ${dest} but leaves ${dist} alone.  This allows us to run nightly and clover together in Hudson">
+          description="Cleans out ${dest} but leaves ${dist} and ${package.dir} alone.  This allows us to run nightly and clover together in Hudson">
     <delete includeemptydirs="true" >
       <fileset dir="${dest}">
         <exclude name="docs/"/>
       </fileset>
     </delete>
   </target>
-
-  <!-- Prepares an entity file for use in Forrest documentation -->
-  <target name="init-forrest-entities">
-    <!-- no description, don't advertise -->
-
-    <!-- Building off Lucene trunk, we don't need this
-    <available file="lib/lucene-core-${version}.jar"
-               property="lucene-version-ok-m2deploy-wont-fail" />
-    <fail unless="lucene-version-ok-m2deploy-wont-fail">
-      lib/lucene-core-${version}.jar Missing
-
-      lib/lucene-core-${version}.jar does not exist.
-      This will cause problems with m2-deploy later, so fail fast now.
-      
-      Probably cause: lucene jars were upgraded w/o modifying the
-      'version' property in common-build.xml
-    </fail>
-    -->
-    
-    <mkdir dir="${dest}" />
-  	
-  	<!-- A folder containing the expanded war file -->
-  	<mkdir dir="${dest}/web" />
-  	
-    <echo  file="${dest}/solr-specific-forrest-variables.ent" append="false">
-      &lt;!ENTITY solr.specversion "${specversion}"&gt;
-    </echo>
-  </target>
-
 
   <!-- ========================================================================= -->
   <!-- ===================== COMPILATION-RELATED TASKS ========================= -->
@@ -124,7 +97,7 @@
 
   <target name="compile-solrj"
           description="Compile the java client."
-          depends="init-forrest-entities, compile-lucene">
+          depends="compile-lucene">
 
     <solr-javac destdir="${dest}/solrj"
                 classpathref="compile.classpath">
@@ -147,7 +120,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="compile-solrj,init-forrest-entities">
+          depends="validate-solr, compile-solrj">
 
     <solr-javac destdir="${dest}/solr"
                 classpathref="compile.classpath.solrj">
@@ -156,7 +129,13 @@
     </solr-javac>
   </target>
 
-  <target name="javadoc-solrj" depends="compile-solrj" description="Generates solrj javadoc documentation.">
+  <target name="javadoc-dep">
+    <copy failonerror="false" todir="${build.docs}">
+      <fileset dir="site" />
+    </copy>
+  </target>
+
+  <target name="javadoc-solrj" depends="compile-solrj,javadoc-dep" description="Generates solrj javadoc documentation.">
     <sequential>
       <mkdir dir="${build.javadoc}/solrj"/>
 
@@ -175,7 +154,7 @@
     </sequential>
   </target>
   
-  <target name="javadoc-core" depends="compile"  description="Generates javadoc documentation for core.">
+  <target name="javadoc-core" depends="compile,javadoc-dep"  description="Generates javadoc documentation for core.">
 
     <sequential>
       <mkdir dir="${build.javadoc}/solr"/>
@@ -198,7 +177,7 @@
   </target>
 
 
-  <target name="javadoc-all" description="Generate javadoc for core, client and contrib">
+  <target name="javadoc-all" depends="compile,javadoc-dep" description="Generate javadoc for core, client and contrib">
     <sequential>
       <mkdir dir="${build.javadoc}"/>
 
@@ -207,6 +186,7 @@
          <path refid="compile.classpath.solrj"/>
           <fileset dir="contrib">
             <include name="**/lib/**/*.jar"/>
+            <include name="**/lucene-libs/**/*.jar"/>
           </fileset>
          <pathelement location="${dest}/client/solrj"/>
       </path>
@@ -218,6 +198,7 @@
           <packageset dir="${src}/java" />
           <packageset dir="${src}/webapp/src" />
           <packageset dir="contrib/dataimporthandler/src/main/java" />
+          <packageset dir="contrib/dataimporthandler/src/extras/main/java" />
           <packageset dir="contrib/clustering/src/main/java" />
           <packageset dir="contrib/extraction/src/main/java" />
           <packageset dir="contrib/uima/src/main/java" />
@@ -234,7 +215,7 @@
     </sequential>
   </target>
 
-  <target name="javadoc-contrib" description="Generate javadoc for contrib classes" depends="build-contrib">
+  <target name="javadoc-contrib" description="Generate javadoc for contrib classes" depends="build-contrib,javadoc-dep">
     <contrib-crawl target="javadoc"
                    failonerror="true"/>
   </target>
@@ -374,12 +355,12 @@
   <!-- Run core unit tests. -->
   <target name="test-core"
           description="Runs the core unit tests."
-          depends="init-forrest-entities, compileTests, junit" />
+          depends="compileTests, junit" />
 	
   <!-- Run contrib unit tests. -->
   <target name="test"
         description="Runs the core unit tests."
-        depends="test-core, test-contrib" />
+        depends="test-core, test-contrib, test-jsp" />
 
   <target name="junit" depends="compileTests,junit-mkdir,junit-sequential,junit-parallel"/>
 
@@ -554,6 +535,37 @@
     </clover-report>
   </target>
 
+  <!-- ========================================================================= -->
+
+  <!-- Checks that all JSP files in the webapp compile successfully using Jetty's Jasper -->
+  <target name="test-jsp" depends="compile">
+    <property name="jsp.target" location="${dest}/jsp-temp" />
+    <taskdef classname="org.apache.jasper.JspC" name="jasper" >
+      <classpath>
+        <fileset dir="example/lib" includes="**/*.jar" />
+      </classpath>
+    </taskdef>
+    <delete dir="${jsp.target}" />
+    <mkdir dir="${jsp.target}" />
+    <jasper
+      uriroot="${src}/webapp/web"
+      outputDir="${jsp.target}" 
+      compile="false" 
+      verbose="1"
+      package="j"
+    />
+    <javac
+      srcdir="${jsp.target}"
+      destdir="${jsp.target}"
+      target="${java.compat.version}"
+      source="${java.compat.version}"
+      debug="off"
+      encoding="utf8"
+      includeAntRuntime="${javac.includeAntRuntime}"
+      classpathref="test.compile.classpath"
+    />
+  </target>
+
 
   <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
@@ -563,12 +575,12 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="init-forrest-entities, dist-solrj, dist-jar, dist-contrib, dist-war" />
+          depends="dist-solrj, dist-jar, dist-contrib, dist-war" />
 
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file."
-          depends="compile, make-manifest, dist-jar, dist-solrj, lucene-jars-to-solr">
+          depends="compile, test-jsp, make-manifest, dist-jar, dist-solrj, lucene-jars-to-solr">
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${fullnamever}.war"
          webxml="${web.xml}"
@@ -576,7 +588,7 @@
          manifest="${dest}/META-INF/MANIFEST.MF">
        <lib dir="${lib}">
          <exclude name="servlet-api*.jar" />
-         <exclude name="easymock.jar" />
+         <exclude name="easymock-*.jar" />
          <exclude name="junit-*.jar" />
          <exclude name="*.txt" />
          <exclude name="*.template" />
@@ -597,7 +609,7 @@
     </war>
   </target>
 
-  <target name="dist-src" description="Creates the Solr source distribution files"
+  <target name="dist-src" description="Creates the Solr source distribution files for maven"
           depends="make-manifest">
     <mkdir dir="${dist}" />
 
@@ -628,7 +640,7 @@
     </solr-jar>
   </target>
 
-  <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
+  <target name="dist-javadoc" description="Creates the Solr javadoc distribution files for maven"
           depends="make-manifest, javadoc">
     <mkdir dir="${dist}" />
 
@@ -685,7 +697,7 @@
 
   <target name="example" 
           description="Creates a runnable example configuration."
-          depends="init-forrest-entities,compile-lucene,dist-contrib,dist-war,example-contrib">
+          depends="compile-lucene,dist-contrib,dist-war,example-contrib">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
@@ -725,55 +737,120 @@
   </target>
   
   <!-- make a distribution -->
-  <target name="package" depends="create-package"/>
+  <target name="package" depends="package-src,create-package"/>
+
+  <property name="svn.export.dir" location="${dest}/svn-export"/>
+
+  <!-- Makes a tarball from running "svn export" at the root level.    -->
+  <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
+  <target name="package-src" depends="svn-export-source"
+          description="Packages the Solr Source Distribution">
+    <mkdir dir="${package.dir}"/>
+    <property name="source.package.file"
+              value="${package.dir}/${fullnamever}-src.tgz"/>
+    <delete file="${source.package.file}" failonerror="false" />
+    <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset dir="${svn.export.dir}" prefix="${fullnamever}"/>
+      <tarfileset dir="${svn.export.dir}/solr" prefix="${fullnamever}"
+                  includes="NOTICE.txt,LICENSE.txt"/>
+    </tar>
+    <solr-checksum file="${source.package.file}"/>
+  </target>
+
+  <!-- Runs "svn export" in build/svn-export/ with the same root-level URL -->
+  <!-- and revision as the current working copy.                           -->
+  <target name="svn-export-source" depends="get-svn-info">
+    <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
+    <mkdir dir="${dest}"/>
+    <exec dir="." executable="${svn.exe}" failonerror="true">
+      <arg value="export"/>
+      <arg value="--native-eol"/>
+      <arg value="LF"/>
+      <arg value="-r"/>
+      <arg value="${svn.Revision}"/>
+      <arg value="${svn.URL}"/>
+      <arg value="${svn.export.dir}"/>
+    </exec>
+  </target>
+
+  <!-- Populates properties svn.URL and svn.Revision using "svn info" -->
+  <target name="get-svn-info">
+    <exec dir=".." executable="${svn.exe}" outputproperty="svn.info" failonerror="true">
+      <arg value="info"/>
+    </exec>
+    <loadproperties>
+      <propertyresource name="svn.info"/>
+      <filterchain>
+        <linecontainsregexp>
+          <regexp pattern="(URL|Revision):"/>
+        </linecontainsregexp>
+        <replacestring from=": " to="="/>
+        <prefixlines prefix="svn."/>
+      </filterchain>
+    </loadproperties>
+  </target>
 
   <target name="create-package"
-          description="Packages the Solr Distribution files and Documentation."
-          depends="dist, example, javadoc, dist-src, dist-javadoc">
+          description="Packages the Solr Binary Distribution"
+          depends="dist, example, javadoc">
+    <mkdir dir="${package.dir}"/>
 
-    <copy failonerror="false" todir="${build.docs}">
-      <fileset dir="site" />
-    </copy>
+    <delete includeemptydirs="true">
+      <fileset dir="${example}/work" includes="**/*"/>
+    </delete>
 
-    <delete file="${dist}/${fullnamever}.tgz" failonerror="false" />
-    <delete file="${dist}/${fullnamever}.zip" failonerror="false" />
+    <delete includeemptydirs="true" failonerror="false">
+      <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
+    </delete>
 
-    <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
+    <delete file="${package.dir}/${fullnamever}.tgz" failonerror="false" />
+    <delete file="${package.dir}/${fullnamever}.zip" failonerror="false" />
+
+    <tar destfile="${package.dir}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="LICENSE.txt NOTICE.txt *.txt *.xml lucene-libs/** lib/** src/** example/** client/** contrib/"
-        excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python contrib/**/build/ **/*.iml **/*.ipr **/*.iws contrib/clustering/example/lib/** contrib/clustering/lib/downloads/** contrib/analysis-extras/lib/** contrib/uima/lib/**" />
-      <tarfileset dir="."
-        prefix="${fullnamever}"
-        includes="src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
+        includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/**/lib/ contrib/**/lucene-libs/ contrib/**/README.txt contrib/**/CHANGES.txt"
+        excludes="${dist}/** ${dest}/** lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/** src/site/build/** **/target/** client/ruby/flare/** client/python/** client/javascript/** contrib/**/build/** **/*.iml **/*.ipr **/*.iws **/*pom.xml.template" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
-        includes="**/*.sh **/bin/ src/scripts/" />
+        includes="example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="dist/**"
-        excludes="*.tgz *.zip *.md5 **/*src*.jar **/*docs*.jar" />
+        includes="dist/*.jar dist/*.war dist/solrj-lib/*"
+        excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar" />
+      <!-- hack: the javadocs are built twice since maven needs separate packages... exclude those -->
       <tarfileset dir="${build.docs}"
-        prefix="${fullnamever}/docs/" />
-      <tarfileset dir="../lucene"
-        prefix="lucene"
-        excludes="**/build/" />
-      <tarfileset dir="../modules"
-        prefix="modules"
-        excludes="**/build/" />
+        prefix="${fullnamever}/docs/"
+        excludes="api/solr/** api/contrib-*/**"
+       />
     </tar>
-    <solr-checksum file="${dist}/${fullnamever}.tgz"/>
+    <solr-checksum file="${package.dir}/${fullnamever}.tgz"/>
 
-    <gunzip src="${dist}/${fullnamever}.tgz" dest="${dest}/${fullnamever}.tar"/>
+    <gunzip src="${package.dir}/${fullnamever}.tgz" dest="${dest}/${fullnamever}.tar"/>
     <untar src="${dest}/${fullnamever}.tar" dest="${dest}"/>
 
+    <!--
+      This is a list of text file patterns to convert to CRLF line-ending style.
+      Shell scripts and files included in shell scripts should not be converted.
+      NB: The line-ending conversion process will mangle non-UTF8-encoded files.
+     -->
     <fixcrlf srcdir="${dest}/${fullnamever}"
+       encoding="UTF-8"
        eol="crlf"
-       includes="**/*.txt **/*.xml **/*.java **/*.html **/*.csv **/*.css **/*.properties **/*.jsp **/*.xsl **/*.py **/*.rb **/*.js **/*.json **/*.pl"
+       includes="**/*.alg **/*.cfg **/*.cgi **/*.cpp **/*.css **/*.csv **/*.dtd
+                 **/*.erb **/*.fcgi **/.htaccess **/*.htm **/*.html **/*.incl
+                 **/*.java **/*.javacc **/*.jflex **/*.jflex-macro **/*.jj
+                 **/*.js **/*.json **/*.jsp **/*LICENSE **/package-list **/*.pl
+                 **/*.pom **/*pom.xml.template **/*.properties **/*.py
+                 **/*.rake **/Rakefile **/*.rb **/*.rbbi **/README* **/*.rhtml
+                 **/*.rslp **/*.rxml **/*.script **/*.svg **/*.tsv **/*.txt
+                 **/UPGRADING **/USAGE **/*.uxf **/*.vm **/*.xcat **/*.xml
+                 **/*.xsl **/*.xslt **/*.yml"       
+       excludes="**/stopwordsWrongEncoding.txt **/gb18030-example.xml"
      />
 
-    <zip destfile="${dist}/${fullnamever}.zip">
+    <zip destfile="${package.dir}/${fullnamever}.zip">
       <zipfileset dir="${dest}/${fullnamever}"
         prefix="${fullnamever}" 
         excludes="**/*.sh **/bin/ src/scripts/" />
@@ -781,60 +858,51 @@
         prefix="${fullnamever}"
         includes="**/*.sh **/bin/ src/scripts/"
         filemode="755" />
-      <zipfileset dir="../lucene"
-        prefix="lucene"
-        excludes="**/build/" />
-      <zipfileset dir="../modules"
-        prefix="modules"
-        excludes="**/build/" />
     </zip>
-    <solr-checksum file="${dist}/${fullnamever}.zip"/>
+    <solr-checksum file="${package.dir}/${fullnamever}.zip"/>
 
   </target>
 
-  	<target name="build-site" depends="svn-up, init-forrest-entities" description="Prototype Helper for Committers.  Assumes SVN is in the path">
-		<delete dir="src/site/build"/>
-		<exec executable="forrest" dir="src/site"/>
-		<copy todir="site">
-			<fileset dir="src/site/build/site"/>
-		</copy>
-		<exec executable="svn" dir="site">
-			<arg value="ci"/>
-			<arg value="-m"/>
-			<arg value="&quot;Forrest Entity updates&quot;"/>
-		</exec>
-    <exec executable="svn" dir="src/site">
-                    <arg value="ci"/>
-                    <arg value="-m"/>
-                    <arg value="&quot;Forrest Entity updates&quot;"/>
-            </exec>
+
+  <target name="build-site" depends="svn-up" 
+          description="Prototype Helper for Committers.  Assumes SVN is in the path">
+    <delete dir="src/site/build"/>
+    <exec executable="forrest" dir="src/site"/>
+    <copy todir="site">
+      <fileset dir="src/site/build/site"/>
+    </copy>
     <antcall target="svn-up"/>
-
+  
   </target>
-	<target name="svn-up">
-		<exec executable="svn">
-			<arg value="update"/>
-		</exec>
-	</target>
+  <target name="svn-up">
+    <exec executable="${svn.exe}">
+      <arg value="update"/>
+    </exec>
+  </target>
 
-  <target name="clean-dist-signatures">
+  <target name="clean-package-signatures">
     <delete failonerror="false">
-      <fileset dir="${dist}">
+      <fileset dir="${package.dir}">
         <include name="**/*.asc"/>
       </fileset>
     </delete>
   </target>
-  <target name="sign-artifacts" depends="clean-dist-signatures">
+  <target name="sign-artifacts" depends="clean-package-signatures">
     <!--<property file="${user.home}/.solr/build.properties" />-->
     <input message="password:>" addproperty="gpg.passphrase">
       <handler classname="org.apache.tools.ant.input.SecureInputHandler" />
     </input>
-    <sign-artifact input.file="${dist}/${fullnamever}.tgz" output.file="${dist}/${fullnamever}.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${dist}/${fullnamever}.zip" output.file="${dist}/${fullnamever}.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${package.dir}/${fullnamever}.tgz" output.file="${package.dir}/${fullnamever}.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${package.dir}/${fullnamever}.zip" output.file="${package.dir}/${fullnamever}.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${package.dir}/${fullnamever}-src.tgz" output.file="${package.dir}/${fullnamever}-src.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- Maven artifacts -->
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-noggit" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-alchemy" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-calais" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-tagger" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-uima-an-wst" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-war-artifacts artifact.id="solr" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-analysis-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
@@ -843,22 +911,42 @@
     <sign-maven-artifacts artifact.id="solr-dataimporthandler" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-solrj" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-uima" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- These are special since there are no jars, just poms -->
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
   </target>
 
-  <target name="prepare-release" depends="clean, svn-up, build-site, package, sign-artifacts" description="Prototype helper for Committers.  Assumes gpg is in the path">
-
-    <tar destfile="${dist}/solr-maven.tar" longfile="gnu">
-		  <tarfileset dir="${dist}/maven" prefix="maven"/>
-    </tar>
-	<tar destfile="${dist}/solr.tar" longfile="gnu">
-		<tarfileset dir="${dist}" includes="${fullnamever}.* solr-maven.tar" excludes="${fullnamever}.war"/>
-	</tar>
+  <property name="rc" value="rc0"/>
+  <property name="remote.staging.dir" value="public_html/staging_area/${rc}/${version}"/>
+  <property name="keyfile" value="${user.home}/.ssh/id_rsa"/>
+  <property name="scp.user" value="${user.name}"/>
+  <!--keys.dir is the location of the https://svn.apache.org/repos/asf/lucene/java/dist/ directory-->
+  <property name="keys.dir" value="${common-solr.dir}/../../dist"/>
+  <target name="copy-to-stage">
+    <sshexec host="people.apache.org"
+	    username="${scp.user}"
+	    keyfile="${keyfile}"
+	    command="mkdir -p ${remote.staging.dir}"/>
+    <echo>Uploading artifacts to ${scp.user}@people.apache.org:${remote.staging.dir}</echo>
+    <scp todir="${scp.user}@people.apache.org:${remote.staging.dir}"
+         username="${scp.user}"
+	    keyfile="${keyfile}"
+      verbose="true"
+        >
+      <fileset dir="dist"/>
+      <fileset dir="${keys.dir}">
+        <include name="KEYS"/>
+      </fileset>
+    </scp>
   </target>
 
-  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, create-package">
+  <target name="prepare-release" depends="clean, svn-up, package, sign-artifacts"
+          description="Prototype helper for Committers.  Assumes gpg is in the path"/>
+
+  <target name="stage" depends="prepare-release, copy-to-stage"/>
+
+  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check,dist,dist-src,dist-javadoc">
     <sequential>
 	  <ant target="get-maven-poms" dir=".."/>
 
@@ -877,14 +965,26 @@
 
       <m2-deploy pom.xml="pom.xml"/>
 
-      <!-- ========== SOLR SPECIFIC COMMONS CSV ========== -->
+      <!-- ========== SOLR SPECIFIC NON-MAVENIZED DEPENDENCIES ========== -->
       <m2-deploy-with-pom-template pom.xml="lib/solr-commons-csv-pom.xml.template"
                                    jar.file="lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
 
-      <!-- ========== SOLR ARTIFACTS ========== -->
-
       <m2-deploy-with-pom-template pom.xml="lib/apache-solr-noggit-pom.xml.template"
                                    jar.file="lib/apache-solr-noggit-r944541.jar" />
+      
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-alchemy-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar" />
+
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-calais-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar" />
+
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-tagger-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar" />
+
+      <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-wst-pom.xml.template"
+                                   jar.file="contrib/uima/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar" />
+
+      <!-- ========== SOLR ARTIFACTS ========== -->
 
       <m2-deploy pom.xml="contrib/dataimporthandler/src/pom.xml"
                  jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">

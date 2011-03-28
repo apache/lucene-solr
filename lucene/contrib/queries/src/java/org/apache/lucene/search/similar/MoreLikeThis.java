@@ -1006,7 +1006,7 @@ public final class MoreLikeThis {
      */
     private static class FreqQ extends PriorityQueue<Object[]> {
         FreqQ (int s) {
-            initialize(s);
+            super(s);
         }
 
         @Override

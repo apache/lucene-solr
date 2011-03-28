@@ -25,9 +25,18 @@ import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
 
 /**
+ * Factory for {@link PatternReplaceCharFilter}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_ptnreplace" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;charFilter class="solr.PatternReplaceCharFilterFactory" pattern="([^a-z])" replacement=""
+ *                 maxBlockChars="10000" blockDelimiters="|"/&gt;
+ *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  * 
  * @version $Id$
- * @since Solr 1.5
+ * @since Solr 3.1
  */
 public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {
   

@@ -26,7 +26,18 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 import java.util.Map;
 
-/** Factory for {@link ShingleFilter} */
+/** 
+ * Factory for {@link ShingleFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_shingle" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.ShingleFilterFactory" minShingleSize="2" maxShingleSize="2"
+ *             outputUnigrams="true" outputUnigramsIfNoShingles="false" tokenSeparator=" "/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
+ */
 public class ShingleFilterFactory extends BaseTokenFilterFactory {
   private int minShingleSize;
   private int maxShingleSize;

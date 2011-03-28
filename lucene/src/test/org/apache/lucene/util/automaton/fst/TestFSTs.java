@@ -20,19 +20,12 @@ package org.apache.lucene.util.automaton.fst;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -54,6 +47,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.automaton.fst.FST.Arc;
 
 public class TestFSTs extends LuceneTestCase {
 
@@ -445,9 +439,9 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       if (VERBOSE && pairs.size() <= 20 && fst != null) {
-        PrintStream ps = new PrintStream("out.dot");
-        Util.toDot(fst, ps);
-        ps.close();
+        Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+        Util.toDot(fst, w, false, false);
+        w.close();
         System.out.println("SAVED out.dot");
       }
 
@@ -1095,7 +1089,7 @@ public class TestFSTs extends LuceneTestCase {
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
 
-    public void run(int limit) throws IOException {
+    public void run(int limit, boolean verify) throws IOException {
       BufferedReader is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), "UTF-8"), 65536);
       try {
         final IntsRef intsRef = new IntsRef(10);
@@ -1112,7 +1106,9 @@ public class TestFSTs extends LuceneTestCase {
 
           ord++;
           if (ord % 500000 == 0) {
-            System.out.println(((System.currentTimeMillis()-tStart)/1000.0) + "s: " + ord + "...");
+            System.out.println(
+                String.format(Locale.ENGLISH, 
+                    "%6.2fs: %9d...", ((System.currentTimeMillis() - tStart) / 1000.0), ord));
           }
           if (ord >= limit) {
             break;
@@ -1126,11 +1122,14 @@ public class TestFSTs extends LuceneTestCase {
           System.exit(0);
         }
 
+        if (dirOut == null)
+          return;
+
         System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.sizeInBytes());
         if (fst.getNodeCount() < 100) {
-          PrintStream ps = new PrintStream("out.dot");
-          Util.toDot(fst, ps);
-          ps.close();
+          Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+          Util.toDot(fst, w, false, false);
+          w.close();
           System.out.println("Wrote FST to out.dot");
         }
 
@@ -1140,6 +1139,10 @@ public class TestFSTs extends LuceneTestCase {
         out.close();
 
         System.out.println("Saved FST to fst.bin.");
+
+        if (!verify) {
+          return;
+        }
 
         System.out.println("\nNow verify...");
 
@@ -1183,36 +1186,53 @@ public class TestFSTs extends LuceneTestCase {
 
   // java -cp build/classes/test:build/classes/java:lib/junit-4.7.jar org.apache.lucene.util.automaton.fst.TestFSTs /x/tmp/allTerms3.txt out
   public static void main(String[] args) throws IOException {
-    final String wordsFileIn = args[0];
-    final String dirOut = args[1];
-    int idx = 2;
     int prune = 0;
     int limit = Integer.MAX_VALUE;
     int inputMode = 0;                             // utf8
     boolean storeOrds = false;
     boolean storeDocFreqs = false;
-    while(idx < args.length) {
+    boolean verify = true;
+    
+    String wordsFileIn = null;
+    String dirOut = null;
+
+    int idx = 0;
+    while (idx < args.length) {
       if (args[idx].equals("-prune")) {
-        prune = Integer.valueOf(args[1+idx]);
+        prune = Integer.valueOf(args[1 + idx]);
         idx++;
-      }
-      if (args[idx].equals("-limit")) {
-        limit = Integer.valueOf(args[1+idx]);
+      } else if (args[idx].equals("-limit")) {
+        limit = Integer.valueOf(args[1 + idx]);
         idx++;
-      }
-      if (args[idx].equals("-utf8")) {
+      } else if (args[idx].equals("-utf8")) {
         inputMode = 0;
-      }
-      if (args[idx].equals("-utf32")) {
+      } else if (args[idx].equals("-utf32")) {
         inputMode = 1;
-      }
-      if (args[idx].equals("-docFreq")) {
+      } else if (args[idx].equals("-docFreq")) {
         storeDocFreqs = true;
-      }
-      if (args[idx].equals("-ords")) {
+      } else if (args[idx].equals("-ords")) {
         storeOrds = true;
+      } else if (args[idx].equals("-noverify")) {
+        verify = false;
+      } else if (args[idx].startsWith("-")) {
+        System.err.println("Unrecognized option: " + args[idx]);
+        System.exit(-1);
+      } else {
+        if (wordsFileIn == null) {
+          wordsFileIn = args[idx];
+        } else if (dirOut == null) {
+          dirOut = args[idx];
+        } else {
+          System.err.println("Too many arguments, expected: input [output]");
+          System.exit(-1);
+        }
       }
       idx++;
+    }
+    
+    if (wordsFileIn == null) {
+      System.err.println("No input file.");
+      System.exit(-1);
     }
 
     // ord benefits from share, docFreqs don't:
@@ -1232,7 +1252,7 @@ public class TestFSTs extends LuceneTestCase {
           return new PairOutputs.Pair<Long,Long>(o1.get(ord),
                                                  o2.get(_TestUtil.nextInt(rand, 1, 5000)));
         }
-      }.run(limit);
+      }.run(limit, verify);
     } else if (storeOrds) {
       // Store only ords
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
@@ -1241,7 +1261,7 @@ public class TestFSTs extends LuceneTestCase {
         public Long getOutput(IntsRef input, int ord) {
           return outputs.get(ord);
         }
-      }.run(limit);
+      }.run(limit, verify);
     } else if (storeDocFreqs) {
       // Store only docFreq
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(false);
@@ -1254,7 +1274,7 @@ public class TestFSTs extends LuceneTestCase {
           }
           return outputs.get(_TestUtil.nextInt(rand, 1, 5000));
         }
-      }.run(limit);
+      }.run(limit, verify);
     } else {
       // Store nothing
       final NoOutputs outputs = NoOutputs.getSingleton();
@@ -1264,7 +1284,7 @@ public class TestFSTs extends LuceneTestCase {
         public Object getOutput(IntsRef input, int ord) {
           return NO_OUTPUT;
         }
-      }.run(limit);
+      }.run(limit, verify);
     }
   }
 
@@ -1319,5 +1339,86 @@ public class TestFSTs extends LuceneTestCase {
     assertNotNull(seekResult);
     assertEquals(b, seekResult.input);
     assertEquals(42, (long) seekResult.output);
+  }
+
+  /**
+   * Test state expansion (array format) on close-to-root states. Creates
+   * synthetic input that has one expanded state on each level.
+   * 
+   * @see "https://issues.apache.org/jira/browse/LUCENE-2933" 
+   */
+  public void testExpandedCloseToRoot() throws Exception {
+    class SyntheticData {
+      FST<Object> compile(String[] lines) throws IOException {
+        final NoOutputs outputs = NoOutputs.getSingleton();
+        final Object nothing = outputs.getNoOutput();
+        final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+
+        int line = 0;
+        final BytesRef term = new BytesRef();
+        while (line < lines.length) {
+          String w = lines[line++];
+          if (w == null) {
+            break;
+          }
+          term.copy(w);
+          b.add(term, nothing);
+        }
+        
+        return b.finish();
+      }
+      
+      void generate(ArrayList<String> out, StringBuilder b, char from, char to,
+          int depth) {
+        if (depth == 0 || from == to) {
+          String seq = b.toString() + "_" + out.size() + "_end";
+          out.add(seq);
+        } else {
+          for (char c = from; c <= to; c++) {
+            b.append(c);
+            generate(out, b, from, c == to ? to : from, depth - 1);
+            b.deleteCharAt(b.length() - 1);
+          }
+        }
+      }
+
+      public int verifyStateAndBelow(FST<Object> fst, Arc<Object> arc, int depth) 
+        throws IOException {
+        if (fst.targetHasArcs(arc)) {
+          int childCount = 0;
+          for (arc = fst.readFirstTargetArc(arc, arc);; 
+               arc = fst.readNextArc(arc), childCount++)
+          {
+            boolean expanded = fst.isExpandedTarget(arc);
+            int children = verifyStateAndBelow(fst, new FST.Arc<Object>().copyFrom(arc), depth + 1);
+
+            assertEquals(
+                expanded,
+                (depth <= FST.FIXED_ARRAY_SHALLOW_DISTANCE && 
+                    children >= FST.FIXED_ARRAY_NUM_ARCS_SHALLOW) ||
+                 children >= FST.FIXED_ARRAY_NUM_ARCS_DEEP);
+            if (arc.isLast()) break;
+          }
+
+          return childCount;
+        }
+        return 0;
+      }
+    }
+
+    // Sanity check.
+    assertTrue(FST.FIXED_ARRAY_NUM_ARCS_SHALLOW < FST.FIXED_ARRAY_NUM_ARCS_DEEP);
+    assertTrue(FST.FIXED_ARRAY_SHALLOW_DISTANCE >= 0);
+
+    SyntheticData s = new SyntheticData();
+
+    ArrayList<String> out = new ArrayList<String>();
+    StringBuilder b = new StringBuilder();
+    s.generate(out, b, 'a', 'i', 10);
+    String[] input = out.toArray(new String[out.size()]);
+    Arrays.sort(input);
+    FST<Object> fst = s.compile(input);
+    FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<Object>());
+    s.verifyStateAndBelow(fst, arc, 1);
   }
 }

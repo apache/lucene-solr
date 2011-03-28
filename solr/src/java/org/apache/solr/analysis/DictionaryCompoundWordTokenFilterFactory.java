@@ -28,7 +28,18 @@ import org.apache.lucene.analysis.TokenStream;
 import java.util.Map;
 import java.io.IOException;
 
-/** Factory for {@link DictionaryCompoundWordTokenFilter} */
+/** 
+ * Factory for {@link DictionaryCompoundWordTokenFilter}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_dictcomp" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.DictionaryCompoundWordTokenFilterFactory" dictionary="dictionary.txt"
+ *     	     minWordSize="5" minSubwordSize="2" maxSubwordSize="15" onlyLongestMatch="true"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
+ */
 public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFactory  implements ResourceLoaderAware {
   private CharArraySet dictionary;
   private String dictFile;

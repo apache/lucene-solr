@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.PrintStream;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.Directory;
@@ -35,7 +33,6 @@ public class SegmentWriteState {
   public final FieldInfos fieldInfos;
   public final int numDocs;
   public boolean hasVectors;
-  public final Collection<String> flushedFiles;
   public final AtomicLong bytesUsed;
 
   // Deletes to apply while we are flushing the segment.  A
@@ -49,7 +46,7 @@ public class SegmentWriteState {
   public BitVector deletedDocs;
 
   final SegmentCodecs segmentCodecs;
-  public final String codecId;
+  public final int codecId;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
    * in RAM.  Smaller values use more memory, but make searching slightly
@@ -68,15 +65,14 @@ public class SegmentWriteState {
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
     this.segmentCodecs = segmentCodecs;
-    flushedFiles = new HashSet<String>();
-    codecId = "";
+    codecId = -1;
     this.bytesUsed = bytesUsed;
   }
   
   /**
    * Create a shallow {@link SegmentWriteState} copy final a codec ID
    */
-  SegmentWriteState(SegmentWriteState state, String codecId) {
+  SegmentWriteState(SegmentWriteState state, int codecId) {
     infoStream = state.infoStream;
     directory = state.directory;
     segmentName = state.segmentName;
@@ -84,9 +80,12 @@ public class SegmentWriteState {
     numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
     segmentCodecs = state.segmentCodecs;
-    flushedFiles = state.flushedFiles;
     this.codecId = codecId;
     segDeletes = state.segDeletes;
     bytesUsed = state.bytesUsed;
+  }
+  
+  public String codecIdAsString() {
+    return "" + codecId;
   }
 }

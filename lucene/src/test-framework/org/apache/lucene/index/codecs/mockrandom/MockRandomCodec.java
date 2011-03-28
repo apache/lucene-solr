@@ -127,7 +127,7 @@ public class MockRandomCodec extends Codec {
       System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " seed=" + seed);
     }
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SEED_EXT);
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), SEED_EXT);
     final IndexOutput out = state.directory.createOutput(seedFileName);
     out.writeLong(seed);
     out.close();
@@ -222,7 +222,7 @@ public class MockRandomCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, SEED_EXT);
+    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecIdAsString(), SEED_EXT);
     final IndexInput in = state.dir.openInput(seedFileName);
     final long seed = in.readLong();
     if (LuceneTestCase.VERBOSE) {
@@ -322,14 +322,15 @@ public class MockRandomCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
-    final String seedFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecId, SEED_EXT);    
+  public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
+    final String codecIdAsString = codecId + "";
+    final String seedFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecIdAsString, SEED_EXT);    
     files.add(seedFileName);
-    SepPostingsReaderImpl.files(segmentInfo, codecId, files);
-    StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-    BlockTermsReader.files(dir, segmentInfo, codecId, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
+    SepPostingsReaderImpl.files(segmentInfo, codecIdAsString, files);
+    StandardPostingsReader.files(dir, segmentInfo, codecIdAsString, files);
+    BlockTermsReader.files(dir, segmentInfo, codecIdAsString, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, codecIdAsString, files);
+    VariableGapTermsIndexReader.files(dir, segmentInfo, codecIdAsString, files);
     
     // hackish!
     Iterator<String> it = files.iterator();

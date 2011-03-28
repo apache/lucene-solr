@@ -23,6 +23,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
 
 /**
+ * Factory for {@link StandardFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_stndrd" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.StandardFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  * @version $Id$
  */
 public class StandardFilterFactory extends BaseTokenFilterFactory {

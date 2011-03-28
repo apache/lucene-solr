@@ -109,14 +109,14 @@ public class BlockTermsReader extends FieldsProducer {
   //private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
-                          int termsCacheSize, String codecId)
+                          int termsCacheSize, int codecId)
     throws IOException {
     
     this.postingsReader = postingsReader;
     termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     //this.segment = segment;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, ""+codecId, BlockTermsWriter.TERMS_EXTENSION),
                        readBufferSize);
 
     boolean success = false;

@@ -28,6 +28,10 @@ $Id:$
 
 (No Changes)
 
+================== Release 3.2-dev ==================
+
+(No Changes)
+
 ================== Release 3.1-dev ==================
 
 * SOLR-1902: Upgraded to Tika 0.8 and changed deprecated parse call

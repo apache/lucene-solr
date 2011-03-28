@@ -112,7 +112,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   }
   
   private void checkDuplicateTerms(MultiTermQuery.RewriteMethod method) throws Exception {
-    final MultiTermQuery mtq = new TermRangeQuery("data", "2", "7", true, true);
+    final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
     mtq.setRewriteMethod(method);
     final Query q1 = searcher.rewrite(mtq);
     final Query q2 = multiSearcher.rewrite(mtq);
@@ -158,7 +158,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     final MultiTermQuery mtq = new MultiTermQuery("data") {
       @Override
       protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-        return new TermRangeTermsEnum(terms.iterator(), "2", "7", true, true, null) {
+        return new TermRangeTermsEnum(terms.iterator(), new BytesRef("2"), new BytesRef("7"), true, true) {
           final BoostAttribute boostAtt =
             attributes().addAttribute(BoostAttribute.class);
         
@@ -203,7 +203,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     // default gets restored automatically by LuceneTestCase:
     BooleanQuery.setMaxClauseCount(3);
     
-    final MultiTermQuery mtq = new TermRangeQuery("data", "2", "7", true, true);
+    final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
     mtq.setRewriteMethod(method);
     try {
       multiSearcherDupls.rewrite(mtq);
@@ -219,7 +219,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     // default gets restored automatically by LuceneTestCase:
     BooleanQuery.setMaxClauseCount(3);
     
-    final MultiTermQuery mtq = new TermRangeQuery("data", "2", "7", true, true);
+    final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
     mtq.setRewriteMethod(method);
     multiSearcherDupls.rewrite(mtq);
   }

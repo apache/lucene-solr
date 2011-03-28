@@ -22,6 +22,15 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.ClassicFilter;
 
 /**
+ * Factory for {@link ClassicFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_clssc" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.ClassicTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.ClassicFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ *
  * @version $Id$
  */
 public class ClassicFilterFactory extends BaseTokenFilterFactory {

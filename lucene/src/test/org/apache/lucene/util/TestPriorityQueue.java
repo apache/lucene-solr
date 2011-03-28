@@ -23,8 +23,7 @@ public class TestPriorityQueue extends LuceneTestCase {
 
     private static class IntegerQueue extends PriorityQueue<Integer> {
         public IntegerQueue(int count) {
-            super();
-            initialize(count);
+            super(count);
         }
 
         @Override

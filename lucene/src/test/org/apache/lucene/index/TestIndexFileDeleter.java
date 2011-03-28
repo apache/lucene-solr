@@ -68,7 +68,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Term searchTerm = new Term("id", "7");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("didn't delete the right number of documents", 1, delCount);
-    Similarity sim = new DefaultSimilarity().get("content");
+    Similarity sim = new DefaultSimilarity();
     // Set one norm so we get a .s0 file:
     reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
     reader.close();
@@ -92,10 +92,9 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
     FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
     int contentFieldIndex = -1;
-    for(i=0;i<fieldInfos.size();i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
+    for (FieldInfo fi : fieldInfos) {
       if (fi.name.equals("content")) {
-        contentFieldIndex = i;
+        contentFieldIndex = fi.number;
         break;
       }
     }

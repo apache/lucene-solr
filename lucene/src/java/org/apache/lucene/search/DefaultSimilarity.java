@@ -20,7 +20,7 @@ import org.apache.lucene.index.FieldInvertState;
  */
 
 /** Expert: Default scoring implementation. */
-public class DefaultSimilarity extends Similarity implements SimilarityProvider {
+public class DefaultSimilarity extends Similarity {
 
   /** Implemented as
    *  <code>state.getBoost()*lengthNorm(numTerms)</code>, where
@@ -40,11 +40,6 @@ public class DefaultSimilarity extends Similarity implements SimilarityProvider 
     return state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms)));
   }
   
-  /** Implemented as <code>1/sqrt(sumOfSquaredWeights)</code>. */
-  public float queryNorm(float sumOfSquaredWeights) {
-    return (float)(1.0 / Math.sqrt(sumOfSquaredWeights));
-  }
-
   /** Implemented as <code>sqrt(freq)</code>. */
   @Override
   public float tf(float freq) {
@@ -63,11 +58,6 @@ public class DefaultSimilarity extends Similarity implements SimilarityProvider 
     return (float)(Math.log(numDocs/(double)(docFreq+1)) + 1.0);
   }
     
-  /** Implemented as <code>overlap / maxOverlap</code>. */
-  public float coord(int overlap, int maxOverlap) {
-    return overlap / (float)maxOverlap;
-  }
-
   // Default true
   protected boolean discountOverlaps = true;
 
@@ -87,13 +77,5 @@ public class DefaultSimilarity extends Similarity implements SimilarityProvider 
   /** @see #setDiscountOverlaps */
   public boolean getDiscountOverlaps() {
     return discountOverlaps;
-  }
-
-  /** 
-   * Returns this default implementation for all fields.
-   * Override this method to customize scoring on a per-field basis.
-   */
-  public Similarity get(String field) {
-    return this;
   }
 }

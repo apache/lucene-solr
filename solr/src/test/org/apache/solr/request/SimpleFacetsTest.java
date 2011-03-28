@@ -370,6 +370,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     final String pre = "//lst[@name='"+b+"']/lst[@name='"+f+"']" + c;
     final String meta = pre + (rangeMode ? "/../" : "");
 
+    
+    // date faceting defaults to include both endpoints, 
+    // range faceting defaults to including only lower
+    // doc exists with value @ 00:00:00.000 on July5
+    final String jul4 = rangeMode ? "[.='1'  ]" : "[.='2'  ]";
+
     assertQ("check counts for month of facet by day",
             req( "q", "*:*"
                 ,"rows", "0"
@@ -381,12 +387,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 )
             ,"*[count("+pre+"/int)="+(rangeMode ? 31 : 34)+"]"
-            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0'  ]"
-            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0'  ]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            // july4th = 2 because exists doc @ 00:00:00.000 on July5
-            // (date faceting is inclusive)
-            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
@@ -433,9 +437,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 )
             ,"*[count("+pre+"/int)="+(rangeMode ? 8 : 11)+"]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            // july4th = 2 because exists doc @ 00:00:00.000 on July5
-            // (date faceting is inclusive)
-            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-13T00:00:00Z'][.='1'  ]"
@@ -458,11 +460,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 ,"f." + f + ".facet.mincount", "2"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 4 : 7)+"]"
+            ,"*[count("+pre+"/int)="+(rangeMode ? 3 : 7)+"]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            // july4th = 2 because exists doc @ 00:00:00.000 on July5
-            // (date faceting is inclusive)
-            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+(rangeMode ? "" : "/int[@name='1976-07-04T00:00:00Z']" +jul4)
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
             ,meta+"/int[@name='before' ][.='2']"
@@ -482,11 +482,11 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 )
             ,"*[count("+pre+"/int)="+(rangeMode ? 2 : 5)+"]"
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
-            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
             
             ,meta+"/int[@name='before' ][.='5']"
             );
-    assertQ("check after is not inclusive of lower bound by default",
+    assertQ("check after is not inclusive of lower bound by default (for dates)",
             req("q", "*:*"
                 ,"rows", "0"
                 ,"facet", "true"
@@ -498,9 +498,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 )
             ,"*[count("+pre+"/int)="+(rangeMode ? 2 : 5)+"]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
             
-            ,meta+"/int[@name='after' ][.='8']"
+            ,meta+"/int[@name='after' ][.='"+(rangeMode ? 9 : 8)+"']"
             );
             
 

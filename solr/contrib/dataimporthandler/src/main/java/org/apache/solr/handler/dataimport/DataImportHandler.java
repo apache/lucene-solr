@@ -27,6 +27,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -41,8 +42,10 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.*;
+import java.io.StringReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
 /**
  * <p>
@@ -108,9 +111,9 @@ public class DataImportHandler extends RequestHandlerBase implements
         String configLoc = (String) defaults.get("config");
         if (configLoc != null && configLoc.length() != 0) {
           processConfiguration(defaults);
-
-          importer = new DataImporter(SolrWriter.getResourceAsString(core
-                  .getResourceLoader().openResource(configLoc)), core,
+          final InputSource is = new InputSource(core.getResourceLoader().openConfig(configLoc));
+          is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(configLoc));
+          importer = new DataImporter(is, core,
                   dataSources, coreScopeSession);
         }
       }
@@ -162,7 +165,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       if (requestParams.dataConfig != null) {
         try {
           processConfiguration((NamedList) initArgs.get("defaults"));
-          importer = new DataImporter(requestParams.dataConfig, req.getCore()
+          importer = new DataImporter(new InputSource(new StringReader(requestParams.dataConfig)), req.getCore()
                   , dataSources, coreScopeSession);
         } catch (RuntimeException e) {
           rsp.add("exception", DebugLogger.getStacktraceString(e));

@@ -27,16 +27,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.MergeState;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.MultiBits;
+import org.apache.lucene.util.ReaderUtil;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
@@ -66,7 +66,6 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
   
-  private final CodecProvider codecs;
   private Codec codec;
   private SegmentWriteState segmentWriteState;
 
@@ -75,9 +74,8 @@ final class SegmentMerger {
   SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, CodecProvider codecs, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos) {
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
-    this.codecs = codecs;
-    this.fieldInfos = fieldInfos;
     segment = name;
+    this.fieldInfos = fieldInfos;
     if (merge != null) {
       checkAbort = new MergeState.CheckAbort(merge, directory);
     } else {
@@ -148,7 +146,7 @@ final class SegmentMerger {
       boolean storePayloads, boolean omitTFAndPositions)
       throws IOException {
     for (String field : names) {
-      fInfos.add(field, true, storeTermVectors,
+      fInfos.addOrUpdate(field, true, storeTermVectors,
           storePositionWithTermVector, storeOffsetWithTermVector, !reader
               .hasNorms(field), storePayloads, omitTFAndPositions, null);
     }
@@ -180,9 +178,8 @@ final class SegmentMerger {
         SegmentReader segmentReader = (SegmentReader) reader;
         boolean same = true;
         FieldInfos segmentFieldInfos = segmentReader.fieldInfos();
-        int numFieldInfos = segmentFieldInfos.size();
-        for (int j = 0; same && j < numFieldInfos; j++) {
-          same = fieldInfos.fieldName(j).equals(segmentFieldInfos.fieldName(j));
+        for (FieldInfo fi : segmentFieldInfos) {
+          same = fieldInfos.fieldName(fi.number).equals(fi.name);
         }
         if (same) {
           matchingSegmentReaders[i] = segmentReader;
@@ -208,9 +205,8 @@ final class SegmentMerger {
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         FieldInfos readerFieldInfos = segmentReader.fieldInfos();
-        int numReaderFieldInfos = readerFieldInfos.size();
-        for (int j = 0; j < numReaderFieldInfos; j++) {
-          fieldInfos.add(readerFieldInfos.fieldInfo(j));
+        for (FieldInfo fi : readerFieldInfos) {
+          fieldInfos.add(fi);
         }
       } else {
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, false);
@@ -220,18 +216,18 @@ final class SegmentMerger {
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.OMIT_TERM_FREQ_AND_POSITIONS), false, false, false, false, true);
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.STORES_PAYLOADS), false, false, false, true, false);
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.INDEXED), false, false, false, false, false);
-        fieldInfos.add(reader.getFieldNames(FieldOption.UNINDEXED), false);
-        fieldInfos.add(reader.getFieldNames(FieldOption.DOC_VALUES), false);
+        fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.UNINDEXED), false);
+        fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
-    final SegmentCodecs codecInfo = SegmentCodecs.build(fieldInfos, this.codecs);
-    fieldInfos.write(directory, segment + ".fnm");
+    final SegmentCodecs codecInfo = fieldInfos.buildSegmentCodecs(false);
+    fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
 
     int docCount = 0;
 
     setMatchingSegmentReaders();
 
-    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, fieldInfos);
+    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment);
 
     try {
       int idx = 0;
@@ -313,7 +309,7 @@ final class SegmentMerger {
         // NOTE: it's very important to first assign to doc then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         Document doc = reader.document(j);
-        fieldsWriter.addDocument(doc);
+        fieldsWriter.addDocument(doc, fieldInfos);
         docCount++;
         checkAbort.work(300);
       }
@@ -340,7 +336,7 @@ final class SegmentMerger {
         // NOTE: it's very important to first assign to doc then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         Document doc = reader.document(docCount);
-        fieldsWriter.addDocument(doc);
+        fieldsWriter.addDocument(doc, fieldInfos);
         checkAbort.work(300);
       }
     }
@@ -572,11 +568,15 @@ final class SegmentMerger {
     return mergeState.delCounts;
   }
   
+  public boolean getAnyNonBulkMerges() {
+    assert matchedCount <= readers.size();
+    return matchedCount != readers.size();
+  }
+
   private void mergeNorms() throws IOException {
     IndexOutput output = null;
     try {
-      for (int i = 0, numFieldInfos = fieldInfos.size(); i < numFieldInfos; i++) {
-        final FieldInfo fi = fieldInfos.fieldInfo(i);
+      for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) { 
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));

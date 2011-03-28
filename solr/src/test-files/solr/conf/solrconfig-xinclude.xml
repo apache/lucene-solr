@@ -19,6 +19,10 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <!--  FIXME: is there a way to make this test *not* depend on the CWD? -->
-  <xi:include href="solrconfig-reqHandler.incl" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <xi:include href="foobar-missing.xml" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:fallback>
+      <xi:include href="solrconfig-reqHandler.incl" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+    </xi:fallback>
+  </xi:include>
 </config>

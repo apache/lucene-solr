@@ -5,7 +5,7 @@
 <meta content="Apache Forrest" name="Generator">
 <meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="lucene">
-<title>Solr tutorial (version 4.0.0.2011.01.04.00.08.44)</title>
+<title>Solr tutorial</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
@@ -192,10 +192,7 @@ document.write("Last Published: " + document.lastModified);
                 }
               }
             </script>
-<div id="credit">
-<hr>
-      This document is for Apache Solr version 4.0.0.2011.01.04.00.08.44.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
-        </div>
+<div id="credit"></div>
 <div id="roundbottom">
 <img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
 <!--+
@@ -217,9 +214,6 @@ document.write("Last Published: " + document.lastModified);
         PDF</a>
 </div>
 <h1>Solr tutorial</h1>
-<div id="motd-area">
-      This document is for Apache Solr version 4.0.0.2011.01.04.00.08.44.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
-        </div>
 <div id="minitoc-area">
 <ul class="minitoc">
 <li>
@@ -257,6 +251,9 @@ document.write("Last Published: " + document.lastModified);
 <a href="#Faceted+Search">Faceted Search</a>
 </li>
 <li>
+<a href="#Search+UI">Search UI</a>
+</li>
+<li>
 <a href="#Text+Analysis">Text Analysis</a>
 <ul class="minitoc">
 <li>
@@ -290,10 +287,9 @@ To follow along with this tutorial, you will need...
 <ol>
   
 <li>Java 1.6 or greater.  Some places you can get it are from
-  <a href="http://java.sun.com/j2se/downloads.html">OpenJDK</a>,
-  <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
+  <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle</a>,
+  <a href="http://openjdk.java.net/">Open JDK</a>,
   <a href="http://www.ibm.com/developerworks/java/jdk/">IBM</a>, or
-  <a href="http://www.oracle.com/technology/products/jrockit/index.html">Oracle</a>.
   <br>
   Running <span class="codefrag">java -version</span> at the command line should indicate a version
   number starting with 1.6.  Gnu's GCJ is not supported and does not work with Solr.
@@ -306,7 +302,7 @@ To follow along with this tutorial, you will need...
 </div>
 
 
-<a name="N10043"></a><a name="Getting+Started"></a>
+<a name="N1003F"></a><a name="Getting+Started"></a>
 <h2 class="boxed">Getting Started</h2>
 <div class="section">
 <p>
@@ -335,7 +331,7 @@ To launch Jetty with the Solr WAR, and the example configs, just run the <span c
 <pre class="code">
 user:~/solr/example$ <strong>java -jar start.jar</strong>
 2009-10-23 16:42:53.816::INFO:  Logging to STDERR via org.mortbay.log.StdErrLog
-2009-10-23 16:42:53.907::INFO:  jetty-6.1.3
+2009-10-23 16:42:53.907::INFO:  jetty-6.1.26
 
 ...
 
@@ -354,7 +350,7 @@ You can see that the Solr is running by loading <a href="http://localhost:8983/s
 
 
 
-<a name="N1007B"></a><a name="Indexing+Data"></a>
+<a name="N10077"></a><a name="Indexing+Data"></a>
 <h2 class="boxed">Indexing Data</h2>
 <div class="section">
 <p>
@@ -389,11 +385,11 @@ Clicking the "Search" button should take you to the following URL...
 </p>
 <p>
 
-<a href="http://localhost:8983/solr/select/?q=solr&version=2.2&start=0&rows=10&indent=on">http://localhost:8983/solr/select/?q=solr&amp;version=2.2&amp;start=0&amp;rows=10&amp;indent=on</a>
+<a href="http://localhost:8983/solr/select/?q=solr&start=0&rows=10&indent=on">http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on</a>
 
 </p>
 <p>
-You can index all of the sample data, using the following command (assuming your shell supports the *.xml notation):
+You can index all of the sample data, using the following command (assuming your command line shell supports the *.xml notation):
 </p>
 <pre class="code">
   user:~/solr/example/exampledocs$ <strong>java -jar post.jar *.xml</strong>
@@ -448,6 +444,11 @@ SimplePostTool: COMMITting Solr index changes..
    including those exported by Excel or MySQL.
   </li> 
   
+<li>
+<a href="http://wiki.apache.org/solr/UpdateJSON">POST JSON documents</a>
+  
+</li> 
+  
 <li>Index binary documents such as Word and PDF with 
     <a href="http://wiki.apache.org/solr/ExtractingRequestHandler">Solr Cell</a> (ExtractingRequestHandler).
   </li>
@@ -464,7 +465,7 @@ SimplePostTool: COMMITting Solr index changes..
 
 
 
-<a name="N100EB"></a><a name="Updating+Data"></a>
+<a name="N100ED"></a><a name="Updating+Data"></a>
 <h2 class="boxed">Updating Data</h2>
 <div class="section">
 <p>
@@ -496,7 +497,7 @@ Go ahead and edit the existing XML files to change some of the data, and re-run
 the <span class="codefrag">java -jar post.jar</span> command, you'll see your changes reflected
 in subsequent searches.
 </p>
-<a name="N10119"></a><a name="Deleting+Data"></a>
+<a name="N1011B"></a><a name="Deleting+Data"></a>
 <h3 class="boxed">Deleting Data</h3>
 <p>You can delete data by POSTing a delete command to the update URL and specifying the value
       of the document's unique key field, or a query that matches multiple documents (be careful with that one!).  Since these commands
@@ -525,7 +526,7 @@ in subsequent searches.
 </div>
 
 
-<a name="N1015F"></a><a name="Querying+Data"></a>
+<a name="N10161"></a><a name="Querying+Data"></a>
 <h2 class="boxed">Querying Data</h2>
 <div class="section">
 <p>
@@ -556,7 +557,7 @@ in subsequent searches.
     Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
     that allows setting the various request parameters and is useful when trying out or debugging queries.
   </p>
-<a name="N10194"></a><a name="Sorting"></a>
+<a name="N10196"></a><a name="Sorting"></a>
 <h3 class="boxed">Sorting</h3>
 <p>
       Solr provides a simple method to sort on one or more indexed fields.
@@ -592,13 +593,23 @@ in subsequent searches.
     
 </ul>
 <p>
+      Complex functions may also be used to sort results...
+    </p>
+<ul>
+      
+<li>
+<a href="http://localhost:8983/solr/select/?indent=on&q=*:*&sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a>
+</li>
+    
+</ul>
+<p>
       If no sort is specified, the default is <span class="codefrag">score desc</span> to return the matches having the highest relevancy.
     </p>
 </div>
 
 
 
-<a name="N101C7"></a><a name="Highlighting"></a>
+<a name="N101D4"></a><a name="Highlighting"></a>
 <h2 class="boxed">Highlighting</h2>
 <div class="section">
 <p>
@@ -625,7 +636,7 @@ in subsequent searches.
 
 
 
-<a name="N101F0"></a><a name="Faceted+Search"></a>
+<a name="N101FD"></a><a name="Faceted+Search"></a>
 <h2 class="boxed">Faceted Search</h2>
 <div class="section">
 <p>
@@ -684,7 +695,25 @@ in subsequent searches.
 
 
 
-<a name="N10241"></a><a name="Text+Analysis"></a>
+<a name="N1024E"></a><a name="Search+UI"></a>
+<h2 class="boxed">Search UI</h2>
+<div class="section">
+<p>
+    Solr includes an example search interface built with velocity templating
+    that demonstrates many features, including searching, faceting, highlighting,
+    autocomplete, and geospatial searching. 
+  </p>
+<p>
+    Try it out at
+    <a href="http://localhost:8983/solr/browse">http://localhost:8983/solr/browse</a>
+  
+</p>
+</div> <!-- Search UI -->
+
+
+
+
+<a name="N10261"></a><a name="Text+Analysis"></a>
 <h2 class="boxed">Text Analysis</h2>
 <div class="section">
 <p>
@@ -726,7 +755,7 @@ in subsequent searches.
 <p>A full description of the analysis components, Analyzers, Tokenizers, and TokenFilters
     available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
   </p>
-<a name="N10291"></a><a name="Analysis+Debugging"></a>
+<a name="N102B1"></a><a name="Analysis+Debugging"></a>
 <h3 class="boxed">Analysis Debugging</h3>
 <p>There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
       debugging page where you can see how a text value is broken down into words,
@@ -755,7 +784,7 @@ in subsequent searches.
 </div>
 
 
-<a name="N102D0"></a><a name="Conclusion"></a>
+<a name="N102F0"></a><a name="Conclusion"></a>
 <h2 class="boxed">Conclusion</h2>
 <div class="section">
 <p>

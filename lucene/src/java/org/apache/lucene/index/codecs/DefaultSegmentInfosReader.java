@@ -56,7 +56,9 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
   
       infos.version = input.readLong(); // read version
       infos.counter = input.readInt(); // read counter
-  
+      if (infos.getFormat() <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+        infos.setGlobalFieldMapVersion(input.readLong());
+      }
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
         SegmentInfo si = new SegmentInfo(directory, format, input, codecs);
         if (si.getVersion() == null) {

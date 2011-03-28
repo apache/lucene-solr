@@ -43,7 +43,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -164,28 +166,16 @@ public class EmbeddedSolrServer extends SolrServer
             new BinaryResponseWriter.Resolver( req, rsp.getReturnFields()) 
           {
             @Override
-            public void writeDocList(DocList ids, JavaBinCodec codec) throws IOException {
+            public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
               // write an empty list...
               SolrDocumentList docs = new SolrDocumentList();
-              docs.setNumFound( ids.matches() );
-              docs.setStart( ids.offset() );
-              docs.setMaxScore( ids.maxScore() );
+              docs.setNumFound( ctx.docs.matches() );
+              docs.setStart( ctx.docs.offset() );
+              docs.setMaxScore( ctx.docs.maxScore() );
               codec.writeSolrDocumentList( docs );
               
-              int sz = ids.size();
-              
-              if(searcher == null) searcher = solrQueryRequest.getSearcher();
-              if(schema == null) schema = solrQueryRequest.getSchema(); 
-              DocIterator iterator = ids.iterator();
-              for (int i = 0; i < sz; i++) {
-                int id = iterator.nextDoc();
-                Document doc = searcher.doc(id, returnFields);
-                SolrDocument sdoc = getDoc(doc);
-                if (includeScore && ids.hasScores()) {
-                  sdoc.addField("score", iterator.score());
-                }
-                callback.streamSolrDocument( sdoc );
-              }
+              // This will transform
+              writeResultsBody( ctx, codec );
             }
           };
           
@@ -194,7 +184,7 @@ public class EmbeddedSolrServer extends SolrServer
           new JavaBinCodec(resolver) {
 
             @Override
-            public void writeSolrDocument(SolrDocument doc, Set<String> fields) throws IOException {
+            public void writeSolrDocument(SolrDocument doc) throws IOException {
               callback.streamSolrDocument( doc );
               //super.writeSolrDocument( doc, fields );
             }

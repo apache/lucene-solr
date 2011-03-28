@@ -22,7 +22,16 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.cjk.CJKTokenizer;
 import java.io.Reader;
 
-/** Factory for {@link CJKTokenizer} */
+/** 
+ * Factory for {@link CJKTokenizer}. 
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_cjk" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.CJKTokenizerFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
+ */
 public class CJKTokenizerFactory extends BaseTokenizerFactory {
   public CJKTokenizer create(Reader in) {
     return new CJKTokenizer(in);

@@ -21,6 +21,14 @@ based on changes in the terms of the dependency being updated.
 
 ---
 
+When adding a jar or updating an existing jar, be sure to include/update 
+xyz-LICENSE.txt and if applicable, xyz-NOTICE.txt.  These files often
+change across versions of the dependency, so when updating be SURE to 
+update them to the recent version. This also allows others to see
+what changed with respect to licensing in the commit diff.
+
+---
+
 Any changes made to this directory should be noted in CHANGES.txt,
 along with the specific version information.  If the version is a
 "snapshot" of another Apache project, include the SVN revision number.

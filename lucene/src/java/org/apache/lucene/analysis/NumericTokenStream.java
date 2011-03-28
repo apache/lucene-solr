@@ -142,8 +142,13 @@ public final class NumericTokenStream extends TokenStream {
   public static final class NumericTermAttributeImpl extends AttributeImpl implements NumericTermAttribute,TermToBytesRefAttribute {
     private long value = 0L;
     private int valueSize = 0, shift = 0, precisionStep = 0;
+    private BytesRef bytes = new BytesRef();
+
+    public BytesRef getBytesRef() {
+      return bytes;
+    }
     
-    public int toBytesRef(BytesRef bytes) {
+    public int fillBytesRef() {
       try {
         assert valueSize == 64 || valueSize == 32;
         return (valueSize == 64) ? 
@@ -180,9 +185,8 @@ public final class NumericTokenStream extends TokenStream {
     
     @Override
     public void reflectWith(AttributeReflector reflector) {
-      final BytesRef bytes = new BytesRef();
-      toBytesRef(bytes);
-      reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes);
+      fillBytesRef();
+      reflector.reflect(TermToBytesRefAttribute.class, "bytes", new BytesRef(bytes));
       reflector.reflect(NumericTermAttribute.class, "shift", shift);
       reflector.reflect(NumericTermAttribute.class, "rawValue", getRawValue());
       reflector.reflect(NumericTermAttribute.class, "valueSize", valueSize);

@@ -42,9 +42,9 @@
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.5</java.compat.version>
     <jetty.version>6.1.26</jetty.version>
+    <patched.jetty.version>6.1.26-patched-JETTY-1340</patched.jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
     <tika.version>0.8</tika.version>
-    <uima.version>${project.version}</uima.version>
   </properties>
   <issueManagement>
     <system>JIRA</system>
@@ -128,9 +128,9 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>com.ibm.icu</groupId>
-        <artifactId>icu4j</artifactId>
-        <version>4.6</version>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-icu4j</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>com.sleepycat</groupId>
@@ -259,28 +259,28 @@
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>uima-alchemy-annotator</artifactId>
-        <version>${uima.version}</version>
+        <artifactId>solr-uima-an-alchemy</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>uima-OpenCalaisAnnotator</artifactId>
-        <version>${uima.version}</version>
+        <artifactId>solr-uima-an-calais</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>uima-Tagger</artifactId>
-        <version>${uima.version}</version>
+        <artifactId>solr-uima-an-tagger</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
-        <artifactId>uima-WhitespaceTokenizer</artifactId>
-        <version>${uima.version}</version>
+        <artifactId>solr-uima-an-wst</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>uima-uimaj-core</artifactId>
-        <version>${uima.version}</version>
+        <groupId>org.apache.uima</groupId>
+        <artifactId>uimaj-core</artifactId>
+        <version>2.3.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.velocity</groupId>
@@ -315,12 +315,12 @@
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty</artifactId>
-        <version>${jetty.version}</version>
+        <version>${patched.jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-util</artifactId>
-        <version>${jetty.version}</version>
+        <version>${patched.jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
@@ -363,14 +363,9 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>xerces</groupId>
-        <artifactId>xercesImpl</artifactId>
-        <version>2.9.1-patched-XERCESJ-1257</version>
-      </dependency>
-      <dependency>
-        <groupId>xml-apis</groupId>
-        <artifactId>xml-apis</artifactId>
-        <version>2.9.0</version>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-xercesImpl</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>javax.servlet</groupId>
@@ -559,6 +554,7 @@
           <doCheck>false</doCheck>
           <doUpdate>false</doUpdate>
           <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+          <revisionOnScmFailure>NO-REVISION-AVAILABLE</revisionOnScmFailure>
           <buildNumberPropertyName>svn.revision</buildNumberPropertyName>
         </configuration>
       </plugin>
@@ -624,9 +620,9 @@
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
-                  <groupId>com.ibm.icu</groupId>
-                  <artifactId>icu4j</artifactId>
-                  <version>4.6</version>
+                  <groupId>org.apache.lucene</groupId>
+                  <artifactId>lucene-icu4j</artifactId>
+                  <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>modules/analysis/icu/lib/icu4j-4_6.jar</file>
                 </configuration>
@@ -638,25 +634,11 @@
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
-                  <groupId>xerces</groupId>
-                  <artifactId>xercesImpl</artifactId>
-                  <version>2.9.1-patched-XERCESJ-1257</version>
+                  <groupId>org.apache.lucene</groupId>
+                  <artifactId>lucene-xercesImpl</artifactId>
+                  <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-xml-apis</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>xml-apis</groupId>
-                  <artifactId>xml-apis</artifactId>
-                  <version>2.9.0</version>
-                  <packaging>jar</packaging>
-                  <file>modules/benchmark/lib/xml-apis-2.9.0.jar</file>
                 </configuration>  
               </execution>
               <execution>
@@ -716,74 +698,88 @@
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-alchemy-annotator</id>
+                <id>install-solr-uima-an-alchemy</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>uima-alchemy-annotator</artifactId>
-                  <version>${uima.version}</version>
+                  <artifactId>solr-uima-an-alchemy</artifactId>
+                  <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-alchemy.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar</file>
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-OpenCalaisAnnotator</id>
+                <id>install-solr-uima-an-calais</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>uima-OpenCalaisAnnotator</artifactId>
-                  <version>${uima.version}</version>
+                  <artifactId>solr-uima-an-calais</artifactId>
+                  <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-calais.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar</file>
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-Tagger</id>
+                <id>install-solr-uima-an-tagger</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>uima-Tagger</artifactId>
-                  <version>${uima.version}</version>
+                  <artifactId>solr-uima-an-tagger</artifactId>
+                  <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-tagger.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar</file>
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-WhitespaceTokenizer</id>
+                <id>install-solr-uima-an-wst</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
                   <groupId>org.apache.solr</groupId>
-                  <artifactId>uima-WhitespaceTokenizer</artifactId>
-                  <version>${uima.version}</version>
+                  <artifactId>solr-uima-an-wst</artifactId>
+                  <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-an-wst.jar</file>
+                  <file>solr/contrib/uima/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar</file>
                 </configuration>  
               </execution>
               <execution>
-                <id>install-solr-uima-uimaj-core</id>
+                <id>install-jetty</id>
                 <phase>install</phase>
                 <goals>
                   <goal>install-file</goal>
                 </goals>
                 <configuration>
-                  <groupId>org.apache.solr</groupId>
-                  <artifactId>uima-uimaj-core</artifactId>
-                  <version>${uima.version}</version>
+                  <groupId>org.mortbay.jetty</groupId>
+                  <artifactId>jetty</artifactId>
+                  <version>${patched.jetty.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/contrib/uima/lib/uima-core.jar</file>
-                </configuration>  
+                  <file>solr/example/lib/jetty-${patched.jetty.version}.jar</file>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-jetty-util</id>
+                <phase>install</phase>
+                <goals>
+                  <goal>install-file</goal>
+                </goals>
+                <configuration>
+                  <groupId>org.mortbay.jetty</groupId>
+                  <artifactId>jetty-util</artifactId>
+                  <version>${patched.jetty.version}</version>
+                  <packaging>jar</packaging>
+                  <file>solr/example/lib/jetty-util-${patched.jetty.version}.jar</file>
+                </configuration>
               </execution>
             </executions>
           </plugin>

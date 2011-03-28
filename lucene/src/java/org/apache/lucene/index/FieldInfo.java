@@ -21,6 +21,7 @@ import org.apache.lucene.index.values.Type;
 
 /** @lucene.experimental */
 public final class FieldInfo {
+  public static final int UNASSIGNED_CODEC_ID = -1;
   public String name;
   public boolean isIndexed;
   public int number;
@@ -36,14 +37,15 @@ public final class FieldInfo {
   public boolean omitTermFreqAndPositions;
 
   public boolean storePayloads; // whether this field stores payloads together with term positions
-  int codecId = 0; // set inside SegmentCodecs#build() during segment flush - this is used to identify the codec used to write this field 
+  private int codecId = UNASSIGNED_CODEC_ID; // set inside SegmentCodecs#build() during segment flush - this is used to identify the codec used to write this field
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
-            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, Type docValues) {
     name = na;
     isIndexed = tk;
     number = nu;
+    this.docValues = docValues;
     if (isIndexed) {
       this.storeTermVector = storeTermVector;
       this.storeOffsetWithTermVector = storeOffsetWithTermVector;
@@ -61,12 +63,24 @@ public final class FieldInfo {
     }
   }
 
-  @Override
-  public Object clone() {
-    return new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
-                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+  void setCodecId(int codecId) {
+    assert this.codecId == UNASSIGNED_CODEC_ID : "CodecId can only be set once.";
+    this.codecId = codecId;
   }
 
+  public int getCodecId() {
+    return codecId;
+  }
+
+  @Override
+  public Object clone() {
+    FieldInfo clone = new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
+                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValues);
+    clone.codecId = this.codecId;
+    return clone;
+  }
+
+  // should only be called by FieldInfos#addOrUpdate
   void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
               boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     if (this.isIndexed != isIndexed) {
@@ -95,12 +109,8 @@ public final class FieldInfo {
   }
 
   void setDocValues(Type v) {
-    if (docValues != null) {
-      if (docValues != v) {
-        throw new IllegalArgumentException("indexValues is already set to " + docValues + "; cannot change to " + v);
-      }
-    } else{
-	   docValues = v;
+    if (docValues == null) {
+      docValues = v;
     }
   }
   

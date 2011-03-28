@@ -36,7 +36,6 @@ import org.apache.lucene.store.IndexOutput;
 
 final class NormsWriter extends InvertedDocEndConsumer {
 
-  private FieldInfos fieldInfos;
   @Override
   public InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread) {
     return new NormsWriterPerThread(docInverterPerThread, this);
@@ -48,11 +47,6 @@ final class NormsWriter extends InvertedDocEndConsumer {
   // We only write the _X.nrm file at flush
   void files(Collection<String> files) {}
 
-  @Override
-  void setFieldInfos(FieldInfos fieldInfos) {
-    this.fieldInfos = fieldInfos;
-  }
-
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
   @Override
@@ -60,7 +54,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
     final Map<FieldInfo,List<NormsWriterPerField>> byField = new HashMap<FieldInfo,List<NormsWriterPerField>>();
 
-    if (!fieldInfos.hasNorms()) {
+    if (!state.fieldInfos.hasNorms()) {
       return;
     }
 
@@ -96,15 +90,10 @@ final class NormsWriter extends InvertedDocEndConsumer {
     try {
       normsOut.writeBytes(SegmentMerger.NORMS_HEADER, 0, SegmentMerger.NORMS_HEADER.length);
 
-      final int numField = fieldInfos.size();
-
       int normCount = 0;
 
-      for(int fieldNumber=0;fieldNumber<numField;fieldNumber++) {
-
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
-
-        List<NormsWriterPerField> toMerge = byField.get(fieldInfo);
+      for (FieldInfo fi : state.fieldInfos) {
+        final List<NormsWriterPerField> toMerge = byField.get(fi);
         int upto = 0;
         if (toMerge != null) {
 
@@ -158,7 +147,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
           // Fill final hole with defaultNorm
           for(;upto<state.numDocs;upto++)
             normsOut.writeByte((byte) 0);
-        } else if (fieldInfo.isIndexed && !fieldInfo.omitNorms) {
+        } else if (fi.isIndexed && !fi.omitNorms) {
           normCount++;
           // Fill entire field with default norm:
           for(;upto<state.numDocs;upto++)

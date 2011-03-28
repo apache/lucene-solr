@@ -48,6 +48,18 @@ import org.apache.lucene.analysis.reverse.ReverseStringFilter;
  * </ul>
  * Note 1: This filter always reverses input tokens during indexing.
  * Note 2: Query tokens without wildcard characters will never be reversed.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_rvswc" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer type="index"&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.ReversedWildcardFilterFactory" withOriginal="true"
+ *             maxPosAsterisk="2" maxPosQuestion="1" minTrailing="2" maxFractionAsterisk="0"/&gt;
+ *   &lt;/analyzer&gt;
+ *   &lt;analyzer type="query"&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
  */
 public class ReversedWildcardFilterFactory extends BaseTokenFilterFactory {
   

@@ -20,6 +20,8 @@ package org.apache.lucene.collation;
 
 import com.ibm.icu.text.Collator;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.util.BytesRef;
 
 import java.util.Locale;
 
@@ -27,17 +29,23 @@ import java.util.Locale;
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
-  private Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
+  private Analyzer analyzer = new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator);
 
-  private String firstRangeBeginning = encodeCollationKey
+  private BytesRef firstRangeBeginning = new BytesRef
     (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
-  private String firstRangeEnd = encodeCollationKey
+  private BytesRef firstRangeEnd = new BytesRef
     (collator.getCollationKey(firstRangeEndOriginal).toByteArray());
-  private String secondRangeBeginning = encodeCollationKey
+  private BytesRef secondRangeBeginning = new BytesRef
     (collator.getCollationKey(secondRangeBeginningOriginal).toByteArray());
-  private String secondRangeEnd = encodeCollationKey
+  private BytesRef secondRangeEnd = new BytesRef
     (collator.getCollationKey(secondRangeEndOriginal).toByteArray());
-  
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    assumeFalse("preflex format only supports UTF-8 encoded bytes", "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+  }
+
   public void testFarsiRangeFilterCollating() throws Exception {
     testFarsiRangeFilterCollating(analyzer, firstRangeBeginning, firstRangeEnd, 
                                   secondRangeBeginning, secondRangeEnd);
@@ -62,18 +70,28 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
   //  
   public void testCollationKeySort() throws Exception {
     Analyzer usAnalyzer = new ICUCollationKeyAnalyzer
-      (Collator.getInstance(Locale.US));
+      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.US));
     Analyzer franceAnalyzer = new ICUCollationKeyAnalyzer
-      (Collator.getInstance(Locale.FRANCE));
+      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.FRANCE));
     Analyzer swedenAnalyzer = new ICUCollationKeyAnalyzer
-      (Collator.getInstance(new Locale("sv", "se")));
+      (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("sv", "se")));
     Analyzer denmarkAnalyzer = new ICUCollationKeyAnalyzer
-      (Collator.getInstance(new Locale("da", "dk")));
+      (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("da", "dk")));
 
     // The ICU Collator and java.text.Collator implementations differ in their
     // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.US.
     testCollationKeySort
     (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
      "BFJHD", "ECAGI", "BJDFH", "BJDHF");
+  }
+  
+  public void testThreadSafe() throws Exception {
+    int iters = 20 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < iters; i++) {
+      Locale locale = randomLocale(random);
+      Collator collator = Collator.getInstance(locale);
+      collator.setStrength(Collator.IDENTICAL);
+      assertThreadSafe(new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator));
+    }
   }
 }

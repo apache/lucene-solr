@@ -42,6 +42,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.schema.IndexSchema;
@@ -100,7 +101,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   
   @Test
   public void testIgnoredFields() throws Exception {
-    lrf.args.put("version","2.0");
+    lrf.args.put(CommonParams.VERSION,"2.2");
     assertU("adding doc with ignored field",
             adoc("id", "42", "foo_ignored", "blah blah"));
     assertU("commit",
@@ -123,7 +124,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals("Mergefactor was not picked up", ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
     writer.close();
 
-    lrf.args.put("version","2.0");
+    lrf.args.put(CommonParams.VERSION,"2.2");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")
             ,"//result[@numFound='0']"
@@ -445,7 +446,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultFieldValues() {
     clearIndex();
-    lrf.args.put("version","2.1");
+    lrf.args.put(CommonParams.VERSION,"2.2");
     assertU(adoc("id",  "4055",
                  "subject", "Hoss the Hoss man Hostetter"));
     assertU(adoc("id",  "4056",
@@ -558,7 +559,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-    DocList dl = (DocList) rsp.getValues().get("response");
+    DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field is not lazy
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
@@ -580,7 +581,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-    DocList dl = (DocList) rsp.getValues().get("response");
+    DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     DocIterator di = dl.iterator();    
     org.apache.lucene.document.Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy
@@ -675,6 +676,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(commit());
   
     try {
+      ignoreException("can not sort on multivalued field: sortabuse_t");
       assertQ("sort on something that shouldn't work",
               req("q", "sortabuse_b:true",
                   "sort", "sortabuse_t asc"),

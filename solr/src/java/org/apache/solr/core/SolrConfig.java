@@ -27,6 +27,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.transform.TransformerFactory;
 
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -102,7 +104,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name
    *@param is the configuration stream
    */
-  public SolrConfig(String name, InputStream is)
+  public SolrConfig(String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     this( (SolrResourceLoader) null, name, is );
   }
@@ -112,7 +114,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name used by the loader if the stream is null
    *@param is the configuration stream 
    */
-  public SolrConfig(String instanceDir, String name, InputStream is)
+  public SolrConfig(String instanceDir, String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     this(new SolrResourceLoader(instanceDir), name, is);
   }
@@ -124,7 +126,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name
    *@param is the configuration stream
    */
-  SolrConfig(SolrResourceLoader loader, String name, InputStream is)
+  SolrConfig(SolrResourceLoader loader, String name, InputSource is)
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     initLibs();
@@ -189,6 +191,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(QParserPlugin.class,"queryParser",true, true);
      loadPluginInfo(QueryResponseWriter.class,"queryResponseWriter",true, true);
      loadPluginInfo(ValueSourceParser.class,"valueSourceParser",true, true);
+     loadPluginInfo(TransformerFactory.class,"transformer",true, true);
      loadPluginInfo(SearchComponent.class,"searchComponent",true, true);
      loadPluginInfo(QueryConverter.class,"queryConverter",true, true);
 
@@ -395,7 +398,7 @@ public class SolrConfig extends Config {
    * @param type The key is FQN of the plugin class there are a few  known types : SolrFormatter, SolrFragmenter
    * SolrRequestHandler,QParserPlugin, QueryResponseWriter,ValueSourceParser,
    * SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
-   * IndexDeletionPolicy, IndexReaderFactory
+   * IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
   public List<PluginInfo> getPluginInfos(String  type){
     List<PluginInfo> result = pluginStore.get(type);

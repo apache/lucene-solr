@@ -410,7 +410,7 @@ public class DateField extends FieldType {
 
   /** DateField specific range query */
   public Query getRangeQuery(QParser parser, SchemaField sf, Date part1, Date part2, boolean minInclusive, boolean maxInclusive) {
-    return new TermRangeQuery(
+    return TermRangeQuery.newStringRange(
             sf.getName(),
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),

@@ -13,6 +13,9 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/test-files" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
+      <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/lucene-libs" />
+      <excludeFolder url="file://$MODULE_DIR$/package" />
     </content>
     <orderEntry type="module" module-name="spatial" />
     <orderEntry type="module" module-name="highlighter" />

@@ -20,7 +20,18 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.sv.SwedishLightStemFilter;
 
-/** Factory for {@link SwedishLightStemFilter} */
+/** 
+ * Factory for {@link SwedishLightStemFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_svlgtstem" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *     &lt;filter class="solr.SwedishLightStemFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$ 
+ */
 public class SwedishLightStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new SwedishLightStemFilter(input);

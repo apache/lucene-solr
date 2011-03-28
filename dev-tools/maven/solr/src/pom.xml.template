@@ -50,7 +50,6 @@
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -132,10 +131,12 @@
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty</artifactId>
+      <optional>true</optional> <!-- Only used for tests and one command-line utility: JettySolrRunner -->
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty-util</artifactId>
+      <optional>true</optional> <!-- Only used for tests and one command-line utility: JettySolrRunner -->
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId>

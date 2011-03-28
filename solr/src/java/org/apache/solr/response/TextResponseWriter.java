@@ -17,17 +17,23 @@
 
 package org.apache.solr.response;
 
-import org.apache.lucene.document.Document;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.FastWriter;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.DocList;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.response.transform.TransformContext;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
 
 /** Base class for text-oriented response writers.
  *
@@ -49,7 +55,7 @@ public abstract class TextResponseWriter {
   protected final SolrQueryResponse rsp;
 
   // the default set of fields to return for each document
-  protected Set<String> returnFields;
+  protected ReturnFields returnFields;
 
   protected int level;
   protected boolean doIndent;
@@ -103,7 +109,7 @@ public abstract class TextResponseWriter {
 
   public abstract void writeNamedList(String name, NamedList val) throws IOException;
 
-  public void writeVal(String name, Object val) throws IOException {
+  public final void writeVal(String name, Object val) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)
@@ -114,6 +120,15 @@ public abstract class TextResponseWriter {
     } else if (val instanceof String) {
       writeStr(name, val.toString(), true);
       // micro-optimization... using toString() avoids a cast first
+    } else if (val instanceof Fieldable) {
+      Fieldable f = (Fieldable)val;
+      SchemaField sf = schema.getFieldOrNull( f.name() );
+      if( sf != null ) {
+        sf.getType().write(this, name, f);
+      }
+      else {
+        writeStr(name, f.stringValue(), true);
+      }
     } else if (val instanceof Integer) {
       writeInt(name, val.toString());
     } else if (val instanceof Boolean) {
@@ -129,19 +144,25 @@ public abstract class TextResponseWriter {
     } else if (val instanceof Double) {
       writeDouble(name, ((Double)val).doubleValue());
     } else if (val instanceof Document) {
-      writeDoc(name, (Document)val, returnFields, 0.0f, false);
+      SolrDocument doc = toSolrDocument( (Document)val );
+      writeSolrDocument(name, doc, returnFields, 0 );
     } else if (val instanceof SolrDocument) {
-      writeSolrDocument(name, (SolrDocument)val, returnFields, null);
-    } else if (val instanceof DocList) {
+      writeSolrDocument(name, (SolrDocument)val, returnFields, 0);
+    } else if (val instanceof ResultContext) {
       // requires access to IndexReader
-      writeDocList(name, (DocList)val, returnFields,null);
+      writeDocuments(name, (ResultContext)val, returnFields);
+    } else if (val instanceof DocList) {
+      // Should not happen normally
+      ResultContext ctx = new ResultContext();
+      ctx.docs = (DocList)val;
+      writeDocuments(name, ctx, returnFields);
     // }
     // else if (val instanceof DocSet) {
     // how do we know what fields to read?
     // todo: have a DocList/DocSet wrapper that
     // restricts the fields to write...?
     } else if (val instanceof SolrDocumentList) {
-      writeSolrDocumentList(name, (SolrDocumentList)val, returnFields, null);
+      writeSolrDocumentList(name, (SolrDocumentList)val, returnFields);
     } else if (val instanceof Map) {
       writeMap(name, (Map)val, false, true);
     } else if (val instanceof NamedList) {
@@ -162,20 +183,82 @@ public abstract class TextResponseWriter {
   // types of formats, including those where the name may come after the value (like
   // some XML formats).
 
-  public abstract void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException;
+  public abstract void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException;  
 
-  /**
-   * @since solr 1.3
-   */
-  public abstract void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException;  
+  public abstract void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException;  
+  
+  public abstract void writeEndDocumentList() throws IOException;
+  
+  // Assume each SolrDocument is already transformed
+  public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields returnFields) throws IOException
+  {
+    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore() );
+    for( int i=0; i<docs.size(); i++ ) {
+      writeSolrDocument( null, docs.get(i), returnFields, i );
+    }
+    writeEndDocumentList();
+  }
 
-  public abstract void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException;
-
-  /**
-   * @since solr 1.3
-   */
-  public abstract void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException;  
-
+  public final SolrDocument toSolrDocument( Document doc )
+  {
+    SolrDocument out = new SolrDocument();
+    for( Fieldable f : doc.getFields() ) {
+      if( "gack_i".equals( f.name() ) ) {
+        System.out.println( f );
+      }
+      
+      // Make sure multivalued fields are represented as lists
+      Object existing = out.get(f.name());
+      if (existing == null) {
+        SchemaField sf = schema.getFieldOrNull(f.name());
+        if (sf != null && sf.multiValued()) {
+          List<Object> vals = new ArrayList<Object>();
+          vals.add( f );
+          out.setField( f.name(), vals );
+        } 
+        else{
+          out.setField( f.name(), f );
+        }
+      }
+      else {
+        out.addField( f.name(), f );
+      }
+    }
+    return out;
+  }
+  
+  public final void writeDocuments(String name, ResultContext res, ReturnFields fields ) throws IOException {
+    DocList ids = res.docs;
+    TransformContext context = new TransformContext();
+    context.query = res.query;
+    context.wantsScores = fields.wantsScore() && ids.hasScores();
+    writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(), 
+        context.wantsScores ? new Float(ids.maxScore()) : null );
+    
+    DocTransformer transformer = fields.getTransformer();
+    context.searcher = req.getSearcher();
+    context.iterator = ids.iterator();
+    if( transformer != null ) {
+      transformer.setContext( context );
+    }
+    int sz = ids.size();
+    Set<String> fnames = fields.getLuceneFieldNames();
+    for (int i=0; i<sz; i++) {
+      int id = context.iterator.nextDoc();
+      Document doc = context.searcher.doc(id, fnames);
+      SolrDocument sdoc = toSolrDocument( doc );
+      if( transformer != null ) {
+        transformer.transform( sdoc, id );
+      }
+      writeSolrDocument( null, sdoc, returnFields, i );
+    }
+    if( transformer != null ) {
+      transformer.setContext( null );
+    }
+    writeEndDocumentList();
+  }
+  
+  
   public abstract void writeStr(String name, String val, boolean needsEscaping) throws IOException;
 
   public abstract void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException;

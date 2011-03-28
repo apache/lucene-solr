@@ -222,12 +222,11 @@ public class FacetComponent extends SearchComponent
           sreq.params.remove(paramStart + FacetParams.FACET_MINCOUNT);
           sreq.params.remove(paramStart + FacetParams.FACET_OFFSET);
 
+          dff.initialLimit = dff.offset + dff.limit;
+
           if(dff.sort.equals(FacetParams.FACET_SORT_COUNT) && dff.limit > 0) {
             // set the initial limit higher to increase accuracy
-            dff.initialLimit = dff.offset + dff.limit;
             dff.initialLimit = (int)(dff.initialLimit * 1.5) + 10;
-          } else {
-            dff.initialLimit = dff.limit;
           }
 
           // Currently this is for testing only and allows overriding of the

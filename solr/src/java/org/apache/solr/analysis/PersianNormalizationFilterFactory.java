@@ -22,7 +22,18 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.fa.PersianNormalizationFilter;
 import org.apache.lucene.analysis.TokenStream;
 
-/** Factory for {@link PersianNormalizationFilter} */
+/** 
+ * Factory for {@link PersianNormalizationFilter}.
+ * <pre class="prettyprint" >
+ * &lt;fieldType name="text_fanormal" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;charFilter class="solr.PersianCharFilterFactory"/&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.PersianNormalizationFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ * @version $Id$
+ */
 public class PersianNormalizationFilterFactory extends BaseTokenFilterFactory {
   public PersianNormalizationFilter create(TokenStream input) {
     return new PersianNormalizationFilter(input);

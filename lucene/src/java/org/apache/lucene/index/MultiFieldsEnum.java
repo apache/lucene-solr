@@ -143,7 +143,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
 
   private final static class FieldMergeQueue extends PriorityQueue<FieldsEnumWithSlice> {
     FieldMergeQueue(int size) {
-      initialize(size);
+      super(size);
     }
 
     @Override

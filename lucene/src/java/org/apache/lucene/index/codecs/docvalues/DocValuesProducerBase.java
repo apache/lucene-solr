@@ -30,7 +30,6 @@ import org.apache.lucene.index.values.Floats;
 import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.Type;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IntsRef;
 
 /**
  * Abstract base class for FieldsProducer implementations supporting
@@ -41,7 +40,6 @@ import org.apache.lucene.util.IntsRef;
 public abstract class DocValuesProducerBase extends FieldsProducer {
 
   protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();
-  private final DocValuesCodecInfo info = new DocValuesCodecInfo();
 
   /**
    * Creates a new {@link DocValuesProducerBase} instance and loads all
@@ -59,8 +57,7 @@ public abstract class DocValuesProducerBase extends FieldsProducer {
    *           if an {@link IOException} occurs
    */
   protected DocValuesProducerBase(SegmentInfo si, Directory dir,
-      FieldInfos fieldInfo, String codecId) throws IOException {
-    info.read(dir, si, codecId);
+      FieldInfos fieldInfo, int codecId) throws IOException {
     load(fieldInfo, si.name, si.docCount, dir, codecId);
   }
 
@@ -75,19 +72,18 @@ public abstract class DocValuesProducerBase extends FieldsProducer {
 
   // Only opens files... doesn't actually load any values
   protected void load(FieldInfos fieldInfos, String segment, int docCount,
-      Directory dir, String codecId) throws IOException {
-    final IntsRef valueFields = info.fieldIDs();
-    for (int i = valueFields.offset; i < valueFields.length; i++) {
-      final int fieldNumber = valueFields.ints[i];
-      final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
-      assert fieldInfo.hasDocValues();
-      final String field = fieldInfo.name;
-      // TODO can we have a compound file per segment and codec for docvalues?
-      final String id = info.docValuesId(segment, codecId, fieldNumber + "");
-      docValues.put(field, loadDocValues(docCount, dir, id, fieldInfo
-          .getDocValues()));
+      Directory dir, int codecId) throws IOException {
+    for (FieldInfo fieldInfo : fieldInfos) {
+      if (codecId == fieldInfo.getCodecId() && fieldInfo.hasDocValues()) {
+        final String field = fieldInfo.name;
+        // TODO can we have a compound file per segment and codec for docvalues?
+        final String id = DocValuesCodec.docValuesId(segment, codecId, fieldInfo.number);
+        docValues.put(field, loadDocValues(docCount, dir, id, fieldInfo
+            .getDocValues()));
+      }
     }
   }
+  
 
   /**
    * Loads a {@link DocValues} instance depending on the given {@link Type}.

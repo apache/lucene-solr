@@ -174,8 +174,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     if (isPass2ResolvingPhrases) {
       // Must use old-style RangeQuery in order to produce a BooleanQuery
       // that can be turned into SpanOr clause
-      TermRangeQuery rangeQuery = new TermRangeQuery(field, part1, part2, startInclusive, endInclusive,
-          getRangeCollator());
+      TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, part1, part2, startInclusive, endInclusive);
       rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
       return rangeQuery;
     }

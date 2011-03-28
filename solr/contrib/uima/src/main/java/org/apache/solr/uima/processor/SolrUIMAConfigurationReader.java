@@ -105,15 +105,15 @@ public class SolrUIMAConfigurationReader {
     return map;
   }
 
-  private Map<String, String> readAEOverridingParameters() {
-    Map<String, String> runtimeParameters = new HashMap<String, String>();
+  private Map<String, Object> readAEOverridingParameters() {
+    Map<String, Object> runtimeParameters = new HashMap<String, Object>();
     Node uimaConfigNode = solrConfig.getNode(AE_RUNTIME_PARAMETERS_NODE_PATH, true);
 
     if (uimaConfigNode.hasChildNodes()) {
       NodeList overridingNodes = uimaConfigNode.getChildNodes();
       for (int i = 0; i < overridingNodes.getLength(); i++) {
         Node overridingNode = overridingNodes.item(i);
-        if (overridingNode.getNodeType() != Node.TEXT_NODE) {
+        if (overridingNode.getNodeType() != Node.TEXT_NODE && overridingNode.getNodeType() != Node.COMMENT_NODE) {
           runtimeParameters.put(overridingNode.getNodeName(), overridingNode.getTextContent());
         }
       }

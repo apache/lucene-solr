@@ -63,17 +63,15 @@ final class HitQueue extends PriorityQueue<ScoreDoc> {
    * @see #getSentinelObject()
    */
   HitQueue(int size, boolean prePopulate) {
-    this.prePopulate = prePopulate;
-    initialize(size);
+    super(size, prePopulate);
   }
 
-  // Returns null if prePopulate is false.
   @Override
   protected ScoreDoc getSentinelObject() {
     // Always set the doc Id to MAX_VALUE so that it won't be favored by
     // lessThan. This generally should not happen since if score is not NEG_INF,
     // TopScoreDocCollector will always add the object to the queue.
-    return !prePopulate ? null : new ScoreDoc(Integer.MAX_VALUE, Float.NEGATIVE_INFINITY);
+    return new ScoreDoc(Integer.MAX_VALUE, Float.NEGATIVE_INFINITY);
   }
   
   @Override

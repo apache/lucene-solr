@@ -61,8 +61,8 @@ public class SimpleTextCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException {
-    files.add(getPostingsFileName(segmentInfo.name, id));
+  public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
+    files.add(getPostingsFileName(segmentInfo.name, ""+id));
   }
 
   @Override

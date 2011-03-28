@@ -131,14 +131,14 @@ public class AttributeSource {
   /**
    * returns the used AttributeFactory.
    */
-  public AttributeFactory getAttributeFactory() {
+  public final AttributeFactory getAttributeFactory() {
     return this.factory;
   }
   
   /** Returns a new iterator that iterates the attribute classes
    * in the same order they were added in.
    */
-  public Iterator<Class<? extends Attribute>> getAttributeClassesIterator() {
+  public final Iterator<Class<? extends Attribute>> getAttributeClassesIterator() {
     return Collections.unmodifiableSet(attributes.keySet()).iterator();
   }
   
@@ -146,7 +146,7 @@ public class AttributeSource {
    * This iterator may contain less entries that {@link #getAttributeClassesIterator},
    * if one instance implements more than one Attribute interface.
    */
-  public Iterator<AttributeImpl> getAttributeImplsIterator() {
+  public final Iterator<AttributeImpl> getAttributeImplsIterator() {
     if (hasAttributes()) {
       if (currentState == null) {
         computeCurrentState();

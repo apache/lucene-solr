@@ -34,11 +34,11 @@ public class SolrUIMAConfiguration {
 
   private String aePath;
 
-  private Map<String, String> runtimeParameters;
+  private Map<String, Object> runtimeParameters;
 
   public SolrUIMAConfiguration(String aePath, String[] fieldsToAnalyze, boolean fieldsMerging,
           Map<String, Map<String, String>> typesFeaturesFieldsMapping,
-          Map<String, String> runtimeParameters) {
+          Map<String, Object> runtimeParameters) {
     this.aePath = aePath;
     this.fieldsToAnalyze = fieldsToAnalyze;
     this.fieldsMerging = fieldsMerging;
@@ -62,7 +62,7 @@ public class SolrUIMAConfiguration {
     return aePath;
   }
 
-  public Map<String, String> getRuntimeParameters() {
+  public Map<String, Object> getRuntimeParameters() {
     return runtimeParameters;
   }
 

@@ -36,6 +36,7 @@ import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
+import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldsEnum;
@@ -393,8 +394,13 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     BufferedReader r = new BufferedReader(new FileReader(lineFile));
     int numLines = 0;
-    while(r.readLine() != null)
+    String line;
+    while((line = r.readLine()) != null) {
+      if (numLines==0 && line.startsWith(WriteLineDocTask.FIELDS_HEADER_INDICATOR)) {
+        continue; // do not count the header line as a doc 
+      }
       numLines++;
+    }
     r.close();
     assertEquals("did not see the right number of docs; should be " + NUM_TRY_DOCS + " but was " + numLines, NUM_TRY_DOCS, numLines);
     

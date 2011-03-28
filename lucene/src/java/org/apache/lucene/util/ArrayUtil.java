@@ -576,6 +576,7 @@ public final class ArrayUtil {
    * @param toIndex end index (exclusive)
    */
   public static <T> void quickSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    if (toIndex-fromIndex <= 1) return;
     getSorter(a, comp).quickSort(fromIndex, toIndex-1);
   }
   
@@ -594,6 +595,7 @@ public final class ArrayUtil {
    * @param toIndex end index (exclusive)
    */
   public static <T extends Comparable<? super T>> void quickSort(T[] a, int fromIndex, int toIndex) {
+    if (toIndex-fromIndex <= 1) return;
     getSorter(a).quickSort(fromIndex, toIndex-1);
   }
   
@@ -614,6 +616,7 @@ public final class ArrayUtil {
    * @param toIndex end index (exclusive)
    */
   public static <T> void mergeSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    if (toIndex-fromIndex <= 1) return;
     getSorter(a, comp).mergeSort(fromIndex, toIndex-1);
   }
   
@@ -632,6 +635,7 @@ public final class ArrayUtil {
    * @param toIndex end index (exclusive)
    */
   public static <T extends Comparable<? super T>> void mergeSort(T[] a, int fromIndex, int toIndex) {
+    if (toIndex-fromIndex <= 1) return;
     getSorter(a).mergeSort(fromIndex, toIndex-1);
   }
   
@@ -652,6 +656,7 @@ public final class ArrayUtil {
    * @param toIndex end index (exclusive)
    */
   public static <T> void insertionSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    if (toIndex-fromIndex <= 1) return;
     getSorter(a, comp).insertionSort(fromIndex, toIndex-1);
   }
   
@@ -670,6 +675,7 @@ public final class ArrayUtil {
    * @param toIndex end index (exclusive)
    */
   public static <T extends Comparable<? super T>> void insertionSort(T[] a, int fromIndex, int toIndex) {
+    if (toIndex-fromIndex <= 1) return;
     getSorter(a).insertionSort(fromIndex, toIndex-1);
   }
   

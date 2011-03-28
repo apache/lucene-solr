@@ -63,19 +63,20 @@ final class PerFieldCodecWrapper extends Codec {
       assert segmentCodecs == state.segmentCodecs;
       final Codec[] codecs = segmentCodecs.codecs;
       for (int i = 0; i < codecs.length; i++) {
-        consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, "" + i)));
+        consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, i)));
       }
     }
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
-      final FieldsConsumer fields = consumers.get(field.codecId);
+      assert field.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
+      final FieldsConsumer fields = consumers.get(field.getCodecId());
       return fields.addField(field);
     }
 
     @Override
     public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
-      final FieldsConsumer fields = consumers.get(field.codecId);
+      final FieldsConsumer fields = consumers.get(field.getCodecId());
       return fields.addValuesField(field);
     }
 
@@ -108,18 +109,17 @@ final class PerFieldCodecWrapper extends Codec {
     public FieldsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
         int readBufferSize, int indexDivisor) throws IOException {
 
-      final int fieldCount = fieldInfos.size();
       final Map<Codec, FieldsProducer> producers = new HashMap<Codec, FieldsProducer>();
       boolean success = false;
       try {
-        for (int i = 0; i < fieldCount; i++) {
-          FieldInfo fi = fieldInfos.fieldInfo(i);
+        for (FieldInfo fi : fieldInfos) {
           if (fi.isIndexed || fi.hasDocValues()) { // TODO this does not work for non-indexed fields
             fields.add(fi.name);
-            Codec codec = segmentCodecs.codecs[fi.codecId];
+            assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
+            Codec codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                                                                             si, fieldInfos, readBufferSize, indexDivisor, ""+fi.codecId)));
+                                                                             si, fieldInfos, readBufferSize, indexDivisor, fi.getCodecId())));
             }
             codecs.put(fi.name, producers.get(codec));
           }
@@ -232,7 +232,7 @@ final class PerFieldCodecWrapper extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, String codecId, Set<String> files)
+  public void files(Directory dir, SegmentInfo info, int codecId, Set<String> files)
       throws IOException {
     // ignore codecid since segmentCodec will assign it per codec
     segmentCodecs.files(dir, info, files);

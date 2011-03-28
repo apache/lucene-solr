@@ -58,20 +58,20 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   int maxSkipLevels;
   int skipMinimum;
 
-  public SepPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize, IntStreamFactory intFactory, String codecId) throws IOException {
-
+  public SepPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize, IntStreamFactory intFactory, int codecId) throws IOException {
+    final String codecIdAsString = "" + codecId;
     boolean success = false;
     try {
 
-      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.DOC_EXTENSION);
+      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecIdAsString, SepPostingsWriterImpl.DOC_EXTENSION);
       docIn = intFactory.openInput(dir, docFileName);
 
-      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.SKIP_EXTENSION), readBufferSize);
+      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecIdAsString, SepPostingsWriterImpl.SKIP_EXTENSION), readBufferSize);
 
       if (segmentInfo.getHasProx()) {
-        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.FREQ_EXTENSION));
-        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.POS_EXTENSION), readBufferSize);
-        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.PAYLOAD_EXTENSION), readBufferSize);
+        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecIdAsString, SepPostingsWriterImpl.FREQ_EXTENSION));
+        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, codecIdAsString, SepPostingsWriterImpl.POS_EXTENSION), readBufferSize);
+        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecIdAsString, SepPostingsWriterImpl.PAYLOAD_EXTENSION), readBufferSize);
       } else {
         posIn = null;
         payloadIn = null;

@@ -37,6 +37,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -515,8 +516,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("didn't delete the right number of documents", 1, delCount);
 
       // Set one norm so we get a .s0 file:
-      SimilarityProvider sim = new DefaultSimilarity();
-      reader.setNorm(21, "content", sim.get("content").encodeNormValue(1.5f));
+      Similarity sim = new DefaultSimilarity();
+      reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
       reader.close();
 
       // The numbering of fields can vary depending on which
@@ -528,10 +529,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
-      for(int i=0;i<fieldInfos.size();i++) {
-        FieldInfo fi = fieldInfos.fieldInfo(i);
+      for (FieldInfo fi : fieldInfos) {
         if (fi.name.equals("content")) {
-          contentFieldIndex = i;
+          contentFieldIndex = fi.number;
           break;
         }
       }
@@ -543,7 +543,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                "_0_1.del",
                                "_0_1.s" + contentFieldIndex,
                                "segments_2",
-                               "segments.gen"};
+                               "segments.gen",
+                               "1.fnx"};
 
       String[] actual = dir.listAll();
       Arrays.sort(expected);

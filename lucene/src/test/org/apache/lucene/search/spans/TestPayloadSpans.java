@@ -37,7 +37,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
@@ -50,7 +50,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
   private IndexSearcher searcher;
-  private SimilarityProvider similarity = new DefaultSimilarity();
+  private SimilarityProvider similarity = new DefaultSimilarityProvider();
   protected IndexReader indexReader;
   private IndexReader closeIndexReader;
   private Directory directory;

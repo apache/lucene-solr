@@ -51,14 +51,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   //private String segment;
 
-  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize, String codecId) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
+  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize, int codecId) throws IOException {
+    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, ""+codecId, StandardCodec.FREQ_EXTENSION),
                            readBufferSize);
     //this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
-        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.PROX_EXTENSION),
+        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, ""+codecId, StandardCodec.PROX_EXTENSION),
                                readBufferSize);
         success = true;
       } finally {

@@ -59,7 +59,7 @@ public abstract class Codec {
    * @param id the codec id within this segment
    * @param files the of files to add the codec files to.
    */
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException;
+  public abstract void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException;
 
   /** Records all file extensions this codec uses */
   public abstract void getExtensions(Set<String> extensions);

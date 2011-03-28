@@ -52,10 +52,10 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   // start of the field info data
   protected long dirOffset;
 
-  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, String codecId)
+  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, int codecId)
     throws IOException {
 
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, ""+codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
     
     boolean success = false;
 

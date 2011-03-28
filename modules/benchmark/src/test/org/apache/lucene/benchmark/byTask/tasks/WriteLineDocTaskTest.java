@@ -31,6 +31,7 @@ import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.benchmark.byTask.utils.StreamUtils.Type;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -98,6 +99,25 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       return doc;
     }
   }
+
+  // class has to be public so that Class.forName.newInstance() will work
+  // same as JustDate just that this one is treated as legal
+  public static final class LegalJustDateDocMaker extends DocMaker {
+    @Override
+    public Document makeDocument() throws Exception {
+      Document doc = new Document();
+      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      return doc;
+    }
+  }
+
+  // class has to be public so that Class.forName.newInstance() will work
+  public static final class EmptyDocMaker extends DocMaker {
+    @Override
+    public Document makeDocument() throws Exception {
+      return new Document();
+    }
+  }
   
   // class has to be public so that Class.forName.newInstance() will work
   public static final class ThreadingDocMaker extends DocMaker {
@@ -116,29 +136,43 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
 
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
-  private PerfRunData createPerfRunData(File file, boolean setBZCompress,
-                                        String bz2CompressVal,
+  private PerfRunData createPerfRunData(File file, 
+                                        boolean allowEmptyDocs,
                                         String docMakerName) throws Exception {
     Properties props = new Properties();
     props.setProperty("doc.maker", docMakerName);
     props.setProperty("line.file.out", file.getAbsolutePath());
-    if (setBZCompress) {
-      props.setProperty("bzip.compression", bz2CompressVal);
-    }
     props.setProperty("directory", "RAMDirectory"); // no accidental FS dir.
+    if (allowEmptyDocs) {
+      props.setProperty("sufficient.fields", ",");
+    }
+    if (docMakerName.equals(LegalJustDateDocMaker.class.getName())) {
+      props.setProperty("line.fields", DocMaker.DATE_FIELD);
+      props.setProperty("sufficient.fields", DocMaker.DATE_FIELD);
+    }
     Config config = new Config(props);
     return new PerfRunData(config);
   }
   
-  private void doReadTest(File file, boolean bz2File, String expTitle,
+  private void doReadTest(File file, Type fileType, String expTitle,
                           String expDate, String expBody) throws Exception {
     InputStream in = new FileInputStream(file);
-    if (bz2File) {
-      in = csFactory.createCompressorInputStream("bzip2", in);
+    switch(fileType) {
+    	case BZIP2:
+    		in = csFactory.createCompressorInputStream(CompressorStreamFactory.BZIP2, in);
+    		break;
+    	case GZIP:
+    		in = csFactory.createCompressorInputStream(CompressorStreamFactory.GZIP, in);
+    	case PLAIN:
+    		break; // nothing to do
+    	default:
+    		assertFalse("Unknown file type!",true); //fail, should not happen
     }
     BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
     try {
       String line = br.readLine();
+      assertHeaderLine(line);
+      line = br.readLine();
       assertNotNull(line);
       String[] parts = line.split(Character.toString(WriteLineDocTask.SEP));
       int numExpParts = expBody == null ? 2 : 3;
@@ -153,42 +187,47 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       br.close();
     }
   }
+
+  private void assertHeaderLine(String line) {
+    assertTrue("First line should be a header line",line.startsWith(WriteLineDocTask.FIELDS_HEADER_INDICATOR));
+  }
   
   /* Tests WriteLineDocTask with a bzip2 format. */
   public void testBZip2() throws Exception {
     
     // Create a document in bz2 format.
     File file = new File(getWorkDir(), "one-line.bz2");
-    PerfRunData runData = createPerfRunData(file, true, "true", WriteLineDocMaker.class.getName());
+    PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, true, "title", "date", "body");
+    doReadTest(file, Type.BZIP2, "title", "date", "body");
   }
   
-  public void testBZip2AutoDetect() throws Exception {
+  /* Tests WriteLineDocTask with a gzip format. */
+  public void testGZip() throws Exception {
     
-    // Create a document in bz2 format.
-    File file = new File(getWorkDir(), "one-line.bz2");
-    PerfRunData runData = createPerfRunData(file, false, null, WriteLineDocMaker.class.getName());
+    // Create a document in gz format.
+    File file = new File(getWorkDir(), "one-line.gz");
+    PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, true, "title", "date", "body");
+    doReadTest(file, Type.GZIP, "title", "date", "body");
   }
   
   public void testRegularFile() throws Exception {
     
     // Create a document in regular format.
     File file = new File(getWorkDir(), "one-line");
-    PerfRunData runData = createPerfRunData(file, true, "false", WriteLineDocMaker.class.getName());
+    PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, false, "title", "date", "body");
+    doReadTest(file, Type.PLAIN, "title", "date", "body");
   }
 
   public void testCharsReplace() throws Exception {
@@ -196,12 +235,12 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     // separator char. However, it didn't replace newline characters, which
     // resulted in errors in LineDocSource.
     File file = new File(getWorkDir(), "one-line");
-    PerfRunData runData = createPerfRunData(file, false, null, NewLinesDocMaker.class.getName());
+    PerfRunData runData = createPerfRunData(file, false, NewLinesDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, false, "title text", "date text", "body text two");
+    doReadTest(file, Type.PLAIN, "title text", "date text", "body text two");
   }
   
   public void testEmptyBody() throws Exception {
@@ -209,27 +248,28 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     // had a TITLE element (LUCENE-1755). It should throw away documents if they
     // don't have BODY nor TITLE
     File file = new File(getWorkDir(), "one-line");
-    PerfRunData runData = createPerfRunData(file, false, null, NoBodyDocMaker.class.getName());
+    PerfRunData runData = createPerfRunData(file, false, NoBodyDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, false, "title", "date", null);
+    doReadTest(file, Type.PLAIN, "title", "date", null);
   }
   
   public void testEmptyTitle() throws Exception {
     File file = new File(getWorkDir(), "one-line");
-    PerfRunData runData = createPerfRunData(file, false, null, NoTitleDocMaker.class.getName());
+    PerfRunData runData = createPerfRunData(file, false, NoTitleDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, false, "", "date", "body");
+    doReadTest(file, Type.PLAIN, "", "date", "body");
   }
   
+  /** Fail by default when there's only date */
   public void testJustDate() throws Exception {
     File file = new File(getWorkDir(), "one-line");
-    PerfRunData runData = createPerfRunData(file, false, null, JustDateDocMaker.class.getName());
+    PerfRunData runData = createPerfRunData(file, false, JustDateDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
@@ -237,7 +277,45 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
     try {
       String line = br.readLine();
+      assertHeaderLine(line);
+      line = br.readLine();
       assertNull(line);
+    } finally {
+      br.close();
+    }
+  }
+
+  public void testLegalJustDate() throws Exception {
+    File file = new File(getWorkDir(), "one-line");
+    PerfRunData runData = createPerfRunData(file, false, LegalJustDateDocMaker.class.getName());
+    WriteLineDocTask wldt = new WriteLineDocTask(runData);
+    wldt.doLogic();
+    wldt.close();
+    
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    try {
+      String line = br.readLine();
+      assertHeaderLine(line);
+      line = br.readLine();
+      assertNotNull(line);
+    } finally {
+      br.close();
+    }
+  }
+
+  public void testEmptyDoc() throws Exception {
+    File file = new File(getWorkDir(), "one-line");
+    PerfRunData runData = createPerfRunData(file, true, EmptyDocMaker.class.getName());
+    WriteLineDocTask wldt = new WriteLineDocTask(runData);
+    wldt.doLogic();
+    wldt.close();
+    
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    try {
+      String line = br.readLine();
+      assertHeaderLine(line);
+      line = br.readLine();
+      assertNotNull(line);
     } finally {
       br.close();
     }
@@ -245,7 +323,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
 
   public void testMultiThreaded() throws Exception {
     File file = new File(getWorkDir(), "one-line");
-    PerfRunData runData = createPerfRunData(file, false, null, ThreadingDocMaker.class.getName());
+    PerfRunData runData = createPerfRunData(file, false, ThreadingDocMaker.class.getName());
     final WriteLineDocTask wldt = new WriteLineDocTask(runData);
     Thread[] threads = new Thread[10];
     for (int i = 0; i < threads.length; i++) {
@@ -269,8 +347,10 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     Set<String> ids = new HashSet<String>();
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
     try {
+      String line = br.readLine();
+      assertHeaderLine(line); // header line is written once, no matter how many threads there are
       for (int i = 0; i < threads.length; i++) {
-        String line = br.readLine();
+        line = br.readLine();
         String[] parts = line.split(Character.toString(WriteLineDocTask.SEP));
         assertEquals(3, parts.length);
         // check that all thread names written are the same in the same line

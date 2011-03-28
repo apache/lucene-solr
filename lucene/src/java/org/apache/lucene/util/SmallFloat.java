@@ -39,7 +39,7 @@ public class SmallFloat {
     int fzero = (63-zeroExp)<<numMantissaBits;
     int bits = Float.floatToRawIntBits(f);
     int smallfloat = bits >> (24-numMantissaBits);
-    if (smallfloat < fzero) {
+    if (smallfloat <= fzero) {
       return (bits<=0) ?
         (byte)0   // negative numbers and zero both map to 0 byte
        :(byte)1;  // underflow is mapped to smallest non-zero number.
@@ -75,7 +75,7 @@ public class SmallFloat {
   public static byte floatToByte315(float f) {
     int bits = Float.floatToRawIntBits(f);
     int smallfloat = bits >> (24-3);
-    if (smallfloat < (63-15)<<3) {
+    if (smallfloat <= ((63-15)<<3)) {
       return (bits<=0) ? (byte)0 : (byte)1;
     }
     if (smallfloat >= ((63-15)<<3) + 0x100) {
@@ -103,7 +103,7 @@ public class SmallFloat {
   public static byte floatToByte52(float f) {
     int bits = Float.floatToRawIntBits(f);
     int smallfloat = bits >> (24-5);
-    if (smallfloat < (63-2)<<5) {
+    if (smallfloat <= (63-2)<<5) {
       return (bits<=0) ? (byte)0 : (byte)1;
     }
     if (smallfloat >= ((63-2)<<5) + 0x100) {
