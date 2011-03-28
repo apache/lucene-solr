@@ -29,7 +29,33 @@ Apache Lucene 3x
 Apache Tika 0.8
 Carrot2 3.4.2
 
-(No Changes)
+
+Upgrading from Solr 3.1
+----------------------
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Optimizations
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-2445: Register "standard" search handler. (koji)
+
+Other Changes
+----------------------
+
+Build
+----------------------
+
+Documentation
+----------------------
+
 
 
 ==================  3.1.0 ==================

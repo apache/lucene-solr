@@ -17,23 +17,26 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CommonParams.EchoParamStyle;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.component.SearchHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  */
@@ -67,6 +70,18 @@ final class RequestHandlers {
   
   public RequestHandlers(SolrCore core) {
       this.core = core;
+      register(DEFAULT_HANDLER_NAME, getStandardHandler());
+  }
+  
+  private SolrRequestHandler getStandardHandler(){
+    SolrRequestHandler standard = core.createRequestHandler(SearchHandler.class.getName());
+    NamedList defParams = new NamedList();
+    defParams.add(CommonParams.HEADER_ECHO_PARAMS, EchoParamStyle.EXPLICIT.toString());
+    defParams.add(CommonParams.ROWS, 10);
+    NamedList nl = new NamedList();
+    nl.add("defaults", defParams);
+    standard.init(nl);
+    return standard;
   }
 
   /**
