@@ -27,7 +27,6 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -315,7 +314,7 @@ public class ReturnFields
 
       TransformerFactory factory = req.getCore().getTransformerFactory( name );
       if( factory != null ) {
-        augmenters.addTransformer( factory.create(disp, args) );
+        augmenters.addTransformer( factory.create(disp, args, req) );
       }
       else {
         // unknown field?

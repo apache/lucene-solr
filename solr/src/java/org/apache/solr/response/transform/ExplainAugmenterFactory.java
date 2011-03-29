@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
@@ -62,7 +63,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
   }
 
   @Override
-  public DocTransformer create(String field, String arg) {
+  public DocTransformer create(String field, String arg, SolrQueryRequest req) {
     Style style = (arg==null)?defaultStyle:getStyle(arg);
     return new ExplainAugmenter( field, style );
   }
