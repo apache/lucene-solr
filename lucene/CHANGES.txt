@@ -333,6 +333,10 @@ New features
 
 * LUCENE-2862: Added TermsEnum.totalTermFreq() and
   Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
+  
+* LUCENE-3001: Added TrieFieldHelper to write solr compatible numeric
+  fields without the solr dependency. (ryan)
+  
 
 Optimizations
 

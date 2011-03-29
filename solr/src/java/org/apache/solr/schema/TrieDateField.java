@@ -27,7 +27,6 @@ import org.apache.solr.search.function.*;
 import org.apache.solr.search.QParser;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Query;
@@ -36,8 +35,7 @@ import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.util.TrieFieldHelper;
 
 import java.util.Map;
 import java.util.Date;
@@ -68,7 +66,7 @@ public class TrieDateField extends DateField {
   public Date toObject(Fieldable f) {
     byte[] arr = f.getBinaryValue();
     if (arr==null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,TrieField.badFieldString(f));
-    return new Date(TrieField.toLong(arr));
+    return new Date(TrieFieldHelper.toLong(arr));
   }
 
   @Override
@@ -107,7 +105,7 @@ public class TrieDateField extends DateField {
       return;
     }
 
-    writer.writeDate(name,new Date(TrieField.toLong(arr)));
+    writer.writeDate(name,new Date(TrieFieldHelper.toLong(arr)));
   }
 
   @Override
@@ -146,7 +144,7 @@ public class TrieDateField extends DateField {
   public String toExternal(Fieldable f) {
     byte[] arr = f.getBinaryValue();
     if (arr==null) return TrieField.badFieldString(f);
-     return super.toExternal(new Date(TrieField.toLong(arr)));
+     return super.toExternal(new Date(TrieFieldHelper.toLong(arr)));
   }
 
   @Override
@@ -167,44 +165,6 @@ public class TrieDateField extends DateField {
     return readableToIndexed(storedToReadable(f));
   }
 
-  @Override
-  public Fieldable createField(SchemaField field, Object value, float boost) {
-    boolean indexed = field.indexed();
-    boolean stored = field.stored();
-
-    if (!indexed && !stored) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
-      return null;
-    }
-
-    int ps = precisionStep;
-
-    byte[] arr=null;
-    TokenStream ts=null;
-
-    long time = (value instanceof Date) 
-      ? ((Date)value).getTime() 
-      : super.parseMath(null, value.toString()).getTime();
-      
-    if (stored) arr = TrieField.toArr(time);
-    if (indexed) ts = new NumericTokenStream(ps).setLongValue(time);
-
-    Field f;
-    if (stored) {
-      f = new Field(field.getName(), arr);
-      if (indexed) f.setTokenStream(ts);
-    } else {
-      f = new Field(field.getName(), ts);
-    }
-
-    // term vectors aren't supported
-
-    f.setOmitNorms(field.omitNorms());
-    f.setOmitTermFreqAndPositions(field.omitTf());
-    f.setBoost(boost);
-    return f;
-  }
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
