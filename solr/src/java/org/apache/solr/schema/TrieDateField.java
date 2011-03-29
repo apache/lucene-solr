@@ -36,7 +36,6 @@ import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TrieFieldHelper;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
 

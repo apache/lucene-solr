@@ -25,7 +25,6 @@ import org.apache.lucene.search.cache.IntValuesCreator;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TrieFieldHelper;
 import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
