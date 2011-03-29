@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.util;
+package org.apache.solr.schema;
 
 import java.util.Date;
 
@@ -25,6 +25,9 @@ import org.apache.lucene.document.Fieldable;
 
 /**
  * Helper class to make TrieFields compatible with ones written in solr
+ * 
+ * TODO -- Something like this should be in in lucene
+ *  see: LUCENE-3001
  */
 public class TrieFieldHelper {
   
