@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.solr.schema;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,23 +19,35 @@ package org.apache.solr.analysis;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.collation.CollationKeyFilter;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.collation.CollationKeyAnalyzer;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.util.plugin.ResourceLoaderAware;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 
 /**
- * Factory for {@link CollationKeyFilter}.
+ * Field for collated sort keys. 
+ * These can be used for locale-sensitive sort and range queries.
  * <p>
- * This factory can be created in two ways: 
+ * This field can be created in two ways: 
  * <ul>
  *  <li>Based upon a system collator associated with a Locale.
  *  <li>Based upon a tailored ruleset.
@@ -57,32 +69,34 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *  <li>decomposition: 'no','canonical', or 'full' (optional)
  * </ul>
  * 
- * <pre class="prettyprint" >
- * &lt;fieldType name="text_clltnky" class="solr.TextField" positionIncrementGap="100"&gt;
- *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
- *     &lt;filter class="solr.CollationKeyFilterFactory" language="ja" country="JP"/&gt;
- *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre>
- * 
  * @see Collator
  * @see Locale
  * @see RuleBasedCollator
- * @since solr 3.1
- * @deprecated use {@link org.apache.solr.schema.CollationField} instead.
+ * @since solr 4.0
  */
-@Deprecated
-public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
-  private Collator collator;
+public class CollationField extends FieldType {
+  private Analyzer analyzer;
 
-  public void inform(ResourceLoader loader) {
-    String custom = args.get("custom");
-    String language = args.get("language");
-    String country = args.get("country");
-    String variant = args.get("variant");
-    String strength = args.get("strength");
-    String decomposition = args.get("decomposition");
+  @Override
+  protected void init(IndexSchema schema, Map<String,String> args) {
+    properties |= TOKENIZED; // this ensures our analyzer gets hit
+    setup(schema.getResourceLoader(), args);
+    super.init(schema, args);
+  }
+  
+  /**
+   * Setup the field according to the provided parameters
+   */
+  private void setup(ResourceLoader loader, Map<String,String> args) {
+    String custom = args.remove("custom");
+    String language = args.remove("language");
+    String country = args.remove("country");
+    String variant = args.remove("variant");
+    String strength = args.remove("strength");
+    String decomposition = args.remove("decomposition");
     
+    final Collator collator;
+
     if (custom == null && language == null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "Either custom or language is required.");
     
@@ -125,13 +139,11 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
       else
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid decomposition: " + decomposition);
     }
+    // we use 4.0 because it ensures we just encode the pure byte[] keys.
+    analyzer = new CollationKeyAnalyzer(Version.LUCENE_40, collator);
   }
   
-  public TokenStream create(TokenStream input) {
-    return new CollationKeyFilter(input, collator);
-  }
-  
-  /*
+  /**
    * Create a locale from language, with optional country and variant.
    * Then return the appropriate collator for the locale.
    */
@@ -151,7 +163,7 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
     return Collator.getInstance(locale);
   }
   
-  /*
+  /**
    * Read custom rules from a file, and create a RuleBasedCollator
    * The file cannot support comments, as # might be in the rules!
    */
@@ -170,5 +182,69 @@ public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements
     } finally {
       IOUtils.closeQuietly(input);
     }
+  }
+
+  @Override
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeStr(name, f.stringValue(), true);
+  }
+
+  @Override
+  public SortField getSortField(SchemaField field, boolean top) {
+    return getStringSort(field, top);
+  }
+
+  @Override
+  public Analyzer getAnalyzer() {
+    return analyzer;
+  }
+
+  @Override
+  public Analyzer getQueryAnalyzer() {
+    return analyzer;
+  }
+
+  /**
+   * analyze the range with the analyzer, instead of the collator.
+   * because jdk collators might not be thread safe (when they are
+   * its just that all methods are synced), this keeps things 
+   * simple (we already have a threadlocal clone in the reused TS)
+   */
+  private BytesRef analyzeRangePart(String field, String part) {
+    TokenStream source;
+      
+    try {
+      source = analyzer.reusableTokenStream(field, new StringReader(part));
+      source.reset();
+    } catch (IOException e) {
+      source = analyzer.tokenStream(field, new StringReader(part));
+    }
+      
+    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+
+    // we control the analyzer here: most errors are impossible
+    try {
+      if (!source.incrementToken())
+        throw new IllegalArgumentException("analyzer returned no terms for range part: " + part);
+      termAtt.fillBytesRef();
+      assert !source.incrementToken();
+    } catch (IOException e) {
+      throw new RuntimeException("error analyzing range part: " + part, e);
+    }
+      
+    try {
+      source.close();
+    } catch (IOException ignored) {}
+      
+    return new BytesRef(bytes);
+  }
+  
+  @Override
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+    String f = field.getName();
+    BytesRef low = part1 == null ? null : analyzeRangePart(f, part1);
+    BytesRef high = part2 == null ? null : analyzeRangePart(f, part2);
+    return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
   }
 }

@@ -113,6 +113,10 @@ New Features
   as results. (ryan with patches from grant, noble, cmale, yonik)
 
 * SOLR-2417: Add explain info directly to return documents using ?fl=_explain_ (ryan)
+
+* SOLR-2396: Add CollationField, which is much more efficient than 
+  the Solr 3.x CollationKeyFilterFactory, and also supports 
+  Locale-sensitive range queries. (rmuir)
   
 
 Optimizations

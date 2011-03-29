@@ -34,6 +34,7 @@ import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
 
+@Deprecated
 public class TestICUCollationKeyFilterFactory extends BaseTokenTestCase {
 
   /*
