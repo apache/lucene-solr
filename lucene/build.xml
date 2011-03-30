@@ -152,6 +152,7 @@
       <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/lucene-java/HowToUpdateTheWebsite</echo>
   </target>
 
+  <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" 
           depends="javadocs-all, javadocs-core, javadocs-contrib, javadocs-test-framework">
     <echo file="${javadoc.dir}/index.html" append="false">
