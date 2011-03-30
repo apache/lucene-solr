@@ -63,8 +63,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     termBytePool = termsHash.termBytePool;
     docState = termsHash.docState;
     this.termsHash = termsHash;
-    bytesUsed =  termsHash.trackAllocations?termsHash.docWriter.bytesUsed:new AtomicLong();
-
+    bytesUsed = termsHash.trackAllocations ? termsHash.docWriter.bytesUsed
+        : new AtomicLong();
     fieldState = docInverterPerField.fieldState;
     this.consumer = termsHash.consumer.addField(this, fieldInfo);
     PostingsBytesStartArray byteStarts = new PostingsBytesStartArray(this, bytesUsed);
@@ -311,7 +311,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     @Override
     public int[] clear() {
       if(perField.postingsArray != null) {
-        bytesUsed.addAndGet(-perField.postingsArray.size * perField.postingsArray.bytesPerPosting());
+        bytesUsed.addAndGet(-(perField.postingsArray.size * perField.postingsArray.bytesPerPosting()));
         perField.postingsArray = null;
       }
       return null;

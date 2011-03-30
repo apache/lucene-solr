@@ -124,7 +124,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-
+  
   // test when delete terms only apply to ram segments
   public void testRAMDeletes() throws IOException {
     for(int t=0;t<2;t++) {

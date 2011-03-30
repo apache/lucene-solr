@@ -52,13 +52,14 @@ final class TermsHash extends InvertedDocConsumer {
   // Used by perField to obtain terms from the analysis chain
   final BytesRef termBytesRef = new BytesRef(10);
 
-  boolean trackAllocations;
+  final boolean trackAllocations;
 
 
-  public TermsHash(final DocumentsWriterPerThread docWriter, final TermsHashConsumer consumer, final TermsHash nextTermsHash) {
+  public TermsHash(final DocumentsWriterPerThread docWriter, final TermsHashConsumer consumer, boolean trackAllocations, final TermsHash nextTermsHash) {
     this.docState = docWriter.docState;
     this.docWriter = docWriter;
     this.consumer = consumer;
+    this.trackAllocations = trackAllocations; 
     this.nextTermsHash = nextTermsHash;
     intPool = new IntBlockPool(docWriter);
     bytePool = new ByteBlockPool(docWriter.byteBlockAllocator);

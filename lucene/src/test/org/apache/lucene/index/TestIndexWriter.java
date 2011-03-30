@@ -759,13 +759,14 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.deleteDocuments(new Term("field", "aaa" + j));
         _TestUtil.syncConcurrentMerges(writer);
         int flushCount = writer.getFlushCount();
+       
         if (j == 1)
           lastFlushCount = flushCount;
         else if (j < 10) {
           // No new files should be created
           assertEquals(flushCount, lastFlushCount);
         } else if (10 == j) {
-          assertTrue(flushCount > lastFlushCount);
+          assertTrue("" + j, flushCount > lastFlushCount);
           lastFlushCount = flushCount;
           writer.getConfig().setRAMBufferSizeMB(0.000001);
           writer.getConfig().setMaxBufferedDeleteTerms(1);

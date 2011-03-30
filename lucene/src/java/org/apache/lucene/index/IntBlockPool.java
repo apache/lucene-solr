@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import java.util.Arrays;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,6 +38,10 @@ final class IntBlockPool {
   public void reset() {
     if (bufferUpto != -1) {
       // Reuse first buffer
+      if (bufferUpto > 0) {
+        docWriter.recycleIntBlocks(buffers, 1, bufferUpto-1);
+        Arrays.fill(buffers, 1, bufferUpto, null);
+      }
       bufferUpto = 0;
       intUpto = 0;
       intOffset = 0;

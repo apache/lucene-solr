@@ -31,7 +31,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
-import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
+import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.RamUsageEstimator;
 
 public class DocumentsWriterPerThread {
@@ -73,16 +73,13 @@ public class DocumentsWriterPerThread {
       final TermsHashConsumer termVectorsWriter = new TermVectorsTermsWriter(documentsWriterPerThread);
       final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
 
-      final InvertedDocConsumer  termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter,
-                                                           new TermsHash(documentsWriterPerThread, termVectorsWriter, null));
+      final InvertedDocConsumer  termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
+                                                           new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
       final NormsWriter normsWriter = new NormsWriter();
       final DocInverter docInverter = new DocInverter(documentsWriterPerThread.docState, termsHash, normsWriter);
       return new DocFieldProcessor(documentsWriterPerThread, docInverter);
     }
   };
-
-  // Deletes for our still-in-RAM (to be flushed next) segment
-  BufferedDeletes pendingDeletes = new BufferedDeletes(false);
 
   static class DocState {
     final DocumentsWriterPerThread docWriter;
@@ -128,7 +125,7 @@ public class DocumentsWriterPerThread {
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
   void abort() throws IOException {
-    aborting = true;
+    hasAborted = aborting = true;
     try {
       if (infoStream != null) {
         message("docWriter: now abort");
@@ -152,37 +149,52 @@ public class DocumentsWriterPerThread {
 
   final DocumentsWriter parent;
   final IndexWriter writer;
-
   final Directory directory;
   final DocState docState;
   final DocConsumer consumer;
+  final AtomicLong bytesUsed;
+  
+  SegmentWriteState flushState;
+  //Deletes for our still-in-RAM (to be flushed next) segment
+  BufferedDeletes pendingDeletes;  
+  String segment;     // Current segment we are working on
+  boolean aborting = false;   // True if an abort is pending
+  boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
 
-  String segment;                         // Current segment we are working on
-  boolean aborting;               // True if an abort is pending
-
+  private FieldInfos fieldInfos;
   private final PrintStream infoStream;
   private int numDocsInRAM;
   private int flushedDocCount;
-  SegmentWriteState flushState;
-
-  final AtomicLong bytesUsed = new AtomicLong(0);
-
-  private FieldInfos fieldInfos;
-
-  public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent, FieldInfos fieldInfos, IndexingChain indexingChain) {
+  
+  public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
+      FieldInfos fieldInfos, IndexingChain indexingChain) {
     this.directory = directory;
     this.parent = parent;
     this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
     this.infoStream = parent.indexWriter.getInfoStream();
     this.docState = new DocState(this);
-    this.docState.similarityProvider = parent.indexWriter.getConfig().getSimilarityProvider();
+    this.docState.similarityProvider = parent.indexWriter.getConfig()
+        .getSimilarityProvider();
 
     consumer = indexingChain.getChain(this);
-    }
+    bytesUsed = new AtomicLong(0);
+    pendingDeletes = new BufferedDeletes(false);
+  }
+  
+  public DocumentsWriterPerThread(DocumentsWriterPerThread other, FieldInfos fieldInfos) {
+    this(other.directory, other.parent, fieldInfos, other.parent.chain);
+    
+  }
 
   void setAborting() {
     aborting = true;
+  }
+  
+  boolean checkAndResetHasAborted() {
+    final boolean retval = hasAborted;
+    hasAborted = false;
+    return retval;
   }
 
   public void updateDocument(Document doc, Analyzer analyzer, Term delTerm) throws IOException {
@@ -203,7 +215,7 @@ public class DocumentsWriterPerThread {
     boolean success = false;
     try {
       try {
-      consumer.processDocument(fieldInfos);
+        consumer.processDocument(fieldInfos);
       } finally {
         docState.clear();
       }
@@ -251,21 +263,33 @@ public class DocumentsWriterPerThread {
 
   void deleteQueries(Query... queries) {
     if (numDocsInRAM > 0) {
-    for (Query query : queries) {
-      pendingDeletes.addQuery(query, numDocsInRAM);
+      for (Query query : queries) {
+        pendingDeletes.addQuery(query, numDocsInRAM);
+      }
     }
-  }
   }
 
   void deleteTerms(Term... terms) {
     if (numDocsInRAM > 0) {
-    for (Term term : terms) {
-      pendingDeletes.addTerm(term, numDocsInRAM);
+      for (Term term : terms) {
+        pendingDeletes.addTerm(term, numDocsInRAM);
+      }
     }
   }
+  
+  /**
+   * Returns the number of delete terms in this {@link DocumentsWriterPerThread}
+   */
+  public int numDeleteTerms() {
+    // public for FlushPolicy
+    return pendingDeletes.numTermDeletes.get();
   }
 
-  int getNumDocsInRAM() {
+  /**
+   * Returns the number of RAM resident documents in this {@link DocumentsWriterPerThread}
+   */
+  public int getNumDocsInRAM() {
+    // public for FlushPolicy
     return numDocsInRAM;
   }
 
@@ -285,7 +309,6 @@ public class DocumentsWriterPerThread {
   /** Flush all pending docs to a new segment */
   FlushedSegment flush() throws IOException {
     assert numDocsInRAM > 0;
-
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
         fieldInfos.buildSegmentCodecs(true), pendingDeletes);
@@ -323,16 +346,17 @@ public class DocumentsWriterPerThread {
       newSegment.setHasVectors(flushState.hasVectors);
 
       if (infoStream != null) {
-        message("new segment has " + flushState.deletedDocs.count() + " deleted docs");
+        message("new segment has " + (flushState.deletedDocs == null ? 0 : flushState.deletedDocs.count()) + " deleted docs");
         message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
         message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());
       }
       flushedDocCount += flushState.numDocs;
 
-      BufferedDeletes segmentDeletes = null;
+      final BufferedDeletes segmentDeletes;
       if (pendingDeletes.queries.isEmpty()) {
         pendingDeletes.clear();
+        segmentDeletes = null;
       } else {
         segmentDeletes = pendingDeletes;
         pendingDeletes = new BufferedDeletes(false);
@@ -350,7 +374,6 @@ public class DocumentsWriterPerThread {
             parent.indexWriter.deleter.refresh(segment);
           }
         }
-
         abort();
       }
     }
@@ -362,7 +385,7 @@ public class DocumentsWriterPerThread {
   }
 
   long bytesUsed() {
-    return bytesUsed.get();
+    return bytesUsed.get() + pendingDeletes.bytesUsed.get();
   }
 
   FieldInfos getFieldInfos() {
@@ -395,11 +418,38 @@ public class DocumentsWriterPerThread {
     bytesUsed.addAndGet(INT_BLOCK_SIZE*RamUsageEstimator.NUM_BYTES_INT);
     return b;
   }
+  
+  void recycleIntBlocks(int[][] blocks, int offset, int length) {
+    bytesUsed.addAndGet(-(length *(INT_BLOCK_SIZE*RamUsageEstimator.NUM_BYTES_INT)));
+  }
 
-  final DirectAllocator byteBlockAllocator = new DirectAllocator();
+  final Allocator byteBlockAllocator = new DirectTrackingAllocator();
+    
+    
+ private class DirectTrackingAllocator extends Allocator {
+    public DirectTrackingAllocator() {
+      this(BYTE_BLOCK_SIZE);
+    }
+
+    public DirectTrackingAllocator(int blockSize) {
+      super(blockSize);
+    }
+
+    public byte[] getByteBlock() {
+      bytesUsed.addAndGet(blockSize);
+      return new byte[blockSize];
+    }
+    @Override
+    public void recycleByteBlocks(byte[][] blocks, int start, int end) {
+      bytesUsed.addAndGet(-((end-start)* blockSize));
+      for (int i = start; i < end; i++) {
+        blocks[i] = null;
+      }
+    }
+    
+  };
 
   String toMB(long v) {
     return nf.format(v/1024./1024.);
   }
-
 }

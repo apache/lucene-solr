@@ -94,6 +94,8 @@ public final class IndexWriterConfig implements Cloneable {
   /** Default value is 1. Change using {@link #setReaderTermsIndexDivisor(int)}. */
   public static final int DEFAULT_READER_TERMS_INDEX_DIVISOR = IndexReader.DEFAULT_TERMS_INDEX_DIVISOR;
 
+  /** Default value is 1945. Change using {@link #setRAMPerThreadHardLimitMB(int)} */
+  public static final int DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB = 1945;
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
    * (in milliseconds).
@@ -130,6 +132,8 @@ public final class IndexWriterConfig implements Cloneable {
   private volatile DocumentsWriterPerThreadPool indexerThreadPool;
   private volatile boolean readerPooling;
   private volatile int readerTermsIndexDivisor;
+  private volatile FlushPolicy flushPolicy;
+  private volatile int perThreadHardLimitMB;
 
   private Version matchVersion;
 
@@ -160,6 +164,7 @@ public final class IndexWriterConfig implements Cloneable {
     readerPooling = DEFAULT_READER_POOLING;
     indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(DEFAULT_MAX_THREAD_STATES);
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
+    perThreadHardLimitMB = DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
   }
 
   @Override
@@ -352,6 +357,7 @@ public final class IndexWriterConfig implements Cloneable {
    * @throws IllegalArgumentException if maxBufferedDeleteTerms
    * is enabled but smaller than 1
    * @see #setRAMBufferSizeMB
+   * @see #setFlushPolicy(FlushPolicy)
    *
    * <p>Takes effect immediately, but only the next time a
    * document is added, updated or deleted.
@@ -380,14 +386,20 @@ public final class IndexWriterConfig implements Cloneable {
    * and deletions before they are flushed to the Directory. Generally for
    * faster indexing performance it's best to flush by RAM usage instead of
    * document count and use as large a RAM buffer as you can.
-   *
    * <p>
    * When this is set, the writer will flush whenever buffered documents and
    * deletions use this much RAM. Pass in {@link #DISABLE_AUTO_FLUSH} to prevent
    * triggering a flush due to RAM usage. Note that if flushing by document
    * count is also enabled, then the flush will be triggered by whichever comes
    * first.
-   *
+   * <p>
+   * The maximum RAM limit is inherently determined by the JVMs available memory.
+   * Yet, an {@link IndexWriter} session can consume a significantly larger amount
+   * of memory than the given RAM limit since this limit is just an indicator when
+   * to flush memory resident documents to the Directory. Flushes are likely happen
+   * concurrently while other threads adding documents to the writer. For application
+   * stability the available memory in the JVM should be significantly larger than
+   * the RAM buffer used for indexing.
    * <p>
    * <b>NOTE</b>: the account of RAM usage for pending deletions is only
    * approximate. Specifically, if you delete by Query, Lucene currently has no
@@ -396,16 +408,15 @@ public final class IndexWriterConfig implements Cloneable {
    * periodically yourself, or by using {@link #setMaxBufferedDeleteTerms(int)}
    * to flush by count instead of RAM usage (each buffered delete Query counts
    * as one).
-   *
    * <p>
-   * <b>NOTE</b>: because IndexWriter uses <code>int</code>s when managing its
-   * internal storage, the absolute maximum value for this setting is somewhat
-   * less than 2048 MB. The precise limit depends on various factors, such as
-   * how large your documents are, how many fields have norms, etc., so it's
-   * best to set this value comfortably under 2048.
-   *
+   * <b>NOTE</b>: It's not guaranteed that all memory resident documents are flushed 
+   * once this limit is exceeded. Depending on the configured {@link FlushPolicy} only a
+   * subset of the buffered documents are flushed and therefore only parts of the RAM
+   * buffer is released.    
    * <p>
+   * 
    * The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.
+   * @see #setFlushPolicy(FlushPolicy)
    *
    * <p>Takes effect immediately, but only the next time a
    * document is added, updated or deleted.
@@ -413,12 +424,9 @@ public final class IndexWriterConfig implements Cloneable {
    * @throws IllegalArgumentException
    *           if ramBufferSize is enabled but non-positive, or it disables
    *           ramBufferSize when maxBufferedDocs is already disabled
+   *           
    */
   public IndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
-    if (ramBufferSizeMB > 2048.0) {
-      throw new IllegalArgumentException("ramBufferSize " + ramBufferSizeMB
-          + " is too large; should be comfortably less than 2048");
-    }
     if (ramBufferSizeMB != DISABLE_AUTO_FLUSH && ramBufferSizeMB <= 0.0)
       throw new IllegalArgumentException(
           "ramBufferSize should be > 0.0 MB when enabled");
@@ -453,7 +461,7 @@ public final class IndexWriterConfig implements Cloneable {
    * document is added, updated or deleted.
    *
    * @see #setRAMBufferSizeMB(double)
-   *
+   * @see #setFlushPolicy(FlushPolicy)
    * @throws IllegalArgumentException
    *           if maxBufferedDocs is enabled but smaller than 2, or it disables
    *           maxBufferedDocs when ramBufferSize is already disabled
@@ -607,6 +615,53 @@ public final class IndexWriterConfig implements Cloneable {
   public int getReaderTermsIndexDivisor() {
     return readerTermsIndexDivisor;
   }
+  
+  /**
+   * Expert: Controls when segments are flushed to disk during indexing.
+   * The {@link FlushPolicy} initialized during {@link IndexWriter} instantiation and once initialized
+   * the given instance is bound to this {@link IndexWriter} and should not be used with another writer.
+   * @see #setMaxBufferedDeleteTerms(int)
+   * @see #setMaxBufferedDocs(int)
+   * @see #setRAMBufferSizeMB(double)
+   */
+  public IndexWriterConfig setFlushPolicy(FlushPolicy flushPolicy) {
+    this.flushPolicy = flushPolicy;
+    return this;
+  }
+
+  /**
+   * Expert: Sets the maximum memory consumption per thread triggering a forced
+   * flush if exceeded. A {@link DocumentsWriterPerThread} is forcefully flushed
+   * once it exceeds this limit even if the {@link #getRAMBufferSizeMB()} has
+   * not been exceeded. This is a safety limit to prevent a
+   * {@link DocumentsWriterPerThread} from address space exhaustion due to its
+   * internal 32 bit signed integer based memory addressing.
+   * The given value must be less that 2GB (2048MB)
+   * 
+   * @see #DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB
+   */
+  public IndexWriterConfig setRAMPerThreadHardLimitMB(int perThreadHardLimitMB) {
+    if (perThreadHardLimitMB <= 0 || perThreadHardLimitMB >= 2048) {
+      throw new IllegalArgumentException("PerThreadHardLimit must be greater than 0 and less than 2048MB");
+    }
+    this.perThreadHardLimitMB = perThreadHardLimitMB;
+    return this;
+  }
+
+  /**
+   * Returns the max amount of memory each {@link DocumentsWriterPerThread} can
+   * consume until forcefully flushed.
+   * @see #setRAMPerThreadHardLimitMB(int) 
+   */
+  public int getRAMPerThreadHardLimitMB() {
+    return perThreadHardLimitMB;
+  }
+  /**
+   * @see #setFlushPolicy(FlushPolicy)
+   */
+  public FlushPolicy getFlushPolicy() {
+    return flushPolicy;
+  }
 
   @Override
   public String toString() {
@@ -631,6 +686,10 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("maxThreadStates=").append(indexerThreadPool.getMaxThreadStates()).append("\n");
     sb.append("readerPooling=").append(readerPooling).append("\n");
     sb.append("readerTermsIndexDivisor=").append(readerTermsIndexDivisor).append("\n");
+    sb.append("flushPolicy=").append(flushPolicy).append("\n");
+    sb.append("perThreadHardLimitMB=").append(perThreadHardLimitMB).append("\n");
+
     return sb.toString();
   }
+
 }

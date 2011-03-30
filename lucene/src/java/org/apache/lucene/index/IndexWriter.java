@@ -248,8 +248,8 @@ public class IndexWriter implements Closeable {
   private long mergeGen;
   private boolean stopMerges;
 
-  private final AtomicInteger flushCount = new AtomicInteger();
-  private final AtomicInteger flushDeletesCount = new AtomicInteger();
+  final AtomicInteger flushCount = new AtomicInteger();
+  final AtomicInteger flushDeletesCount = new AtomicInteger();
 
   final ReaderPool readerPool = new ReaderPool();
   final BufferedDeletesStream bufferedDeletesStream;
@@ -2540,17 +2540,7 @@ public class IndexWriter implements Closeable {
     doBeforeFlush();
 
     assert testPoint("startDoFlush");
-
-    // We may be flushing because it was triggered by doc
-    // count, del count, ram usage (in which case flush
-    // pending is already set), or we may be flushing
-    // due to external event eg getReader or commit is
-    // called (in which case we now set it, and this will
-    // pause all threads):
-    flushControl.setFlushPendingNoWait("explicit flush");
-
     boolean success = false;
-
     try {
 
       if (infoStream != null) {
@@ -2566,8 +2556,7 @@ public class IndexWriter implements Closeable {
           // buffer, force them all to apply now. This is to
           // prevent too-frequent flushing of a long tail of
           // tiny segments:
-          if (flushControl.getFlushDeletes() ||
-              (config.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
+          if ((config.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
                bufferedDeletesStream.bytesUsed() > (1024*1024*config.getRAMBufferSizeMB()/2))) {
             applyAllDeletes = true;
             if (infoStream != null) {
@@ -2580,39 +2569,16 @@ public class IndexWriter implements Closeable {
           if (infoStream != null) {
             message("apply all deletes during flush");
           }
-          flushDeletesCount.incrementAndGet();
-          final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, segmentInfos);
-          if (result.anyDeletes) {
-            checkpoint();
-          }
-          if (!keepFullyDeletedSegments && result.allDeleted != null) {
-            if (infoStream != null) {
-              message("drop 100% deleted segments: " + result.allDeleted);
-            }
-            for(SegmentInfo info : result.allDeleted) {
-              // If a merge has already registered for this
-              // segment, we leave it in the readerPool; the
-              // merge will skip merging it and will then drop
-              // it once it's done:
-              if (!mergingSegments.contains(info)) {
-                segmentInfos.remove(info);
-                if (readerPool != null) {
-                  readerPool.drop(info);
-                }
-              }
-            }
-            checkpoint();
-          }
-          bufferedDeletesStream.prune(segmentInfos);
-          assert !bufferedDeletesStream.any();
-
-          flushControl.clearDeletes();
+          applyAllDeletes();
         } else if (infoStream != null) {
           message("don't apply deletes now delTermCount=" + bufferedDeletesStream.numTerms() + " bytesUsed=" + bufferedDeletesStream.bytesUsed());
         }
 
         doAfterFlush();
-        flushCount.incrementAndGet();
+        if (!maybeMerge) {
+          // flushCount is incremented in flushAllThreads
+          flushCount.incrementAndGet();
+        }
 
         success = true;
 
@@ -2624,10 +2590,36 @@ public class IndexWriter implements Closeable {
       // never hit
       return false;
     } finally {
-      flushControl.clearFlushPending();
       if (!success && infoStream != null)
         message("hit exception during flush");
     }
+  }
+  
+  final synchronized void applyAllDeletes() throws IOException {
+    flushDeletesCount.incrementAndGet();
+    final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, segmentInfos);
+    if (result.anyDeletes) {
+      checkpoint();
+    }
+    if (!keepFullyDeletedSegments && result.allDeleted != null) {
+      if (infoStream != null) {
+        message("drop 100% deleted segments: " + result.allDeleted);
+      }
+      for(SegmentInfo info : result.allDeleted) {
+        // If a merge has already registered for this
+        // segment, we leave it in the readerPool; the
+        // merge will skip merging it and will then drop
+        // it once it's done:
+        if (!mergingSegments.contains(info)) {
+          segmentInfos.remove(info);
+          if (readerPool != null) {
+            readerPool.drop(info);
+          }
+        }
+      }
+      checkpoint();
+    }
+    bufferedDeletesStream.prune(segmentInfos);
   }
 
   /** Expert:  Return the total size of all index files currently cached in memory.
@@ -2635,9 +2627,14 @@ public class IndexWriter implements Closeable {
    */
   public final long ramSizeInBytes() {
     ensureOpen();
-    // nocommit
-    //return docWriter.bytesUsed() + bufferedDeletesStream.bytesUsed();
-    return 0;
+    return docWriter.flushControl.netBytes() + bufferedDeletesStream.bytesUsed();
+  }
+  
+  // for testing only
+  DocumentsWriter getDocsWriter() {
+    boolean test = false;
+    assert test = true;
+    return test?docWriter: null;
   }
 
   /** Expert:  Return the number of documents currently
@@ -3681,124 +3678,4 @@ public class IndexWriter implements Closeable {
   public PayloadProcessorProvider getPayloadProcessorProvider() {
     return payloadProcessorProvider;
   }
-
-  // decides when flushes happen
-  final class FlushControl {
-
-    private boolean flushPending;
-    private boolean flushDeletes;
-    private int delCount;
-    private int docCount;
-    private boolean flushing;
-
-    private synchronized boolean setFlushPending(String reason, boolean doWait) {
-      if (flushPending || flushing) {
-        if (doWait) {
-          while(flushPending || flushing) {
-            try {
-              wait();
-            } catch (InterruptedException ie) {
-              throw new ThreadInterruptedException(ie);
-            }
-          }
-        }
-        return false;
-      } else {
-        if (infoStream != null) {
-          message("now trigger flush reason=" + reason);
-        }
-        flushPending = true;
-        return flushPending;
-      }
-    }
-
-    public synchronized void setFlushPendingNoWait(String reason) {
-      setFlushPending(reason, false);
-    }
-
-    public synchronized boolean getFlushPending() {
-      return flushPending;
-    }
-
-    public synchronized boolean getFlushDeletes() {
-      return flushDeletes;
-    }
-
-    public synchronized void clearFlushPending() {
-      if (infoStream != null) {
-        message("clearFlushPending");
-      }
-      flushPending = false;
-      flushDeletes = false;
-      docCount = 0;
-      notifyAll();
-    }
-
-    public synchronized void clearDeletes() {
-      delCount = 0;
-    }
-
-    public synchronized boolean waitUpdate(int docInc, int delInc) {
-      return waitUpdate(docInc, delInc, false);
-    }
-
-    public synchronized boolean waitUpdate(int docInc, int delInc, boolean skipWait) {
-      while(flushPending) {
-        try {
-          wait();
-        } catch (InterruptedException ie) {
-          throw new ThreadInterruptedException(ie);
-        }
-      }
-
-      // skipWait is only used when a thread is BOTH adding
-      // a doc and buffering a del term, and, the adding of
-      // the doc already triggered a flush
-      if (skipWait) {
-        docCount += docInc;
-        delCount += delInc;
-        return false;
-      }
-
-      final int maxBufferedDocs = config.getMaxBufferedDocs();
-      if (maxBufferedDocs != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
-          (docCount+docInc) >= maxBufferedDocs) {
-        return setFlushPending("maxBufferedDocs", true);
-      }
-      docCount += docInc;
-
-      final int maxBufferedDeleteTerms = config.getMaxBufferedDeleteTerms();
-      if (maxBufferedDeleteTerms != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
-          (delCount+delInc) >= maxBufferedDeleteTerms) {
-        flushDeletes = true;
-        return setFlushPending("maxBufferedDeleteTerms", true);
-      }
-      delCount += delInc;
-
-      return flushByRAMUsage("add delete/doc");
-    }
-
-    public synchronized boolean flushByRAMUsage(String reason) {
-//      final double ramBufferSizeMB = config.getRAMBufferSizeMB();
-//      if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-//        final long limit = (long) (ramBufferSizeMB*1024*1024);
-//        long used = bufferedDeletesStream.bytesUsed() + docWriter.bytesUsed();
-//        if (used >= limit) {
-//
-//          // DocumentsWriter may be able to free up some
-//          // RAM:
-//          // Lock order: FC -> DW
-//          docWriter.balanceRAM();
-//
-//          used = bufferedDeletesStream.bytesUsed() + docWriter.bytesUsed();
-//          if (used >= limit) {
-//            return setFlushPending("ram full: " + reason, false);
-//          }
-//        }
-//      }
-      return false;
-    }
-  }
-
-  final FlushControl flushControl = new FlushControl();
 }

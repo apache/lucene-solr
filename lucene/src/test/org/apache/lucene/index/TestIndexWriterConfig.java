@@ -70,6 +70,10 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
     assertEquals(ThreadAffinityDocumentsWriterThreadPool.class, conf.getIndexerThreadPool().getClass());
+    assertNull(conf.getFlushPolicy());
+    assertEquals(IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
+
+
 
     // Sanity check - validate that all getters are covered.
     Set<String> getters = new HashSet<String>();
@@ -94,6 +98,9 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getReaderPooling");
     getters.add("getIndexerThreadPool");
     getters.add("getReaderTermsIndexDivisor");
+    getters.add("getFlushPolicy");
+    getters.add("getRAMPerThreadHardLimitMB");
+    
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {
         assertTrue("method " + m.getName() + " is not tested for defaults", getters.contains(m.getName()));
@@ -237,6 +244,20 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     try {
       conf.setReaderTermsIndexDivisor(-2);
       fail("should not have succeeded to set termsIndexDivisor to < -1");
+    } catch (IllegalArgumentException e) {
+      // this is expected
+    }
+    
+    try {
+      conf.setRAMPerThreadHardLimitMB(2048);
+      fail("should not have succeeded to set RAMPerThreadHardLimitMB to >= 2048");
+    } catch (IllegalArgumentException e) {
+      // this is expected
+    }
+    
+    try {
+      conf.setRAMPerThreadHardLimitMB(0);
+      fail("should not have succeeded to set RAMPerThreadHardLimitMB to 0");
     } catch (IllegalArgumentException e) {
       // this is expected
     }
