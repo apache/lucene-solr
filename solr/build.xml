@@ -222,6 +222,7 @@
 
   <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
+  <target name="javadocs" depends="javadoc"/>
 
   <target name="stub-factories" depends="dist-jar"
           description="Generates stub factories as needed">
