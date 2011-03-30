@@ -70,18 +70,6 @@ final class RequestHandlers {
   
   public RequestHandlers(SolrCore core) {
       this.core = core;
-      register(DEFAULT_HANDLER_NAME, getStandardHandler());
-  }
-  
-  private SolrRequestHandler getStandardHandler(){
-    SolrRequestHandler standard = core.createRequestHandler(SearchHandler.class.getName());
-    NamedList defParams = new NamedList();
-    defParams.add(CommonParams.HEADER_ECHO_PARAMS, EchoParamStyle.EXPLICIT.toString());
-    defParams.add(CommonParams.ROWS, 10);
-    NamedList nl = new NamedList();
-    nl.add("defaults", defParams);
-    standard.init(nl);
-    return standard;
   }
 
   /**
