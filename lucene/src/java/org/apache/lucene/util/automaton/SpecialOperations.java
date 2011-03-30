@@ -29,6 +29,7 @@
 
 package org.apache.lucene.util.automaton;
 
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -65,7 +66,7 @@ final public class SpecialOperations {
    */
   public static boolean isFinite(Automaton a) {
     if (a.isSingleton()) return true;
-    return isFinite(a.initial, new HashSet<State>());
+    return isFinite(a.initial, new BitSet(a.getNumberOfStates()), new BitSet(a.getNumberOfStates()));
   }
   
   /**
@@ -74,11 +75,12 @@ final public class SpecialOperations {
    */
   // TODO: not great that this is recursive... in theory a
   // large automata could exceed java's stack
-  private static boolean isFinite(State s, HashSet<State> path) {
-    path.add(s);
+  private static boolean isFinite(State s, BitSet path, BitSet visited) {
+    path.set(s.number);
     for (Transition t : s.getTransitions())
-      if (path.contains(t.to) || !isFinite(t.to, path)) return false;
-    path.remove(s);
+      if (path.get(t.to.number) || (!visited.get(t.to.number) && !isFinite(t.to, path, visited))) return false;
+    path.clear(s.number);
+    visited.set(s.number);
     return true;
   }
   

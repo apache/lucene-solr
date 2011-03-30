@@ -28,23 +28,14 @@ functionalities of Lucene and how you can add Lucene to your applications.
 <section id="Setting your CLASSPATH"><title>Setting your CLASSPATH</title>
 <p>
 First, you should <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">download</a> the
-latest Lucene distribution and then extract it to a working directory.  Alternatively, you can <a
-href="http://wiki.apache.org/lucene-java/SourceRepository">check out the sources from
-Subversion</a>, and then run <code>ant</code> in the <code>lucene/contrib/demo/</code>
-directory to generate the JARs.
+latest Lucene distribution and then extract it to a working directory.
 </p>
 <p>
 You need three JARs: the Lucene JAR, the common analysis JAR, and the Lucene demo JAR.  You should
 see the Lucene JAR file in the directory you created when you extracted the archive -- it
 should be named something like <code>lucene-core-{version}.jar</code>.  You should also see files
-called <code>lucene-analysis-common-{version}.jar</code> and <code>lucene-demos-{version}.jar</code>.
-If you checked out the sources from Subversion then the JARs are located at:
+called <code>lucene-analyzers-common-{version}.jar</code> and <code>lucene-demo-{version}.jar</code>.
 </p>
-<ul>
-  <li><code>lucene/build/lucene-core-4.0-SNAPSHOT.jar</code></li>
-  <li><code>modules/analysis/build/common/lucene-analyzers-common-4.0-SNAPSHOT.jar</code></li>
-  <li><code>lucene/build/contrib/demo/lucene-demo-4.0-SNAPSHOT.jar</code></li>
-</ul>
 <p>
 Put all three of these files in your Java CLASSPATH.
 </p>

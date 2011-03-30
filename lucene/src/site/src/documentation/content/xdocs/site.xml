@@ -50,6 +50,7 @@ See http://forrest.apache.org/docs/linking.html for more info
       <javadoc label="Javadocs">
          <javadoc-all label="All" href="ext:javadocs-all"/>
 		 <javadoc-core label="Core" href="ext:javadocs-core"/>
+		 <javadoc-test-framework label="Test Framework" href="ext:javadocs-test-framework"/>
 		 <javadoc-contrib label="Contrib">
 		    <javadoc-contrib-ant label="Ant" href="ext:javadocs-contrib-ant"/>
 		    <javadoc-contrib-bdb label="Bdb" href="ext:javadocs-contrib-bdb"/>
@@ -98,6 +99,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     <changes-contrib href="changes/Contrib-Changes.html" />
     <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
+	<javadocs-test-framework href="api/test-framework/index.html"/>
 	<javadocs-contrib-ant href="api/contrib-ant/index.html"/>
 	<javadocs-contrib-bdb href="api/contrib-bdb/index.html"/>
 	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>

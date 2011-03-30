@@ -27,6 +27,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
+import org.apache.lucene.util._TestUtil;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -42,9 +46,11 @@ import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.junit.Test;
 
@@ -181,7 +187,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
 
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField( "id", "id2", 1.0f );
-    doc2.addField( "name", "h\u1234llo", 1.0f );
+    doc2.addField( "name", "h\uD866\uDF05llo", 1.0f );
     doc2.addField( "price", 20 );
     
     Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
@@ -209,12 +215,129 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     // System.out.println( rsp.getResults() );
 
     // query outside ascii range
-    query.setQuery("name:h\u1234llo");
+    query.setQuery("name:h\uD866\uDF05llo");
     rsp = server.query( query );
     assertEquals( 1, rsp.getResults().getNumFound() );
 
   }
+ 
+
+ /**
+  * Get empty results
+  */
+  @Test
+  public void testGetEmptyResults() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+     
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+     
+    // Add two docs
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "id", "id1", 1.0f );
+    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "price", 10 );
+    server.add( doc );
+    
+    doc = new SolrInputDocument();
+    doc.addField( "id", "id2", 1.0f );
+    server.add( doc );
+    server.commit();
+    
+    // Make sure we get empty docs for unknown field
+    SolrDocumentList out = server.query( new SolrQuery( "*:*" ).set("fl", "foofoofoo" ) ).getResults();
+    assertEquals( 2, out.getNumFound() );
+    assertEquals( 0, out.get(0).size() );
+    assertEquals( 0, out.get(1).size() );
+
+  }
   
+  private String randomTestString(int maxLength) {
+    // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc
+    // (considered invalid by XML)
+    
+    int size = random.nextInt(maxLength);
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < size; i++) {
+      switch(random.nextInt(4)) {
+        case 0: /* single byte */ 
+          sb.append('a'); 
+          break;
+        case 1: /* two bytes */
+          sb.append('\u0645');
+          break;
+        case 2: /* three bytes */
+          sb.append('\u092a');
+          break;
+        case 3: /* four bytes */
+          sb.appendCodePoint(0x29B05);
+      }
+    }
+    return sb.toString();
+  }
+  
+  public void testUnicode() throws Exception {
+    int numIterations = 100 * RANDOM_MULTIPLIER;
+    
+    SolrServer server = getSolrServer();
+    
+    // save the old parser, so we can set it back.
+    ResponseParser oldParser = null;
+    if (server instanceof CommonsHttpSolrServer) {
+      CommonsHttpSolrServer cserver = (CommonsHttpSolrServer) server;
+      oldParser = cserver.getParser();
+    }
+    
+    try {
+      for (int iteration = 0; iteration < numIterations; iteration++) {
+        // choose format
+        if (server instanceof CommonsHttpSolrServer) {
+          if (random.nextBoolean()) {
+            ((CommonsHttpSolrServer) server).setParser(new BinaryResponseParser());
+          } else {
+            ((CommonsHttpSolrServer) server).setParser(new XMLResponseParser());
+          }
+        }
+
+        int numDocs = _TestUtil.nextInt(random, 1, 100);
+        
+        // Empty the database...
+        server.deleteByQuery("*:*");// delete everything!
+        
+        List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+        for (int i = 0; i < numDocs; i++) {
+          // Now add something...
+          SolrInputDocument doc = new SolrInputDocument();
+          doc.addField("id", "" + i);
+          doc.addField("unicode_s", randomTestString(30));
+          docs.add(doc);
+        }
+        
+        server.add(docs);
+        server.commit();
+        
+        SolrQuery query = new SolrQuery();
+        query.setQuery("*:*");
+        query.setRows(numDocs);
+        
+        QueryResponse rsp = server.query( query );
+        
+        for (int i = 0; i < numDocs; i++) {
+          String expected = (String) docs.get(i).getFieldValue("unicode_s");
+          String actual = (String) rsp.getResults().get(i).getFieldValue("unicode_s");
+          assertEquals(expected, actual);
+        }
+      }
+    } finally {
+      if (oldParser != null) {
+        // set the old parser back
+        ((CommonsHttpSolrServer)server).setParser(oldParser);
+      }
+    }
+  }
+
   /**
    * query the example
    */
@@ -256,6 +379,58 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     Assert.assertEquals( 1, rsp.getResults().getNumFound() );
   }
 
+
+  @Test
+  public void testAugmentFields() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    
+    // Now add something...
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "id", "111", 1.0f );
+    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "price", 11 );
+    server.add( doc );
+    server.commit(); // make sure this gets in first
+    
+    doc = new SolrInputDocument();
+    doc.addField( "id", "222", 1.0f );
+    doc.addField( "name", "doc2", 1.0f );
+    doc.addField( "price", 22 );
+    server.add( doc );
+    server.commit();
+    
+    SolrQuery query = new SolrQuery();
+    query.setQuery( "*:*" );
+    query.set( CommonParams.FL, "id,price,_docid_,_explain:nl_,score,aaa=_value:aaa_,ten=_value:int:10_" );
+    query.addSortField( "price", SolrQuery.ORDER.asc );
+    QueryResponse rsp = server.query( query );
+    
+    SolrDocumentList out = rsp.getResults();
+    assertEquals( 2, out.getNumFound() );
+    SolrDocument out1 = out.get( 0 ); 
+    SolrDocument out2 = out.get( 1 );
+    assertEquals( "111", out1.getFieldValue( "id" ) );
+    assertEquals( "222", out2.getFieldValue( "id" ) );
+    assertEquals( 1.0f, out1.getFieldValue( "score" ) );
+    assertEquals( 1.0f, out2.getFieldValue( "score" ) );
+    
+    // check that the docid is one bigger
+    int id1 = (Integer)out1.getFieldValue( "_docid_" );
+    int id2 = (Integer)out2.getFieldValue( "_docid_" );
+    assertTrue( "should be bigger ["+id1+","+id2+"]", id2 > id1 );
+    
+    // The score from explain should be the same as the score
+    NamedList explain = (NamedList)out1.getFieldValue( "_explain:nl_" );
+    assertEquals( out1.get( "score"), explain.get( "value" ) );
+    
+    // Augmented _value_ with alias
+    assertEquals( "aaa", out1.get( "aaa" ) );
+    assertEquals( 10, ((Integer)out1.get( "ten" )).intValue() );
+  }
 
  @Test
  public void testContentStreamRequest() throws Exception {
@@ -471,8 +646,8 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( "they have the same distribution", inStockF.getStddev(), inStockT.getStddev() );
   }
 
- @Test
- public void testPingHandler() throws Exception
+  @Test
+  public void testPingHandler() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -495,8 +670,8 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     }
   }
   
- @Test
- public void testFaceting() throws Exception
+  @Test
+  public void testFaceting() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -716,6 +891,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
    
     // Make sure it ran OK
     SolrQuery query = new SolrQuery("*:*");
+    query.set( CommonParams.FL, "id,score,_docid_" );
     QueryResponse response = server.query(query);
     assertEquals(0, response.getStatus());
     assertEquals(10, response.getResults().getNumFound());
@@ -732,6 +908,11 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
       @Override
       public void streamSolrDocument(SolrDocument doc) {
         cnt.incrementAndGet();
+        
+        // Make sure the transformer works for streaming
+        Float score = (Float)doc.get( "score" );
+        Integer docid = (Integer)doc.get( "_docid_" );
+        assertEquals( "should have score", new Float(1.0), score );
       }
      
     });

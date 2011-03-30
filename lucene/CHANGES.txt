@@ -138,6 +138,9 @@ Changes in backwards compatibility policy
 * LUCENE-2236: Similarity can now be configured on a per-field basis. See the
   migration notes in MIGRATE.txt for more details.  (Robert Muir, Doron Cohen)
 
+* LUCENE-2315: AttributeSource's methods for accessing attributes are now final,
+  else its easy to corrupt the internal states.  (Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -159,11 +162,13 @@ Changes in Runtime Behavior
   say "in order".  If this is a problem then you can use either of the
   LogMergePolicy impls, and call setRequireContiguousMerge(true).
   (Mike McCandless)
-
+  
 * LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
   per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
-  properties from all previous segments combined.  The corresponding file format
-  changes are backwards-compatible. (Michael Busch)
+  properties from all previous segments combined. Field numbers are now tracked
+  globally across IndexWriter sessions and persisted into a X.fnx file on
+  successful commit. The corresponding file format changes are backwards-
+  compatible. (Michael Busch, Simon Willnauer)
 
 API Changes
 
@@ -203,6 +208,9 @@ API Changes
 * LUCENE-2892: Add QueryParser.newFieldQuery (called by getFieldQuery by default)
   which takes Analyzer as a parameter, for easier customization by subclasses.
   (Robert Muir)
+
+* LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
+  function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
 
 New features
 
@@ -358,7 +366,25 @@ Bug fixes
 * LUCENE-2936: PhraseQuery score explanations were not correctly 
   identifying matches vs non-matches.  (hossman)
 
+* LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
+  indexes, causing existing deletions to be applied on the incoming indexes as 
+  well. (Shai Erera, Mike McCandless)
+
 ======================= Lucene 3.x (not yet released) =======================
+
+Changes in backwards compatibility policy
+
+* LUCENE-2953: PriorityQueue's internal heap was made private, as subclassing
+  with generics can lead to ClassCastException. For advanced use (e.g. in Solr)
+  a method getHeapArray() was added to retrieve the internal heap array as a
+  non-generic Object[].  (Uwe Schindler, Yonik Seeley)
+
+Optimizations
+
+* LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
+  on empty or one-element lists/arrays.  (Uwe Schindler)
+
+======================= Lucene 3.1 (not yet released) =======================
 
 Changes in backwards compatibility policy
 
@@ -515,6 +541,10 @@ Changes in runtime behavior
 * LUCENE-2010: Segments with 100% deleted documents are now removed on
   IndexReader or IndexWriter commit.   (Uwe Schindler, Mike McCandless)
   
+* LUCENE-2960: Allow some changes to IndexWriterConfig to take effect
+  "live" (after an IW is instantiated), via
+  IndexWriter.getConfig().setXXX(...) (Shay Banon, Mike McCandless)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
@@ -748,6 +778,11 @@ Bug fixes
   certain very small field norms (index_boost * length_norm) could have
   been rounded down to 0 instead of being rounded up to the smallest
   positive number.  (yonik)
+
+* LUCENE-2975: A hotspot bug corrupts IndexInput#readVInt()/readVLong() if
+  the underlying readByte() is inlined (which happens e.g. in MMapDirectory).
+  The loop was unwinded which makes the hotspot bug disappear.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
 
 New features
 

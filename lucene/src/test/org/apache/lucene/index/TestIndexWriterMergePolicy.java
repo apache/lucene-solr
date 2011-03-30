@@ -236,7 +236,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     int segmentCount = writer.getSegmentCount();
     for (int i = segmentCount - 1; i >= 0; i--) {
       int docCount = writer.getDocCount(i);
-      assertTrue(docCount > lowerBound);
+      assertTrue("docCount=" + docCount + " lowerBound=" + lowerBound + " i=" + i + " segmentCount=" + segmentCount + " index=" + writer.segString(), docCount > lowerBound);
 
       if (docCount <= upperBound) {
         numSegments++;

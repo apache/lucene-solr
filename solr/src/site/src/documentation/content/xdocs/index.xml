@@ -28,8 +28,8 @@
 Solr is the popular, blazing fast open source enterprise search
 platform from the Apache Lucene project.  Its major features include
 powerful full-text search, hit highlighting, faceted search, dynamic
-clustering, database integration, and rich document (e.g., Word, PDF)
-handling.  Solr is highly scalable, providing distributed search and
+clustering, database integration, rich document (e.g., Word, PDF)
+handling, and geospatial search.  Solr is highly scalable, providing distributed search and
 index replication, and it powers the search and navigation features of
 many of the world's largest internet sites.
 </p>
@@ -66,6 +66,32 @@ customization is required.
     </section>
     <section id="news">
       <title>News</title>
+            <section>
+   <title>March 2011 - Solr 3.1 Released</title>
+   <p>
+     Solr 3.1 has been released and is now available for public <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
+     
+   New Solr 3.1 features include
+ </p>
+  <ul>
+    <li>Improved geospatial support</li>
+    <li>Sorting by function queries</li>
+    <li>Range faceting on all numeric fields</li>
+    <li>Example Velocity driven search UI at http://localhost:8983/solr/browse</li>
+    <li>A new termvector-based highlighter</li>
+    <li>Improved spellchecking capabilities</li>
+    <li>Improved integration with Apache Lucene</li>
+    <li>New autosuggest component</li>
+    <li>Distributed support for more components</li>
+    <li>JSON document indexing and CSV response format</li>
+    <li>Apache UIMA integration for metadata extraction</li>
+    <li>Many other Bugfixes, improvements and optimizations</li>
+  </ul>
+     
+	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_1/solr/CHANGES.txt">release notes</a> for more details.
+ </p>
+
+</section>
         <section>
           <title>25 June 2010 - Solr 1.4.1 Released</title>
           <p>

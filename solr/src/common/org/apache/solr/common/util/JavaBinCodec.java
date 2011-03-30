@@ -295,27 +295,13 @@ public class JavaBinCodec {
   }
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
-    writeSolrDocument(doc, null);
-  }
-
-  public void writeSolrDocument(SolrDocument doc, Set<String> fields) throws IOException {
-    int count = 0;
-    if (fields == null) {
-      count = doc.getFieldNames().size();
-    } else {
-      for (Map.Entry<String, Object> entry : doc) {
-        if (fields.contains(entry.getKey())) count++;
-      }
-    }
     writeTag(SOLRDOC);
-    writeTag(ORDERED_MAP, count);
+    writeTag(ORDERED_MAP, doc.size());
     for (Map.Entry<String, Object> entry : doc) {
-      if (fields == null || fields.contains(entry.getKey())) {
-        String name = entry.getKey();
-        writeExternString(name);
-        Object val = entry.getValue();
-        writeVal(val);
-      }
+      String name = entry.getKey();
+      writeExternString(name);
+      Object val = entry.getValue();
+      writeVal(val);
     }
   }
 

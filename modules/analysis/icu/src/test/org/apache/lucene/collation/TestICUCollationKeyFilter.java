@@ -22,24 +22,26 @@ import com.ibm.icu.text.Collator;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.Reader;
 import java.util.Locale;
 
-
+/** @deprecated remove this when ICUCollationKeyFilter is removed */
+@Deprecated
 public class TestICUCollationKeyFilter extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
   private Analyzer analyzer = new TestAnalyzer(collator);
 
-  private String firstRangeBeginning = encodeCollationKey
-    (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
-  private String firstRangeEnd = encodeCollationKey
-    (collator.getCollationKey(firstRangeEndOriginal).toByteArray());
-  private String secondRangeBeginning = encodeCollationKey
-    (collator.getCollationKey(secondRangeBeginningOriginal).toByteArray());
-  private String secondRangeEnd = encodeCollationKey
-    (collator.getCollationKey(secondRangeEndOriginal).toByteArray());
+  private BytesRef firstRangeBeginning = new BytesRef(encodeCollationKey
+    (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray()));
+  private BytesRef firstRangeEnd = new BytesRef(encodeCollationKey
+    (collator.getCollationKey(firstRangeEndOriginal).toByteArray()));
+  private BytesRef secondRangeBeginning = new BytesRef(encodeCollationKey
+    (collator.getCollationKey(secondRangeBeginningOriginal).toByteArray()));
+  private BytesRef secondRangeEnd = new BytesRef(encodeCollationKey
+    (collator.getCollationKey(secondRangeEndOriginal).toByteArray()));
 
   
   public final class TestAnalyzer extends Analyzer {

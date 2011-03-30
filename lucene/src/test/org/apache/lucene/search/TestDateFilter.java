@@ -61,12 +61,12 @@ public class TestDateFilter extends LuceneTestCase {
     
     // filter that should preserve matches
     // DateFilter df1 = DateFilter.Before("datefield", now);
-    TermRangeFilter df1 = new TermRangeFilter("datefield", DateTools
+    TermRangeFilter df1 = TermRangeFilter.newStringRange("datefield", DateTools
         .timeToString(now - 2000, DateTools.Resolution.MILLISECOND), DateTools
         .timeToString(now, DateTools.Resolution.MILLISECOND), false, true);
     // filter that should discard matches
     // DateFilter df2 = DateFilter.Before("datefield", now - 999999);
-    TermRangeFilter df2 = new TermRangeFilter("datefield", DateTools
+    TermRangeFilter df2 = TermRangeFilter.newStringRange("datefield", DateTools
         .timeToString(0, DateTools.Resolution.MILLISECOND), DateTools
         .timeToString(now - 2000, DateTools.Resolution.MILLISECOND), true,
         false);
@@ -128,13 +128,13 @@ public class TestDateFilter extends LuceneTestCase {
     
     // filter that should preserve matches
     // DateFilter df1 = DateFilter.After("datefield", now);
-    TermRangeFilter df1 = new TermRangeFilter("datefield", DateTools
+    TermRangeFilter df1 = TermRangeFilter.newStringRange("datefield", DateTools
         .timeToString(now, DateTools.Resolution.MILLISECOND), DateTools
         .timeToString(now + 999999, DateTools.Resolution.MILLISECOND), true,
         false);
     // filter that should discard matches
     // DateFilter df2 = DateFilter.After("datefield", now + 999999);
-    TermRangeFilter df2 = new TermRangeFilter("datefield", DateTools
+    TermRangeFilter df2 = TermRangeFilter.newStringRange("datefield", DateTools
         .timeToString(now + 999999, DateTools.Resolution.MILLISECOND),
         DateTools.timeToString(now + 999999999,
             DateTools.Resolution.MILLISECOND), false, true);

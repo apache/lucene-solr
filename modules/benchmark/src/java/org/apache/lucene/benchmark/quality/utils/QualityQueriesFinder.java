@@ -124,7 +124,7 @@ public class QualityQueriesFinder {
   
   private static class TermsDfQueue extends PriorityQueue<TermDf> {
     TermsDfQueue (int maxSize) {
-      initialize(maxSize);
+      super(maxSize);
     }
     @Override
     protected boolean lessThan(TermDf tf1, TermDf tf2) {

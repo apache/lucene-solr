@@ -19,13 +19,16 @@ package org.apache.solr.response;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.response.transform.TransformContext;
 import org.apache.solr.schema.*;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,79 +65,101 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     protected final SolrQueryRequest solrQueryRequest;
     protected IndexSchema schema;
     protected SolrIndexSearcher searcher;
-    protected final Set<String> returnFields;
-    protected final boolean includeScore;
+    protected final ReturnFields returnFields;
 
     // transmit field values using FieldType.toObject()
     // rather than the String from FieldType.toExternal()
     boolean useFieldObjects = true;
 
-    public Resolver(SolrQueryRequest req, Set<String> returnFields) {
+    public Resolver(SolrQueryRequest req, ReturnFields returnFields) {
       solrQueryRequest = req;
-      this.includeScore = returnFields != null && returnFields.contains("score");
-
-      if (returnFields != null) {
-        if (returnFields.size() == 0 || (returnFields.size() == 1 && includeScore) || returnFields.contains("*")) {
-          returnFields = null;  // null means return all stored fields
-        }
-      }
       this.returnFields = returnFields;
     }
 
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-      if (o instanceof DocList) {
-        writeDocList((DocList) o, codec);
+      if (o instanceof ResultContext) {
+        writeResults((ResultContext) o, codec);
         return null; // null means we completely handled it
       }
-      if (o instanceof SolrDocument) {
-        SolrDocument solrDocument = (SolrDocument) o;
-        codec.writeSolrDocument(solrDocument, returnFields);
-        return null;
-      }
-      if (o instanceof Document) {
-        return getDoc((Document) o);
+      if (o instanceof DocList) {
+        ResultContext ctx = new ResultContext();
+        ctx.docs = (DocList) o;
+        writeResults(ctx, codec);
+        return null; // null means we completely handled it
       }
 
+      if (o instanceof SolrDocument) {
+        // Remove any fields that were not requested
+        // This typically happens when distributed search adds extra fields to an internal request
+        SolrDocument doc = (SolrDocument)o;
+        for( String fname : doc.getFieldNames() ) {
+          if( !returnFields.wantsField( fname ) ) {
+            doc.removeFields( fname );
+          }
+        }
+        return doc;
+      }
       return o;
     }
 
-    public void writeDocList(DocList ids, JavaBinCodec codec) throws IOException {
-      codec.writeTag(JavaBinCodec.SOLRDOCLST);
-      List l = new ArrayList(3);
-      l.add((long) ids.matches());
-      l.add((long) ids.offset());
-      Float maxScore = null;
-      if (includeScore && ids.hasScores()) {
-        maxScore = ids.maxScore();
-      }
-      l.add(maxScore);
-      codec.writeArray(l);
-
+    protected void writeResultsBody( ResultContext res, JavaBinCodec codec ) throws IOException 
+    {
+      DocList ids = res.docs;
+      TransformContext context = new TransformContext();
+      context.query = res.query;
+      context.wantsScores = returnFields.wantsScore() && ids.hasScores();
+      
       int sz = ids.size();
       codec.writeTag(JavaBinCodec.ARR, sz);
       if(searcher == null) searcher = solrQueryRequest.getSearcher();
       if(schema == null) schema = solrQueryRequest.getSchema(); 
-      DocIterator iterator = ids.iterator();
+      
+      context.searcher = searcher;
+      DocTransformer transformer = returnFields.getTransformer();
+      if( transformer != null ) {
+        transformer.setContext( context );
+      }
+      
+      Set<String> fnames = returnFields.getLuceneFieldNames();
+      context.iterator = ids.iterator();
       for (int i = 0; i < sz; i++) {
-        int id = iterator.nextDoc();
-        Document doc = searcher.doc(id, returnFields);
-
+        int id = context.iterator.nextDoc();
+        Document doc = searcher.doc(id, fnames);
         SolrDocument sdoc = getDoc(doc);
-
-        if (includeScore && ids.hasScores()) {
-          sdoc.addField("score", iterator.score());
+        if( transformer != null ) {
+          transformer.transform(sdoc, id );
         }
-
         codec.writeSolrDocument(sdoc);
       }
+      if( transformer != null ) {
+        transformer.setContext( null );
+      }
     }
-
+    
+    public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
+      codec.writeTag(JavaBinCodec.SOLRDOCLST);
+      boolean wantsScores = returnFields.wantsScore() && ctx.docs.hasScores();
+      List l = new ArrayList(3);
+      l.add((long) ctx.docs.matches());
+      l.add((long) ctx.docs.offset());
+      
+      Float maxScore = null;
+      if (wantsScores) {
+        maxScore = ctx.docs.maxScore();
+      }
+      l.add(maxScore);
+      codec.writeArray(l);
+      
+      // this is a seprate function so that streaming responses can use just that part
+      writeResultsBody( ctx, codec );
+    }
 
     public SolrDocument getDoc(Document doc) {
       SolrDocument solrDoc = new SolrDocument();
       for (Fieldable f : doc.getFields()) {
         String fieldName = f.name();
-        if (returnFields != null && !returnFields.contains(fieldName)) continue;
+        if( !returnFields.wantsField(fieldName) ) 
+          continue;
         SchemaField sf = schema.getFieldOrNull(fieldName);
         FieldType ft = null;
         if(sf != null) ft =sf.getType();

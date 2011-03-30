@@ -17,7 +17,6 @@ package org.apache.lucene.queryParser.standard;
  * limitations under the License.
  */
 
-import java.text.Collator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TooManyListenersException;
@@ -41,10 +40,8 @@ import org.apache.lucene.queryParser.standard.config.LowercaseExpandedTermsAttri
 import org.apache.lucene.queryParser.standard.config.MultiFieldAttribute;
 import org.apache.lucene.queryParser.standard.config.MultiTermRewriteMethodAttribute;
 import org.apache.lucene.queryParser.standard.config.PositionIncrementsAttribute;
-import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
-import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
 import org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
 import org.apache.lucene.search.FuzzyQuery;
@@ -185,32 +182,6 @@ public class StandardQueryParser extends QueryParserHelper {
   public Operator getDefaultOperator() {
     DefaultOperatorAttribute attr = getQueryConfigHandler().getAttribute(DefaultOperatorAttribute.class);
     return attr.getOperator();
-  }
-
-  /**
-   * Sets the collator used to determine index term inclusion in ranges for
-   * RangeQuerys.
-   * <p/>
-   * <strong>WARNING:</strong> Setting the rangeCollator to a non-null collator
-   * using this method will cause every single index Term in the Field
-   * referenced by lowerTerm and/or upperTerm to be examined. Depending on the
-   * number of index Terms in this Field, the operation could be very slow.
-   * 
-   * @param collator
-   *          the collator to use when constructing {@link RangeQueryNode}s
-   */
-  public void setRangeCollator(Collator collator) {
-    RangeCollatorAttribute attr = getQueryConfigHandler().getAttribute(RangeCollatorAttribute.class);
-    attr.setDateResolution(collator);
-  }
-
-  /**
-   * @return the collator used to determine index term inclusion in ranges for
-   *         RangeQuerys.
-   */
-  public Collator getRangeCollator() {
-    RangeCollatorAttribute attr = getQueryConfigHandler().getAttribute(RangeCollatorAttribute.class);
-    return attr.getRangeCollator();
   }
 
   /**

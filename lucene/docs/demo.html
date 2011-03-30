@@ -129,8 +129,11 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="api/core/index.html">Core</a>
 </div>
-<div onclick="SwitchMenu('menu_1.1.3.3', 'skin/')" id="menu_1.1.3.3Title" class="menutitle">Contrib</div>
-<div id="menu_1.1.3.3" class="menuitemgroup">
+<div class="menuitem">
+<a href="api/test-framework/index.html">Test Framework</a>
+</div>
+<div onclick="SwitchMenu('menu_1.1.3.4', 'skin/')" id="menu_1.1.3.4Title" class="menutitle">Contrib</div>
+<div id="menu_1.1.3.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="api/contrib-ant/index.html">Ant</a>
 </div>
@@ -284,39 +287,21 @@ functionalities of Lucene and how you can add Lucene to your applications.
 <div class="section">
 <p>
 First, you should <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">download</a> the
-latest Lucene distribution and then extract it to a working directory.  Alternatively, you can <a href="http://wiki.apache.org/lucene-java/SourceRepository">check out the sources from
-Subversion</a>, and then run <span class="codefrag">ant</span> in the <span class="codefrag">lucene/contrib/demo/</span>
-directory to generate the JARs.
+latest Lucene distribution and then extract it to a working directory.
 </p>
 <p>
 You need three JARs: the Lucene JAR, the common analysis JAR, and the Lucene demo JAR.  You should
 see the Lucene JAR file in the directory you created when you extracted the archive -- it
 should be named something like <span class="codefrag">lucene-core-{version}.jar</span>.  You should also see files
-called <span class="codefrag">lucene-analysis-common-{version}.jar</span> and <span class="codefrag">lucene-demos-{version}.jar</span>.
-If you checked out the sources from Subversion then the JARs are located at:
+called <span class="codefrag">lucene-analyzers-common-{version}.jar</span> and <span class="codefrag">lucene-demo-{version}.jar</span>.
 </p>
-<ul>
-  
-<li>
-<span class="codefrag">lucene/build/lucene-core-4.0-SNAPSHOT.jar</span>
-</li>
-  
-<li>
-<span class="codefrag">modules/analysis/build/common/lucene-analyzers-common-4.0-SNAPSHOT.jar</span>
-</li>
-  
-<li>
-<span class="codefrag">lucene/build/contrib/demo/lucene-demo-4.0-SNAPSHOT.jar</span>
-</li>
-
-</ul>
 <p>
 Put all three of these files in your Java CLASSPATH.
 </p>
 </div>
 
 
-<a name="N1005A"></a><a name="Indexing Files"></a>
+<a name="N10041"></a><a name="Indexing Files"></a>
 <h2 class="boxed">Indexing Files</h2>
 <div class="section">
 <p>
@@ -345,7 +330,7 @@ you whether you want more results.
 </div>
 
 
-<a name="N10075"></a><a name="About the code..."></a>
+<a name="N1005C"></a><a name="About the code..."></a>
 <h2 class="boxed">About the code...</h2>
 <div class="section">
 <p>

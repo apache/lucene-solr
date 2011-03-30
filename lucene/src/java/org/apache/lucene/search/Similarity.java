@@ -362,7 +362,7 @@ import org.apache.lucene.util.SmallFloat;
  *      than another document with fewer query terms.
  *      This is a search time factor computed in
  *      {@link SimilarityProvider#coord(int, int) coord(q,d)}
- *      by the Similarity in effect at search time.
+ *      by the SimilarityProvider in effect at search time.
  *      <br>&nbsp;<br>
  *    </li>
  *
@@ -373,17 +373,17 @@ import org.apache.lucene.util.SmallFloat;
  *      is a normalizing factor used to make scores between queries comparable.
  *      This factor does not affect document ranking (since all ranked documents are multiplied by the same factor),
  *      but rather just attempts to make scores from different queries (or even different indexes) comparable.
- *      This is a search time factor computed by the Similarity in effect at search time.
+ *      This is a search time factor computed by the SimilarityProvider in effect at search time.
  *
  *      The default computation in
- *      {@link org.apache.lucene.search.DefaultSimilarity#queryNorm(float) DefaultSimilarity}
+ *      {@link org.apache.lucene.search.DefaultSimilarityProvider#queryNorm(float) DefaultSimilarityProvider}
  *      produces a <a href="http://en.wikipedia.org/wiki/Euclidean_norm#Euclidean_norm">Euclidean norm</a>:
  *      <br>&nbsp;<br>
  *      <table cellpadding="1" cellspacing="0" border="0" align="center">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            queryNorm(q)  &nbsp; = &nbsp;
- *            {@link org.apache.lucene.search.DefaultSimilarity#queryNorm(float) queryNorm(sumOfSquaredWeights)}
+ *            {@link org.apache.lucene.search.DefaultSimilarityProvider#queryNorm(float) queryNorm(sumOfSquaredWeights)}
  *            &nbsp; = &nbsp;
  *          </td>
  *          <td valign="middle" align="center" rowspan="1">

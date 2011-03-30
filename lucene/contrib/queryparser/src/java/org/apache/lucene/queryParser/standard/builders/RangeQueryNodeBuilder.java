@@ -53,9 +53,7 @@ public class RangeQueryNodeBuilder implements StandardQueryBuilder {
 
     String field = rangeNode.getField().toString();
 
-    TermRangeQuery rangeQuery = new TermRangeQuery(field, lower
-        .getTextAsString(), upper.getTextAsString(), lowerInclusive,
-        upperInclusive, rangeNode.getCollator());
+    TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, lower.getTextAsString(), upper.getTextAsString(), lowerInclusive, upperInclusive);
     
     MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod)queryNode.getTag(MultiTermRewriteMethodAttribute.TAG_ID);
     if (method != null) {

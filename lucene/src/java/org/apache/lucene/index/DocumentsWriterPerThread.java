@@ -172,7 +172,7 @@ public class DocumentsWriterPerThread {
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent, FieldInfos fieldInfos, IndexingChain indexingChain) {
     this.directory = directory;
     this.parent = parent;
-    this.fieldInfos = fieldInfos.newFieldInfosWithGlobalFieldNumberMap();
+    this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
     this.infoStream = parent.indexWriter.getInfoStream();
     this.docState = new DocState(this);
@@ -277,7 +277,7 @@ public class DocumentsWriterPerThread {
   private void doAfterFlush() throws IOException {
     segment = null;
     consumer.doAfterFlush();
-    fieldInfos = fieldInfos.newFieldInfosWithGlobalFieldNumberMap();
+    fieldInfos = new FieldInfos(fieldInfos);
     parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
   }
@@ -288,7 +288,7 @@ public class DocumentsWriterPerThread {
 
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
-        SegmentCodecs.build(fieldInfos, writer.codecs), pendingDeletes);
+        fieldInfos.buildSegmentCodecs(true), pendingDeletes);
 
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
@@ -317,10 +317,10 @@ public class DocumentsWriterPerThread {
 
     try {
 
-      SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentCodecs, fieldInfos);
+      SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false, fieldInfos);
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      newSegment.clearFilesCache();
+      newSegment.setHasVectors(flushState.hasVectors);
 
       if (infoStream != null) {
         message("new segment has " + flushState.deletedDocs.count() + " deleted docs");

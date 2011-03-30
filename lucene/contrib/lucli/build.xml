@@ -33,9 +33,6 @@
                refid="additional.dependencies"
   />
 
-  <property name="src.dir" location="src"/>
-
-
   <import file="../contrib-build.xml"/>
 
   <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"

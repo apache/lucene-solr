@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -189,7 +190,7 @@ public class EnwikiContentSource extends ContentSource {
               return;
             } else if (localFileIS == is) {
               // If file is not already re-opened then re-open it now
-              is = getInputStream(file);
+              is = StreamUtils.inputStream(file);
             }
           }
         }
@@ -290,7 +291,7 @@ public class EnwikiContentSource extends ContentSource {
   @Override
   public void resetInputs() throws IOException {
     super.resetInputs();
-    is = getInputStream(file);
+    is = StreamUtils.inputStream(file);
   }
   
   @Override

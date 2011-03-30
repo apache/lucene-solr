@@ -49,7 +49,7 @@ public class TestFieldsReader extends LuceneTestCase {
     super.setUp();
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
-    fieldInfos.add(testDoc);
+    _TestUtil.add(testDoc, fieldInfos);
     dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);

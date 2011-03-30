@@ -354,13 +354,17 @@ public class ConcurrentLRUCache<K,V> {
 
   private static class PQueue<K,V> extends PriorityQueue<CacheEntry<K,V>> {
     int myMaxSize;
+    final Object[] heap;
+    
     PQueue(int maxSz) {
-      super.initialize(maxSz);
+      super(maxSz);
+      heap = getHeapArray();
       myMaxSize = maxSz;
     }
 
+    @SuppressWarnings("unchecked")
     Iterable<CacheEntry<K,V>> getValues() { 
-      return Collections.unmodifiableCollection(Arrays.asList(heap));
+      return (Iterable) Collections.unmodifiableCollection(Arrays.asList(heap));
     }
 
     @Override
@@ -370,12 +374,13 @@ public class ConcurrentLRUCache<K,V> {
     }
 
     // necessary because maxSize is private in base class
+    @SuppressWarnings("unchecked")
     public CacheEntry<K,V> myInsertWithOverflow(CacheEntry<K,V> element) {
       if (size() < myMaxSize) {
         add(element);
         return null;
-      } else if (size() > 0 && !lessThan(element, heap[1])) {
-        CacheEntry<K,V> ret = heap[1];
+      } else if (size() > 0 && !lessThan(element, (CacheEntry<K,V>) heap[1])) {
+        CacheEntry<K,V> ret = (CacheEntry<K,V>) heap[1];
         heap[1] = element;
         updateTop();
         return ret;

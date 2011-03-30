@@ -24,6 +24,8 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.common.util.XMLErrorLogger;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
@@ -33,6 +35,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.apache.commons.io.IOUtils;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -58,6 +61,7 @@ public class DataImporter {
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
+  private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
 
   private Status status = Status.IDLE;
 
@@ -88,7 +92,7 @@ public class DataImporter {
     coreScopeSession = new ConcurrentHashMap<String, Object>();
   }
 
-  DataImporter(String dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session) {
+  DataImporter(InputSource dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session) {
     if (dataConfig == null)
       throw new DataImportHandlerException(SEVERE,
               "Configuration not found");
@@ -141,7 +145,7 @@ public class DataImporter {
    * Used by tests
    */
   void loadAndInit(String configStr) {
-    loadDataConfig(configStr);
+    loadDataConfig(new InputSource(new StringReader(configStr)));
     Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
     for (DataConfig.Entity entity : config.document.entities) {
       initEntity(entity, fields, false);
@@ -168,19 +172,32 @@ public class DataImporter {
 
   }
 
-  private void loadDataConfig(String configFile) {
+  private void loadDataConfig(InputSource configFile) {
 
     try {
       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      try {
-        dbf.setXIncludeAware(true);
-        dbf.setNamespaceAware(true);
-      } catch( UnsupportedOperationException e ) {
-        LOG.warn( "XML parser doesn't support XInclude option" );
+      
+      // only enable xinclude, if a a SolrCore and SystemId is present (makes no sense otherwise)
+      if (core != null && configFile.getSystemId() != null) {
+        try {
+          dbf.setXIncludeAware(true);
+          dbf.setNamespaceAware(true);
+        } catch( UnsupportedOperationException e ) {
+          LOG.warn( "XML parser doesn't support XInclude option" );
+        }
       }
+      
       DocumentBuilder builder = dbf.newDocumentBuilder();
-      Document document = builder.parse(new InputSource(new StringReader(
-              configFile)));
+      if (core != null)
+        builder.setEntityResolver(new SystemIdResolver(core.getResourceLoader()));
+      builder.setErrorHandler(XMLLOG);
+      Document document;
+      try {
+        document = builder.parse(configFile);
+      } finally {
+        // some XML parsers are broken and don't close the byte stream (but they should according to spec)
+        IOUtils.closeQuietly(configFile.getByteStream());
+      }
 
       config = new DataConfig();
       NodeList elems = document.getElementsByTagName("dataConfig");

@@ -42,9 +42,6 @@ import org.apache.lucene.util.Constants;
  */
 public final class SegmentInfo {
 
-  @Deprecated
-  // remove with hasVector and hasProx
-  static final int CHECK_FIELDINFOS = -2;  // hasVector and hasProx use this for bw compatibility
   static final int NO = -1;          // e.g. no norms; no deletes;
   static final int YES = 1;          // e.g. have norms; have deletes;
   static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
@@ -84,14 +81,10 @@ public final class SegmentInfo {
 
   private int delCount;                           // How many deleted docs in this segment
 
-  @Deprecated
-  // remove when we don't have to support old indexes anymore that had this field
-  private int hasProx = CHECK_FIELDINFOS;         // True if this segment has any fields with omitTermFreqAndPositions==false
+  private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
 
-  @Deprecated
-  // remove when we don't have to support old indexes anymore that had this field
-  private int hasVectors = CHECK_FIELDINFOS;      // True if this segment wrote term vectors
-
+  private boolean hasVectors;                     // True if this segment wrote term vectors
+  
   private FieldInfos fieldInfos;
 
   private SegmentCodecs segmentCodecs;
@@ -110,7 +103,7 @@ public final class SegmentInfo {
   private long bufferedDeletesGen;
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
-                     SegmentCodecs segmentCodecs, FieldInfos fieldInfos) {
+                     boolean hasProx, SegmentCodecs segmentCodecs, boolean hasVectors, FieldInfos fieldInfos) {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -118,7 +111,9 @@ public final class SegmentInfo {
     this.isCompoundFile = isCompoundFile;
     this.docStoreOffset = -1;
     this.docStoreSegment = name;
+    this.hasProx = hasProx;
     this.segmentCodecs = segmentCodecs;
+    this.hasVectors = hasVectors;
     delCount = 0;
     version = Constants.LUCENE_MAIN_VERSION;
     this.fieldInfos = fieldInfos;
@@ -146,7 +141,7 @@ public final class SegmentInfo {
       normGen = new HashMap<Integer, Long>(src.normGen.size());
       for (Entry<Integer,Long> entry : src.normGen.entrySet()) {
         normGen.put(entry.getKey(), entry.getValue());
-    }
+      }
     }
     isCompoundFile = src.isCompoundFile;
     delCount = src.delCount;
@@ -203,44 +198,30 @@ public final class SegmentInfo {
         int fieldNumber = j;
         if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
           fieldNumber = input.readInt();
-      }
+        }
 
         normGen.put(fieldNumber, input.readLong());
-    }
-    }
-    isCompoundFile = input.readByte() == YES;
-
-    Directory dir0 = dir;
-    if (isCompoundFile) {
-      dir0 = new CompoundFileReader(dir, IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-    }
-
-    try {
-      fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
-    } finally {
-      if (dir != dir0) {
-        dir0.close();
       }
     }
+    isCompoundFile = input.readByte() == YES;
 
     delCount = input.readInt();
     assert delCount <= docCount;
 
-    hasProx = input.readByte();
+    hasProx = input.readByte() == YES;
 
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
-    segmentCodecs = new SegmentCodecs(codecs);
     if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
-      segmentCodecs.read(input);
+      segmentCodecs = new SegmentCodecs(codecs, input);
     } else {
       // codec ID on FieldInfo is 0 so it will simply use the first codec available
       // TODO what todo if preflex is not available in the provider? register it or fail?
-      segmentCodecs.codecs = new Codec[] { codecs.lookup("PreFlex")};
+      segmentCodecs = new SegmentCodecs(codecs, new Codec[] { codecs.lookup("PreFlex")});
     }
     diagnostics = input.readStringStringMap();
 
     if (format <= DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
-      hasVectors = input.readByte();
+      hasVectors = input.readByte() == 1;
     } else {
       final String storesSegment;
       final String ext;
@@ -261,14 +242,28 @@ public final class SegmentInfo {
         dirToTest = dir;
       }
       try {
-        if (dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION))) {
-          hasVectors = YES;
-        } else {
-          hasVectors = NO;
-        }
+        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
       } finally {
         if (isCompoundFile) {
           dirToTest.close();
+        }
+      }
+    }
+  }
+  
+  synchronized void loadFieldInfos(Directory dir, boolean checkCompoundFile) throws IOException {
+    if (fieldInfos == null) {
+      Directory dir0 = dir;
+      if (isCompoundFile && checkCompoundFile) {
+        dir0 = new CompoundFileReader(dir, IndexFileNames.segmentFileName(name,
+            "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      }
+      try {
+        fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name,
+            "", IndexFileNames.FIELD_INFOS_EXTENSION));
+      } finally {
+        if (dir != dir0) {
+          dir0.close();
         }
       }
     }
@@ -310,12 +305,17 @@ public final class SegmentInfo {
     }
   }
 
-  public boolean getHasVectors() {
-    return hasVectors == CHECK_FIELDINFOS ?
-        (fieldInfos == null ? true : fieldInfos.hasVectors()) : hasVectors == YES;
+  public boolean getHasVectors() throws IOException {
+    return hasVectors;
   }
 
-  public FieldInfos getFieldInfos() {
+  public void setHasVectors(boolean v) {
+    hasVectors = v;
+    clearFilesCache();
+  }
+
+  public FieldInfos getFieldInfos() throws IOException {
+    loadFieldInfos(dir, true);
     return fieldInfos;
   }
 
@@ -344,7 +344,7 @@ public final class SegmentInfo {
 
   @Override
   public Object clone() {
-    SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, segmentCodecs,
+    final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, hasProx, segmentCodecs, hasVectors,
         fieldInfos == null ? null : (FieldInfos) fieldInfos.clone());
     si.docStoreOffset = docStoreOffset;
     si.docStoreSegment = docStoreSegment;
@@ -356,10 +356,8 @@ public final class SegmentInfo {
       si.normGen = new HashMap<Integer, Long>();
       for (Entry<Integer,Long> entry : normGen.entrySet()) {
         si.normGen.put(entry.getKey(), entry.getValue());
+      }
     }
-    }
-    si.hasProx = hasProx;
-    si.hasVectors = hasVectors;
     si.version = version;
     return si;
   }
@@ -382,7 +380,7 @@ public final class SegmentInfo {
   public boolean hasSeparateNorms(int fieldNumber) {
     if (normGen == null) {
       return false;
-  }
+    }
 
     Long gen = normGen.get(fieldNumber);
     return gen != null && gen.longValue() != NO;
@@ -538,15 +536,19 @@ public final class SegmentInfo {
 
     output.writeByte((byte) (isCompoundFile ? YES : NO));
     output.writeInt(delCount);
-    output.writeByte((byte) hasProx);
+    output.writeByte((byte) (hasProx ? 1:0));
     segmentCodecs.write(output);
     output.writeStringStringMap(diagnostics);
-    output.writeByte((byte) hasVectors);
+    output.writeByte((byte) (hasVectors ? 1 : 0));
+  }
+
+  void setHasProx(boolean hasProx) {
+    this.hasProx = hasProx;
+    clearFilesCache();
   }
 
   public boolean getHasProx() {
-    return hasProx == CHECK_FIELDINFOS ?
-        (fieldInfos == null ? true : fieldInfos.hasProx()) : hasProx == YES;
+    return hasProx;
   }
 
   /** Can only be called once. */
@@ -602,7 +604,7 @@ public final class SegmentInfo {
       } else {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_EXTENSION));
-        if (getHasVectors()) {
+        if (hasVectors) {
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
@@ -611,7 +613,7 @@ public final class SegmentInfo {
     } else if (!useCompoundFile) {
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_EXTENSION));
-      if (getHasVectors()) {
+      if (hasVectors) {
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
@@ -640,7 +642,7 @@ public final class SegmentInfo {
 
   /* Called whenever any change is made that affects which
    * files this segment has. */
-  void clearFilesCache() {
+  private void clearFilesCache() {
     files = null;
     sizeInBytesNoStore = -1;
     sizeInBytesWithStore = -1;
@@ -675,7 +677,7 @@ public final class SegmentInfo {
     if (this.dir != dir) {
       s.append('x');
     }
-    if (getHasVectors()) {
+    if (hasVectors) {
       s.append('v');
     }
     s.append(docCount);

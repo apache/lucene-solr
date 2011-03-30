@@ -59,7 +59,7 @@ two starts and ends at the greater of the two ends.
 <p>For example, a span query which matches "John Kerry" within ten
 words of "George Bush" within the first 100 words of the document
 could be constructed with:
-<pre>
+<pre class="prettyprint">
 SpanQuery john   = new SpanTermQuery(new Term("content", "john"));
 SpanQuery kerry  = new SpanTermQuery(new Term("content", "kerry"));
 SpanQuery george = new SpanTermQuery(new Term("content", "george"));
@@ -82,7 +82,7 @@ SpanQuery johnKerryNearGeorgeBushAtStart =
 So, for example, the above query can be restricted to documents which
 also use the word "iraq" with:
 
-<pre>
+<pre class="prettyprint">
 Query query = new BooleanQuery();
 query.add(johnKerryNearGeorgeBushAtStart, true, false);
 query.add(new TermQuery("content", "iraq"), true, false);

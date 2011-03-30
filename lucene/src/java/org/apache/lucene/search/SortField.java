@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Locale;
 
 import org.apache.lucene.search.cache.*;
 import org.apache.lucene.util.StringHelper;
@@ -90,7 +89,6 @@ public class SortField {
 
   private String field;
   private int type;  // defaults to determining type dynamically
-  private Locale locale;    // defaults to "natural order" (no Locale)
   boolean reverse = false;  // defaults to natural order
   private CachedArrayCreator<?> creator;
   public Object missingValue = null; // used for 'sortMissingFirst/Last'
@@ -213,28 +211,6 @@ public class SortField {
     }
     return this;
   }
-  
-
-  /** Creates a sort by terms in the given field sorted
-   * according to the given locale.
-   * @param field  Name of field to sort by, cannot be <code>null</code>.
-   * @param locale Locale of values in the field.
-   */
-  public SortField (String field, Locale locale) {
-    initFieldType(field, STRING);
-    this.locale = locale;
-  }
-
-  /** Creates a sort, possibly in reverse, by terms in the given field sorted
-   * according to the given locale.
-   * @param field  Name of field to sort by, cannot be <code>null</code>.
-   * @param locale Locale of values in the field.
-   */
-  public SortField (String field, Locale locale, boolean reverse) {
-    initFieldType(field, STRING);
-    this.locale = locale;
-    this.reverse = reverse;
-  }
 
   /** Creates a sort with a custom comparison function.
    * @param field Name of field to sort by; cannot be <code>null</code>.
@@ -293,14 +269,6 @@ public class SortField {
    */
   public int getType() {
     return type;
-  }
-
-  /** Returns the Locale by which term values are interpreted.
-   * May return <code>null</code> if no Locale was specified.
-   * @return Locale, or <code>null</code>.
-   */
-  public Locale getLocale() {
-    return locale;
   }
 
   /** Returns the instance of a {@link FieldCache} parser that fits to the given sort type.
@@ -384,7 +352,6 @@ public class SortField {
         break;
     }
 
-    if (locale != null) buffer.append('(').append(locale).append(')');
     if (creator != null) buffer.append('(').append(creator).append(')');
     if (reverse) buffer.append('!');
 
@@ -404,7 +371,6 @@ public class SortField {
       other.field == this.field // field is always interned
       && other.type == this.type
       && other.reverse == this.reverse
-      && (other.locale == null ? this.locale == null : other.locale.equals(this.locale))
       && (other.comparatorSource == null ? this.comparatorSource == null : other.comparatorSource.equals(this.comparatorSource))
       && (other.creator == null ? this.creator == null : other.creator.equals(this.creator))
     );
@@ -419,7 +385,6 @@ public class SortField {
   public int hashCode() {
     int hash=type^0x346565dd + Boolean.valueOf(reverse).hashCode()^0xaf5998bb;
     if (field != null) hash += field.hashCode()^0xff5685dd;
-    if (locale != null) hash += locale.hashCode()^0x08150815;
     if (comparatorSource != null) hash += comparatorSource.hashCode();
     if (creator != null) hash += creator.hashCode()^0x3aaf56ff;
     return hash;
@@ -438,13 +403,6 @@ public class SortField {
    * @return {@link FieldComparator} to use when sorting
    */
   public FieldComparator getComparator(final int numHits, final int sortPos) throws IOException {
-
-    if (locale != null) {
-      // TODO: it'd be nice to allow FieldCache.getStringIndex
-      // to optionally accept a Locale so sorting could then use
-      // the faster StringComparator impls
-      return new FieldComparator.StringComparatorLocale(numHits, field, locale);
-    }
 
     switch (type) {
     case SortField.SCORE:

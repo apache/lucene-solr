@@ -187,7 +187,7 @@ public class TestFilteredQuery extends LuceneTestCase {
    * This tests FilteredQuery's rewrite correctness
    */
   public void testRangeQuery() throws Exception {
-    TermRangeQuery rq = new TermRangeQuery(
+    TermRangeQuery rq = TermRangeQuery.newStringRange(
         "sorter", "b", "d", true, true);
 
     Query filteredquery = new FilteredQuery(rq, filter);

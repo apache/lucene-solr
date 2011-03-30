@@ -27,7 +27,7 @@
   <xsl:output
     method="html"
     encoding="utf-8"
-    media-type="text/html; charset=UTF-8"
+    media-type="text/html"
     indent="yes"
     doctype-public="-//W3C//DTD HTML 4.01//EN"
     doctype-system="http://www.w3.org/TR/html4/strict.dtd" />

@@ -43,7 +43,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * @version $Id$
  */
 public interface QueryResponseWriter extends NamedListInitializedPlugin {
-  public static String CONTENT_TYPE_XML_UTF8="text/xml; charset=UTF-8";
+  public static String CONTENT_TYPE_XML_UTF8="application/xml; charset=UTF-8";
   public static String CONTENT_TYPE_TEXT_UTF8="text/plain; charset=UTF-8";
   public static String CONTENT_TYPE_TEXT_ASCII="text/plain; charset=US-ASCII";
 

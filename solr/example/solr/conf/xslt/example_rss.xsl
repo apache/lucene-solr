@@ -27,7 +27,7 @@
   <xsl:output
        method="xml"
        encoding="utf-8"
-       media-type="text/xml; charset=UTF-8"
+       media-type="application/xml"
   />
   <xsl:template match='/'>
     <rss version="2.0">

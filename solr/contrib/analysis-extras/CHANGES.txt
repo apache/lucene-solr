@@ -15,6 +15,10 @@ $Id$
 
 (No Changes)
 
+================== Release 3.2-dev ==================
+
+(No Changes)
+
 ================== Release 3.1-dev ==================
 
 * SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)

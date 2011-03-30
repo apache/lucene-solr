@@ -4,6 +4,9 @@ import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
+import org.apache.lucene.index.codecs.CodecProvider;
 
 public abstract class DocumentsWriterPerThreadPool {
   final static class ThreadState extends ReentrantLock {
@@ -24,9 +27,11 @@ public abstract class DocumentsWriterPerThreadPool {
     numThreadStatesActive = 0;
   }
 
-  public void initialize(DocumentsWriter documentsWriter, FieldInfos fieldInfos) {
+  public void initialize(DocumentsWriter documentsWriter, FieldNumberBiMap globalFieldMap, IndexWriterConfig config) {
+    final CodecProvider codecProvider = config.getCodecProvider();
     for (int i = 0; i < perThreads.length; i++) {
-      perThreads[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, fieldInfos, documentsWriter.chain));
+      final FieldInfos infos = globalFieldMap.newFieldInfos(SegmentCodecsBuilder.create(codecProvider));
+      perThreads[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
     }
   }
 

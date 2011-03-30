@@ -115,41 +115,6 @@ public class SolrPluginUtils {
      return splitList.split(value.trim(), 0);
   }
 
-  /**
-   * Assumes the standard query param of "fl" to specify the return fields
-   * @see #setReturnFields(String,SolrQueryResponse)
-   */
-  public static int setReturnFields(SolrQueryRequest req,
-                                    SolrQueryResponse res) {
-
-    return setReturnFields(req.getParams().get(CommonParams.FL), res);
-  }
-
-  /**
-   * Given a space seperated list of field names, sets the field list on the
-   * SolrQueryResponse.
-   *
-   * @return bitfield of SolrIndexSearcher flags that need to be set
-   */
-  public static int setReturnFields(String fl,
-                                    SolrQueryResponse res) {
-    int flags = 0;
-    if (fl != null) {
-      // TODO - this could become more efficient if widely used.
-      // TODO - should field order be maintained?
-      String[] flst = split(fl);
-      if (flst.length > 0 && !(flst.length==1 && flst[0].length()==0)) {
-        Set<String> set = new LinkedHashSet<String>();
-        for (String fname : flst) {
-          if("score".equalsIgnoreCase(fname))
-            flags |= SolrIndexSearcher.GET_SCORES;
-          set.add(fname);
-        }
-        res.setReturnFields(set);
-      }
-    }
-    return flags;
-  }
 
   /**
    * Pre-fetch documents into the index searcher's document cache.
@@ -180,14 +145,13 @@ public class SolrPluginUtils {
       return;
     }
 
-    Set<String> returnFields = res.getReturnFields();
-    Set<String> fieldFilter = returnFields;
-
-    if(returnFields != null) {
+    ReturnFields returnFields = res.getReturnFields();
+    if(returnFields.getLuceneFieldNames() != null) {
+      Set<String> fieldFilter = returnFields.getLuceneFieldNames();
 
       if (rb.doHighlights) {
         // copy return fields list
-        fieldFilter = new HashSet<String>(returnFields);
+        fieldFilter = new HashSet<String>(fieldFilter);
         // add highlight fields
 
         SolrHighlighter highlighter = HighlightComponent.getHighlighter(req.getCore());

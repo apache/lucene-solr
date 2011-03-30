@@ -586,7 +586,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     public TermHistogram histogram;
     
     TopTermQueue(int size) {
-      initialize(size);
+      super(size);
       histogram = new TermHistogram();
     }
     

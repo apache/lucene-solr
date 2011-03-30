@@ -36,8 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
+import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -45,7 +47,6 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -55,22 +56,22 @@ import org.apache.lucene.util.MapBackedSet;
   An <code>IndexWriter</code> creates and maintains an index.
 
   <p>The <code>create</code> argument to the {@link
-  #IndexWriter(Directory, IndexWriterConfig) constructor} determines
+  #IndexWriter(Directory, IndexWriterConfig) constructor} determines 
   whether a new index is created, or whether an existing index is
   opened.  Note that you can open an index with <code>create=true</code>
-  even while readers are using the index.  The old readers will
-  continue to search the "point in time" snapshot they had opened,
+  even while readers are using the index.  The old readers will 
+  continue to search the "point in time" snapshot they had opened, 
   and won't see the newly created index until they re-open.  There are
   also {@link #IndexWriter(Directory, IndexWriterConfig) constructors}
   with no <code>create</code> argument which will create a new index
-  if there is not already an index at the provided path and otherwise
+  if there is not already an index at the provided path and otherwise 
   open the existing index.</p>
 
   <p>In either case, documents are added with {@link #addDocument(Document)
   addDocument} and removed with {@link #deleteDocuments(Term)} or {@link
   #deleteDocuments(Query)}. A document can be updated with {@link
   #updateDocument(Term, Document) updateDocument} (which just deletes
-  and then adds the entire document). When finished adding, deleting
+  and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
 
   <a name="flush"></a>
@@ -103,7 +104,7 @@ import org.apache.lucene.util.MapBackedSet;
   {@link LockObtainFailedException}. The {@link LockObtainFailedException}
   is also thrown if an IndexReader on the same directory is used to delete documents
   from the index.</p>
-
+  
   <a name="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
   {@link IndexDeletionPolicy} implementation to be
@@ -153,7 +154,7 @@ import org.apache.lucene.util.MapBackedSet;
   synchronize on the <code>IndexWriter</code> instance as
   this may cause deadlock; use your own (non-Lucene) objects
   instead. </p>
-
+  
   <p><b>NOTE</b>: If you call
   <code>Thread.interrupt()</code> on a thread that's within
   IndexWriter, IndexWriter will try to catch this (eg, if
@@ -222,7 +223,7 @@ public class IndexWriter implements Closeable {
   volatile long pendingCommitChangeCount;
 
   final SegmentInfos segmentInfos;       // the segments
-  final FieldInfos fieldInfos;
+  final FieldNumberBiMap globalFieldNumberMap;
 
   private DocumentsWriter docWriter;
   final IndexFileDeleter deleter;
@@ -231,8 +232,6 @@ public class IndexWriter implements Closeable {
   private int optimizeMaxNumSegments;
 
   private Lock writeLock;
-
-  private final int termIndexInterval;
 
   private boolean closed;
   private boolean closing;
@@ -643,7 +642,7 @@ public class IndexWriter implements Closeable {
 
   /**
    * Obtain the number of deleted docs for a pooled reader.
-   * If the reader isn't being pooled, the segmentInfo's
+   * If the reader isn't being pooled, the segmentInfo's 
    * delCount is returned.
    */
   public int numDeletedDocs(SegmentInfo info) throws IOException {
@@ -691,15 +690,11 @@ public class IndexWriter implements Closeable {
 
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
-   * Note that the passed in {@link IndexWriterConfig} is cloned and thus making
-   * changes to it after IndexWriter has been instantiated will not affect
-   * IndexWriter. Additionally, calling {@link #getConfig()} and changing the
-   * parameters does not affect that IndexWriter instance.
+   * Note that the passed in {@link IndexWriterConfig} is
+   * privately cloned; if you need to make subsequent "live"
+   * changes to the configuration use {@link #getConfig}.
    * <p>
-   * <b>NOTE:</b> by default, {@link IndexWriterConfig#getMaxFieldLength()}
-   * returns {@link IndexWriterConfig#UNLIMITED_FIELD_LENGTH}. Pay attention to
-   * whether this setting fits your application.
-   *
+   * 
    * @param d
    *          the index directory. The index is either created or appended
    *          according <code>conf.getOpenMode()</code>.
@@ -723,11 +718,9 @@ public class IndexWriter implements Closeable {
     directory = d;
     analyzer = conf.getAnalyzer();
     infoStream = defaultInfoStream;
-    termIndexInterval = conf.getTermIndexInterval();
     mergePolicy = conf.getMergePolicy();
     mergePolicy.setIndexWriter(this);
     mergeScheduler = conf.getMergeScheduler();
-    mergedSegmentWarmer = conf.getMergedSegmentWarmer();
     codecs = conf.getCodecProvider();
 
     bufferedDeletesStream = new BufferedDeletesStream(messageID);
@@ -797,9 +790,8 @@ public class IndexWriter implements Closeable {
       setRollbackSegmentInfos(segmentInfos);
 
       // start with previous field numbers, but new FieldInfos
-      fieldInfos = getCurrentFieldInfos();
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getIndexerThreadPool(),
-          fieldInfos.newFieldInfosWithGlobalFieldNumberMap(), bufferedDeletesStream);
+      globalFieldNumberMap = segmentInfos.getOrLoadGlobalFieldNumberMap(directory);
+      docWriter = new DocumentsWriter(config, directory, this, globalFieldNumberMap, bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
 
       // Default deleter (for backwards compatibility) is
@@ -816,10 +808,6 @@ public class IndexWriter implements Closeable {
         changeCount++;
         segmentInfos.changed();
       }
-
-      docWriter.setRAMBufferSizeMB(conf.getRAMBufferSizeMB());
-      docWriter.setMaxBufferedDocs(conf.getMaxBufferedDocs());
-      pushMaxBufferedDocs();
 
       if (infoStream != null) {
         message("init: create=" + create);
@@ -842,74 +830,24 @@ public class IndexWriter implements Closeable {
       }
     }
   }
-
-  private FieldInfos getFieldInfos(SegmentInfo info) throws IOException {
-    Directory cfsDir = null;
-    try {
-      if (info.getUseCompoundFile()) {
-        cfsDir = new CompoundFileReader(directory, IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-      } else {
-        cfsDir = directory;
-      }
-      return new FieldInfos(cfsDir, IndexFileNames.segmentFileName(info.name, "", IndexFileNames.FIELD_INFOS_EXTENSION));
-    } finally {
-      if (info.getUseCompoundFile() && cfsDir != null) {
-        cfsDir.close();
-      }
-    }
-  }
-
-  private FieldInfos getCurrentFieldInfos() throws IOException {
-    final FieldInfos fieldInfos;
-    if (segmentInfos.size() > 0) {
-        fieldInfos = new FieldInfos();
-        for(SegmentInfo info : segmentInfos) {
-          final FieldInfos segFieldInfos = getFieldInfos(info);
-          for (FieldInfo fi : segFieldInfos) {
-            fieldInfos.add(fi);
-          }
-        }
-      } else {
-      fieldInfos = new FieldInfos();
-    }
-    return fieldInfos;
-  }
-
+  
   private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
     rollbackSegmentInfos = (SegmentInfos) infos.clone();
   }
 
   /**
-   * Returns the {@link IndexWriterConfig} that was passed to
-   * {@link #IndexWriter(Directory, IndexWriterConfig)}. This allows querying
-   * IndexWriter's settings.
+   * Returns the private {@link IndexWriterConfig}, cloned
+   * from the {@link IndexWriterConfig} passed to
+   * {@link #IndexWriter(Directory, IndexWriterConfig)}.
    * <p>
-   * <b>NOTE:</b> setting any parameter on the returned instance has not effect
-   * on the IndexWriter instance. If you need to change those settings after
-   * IndexWriter has been created, you need to instantiate a new IndexWriter.
+   * <b>NOTE:</b> some settings may be changed on the
+   * returned {@link IndexWriterConfig}, and will take
+   * effect in the current IndexWriter instance.  See the
+   * javadocs for the specific setters in {@link
+   * IndexWriterConfig} for details.
    */
   public IndexWriterConfig getConfig() {
     return config;
-  }
-
-  /**
-   * If we are flushing by doc count (not by RAM usage), and
-   * using LogDocMergePolicy then push maxBufferedDocs down
-   * as its minMergeDocs, to keep backwards compatibility.
-   */
-  private void pushMaxBufferedDocs() {
-    if (docWriter.getMaxBufferedDocs() != IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-      final MergePolicy mp = mergePolicy;
-      if (mp instanceof LogDocMergePolicy) {
-        LogDocMergePolicy lmp = (LogDocMergePolicy) mp;
-        final int maxBufferedDocs = docWriter.getMaxBufferedDocs();
-        if (lmp.getMinMergeDocs() != maxBufferedDocs) {
-          if (infoStream != null)
-            message("now push maxBufferedDocs " + maxBufferedDocs + " to LogDocMergePolicy");
-          lmp.setMinMergeDocs(maxBufferedDocs);
-        }
-      }
-    }
   }
 
   /** If non-null, this will be the default infoStream used
@@ -1197,9 +1135,7 @@ public class IndexWriter implements Closeable {
   }
 
   /**
-   * Adds a document to this index.  If the document contains more than
-   * {@link IndexWriterConfig#setMaxFieldLength(int)} terms for a given field,
-   * the remainder are discarded.
+   * Adds a document to this index.
    *
    * <p> Note that if an Exception is hit (for example disk full)
    * then the index will be consistent, but this document
@@ -1246,9 +1182,7 @@ public class IndexWriter implements Closeable {
 
   /**
    * Adds a document to this index, using the provided analyzer instead of the
-   * value of {@link #getAnalyzer()}.  If the document contains more than
-   * {@link IndexWriterConfig#setMaxFieldLength(int)} terms for a given field, the remainder are
-   * discarded.
+   * value of {@link #getAnalyzer()}.
    *
    * <p>See {@link #addDocument(Document)} for details on
    * index and IndexWriter state after an Exception, and
@@ -1430,6 +1364,11 @@ public class IndexWriter implements Closeable {
   }
 
   // for test purpose
+  final synchronized Collection<String> getIndexFileNames() throws IOException {
+    return segmentInfos.files(directory, true);
+  }
+
+  // for test purpose
   final synchronized int getDocCount(int i) {
     if (i >= 0 && i < segmentInfos.size()) {
       return segmentInfos.info(i).docCount;
@@ -1465,8 +1404,8 @@ public class IndexWriter implements Closeable {
 
   /** If non-null, information about merges will be printed to this.
    */
-  private PrintStream infoStream = null;
-  private static PrintStream defaultInfoStream = null;
+  private PrintStream infoStream;
+  private static PrintStream defaultInfoStream;
 
   /**
    * Requests an "optimize" operation on an index, priming the index
@@ -2295,8 +2234,6 @@ public class IndexWriter implements Closeable {
           }
 
           // Update SI appropriately
-          // if this call is removed in the future we need to make
-          // sure that info.clearFiles() is called here
           info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
           info.dir = directory;
           info.name = newSegName;
@@ -2316,28 +2253,21 @@ public class IndexWriter implements Closeable {
     }
   }
 
-  /**
-   * Merges the provided indexes into this index.
-   * <p>
-   * After this completes, the index is optimized.
-   * </p>
-   * <p>
-   * The provided IndexReaders are not closed.
-   * </p>
+  /** Merges the provided indexes into this index.
+   * <p>After this completes, the index is optimized. </p>
+   * <p>The provided IndexReaders are not closed.</p>
    *
-   * <p>
-   * <b>NOTE:</b> while this is running, any attempts to add or delete documents
-   * (with another thread) will be paused until this method completes.
+   * <p><b>NOTE:</b> while this is running, any attempts to
+   * add or delete documents (with another thread) will be
+   * paused until this method completes.
    *
-   * <p>
-   * See {@link #addIndexes} for details on transactional semantics, temporary
-   * free space required in the Directory, and non-CFS segments on an Exception.
-   * </p>
+   * <p>See {@link #addIndexes} for details on transactional 
+   * semantics, temporary free space required in the Directory, 
+   * and non-CFS segments on an Exception.</p>
    *
-   * <p>
-   * <b>NOTE</b>: if this method hits an OutOfMemoryError you should immediately
-   * close the writer. See <a href="#OOME">above</a> for details.
-   * </p>
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
    *
    * <p><b>NOTE</b>: if you call {@link #close(boolean)}
    * with <tt>false</tt>, which aborts all running merges,
@@ -2351,19 +2281,25 @@ public class IndexWriter implements Closeable {
     ensureOpen();
 
     try {
+      if (infoStream != null)
+        message("flush at addIndexes(IndexReader...)");
+      flush(false, true);
+
       String mergedName = newSegmentName();
-      SegmentMerger merger = new SegmentMerger(directory, termIndexInterval,
+      SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, codecs, payloadProcessorProvider,
-                                               fieldInfos.newFieldInfosWithGlobalFieldNumberMap());
+                                               globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
 
       int docCount = merger.merge();                // merge 'em
 
+      final FieldInfos fieldInfos = merger.fieldInfos();
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, merger.getSegmentCodecs(),
-                                         merger.fieldInfos());
+                                         false, fieldInfos.hasProx(), merger.getSegmentCodecs(),
+                                         fieldInfos.hasVectors(),
+                                         fieldInfos);
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
       boolean useCompoundFile;
@@ -2851,7 +2787,7 @@ public class IndexWriter implements Closeable {
       message("merged segment " + merge.info + " is 100% deleted" +  (keepFullyDeletedSegments ? "" : "; skipping insert"));
     }
 
-    final Set mergedAway = new HashSet<SegmentInfo>(merge.segments);
+    final Set<SegmentInfo> mergedAway = new HashSet<SegmentInfo>(merge.segments);
     int segIdx = 0;
     int newSegIdx = 0;
     boolean inserted = false;
@@ -3095,7 +3031,7 @@ public class IndexWriter implements Closeable {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, fieldInfos.newFieldInfosWithGlobalFieldNumberMap());
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false, globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
@@ -3244,7 +3180,7 @@ public class IndexWriter implements Closeable {
 
     SegmentInfos sourceSegments = merge.segments;
 
-    SegmentMerger merger = new SegmentMerger(directory, termIndexInterval, mergedName, merge,
+    SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
                                              codecs, payloadProcessorProvider,
                                              merge.info.getFieldInfos());
 
@@ -3254,9 +3190,6 @@ public class IndexWriter implements Closeable {
 
     merge.readers = new ArrayList<SegmentReader>();
     merge.readerClones = new ArrayList<SegmentReader>();
-
-    merge.info.clearFilesCache();
-
 
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -3281,10 +3214,10 @@ public class IndexWriter implements Closeable {
         final SegmentReader clone = (SegmentReader) reader.clone(true);
         merge.readerClones.add(clone);
 
-        if (reader.numDocs() > 0) {
+        if (clone.numDocs() > 0) {
           merger.add(clone);
+          totDocCount += clone.numDocs();
         }
-        totDocCount += clone.numDocs();
         segUpto++;
       }
 
@@ -3299,12 +3232,14 @@ public class IndexWriter implements Closeable {
 
       // Record which codec was used to write the segment
       merge.info.setSegmentCodecs(merger.getSegmentCodecs());
+      // Record if we have merged vectors
+      merge.info.setHasVectors(merger.fieldInfos().hasVectors());
 
       if (infoStream != null) {
         message("merge segmentCodecs=" + merger.getSegmentCodecs());
         message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + merge.readers.size());
       }
-      anyNonBulkMerges |= merger.getMatchedSubReaderCount() != merge.readers.size();
+      anyNonBulkMerges |= merger.getAnyNonBulkMerges();
 
       assert mergedDocCount == totDocCount: "mergedDocCount=" + mergedDocCount + " vs " + totDocCount;
 
@@ -3312,7 +3247,7 @@ public class IndexWriter implements Closeable {
       // because codec must know if prox was written for
       // this segment:
       //System.out.println("merger set hasProx=" + merger.hasProx() + " seg=" + merge.info.name);
-      merge.info.clearFilesCache();
+      merge.info.setHasProx(merger.fieldInfos().hasProx());
 
       boolean useCompoundFile;
       synchronized (this) { // Guard segmentInfos
@@ -3374,10 +3309,12 @@ public class IndexWriter implements Closeable {
         merge.info.setUseCompoundFile(true);
       }
 
+      final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
+
       final int termsIndexDivisor;
       final boolean loadDocStores;
 
-      if (poolReaders && mergedSegmentWarmer != null) {
+      if (mergedSegmentWarmer != null) {
         // Load terms index & doc stores so the segment
         // warmer can run searches, load documents/term
         // vectors
@@ -3470,7 +3407,7 @@ public class IndexWriter implements Closeable {
     // NOTE: the callers of this method should in theory
     // be able to do simply wait(), but, as a defense
     // against thread timing hazards where notifyAll()
-    // falls to be called, we wait for at most 1 second
+    // fails to be called, we wait for at most 1 second
     // and then return so caller can check if wait
     // conditions are satisfied:
     try {
@@ -3654,8 +3591,6 @@ public class IndexWriter implements Closeable {
     public abstract void warm(IndexReader reader) throws IOException;
   }
 
-  private IndexReaderWarmer mergedSegmentWarmer;
-
   private void handleOOM(OutOfMemoryError oom, String location) {
     if (infoStream != null) {
       message("hit OutOfMemoryError inside " + location);
@@ -3703,10 +3638,10 @@ public class IndexWriter implements Closeable {
    *  IndexWriter, you'll see the unused files linger.  If
    *  that's a problem, call this method to delete them
    *  (once you've closed the open readers that were
-   *  preventing their deletion).
-   *
-   *  <p> In addition, you can call this method to delete
-   *  unreferenced index commits. This might be useful if you
+   *  preventing their deletion). 
+   *  
+   *  <p> In addition, you can call this method to delete 
+   *  unreferenced index commits. This might be useful if you 
    *  are using an {@link IndexDeletionPolicy} which holds
    *  onto index commits until some criteria are met, but those
    *  commits are no longer needed. Otherwise, those commits will

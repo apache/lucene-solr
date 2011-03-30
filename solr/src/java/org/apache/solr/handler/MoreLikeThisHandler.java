@@ -77,10 +77,11 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     SolrParams params = req.getParams();
 
     // Set field flags
-    String fl = params.get(CommonParams.FL);
+    ReturnFields returnFields = new ReturnFields( req );
+    rsp.setReturnFields( returnFields );
     int flags = 0;
-    if (fl != null) {
-      flags |= SolrPluginUtils.setReturnFields(fl, rsp);
+    if (returnFields.wantsScore()) {
+      flags |= SolrIndexSearcher.GET_SCORES;
     }
 
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);

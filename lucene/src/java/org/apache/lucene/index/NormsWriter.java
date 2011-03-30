@@ -56,8 +56,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
       int normCount = 0;
 
       for (FieldInfo fi : state.fieldInfos) {
-        NormsWriterPerField toWrite = (NormsWriterPerField) fieldsToFlush.get(fi);
-
+        final NormsWriterPerField toWrite = (NormsWriterPerField) fieldsToFlush.get(fi);
         int upto = 0;
         if (toWrite != null && toWrite.upto > 0) {
           normCount++;

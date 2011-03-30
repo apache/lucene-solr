@@ -30,6 +30,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -78,6 +79,7 @@ import java.util.*;
 public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
   public static final Logger log = LoggerFactory.getLogger(DocumentAnalysisRequestHandler.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   private static final float DEFAULT_BOOST = 1.0f;
 
@@ -101,6 +103,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       // isimplementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input factory: " + inputFactory);
     }
+    inputFactory.setXMLReporter(xmllog);
   }
 
   /**

@@ -22,18 +22,39 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * This attribute is requested by TermsHashPerField to index the contents.
- * This attribute has no real state, it should be implemented in addition to
- * {@link CharTermAttribute}, to support indexing the term text as
- * UTF-8 bytes.
+ * This attribute can be used to customize the final byte[] encoding of terms.
+ * <p>
+ * Consumers of this attribute call {@link #getBytesRef()} up-front, and then
+ * invoke {@link #fillBytesRef()} for each term. Example:
+ * <pre class="prettyprint">
+ *   final TermToBytesRefAttribute termAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
+ *   final BytesRef bytes = termAtt.getBytesRef();
+ *
+ *   while (termAtt.incrementToken() {
+ *
+ *     // you must call termAtt.fillBytesRef() before doing something with the bytes.
+ *     // this encodes the term value (internally it might be a char[], etc) into the bytes.
+ *     int hashCode = termAtt.fillBytesRef();
+ *
+ *     if (isInteresting(bytes)) {
+ *     
+ *       // because the bytes are reused by the attribute (like CharTermAttribute's char[] buffer),
+ *       // you should make a copy if you need persistent access to the bytes, otherwise they will
+ *       // be rewritten across calls to incrementToken()
+ *
+ *       doSomethingWith(new BytesRef(bytes));
+ *     }
+ *   }
+ *   ...
+ * </pre>
  * @lucene.experimental This is a very expert API, please use
  * {@link CharTermAttributeImpl} and its implementation of this method
  * for UTF-8 terms.
  */
 public interface TermToBytesRefAttribute extends Attribute {
-  /** Copies the token's term text into the given {@link BytesRef}.
-   * @param termBytes destination to write the bytes to (UTF-8 for text terms).
-   * The length of the BytesRef's buffer may be not large enough, so you need to grow.
-   * The parameters' {@code bytes} is guaranteed to be not {@code null}.
+  /** 
+   * Updates the bytes {@link #getBytesRef()} to contain this term's
+   * final encoding, and returns its hashcode.
    * @return the hashcode as defined by {@link BytesRef#hashCode}:
    * <pre>
    *  int hash = 0;
@@ -45,5 +66,12 @@ public interface TermToBytesRefAttribute extends Attribute {
    * the hash on-the-fly. If this is not the case, just return
    * {@code termBytes.hashCode()}.
    */
-  public int toBytesRef(BytesRef termBytes);
+  public int fillBytesRef();
+  
+  /**
+   * Retrieve this attribute's BytesRef. The bytes are updated 
+   * from the current term when the consumer calls {@link #fillBytesRef()}.
+   * @return this Attributes internal BytesRef.
+   */
+  public BytesRef getBytesRef();
 }

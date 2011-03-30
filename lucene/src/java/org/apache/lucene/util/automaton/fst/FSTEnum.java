@@ -274,7 +274,7 @@ abstract class FSTEnum<T> {
     while(true) {
       //System.out.println("  cycle upto=" + upto + " arc.label=" + arc.label + " (" + (char) arc.label + ") targetLabel=" + targetLabel + " isLast?=" + arc.isLast());
 
-      if (arc.bytesPerArc != 0 && arc.label != -1) {
+      if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
         // Arcs are fixed array -- use binary search to find
         // the target.
 
@@ -465,12 +465,7 @@ abstract class FSTEnum<T> {
       }
       incr();
 
-      final FST.Arc<T> nextArc = getArc(upto);
-      fst.readFirstTargetArc(arc, nextArc);
-      arc = nextArc;
-      while(!arc.isLast()) {
-        fst.readNextArc(arc);
-      }
+      arc = fst.readLastTargetArc(arc, getArc(upto));
     }
   }
 

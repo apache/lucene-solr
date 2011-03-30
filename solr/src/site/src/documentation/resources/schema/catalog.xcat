@@ -21,6 +21,5 @@
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog"
          prefer="public">
   <!-- Sets of symbols. e.g. for string replacements -->
-  <public publicId="-//Apache Solr//ENTITIES Symbols Project v1.0//EN"
-        uri="../../../../../../build/solr-specific-forrest-variables.ent"/>
+
 </catalog>

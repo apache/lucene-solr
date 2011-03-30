@@ -114,10 +114,7 @@ class PerSegmentSingleValuedFaceting {
 
 
     // now merge the per-segment results
-    PriorityQueue<SegFacet> queue = new PriorityQueue<SegFacet>() {
-      {
-        initialize(leaves.length);
-      }
+    PriorityQueue<SegFacet> queue = new PriorityQueue<SegFacet>(leaves.length) {
       @Override
       protected boolean lessThan(SegFacet a, SegFacet b) {
         return a.tempBR.compareTo(b.tempBR) < 0;

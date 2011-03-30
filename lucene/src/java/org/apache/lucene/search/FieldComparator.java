@@ -18,8 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.text.Collator;
-import java.util.Locale;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -718,85 +716,6 @@ public abstract class FieldComparator {
     }
   }
   
-  
-  /** Sorts by a field's value using the Collator for a
-   *  given Locale.
-   *
-   * <p><b>WARNING</b>: this is likely very slow; you'll
-   * get much better performance using the
-   * CollationKeyAnalyzer or ICUCollationKeyAnalyzer. */
-  public static final class StringComparatorLocale extends FieldComparator {
-
-    private final String[] values;
-    private DocTerms currentDocTerms;
-    private final String field;
-    final Collator collator;
-    private String bottom;
-    private final BytesRef tempBR = new BytesRef();
-
-    StringComparatorLocale(int numHits, String field, Locale locale) {
-      values = new String[numHits];
-      this.field = field;
-      collator = Collator.getInstance(locale);
-    }
-
-    @Override
-    public int compare(int slot1, int slot2) {
-      final String val1 = values[slot1];
-      final String val2 = values[slot2];
-      if (val1 == null) {
-        if (val2 == null) {
-          return 0;
-        }
-        return -1;
-      } else if (val2 == null) {
-        return 1;
-      }
-      return collator.compare(val1, val2);
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      final String val2 = currentDocTerms.getTerm(doc, tempBR).utf8ToString();
-      if (bottom == null) {
-        if (val2 == null) {
-          return 0;
-        }
-        return -1;
-      } else if (val2 == null) {
-        return 1;
-      }
-      return collator.compare(bottom, val2);
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      final BytesRef br = currentDocTerms.getTerm(doc, tempBR);
-      if (br == null) {
-        values[slot] = null;
-      } else {
-        values[slot] = br.utf8ToString();
-      }
-    }
-
-    @Override
-    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader, field);
-      return this;
-    }
-    
-    @Override
-    public void setBottom(final int bottom) {
-      this.bottom = values[bottom];
-    }
-
-    @Override
-    public Comparable<?> value(int slot) {
-      final String s = values[slot];
-      return s == null ? null : new BytesRef(values[slot]);
-    }
-  }
-
   /** Sorts by field's natural Term sort order, using
    *  ordinals.  This is functionally equivalent to {@link
    *  TermValComparator}, but it first resolves the string

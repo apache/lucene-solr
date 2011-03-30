@@ -33,6 +33,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
@@ -57,7 +58,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * The default poly field separator.
    *
-   * @see #createFields(SchemaField, String, float)
+   * @see #createFields(SchemaField, Object, float)
    * @see #isPolyField()
    */
   public static final String POLY_FIELD_SEPARATOR = "___";
@@ -84,9 +85,9 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method.  This is useful
+   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method.  This is useful
    * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by multiple different fields.
-   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method may return more than one field
+   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method may return more than one field
    */
   public boolean isPolyField(){
     return false;
@@ -222,17 +223,18 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, Object value, float boost) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
       return null;
     }
+    
     String val;
     try {
-      val = toInternal(externalVal);
+      val = toInternal(value.toString());
     } catch (RuntimeException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "'", e, false);
     }
     if (val==null) return null;
 
@@ -271,15 +273,15 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.document.Fieldable} instances
    * @param field the {@link org.apache.solr.schema.SchemaField}
-   * @param externalVal The value to add to the field
+   * @param value The value to add to the field
    * @param boost The boost to apply
    * @return An array of {@link org.apache.lucene.document.Fieldable}
    *
-   * @see #createField(SchemaField, String, float)
+   * @see #createField(SchemaField, Object, float)
    * @see #isPolyField()
    */
-  public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
-    Fieldable f = createField( field, externalVal, boost);
+  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
+    Fieldable f = createField( field, value, boost);
     return f==null ? new Fieldable[]{} : new Fieldable[]{f};
   }
 
@@ -418,6 +420,7 @@ public abstract class FieldType extends FieldProperties {
    * of this type, subclasses can set analyzer themselves or override
    * getAnalyzer()
    * @see #getAnalyzer
+   * @see #setAnalyzer
    */
   protected Analyzer analyzer=new DefaultAnalyzer(256);
 
@@ -426,6 +429,7 @@ public abstract class FieldType extends FieldProperties {
    * of this type, subclasses can set analyzer themselves or override
    * getAnalyzer()
    * @see #getQueryAnalyzer
+   * @see #setQueryAnalyzer
    */
   protected Analyzer queryAnalyzer=analyzer;
 
@@ -451,22 +455,52 @@ public abstract class FieldType extends FieldProperties {
     return queryAnalyzer;
   }
 
+  private final String analyzerError = 
+    "FieldType: " + this.getClass().getSimpleName() + 
+    " (" + typeName + ") does not support specifying an analyzer";
+
   /**
    * Sets the Analyzer to be used when indexing fields of this type.
+   *
+   * <p>
+   * The default implementation throws a SolrException.  
+   * Subclasses that override this method need to ensure the behavior 
+   * of the analyzer is consistent with the implementation of toInternal.
+   * </p>
+   * 
+   * @see #toInternal
+   * @see #setQueryAnalyzer
    * @see #getAnalyzer
    */
   public void setAnalyzer(Analyzer analyzer) {
-    this.analyzer = analyzer;
-    log.trace("FieldType: " + typeName + ".setAnalyzer(" + analyzer.getClass().getName() + ")" );
+    SolrException e = new SolrException
+      (ErrorCode.SERVER_ERROR,
+       "FieldType: " + this.getClass().getSimpleName() + 
+       " (" + typeName + ") does not support specifying an analyzer");
+    SolrException.logOnce(log,null,e);
+    throw e;
   }
 
   /**
    * Sets the Analyzer to be used when querying fields of this type.
+   *
+   * <p>
+   * The default implementation throws a SolrException.  
+   * Subclasses that override this method need to ensure the behavior 
+   * of the analyzer is consistent with the implementation of toInternal.
+   * </p>
+   * 
+   * @see #toInternal
+   * @see #setAnalyzer
    * @see #getQueryAnalyzer
    */
   public void setQueryAnalyzer(Analyzer analyzer) {
-    this.queryAnalyzer = analyzer;
-    log.trace("FieldType: " + typeName + ".setQueryAnalyzer(" + analyzer.getClass().getName() + ")" );
+    SolrException e = new SolrException
+      (ErrorCode.SERVER_ERROR,
+       "FieldType: " + this.getClass().getSimpleName() + 
+       " (" + typeName + ") does not support specifying an analyzer");
+    SolrException.logOnce(log,null,e);
+    throw e;
   }
 
   /**
@@ -521,7 +555,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // constant score mode is now enabled per default
-    return new TermRangeQuery(
+    return TermRangeQuery.newStringRange(
             field.getName(),
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),

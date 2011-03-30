@@ -148,7 +148,7 @@ final class SegmentMerger {
       boolean storePayloads, boolean omitTFAndPositions)
       throws IOException {
     for (String field : names) {
-      fInfos.add(field, true, storeTermVectors,
+      fInfos.addOrUpdate(field, true, storeTermVectors,
           storePositionWithTermVector, storeOffsetWithTermVector, !reader
               .hasNorms(field), storePayloads, omitTFAndPositions);
     }
@@ -217,10 +217,10 @@ final class SegmentMerger {
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.OMIT_TERM_FREQ_AND_POSITIONS), false, false, false, false, true);
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.STORES_PAYLOADS), false, false, false, true, false);
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.INDEXED), false, false, false, false, false);
-        fieldInfos.add(reader.getFieldNames(FieldOption.UNINDEXED), false);
+        fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.UNINDEXED), false);
       }
     }
-    final SegmentCodecs codecInfo = SegmentCodecs.build(fieldInfos, this.codecs);
+    final SegmentCodecs codecInfo = fieldInfos.buildSegmentCodecs(false);
     fieldInfos.write(directory, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
 
     int docCount = 0;
@@ -566,6 +566,11 @@ final class SegmentMerger {
 
   int[] getDelCounts() {
     return mergeState.delCounts;
+  }
+
+  public boolean getAnyNonBulkMerges() {
+    assert matchedCount <= readers.size();
+    return matchedCount != readers.size();
   }
 
   private void mergeNorms() throws IOException {

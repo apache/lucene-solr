@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 public class TestCollectionUtil extends LuceneTestCase {
@@ -89,9 +90,30 @@ public class TestCollectionUtil extends LuceneTestCase {
     }
   }
   
-  // should produce no exceptions
-  public void testEmptyArraySort() {
-    List<Integer> list = Collections.emptyList();
+  public void testEmptyListSort() {
+    // should produce no exceptions
+    List<Integer> list = Arrays.asList(new Integer[0]);
+    CollectionUtil.quickSort(list);
+    CollectionUtil.mergeSort(list);
+    CollectionUtil.insertionSort(list);
+    CollectionUtil.quickSort(list, Collections.reverseOrder());
+    CollectionUtil.mergeSort(list, Collections.reverseOrder());
+    CollectionUtil.insertionSort(list, Collections.reverseOrder());
+    
+    // check that empty non-random access lists pass sorting without ex (as sorting is not needed)
+    list = new LinkedList<Integer>();
+    CollectionUtil.quickSort(list);
+    CollectionUtil.mergeSort(list);
+    CollectionUtil.insertionSort(list);
+    CollectionUtil.quickSort(list, Collections.reverseOrder());
+    CollectionUtil.mergeSort(list, Collections.reverseOrder());
+    CollectionUtil.insertionSort(list, Collections.reverseOrder());
+  }
+  
+  public void testOneElementListSort() {
+    // check that one-element non-random access lists pass sorting without ex (as sorting is not needed)
+    List<Integer> list = new LinkedList<Integer>();
+    list.add(1);
     CollectionUtil.quickSort(list);
     CollectionUtil.mergeSort(list);
     CollectionUtil.insertionSort(list);

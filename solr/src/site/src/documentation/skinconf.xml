@@ -21,12 +21,7 @@ Skin configuration file. This file contains details of your project,
 which will be used to configure the chosen Forrest skin.
 -->
 
-<!DOCTYPE skinconfig PUBLIC "-//APACHE//DTD Skin Configuration V0.7-1//EN" "http://forrest.apache.org/dtd/skinconfig-v07-1.dtd" [
-<!ENTITY % symbols-project
-    PUBLIC "-//Apache Solr//ENTITIES Symbols Project v1.0//EN"
-    "solr-specific-forrest-variables.ent"> 
-  %symbols-project;
-]>
+<!DOCTYPE skinconfig PUBLIC "-//APACHE//DTD Skin Configuration V0.7-1//EN" "http://forrest.apache.org/dtd/skinconfig-v07-1.dtd">
 <skinconfig>
   <!-- To enable lucene search add provider="lucene" (default is google).
     Add box-location="alt" to move the search box to an alternate location
@@ -155,16 +150,6 @@ which will be used to configure the chosen Forrest skin.
       alt : at the bottom of the left-hand navigation panel
       both : both
     -->
-
-  <motd>
-    <motd-option pattern="tutorial">
-      <motd-title>version &solr.specversion;</motd-title>
-      <motd-page location="both">
-      This document is for Apache Solr version &solr.specversion;.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
-        </motd-page>
-    </motd-option>
-  </motd>
-
 
   <!--
     extra-css - here you can define custom css-elements that are 

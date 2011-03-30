@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -40,6 +41,7 @@ import java.util.HashMap;
  */
 public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
   public static Logger log = LoggerFactory.getLogger(XmlUpdateRequestHandler.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   public static final String UPDATE_PROCESSOR = "update.processor";
 
@@ -78,6 +80,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
       // isimplementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input chain: " + inputFactory);
     }
+    inputFactory.setXMLReporter(xmllog);
   }
 
   @Override

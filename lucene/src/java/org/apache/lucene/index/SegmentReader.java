@@ -118,7 +118,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           dir0 = cfsReader;
         }
         cfsDir = dir0;
-
+        si.loadFieldInfos(cfsDir, false); // prevent opening the CFS to load fieldInfos
         fieldInfos = si.getFieldInfos();
         
         this.termsIndexDivisor = termsIndexDivisor;
@@ -700,7 +700,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  private void commitChanges(Map<String,String> commitUserData) throws IOException {
+  private synchronized void commitChanges(Map<String,String> commitUserData) throws IOException {
     if (deletedDocsDirty) {               // re-write deleted
       si.advanceDelGen();
 
@@ -920,26 +920,21 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return fieldSet;
   }
 
-
   @Override
-  public synchronized boolean hasNorms(String field) {
+  public boolean hasNorms(String field) {
     ensureOpen();
     return norms.containsKey(field);
   }
 
-  // can return null if norms aren't stored
-  protected synchronized byte[] getNorms(String field) throws IOException {
-    Norm norm = norms.get(field);
-    if (norm == null) return null;  // not indexed, or norms not stored
-    return norm.bytes();
-  }
-
-  // returns fake norms if norms aren't available
   @Override
-  public synchronized byte[] norms(String field) throws IOException {
+  public byte[] norms(String field) throws IOException {
     ensureOpen();
-    byte[] bytes = getNorms(field);
-    return bytes;
+    final Norm norm = norms.get(field);
+    if (norm == null) {
+      // not indexed, or norms not stored
+      return null;  
+    }
+    return norm.bytes();
   }
 
   @Override

@@ -70,8 +70,6 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testProcessing() throws Exception {
-    // this test requires an internet connection (e.g. opencalais api)
-    checkInternetConnection();
 
     addDoc(adoc(
             "id",
@@ -83,31 +81,29 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
                     + " attached if you need it, but it is also committed to trunk and 3_x branch."
                     + " Last Lucene European Conference has been held in Prague."));
     assertU(commit());
-    assertQ(req("language:english"), "//*[@numFound='1']");
+    assertQ(req("sentence:*"), "//*[@numFound='1']");
+    assertQ(req("sentiment:*"), "//*[@numFound='0']");
+    assertQ(req("entity:Prague"), "//*[@numFound='1']");
   }
 
   @Test
-  public void testTwoUpdates() {
-    // this test requires an internet connection (e.g. opencalais api)
-    checkInternetConnection();
+  public void testTwoUpdates() throws Exception {
 
-    try {
-      addDoc(adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
-              + "BarCampApache Sydney, Australia, the first ASF-backed event in the Southern "
-              + "Hemisphere!"));
-      assertU(commit());
-      assertQ(req("language:english"), "//*[@numFound='1']");
+    addDoc(adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
+            + "BarCampApache Sydney, Australia, the first ASF-backed event in the Southern "
+            + "Hemisphere!"));
+    assertU(commit());
+    assertQ(req("sentence:*"), "//*[@numFound='1']");
 
-      addDoc(adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
-              + "of Sydney's Darlington Centre, the BarCampApache \"unconference\" will be"
-              + " attendee-driven, facilitated by members of the Apache community and will "
-              + "focus on the Apache..."));
-      assertU(commit());
-      assertQ(req("language:english"), "//*[@numFound='2']");
+    addDoc(adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
+            + "of Sydney's Darlington Centre, the BarCampApache \"unconference\" will be"
+            + " attendee-driven, facilitated by members of the Apache community and will "
+            + "focus on the Apache..."));
+    assertU(commit());
+    assertQ(req("sentence:*"), "//*[@numFound='2']");
 
-    } catch (Exception e) {
-      assumeNoException("Multiple updates on same instance didn't work", e);
-    }
+    assertQ(req("sentiment:positive"), "//*[@numFound='1']");
+    assertQ(req("entity:Apache"), "//*[@numFound='2']");
   }
 
   private void addDoc(String doc) throws Exception {
@@ -125,14 +121,4 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req, new SolrQueryResponse());
   }
 
-  private void checkInternetConnection() {
-    try {
-      URLConnection conn = new URL("http://www.apache.org/").openConnection();
-      conn.setConnectTimeout(5000);
-      conn.setReadTimeout(5000);
-      conn.connect();
-    } catch (Exception ex) {
-      assumeNoException("This test requires an internet connection", ex);
-    }
-  }
 }

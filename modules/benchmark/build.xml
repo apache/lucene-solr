@@ -265,5 +265,8 @@
 		     />
     </target>
     
-    <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven"/>
+    <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven">
+      <m2-deploy-with-pom-template pom.xml="lib/lucene-xercesImpl-pom.xml.template"
+                                   jar.file="lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar" />
+    </target>
 </project>

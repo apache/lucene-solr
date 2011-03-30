@@ -32,6 +32,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         solrConfig,
         "schema12.xml");
     lrf = h.getRequestFactory
-    ("standard",0,20,"version","2.2");
+    ("standard",0,20,CommonParams.VERSION,"2.2");
   }
   
   @Override

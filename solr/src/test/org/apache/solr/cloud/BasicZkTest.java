@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.SolrIndexWriter;
 
@@ -50,7 +51,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertEquals("Mergefactor was not picked up", ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
     writer.close();
     
-    lrf.args.put("version", "2.0");
+    lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ("test query on empty index", req("qlkciyopsbgzyvkylsjhchghjrdf"),
         "//result[@numFound='0']");
 

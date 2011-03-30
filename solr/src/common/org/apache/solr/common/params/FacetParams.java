@@ -180,12 +180,13 @@ public interface FacetParams {
    * exclusive of their end points.
    * </p>
    * <p>
-   * The default value if none are specified is: [lower,upper,edge]
+   * The default value if none are specified is: [lower,upper,edge] <i>(NOTE: This is different then FACET_RANGE_INCLUDE)</i>
    * </p>
    * <p>
    * Can be overriden on a per field basis.
    * </p>
    * @see FacetRangeInclude
+   * @see #FACET_RANGE_INCLUDE
    */
   public static final String FACET_DATE_INCLUDE = FACET_DATE + ".include";
 
@@ -230,13 +231,6 @@ public interface FacetParams {
    * Can be overriden on a per field basis.
    */
   public static final String FACET_RANGE_OTHER = FACET_RANGE + ".other";
-  /**
-   * String indicating whether ranges for numerical range faceting 
-   * should be exclusive or inclusive. By default both the start and
-   * end point are inclusive.
-   * Can be overriden on a per field basis.
-   * @see FacetNumberExclusive
-   */
 
   /**
    * <p>
@@ -245,7 +239,7 @@ public interface FacetParams {
    * exclusive of their end points.
    * </p>
    * <p>
-   * The default value if none are specified is: [lower,upper,edge]
+   * The default value if none are specified is: lower
    * </p>
    * <p>
    * Can be overriden on a per field basis.
@@ -335,15 +329,16 @@ public interface FacetParams {
     }
     /**
      * Convinience method for parsing the param value according to the 
-     * correct semantics.
+     * correct semantics and applying the default of "LOWER"
      */
     public static EnumSet<FacetRangeInclude> parseParam(final String[] param) {
       // short circut for default behavior
       if (null == param || 0 == param.length ) 
-        return EnumSet.of(LOWER, UPPER, EDGE);
+        return EnumSet.of(LOWER);
 
       // build up set containing whatever is specified
-      final EnumSet<FacetRangeInclude> include = EnumSet.noneOf(FacetRangeInclude.class);
+      final EnumSet<FacetRangeInclude> include 
+        = EnumSet.noneOf(FacetRangeInclude.class);
       for (final String o : param) {
         include.add(FacetRangeInclude.get(o));
       }

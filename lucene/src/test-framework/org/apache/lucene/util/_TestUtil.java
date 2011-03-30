@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
@@ -35,8 +36,11 @@ import java.util.zip.ZipFile;
 
 import org.junit.Assert;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergeScheduler;
@@ -323,6 +327,15 @@ public class _TestUtil {
     } catch (Exception e) {
       // Should not happen?
       throw new RuntimeException(e);
+    }
+  }
+  
+  /** Adds field info for a Document. */
+  public static void add(Document doc, FieldInfos fieldInfos) {
+    List<Fieldable> fields = doc.getFields();
+    for (Fieldable field : fields) {
+      fieldInfos.addOrUpdate(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
+              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
     }
   }
 }

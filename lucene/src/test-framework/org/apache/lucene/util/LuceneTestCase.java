@@ -83,9 +83,9 @@ import org.junit.runners.model.InitializationError;
  * <code>super.tearDown()</code>
  * </p>
  *
- * @After - replaces setup
- * @Before - replaces teardown
- * @Test - any public method with this annotation is a test case, regardless
+ * <code>@After</code> - replaces setup
+ * <code>@Before</code> - replaces teardown
+ * <code>@Test</code> - any public method with this annotation is a test case, regardless
  * of its name
  * <p>
  * <p>
@@ -148,6 +148,8 @@ public abstract class LuceneTestCase extends Assert {
   public static final boolean TEST_NIGHTLY = Boolean.parseBoolean(System.getProperty("tests.nightly", "false"));
   /** the line file used by LineFileDocs */
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
+  /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
+  public static final String TEST_CLEAN_THREADS = System.getProperty("tests.cleanthreads", "perClass");
 
   private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
 
@@ -342,10 +344,12 @@ public abstract class LuceneTestCase extends Assert {
 
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    int rogueThreads = threadCleanup("test class");
-    if (rogueThreads > 0) {
-      // TODO: fail here once the leaks are fixed.
-      System.err.println("RESOURCE LEAK: test class left " + rogueThreads + " thread(s) running");
+    if (! "false".equals(TEST_CLEAN_THREADS)) {
+      int rogueThreads = threadCleanup("test class");
+      if (rogueThreads > 0) {
+        // TODO: fail here once the leaks are fixed.
+        System.err.println("RESOURCE LEAK: test class left " + rogueThreads + " thread(s) running");
+      }
     }
     String codecDescription;
     CodecProvider cp = CodecProvider.getDefault();
@@ -490,7 +494,7 @@ public abstract class LuceneTestCase extends Assert {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-    if (!getClass().getName().startsWith("org.apache.solr")) {
+    if ("perMethod".equals(TEST_CLEAN_THREADS)) {
       int rogueThreads = threadCleanup("test method: '" + getName() + "'");
       if (rogueThreads > 0) {
         System.err.println("RESOURCE LEAK: test method: '" + getName()
@@ -534,7 +538,7 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private final static int THREAD_STOP_GRACE_MSEC = 1000;
+  private final static int THREAD_STOP_GRACE_MSEC = 50;
   // jvm-wide list of 'rogue threads' we found, so they only get reported once.
   private final static IdentityHashMap<Thread,Boolean> rogueThreads = new IdentityHashMap<Thread,Boolean>();
 
@@ -586,10 +590,8 @@ public abstract class LuceneTestCase extends Assert {
           // try to stop the thread:
           t.setUncaughtExceptionHandler(null);
           Thread.setDefaultUncaughtExceptionHandler(null);
-          t.interrupt();
-          try {
-            t.join(THREAD_STOP_GRACE_MSEC);
-          } catch (InterruptedException e) { e.printStackTrace(); }
+          if (!t.getName().startsWith("SyncThread")) // avoid zookeeper jre crash
+            t.interrupt();
         }
       }
     }
@@ -612,7 +614,7 @@ public abstract class LuceneTestCase extends Assert {
    * directly in the same scope as the IndexReader.
    * </p>
    *
-   * @see FieldCacheSanityChecker
+   * @see org.apache.lucene.util.FieldCacheSanityChecker
    */
   protected void assertSaneFieldCaches(final String msg) {
     final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
@@ -899,26 +901,50 @@ public abstract class LuceneTestCase extends Assert {
     return dir;
   }
 
+  
+  /** Returns a new field instance. 
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(String name, String value, Index index) {
     return newField(random, name, value, index);
   }
 
+  
+  /** Returns a new field instance. 
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index);
   }
-
+  
+  /**
+   * Returns a new Field instance. Use this when the test does not
+   * care about some specific field settings (most tests)
+   * <ul>
+   *  <li>If the store value is set to Store.NO, sometimes the field will be randomly stored.
+   *  <li>More term vector data than you ask for might be indexed, for example if you choose YES
+   *      it might index term vectors with offsets too.
+   * </ul>
+   */
   public static Field newField(String name, String value, Store store, Index index, TermVector tv) {
     return newField(random, name, value, store, index, tv);
   }
 
+  
+  /** Returns a new field instance, using the specified random. 
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Index index) {
     return newField(random, name, value, Store.NO, index);
   }
 
+  
+  /** Returns a new field instance, using the specified random. 
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index, TermVector.NO);
   }
 
+  
+  /** Returns a new field instance, using the specified random. 
+   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
     if (!index.isIndexed())
       return new Field(name, value, store, index);

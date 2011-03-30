@@ -17,8 +17,8 @@
 Welcome to the Apache Solr project!
 -----------------------------------
 
-Apache Solr is a search server based on the Apache Lucene search
-library. 
+Solr is the popular, blazing fast open source enterprise search platform
+from the Apache Lucene project.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
@@ -29,12 +29,20 @@ Getting Started
 ---------------
 
 See the "example" directory for an example Solr setup.  A tutorial
-using the example setup can be found in "docs/tutorial.html" 
+using the example setup can be found at
+http://lucene.apache.org/solr/tutorial.html
+or in in "docs/tutorial.html" in a binary distribution.
 
 
 
-Files Included In Apache Solr Distributions
--------------------------------------------
+Files included in an Apache Solr binary distribution
+----------------------------------------------------
+
+example/
+  A self-contained example Solr instance, complete with a sample
+  configuration, documents to index, and the Jetty Servlet container.
+  Please see example/README.txt for information about running this
+  example.
 
 dist/apache-solr-XX.war
   The Apache Solr Application.  Deploy this WAR file to any servlet
@@ -45,20 +53,11 @@ dist/apache-solr-XX.jar
   Apache Solr Plugins (see http://wiki.apache.org/solr/SolrPlugins for
   more information).
 
-example/
-  A self-contained example Solr instance, complete with a sample
-  configuration, documents to index, and the Jetty Servlet container.
-  Please see example/README.txt for information about running this
-  example.
-
 docs/index.html
   The contents of the Apache Solr website.
   
 docs/api/index.html
   The Apache Solr Javadoc API documentation.
-
-src/
-  The Apache Solr source code.
 
 
 
@@ -82,7 +81,7 @@ Instructions for Building Apache Solr from Source
 
      http://lucene.apache.org/solr/version_control.html
 
-4. Navigate to that folder and issue an "ant" command to see the available options
+4. Navigate to the "solr" folder and issue an "ant" command to see the available options
    for building, testing, and packaging Solr.
   
    NOTE: 

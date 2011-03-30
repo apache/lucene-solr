@@ -35,13 +35,15 @@ See also README.txt in the solr subdirectory, and check
 http://wiki.apache.org/solr/SolrResources for a list of tutorials and
 introductory articles.
 
-NOTE: This Solr example server references SolrCell jars outside of the server
-directory with <lib> statements in the solrconfig.xml.  If you make a copy of
-this example server and wish to use the ExtractingRequestHandler (SolrCell),
+NOTE: This Solr example server references certain Solr jars outside of
+this server directory for non-core modules with <lib> statements in
+solrconfig.xml.  If you make a copy of this example server and wish
+to use the ExtractingRequestHandler (SolrCell), DataImportHandler (DIH),
+UIMA, the clustering component, or other modules in "contrib",
 you will need to copy the required jars into solr/lib or update the paths to
 the jars in your solrconfig.xml.
 
-By default, start.jar starts Solr in Jetty using the default SolrHome 
+By default, start.jar starts Solr in Jetty using the default solr home
 directory of "./solr/" -- To run other example configurations, you can
 speciy the solr.solr.home system property when starting jetty...
 

@@ -38,7 +38,6 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     addFieldConfigListener(new FieldDateResolutionFCListener(this));
 
     // Default Values
-    addAttribute(RangeCollatorAttribute.class);
     addAttribute(DefaultOperatorAttribute.class);
     addAttribute(AnalyzerAttribute.class);
     addAttribute(FuzzyAttribute.class);

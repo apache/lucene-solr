@@ -46,10 +46,9 @@ To follow along with this tutorial, you will need...
 
 <ol>
   <li>Java 1.6 or greater.  Some places you can get it are from
-  <a href="http://java.sun.com/j2se/downloads.html">OpenJDK</a>,
-  <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
+  <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle</a>,
+  <a href="http://openjdk.java.net/">Open JDK</a>,
   <a href="http://www.ibm.com/developerworks/java/jdk/">IBM</a>, or
-  <a href="http://www.oracle.com/technology/products/jrockit/index.html">Oracle</a>.
   <br/>
   Running <code>java -version</code> at the command line should indicate a version
   number starting with 1.6.  Gnu's GCJ is not supported and does not work with Solr.
@@ -86,7 +85,7 @@ To launch Jetty with the Solr WAR, and the example configs, just run the <code>s
 <source>
 user:~/solr/example$ <strong>java -jar start.jar</strong>
 2009-10-23 16:42:53.816::INFO:  Logging to STDERR via org.mortbay.log.StdErrLog
-2009-10-23 16:42:53.907::INFO:  jetty-6.1.3
+2009-10-23 16:42:53.907::INFO:  jetty-6.1.26
 
 ...
 
@@ -141,11 +140,11 @@ You can now search for "solr" using the "Make a Query" interface on the Admin sc
 Clicking the "Search" button should take you to the following URL...
 </p>
 <p>
-<a href="http://localhost:8983/solr/select/?q=solr&amp;version=2.2&amp;start=0&amp;rows=10&amp;indent=on">http://localhost:8983/solr/select/?q=solr&amp;version=2.2&amp;start=0&amp;rows=10&amp;indent=on</a>
+<a href="http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on">http://localhost:8983/solr/select/?q=solr&amp;start=0&amp;rows=10&amp;indent=on</a>
 </p>
 
 <p>
-You can index all of the sample data, using the following command (assuming your shell supports the *.xml notation):
+You can index all of the sample data, using the following command (assuming your command line shell supports the *.xml notation):
 </p>
 
 <source>
@@ -188,6 +187,8 @@ SimplePostTool: COMMITting Solr index changes..
   </li>
   <li><a href="http://wiki.apache.org/solr/UpdateCSV">Load a CSV file</a> (comma separated values),
    including those exported by Excel or MySQL.
+  </li> 
+  <li><a href="http://wiki.apache.org/solr/UpdateJSON">POST JSON documents</a>
   </li> 
   <li>Index binary documents such as Word and PDF with 
     <a href="http://wiki.apache.org/solr/ExtractingRequestHandler">Solr Cell</a> (ExtractingRequestHandler).
@@ -313,6 +314,14 @@ in subsequent searches.
     </ul>
 
     <p>
+      Complex functions may also be used to sort results...
+    </p>
+    <ul>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=*:*&amp;sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a></li>
+    </ul>
+
+
+    <p>
       If no sort is specified, the default is <code>score desc</code> to return the matches having the highest relevancy.
     </p>
 
@@ -399,6 +408,21 @@ in subsequent searches.
   </p>
 
 </section> <!-- faceted search -->
+
+
+<section>
+  <title>Search UI</title>
+  <p>
+    Solr includes an example search interface built with velocity templating
+    that demonstrates many features, including searching, faceting, highlighting,
+    autocomplete, and geospatial searching. 
+  </p>
+  <p>
+    Try it out at
+    <a href="http://localhost:8983/solr/browse">http://localhost:8983/solr/browse</a>
+  </p>
+</section> <!-- Search UI -->
+
 
 
 <section>

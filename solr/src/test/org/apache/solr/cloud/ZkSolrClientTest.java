@@ -40,7 +40,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     server = new ZkTestServer(zkDir);
     server.run();
 
-    SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 100);
+    SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
 
     zkClient.close();
     server.shutdown();

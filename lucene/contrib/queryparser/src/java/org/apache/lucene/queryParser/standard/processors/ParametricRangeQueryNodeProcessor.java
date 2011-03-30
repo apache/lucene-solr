@@ -17,7 +17,6 @@ package org.apache.lucene.queryParser.standard.processors;
  * limitations under the License.
  */
 
-import java.text.Collator;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -36,7 +35,6 @@ import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode.CompareOpera
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.standard.config.DateResolutionAttribute;
 import org.apache.lucene.queryParser.standard.config.LocaleAttribute;
-import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
 import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
 
 /**
@@ -54,12 +52,7 @@ import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
  * If a {@link DateResolutionAttribute} is defined and the {@link Resolution} is
  * not <code>null</code> it will also be used to parse the date value. <br/>
  * <br/>
- * This processor will also try to retrieve a {@link RangeCollatorAttribute}
- * from the {@link QueryConfigHandler}. If a {@link RangeCollatorAttribute} is
- * found and the {@link Collator} is not <code>null</code>, it's set on the
- * {@link RangeQueryNode}. <br/>
  * 
- * @see RangeCollatorAttribute
  * @see DateResolutionAttribute
  * @see LocaleAttribute
  * @see RangeQueryNode
@@ -79,16 +72,8 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       ParametricQueryNode upper = parametricRangeNode.getUpperBound();
       ParametricQueryNode lower = parametricRangeNode.getLowerBound();
       Locale locale = Locale.getDefault();
-      Collator collator = null;
       DateTools.Resolution dateRes = null;
       boolean inclusive = false;
-
-      if (getQueryConfigHandler().hasAttribute(RangeCollatorAttribute.class)) {
-
-        collator = getQueryConfigHandler().getAttribute(
-            RangeCollatorAttribute.class).getRangeCollator();
-
-      }
 
       if (getQueryConfigHandler().hasAttribute(LocaleAttribute.class)) {
 
@@ -155,7 +140,7 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       lower.setText(part1);
       upper.setText(part2);
 
-      return new RangeQueryNode(lower, upper, collator);
+      return new RangeQueryNode(lower, upper);
 
     }
 

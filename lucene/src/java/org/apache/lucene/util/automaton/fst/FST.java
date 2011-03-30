@@ -99,7 +99,7 @@ public class FST<T> {
   public int arcWithOutputCount;
 
   // If arc has this label then that arc is final/accepted
-  public static int END_LABEL = -1;
+  public static final int END_LABEL = -1;
 
   public final static class Arc<T> {
     public int label;
@@ -297,9 +297,7 @@ public class FST<T> {
     final int v;
     if (inputType == INPUT_TYPE.BYTE1) {
       v = in.readByte()&0xFF;
-    } else if (inputType == INPUT_TYPE.BYTE2) {
-      v = in.readVInt();
-    } else {
+    } else { 
       v = in.readVInt();
     }
     return v;
@@ -478,6 +476,59 @@ public class FST<T> {
     return arc;
   }
 
+  /** Follows the <code>follow</code> arc and reads the last
+   *  arc of its target; this changes the provided
+   *  <code>arc</code> (2nd arg) in-place and returns it.
+   * 
+   * @return Returns the second argument
+   * (<code>arc</code>). */
+  public Arc<T> readLastTargetArc(Arc<T> follow, Arc<T> arc) throws IOException {
+    //System.out.println("readLast");
+    if (!targetHasArcs(follow)) {
+      //System.out.println("  end node");
+      assert follow.isFinal();
+      arc.label = -1;
+      arc.output = follow.nextFinalOutput;
+      arc.flags = BIT_LAST_ARC;
+      return arc;
+    } else {
+      final BytesReader in = getBytesReader(follow.target);
+      arc.flags = in.readByte();
+      if (arc.flag(BIT_ARCS_AS_FIXED_ARRAY)) {
+        // array: jump straight to end
+        arc.numArcs = in.readVInt();
+        arc.bytesPerArc = in.readByte() & 0xFF;
+        //System.out.println("  array numArcs=" + arc.numArcs + " bpa=" + arc.bytesPerArc);
+        arc.posArcsStart = in.pos;
+        arc.arcIdx = arc.numArcs - 2;
+      } else {
+        // non-array: linear scan
+        arc.bytesPerArc = 0;
+        //System.out.println("  scan");
+        while(!arc.isLast()) {
+          // skip this arc:
+          readLabel(in);
+          if (arc.flag(BIT_ARC_HAS_OUTPUT)) {
+            outputs.read(in);
+          }
+          if (arc.flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
+            outputs.read(in);
+          }
+          if (arc.flag(BIT_STOP_NODE)) {
+          } else if (arc.flag(BIT_TARGET_NEXT)) {
+          } else {
+            in.pos -= 4;
+          }
+          arc.flags = in.readByte();
+        }
+        arc.nextArc = in.pos+1;
+      }
+      readNextRealArc(arc);
+      assert arc.isLast();
+      return arc;
+    }
+  }
+
   /**
    * Follow the <code>follow</code> arc and read the first arc of its target;
    * this changes the provided <code>arc</code> (2nd arg) in-place and returns
@@ -518,15 +569,13 @@ public class FST<T> {
       arc.numArcs = in.readVInt();
       arc.bytesPerArc = in.readByte() & 0xFF;
       arc.arcIdx = -1;
-      arc.posArcsStart = in.pos;
+      arc.nextArc = arc.posArcsStart = in.pos;
       //System.out.println("  bytesPer=" + arc.bytesPerArc + " numArcs=" + arc.numArcs + " arcsStart=" + pos);
     } else {
-      in.pos++;
+      arc.nextArc = address;
       arc.bytesPerArc = 0;
     }
-    arc.nextArc = in.pos;
-    arc.label = 0;
-    return readNextArc(arc);
+    return readNextRealArc(arc);
   }
 
   /**
@@ -598,6 +647,7 @@ public class FST<T> {
     if (arc.bytesPerArc != 0) {
       // arcs are at fixed entries
       arc.arcIdx++;
+      assert arc.arcIdx < arc.numArcs;
       in = getBytesReader(arc.posArcsStart - arc.arcIdx*arc.bytesPerArc);
     } else {
       // arcs are packed

@@ -67,6 +67,7 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public TermsConsumer addField(FieldInfo field) throws IOException {
+      assert field.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
       final FieldsConsumer fields = consumers.get(field.getCodecId());
       return fields.addField(field);
     }
@@ -106,6 +107,7 @@ final class PerFieldCodecWrapper extends Codec {
         for (FieldInfo fi : fieldInfos) {
           if (fi.isIndexed) { // TODO this does not work for non-indexed fields
             fields.add(fi.name);
+            assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
             Codec codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,

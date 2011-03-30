@@ -113,14 +113,14 @@
   <span class="facet-field">$display</span>
     <ul>
     #if($before && $before != "")
-      #set($value = '[* TO "' + $start + '"]')
+      #set($value = "[* TO " + $start + "]")
       #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
       <li><a href="$facetURL">Less than $start</a> ($before)</li>
     #end
     #foreach ($facet in $field)
       #set($rangeEnd = $math.add($facet.key, $gap))
-      #set($value = "[" + $facet.key + " TO $rangeEnd]")
-      #set($facetURL = "#url_for_facet_filter($fieldName, $value)")
+      #set($value = "[" + $facet.key + " TO " + $rangeEnd + "]")
+      #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
       #if ($facetURL != '')
         <li><a href="$facetURL">$facet.key</a> ($facet.value)</li>
       #end

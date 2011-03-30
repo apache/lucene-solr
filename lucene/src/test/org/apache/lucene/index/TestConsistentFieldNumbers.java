@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -150,6 +152,120 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
     dir1.close();
     dir2.close();
+  }
+  
+  public void testFieldNumberGaps() throws IOException {
+    for (int i = 0; i < 39; i++) {
+      Directory dir = newDirectory();
+      {
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+            TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(
+            NoMergePolicy.NO_COMPOUND_FILES));
+        Document d = new Document();
+        d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
+            TermVector.NO));
+        d.add(new Field("f2", "d1 second field", Store.YES, Index.ANALYZED,
+            TermVector.NO));
+        writer.addDocument(d);
+        writer.close();
+        SegmentInfos sis = new SegmentInfos();
+        sis.read(dir);
+        assertEquals(1, sis.size());
+        FieldInfos fis1 = sis.info(0).getFieldInfos();
+        assertEquals("f1", fis1.fieldInfo(0).name);
+        assertEquals("f2", fis1.fieldInfo(1).name);
+        assertTrue(dir.fileExists("1.fnx"));
+      }
+      
+
+      {
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+            TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(
+            random.nextBoolean() ? NoMergePolicy.NO_COMPOUND_FILES
+                : NoMergePolicy.COMPOUND_FILES));
+        Document d = new Document();
+        d.add(new Field("f1", "d2 first field", Store.YES, Index.ANALYZED,
+            TermVector.NO));
+        d.add(new Field("f3", new byte[] { 1, 2, 3 }));
+        writer.addDocument(d);
+        writer.close();
+        SegmentInfos sis = new SegmentInfos();
+        sis.read(dir);
+        assertEquals(2, sis.size());
+        FieldInfos fis1 = sis.info(0).getFieldInfos();
+        FieldInfos fis2 = sis.info(1).getFieldInfos();
+        assertEquals("f1", fis1.fieldInfo(0).name);
+        assertEquals("f2", fis1.fieldInfo(1).name);
+        assertEquals("f1", fis2.fieldInfo(0).name);
+        assertNull(fis2.fieldInfo(1));
+        assertEquals("f3", fis2.fieldInfo(2).name);
+        assertFalse(dir.fileExists("1.fnx"));
+        assertTrue(dir.fileExists("2.fnx"));
+      }
+
+      {
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+            TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(
+            random.nextBoolean() ? NoMergePolicy.NO_COMPOUND_FILES
+                : NoMergePolicy.COMPOUND_FILES));
+        Document d = new Document();
+        d.add(new Field("f1", "d3 first field", Store.YES, Index.ANALYZED,
+            TermVector.NO));
+        d.add(new Field("f2", "d3 second field", Store.YES, Index.ANALYZED,
+            TermVector.NO));
+        d.add(new Field("f3", new byte[] { 1, 2, 3, 4, 5 }));
+        writer.addDocument(d);
+        writer.close();
+        SegmentInfos sis = new SegmentInfos();
+        sis.read(dir);
+        assertEquals(3, sis.size());
+        FieldInfos fis1 = sis.info(0).getFieldInfos();
+        FieldInfos fis2 = sis.info(1).getFieldInfos();
+        FieldInfos fis3 = sis.info(2).getFieldInfos();
+        assertEquals("f1", fis1.fieldInfo(0).name);
+        assertEquals("f2", fis1.fieldInfo(1).name);
+        assertEquals("f1", fis2.fieldInfo(0).name);
+        assertNull(fis2.fieldInfo(1));
+        assertEquals("f3", fis2.fieldInfo(2).name);
+        assertEquals("f1", fis3.fieldInfo(0).name);
+        assertEquals("f2", fis3.fieldInfo(1).name);
+        assertEquals("f3", fis3.fieldInfo(2).name);
+        assertFalse(dir.fileExists("1.fnx"));
+        assertTrue(dir.fileExists("2.fnx"));
+        assertFalse(dir.fileExists("3.fnx"));
+      }
+
+      {
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+            TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(
+            random.nextBoolean() ? NoMergePolicy.NO_COMPOUND_FILES
+                : NoMergePolicy.COMPOUND_FILES));
+        writer.deleteDocuments(new Term("f1", "d1"));
+        // nuke the first segment entirely so that the segment with gaps is
+        // loaded first!
+        writer.expungeDeletes();
+        writer.close();
+      }
+
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(
+          new LogByteSizeMergePolicy()));
+      writer.optimize();
+      assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
+      writer.close();
+
+      SegmentInfos sis = new SegmentInfos();
+      sis.read(dir);
+      assertEquals(1, sis.size());
+      FieldInfos fis1 = sis.info(0).getFieldInfos();
+      assertEquals("f1", fis1.fieldInfo(0).name);
+      assertEquals("f2", fis1.fieldInfo(1).name);
+      assertEquals("f3", fis1.fieldInfo(2).name);
+      assertFalse(dir.fileExists("1.fnx"));
+      assertTrue(dir.fileExists("2.fnx"));
+      assertFalse(dir.fileExists("3.fnx"));
+      dir.close();
+    }
   }
 
   @Test

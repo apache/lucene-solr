@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
+import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -119,29 +120,23 @@ final class DocumentsWriter {
   private AtomicInteger numDocsInRAM = new AtomicInteger(0);
   private AtomicLong ramUsed = new AtomicLong(0);
 
-  // How much RAM we can use before flushing.  This is 0 if
-  // we are flushing by doc count instead.
-  private long ramBufferSize = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024);
-
-  // Flush @ this number of docs.  If ramBufferSize is
-  // non-zero we will flush by RAM usage instead.
-  private int maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
-
   final BufferedDeletesStream bufferedDeletesStream;
   // TODO: cutover to BytesRefHash
   private BufferedDeletes pendingDeletes = new BufferedDeletes(false);
   final IndexingChain chain;
+  private final IndexWriterConfig config;
 
   final DocumentsWriterPerThreadPool perThreadPool;
-
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain chain, DocumentsWriterPerThreadPool indexerThreadPool, FieldInfos fieldInfos, BufferedDeletesStream bufferedDeletesStream) throws IOException {
+  DocumentsWriter(IndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumberBiMap globalFieldNumbers,
+      BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
     this.indexWriter = writer;
     this.similarityProvider = writer.getConfig().getSimilarityProvider();
     this.bufferedDeletesStream = bufferedDeletesStream;
-    this.perThreadPool = indexerThreadPool;
-    this.chain = chain;
-    this.perThreadPool.initialize(this, fieldInfos);
+    this.perThreadPool = config.getIndexerThreadPool();
+    this.chain = config.getIndexingChain();
+    this.perThreadPool.initialize(this, globalFieldNumbers, config);
+    this.config = config;
   }
 
   boolean deleteQueries(final Query... queries) throws IOException {
@@ -238,33 +233,6 @@ final class DocumentsWriter {
       perThread.docState.infoStream = this.infoStream;
       perThread.docState.similarityProvider = this.similarityProvider;
     }
-  }
-
-  /** Set how much RAM we can use before flushing. */
-  synchronized void setRAMBufferSizeMB(double mb) {
-    if (mb == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-      ramBufferSize = IndexWriterConfig.DISABLE_AUTO_FLUSH;
-    } else {
-      ramBufferSize = (long) (mb*1024*1024);
-    }
-  }
-
-  synchronized double getRAMBufferSizeMB() {
-    if (ramBufferSize == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
-      return ramBufferSize;
-    } else {
-      return ramBufferSize/1024./1024.;
-    }
-  }
-
-  /** Set max buffered docs, which means we will flush by
-   *  doc count instead of by RAM usage. */
-  void setMaxBufferedDocs(int count) {
-    maxBufferedDocs = count;
-  }
-
-  int getMaxBufferedDocs() {
-    return maxBufferedDocs;
   }
 
   /** Returns how many docs are currently buffered in RAM. */
@@ -405,8 +373,9 @@ final class DocumentsWriter {
   private final FlushedSegment finishAddDocument(DocumentsWriterPerThread perThread,
       long perThreadRAMUsedBeforeAdd) throws IOException {
     FlushedSegment newSegment = null;
-
-    if (perThread.getNumDocsInRAM() == maxBufferedDocs) {
+    final int maxBufferedDocs = config.getMaxBufferedDocs();
+    if (maxBufferedDocs != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
+        perThread.getNumDocsInRAM() >= maxBufferedDocs) {
       newSegment = perThread.flush();
     }
 

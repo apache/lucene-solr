@@ -70,7 +70,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	
   private Filter getRangeFilter(String field,String lowerPrice, String upperPrice)
 	{
-    Filter f = new TermRangeFilter(field,lowerPrice,upperPrice,true,true);
+    Filter f = TermRangeFilter.newStringRange(field,lowerPrice,upperPrice,true,true);
     return f;
 	}
   private Filter getTermsFilter(String field,String text)
