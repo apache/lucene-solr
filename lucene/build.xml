@@ -95,6 +95,8 @@
       <mkdir dir="${build.dir.backwards}"/>	  
           
       <!-- compile branch tests against previous version JAR file -->	
+      <compile-test-macro srcdir="${backwards.dir}/src/test-framework" destdir="${build.dir.backwards}/classes/test"
+                  test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
       <compile-test-macro srcdir="${backwards.dir}/src/test" destdir="${build.dir.backwards}/classes/test"
                   test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
       
