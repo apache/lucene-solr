@@ -20,6 +20,12 @@ Bug fixes
   indexes, causing existing deletions to be applied on the incoming indexes as 
   well. (Shai Erera, Mike McCandless)
 
+Test Cases
+
+* LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
+  stop iterating if at least 'tests.iter.min' ran and a failure occured. 
+  (Shai Erera, Chris Hostetter)
+  
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
