@@ -142,6 +142,8 @@ public abstract class LuceneTestCase extends Assert {
   public static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
   /** Get the number of times to run tests */
   public static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
+  /** Get the minimum number of times to run tests until a failure happens */
+  public static final int TEST_ITER_MIN = Integer.parseInt(System.getProperty("tests.iter.min", Integer.toString(TEST_ITER)));
   /** Get the random seed for tests */
   public static final String TEST_SEED = System.getProperty("tests.seed", "random");
   /** whether or not nightly tests should run */
@@ -1208,11 +1210,24 @@ public abstract class LuceneTestCase extends Assert {
       if (VERBOSE) {
         System.out.println("\nNOTE: running test " + arg0.getName());
       }
+      
+      // only print iteration info if the user requested more than one iterations
+      boolean verbose = VERBOSE && TEST_ITER > 1;
+      int lastIterFailed = -1;
       for (int i = 0; i < TEST_ITER; i++) {
-        if (VERBOSE && TEST_ITER > 1) {
+        if (verbose) {
           System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
         }
         super.runChild(arg0, arg1);
+        if (testsFailed) {
+          lastIterFailed = i;
+          if (i == TEST_ITER_MIN - 1) {
+            if (verbose) {
+              System.out.println("\nNOTE: iteration " + lastIterFailed + " failed !");
+            }
+            break;
+          }
+        }
       }
     }
 

@@ -78,6 +78,7 @@
   <property name="tests.directory" value="random" />
   <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
   <property name="tests.iter" value="1" />
+  <property name="tests.iter.min" value="${tests.iter}" />
   <property name="tests.seed" value="random" />
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
@@ -507,6 +508,8 @@
               <sysproperty key="tests.linedocsfile" value="${tests.linedocsfile}"/>
               <!-- set the number of times tests should run -->
               <sysproperty key="tests.iter" value="${tests.iter}"/>
+              <!-- set the minimum number of times tests should run unless failure -->
+              <sysproperty key="tests.iter.min" value="${tests.iter.min}"/>
               <!-- set the test seed -->
               <sysproperty key="tests.seed" value="${tests.seed}"/>
               <!-- set the Version that tests should run against -->
