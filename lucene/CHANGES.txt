@@ -1,5 +1,10 @@
 Lucene Change Log
 
+Build
+
+* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

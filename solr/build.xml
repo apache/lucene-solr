@@ -221,6 +221,7 @@
                    failonerror="true"/>
   </target>
 
+  <target name="javadocs" depends="javadoc"/>
   <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
 
