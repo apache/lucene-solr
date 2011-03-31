@@ -211,6 +211,8 @@ Documentation
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
 
+* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
 ==================  3.2.0-dev ==================
 Versions of Major Components
 ---------------------

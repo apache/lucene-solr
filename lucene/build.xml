@@ -200,6 +200,7 @@
         <path refid="classpath"/>
         <pathelement location="${ant.home}/lib/ant.jar"/>
         <fileset dir=".">
+          <exclude name="build/**/*.jar"/>
           <include name="**/lib/*.jar"/>
         </fileset>
         <pathelement location="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
