@@ -117,6 +117,9 @@ New Features
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 
   Locale-sensitive range queries. (rmuir)
+
+* SOLR-2338: Add support for using <similarity/> in a schema's fieldType,
+  for customizing scoring on a per-field basis. (hossman, yonik, rmuir)
   
 
 Optimizations

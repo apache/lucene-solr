@@ -1,4 +1,5 @@
 package org.apache.solr.schema;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,14 +17,18 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Similarity;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.SolrSimilarityProvider;
 
-public abstract class SimilarityFactory {
-  protected SolrParams params;
+/**
+ * Expert: Factory to provide a {@link SolrSimilarityProvider}.
+ * <p>
+ * Usually you would implement this if you want to customize the
+ * scoring routines that are not field-specific, such as coord() and queryNorm(). 
+ * Most scoring customization happens in the fieldtype's Similarity
+ */
+public abstract class SimilarityProviderFactory {
+  public void init(NamedList<?> args) {}
 
-  public void init(SolrParams params) { this.params = params; }
-  public SolrParams getParams() { return params; }
-
-  public abstract Similarity getSimilarity();
+  public abstract SolrSimilarityProvider getSimilarityProvider(IndexSchema schema);
 }
