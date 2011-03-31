@@ -21,8 +21,10 @@ package org.apache.lucene.util;
  * least element can always be found in constant time.  Put()'s and pop()'s
  * require log(size) time.
  *
- * <p><b>NOTE</b>: This class pre-allocates a full array of
- * length <code>maxSize+1</code>, in {@link #initialize}.
+ * <p><b>NOTE</b>: This class will pre-allocate a full array of
+ * length <code>maxSize+1</code> if instantiated via the
+ * {@link #PriorityQueue(int,boolean)} constructor with
+ * <code>prepopulate</code> set to <code>true</code>.
  * 
  * @lucene.internal
 */
@@ -83,9 +85,10 @@ public abstract class PriorityQueue<T> {
 
   /**
    * This method can be overridden by extending classes to return a sentinel
-   * object which will be used by {@link #initialize(int)} to fill the queue, so
-   * that the code which uses that queue can always assume it's full and only
-   * change the top without attempting to insert any new object.<br>
+   * object which will be used by the {@link PriorityQueue#PriorityQueue(int,boolean)} 
+   * constructor to fill the queue, so that the code which uses that queue can always
+   * assume it's full and only change the top without attempting to insert any new
+   * object.<br>
    * 
    * Those sentinel values should always compare worse than any non-sentinel
    * value (i.e., {@link #lessThan} should always favor the
@@ -111,11 +114,11 @@ public abstract class PriorityQueue<T> {
    * </pre>
    * 
    * <b>NOTE:</b> if this method returns a non-null value, it will be called by
-   * {@link #initialize(int)} {@link #size()} times, relying on a new object to
-   * be returned and will not check if it's null again. Therefore you should
-   * ensure any call to this method creates a new instance and behaves
-   * consistently, e.g., it cannot return null if it previously returned
-   * non-null.
+   * the {@link PriorityQueue#PriorityQueue(int,boolean)} constructor 
+   * {@link #size()} times, relying on a new object to be returned and will not
+   * check if it's null again. Therefore you should ensure any call to this
+   * method creates a new instance and behaves consistently, e.g., it cannot
+   * return null if it previously returned non-null.
    * 
    * @return the sentinel object to use to pre-populate the queue, or null if
    *         sentinel objects are not supported.

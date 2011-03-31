@@ -187,6 +187,7 @@
           <fileset dir="contrib">
             <include name="**/lib/**/*.jar"/>
             <include name="**/lucene-libs/**/*.jar"/>
+            <exclude name="**/analysis-extras/lib/**/*icu4j*.jar"/> <!-- extraction/lib/ has this one -->
           </fileset>
          <pathelement location="${dest}/client/solrj"/>
       </path>
