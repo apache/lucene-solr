@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
@@ -98,8 +99,11 @@ public class ReadTokensTask extends PerfTask {
       // reset the TokenStream to the first token
       stream.reset();
 
-      while(stream.incrementToken())
+      TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+      while(stream.incrementToken()) {
+        termAtt.fillBytesRef();
         tokenCount++;
+      }
     }
     totalTokenCount += tokenCount;
     return tokenCount;
