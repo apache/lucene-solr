@@ -187,7 +187,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     
     // used by assert
-    boolean containsConsistent(Integer number, String name) {
+    synchronized boolean containsConsistent(Integer number, String name) {
       return name.equals(numberToName.get(number))
           && number.equals(nameToNumber.get(name));
     }
