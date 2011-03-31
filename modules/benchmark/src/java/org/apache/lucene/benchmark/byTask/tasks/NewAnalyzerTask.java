@@ -54,17 +54,16 @@ public class NewAnalyzerTask extends PerfTask {
   public int doLogic() throws IOException {
     String className = null;
     try {
-      if (current >= analyzerClassNames.size())
-      {
+      if (current >= analyzerClassNames.size()) {
         current = 0;
       }
       className = analyzerClassNames.get(current++);
-      if (className == null || className.equals(""))
-      {
-        className = "org.apache.lucene.analysis.standard.StandardAnalyzer"; 
-      }
-      if (className.indexOf(".") == -1  || className.startsWith("standard."))//there is no package name, assume o.a.l.analysis
-      {
+      if (className == null || className.equals("")) {
+        className = "org.apache.lucene.analysis.standard.StandardAnalyzer";
+      } else if (className.equals("KeywordAnalyzer")) {
+        className = "org.apache.lucene.analysis.core.KeywordAnalyzer";
+      } else if (className.indexOf(".") == -1 || className.startsWith("standard.")) {
+        //there is no package name, assume o.a.l.analysis
         className = "org.apache.lucene.analysis." + className;
       }
       getRunData().setAnalyzer(createAnalyzer(className));
