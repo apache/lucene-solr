@@ -11,7 +11,7 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
   in the new org.apache.lucene.analysis.core package (KeywordAnalyzer,
   SimpleAnalyzer, etc.) (Steve Rowe, Robert Muir)
   
-  Updated ReadTokensTask to converts tokens to their indexed forms
+  Updated ReadTokensTask to convert tokens to their indexed forms
   (char[]->byte[]), just as the indexer does.  This allows measurement
   of the conversion process, which is important for analysis components
   that customize it, e.g. (ICU)CollationKeyFilter.  As a result,
