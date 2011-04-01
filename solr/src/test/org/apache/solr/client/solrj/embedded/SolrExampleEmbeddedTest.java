@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.SolrExampleTests;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 /**
@@ -30,6 +31,6 @@ public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
+    initCore(ExternalPaths.EXAMPLE_CONFIG, ExternalPaths.EXAMPLE_SCHEMA, ExternalPaths.EXAMPLE_HOME);
   }
 }

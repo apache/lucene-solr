@@ -57,6 +57,7 @@
 	<classpathentry kind="src" path="solr/src/webapp/src"/>
 	<classpathentry kind="src" path="solr/src/common"/>
 	<classpathentry kind="src" path="solr/src/solrj"/>
+	<classpathentry kind="src" path="solr/src/test-framework"/>
 	<classpathentry kind="src" path="solr/src/test"/>
 	<classpathentry kind="src" path="solr/src/test-files"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>

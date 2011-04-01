@@ -49,7 +49,7 @@ public class PersistenceTest extends SolrTestCaseJ4 {
     for (String k : keys) {
       lookup.add(k, new Float(k.length()));
     }
-    File storeDir = new File(TEST_HOME);
+    File storeDir = new File(TEST_HOME());
     lookup.store(storeDir);
     lookup = new TSTLookup();
     lookup.load(storeDir);
@@ -66,7 +66,7 @@ public class PersistenceTest extends SolrTestCaseJ4 {
     for (String k : keys) {
       lookup.add(k, new Float(k.length()));
     }
-    File storeDir = new File(TEST_HOME);
+    File storeDir = new File(TEST_HOME());
     lookup.store(storeDir);
     lookup = new JaspellLookup();
     lookup.load(storeDir);
