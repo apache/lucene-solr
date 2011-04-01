@@ -54,6 +54,9 @@ public interface CommonParams {
   
   /** query and init param for field list */
   public static final String FL = "fl";
+
+  /** Pseudo fields */
+  public static final String PSEUDO_FL = "fl.pseudo";
   
   /** default query field */
   public static final String DF = "df";

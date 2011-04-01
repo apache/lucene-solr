@@ -17,18 +17,21 @@
 package org.apache.solr.search;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
@@ -68,11 +71,11 @@ public class ReturnFields
   }
 
   public ReturnFields(SolrQueryRequest req) {
-    this( req.getParams().getParams(CommonParams.FL), req );
+    this( req.getParams().getParams(CommonParams.FL), 
+      req.getParams().getParams(CommonParams.PSEUDO_FL), req );
   }
-
+  
   public ReturnFields(String fl, SolrQueryRequest req) {
-//    this( (fl==null)?null:SolrPluginUtils.split(fl), req );
     if( fl == null ) {
       parseFieldList((String[])null, req);
     }
@@ -89,12 +92,13 @@ public class ReturnFields
         parseFieldList( new String[]{fl}, req);
       }
     }
-    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
-  public ReturnFields(String[] fl, SolrQueryRequest req) {
+  public ReturnFields(String[] fl, String[] pseudo, SolrQueryRequest req) {
+    if( pseudo != null && fl != null && fl.length > 0 ) {
+      parsePseudoFields(pseudo);
+    }
     parseFieldList(fl, req);
-    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
@@ -140,187 +144,140 @@ public class ReturnFields
       transformer = augmenters;
     }
   }
-
-  private void add(String fl, NamedList<String> rename, DocTransformers augmenters, SolrQueryRequest req) {
-    if( fl == null ) {
-      return;
+  
+  public Map<String,String> pseudo = null;
+  
+  private void parsePseudoFields( String[] fields ) {
+    if( fields != null ) {
+      pseudo = new HashMap<String, String>();
+      for( String f : fields ) {
+        int idx = f.indexOf( ':' );
+        if( idx > 0 ) {
+          String p = f.substring(0,idx);
+          String r = f.substring(idx+1);
+          pseudo.put(p, r);
+        }
+        else {
+          throw new SolrException( ErrorCode.BAD_REQUEST, "Pseudo fields must be in the form ?fl.pseudo=hello:replace" );
+        }
+      }
     }
-    try {
-      QueryParsing.StrParser sp = new QueryParsing.StrParser(fl);
+  }
 
-      for(;;) {
-        sp.opt(',');
-        sp.eatws();
-        if (sp.pos >= sp.end) break;
-
-        int start = sp.pos;
-
-        // short circuit test for a really simple field name
-        String key = null;
-        String field = sp.getId(null);
-        char ch = sp.ch();
-
-        if (field != null) {
-          if (sp.opt('=')) {
-            // this was a key, not a field name
-            key = field;
-            field = null;
-            sp.eatws();
-            start = sp.pos;
-          } else {
-            if (ch==' ' || ch == ',' || ch==0) {
-              addField( field, key, augmenters, req );
-              continue;
-            }
-            // an invalid field name... reset the position pointer to retry
-            sp.pos = start;
-            field = null;
+  private void add(String fls, NamedList<String> rename, DocTransformers augmenters, SolrQueryRequest req) {
+    // commas deliminate fields?  is this true?
+    StringTokenizer st = new StringTokenizer( fls, "," );
+    while( st.hasMoreTokens() ) {
+      String as = null;
+      String fl = st.nextToken().trim();
+      int idx = fl.lastIndexOf( " AS " );
+      if( idx > 0 ) {
+        as = fl.substring( idx+4 ).trim();
+        fl = fl.substring(0,idx).trim();
+      }
+      
+      // check if the fl is a pseudo field
+      if( pseudo != null ) {
+        String p = pseudo.get( fl );
+        if( p != null ) {
+          if( as == null ) {
+            as = fl;  // use the original
           }
+          
+          // Just replace the input text
+          okFieldNames.add( fl );
+          fl = p;
+        }
+      }
+      
+      // Maybe it is everything
+      if( "*".equals( fl ) ) {
+        if( as != null ) {
+          throw new SolrException( ErrorCode.BAD_REQUEST, "* can not use an 'AS' request" );
+        }
+        _wantsAllFields = true;
+        continue;
+      }
+      
+      // maybe it is a Transformer (starts and ends with [])
+      if( fl.charAt( 0 ) == '[' && fl.charAt( fl.length()-1 ) == ']' ) {
+        String name = null;
+        String args = null;
+        idx = fl.indexOf( ':' );
+        if( idx > 0 ) {
+          name = fl.substring(1,idx);
+          args = fl.substring(idx+1,fl.length()-1);
+        }
+        else {
+          name = fl.substring(1,fl.length()-1 );
         }
 
-        if (key != null) {
-          // we read "key = "
-          field = sp.getId(null);
-          ch = sp.ch();
-          if (field != null && (ch==' ' || ch == ',' || ch==0)) {
-            rename.add(field, key);
-            addField( field, key, augmenters, req );
-            continue;
-          }
-          // an invalid field name... reset the position pointer to retry
-          sp.pos = start;
-          field = null;
+        TransformerFactory factory = req.getCore().getTransformerFactory( name );
+        if( factory != null ) {
+          augmenters.addTransformer( factory.create(as==null?fl:as, args, req) );
+          continue;
         }
-
-        if (field == null) {
-          // We didn't find a simple name, so let's see if it's a globbed field name.
-          // Globbing only works with recommended field names.
-
-          field = sp.getGlobbedId(null);
-          ch = sp.ch();
-          if (field != null && (ch==' ' || ch == ',' || ch==0)) {
-            // "*" looks and acts like a glob, but we give it special treatment
-            if ("*".equals(field)) {
-              _wantsAllFields = true;
-            } else {
-              globs.add(field);
-            }
-            continue;
-          }
-
-          // an invalid glob
-          sp.pos = start;
+        else {
+          // unknown field?  field that starts with [ and ends with ]?
         }
-
-        // let's try it as a function instead
-        String funcStr = sp.val.substring(start);
-
-        QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
-        Query q = null;
-        ValueSource vs = null;
-
+      }
+      
+      // If it has a ( it may be a FunctionQuery
+      else if( StringUtils.contains(fl, '(' ) ) {
         try {
+          QParser parser = QParser.getParser(fl, FunctionQParserPlugin.NAME, req);
+          Query q = null;
+          ValueSource vs = null;
+
           if (parser instanceof FunctionQParser) {
             FunctionQParser fparser = (FunctionQParser)parser;
             fparser.setParseMultipleSources(false);
             fparser.setParseToEnd(false);
 
             q = fparser.getQuery();
-
-            if (fparser.localParams != null) {
-              if (fparser.valFollowedParams) {
-                // need to find the end of the function query via the string parser
-                int leftOver = fparser.sp.end - fparser.sp.pos;
-                sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
-              } else {
-                // the value was via the "v" param in localParams, so we need to find
-                // the end of the local params themselves to pick up where we left off
-                sp.pos = start + fparser.localParamsEnd;
-              }
-            } else {
-              // need to find the end of the function query via the string parser
-              int leftOver = fparser.sp.end - fparser.sp.pos;
-              sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
-            }
           } else {
             // A QParser that's not for function queries.
             // It must have been specified via local params.
             q = parser.getQuery();
-
             assert parser.getLocalParams() != null;
-            sp.pos = start + parser.localParamsEnd;
           }
-
 
           if (q instanceof FunctionQuery) {
             vs = ((FunctionQuery)q).getValueSource();
           } else {
             vs = new QueryValueSource(q, 0.0f);
           }
-
-          if (key==null) {
-            key = funcStr;
-          }
-          okFieldNames.add( key );
-          okFieldNames.add( funcStr );
-          augmenters.addTransformer( new ValueSourceAugmenter( key, parser, vs ) );
+          
+          okFieldNames.add( fl );
+          okFieldNames.add( as );
+          augmenters.addTransformer( new ValueSourceAugmenter( as==null?fl:as, parser, vs ) );
+          continue;
         }
-        catch (ParseException e) {
-          // try again, simple rules for a field name with no whitespace
-          sp.pos = start;
-          field = sp.getSimpleString();
-
-          if (req.getSchema().getFieldOrNull(field) != null) {
-            // OK, it was an oddly named field
-            fields.add(field);
-            if( key != null ) {
-              rename.add(field, key);
-            }
-          } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname: " + e.getMessage(), e);
-          }
+        catch (Exception e) {
+          // Its OK... could just be a wierd field name
         }
+      }
+      
+      // TODO? support fancy globs?
+      else if( fl.endsWith( "*" ) || fl.startsWith( "*" ) ) {
+        globs.add( fl );
+        continue;
+      }
 
-       // end try as function
-
-      } // end for(;;)
-    } catch (ParseException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname", e);
-    }
-  }
-
-  private void addField( String field, String key, DocTransformers augmenters, SolrQueryRequest req )
-  {
-    String disp = (key==null) ? field : key;
-    fields.add( field ); // need to put in the map to maintain order for things like CSVResponseWriter
-    okFieldNames.add( field );
-    okFieldNames.add( key );
-    // a valid field name
-    if(SCORE.equals(field)) {
-      _wantsScore = true;
-      augmenters.addTransformer( new ScoreAugmenter( disp ) );
-    }
-    else if( field.charAt(0)=='_'&& field.charAt(field.length()-1)=='_' ) {
-      String name = field;
-      String args = null;
-      int idx = field.indexOf( ':' );
-      if( idx > 0 ) {
-        name = field.substring(1,idx);
-        args = field.substring(idx+1,field.length()-1);
+      fields.add( fl ); // need to put in the map to maintain order for things like CSVResponseWriter
+      okFieldNames.add( fl );
+      okFieldNames.add( as );
+      
+      if( SCORE.equals(fl)) {
+        _wantsScore = true;
+        augmenters.addTransformer( new ScoreAugmenter( as==null?fl:as ) );
       }
       else {
-        name = field.substring(1,field.length()-1 );
-      }
-
-      TransformerFactory factory = req.getCore().getTransformerFactory( name );
-      if( factory != null ) {
-        augmenters.addTransformer( factory.create(disp, args, req) );
-      }
-      else {
-        // unknown field?
+        // it is a normal field
       }
     }
   }
+ 
 
   public Set<String> getLuceneFieldNames()
   {

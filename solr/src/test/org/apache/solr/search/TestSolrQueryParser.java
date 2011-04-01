@@ -65,10 +65,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertTrue( rf.wantsAllFields() );
     assertNull( rf.getTransformer() );
     
-    rf = new ReturnFields( req("fl", "_explain_") );
+    rf = new ReturnFields( req("fl", "[explain]") );
     assertFalse( rf.wantsScore() );
     assertFalse( rf.wantsField( "id" ) );
-    assertEquals( "_explain_", rf.getTransformer().getName() );
+    assertEquals( "[explain]", rf.getTransformer().getName() );
 
     // Check that we want wildcards
     rf = new ReturnFields( req("fl", "id,aaa*,*bbb") );
@@ -77,5 +77,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertTrue( rf.wantsField( "xxxbbb" ) );
     assertFalse( rf.wantsField( "aa" ) );
     assertFalse( rf.wantsField( "bb" ) );
+    
+    // Check pseudo fiels are replaced
+    rf = new ReturnFields( req("fl", "price", "fl.pseudo", "price:[value:10]" ) );
+    assertTrue( rf.wantsField( "price" ) );
+    assertEquals( "price", rf.getTransformer().getName() );
+
+    rf = new ReturnFields( req("fl", "price AS xxx,name AS yyy", "fl.pseudo", "price:[value:10]" ) );
+    assertTrue( rf.wantsField( "price" ) );
+    assertTrue( rf.wantsField( "yyy" ) );
+    assertTrue( rf.getLuceneFieldNames().contains("name") );
+    assertEquals( "xxx", rf.getTransformer().getName() );
   }
 }
