@@ -56,12 +56,12 @@ import java.util.Map;
  * writing testcases.
  *
  * <p>
- * This class lives in the main source tree (and not in the test source
+ * This class lives in the tests-framework source tree (and not in the test source
  * tree), so that it will be included with even the most minimal solr
  * distribution, in order to encourage plugin writers to create unit 
  * tests for their plugins.
  *
- * @version $Id:$
+ * @version $Id$
  */
 public class TestHarness {
   protected CoreContainer container;

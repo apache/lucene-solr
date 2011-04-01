@@ -72,7 +72,7 @@
     <pathelement path="${dest}/classes"/>
     <pathelement path="${dest}/test-classes"/>
     <pathelement path="${java.class.path}"/>
-    <pathelement location="${common-solr.dir}/build/tests"/> <!-- include solr test code -->
+    <pathelement location="${common-solr.dir}/build/test-framework"/> <!-- include solr test code -->
     <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
     <path refid="common.classpath"/>
   </path>
@@ -92,7 +92,7 @@
     <mkdir dir="${dest}/classes"/>
     
     <mkdir dir="${build.javadoc}"/>
-    <subant target="compileTests">
+    <subant target="compileTestFramework">
       <fileset dir="${solr-path}" includes="build.xml"/>
     </subant>
     <subant target="make-manifest">

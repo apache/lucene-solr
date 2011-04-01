@@ -53,6 +53,10 @@ Bug Fixes
 Other Changes
 ----------------------
 
+* SOLR-2061: Pull base tests out into a new Solr Test Framework module,
+  and publish binary, javadoc, and source test-framework jars. 
+  (Drew Farris, Robert Muir, Steve Rowe)
+
 Build
 ----------------------
 

@@ -89,7 +89,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
    * (default is in test-files)
    */
   public String getSolrHome() {
-    return SolrTestCaseJ4.TEST_HOME;
+    return SolrTestCaseJ4.TEST_HOME();
   }
   
   /**
