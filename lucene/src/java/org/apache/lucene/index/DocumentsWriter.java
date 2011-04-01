@@ -119,6 +119,8 @@ final class DocumentsWriter {
   final BufferedDeletesStream bufferedDeletesStream;
   // TODO: cutover to BytesRefHash
   private final BufferedDeletes pendingDeletes = new BufferedDeletes(false);
+  private Collection<String> abortedFiles;               // List of files that were written before last abort()
+
   final IndexingChain chain;
 
   final DocumentsWriterPerThreadPool perThreadPool;
@@ -214,7 +216,7 @@ final class DocumentsWriter {
       pendingDeletes.addTerm(term, BufferedDeletes.MAX_INT);
     }
 
-    Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
+    final Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
 
     while (threadsIterator.hasNext()) {
       ThreadState state = threadsIterator.next();
@@ -239,19 +241,16 @@ final class DocumentsWriter {
     indexWriter.flushCount.incrementAndGet();
   }
 
-  /** If non-null, various details of indexing are printed
-   *  here. */
   synchronized void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
     pushConfigChange();
   }
 
   private final void pushConfigChange() {
-    Iterator<ThreadState> it = perThreadPool.getAllPerThreadsIterator();
+    final Iterator<ThreadState> it = perThreadPool.getAllPerThreadsIterator();
     while (it.hasNext()) {
       DocumentsWriterPerThread perThread = it.next().perThread;
       perThread.docState.infoStream = this.infoStream;
-      perThread.docState.similarityProvider = this.similarityProvider;
     }
   }
 
@@ -259,7 +258,6 @@ final class DocumentsWriter {
   int getNumDocs() {
     return numDocsInRAM.get();
   }
-  private Collection<String> abortedFiles;               // List of files that were written before last abort()
 
   Collection<String> abortedFiles() {
     return abortedFiles;

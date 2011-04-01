@@ -132,7 +132,6 @@ public abstract class DocumentsWriterPerThreadPool {
     } else {
       threadState.resetWriter(null);
     }
-    clearThreadBindings(threadState); // TODO - do we need to clear ThreadBindings here  since we swap DWPT this is not necessary
     return dwpt;
   }
   
