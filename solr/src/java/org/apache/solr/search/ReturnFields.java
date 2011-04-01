@@ -27,6 +27,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -194,7 +195,7 @@ public class ReturnFields
 
         if (field == null) {
           // We didn't find a simple name, so let's see if it's a globbed field name.
-          // Globbing only works with recommended field names.
+          // Globbing only works with field names of the recommended form (roughly like java identifiers)
 
           field = sp.getGlobbedId(null);
           ch = sp.ch();
@@ -259,6 +260,18 @@ public class ReturnFields
           }
 
           if (key==null) {
+            SolrParams localParams = parser.getLocalParams();
+            if (localParams != null) {
+              key = localParams.get("key");
+            }
+            if (key == null) {
+              // use the function name itself as the field name
+              key = sp.val.substring(start, sp.pos);
+            }
+          }
+
+
+          if (key==null) {
             key = funcStr;
           }
           okFieldNames.add( key );
@@ -292,7 +305,7 @@ public class ReturnFields
   private void addField( String field, String key, DocTransformers augmenters, SolrQueryRequest req )
   {
     String disp = (key==null) ? field : key;
-    fields.add( field ); // need to put in the map to maintain order for things like CSVResponseWriter
+    fields.add(field); // need to put in the map to maintain order for things like CSVResponseWriter
     okFieldNames.add( field );
     okFieldNames.add( key );
     // a valid field name
