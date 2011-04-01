@@ -206,6 +206,10 @@ Other Changes
 * SOLR-2423: FieldType argument changed from String to Object
   Conversion from SolrInputDocument > Object > Fieldable is now managed
   by FieldType rather then DocumentBuilder.  (ryan)
+  
+* SOLR-2061: Pull base tests out into a new Solr Test Framework module,
+  and publish binary, javadoc, and source test-framework jars. 
+  (Drew Farris, Robert Muir, Steve Rowe)
 
 
 Documentation
