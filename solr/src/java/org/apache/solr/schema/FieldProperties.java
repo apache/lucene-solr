@@ -22,29 +22,31 @@ import java.util.HashMap;
 
 /**
  * @version $Id$
+ * 
+ * @lucene.internal
  */
-abstract class FieldProperties {
+public abstract class FieldProperties {
 
   // use a bitfield instead of many different boolean variables since
   // many of the variables are independent or semi-independent.
 
   // bit values for boolean field properties.
-  final static int INDEXED             = 0x00000001;
-  final static int TOKENIZED           = 0x00000002;
-  final static int STORED              = 0x00000004;
-  final static int BINARY              = 0x00000008;
-  final static int OMIT_NORMS          = 0x00000010;
-  final static int OMIT_TF_POSITIONS   = 0x00000020;
-  final static int STORE_TERMVECTORS   = 0x00000040;
-  final static int STORE_TERMPOSITIONS = 0x00000080;
-  final static int STORE_TERMOFFSETS   = 0x00000100;
+  protected final static int INDEXED             = 0x00000001;
+  protected final static int TOKENIZED           = 0x00000002;
+  protected final static int STORED              = 0x00000004;
+  protected final static int BINARY              = 0x00000008;
+  protected final static int OMIT_NORMS          = 0x00000010;
+  protected final static int OMIT_TF_POSITIONS   = 0x00000020;
+  protected final static int STORE_TERMVECTORS   = 0x00000040;
+  protected final static int STORE_TERMPOSITIONS = 0x00000080;
+  protected final static int STORE_TERMOFFSETS   = 0x00000100;
 
 
-  final static int MULTIVALUED         = 0x00000200;
-  final static int SORT_MISSING_FIRST  = 0x00000400;
-  final static int SORT_MISSING_LAST   = 0x00000800;
+  protected final static int MULTIVALUED         = 0x00000200;
+  protected final static int SORT_MISSING_FIRST  = 0x00000400;
+  protected final static int SORT_MISSING_LAST   = 0x00000800;
   
-  final static int REQUIRED            = 0x00001000;
+  protected final static int REQUIRED            = 0x00001000;
   
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
