@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.DoubleValuesCreator;
@@ -26,8 +25,6 @@ import org.apache.lucene.search.cache.IntValuesCreator;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
@@ -68,6 +65,7 @@ public class TrieField extends FieldType {
   protected TrieTypes type;
   protected Object missingValue;
 
+  
   /**
    * Used for handling date types following the same semantics as DateField
    */
@@ -107,15 +105,15 @@ public class TrieField extends FieldType {
     if (arr==null) return badFieldString(f);
     switch (type) {
       case INTEGER:
-        return toInt(arr);
+        return TrieFieldHelper.toInt(arr);
       case FLOAT:
-        return toFloat(arr);
+        return TrieFieldHelper.toFloat(arr);
       case LONG:
-        return toLong(arr);
+        return TrieFieldHelper.toLong(arr);
       case DOUBLE:
-        return toDouble(arr);
+        return TrieFieldHelper.toDouble(arr);
       case DATE:
-        return new Date(toLong(arr));
+        return new Date(TrieFieldHelper.toLong(arr));
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
     }
@@ -207,19 +205,19 @@ public class TrieField extends FieldType {
     }
     switch (type) {
       case INTEGER:
-        writer.writeInt(name,toInt(arr));
+        writer.writeInt(name,TrieFieldHelper.toInt(arr));
         break;
       case FLOAT:
-        writer.writeFloat(name,toFloat(arr));
+        writer.writeFloat(name,TrieFieldHelper.toFloat(arr));
         break;
       case LONG:
-        writer.writeLong(name,toLong(arr));
+        writer.writeLong(name,TrieFieldHelper.toLong(arr));
         break;
       case DOUBLE:
-        writer.writeDouble(name,toDouble(arr));
+        writer.writeDouble(name,TrieFieldHelper.toDouble(arr));
         break;
       case DATE:
-        writer.writeDate(name,new Date(toLong(arr)));
+        writer.writeDate(name,new Date(TrieFieldHelper.toLong(arr)));
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
@@ -293,55 +291,6 @@ public class TrieField extends FieldType {
   }
 
 
-  static int toInt(byte[] arr) {
-    return (arr[0]<<24) | ((arr[1]&0xff)<<16) | ((arr[2]&0xff)<<8) | (arr[3]&0xff);
-  }
-  
-  static long toLong(byte[] arr) {
-    int high = (arr[0]<<24) | ((arr[1]&0xff)<<16) | ((arr[2]&0xff)<<8) | (arr[3]&0xff);
-    int low = (arr[4]<<24) | ((arr[5]&0xff)<<16) | ((arr[6]&0xff)<<8) | (arr[7]&0xff);
-    return (((long)high)<<32) | (low&0x0ffffffffL);
-  }
-
-  static float toFloat(byte[] arr) {
-    return Float.intBitsToFloat(toInt(arr));
-  }
-
-  static double toDouble(byte[] arr) {
-    return Double.longBitsToDouble(toLong(arr));
-  }
-
-  static byte[] toArr(int val) {
-    byte[] arr = new byte[4];
-    arr[0] = (byte)(val>>>24);
-    arr[1] = (byte)(val>>>16);
-    arr[2] = (byte)(val>>>8);
-    arr[3] = (byte)(val);
-    return arr;
-  }
-
-  static byte[] toArr(long val) {
-    byte[] arr = new byte[8];
-    arr[0] = (byte)(val>>>56);
-    arr[1] = (byte)(val>>>48);
-    arr[2] = (byte)(val>>>40);
-    arr[3] = (byte)(val>>>32);
-    arr[4] = (byte)(val>>>24);
-    arr[5] = (byte)(val>>>16);
-    arr[6] = (byte)(val>>>8);
-    arr[7] = (byte)(val);
-    return arr;
-  }
-
-  static byte[] toArr(float val) {
-    return toArr(Float.floatToRawIntBits(val));
-  }
-
-  static byte[] toArr(double val) {
-    return toArr(Double.doubleToRawLongBits(val));
-  }
-
-
   @Override
   public String storedToReadable(Fieldable f) {
     return toExternal(f);
@@ -396,15 +345,15 @@ public class TrieField extends FieldType {
     if (arr==null) return badFieldString(f);
     switch (type) {
       case INTEGER:
-        return Integer.toString(toInt(arr));
+        return Integer.toString(TrieFieldHelper.toInt(arr));
       case FLOAT:
-        return Float.toString(toFloat(arr));
+        return Float.toString(TrieFieldHelper.toFloat(arr));
       case LONG:
-        return Long.toString(toLong(arr));
+        return Long.toString(TrieFieldHelper.toLong(arr));
       case DOUBLE:
-        return Double.toString(toDouble(arr));
+        return Double.toString(TrieFieldHelper.toDouble(arr));
       case DATE:
-        return dateField.formatDate(new Date(toLong(arr)));
+        return dateField.formatDate(new Date(TrieFieldHelper.toLong(arr)));
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
     }
@@ -483,75 +432,53 @@ public class TrieField extends FieldType {
 
   @Override
   public Fieldable createField(SchemaField field, Object value, float boost) {
-    boolean indexed = field.indexed();
-    boolean stored = field.stored();
-
-    if (!indexed && !stored) {
+    TrieFieldHelper.FieldInfo info = new TrieFieldHelper.FieldInfo();
+    info.index = field.indexed();
+    info.store = field.stored();
+    info.precisionStep = precisionStep;
+    info.omitNorms = field.omitNorms();
+    info.omitTF = field.omitTf();
+    
+    if (!info.index && !info.store) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
       return null;
     }
-
-    int ps = precisionStep;
-
-    byte[] arr=null;
-    TokenStream ts=null;
-    // String indexedVal = indexed && precisionStep==0 ? readableToIndexed(externalVal) : null;
 
     switch (type) {
       case INTEGER:
         int i = (value instanceof Number)
           ? ((Number)value).intValue()
           : Integer.parseInt(value.toString());
-        if (stored) arr = toArr(i);
-        if (indexed) ts = new NumericTokenStream(ps).setIntValue(i);
-        break;
+        return TrieFieldHelper.createIntField(field.getName(), i, info, boost);
+
       case FLOAT:
         float f = (value instanceof Number)
           ? ((Number)value).floatValue()
           : Float.parseFloat(value.toString());
-        if (stored) arr = toArr(f);
-        if (indexed) ts = new NumericTokenStream(ps).setFloatValue(f);
-        break;
+        return TrieFieldHelper.createFloatField(field.getName(), f, info, boost);
+        
       case LONG:
         long l = (value instanceof Number)
           ? ((Number)value).longValue()
           : Long.parseLong(value.toString());
-        if (stored) arr = toArr(l);
-        if (indexed) ts = new NumericTokenStream(ps).setLongValue(l);
-        break;
+        return TrieFieldHelper.createLongField(field.getName(), l, info, boost);
+          
       case DOUBLE:
         double d = (value instanceof Number)
           ? ((Number)value).doubleValue()
           : Double.parseDouble(value.toString());
-        if (stored) arr = toArr(d);
-        if (indexed) ts = new NumericTokenStream(ps).setDoubleValue(d);
-        break;
+        return TrieFieldHelper.createDoubleField(field.getName(), d, info, boost);
+        
       case DATE:
-        long time = (value instanceof Date)
-          ? ((Date)value).getTime()
-          : dateField.parseMath(null, value.toString()).getTime();
-        if (stored) arr = toArr(time);
-        if (indexed) ts = new NumericTokenStream(ps).setLongValue(time);
-        break;
+        Date date = (value instanceof Date)
+          ? ((Date)value)
+          : dateField.parseMath(null, value.toString());
+        return TrieFieldHelper.createDateField(field.getName(), date, info, boost);
+        
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
-
-    Field f;
-    if (stored) {
-      f = new Field(field.getName(), arr);
-      if (indexed) f.setTokenStream(ts);
-    } else {
-      f = new Field(field.getName(), ts);
-    }
-
-    // term vectors aren't supported
-
-    f.setOmitNorms(field.omitNorms());
-    f.setOmitTermFreqAndPositions(field.omitTf());
-    f.setBoost(boost);
-    return f;
   }
 
   public enum TrieTypes {

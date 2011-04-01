@@ -938,6 +938,40 @@ public class TestAddIndexes extends LuceneTestCase {
 
     assertTrue(c.failures.size() == 0);
   }
+ 
+  // LUCENE-2996: tests that addIndexes(IndexReader) applies existing deletes correctly.
+  public void testExistingDeletes() throws Exception {
+    Directory[] dirs = new Directory[2];
+    for (int i = 0; i < dirs.length; i++) {
+      dirs[i] = newDirectory();
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+      IndexWriter writer = new IndexWriter(dirs[i], conf);
+      Document doc = new Document();
+      doc.add(new Field("id", "myid", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      writer.addDocument(doc);
+      writer.close();
+    }
+
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriter writer = new IndexWriter(dirs[0], conf);
+
+    // Now delete the document
+    writer.deleteDocuments(new Term("id", "myid"));
+    IndexReader r = IndexReader.open(dirs[1]);
+    try {
+      writer.addIndexes(r);
+    } finally {
+      r.close();
+    }
+    writer.commit();
+    assertEquals("Documents from the incoming index should not have been deleted", 1, writer.numDocs());
+    writer.close();
+
+    for (Directory dir : dirs) {
+      dir.close();
+    }
+
+  }
   
   private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {

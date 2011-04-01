@@ -47,26 +47,26 @@ API Changes
 
 (No changes)
 
-======================= Lucene 3.1 (not yet released) =======================
+======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
 
  * LUCENE-2100: All Analyzers in Lucene-contrib have been marked as final.
    Analyzers should be only act as a composition of TokenStreams, users should
    compose their own analyzers instead of subclassing existing ones.
-   (Simon Willnauer) 
+   (Simon Willnauer)
 
  * LUCENE-2194, LUCENE-2201: Snowball APIs were upgraded to snowball revision
-   502 (with some local modifications for improved performance). 
-   Index backwards compatibility and binary backwards compatibility is 
-   preserved, but some protected/public member variables changed type. This 
-   does NOT affect java code/class files produced by the snowball compiler, 
+   502 (with some local modifications for improved performance).
+   Index backwards compatibility and binary backwards compatibility is
+   preserved, but some protected/public member variables changed type. This
+   does NOT affect java code/class files produced by the snowball compiler,
    but technically is a backwards compatibility break.  (Robert Muir)
-   
+
  * LUCENE-2226: Moved contrib/snowball functionality into contrib/analyzers.
    Be sure to remove any old obselete lucene-snowball jar files from your
    classpath!  (Robert Muir)
-   
+
  * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
    Additionally the package was changed from org.apache.lucene.wikipedia.analysis
    to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
@@ -74,30 +74,30 @@ Changes in backwards compatibility policy
  * LUCENE-2581: Added new methods to FragmentsBuilder interface. These methods
    are used to set pre/post tags and Encoder. (Koji Sekiguchi)
 
- * LUCENE-2391: Improved spellchecker (re)build time/ram usage by omitting 
+ * LUCENE-2391: Improved spellchecker (re)build time/ram usage by omitting
    frequencies/positions/norms for single-valued fields, modifying the default
    ramBufferMBSize to match IndexWriterConfig (16MB), making index optimization
    an optional boolean parameter, and modifying the incremental update logic
-   to work well with unoptimized spellcheck indexes. The indexDictionary() methods 
-   were made final to ensure a hard backwards break in case you were subclassing 
+   to work well with unoptimized spellcheck indexes. The indexDictionary() methods
+   were made final to ensure a hard backwards break in case you were subclassing
    Spellchecker. In general, subclassing Spellchecker is not recommended.  (Robert Muir)
-    
+
 Changes in runtime behavior
 
  * LUCENE-2117: SnowballAnalyzer uses TurkishLowerCaseFilter instead of
    LowercaseFilter to correctly handle the unique Turkish casing behavior if
    used with Version > 3.0 and the TurkishStemmer.
-   (Robert Muir via Simon Willnauer)  
+   (Robert Muir via Simon Willnauer)
 
- * LUCENE-2055: GermanAnalyzer now uses the Snowball German2 algorithm and 
+ * LUCENE-2055: GermanAnalyzer now uses the Snowball German2 algorithm and
    stopwords list by default for Version > 3.0.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
 
 Bug fixes
 
- * LUCENE-2855: contrib queryparser was using CharSequence as key in some internal 
-   Map instances, which was leading to incorrect behaviour, since some CharSequence
-   implementors do not override hashcode and equals methods. Now the internal Maps 
+ * LUCENE-2855: contrib queryparser was using CharSequence as key in some internal
+   Map instances, which was leading to incorrect behavior, since some CharSequence
+   implementors do not override hashcode and equals methods. Now the internal Maps
    are using String instead. (Adriano Crestani)
 
  * LUCENE-2068: Fixed ReverseStringFilter which was not aware of supplementary
@@ -106,9 +106,9 @@ Bug fixes
    now reverses supplementary characters correctly if used with Version > 3.0.
    (Simon Willnauer, Robert Muir)
 
- * LUCENE-2035: TokenSources.getTokenStream() does not assign  positionIncrement. 
+ * LUCENE-2035: TokenSources.getTokenStream() does not assign  positionIncrement.
    (Christopher Morris via Mark Miller)
-  
+
  * LUCENE-2055: Deprecated RussianTokenizer, RussianStemmer, RussianStemFilter,
    FrenchStemmer, FrenchStemFilter, DutchStemmer, and DutchStemFilter. For
    these Analyzers, SnowballFilter is used instead (for Version > 3.0), as
@@ -118,7 +118,7 @@ Bug fixes
 
  * LUCENE-2184: Fixed bug with handling best fit value when the proper best fit value is
    not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
-		
+
  * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
    the 180th meridian (Grant Ingersoll)
 
@@ -135,15 +135,15 @@ Bug fixes
    and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
 
  * LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
-   always the case. If the dictionary is unavailable, the filter will now throw 
+   always the case. If the dictionary is unavailable, the filter will now throw
    UnsupportedOperationException in the constructor.  (Robert Muir)
 
- * LUCENE-589: Fix contrib/demo for international documents. 
+ * LUCENE-589: Fix contrib/demo for international documents.
    (Curtis d'Entremont via Robert Muir)
-  
+
  * LUCENE-2246: Fix contrib/demo for Turkish html documents.
-   (Selim Nadi via Robert Muir)  
-  
+   (Selim Nadi via Robert Muir)
+
  * LUCENE-590: Demo HTML parser gives incorrect summaries when title is repeated as a heading
    (Curtis d'Entremont via Robert Muir)
 
@@ -153,9 +153,9 @@ Bug fixes
  * LUCENE-2874: Highlighting overlapping tokens outputted doubled words.
    (Pierre Gossé via Robert Muir)
 
- * LUCENE-2943: Fix thread-safety issues with ICUCollationKeyFilter. 
+ * LUCENE-2943: Fix thread-safety issues with ICUCollationKeyFilter.
    (Robert Muir)
-   
+
 API Changes
 
  * LUCENE-2867: Some contrib queryparser methods that receives CharSequence as
@@ -165,7 +165,7 @@ API Changes
  * LUCENE-2147: Spatial GeoHashUtils now always decode GeoHash strings
    with full precision. GeoHash#decode_exactly(String) was merged into
    GeoHash#decode(String). (Chris Male, Simon Willnauer)
-   
+
  * LUCENE-2204: Change some package private classes/members to publicly accessible to implement
    custom FragmentsBuilders. (Koji Sekiguchi)
 
@@ -182,14 +182,14 @@ API Changes
  * LUCENE-2626: FastVectorHighlighter: enable FragListBuilder and FragmentsBuilder
    to be set per-field override. (Koji Sekiguchi)
 
- * LUCENE-2712: FieldBoostMapAttribute in contrib/queryparser was changed from 
+ * LUCENE-2712: FieldBoostMapAttribute in contrib/queryparser was changed from
    a Map<CharSequence,Float> to a Map<String,Float>. Per the CharSequence javadoc,
    CharSequence is inappropriate as a map key. (Robert Muir)
 
  * LUCENE-1937: Add more methods to manipulate QueryNodeProcessorPipeline elements.
    QueryNodeProcessorPipeline now implements the List interface, this is useful
    if you want to extend or modify an existing pipeline. (Adriano Crestani via Robert Muir)
-    
+
  * LUCENE-2754, LUCENE-2757: Deprecated SpanRegexQuery. Use
    new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery()) instead.
    (Robert Muir, Uwe Schindler)
@@ -199,10 +199,10 @@ API Changes
 
  * LUCENE-2830: Use StringBuilder instead of StringBuffer across Benchmark, and
    remove the StringBuffer HtmlParser.parse() variant. (Shai Erera)
-   
+
  * LUCENE-2920: Deprecated ShingleMatrixFilter as it is unmaintained and does
    not work with custom Attributes or custom payload encoders.  (Uwe Schindler)
-   
+
 New features
 
  * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
@@ -210,14 +210,14 @@ New features
    cache.  This is useful to prevent segment merging from evicting
    pages from the buffer cache, since fadvise/madvise do not seem.
    (Michael McCandless)
-    
+
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
 
  * LUCENE-2102: Add a Turkish LowerCase Filter. TurkishLowerCaseFilter handles
    Turkish and Azeri unique casing behavior correctly.
    (Ahmet Arslan, Robert Muir via Simon Willnauer)
- 
+
  * LUCENE-2039: Add a extensible query parser to contrib/misc.
    ExtendableQueryParser enables arbitrary parser extensions based on a
    customizable field naming scheme.
@@ -225,11 +225,11 @@ New features
 
  * LUCENE-2067: Add a Czech light stemmer. CzechAnalyzer will now stem words
    when Version is set to 3.1 or higher.  (Robert Muir)
-   
+
  * LUCENE-2062: Add a Bulgarian analyzer.  (Robert Muir, Simon Willnauer)
 
  * LUCENE-2206: Add Snowball's stopword lists for Danish, Dutch, English,
-   Finnish, French, German, Hungarian, Italian, Norwegian, Russian, Spanish, 
+   Finnish, French, German, Hungarian, Italian, Norwegian, Russian, Spanish,
    and Swedish. These can be loaded with WordListLoader.getSnowballWordSet.
    (Robert Muir, Simon Willnauer)
 
@@ -237,7 +237,7 @@ New features
    (Koji Sekiguchi)
 
  * LUCENE-2218: ShingleFilter supports minimum shingle size, and the separator
-   character is now configurable. Its also up to 20% faster. 
+   character is now configurable. Its also up to 20% faster.
    (Steven Rowe via Robert Muir)
 
  * LUCENE-2234: Add a Hindi analyzer.  (Robert Muir)
@@ -267,7 +267,7 @@ New features
  * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
    the Polish language.  (Andrzej Bialecki via Robert Muir)
 
- * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and 
+ * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and
    unigrams, and uses a more performant algorithm to build grams using a linked list
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
    (Steven Rowe via Uwe Schindler)
@@ -286,7 +286,7 @@ New features
  * LUCENE-2464: FastVectorHighlighter: add SingleFragListBuilder to return
    entire field contents. (Koji Sekiguchi)
 
- * LUCENE-2503: Added lighter stemming alternatives for European languages. 
+ * LUCENE-2503: Added lighter stemming alternatives for European languages.
    (Robert Muir)
 
  * LUCENE-2581: FastVectorHighlighter: add Encoder to FragmentsBuilder.
@@ -294,19 +294,22 @@ New features
 
  * LUCENE-2624: Add Analyzers for Armenian, Basque, and Catalan, from snowball.
    (Robert Muir)
-   
+
  * LUCENE-1938: PrecedenceQueryParser is now implemented with the flexible QP framework.
    This means that you can also add this functionality to your own QP pipeline by using
    BooleanModifiersQueryNodeProcessor, for example instead of GroupQueryNodeProcessor.
    (Adriano Crestani via Robert Muir)
 
  * LUCENE-2791: Added WindowsDirectory, a Windows-specific Directory impl
-   that doesn't synchronize on the file handle. This can be useful to 
+   that doesn't synchronize on the file handle. This can be useful to
    avoid the performance problems of SimpleFSDirectory and NIOFSDirectory.
    (Robert Muir, Simon Willnauer, Uwe Schindler, Michael McCandless)
 
  * LUCENE-2842: Add analyzer for Galician. Also adds the RSLP (Orengo) stemmer
    for Portuguese.  (Robert Muir)
+
+ * SOLR-1057: Add PathHierarchyTokenizer that represents file path hierarchies as synonyms of
+   /something, /something/something, /something/something/else. (Ryan McKinley, Koji Sekiguchi)
 
 Build
 

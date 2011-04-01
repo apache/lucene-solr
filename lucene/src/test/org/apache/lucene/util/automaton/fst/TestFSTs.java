@@ -191,7 +191,7 @@ public class TestFSTs extends LuceneTestCase {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(random, 97, 102);
+      buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
     }
     return new String(buffer, 0, end);
   }

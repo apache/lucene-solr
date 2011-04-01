@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
@@ -934,24 +934,24 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   public void testCollator() throws Exception {
     // ROOT locale
     Benchmark benchmark = execBenchmark(getCollatorConfig("ROOT", "impl:jdk"));
-    CollationKeyAnalyzer expected = new CollationKeyAnalyzer(Collator
+    CollationKeyAnalyzer expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator
         .getInstance(new Locale("")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
     
     // specify just a language
     benchmark = execBenchmark(getCollatorConfig("de", "impl:jdk"));
-    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("de")));
+    expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("de")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
     
     // specify language + country
     benchmark = execBenchmark(getCollatorConfig("en,US", "impl:jdk"));
-    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("en",
+    expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("en",
         "US")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
     
     // specify language + country + variant
     benchmark = execBenchmark(getCollatorConfig("no,NO,NY", "impl:jdk"));
-    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("no",
+    expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("no",
         "NO", "NY")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
   }
@@ -962,11 +962,15 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     TokenStream ts2 = a2.tokenStream("bogus", new StringReader(text));
     ts1.reset();
     ts2.reset();
-    CharTermAttribute termAtt1 = ts1.addAttribute(CharTermAttribute.class);
-    CharTermAttribute termAtt2 = ts2.addAttribute(CharTermAttribute.class);
+    TermToBytesRefAttribute termAtt1 = ts1.addAttribute(TermToBytesRefAttribute.class);
+    TermToBytesRefAttribute termAtt2 = ts2.addAttribute(TermToBytesRefAttribute.class);
     assertTrue(ts1.incrementToken());
     assertTrue(ts2.incrementToken());
-    assertEquals(termAtt1.toString(), termAtt2.toString());
+    BytesRef bytes1 = termAtt1.getBytesRef();
+    BytesRef bytes2 = termAtt2.getBytesRef();
+    termAtt1.fillBytesRef();
+    termAtt2.fillBytesRef();
+    assertEquals(bytes1, bytes2);
     assertFalse(ts1.incrementToken());
     assertFalse(ts2.incrementToken());
     ts1.close();

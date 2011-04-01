@@ -28,6 +28,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import org.apache.lucene.index.SegmentCodecs; // Required for Java 1.5 javadocs
 import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
@@ -186,7 +187,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     }
     
     // used by assert
-    boolean containsConsistent(Integer number, String name) {
+    synchronized boolean containsConsistent(Integer number, String name) {
       return name.equals(numberToName.get(number))
           && number.equals(nameToNumber.get(name));
     }
@@ -218,12 +219,13 @@ public final class FieldInfos implements Iterable<FieldInfo> {
 
   /**
    * Creates a new {@link FieldInfos} instance with a private
-   * {@link FieldNumberBiMap} and a default {@link SegmentCodecsBuilder}
+   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} and a default {@link SegmentCodecsBuilder}
    * initialized with {@link CodecProvider#getDefault()}.
    * <p>
    * Note: this ctor should not be used during indexing use
    * {@link FieldInfos#FieldInfos(FieldInfos)} or
-   * {@link FieldInfos#FieldInfos(FieldNumberBiMap)} instead.
+   * {@link FieldInfos#FieldInfos(FieldNumberBiMap,org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder)}
+   * instead.
    */
   public FieldInfos() {
     this(new FieldNumberBiMap(), SegmentCodecsBuilder.create(CodecProvider.getDefault()));
@@ -552,9 +554,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   
   /**
    * Returns <code>true</code> iff this instance is not backed by a
-   * {@link FieldNumberBiMap}. Instances read from a directory via
+   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap}. Instances read from a directory via
    * {@link FieldInfos#FieldInfos(Directory, String)} will always be read-only
-   * since no {@link FieldNumberBiMap} is supplied, otherwise <code>false</code>.
+   * since no {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} is supplied, otherwise 
+   * <code>false</code>.
    */
   public final boolean isReadOnly() {
     return globalFieldNumbers == null;

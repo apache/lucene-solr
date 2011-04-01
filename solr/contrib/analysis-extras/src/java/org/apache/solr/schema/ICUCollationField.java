@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.solr.schema;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,24 +17,37 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.collation.ICUCollationKeyFilter;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.collation.ICUCollationKeyAnalyzer;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.util.plugin.ResourceLoaderAware;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
 
 /**
- * Factory for {@link ICUCollationKeyFilter}.
+ * Field for collated sort keys. 
+ * These can be used for locale-sensitive sort and range queries.
  * <p>
- * This factory can be created in two ways: 
+ * This field can be created in two ways: 
  * <ul>
  *  <li>Based upon a system collator associated with a Locale.
  *  <li>Based upon a tailored ruleset.
@@ -57,17 +70,25 @@ import com.ibm.icu.util.ULocale;
  * @see Collator
  * @see ULocale
  * @see RuleBasedCollator
- * @deprecated use {@link org.apache.solr.schema.ICUCollationField} instead.
  */
-@Deprecated
-public class ICUCollationKeyFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
-  private Collator collator;
+public class ICUCollationField extends FieldType {
+  private Analyzer analyzer;
 
-  public void inform(ResourceLoader loader) {
-    String custom = args.get("custom");
-    String localeID = args.get("locale");
-    String strength = args.get("strength");
-    String decomposition = args.get("decomposition");
+  @Override
+  protected void init(IndexSchema schema, Map<String,String> args) {
+    properties |= TOKENIZED; // this ensures our analyzer gets hit
+    setup(schema.getResourceLoader(), args);
+    super.init(schema, args);
+  }
+  
+  /**
+   * Setup the field according to the provided parameters
+   */
+  private void setup(ResourceLoader loader, Map<String,String> args) {
+    String custom = args.remove("custom");
+    String localeID = args.remove("locale");
+    String strength = args.remove("strength");
+    String decomposition = args.remove("decomposition");
     
     if (custom == null && localeID == null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "Either custom or locale is required.");
@@ -76,6 +97,8 @@ public class ICUCollationKeyFilterFactory extends BaseTokenFilterFactory impleme
       throw new SolrException(ErrorCode.SERVER_ERROR, "Cannot specify both locale and custom. "
           + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
           + "Then save the entire customized ruleset to a file, and use with the custom parameter");
+    
+    final Collator collator;
     
     if (localeID != null) { 
       // create from a system collator, based on Locale.
@@ -110,13 +133,11 @@ public class ICUCollationKeyFilterFactory extends BaseTokenFilterFactory impleme
       else
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid decomposition: " + decomposition);
     }
+    // we use 4.0 because it ensures we just encode the pure byte[] keys.
+    analyzer = new ICUCollationKeyAnalyzer(Version.LUCENE_40, collator);
   }
   
-  public TokenStream create(TokenStream input) {
-    return new ICUCollationKeyFilter(input, collator);
-  }
-  
-  /*
+  /**
    * Create a locale from localeID.
    * Then return the appropriate collator for the locale.
    */
@@ -124,7 +145,7 @@ public class ICUCollationKeyFilterFactory extends BaseTokenFilterFactory impleme
     return Collator.getInstance(new ULocale(localeID));
   }
   
-  /*
+  /**
    * Read custom rules from a file, and create a RuleBasedCollator
    * The file cannot support comments, as # might be in the rules!
    */
@@ -140,5 +161,68 @@ public class ICUCollationKeyFilterFactory extends BaseTokenFilterFactory impleme
     } finally {
       IOUtils.closeQuietly(input);
     }
+  }
+
+  @Override
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeStr(name, f.stringValue(), true);
+  }
+
+  @Override
+  public SortField getSortField(SchemaField field, boolean top) {
+    return getStringSort(field, top);
+  }
+
+  @Override
+  public Analyzer getAnalyzer() {
+    return analyzer;
+  }
+
+  @Override
+  public Analyzer getQueryAnalyzer() {
+    return analyzer;
+  }
+
+  /**
+   * analyze the range with the analyzer, instead of the collator.
+   * because icu collators are not thread safe, this keeps things 
+   * simple (we already have a threadlocal clone in the reused TS)
+   */
+  private BytesRef analyzeRangePart(String field, String part) {
+    TokenStream source;
+      
+    try {
+      source = analyzer.reusableTokenStream(field, new StringReader(part));
+      source.reset();
+    } catch (IOException e) {
+      source = analyzer.tokenStream(field, new StringReader(part));
+    }
+      
+    TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
+    BytesRef bytes = termAtt.getBytesRef();
+
+    // we control the analyzer here: most errors are impossible
+    try {
+      if (!source.incrementToken())
+        throw new IllegalArgumentException("analyzer returned no terms for range part: " + part);
+      termAtt.fillBytesRef();
+      assert !source.incrementToken();
+    } catch (IOException e) {
+      throw new RuntimeException("error analyzing range part: " + part, e);
+    }
+      
+    try {
+      source.close();
+    } catch (IOException ignored) {}
+      
+    return new BytesRef(bytes);
+  }
+  
+  @Override
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+    String f = field.getName();
+    BytesRef low = part1 == null ? null : analyzeRangePart(f, part1);
+    BytesRef high = part2 == null ? null : analyzeRangePart(f, part2);
+    return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
   }
 }

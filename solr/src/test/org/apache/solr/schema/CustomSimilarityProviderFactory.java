@@ -1,4 +1,3 @@
-package org.apache.solr.schema;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,15 +14,21 @@ package org.apache.solr.schema;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.schema;
 
-import org.apache.lucene.search.Similarity;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.SolrSimilarityProvider;
 
-public abstract class SimilarityFactory {
-  protected SolrParams params;
+public class CustomSimilarityProviderFactory extends SimilarityProviderFactory {
+  String echoParam;
+ 
+  @Override
+  public void init(NamedList<?> args) {
+    echoParam = (String) args.get("echo");
+  }
 
-  public void init(SolrParams params) { this.params = params; }
-  public SolrParams getParams() { return params; }
-
-  public abstract Similarity getSimilarity();
+  @Override
+  public SolrSimilarityProvider getSimilarityProvider(IndexSchema schema) {
+    return new MockConfigurableSimilarityProvider(schema, echoParam);
+  }
 }

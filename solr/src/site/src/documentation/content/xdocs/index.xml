@@ -68,27 +68,32 @@ customization is required.
       <title>News</title>
             <section>
    <title>March 2011 - Solr 3.1 Released</title>
+  <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.1</a>!
+  </p> 
    <p>
-     Solr 3.1 has been released and is now available for public <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
-     
-   New Solr 3.1 features include
+    Solr's version number was synced with Lucene following the Lucene/Solr merge, so Solr 3.1 contains Lucene 3.1.
+    Solr 3.1 is the first release after Solr 1.4.1.
+   </p>
+  <p>
+   Solr 3.1 release highlights include
  </p>
   <ul>
-    <li>Improved geospatial support</li>
-    <li>Sorting by function queries</li>
-    <li>Range faceting on all numeric fields</li>
-    <li>Example Velocity driven search UI at http://localhost:8983/solr/browse</li>
-    <li>A new termvector-based highlighter</li>
-    <li>Improved spellchecking capabilities</li>
-    <li>Improved integration with Apache Lucene</li>
-    <li>New autosuggest component</li>
-    <li>Distributed support for more components</li>
-    <li>JSON document indexing and CSV response format</li>
-    <li>Apache UIMA integration for metadata extraction</li>
-    <li>Many other Bugfixes, improvements and optimizations</li>
+    <li><a href="http://wiki.apache.org/solr/SimpleFacetParameters#Facet_by_Range">Numeric range facets</a> (similar to date faceting).</li>
+    <li>New <a href="http://wiki.apache.org/solr/SpatialSearch">spatial search</a>, including spatial filtering, boosting and sorting capabilities.</li>
+    <li>Example Velocity driven search UI at <a href="http://localhost:8983/solr/browse">http://localhost:8983/solr/browse</a></li>
+    <li>A new faster <a href="http://wiki.apache.org/solr/HighlightingParameters">termvector-based highlighter</a>.</li>
+    <li>Extended dismax (edismax) query parser with support for fielded queries, enhanced relevancy, and full lucene syntax support.</li>
+    <li>Distributed search support for the <a href="http://wiki.apache.org/solr/SpellCheckComponent">Spell check</a>
+ and <a href="http://wiki.apache.org/solr/TermsComponent">Terms</a> components.</li>
+    <li><a href="http://wiki.apache.org/solr/Suggester">Suggester</a>, a fast trie-based autocomplete component.</li>
+    <li>Sort results by any <a href="http://wiki.apache.org/solr/FunctionQuery#Sort_By_Function any function">function query</a>.</li>
+    <li><a href="http://wiki.apache.org/solr/UpdateJSON">JSON document indexing</a>.</li>
+    <li><a href="http://wiki.apache.org/solr/CSVResponseWriter">CSV response format</a></li>
+    <li><a href="http://wiki.apache.org/solr/SolrUIMA">Apache UIMA integration</a> for metadata extraction.</li>
+    <li>Tons of optimizations, bugfixes, and new analysis capabilities via <a href="http://lucene.apache.org/java/docs/index.html">Apache Lucene 3.1</a>.</li>
   </ul>
      
-	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_1/solr/CHANGES.txt">release notes</a> for more details.
+  <p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_1/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
  </p>
 
 </section>

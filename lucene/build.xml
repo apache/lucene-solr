@@ -152,6 +152,7 @@
       <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/lucene-java/HowToUpdateTheWebsite</echo>
   </target>
 
+  <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" 
           depends="javadocs-all, javadocs-core, javadocs-contrib, javadocs-test-framework">
     <echo file="${javadoc.dir}/index.html" append="false">
@@ -194,6 +195,17 @@
   <target name="javadocs-all" description="Generate javadoc for core and contrib classes" depends="build-contrib">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
+
+      <path id="javadoc.classpath">
+        <path refid="classpath"/>
+        <pathelement location="${ant.home}/lib/ant.jar"/>
+        <fileset dir=".">
+          <exclude name="build/**/*.jar"/>
+          <include name="**/lib/*.jar"/>
+        </fileset>
+        <pathelement location="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
+      </path>
+
       <invoke-javadoc
         destdir="${javadoc.dir}/all">
         <sources>
@@ -424,8 +436,11 @@
     </scp>
   </target>
 
-  <target name="stage" depends="dist-all, generate-maven-artifacts, sign-artifacts, copy-to-stage">
+  <target name="prepare-release" depends="clean, dist-all, generate-maven-artifacts, sign-artifacts"/>
+  <target name="stage" depends="prepare-release, copy-to-stage">
+
   </target>
+
 
   <target name="generate-maven-artifacts"
           depends="maven.ant.tasks-check, package, jar-src, jar-test-framework-src, javadocs">
