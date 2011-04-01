@@ -150,7 +150,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * (default is in test-files)
    */
   public String getSolrHome() {
-    return SolrTestCaseJ4.TEST_HOME;
+    return SolrTestCaseJ4.TEST_HOME();
   }
   
   @Override

@@ -86,7 +86,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema) throws Exception {
-    initCore(config, schema, TEST_HOME);
+    initCore(config, schema, TEST_HOME());
   }
 
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
@@ -1057,22 +1057,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
   
-  private static final String SOURCE_HOME = determineSourceHome();
-  public static String TEST_HOME = getFile("solr/conf").getParent();
-  public static String WEBAPP_HOME = new File(SOURCE_HOME, "src/webapp/web").getAbsolutePath();
-  public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
-  public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
-  public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/conf/schema.xml";
-  public static String EXAMPLE_CONFIG=EXAMPLE_HOME+"/conf/solrconfig.xml";
-  
-  static String determineSourceHome() {
-    // ugly, ugly hack to determine the example home without depending on the CWD
-    // this is needed for example/multicore tests which reside outside the classpath
-    File base = getFile("solr/conf/").getAbsoluteFile();
-    while (!new File(base, "solr/CHANGES.txt").exists()) {
-      base = base.getParentFile();
-    }
-    return new File(base, "solr/").getAbsolutePath();
+  public static String TEST_HOME() {
+    return getFile("solr/conf").getParent();
   }
 
   public static Throwable getRootCause(Throwable t) {

@@ -18,11 +18,12 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
+    initCore(ExternalPaths.EXAMPLE_CONFIG, ExternalPaths.EXAMPLE_SCHEMA, ExternalPaths.EXAMPLE_HOME);
   }
 }

@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 
 abstract public class SolrJettyTestBase extends SolrTestCaseJ4 
@@ -32,7 +33,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   // using configs in the test directory allows more flexibility to change "example"
   // without breaking configs.
 
-  public String getSolrHome() { return EXAMPLE_HOME; }
+  public String getSolrHome() { return ExternalPaths.EXAMPLE_HOME; }
 
   public static JettySolrRunner jetty;
   public static int port;

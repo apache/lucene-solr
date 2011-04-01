@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-contrib-build">
+  <!-- TODO: adjust build.dir/dist.dir appropriately when a contrib project is run individually -->
+  <property name="build.dir" location="../../build/contrib/${ant.project.name}"/>
+  <property name="dist.dir" location="../../dist/"/>
+  	
+  <import file="../common-build.xml"/>
+
+  <target name="build-solr" unless="solr.core.compiled">
+    <ant dir="${common-solr.dir}" target="compile-test" inheritAll="false"/>
+    <!-- set the property for this ant execution to speed up later tasks depending on this -->
+    <property name="solr.core.compiled" value="true"/>
+  </target>
+  
+  <target name="compile-core" depends="build-solr, common.compile-core"/>
+  
+  <macrodef name="solr-contrib-uptodate">
+    <attribute name="name"/>
+    <attribute name="property" default="solr-@{name}.uptodate"/>
+    <attribute name="classpath.property" default="solr-@{name}.jar"/>
+    <!-- set jarfile only, if the target jar file has no generic name -->
+    <attribute name="jarfile" default="${common-solr.dir}/build/contrib/solr-@{name}/apache-solr-@{name}-${version}.jar"/>
+    <sequential>
+      <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
+      <property name="@{classpath.property}" location="@{jarfile}"/>
+      <uptodate property="@{property}" targetfile="@{jarfile}">
+        <srcfiles dir="../@{name}/src/main/java" includes="**/*.java"/>
+      </uptodate>
+    </sequential>
+  </macrodef>
+</project>
