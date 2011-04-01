@@ -127,8 +127,9 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     Directory dir = newDirectory();
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-        .setMaxBufferedDocs(101).setMergePolicy(new LogDocMergePolicy()));
+                             TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+                                         .setMaxBufferedDocs(101).setMergePolicy(new LogDocMergePolicy())
+                                         .setMergeScheduler(new SerialMergeScheduler()));
 
     // leftmost* segment has 1 doc
     // rightmost* segment has 100 docs
@@ -142,7 +143,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
           new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
           OpenMode.APPEND).setMaxBufferedDocs(101).setMergePolicy(
-          new LogDocMergePolicy()));
+          new LogDocMergePolicy())
+                               .setMergeScheduler(new SerialMergeScheduler()));
     }
 
     writer.close();
@@ -150,7 +152,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     ldmp.setMergeFactor(10);
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
         new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
-        OpenMode.APPEND).setMaxBufferedDocs(10).setMergePolicy(ldmp).setMergeScheduler(new ConcurrentMergeScheduler()));
+        OpenMode.APPEND).setMaxBufferedDocs(10).setMergePolicy(ldmp).setMergeScheduler(new ConcurrentMergeScheduler())
+                             .setMergeScheduler(new SerialMergeScheduler()));
 
     // merge policy only fixes segments on levels where merges
     // have been triggered, so check invariants after all adds
@@ -233,13 +236,13 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     int segmentCount = writer.getSegmentCount();
     for (int i = segmentCount - 1; i >= 0; i--) {
       int docCount = writer.getDocCount(i);
-      assertTrue(docCount > lowerBound);
+      assertTrue("docCount=" + docCount + " lowerBound=" + lowerBound + " upperBound=" + upperBound + " i=" + i + " segmentCount=" + segmentCount + " index=" + writer.segString() + " config=" + writer.getConfig(), docCount > lowerBound);
 
       if (docCount <= upperBound) {
         numSegments++;
       } else {
         if (upperBound * mergeFactor <= maxMergeDocs) {
-          assertTrue("maxMergeDocs=" + maxMergeDocs + "; numSegments=" + numSegments + "; upperBound=" + upperBound + "; mergeFactor=" + mergeFactor + "; segs=" + writer.segString(), numSegments < mergeFactor);
+          assertTrue("maxMergeDocs=" + maxMergeDocs + "; numSegments=" + numSegments + "; upperBound=" + upperBound + "; mergeFactor=" + mergeFactor + "; segs=" + writer.segString() + " config=" + writer.getConfig(), numSegments < mergeFactor);
         }
 
         do {
