@@ -1,5 +1,13 @@
 Lucene Change Log
 
+======================= Lucene 3.1.x (not yet released) =======================
+
+Bug fixes
+
+* LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
+  indexes, causing existing deletions to be applied on the incoming indexes as 
+  well. (Shai Erera, Mike McCandless)
+
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
