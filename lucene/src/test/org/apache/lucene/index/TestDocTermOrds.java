@@ -60,7 +60,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     Field field = newField("field", "", Field.Index.ANALYZED);
     doc.add(field);

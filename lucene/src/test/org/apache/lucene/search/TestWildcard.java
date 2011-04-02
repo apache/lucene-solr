@@ -300,7 +300,7 @@ public class TestWildcard
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMergePolicy(newInOrderLogMergePolicy()));
+        .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(newField(field,docs[i],Store.NO,Index.ANALYZED));

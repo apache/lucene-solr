@@ -156,7 +156,7 @@ public final class IndexWriterConfig implements Cloneable {
     indexingChain = DocumentsWriter.defaultIndexingChain;
     mergedSegmentWarmer = null;
     codecProvider = CodecProvider.getDefault();
-    mergePolicy = new LogByteSizeMergePolicy();
+    mergePolicy = new TieredMergePolicy();
     maxThreadStates = DEFAULT_MAX_THREAD_STATES;
     readerPooling = DEFAULT_READER_POOLING;
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;

@@ -871,7 +871,7 @@ public class IndexWriter implements Closeable {
    * message when maxFieldLength is reached will be printed
    * to this.
    */
-  public void setInfoStream(PrintStream infoStream) {
+  public void setInfoStream(PrintStream infoStream) throws IOException {
     ensureOpen();
     this.infoStream = infoStream;
     docWriter.setInfoStream(infoStream);
@@ -881,7 +881,7 @@ public class IndexWriter implements Closeable {
       messageState();
   }
 
-  private void messageState() {
+  private void messageState() throws IOException {
     message("\ndir=" + directory + "\n" +
             "index=" + segString() + "\n" +
             "version=" + Constants.LUCENE_VERSION + "\n" +
@@ -1640,6 +1640,8 @@ public class IndexWriter implements Closeable {
     throws CorruptIndexException, IOException {
     ensureOpen();
 
+    flush(true, true);
+
     if (infoStream != null)
       message("expungeDeletes: index now " + segString());
 
@@ -1711,6 +1713,10 @@ public class IndexWriter implements Closeable {
    *  this call does not first commit any buffered
    *  documents, so you must do so yourself if necessary.
    *  See also {@link #expungeDeletes(boolean)}
+   *
+   *  <p><b>NOTE</b>: this method first flushes a new
+   *  segment (if there are indexed documents), and applies
+   *  all buffered deletes.
    *
    *  <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    *  you should immediately close the writer.  See <a
@@ -2577,7 +2583,7 @@ public class IndexWriter implements Closeable {
     return docWriter.getNumDocs();
   }
 
-  private void ensureValidMerge(MergePolicy.OneMerge merge) {
+  private void ensureValidMerge(MergePolicy.OneMerge merge) throws IOException {
     for(SegmentInfo info : merge.segments) {
       if (segmentInfos.indexOf(info) == -1) {
         throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.name + ") that is not in the current index " + segString(), directory);
@@ -2868,7 +2874,7 @@ public class IndexWriter implements Closeable {
    *  are now participating in a merge, and true is
    *  returned.  Else (the merge conflicts) false is
    *  returned. */
-  final synchronized boolean registerMerge(MergePolicy.OneMerge merge) throws MergePolicy.MergeAbortedException {
+  final synchronized boolean registerMerge(MergePolicy.OneMerge merge) throws MergePolicy.MergeAbortedException, IOException {
 
     if (merge.registerDone)
       return true;
@@ -2878,10 +2884,8 @@ public class IndexWriter implements Closeable {
       throw new MergePolicy.MergeAbortedException("merge is aborted: " + merge.segString(directory));
     }
 
-    final int count = merge.segments.size();
     boolean isExternal = false;
-    for(int i=0;i<count;i++) {
-      final SegmentInfo info = merge.segments.info(i);
+    for(SegmentInfo info : merge.segments) {
       if (mergingSegments.contains(info)) {
         return false;
       }
@@ -2911,12 +2915,15 @@ public class IndexWriter implements Closeable {
     // is running (while synchronized) to avoid race
     // condition where two conflicting merges from different
     // threads, start
-    for(int i=0;i<count;i++) {
-      mergingSegments.add(merge.segments.info(i));
+    message("registerMerge merging=" + mergingSegments);
+    for(SegmentInfo info : merge.segments) {
+      message("registerMerge info=" + info);
+      mergingSegments.add(info);
     }
 
     // Merge is now registered
     merge.registerDone = true;
+
     return true;
   }
 
@@ -3001,6 +3008,10 @@ public class IndexWriter implements Closeable {
       message("merge seg=" + merge.info.name);
     }
 
+    // TODO: I think this should no longer be needed (we
+    // now build CFS before adding segment to the infos);
+    // however, on removing it, tests fail for some reason!
+
     // Also enroll the merged segment into mergingSegments;
     // this prevents it from getting selected for a merge
     // after our merge is done but while we are building the
@@ -3039,10 +3050,11 @@ public class IndexWriter implements Closeable {
     // exception inside mergeInit
     if (merge.registerDone) {
       final SegmentInfos sourceSegments = merge.segments;
-      final int end = sourceSegments.size();
-      for(int i=0;i<end;i++) {
-        mergingSegments.remove(sourceSegments.info(i));
+      for(SegmentInfo info : sourceSegments) {
+        mergingSegments.remove(info);
       }
+      // TODO: if we remove the add in _mergeInit, we should
+      // also remove this:
       mergingSegments.remove(merge.info);
       merge.registerDone = false;
     }
@@ -3121,6 +3133,8 @@ public class IndexWriter implements Closeable {
     merge.readers = new ArrayList<SegmentReader>();
     merge.readerClones = new ArrayList<SegmentReader>();
 
+    merge.estimatedMergeBytes = 0;
+
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
@@ -3137,6 +3151,13 @@ public class IndexWriter implements Closeable {
                                                     MERGE_READ_BUFFER_SIZE,
                                                     -config.getReaderTermsIndexDivisor());
         merge.readers.add(reader);
+
+        final int readerMaxDoc = reader.maxDoc();
+        if (readerMaxDoc > 0) {
+          final int delCount = reader.numDeletedDocs();
+          final double delRatio = ((double) delCount)/readerMaxDoc;
+          merge.estimatedMergeBytes += info.sizeInBytes(true) * (1.0 - delRatio);
+        }
 
         // We clone the segment readers because other
         // deletes may come in while we're merging so we
@@ -3239,8 +3260,11 @@ public class IndexWriter implements Closeable {
         merge.info.setUseCompoundFile(true);
       }
 
-      final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
+      if (infoStream != null) {
+        message(String.format("merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes(true)/1024./1024., merge.estimatedMergeBytes/1024/1024.));
+      }
 
+      final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
       final int termsIndexDivisor;
       final boolean loadDocStores;
 
@@ -3314,21 +3338,41 @@ public class IndexWriter implements Closeable {
     return segmentInfos.size() > 0 ? segmentInfos.info(segmentInfos.size()-1) : null;
   }
 
-  public synchronized String segString() {
+  /** @lucene.internal */
+  public synchronized String segString() throws IOException {
     return segString(segmentInfos);
   }
 
-  private synchronized String segString(SegmentInfos infos) {
+  /** @lucene.internal */
+  public synchronized String segString(SegmentInfos infos) throws IOException {
     StringBuilder buffer = new StringBuilder();
     final int count = infos.size();
     for(int i = 0; i < count; i++) {
       if (i > 0) {
         buffer.append(' ');
       }
-      final SegmentInfo info = infos.info(i);
-      buffer.append(info.toString(directory, 0));
-      if (info.dir != directory)
-        buffer.append("**");
+      buffer.append(segString(infos.info(i)));
+    }
+
+    return buffer.toString();
+  }
+
+  public synchronized String segString(SegmentInfo info) throws IOException {
+    StringBuilder buffer = new StringBuilder();
+    SegmentReader reader = readerPool.getIfExists(info);
+    try {
+      if (reader != null) {
+        buffer.append(reader.toString());
+      } else {
+        buffer.append(info.toString(directory, 0));
+        if (info.dir != directory) {
+          buffer.append("**");
+        }
+      }
+    } finally {
+      if (reader != null) {
+        readerPool.release(reader);
+      }
     }
     return buffer.toString();
   }

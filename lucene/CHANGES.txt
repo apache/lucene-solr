@@ -157,11 +157,10 @@ Changes in Runtime Behavior
 * LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
   than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
 
-* LUCENE-1076: The default merge policy is now able to merge
-  non-contiguous segments, which means docIDs no longer necessarily
-  say "in order".  If this is a problem then you can use either of the
-  LogMergePolicy impls, and call setRequireContiguousMerge(true).
-  (Mike McCandless)
+* LUCENE-1076: The default merge policy (TieredMergePolicy) is now
+  able to merge non-contiguous segments, which means docIDs no longer
+  necessarily say "in order".  If this is a problem then you can use
+  either of the LogMergePolicy impls.  (Mike McCandless)
   
 * LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
   per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
@@ -333,7 +332,7 @@ New features
 
 * LUCENE-2862: Added TermsEnum.totalTermFreq() and
   Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
-  
+
 * LUCENE-3001: Added TrieFieldHelper to write solr compatible numeric
   fields without the solr dependency. (ryan)
   

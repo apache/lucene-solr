@@ -46,7 +46,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestIndexWriterReader extends LuceneTestCase {
-  static PrintStream infoStream;
+  static PrintStream infoStream = VERBOSE ? System.out : null;
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;

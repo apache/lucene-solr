@@ -68,7 +68,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
-    assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
+    assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     
     // Sanity check - validate that all getters are covered.
     Set<String> getters = new HashSet<String>();
@@ -246,7 +246,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     
     // Test MergePolicy
-    assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
+    assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     conf.setMergePolicy(new LogDocMergePolicy());
     assertEquals(LogDocMergePolicy.class, conf.getMergePolicy().getClass());
     conf.setMergePolicy(null);

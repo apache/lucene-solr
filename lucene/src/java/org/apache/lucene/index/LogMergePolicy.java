@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -72,7 +71,6 @@ public abstract class LogMergePolicy extends MergePolicy {
   // out there wrote his own LMP ...
   protected long maxMergeSizeForOptimize = Long.MAX_VALUE;
   protected int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
-  protected boolean requireContiguousMerge = false;
 
   protected double noCFSRatio = DEFAULT_NO_CFS_RATIO;
 
@@ -109,21 +107,6 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected void message(String message) {
     if (verbose())
       writer.get().message("LMP: " + message);
-  }
-
-  /** If true, merges must be in-order slice of the
-   *  segments.  If false, then the merge policy is free to
-   *  pick any segments.  The default is false, which is
-   *  in general more efficient than true since it gives the
-   *  merge policy more freedom to pick closely sized
-   *  segments. */
-  public void setRequireContiguousMerge(boolean v) {
-    requireContiguousMerge = v;
-  }
-
-  /** See {@link #setRequireContiguousMerge}. */
-  public boolean getRequireContiguousMerge() {
-    return requireContiguousMerge;
   }
 
   /** <p>Returns the number of segments that are merged at
@@ -378,8 +361,6 @@ public abstract class LogMergePolicy extends MergePolicy {
       return null;
     }
 
-    // TODO: handle non-contiguous merge case differently?
-    
     // Find the newest (rightmost) segment that needs to
     // be optimized (other segments may have been flushed
     // since optimize started):
@@ -499,14 +480,6 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
   }
 
-  private static class SortByIndex implements Comparator<SegmentInfoAndLevel> {
-    public int compare(SegmentInfoAndLevel o1, SegmentInfoAndLevel o2) {
-      return o1.index - o2.index;
-    }
-  }
-
-  private static final SortByIndex sortByIndex = new SortByIndex();
-
   /** Checks if any merges are now necessary and returns a
    *  {@link MergePolicy.MergeSpecification} if so.  A merge
    *  is necessary when there are more than {@link
@@ -532,29 +505,22 @@ public abstract class LogMergePolicy extends MergePolicy {
       final SegmentInfo info = infos.info(i);
       long size = size(info);
 
-      // When we require contiguous merge, we still add the
-      // segment to levels to avoid merging "across" a set
-      // of segment being merged:
-      if (!requireContiguousMerge && mergingSegments.contains(info)) {
-        if (verbose()) {
-          message("seg " + info.name + " already being merged; skip");
-        }
-        continue;
-      }
-
       // Floor tiny segments
       if (size < 1) {
         size = 1;
       }
+
       final SegmentInfoAndLevel infoLevel = new SegmentInfoAndLevel(info, (float) Math.log(size)/norm, i);
       levels.add(infoLevel);
-      if (verbose()) {
-        message("seg " + info.name + " level=" + infoLevel.level + " size=" + size);
-      }
-    }
 
-    if (!requireContiguousMerge) {
-      Collections.sort(levels);
+      if (verbose()) {
+        final long segBytes = sizeBytes(info);
+        String extra = mergingSegments.contains(info) ? " [merging]" : "";
+        if (size >= maxMergeSize) {
+          extra += " [skip: too large]";
+        }
+        message("seg=" + writer.get().segString(info) + " level=" + infoLevel.level + " size=" + String.format("%.3f MB", segBytes/1024/1024.) + extra);
+      }
     }
 
     final float levelFloor;
@@ -614,22 +580,28 @@ public abstract class LogMergePolicy extends MergePolicy {
       int end = start + mergeFactor;
       while(end <= 1+upto) {
         boolean anyTooLarge = false;
+        boolean anyMerging = false;
         for(int i=start;i<end;i++) {
           final SegmentInfo info = levels.get(i).info;
           anyTooLarge |= (size(info) >= maxMergeSize || sizeDocs(info) >= maxMergeDocs);
+          if (mergingSegments.contains(info)) {
+            anyMerging = true;
+            break;
+          }
         }
 
-        if (!anyTooLarge) {
+        if (anyMerging) {
+          // skip
+        } else if (!anyTooLarge) {
           if (spec == null)
             spec = new MergeSpecification();
-          if (verbose()) {
-            message("    " + start + " to " + end + ": add this merge");
-          }
-          Collections.sort(levels.subList(start, end), sortByIndex);
           final SegmentInfos mergeInfos = new SegmentInfos();
           for(int i=start;i<end;i++) {
             mergeInfos.add(levels.get(i).info);
             assert infos.contains(levels.get(i).info);
+          }
+          if (verbose()) {
+            message("  add merge=" + writer.get().segString(mergeInfos) + " start=" + start + " end=" + end);
           }
           spec.add(new OneMerge(mergeInfos));
         } else if (verbose()) {
@@ -682,7 +654,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     sb.append("calibrateSizeByDeletes=").append(calibrateSizeByDeletes).append(", ");
     sb.append("maxMergeDocs=").append(maxMergeDocs).append(", ");
     sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
-    sb.append("requireContiguousMerge=").append(requireContiguousMerge);
+    sb.append("noCFSRatio=").append(noCFSRatio);
     sb.append("]");
     return sb.toString();
   }

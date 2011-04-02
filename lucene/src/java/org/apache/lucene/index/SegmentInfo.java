@@ -659,7 +659,6 @@ public final class SegmentInfo {
 
     StringBuilder s = new StringBuilder();
     s.append(name).append('(').append(version == null ? "?" : version).append(')').append(':');
-
     char cfs = getUseCompoundFile() ? 'c' : 'C';
     s.append(cfs);
 

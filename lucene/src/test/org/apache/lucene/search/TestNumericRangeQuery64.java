@@ -53,7 +53,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000))
-        .setMergePolicy(newInOrderLogMergePolicy()));
+        .setMergePolicy(newLogMergePolicy()));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),

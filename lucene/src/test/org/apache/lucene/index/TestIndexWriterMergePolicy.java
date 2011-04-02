@@ -104,7 +104,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
             setMaxBufferedDocs(10).
-            setMergePolicy(newInOrderLogMergePolicy())
+            setMergePolicy(newLogMergePolicy())
     );
 
     for (int i = 0; i < 250; i++) {

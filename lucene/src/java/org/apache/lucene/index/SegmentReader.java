@@ -55,6 +55,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   AtomicInteger deletedDocsRef = null;
   private boolean deletedDocsDirty = false;
   private boolean normsDirty = false;
+
+  // TODO: we should move this tracking into SegmentInfo;
+  // this way SegmentInfo.toString shows pending deletes
   private int pendingDeleteCount;
 
   private boolean rollbackHasChanges = false;
@@ -803,8 +806,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
       oldRef.decrementAndGet();
     }
     deletedDocsDirty = true;
-    if (!deletedDocs.getAndSet(docNum))
+    if (!deletedDocs.getAndSet(docNum)) {
       pendingDeleteCount++;
+    }
   }
 
   @Override

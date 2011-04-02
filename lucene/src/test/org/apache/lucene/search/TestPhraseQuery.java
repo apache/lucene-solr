@@ -335,7 +335,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testSlopScoring() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
     doc.add(newField("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
@@ -598,7 +598,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
 
-    RandomIndexWriter w  = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter w  = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
     Field f = newField("f", "", Field.Store.NO, Field.Index.ANALYZED);

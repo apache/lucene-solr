@@ -768,9 +768,11 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     if (r.nextBoolean()) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else {
+      c.setMergePolicy(newTieredMergePolicy());
+    } else if (r.nextBoolean()) {
       c.setMergePolicy(newLogMergePolicy());
+    } else {
+      c.setMergePolicy(new MockRandomMergePolicy(r));
     }
 
     c.setReaderPooling(r.nextBoolean());
@@ -780,6 +782,10 @@ public abstract class LuceneTestCase extends Assert {
 
   public static LogMergePolicy newLogMergePolicy() {
     return newLogMergePolicy(random);
+  }
+
+  public static TieredMergePolicy newTieredMergePolicy() {
+    return newTieredMergePolicy(random);
   }
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
@@ -794,17 +800,22 @@ public abstract class LuceneTestCase extends Assert {
     return logmp;
   }
 
-  public static LogMergePolicy newInOrderLogMergePolicy() {
-    LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setRequireContiguousMerge(true);
-    return logmp;
-  }
-
-  public static LogMergePolicy newInOrderLogMergePolicy(int mergeFactor) {
-    LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setMergeFactor(mergeFactor);
-    logmp.setRequireContiguousMerge(true);
-    return logmp;
+  public static TieredMergePolicy newTieredMergePolicy(Random r) {
+    TieredMergePolicy tmp = new TieredMergePolicy();
+    if (r.nextInt(3) == 2) {
+      tmp.setMaxMergeAtOnce(2);
+      tmp.setMaxMergeAtOnceExplicit(2);
+    } else {
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 20));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 30));
+    }
+    tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
+    tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
+    tmp.setExpungeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+    tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
+    tmp.setUseCompoundFile(r.nextBoolean());
+    tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    return tmp;
   }
 
   public static LogMergePolicy newLogMergePolicy(boolean useCFS) {

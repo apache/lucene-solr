@@ -43,10 +43,13 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
+import org.junit.Assert;
 
 public class _TestUtil {
 
@@ -307,9 +310,14 @@ public class _TestUtil {
    * count lowish */
   public static void reduceOpenFiles(IndexWriter w) {
     // keep number of open files lowish
-    LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
-    lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
-
+    MergePolicy mp = w.getConfig().getMergePolicy();
+    if (mp instanceof LogMergePolicy) {
+      LogMergePolicy lmp = (LogMergePolicy) mp;
+      lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
+    } else if (mp instanceof TieredMergePolicy) {
+      TieredMergePolicy tmp = (TieredMergePolicy) mp;
+      tmp.setMaxMergeAtOnce(Math.min(5, tmp.getMaxMergeAtOnce()));
+    }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
       ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);

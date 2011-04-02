@@ -58,7 +58,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     IndexWriter writer = new IndexWriter(
         merged,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
-            setMergePolicy(newInOrderLogMergePolicy(2))
+            setMergePolicy(newLogMergePolicy(2))
     );
     writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(indexA, indexB);
@@ -101,7 +101,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
             setOpenMode(OpenMode.CREATE).
             setMaxBufferedDocs(2).
-            setMergePolicy(newInOrderLogMergePolicy(2))
+            setMergePolicy(newLogMergePolicy(2))
     );
 
     for (int i = start; i < (start + numDocs); i++)
