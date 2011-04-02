@@ -126,7 +126,7 @@ public class UnInvertedField extends DocTermOrds {
       }
 
       maxTermCounts[termNum] = searcher.getDocSet(new TermQuery(new Term(field, topTerm.term)), deState).size();
-      System.out.println("  big term termNum=" + termNum + " term=" + topTerm.term.utf8ToString() + " size=" + maxTermCounts[termNum] + " dF=" + te.docFreq());
+      //System.out.println("  big term termNum=" + termNum + " term=" + topTerm.term.utf8ToString() + " size=" + maxTermCounts[termNum] + " dF=" + te.docFreq());
     }
   }
 
