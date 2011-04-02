@@ -608,6 +608,7 @@ public class CheckIndex {
 
       final TermEnum termEnum = reader.terms();
       final TermPositions termPositions = reader.termPositions();
+      final int postingsSkipInterval = reader.getPostingsSkipInterval();
 
       // Used only to count up # deleted docs for this term
       final MySegmentTermDocs myTermDocs = new MySegmentTermDocs(reader);
@@ -646,6 +647,30 @@ public class CheckIndex {
             if (pos < lastPos)
               throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
             lastPos = pos;
+          }
+        }
+
+        // Test skipping
+        if (docFreq >= postingsSkipInterval) {
+          
+          for(int idx=0;idx<7;idx++) {
+            final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
+            termPositions.seek(term);
+            if (!termPositions.skipTo(skipDocID)) {
+              break;
+            } else {
+              final int docID = termPositions.doc();
+              if (docID < skipDocID) {
+                throw new RuntimeException("term " + term + ": skipTo(docID=" + skipDocID + ") returned docID=" + docID);
+              }
+              if (!termPositions.next()) {
+                break;
+              }
+              final int nextDocID = termPositions.doc();
+              if (nextDocID <= docID) {
+                throw new RuntimeException("term " + term + ": skipTo(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
+              }
+            }
           }
         }
 

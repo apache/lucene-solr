@@ -1084,6 +1084,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
     norm.bytes(bytes, offset, maxDoc());
   }
 
+  // For testing
+  /** @lucene.internal */
+  int getPostingsSkipInterval() {
+    return core.getTermsReader().getSkipInterval();
+  }
 
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
     long nextNormSeek = SegmentMerger.NORMS_HEADER.length; //skip header (header unused for now)
