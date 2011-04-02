@@ -157,6 +157,19 @@ public class _TestUtil {
     return start + r.nextInt(end-start+1);
   }
 
+  public static String randomSimpleString(Random r) {
+    final int end = r.nextInt(10);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    final char[] buffer = new char[end];
+    for (int i = 0; i < end; i++) {
+      buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
+    }
+    return new String(buffer, 0, end);
+  }
+
   /** Returns random string, including full unicode range. */
   public static String randomUnicodeString(Random r) {
     return randomUnicodeString(r, 20);

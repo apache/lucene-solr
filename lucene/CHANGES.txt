@@ -337,6 +337,13 @@ New features
 * LUCENE-3001: Added TrieFieldHelper to write solr compatible numeric
   fields without the solr dependency. (ryan)
   
+* LUCENE-3003: Added new expert class oal.index.DocTermsOrd,
+  refactored from Solr's UnInvertedField, for accessing term ords for
+  multi-valued fields, per document.  This is similar to FieldCache in
+  that it inverts the index to compute the ords, but differs in that
+  it's able to handle multi-valued fields and does not hold the term
+  bytes in RAM. (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

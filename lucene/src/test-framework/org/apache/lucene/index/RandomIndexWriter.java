@@ -181,7 +181,7 @@ public class RandomIndexWriter implements Closeable {
         System.out.println("RIW.getReader: open new reader");
       }
       w.commit();
-      return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10));
+      return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10), w.getConfig().getCodecProvider());
     }
   }
 
