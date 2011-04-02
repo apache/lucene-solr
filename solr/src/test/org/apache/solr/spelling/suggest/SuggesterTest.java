@@ -25,6 +25,7 @@ import org.apache.solr.spelling.suggest.jaspell.JaspellLookup;
 import org.apache.solr.spelling.suggest.tst.TSTLookup;
 import org.apache.solr.util.TermFreqIterator;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -139,14 +140,8 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     long lookupTime;
   }
 
-  @Test
+  @Test @Ignore
   public void testBenchmark() throws Exception {
-    // this benchmark is very time consuming
-    boolean doTest = true;
-    if (!doTest) {
-      return;
-    }
-
     final List<Class<? extends Lookup>> benchmarkClasses = Lists.newArrayList();  
     benchmarkClasses.add(JaspellLookup.class);
     benchmarkClasses.add(TSTLookup.class);
