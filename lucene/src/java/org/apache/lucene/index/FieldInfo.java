@@ -18,9 +18,10 @@ package org.apache.lucene.index;
  */
 
 final class FieldInfo {
-  String name;
+  final String name;
+  final int number;
+
   boolean isIndexed;
-  int number;
 
   // true if term vector for this field should be stored
   boolean storeTermVector;
