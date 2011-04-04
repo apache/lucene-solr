@@ -43,7 +43,8 @@ import org.apache.lucene.document.Field;
  * <p>
  * The format of the output is set according to the output file extension.
  * Compression is recommended when the output file is expected to be large.
- * See info on file extensions in {@link StreamUtils.Type}
+ * See info on file extensions in
+ * {@link org.apache.lucene.benchmark.byTask.utils.StreamUtils.Type}
  * <p> 
  * Supports the following parameters:
  * <ul>

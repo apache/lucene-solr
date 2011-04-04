@@ -32,6 +32,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThrottledIndexOutput;
 import org.apache.lucene.util._TestUtil;
@@ -413,10 +414,25 @@ public class MockDirectoryWrapper extends Directory {
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
     }
     open = false;
-    if (checkIndexOnClose && IndexReader.indexExists(this)) {
-      _TestUtil.checkIndex(this);
+    if (checkIndexOnClose) {
+      if (codecProvider != null) {
+        if (IndexReader.indexExists(this, codecProvider)) {
+          _TestUtil.checkIndex(this, codecProvider);
+        }
+      } else {
+        if (IndexReader.indexExists(this)) {
+          _TestUtil.checkIndex(this);
+        }
+      }
     }
     delegate.close();
+  }
+
+  private CodecProvider codecProvider;
+
+  // We pass this CodecProvider to checkIndex when dir is closed...
+  public void setCodecProvider(CodecProvider cp) {
+    codecProvider = cp;
   }
 
   boolean open = true;

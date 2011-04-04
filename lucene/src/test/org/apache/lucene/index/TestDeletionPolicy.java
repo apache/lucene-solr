@@ -619,7 +619,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy).setMergePolicy(newInOrderLogMergePolicy());
+        .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy).setMergePolicy(newLogMergePolicy());
       MergePolicy mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
         ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);

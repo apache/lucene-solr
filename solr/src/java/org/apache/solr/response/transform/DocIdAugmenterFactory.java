@@ -19,6 +19,7 @@ package org.apache.solr.response.transform;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * @version $Id$
@@ -27,7 +28,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 public class DocIdAugmenterFactory extends TransformerFactory
 {
   @Override
-  public DocTransformer create(String field, String arg) {
+  public DocTransformer create(String field, String arg, SolrQueryRequest req) {
     if( arg != null ) {
       throw new SolrException( ErrorCode.BAD_REQUEST,
           "DocIdAugmenter does not take any arguments" );

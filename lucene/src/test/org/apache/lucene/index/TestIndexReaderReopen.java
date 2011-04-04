@@ -174,7 +174,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   private void doTestReopenWithCommit (Random random, Directory dir, boolean withReopen) throws IOException {
     IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
-                                                              OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(newInOrderLogMergePolicy()));
+                                                              OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(newLogMergePolicy()));
     iwriter.commit();
     IndexReader reader = IndexReader.open(dir, false);
     try {

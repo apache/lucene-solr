@@ -25,6 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -82,6 +83,11 @@ public abstract class FieldType extends FieldProperties {
   /** Returns true if fields can have multiple values */
   public boolean isMultiValued() {
     return (properties & MULTIVALUED) != 0;
+  }
+  
+  /** Check if a property is set */
+  protected boolean hasProperty( int p ) {
+    return (properties & p) != 0;
   }
 
   /**
@@ -503,6 +509,34 @@ public abstract class FieldType extends FieldProperties {
     throw e;
   }
 
+  /** @lucene.internal */
+  protected Similarity similarity;
+  
+  /**
+   * Gets the Similarity used when scoring fields of this type
+   * 
+   * <p>
+   * The default implementation returns null, which means this type
+   * has no custom similarity associated with it.
+   * </p>
+   * 
+   * This method exists to internally support SolrSimilarityProvider. 
+   * Custom application code interested in a field's Similarity should
+   * instead query via the searcher's SimilarityProvider.
+   * @lucene.internal
+   */
+  public Similarity getSimilarity() {
+    return similarity;
+  }
+  
+  /**
+   * Sets the Similarity used when scoring fields of this type
+   * @lucene.internal
+   */
+  public void setSimilarity(Similarity similarity) {
+    this.similarity = similarity;
+  }
+  
   /**
    * calls back to TextResponseWriter to write the field value
    */

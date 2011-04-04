@@ -68,7 +68,7 @@ public class TrieDateField extends DateField {
   public Date toObject(Fieldable f) {
     byte[] arr = f.getBinaryValue();
     if (arr==null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,TrieField.badFieldString(f));
-    return new Date(TrieField.toLong(arr));
+    return new Date(TrieFieldHelper.toLong(arr));
   }
 
   @Override
@@ -107,7 +107,7 @@ public class TrieDateField extends DateField {
       return;
     }
 
-    writer.writeDate(name,new Date(TrieField.toLong(arr)));
+    writer.writeDate(name,new Date(TrieFieldHelper.toLong(arr)));
   }
 
   @Override
@@ -146,7 +146,7 @@ public class TrieDateField extends DateField {
   public String toExternal(Fieldable f) {
     byte[] arr = f.getBinaryValue();
     if (arr==null) return TrieField.badFieldString(f);
-     return super.toExternal(new Date(TrieField.toLong(arr)));
+     return super.toExternal(new Date(TrieFieldHelper.toLong(arr)));
   }
 
   @Override
@@ -187,7 +187,7 @@ public class TrieDateField extends DateField {
       ? ((Date)value).getTime() 
       : super.parseMath(null, value.toString()).getTime();
       
-    if (stored) arr = TrieField.toArr(time);
+    if (stored) arr = TrieFieldHelper.toArr(time);
     if (indexed) ts = new NumericTokenStream(ps).setLongValue(time);
 
     Field f;

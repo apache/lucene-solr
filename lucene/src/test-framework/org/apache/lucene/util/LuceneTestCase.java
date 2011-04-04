@@ -142,6 +142,8 @@ public abstract class LuceneTestCase extends Assert {
   public static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
   /** Get the number of times to run tests */
   public static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
+  /** Get the minimum number of times to run tests until a failure happens */
+  public static final int TEST_ITER_MIN = Integer.parseInt(System.getProperty("tests.iter.min", Integer.toString(TEST_ITER)));
   /** Get the random seed for tests */
   public static final String TEST_SEED = System.getProperty("tests.seed", "random");
   /** whether or not nightly tests should run */
@@ -765,9 +767,11 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     if (r.nextBoolean()) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else {
+      c.setMergePolicy(newTieredMergePolicy());
+    } else if (r.nextBoolean()) {
       c.setMergePolicy(newLogMergePolicy());
+    } else {
+      c.setMergePolicy(new MockRandomMergePolicy(r));
     }
 
     c.setReaderPooling(r.nextBoolean());
@@ -777,6 +781,10 @@ public abstract class LuceneTestCase extends Assert {
 
   public static LogMergePolicy newLogMergePolicy() {
     return newLogMergePolicy(random);
+  }
+
+  public static TieredMergePolicy newTieredMergePolicy() {
+    return newTieredMergePolicy(random);
   }
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
@@ -791,17 +799,22 @@ public abstract class LuceneTestCase extends Assert {
     return logmp;
   }
 
-  public static LogMergePolicy newInOrderLogMergePolicy() {
-    LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setRequireContiguousMerge(true);
-    return logmp;
-  }
-
-  public static LogMergePolicy newInOrderLogMergePolicy(int mergeFactor) {
-    LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setMergeFactor(mergeFactor);
-    logmp.setRequireContiguousMerge(true);
-    return logmp;
+  public static TieredMergePolicy newTieredMergePolicy(Random r) {
+    TieredMergePolicy tmp = new TieredMergePolicy();
+    if (r.nextInt(3) == 2) {
+      tmp.setMaxMergeAtOnce(2);
+      tmp.setMaxMergeAtOnceExplicit(2);
+    } else {
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 20));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 30));
+    }
+    tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
+    tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
+    tmp.setExpungeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+    tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
+    tmp.setUseCompoundFile(r.nextBoolean());
+    tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    return tmp;
   }
 
   public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
@@ -1202,11 +1215,24 @@ public abstract class LuceneTestCase extends Assert {
       if (VERBOSE) {
         System.out.println("\nNOTE: running test " + arg0.getName());
       }
+      
+      // only print iteration info if the user requested more than one iterations
+      boolean verbose = VERBOSE && TEST_ITER > 1;
+      int lastIterFailed = -1;
       for (int i = 0; i < TEST_ITER; i++) {
-        if (VERBOSE && TEST_ITER > 1) {
+        if (verbose) {
           System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
         }
         super.runChild(arg0, arg1);
+        if (testsFailed) {
+          lastIterFailed = i;
+          if (i == TEST_ITER_MIN - 1) {
+            if (verbose) {
+              System.out.println("\nNOTE: iteration " + lastIterFailed + " failed !");
+            }
+            break;
+          }
+        }
       }
     }
 

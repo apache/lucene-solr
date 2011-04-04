@@ -264,7 +264,7 @@ public class TestOmitNorms extends LuceneTestCase {
    */
   static byte[] getNorms(String field, Field f1, Field f2) throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy());
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy());
     RandomIndexWriter riw = new RandomIndexWriter(random, dir, iwc);
     
     // add f1

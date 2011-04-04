@@ -25,11 +25,16 @@ import org.apache.solr.spelling.suggest.jaspell.JaspellLookup;
 import org.apache.solr.spelling.suggest.tst.TSTLookup;
 import org.apache.solr.util.TermFreqIterator;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -130,10 +135,47 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     return tfit;
   }
   
-  private void _benchmark(Lookup lookup, Map<String,Integer> ref, boolean estimate, Bench bench) throws Exception {
+  static class Bench {
+    long buildTime;
+    long lookupTime;
+  }
+
+  @Test @Ignore
+  public void testBenchmark() throws Exception {
+    final List<Class<? extends Lookup>> benchmarkClasses = Lists.newArrayList();  
+    benchmarkClasses.add(JaspellLookup.class);
+    benchmarkClasses.add(TSTLookup.class);
+
+    // Run a single pass just to see if everything works fine and provide size estimates.
+    final RamUsageEstimator rue = new RamUsageEstimator();
+    for (Class<? extends Lookup> cls : benchmarkClasses) {
+      Lookup lookup = singleBenchmark(cls, null);
+      System.err.println(
+          String.format(Locale.ENGLISH,
+              "%20s, size[B]=%,d",
+              lookup.getClass().getSimpleName(), 
+              rue.estimateRamUsage(lookup)));
+    }
+
+    int warmupCount = 10;
+    int measuredCount = 100;
+    for (Class<? extends Lookup> cls : benchmarkClasses) {
+      Bench b = fullBenchmark(cls, warmupCount, measuredCount);
+      System.err.println(String.format(Locale.ENGLISH,
+          "%s: buildTime[ms]=%,d lookupTime[ms]=%,d",
+          cls.getSimpleName(),
+          (b.buildTime / measuredCount),
+          (b.lookupTime / measuredCount / 1000000)));
+    }
+  }
+
+  private Lookup singleBenchmark(Class<? extends Lookup> cls, Bench bench) throws Exception {
+    Lookup lookup = cls.newInstance();
+
     long start = System.currentTimeMillis();
     lookup.build(getTFIT());
     long buildTime = System.currentTimeMillis() - start;
+
     TermFreqIterator tfit = getTFIT();
     long elapsed = 0;
     while (tfit.hasNext()) {
@@ -148,78 +190,37 @@ public class SuggesterTest extends SolrTestCaseJ4 {
       for (LookupResult lr : res) {
         assertTrue(lr.key.startsWith(prefix));
       }
-      if (ref != null) { // verify the counts
-        Integer Cnt = ref.get(key);
-        if (Cnt == null) { // first pass
-          ref.put(key, res.size());
-        } else {
-          assertEquals(key + ", prefix: " + prefix, Cnt.intValue(), res.size());
-        }
-      }
     }
-    if (estimate) {
-      RamUsageEstimator rue = new RamUsageEstimator();
-      long size = rue.estimateRamUsage(lookup);
-      System.err.println(lookup.getClass().getSimpleName() + " - size=" + size);
-    }
+
     if (bench != null) {
       bench.buildTime += buildTime;
       bench.lookupTime +=  elapsed;
     }
-  }
-  
-  class Bench {
-    long buildTime;
-    long lookupTime;
+
+    return lookup;
   }
 
-  @Test
-  public void testBenchmark() throws Exception {
-    // this benchmark is very time consuming
-    boolean doTest = false;
-    if (!doTest) {
-      return;
-    }
-    Map<String,Integer> ref = new HashMap<String,Integer>();
-    JaspellLookup jaspell = new JaspellLookup();
-    TSTLookup tst = new TSTLookup();
-    
-    _benchmark(tst, ref, true, null);
-    _benchmark(jaspell, ref, true, null);
-    jaspell = null;
-    tst = null;
-    int count = 100;
-    Bench b = runBenchmark(JaspellLookup.class, count);
-    System.err.println(JaspellLookup.class.getSimpleName() + ": buildTime[ms]=" + (b.buildTime / count) +
-            " lookupTime[ms]=" + (b.lookupTime / count / 1000000));
-    b = runBenchmark(TSTLookup.class, count);
-    System.err.println(TSTLookup.class.getSimpleName() + ": buildTime[ms]=" + (b.buildTime / count) +
-            " lookupTime[ms]=" + (b.lookupTime / count / 1000000));
-  }
-  
-  private Bench runBenchmark(Class<? extends Lookup> cls, int count) throws Exception {
-    System.err.println("* Running " + count + " iterations for " + cls.getSimpleName() + " ...");
-    System.err.println("  - warm-up 10 iterations...");
-    for (int i = 0; i < 10; i++) {
+  private Bench fullBenchmark(Class<? extends Lookup> cls, int warmupCount, int measuredCount) throws Exception {
+    System.err.println("* Running " + measuredCount + " iterations for " + cls.getSimpleName() + " ...");
+    System.err.println("  - warm-up " + warmupCount + " iterations...");
+    for (int i = 0; i < warmupCount; i++) {
       System.runFinalization();
       System.gc();
-      Lookup lookup = cls.newInstance();
-      _benchmark(lookup, null, false, null);
-      lookup = null;
+      singleBenchmark(cls, null);
     }
+
     Bench b = new Bench();
     System.err.print("  - main iterations:"); System.err.flush();
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < measuredCount; i++) {
       System.runFinalization();
       System.gc();
-      Lookup lookup = cls.newInstance();
-      _benchmark(lookup, null, false, b);
-      lookup = null;
+      singleBenchmark(cls, b);
       if (i > 0 && (i % 10 == 0)) {
         System.err.print(" " + i);
         System.err.flush();
       }
     }
+
     System.err.println();
     return b;
   }

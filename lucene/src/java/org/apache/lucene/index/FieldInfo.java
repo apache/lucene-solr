@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 /** @lucene.experimental */
 public final class FieldInfo {
   public static final int UNASSIGNED_CODEC_ID = -1;
-  public String name;
+
+  public final String name;
+  public final int number;
+
   public boolean isIndexed;
-  public int number;
 
   // true if term vector for this field should be stored
   boolean storeTermVector;

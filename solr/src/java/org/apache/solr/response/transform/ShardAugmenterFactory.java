@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response.transform;
 
+import org.apache.solr.request.SolrQueryRequest;
+
 
 /**
  * @version $Id$
@@ -24,7 +26,7 @@ package org.apache.solr.response.transform;
 public class ShardAugmenterFactory extends TransformerFactory
 {
   @Override
-  public DocTransformer create(String field, String arg) {
+  public DocTransformer create(String field, String arg, SolrQueryRequest req) {
     String id = "TODO... find ID";
     // Maybe it is stored in the context?
     // is it a request variable?

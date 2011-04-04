@@ -176,6 +176,24 @@
     </sequential>
   </target>
 
+  <target name="javadoc-test-framework" depends="compileTestFramework,javadoc-dep"
+          description="Generates javadoc documentation for the Solr test-framework.">
+    <sequential>
+      <mkdir dir="${build.javadoc}/test-framework"/>
+
+      <path id="javadoc.classpath">
+        <path refid="testframework.compile.classpath"/>
+      </path>
+
+      <invoke-javadoc
+        destdir="${build.javadoc}/test-framework"
+      	title="${Name} ${version} Test Framework API (${specversion})">
+        <sources>
+          <packageset dir="${src}/test-framework" />
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
 
   <target name="javadoc-all" depends="compile,javadoc-dep" description="Generate javadoc for core, client and contrib">
     <sequential>
@@ -187,6 +205,7 @@
           <fileset dir="contrib">
             <include name="**/lib/**/*.jar"/>
             <include name="**/lucene-libs/**/*.jar"/>
+            <exclude name="**/analysis-extras/lib/**/*icu4j*.jar"/> <!-- extraction/lib/ has this one -->
           </fileset>
          <pathelement location="${dest}/client/solrj"/>
       </path>
@@ -220,8 +239,9 @@
                    failonerror="true"/>
   </target>
 
-  <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
+  <target name="javadoc" depends="javadoc-core, javadoc-test-framework, javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
+  <target name="javadocs" depends="javadoc"/>
 
   <target name="stub-factories" depends="dist-jar"
           description="Generates stub factories as needed">
@@ -318,12 +338,17 @@
 
   <!-- Classpath for unit test compilation. -->
   <!-- For now, it's the same as main classpath.  Later it will have JUnit, Clover, etc. -->
-  <path id="test.compile.classpath">
+  <path id="testframework.compile.classpath">
     <path refid="compile.classpath" />
     <path refid="compile.classpath.solrj" />
     <pathelement location="${dest}/solr"/>
     <pathelement location="${dest}/solrj"/> <!-- include solrj -->
     <pathelement location="${common-solr.dir}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
+  </path>
+	
+  <path id="test.compile.classpath">
+    <path refid="testframework.compile.classpath"/>
+    <pathelement location="${dest}/test-framework"/> <!-- include some solr test code -->
   </path>
 
   <path id="test.run.classpath">
@@ -335,10 +360,19 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
+  <target name="compileTestFramework" depends="compile,compile-solrj">
+    <mkdir dir="${dest}/test-framework"/>
+  	<solr-javac
+      destdir="${dest}/test-framework"
+  	  classpathref="testframework.compile.classpath">
+        <src path="${src}/test-framework"/>
+  	</solr-javac>
+  </target>
+
   <!-- Compile unit tests. -->
   <target name="compileTests"
           description="Compile unit tests."
-          depends="compile,compile-solrj">
+          depends="compileTestFramework">
 
     <mkdir dir="${dest}/tests" />
     <solr-javac 
@@ -575,7 +609,7 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-solrj, dist-jar, dist-contrib, dist-war" />
+          depends="dist-solrj, dist-jar, dist-test-framework, dist-contrib, dist-war" />
 
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
@@ -623,6 +657,9 @@
       <fileset dir="${src}/webapp/src"/>
     </solr-jar>
   	
+    <solr-jar destfile="${dist}/${fullname}-test-framework-src-${version}.jar"
+              basedir="${src}/test-framework" />
+
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-src-${version}.jar"
               basedir="contrib/dataimporthandler/src/main/java" />
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar"
@@ -648,6 +685,8 @@
               basedir="${build.javadoc}/solr" />
     <solr-jar destfile="${dist}/${fullname}-solrj-docs-${version}.jar"
               basedir="${build.javadoc}/solrj" />
+    <solr-jar destfile="${dist}/${fullname}-test-framework-docs-${version}.jar"
+              basedir="${build.javadoc}/test-framework" />
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-dataimporthandler" />
     <solr-jar destfile="${dist}/apache-solr-clustering-docs-${version}.jar"
@@ -669,6 +708,16 @@
       <fileset dir="${dest}/solr" />
     </solr-jar>
 
+  </target>
+
+  <!-- Creates the test-framework jar -->
+  <target name="dist-test-framework"
+          description="Creates the Solr test-framework JAR."
+          depends="compileTestFramework">
+    <mkdir dir="${dist}" />
+    <solr-jar destfile="${dist}/${fullname}-test-framework-${version}.jar">
+      <fileset dir="${dest}/test-framework" />
+    </solr-jar>
   </target>
 
   <!-- Creates the solr jar. -->
@@ -912,6 +961,7 @@
     <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-solrj" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-uima" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-test-framework" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- These are special since there are no jars, just poms -->
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
@@ -934,14 +984,14 @@
 	    keyfile="${keyfile}"
       verbose="true"
         >
-      <fileset dir="dist"/>
+      <fileset dir="package"/>
       <fileset dir="${keys.dir}">
         <include name="KEYS"/>
       </fileset>
     </scp>
   </target>
 
-  <target name="prepare-release" depends="clean, svn-up, package, sign-artifacts"
+  <target name="prepare-release" depends="clean, svn-up, package, generate-maven-artifacts, sign-artifacts"
           description="Prototype helper for Committers.  Assumes gpg is in the path"/>
 
   <target name="stage" depends="prepare-release, copy-to-stage"/>
@@ -1052,6 +1102,14 @@
 
       <m2-deploy pom.xml="src/webapp/pom.xml"
                  jar.file="${dist}/apache-solr-${version}.war"/>
+
+      <m2-deploy pom.xml="${src}/test-framework/pom.xml"
+                 jar.file="${dist}/${fullname}-test-framework-${version}.jar">
+        <artifact-attachments>
+          <attach file="${dist}/${fullname}-test-framework-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/${fullname}-test-framework-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
     </sequential>
   </target>
 

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.Test;
@@ -48,22 +47,8 @@ public class TestRollingUpdates extends LuceneTestCase {
       } else {
         id++;
       }
-      doc.getField("id").setValue(myID);
-      int mode = docIter % 3;
-      switch (mode) {
-        case 0: {
-          w.deleteDocuments(new Term("id", myID));
-          w.addDocument(doc);
-          break;
-        }
-        case 1: {
-          w.deleteDocuments(new TermQuery(new Term("id", myID)));
-          w.addDocument(doc);
-          break;
-        }
-        default : w.updateDocument(new Term("id", myID), doc);
-      }
-
+      doc.getField("docid").setValue(myID);
+      w.updateDocument(new Term("docid", myID), doc);
 
       if (docIter >= SIZE && random.nextInt(50) == 17) {
         if (r != null) {

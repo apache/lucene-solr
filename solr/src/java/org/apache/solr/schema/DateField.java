@@ -180,6 +180,14 @@ public class DateField extends FieldType {
                                "Invalid Date Math String:'" +val+'\'',e);
     }
   }
+
+  public Fieldable createField(SchemaField field, Object value, float boost) {
+    // Convert to a string before indexing
+    if(value instanceof Date) {
+      value = toInternal( (Date)value ) + 'Z';
+    }
+    return super.createField(field, value, boost);
+  }
   
   public String toInternal(Date val) {
     return formatDate(val);

@@ -29,6 +29,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestWordnet extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -42,6 +43,7 @@ public class TestWordnet extends LuceneTestCase {
     // create a temporary synonym index
     File testFile = getDataFile("testSynonyms.txt");
     String commandLineArgs[] = { testFile.getAbsolutePath(), storePathName };
+    _TestUtil.rmDir(new File(storePathName));
     
     try {
       Syns2Index.main(commandLineArgs);
@@ -71,8 +73,12 @@ public class TestWordnet extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
-    dir.close();
+    if (searcher != null) {
+      searcher.close();
+    }
+    if (dir != null) {
+      dir.close();
+    }
     rmDir(storePathName); // delete our temporary synonym index
     super.tearDown();
   }

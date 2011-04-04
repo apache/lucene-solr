@@ -2,6 +2,22 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+03/31/2011
+  Updated ReadTask to the new method for obtaining a top-level deleted docs
+  bitset.  Also checking the bitset for null, when there are no deleted docs.
+  (Steve Rowe, Mike McCandless)
+
+  Updated NewAnalyzerTask and NewShingleAnalyzerTask to handle analyzers
+  in the new org.apache.lucene.analysis.core package (KeywordAnalyzer,
+  SimpleAnalyzer, etc.) (Steve Rowe, Robert Muir)
+  
+  Updated ReadTokensTask to convert tokens to their indexed forms
+  (char[]->byte[]), just as the indexer does.  This allows measurement
+  of the conversion process, which is important for analysis components
+  that customize it, e.g. (ICU)CollationKeyFilter.  As a result,
+  benchmarks that incorporate this task will no longer be directly
+  comparable between 3.X and 4.0. (Robert Muir, Steve Rowe)
+
 03/24/2011
   LUCENE-2977: WriteLineDocTask now automatically detects how to write -
   GZip or BZip2 or Plain-text - according to the output file extension.

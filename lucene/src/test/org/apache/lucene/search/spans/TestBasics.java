@@ -69,7 +69,7 @@ public class TestBasics extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, true))
-                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newInOrderLogMergePolicy()));
+                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();

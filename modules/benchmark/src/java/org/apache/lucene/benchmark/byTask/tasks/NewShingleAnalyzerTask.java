@@ -17,13 +17,11 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.lang.reflect.Constructor;
 import java.util.StringTokenizer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.util.Version;
 
 /**
  * Task to support benchmarking ShingleFilter / ShingleAnalyzerWrapper
@@ -45,26 +43,26 @@ public class NewShingleAnalyzerTask extends PerfTask {
   }
 
   private void setAnalyzer() throws Exception {
-    Class<? extends Analyzer> clazz = null;
-    Analyzer wrappedAnalyzer;
-    try {
-      if (analyzerClassName == null || analyzerClassName.equals("")) {
-        analyzerClassName 
-          = "org.apache.lucene.analysis.standard.StandardAnalyzer"; 
+    Analyzer wrappedAnalyzer = null;
+    if (null == analyzerClassName || 0 == analyzerClassName.length()) {
+      analyzerClassName = "org.apache.lucene.analysis.standard.StandardAnalyzer";
+    } 
+    if (-1 == analyzerClassName.indexOf(".")) {
+      String coreClassName = "org.apache.lucene.analysis.core." + analyzerClassName;
+      try {
+        // If there is no package, first attempt to instantiate a core analyzer
+        wrappedAnalyzer = NewAnalyzerTask.createAnalyzer(coreClassName);
+        analyzerClassName = coreClassName;
+      } catch (ClassNotFoundException e) {
+        // If this is not a core analyzer, try the base analysis package 
+        analyzerClassName = "org.apache.lucene.analysis." + analyzerClassName;
+        wrappedAnalyzer = NewAnalyzerTask.createAnalyzer(analyzerClassName);
       }
-      if (analyzerClassName.indexOf(".") == -1 
-          || analyzerClassName.startsWith("standard.")) {
-        //there is no package name, assume o.a.l.analysis
+    } else {    
+      if (analyzerClassName.startsWith("standard.")) {
         analyzerClassName = "org.apache.lucene.analysis." + analyzerClassName;
       }
-      clazz = Class.forName(analyzerClassName).asSubclass(Analyzer.class);
-      // first try to use a ctor with version parameter (needed for many new 
-      // Analyzers that have no default one anymore)
-      Constructor<? extends Analyzer> ctor = clazz.getConstructor(Version.class);
-      wrappedAnalyzer = ctor.newInstance(Version.LUCENE_CURRENT);
-    } catch (NoSuchMethodException e) {
-      // otherwise use default ctor
-      wrappedAnalyzer = clazz.newInstance();
+      wrappedAnalyzer = NewAnalyzerTask.createAnalyzer(analyzerClassName);
     }
     ShingleAnalyzerWrapper analyzer 
       = new ShingleAnalyzerWrapper(wrappedAnalyzer, maxShingleSize);
@@ -77,7 +75,7 @@ public class NewShingleAnalyzerTask extends PerfTask {
     try {
       setAnalyzer();
       System.out.println
-        ("Changed Analyzer to: ShingleAnalyzerWrapper, wrapping ShingleFilter over" 
+        ("Changed Analyzer to: ShingleAnalyzerWrapper, wrapping ShingleFilter over " 
          + analyzerClassName);
     } catch (Exception e) {
       throw new RuntimeException("Error creating Analyzer", e);

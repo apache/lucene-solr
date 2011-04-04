@@ -17,6 +17,8 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.util.DateMathParser;
@@ -114,4 +116,13 @@ public class DateFieldTest extends LuceneTestCase {
 
   }
 
+  public void testCreateField() {
+    int props = FieldProperties.INDEXED ^ FieldProperties.STORED;
+    SchemaField sf = new SchemaField( "test", f, props, null );
+    Fieldable out = (Field)f.createField(sf, "1995-12-31T23:59:59Z", 1.0f );
+    assertEquals(820454399000l, f.toObject( out ).getTime() );
+    
+    out = (Field)f.createField(sf, new Date(820454399000l), 1.0f );
+    assertEquals(820454399000l, f.toObject( out ).getTime() );
+  }
 }
