@@ -17,7 +17,9 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.response.transform.ScoreAugmenter;
+import org.apache.solr.response.transform.ValueAugmenterFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -64,11 +66,18 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertTrue( rf.wantsField( "xxx" ) );
     assertTrue( rf.wantsAllFields() );
     assertNull( rf.getTransformer() );
+
+    // legacy, score is *,score
+    rf = new ReturnFields( req("fl", "score ") );
+    assertTrue( rf.wantsScore() );
+    assertTrue( rf.wantsAllFields() );
+    assertTrue( rf.wantsField( "score" ) );
     
-    rf = new ReturnFields( req("fl", "[explain]") );
-    assertFalse( rf.wantsScore() );
+    rf = new ReturnFields( req("fl", "[explain],score") );
+    assertTrue( rf.wantsScore() );
     assertFalse( rf.wantsField( "id" ) );
-    assertEquals( "[explain]", rf.getTransformer().getName() );
+    assertEquals( "Transformers[[explain],score]", rf.getTransformer().getName() );
+    assertTrue( rf.wantsScore() );
 
     // Check that we want wildcards
     rf = new ReturnFields( req("fl", "id,aaa*,*bbb") );
@@ -79,14 +88,22 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertFalse( rf.wantsField( "bb" ) );
     
     // Check pseudo fiels are replaced
-    rf = new ReturnFields( req("fl", "price", "fl.pseudo", "price:[value:10]" ) );
+    rf = new ReturnFields( req("fl", "price", "fl.pseudo.price", "[value 10]", "fl.pseudo", "true" ) );
     assertTrue( rf.wantsField( "price" ) );
     assertEquals( "price", rf.getTransformer().getName() );
+    assertTrue( rf.getTransformer().getClass().getName().indexOf( "ValueAugmenter" ) > 0 );
 
-    rf = new ReturnFields( req("fl", "price AS xxx,name AS yyy", "fl.pseudo", "price:[value:10]" ) );
+    rf = new ReturnFields( req("fl", "xxx:price,yyy:name", "fl.pseudo.price", "[value 10]", "fl.pseudo", "true" ) );
     assertTrue( rf.wantsField( "price" ) );
     assertTrue( rf.wantsField( "yyy" ) );
     assertTrue( rf.getLuceneFieldNames().contains("name") );
     assertEquals( "xxx", rf.getTransformer().getName() );
+    assertTrue( rf.getTransformer().getClass().getName().indexOf( "ValueAugmenter" ) > 0 );
+
+    // multiple transformers
+    rf = new ReturnFields( req("fl", "[value hello],[explain]" ) );
+    DocTransformers tx = (DocTransformers)rf.getTransformer(); // will throw exception
+    assertTrue( tx.get(0).getClass().getName().indexOf( "ValueAugmenter" ) > 0 );
+    assertTrue( tx.get(1).getClass().getName().indexOf( "ExplainAugmenter" ) > 0 );
   }
 }

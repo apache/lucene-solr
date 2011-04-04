@@ -42,7 +42,7 @@ public class ValueAugmenterFactory extends TransformerFactory
 
   public static Object getObjectFrom( String str )
   {
-    int idx = str.indexOf( ':' );
+    int idx = str.indexOf( ' ' );
     if( idx > 0 ) {
       String type = str.substring(0,idx);
       String val = str.substring(idx+1);

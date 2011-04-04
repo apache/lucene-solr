@@ -42,6 +42,7 @@ import org.apache.solr.response.transform.ValueSourceAugmenter;
 import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.QueryValueSource;
 import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,10 +72,10 @@ public class ReturnFields
   }
 
   public ReturnFields(SolrQueryRequest req) {
-    this( req.getParams().getParams(CommonParams.FL), 
-      req.getParams().getParams(CommonParams.PSEUDO_FL), req );
+    this( req.getParams().getParams(CommonParams.FL), req );
   }
   
+  // This is only used in testing?
   public ReturnFields(String fl, SolrQueryRequest req) {
     if( fl == null ) {
       parseFieldList((String[])null, req);
@@ -94,10 +95,7 @@ public class ReturnFields
     }
   }
 
-  public ReturnFields(String[] fl, String[] pseudo, SolrQueryRequest req) {
-    if( pseudo != null && fl != null && fl.length > 0 ) {
-      parsePseudoFields(pseudo);
-    }
+  public ReturnFields(String[] fl, SolrQueryRequest req) {
     parseFieldList(fl, req);
   }
 
@@ -109,10 +107,11 @@ public class ReturnFields
       return;
     }
 
+    boolean checkPseudoFields = req.getParams().getBool(CommonParams.PSEUDO_FL, false);
     NamedList<String> rename = new NamedList<String>();
     DocTransformers augmenters = new DocTransformers();
     for (String fieldList : fl) {
-      add(fieldList,rename,augmenters,req);
+      addFieldParam(fieldList,checkPseudoFields,rename,augmenters,req);
     }
     if( rename.size() > 0 ) {
       for( int i=0; i<rename.size(); i++ ) {
@@ -122,7 +121,7 @@ public class ReturnFields
     }
 
     // Legacy behavior? "score" == "*,score"  Distributed tests for this
-    if( fields.size() == 1 && _wantsScore ) {
+    if( _wantsScore && fields.size() == 1 && augmenters.size() == 1 ) {
       _wantsAllFields = true;
     }
 
@@ -144,137 +143,127 @@ public class ReturnFields
       transformer = augmenters;
     }
   }
-  
-  public Map<String,String> pseudo = null;
-  
-  private void parsePseudoFields( String[] fields ) {
-    if( fields != null ) {
-      pseudo = new HashMap<String, String>();
-      for( String f : fields ) {
-        int idx = f.indexOf( ':' );
+
+  /**
+   * TODO, this should be a fancy parser that splits on ',' but respects quoted things
+   */
+  private void addFieldParam(String fls, boolean checkPseudoFields, NamedList<String> rename, DocTransformers augmenters, SolrQueryRequest req) {
+    if( fls != null ) {
+      String[] fields = fls.split(",");
+      for( String fl : fields ) {
+        String as = null;
+        int idx = fl.indexOf( ':' );
         if( idx > 0 ) {
-          String p = f.substring(0,idx);
-          String r = f.substring(idx+1);
-          pseudo.put(p, r);
+          as = fl.substring(0,idx).trim();
+          fl = fl.substring(idx+1).trim();
         }
         else {
-          throw new SolrException( ErrorCode.BAD_REQUEST, "Pseudo fields must be in the form ?fl.pseudo=hello:replace" );
+          fl = fl.trim();
         }
+        
+        if( checkPseudoFields ) {
+          String pseudo = req.getParams().get( CommonParams.PSEUDO_FL+'.'+fl );
+          if( pseudo != null ) {
+            if( as == null ) {
+              as = fl;  // use the original
+            }
+            
+            // Just replace the input text
+            okFieldNames.add( fl );
+            fl = pseudo;
+          }
+        }
+        
+        addField( fl, as, rename, augmenters, req );
       }
     }
   }
-
-  private void add(String fls, NamedList<String> rename, DocTransformers augmenters, SolrQueryRequest req) {
-    // commas deliminate fields?  is this true?
-    StringTokenizer st = new StringTokenizer( fls, "," );
-    while( st.hasMoreTokens() ) {
-      String as = null;
-      String fl = st.nextToken().trim();
-      int idx = fl.lastIndexOf( " AS " );
+  
+  private void addField(String fl, String display, NamedList<String> rename, DocTransformers augmenters, SolrQueryRequest req) {
+    // Maybe it is everything
+    if( "*".equals( fl ) ) {
+      if( display != null ) {
+        throw new SolrException( ErrorCode.BAD_REQUEST, "* can not use an 'AS' request" );
+      }
+      _wantsAllFields = true;
+      return;
+    }
+    
+    // maybe it is a Transformer (starts and ends with [])
+    if( fl.charAt( 0 ) == '[' && fl.charAt( fl.length()-1 ) == ']' ) {
+      String name = null;
+      String args = null;
+      int idx = fl.indexOf( ' ' );
       if( idx > 0 ) {
-        as = fl.substring( idx+4 ).trim();
-        fl = fl.substring(0,idx).trim();
-      }
-      
-      // check if the fl is a pseudo field
-      if( pseudo != null ) {
-        String p = pseudo.get( fl );
-        if( p != null ) {
-          if( as == null ) {
-            as = fl;  // use the original
-          }
-          
-          // Just replace the input text
-          okFieldNames.add( fl );
-          fl = p;
-        }
-      }
-      
-      // Maybe it is everything
-      if( "*".equals( fl ) ) {
-        if( as != null ) {
-          throw new SolrException( ErrorCode.BAD_REQUEST, "* can not use an 'AS' request" );
-        }
-        _wantsAllFields = true;
-        continue;
-      }
-      
-      // maybe it is a Transformer (starts and ends with [])
-      if( fl.charAt( 0 ) == '[' && fl.charAt( fl.length()-1 ) == ']' ) {
-        String name = null;
-        String args = null;
-        idx = fl.indexOf( ':' );
-        if( idx > 0 ) {
-          name = fl.substring(1,idx);
-          args = fl.substring(idx+1,fl.length()-1);
-        }
-        else {
-          name = fl.substring(1,fl.length()-1 );
-        }
-
-        TransformerFactory factory = req.getCore().getTransformerFactory( name );
-        if( factory != null ) {
-          augmenters.addTransformer( factory.create(as==null?fl:as, args, req) );
-          continue;
-        }
-        else {
-          // unknown field?  field that starts with [ and ends with ]?
-        }
-      }
-      
-      // If it has a ( it may be a FunctionQuery
-      else if( StringUtils.contains(fl, '(' ) ) {
-        try {
-          QParser parser = QParser.getParser(fl, FunctionQParserPlugin.NAME, req);
-          Query q = null;
-          ValueSource vs = null;
-
-          if (parser instanceof FunctionQParser) {
-            FunctionQParser fparser = (FunctionQParser)parser;
-            fparser.setParseMultipleSources(false);
-            fparser.setParseToEnd(false);
-
-            q = fparser.getQuery();
-          } else {
-            // A QParser that's not for function queries.
-            // It must have been specified via local params.
-            q = parser.getQuery();
-            assert parser.getLocalParams() != null;
-          }
-
-          if (q instanceof FunctionQuery) {
-            vs = ((FunctionQuery)q).getValueSource();
-          } else {
-            vs = new QueryValueSource(q, 0.0f);
-          }
-          
-          okFieldNames.add( fl );
-          okFieldNames.add( as );
-          augmenters.addTransformer( new ValueSourceAugmenter( as==null?fl:as, parser, vs ) );
-          continue;
-        }
-        catch (Exception e) {
-          // Its OK... could just be a wierd field name
-        }
-      }
-      
-      // TODO? support fancy globs?
-      else if( fl.endsWith( "*" ) || fl.startsWith( "*" ) ) {
-        globs.add( fl );
-        continue;
-      }
-
-      fields.add( fl ); // need to put in the map to maintain order for things like CSVResponseWriter
-      okFieldNames.add( fl );
-      okFieldNames.add( as );
-      
-      if( SCORE.equals(fl)) {
-        _wantsScore = true;
-        augmenters.addTransformer( new ScoreAugmenter( as==null?fl:as ) );
+        name = fl.substring(1,idx);
+        args = fl.substring(idx+1,fl.length()-1);
       }
       else {
-        // it is a normal field
+        name = fl.substring(1,fl.length()-1 );
       }
+
+      TransformerFactory factory = req.getCore().getTransformerFactory( name );
+      if( factory != null ) {
+        augmenters.addTransformer( factory.create(display==null?fl:display, args, req) );
+        return;
+      }
+      else {
+        // unknown field?  field that starts with [ and ends with ]?
+      }
+    }
+    
+    // If it has a ( it may be a FunctionQuery
+    else if( StringUtils.contains(fl, '(' ) ) {
+      try {
+        QParser parser = QParser.getParser(fl, FunctionQParserPlugin.NAME, req);
+        Query q = null;
+        ValueSource vs = null;
+
+        if (parser instanceof FunctionQParser) {
+          FunctionQParser fparser = (FunctionQParser)parser;
+          fparser.setParseMultipleSources(false);
+          fparser.setParseToEnd(false);
+
+          q = fparser.getQuery();
+        } else {
+          // A QParser that's not for function queries.
+          // It must have been specified via local params.
+          q = parser.getQuery();
+          assert parser.getLocalParams() != null;
+        }
+
+        if (q instanceof FunctionQuery) {
+          vs = ((FunctionQuery)q).getValueSource();
+        } else {
+          vs = new QueryValueSource(q, 0.0f);
+        }
+        
+        okFieldNames.add( fl );
+        okFieldNames.add( display );
+        augmenters.addTransformer( new ValueSourceAugmenter( display==null?fl:display, parser, vs ) );
+        return;
+      }
+      catch (Exception e) {
+        // Its OK... could just be a wierd field name
+      }
+    }
+    
+    // TODO? support fancy globs?
+    else if( fl.endsWith( "*" ) || fl.startsWith( "*" ) ) {
+      globs.add( fl );
+      return;
+    }
+
+    fields.add( fl ); // need to put in the map to maintain order for things like CSVResponseWriter
+    okFieldNames.add( fl );
+    okFieldNames.add( display );
+    
+    if( SCORE.equals(fl)) {
+      _wantsScore = true;
+      augmenters.addTransformer( new ScoreAugmenter( display==null?fl:display ) );
+    }
+    else {
+      // it is a normal field
     }
   }
  

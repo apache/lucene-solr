@@ -55,7 +55,11 @@ public interface CommonParams {
   /** query and init param for field list */
   public static final String FL = "fl";
 
-  /** Pseudo fields */
+  /** Pseudo fields -- 
+   *  To enable pseudo fields, use fl.pseudo=true
+   *  then send a pseudo field in for each field that should be remapped.
+   *  For example: fl.pseudo.name=foo(x,y)
+   */
   public static final String PSEUDO_FL = "fl.pseudo";
   
   /** default query field */

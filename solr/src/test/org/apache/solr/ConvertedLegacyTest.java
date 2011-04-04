@@ -1114,7 +1114,8 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("id:44")
             );
     args = new HashMap<String,String>();
-    args.put("fl","fname_s,arr_f  ");
+    args.put("fl","fname_s,arr_f  "); /// space should include score?
+    args.put("fl","fname_s,arr_f,score"); // really?  is this what we want in 4.0?
     req = new LocalSolrQueryRequest(h.getCore(), "id:44",
                                     "standard", 0, 10, args);
     assertQ(req
@@ -1133,7 +1134,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     // test addition of score field
 
     args = new HashMap<String,String>();
-    args.put("fl","score ");
+    args.put("fl","score "); 
     req = new LocalSolrQueryRequest(h.getCore(), "id:44",
                                     "standard", 0, 10, args);
     assertQ(req

@@ -405,7 +405,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
-    query.set( CommonParams.FL, "id,price,[docid],[explain:nl],score,[value:aaa] AS aaa,[value:int:10] AS ten" );
+    query.set( CommonParams.FL, "id,price,[docid],[explain nl],score,aaa:[value aaa],ten:[value int 10]" );
     query.addSortField( "price", SolrQuery.ORDER.asc );
     QueryResponse rsp = server.query( query );
     
@@ -423,8 +423,10 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     int id2 = (Integer)out2.getFieldValue( "[docid]" );
     assertTrue( "should be bigger ["+id1+","+id2+"]", id2 > id1 );
     
+    System.out.println( out1 );
+    
     // The score from explain should be the same as the score
-    NamedList explain = (NamedList)out1.getFieldValue( "[explain:nl]" );
+    NamedList explain = (NamedList)out1.getFieldValue( "[explain nl]" );
     assertEquals( out1.get( "score"), explain.get( "value" ) );
     
     // Augmented _value_ with alias

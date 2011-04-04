@@ -48,6 +48,10 @@ public class DocTransformers extends DocTransformer
     str.append( "]" );
     return str.toString();
   }
+  
+  public DocTransformer get( int idx ) {
+    return children.get( idx );
+  }
 
   public void addTransformer( DocTransformer a ) {
     children.add( a );
