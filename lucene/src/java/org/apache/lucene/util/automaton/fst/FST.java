@@ -21,8 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.automaton.fst.Builder.UnCompiledNode;
@@ -168,7 +166,7 @@ public class FST<T> {
   }
 
   // create an existing FST
-  public FST(IndexInput in, Outputs<T> outputs) throws IOException {
+  public FST(DataInput in, Outputs<T> outputs) throws IOException {
     this.outputs = outputs;
     writer = null;
     CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_START, VERSION_START);
@@ -250,7 +248,7 @@ public class FST<T> {
     writer.posWrite = posSave;
   }
 
-  public void save(IndexOutput out) throws IOException {
+  public void save(DataOutput out) throws IOException {
     if (startNode == -1) {
       throw new IllegalStateException("call finish first");
     }
