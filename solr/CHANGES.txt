@@ -50,6 +50,9 @@ Bug Fixes
 * SOLR-2445: Change the default qt to blank in form.jsp, because there is no "standard"
   request handler unless you have it in your solrconfig.xml explicitly. (koji)
 
+* SOLR-2455: Prevent double submit of forms in admin interface.
+  (Jeffrey Chang via uschindler)
+
 Other Changes
 ----------------------
 
