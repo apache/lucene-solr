@@ -120,7 +120,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           dir.close();
           // Now try again w/ more space:
 
-          diskFree += _TestUtil.nextInt(random, 400, 600);
+          diskFree += TEST_NIGHTLY ? _TestUtil.nextInt(random, 400, 600) : _TestUtil.nextInt(random, 3000, 5000);
         } else {
           //_TestUtil.syncConcurrentMerges(writer);
           dir.setMaxSizeInBytes(0);
