@@ -1283,6 +1283,7 @@ public class TestIndexWriter extends LuceneTestCase {
     lmp.setMaxMergeDocs(20);
     lmp.setMergeFactor(2);
     IndexWriter iw = new IndexWriter(dir, conf);
+    iw.setInfoStream(VERBOSE ? System.out : null);
     Document document = new Document();
     document.add(newField("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
                            Field.TermVector.YES));
