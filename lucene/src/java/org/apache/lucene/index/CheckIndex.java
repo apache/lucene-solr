@@ -659,10 +659,27 @@ public class CheckIndex {
             if (!termPositions.skipTo(skipDocID)) {
               break;
             } else {
+
               final int docID = termPositions.doc();
               if (docID < skipDocID) {
                 throw new RuntimeException("term " + term + ": skipTo(docID=" + skipDocID + ") returned docID=" + docID);
               }
+              final int freq = termPositions.freq();
+              if (freq <= 0) {
+                throw new RuntimeException("termFreq " + freq + " is out of bounds");
+              }
+              int lastPosition = -1;
+              for(int posUpto=0;posUpto<freq;posUpto++) {
+                final int pos = termPositions.nextPosition();
+                if (pos < 0) {
+                  throw new RuntimeException("position " + pos + " is out of bounds");
+                }
+                if (pos <= lastPosition) {
+                  throw new RuntimeException("position " + pos + " is <= lastPosition " + lastPosition);
+                }
+                lastPosition = pos;
+              } 
+
               if (!termPositions.next()) {
                 break;
               }
