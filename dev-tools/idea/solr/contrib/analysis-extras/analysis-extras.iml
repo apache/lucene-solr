@@ -10,12 +10,6 @@
       <excludeFolder url="file://$MODULE_DIR$/build" />
       <excludeFolder url="file://$MODULE_DIR$/lucene-libs" />
     </content>
-    <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="icu" />
-    <orderEntry type="module" module-name="lucene" />
-    <orderEntry type="module" module-name="smartcn" />
-    <orderEntry type="module" module-name="solr" />
-    <orderEntry type="module" module-name="stempel" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
@@ -30,5 +24,11 @@
     </orderEntry>
     <orderEntry type="library" name="Solr library" level="project" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
+    <orderEntry type="module" module-name="icu" />
+    <orderEntry type="module" module-name="smartcn" />
+    <orderEntry type="module" module-name="solr" />
+    <orderEntry type="module" module-name="stempel" />
+    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="lucene" />
   </component>
 </module>
