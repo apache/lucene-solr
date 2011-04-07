@@ -226,8 +226,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
       final Document doc = new Document();
       doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
-
-      for(int numDocs=38;numDocs<500;numDocs += 38) {
+      final int incrMin = TEST_NIGHTLY ? 15 : 40;
+      for(int numDocs=10;numDocs<500;numDocs += _TestUtil.nextInt(random, incrMin, 5*incrMin)) {
         LogDocMergePolicy ldmp = new LogDocMergePolicy();
         ldmp.setMinMergeDocs(1);
         ldmp.setMergeFactor(5);
@@ -2692,7 +2692,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
-    int num = 6*RANDOM_MULTIPLIER;
+    int num = TEST_NIGHTLY ? 6 * RANDOM_MULTIPLIER : 3 * RANDOM_MULTIPLIER;
     for (int iter = 0; iter < num; iter++) {
       int count = 0;
 

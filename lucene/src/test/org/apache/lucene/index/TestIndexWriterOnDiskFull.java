@@ -420,8 +420,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         dir.close();
         
-        // Try again with 5000 more bytes of free space:
-        diskFree += 5000;
+        // Try again with more free space:
+        diskFree += TEST_NIGHTLY ? _TestUtil.nextInt(random, 4000, 8000) : _TestUtil.nextInt(random, 40000, 80000);
       }
     }
     
