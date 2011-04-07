@@ -219,7 +219,7 @@ public class Builder<T> {
     add(scratchIntsRef, output);
   }
 
-  /** Sugar: adds the UTF32 chars from char[] slice.  FST
+  /** Sugar: adds the UTF32 codepoints from char[] slice.  FST
    *  must be FST.INPUT_TYPE.BYTE4! */
   public void add(char[] s, int offset, int length, T output) throws IOException {
     assert fst.getInputType() == FST.INPUT_TYPE.BYTE4;
@@ -237,7 +237,7 @@ public class Builder<T> {
     add(scratchIntsRef, output);
   }
 
-  /** Sugar: adds the UTF32 chars from CharSequence.  FST
+  /** Sugar: adds the UTF32 codepoints from CharSequence.  FST
    *  must be FST.INPUT_TYPE.BYTE4! */
   public void add(CharSequence s, T output) throws IOException {
     assert fst.getInputType() == FST.INPUT_TYPE.BYTE4;
