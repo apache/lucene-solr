@@ -421,6 +421,9 @@ public class MockDirectoryWrapper extends Directory {
     }
     open = false;
     if (checkIndexOnClose) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
+      } 
       if (codecProvider != null) {
         if (IndexReader.indexExists(this, codecProvider)) {
           _TestUtil.checkIndex(this, codecProvider);

@@ -201,6 +201,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       if (!omitTF) {
         int lastDocID = 0;
         int pendingIDX = 0;
+        int lastPayloadLength = -1;
         while(pendingIDX < pendingCount) {
           final Position doc = pending[pendingIDX];
 
@@ -217,7 +218,6 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
           }
 
           int lastPos = 0;
-          int lastPayloadLength = -1;
           for(int posIDX=0;posIDX<doc.termFreq;posIDX++) {
             final Position pos = pending[pendingIDX++];
             assert pos.docID == doc.docID;
