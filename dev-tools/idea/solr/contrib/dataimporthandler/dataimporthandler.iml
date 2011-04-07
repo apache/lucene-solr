@@ -11,12 +11,12 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
-    <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="lucene" />
-    <orderEntry type="module" module-name="solr" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Solr library" level="project" />
     <orderEntry type="library" name="Solr DIH library" level="project" />
+    <orderEntry type="module" module-name="solr" />
+    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="lucene" />
   </component>
 </module>
