@@ -46,6 +46,7 @@ public class RandomIndexWriter implements Closeable {
   private final Random r;
   int docCount;
   int flushAt;
+  private double flushAtFactor = 1.0;
   private boolean getReaderCalled;
 
   // Randomly calls Thread.yield so we mixup thread scheduling
@@ -109,8 +110,15 @@ public class RandomIndexWriter implements Closeable {
   public void addDocument(Document doc) throws IOException {
     w.addDocument(doc);
     if (docCount++ == flushAt) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("RIW.addDocument: now doing a commit at docCount=" + docCount);
+      }
       w.commit();
-      flushAt += _TestUtil.nextInt(r, 10, 1000);
+      flushAt += _TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
+      if (flushAtFactor < 2e6) {
+        // gradually but exponentially increase time b/w flushes
+        flushAtFactor *= 1.05;
+      }
     }
   }
   
