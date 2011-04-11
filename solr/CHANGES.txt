@@ -53,6 +53,9 @@ Bug Fixes
 * SOLR-2455: Prevent double submit of forms in admin interface.
   (Jeffrey Chang via uschindler)
 
+* SOLR-2464: Fix potential slowness in QueryValueSource (the query() function) when
+  the query is very sparse and may not match any documents in a segment. (yonik)
+
 Other Changes
 ----------------------
 
