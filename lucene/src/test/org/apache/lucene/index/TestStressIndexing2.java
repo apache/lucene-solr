@@ -199,44 +199,39 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir, int maxThreadStates,
                                           boolean doReaderPooling) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
-    for(int iter=0;iter<3;iter++) {
-      if (VERBOSE) {
-        System.out.println("TEST: iter=" + iter);
-      }
-      IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE)
-               .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
-               .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()));
-      w.setInfoStream(VERBOSE ? System.out : null);
-      LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
-      lmp.setUseCompoundFile(false);
-      lmp.setMergeFactor(mergeFactor);
+    IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE)
+             .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
+             .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()));
+    w.setInfoStream(VERBOSE ? System.out : null);
+    LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
+    lmp.setUseCompoundFile(false);
+    lmp.setMergeFactor(mergeFactor);
 
-      threads = new IndexingThread[nThreads];
-      for (int i=0; i<threads.length; i++) {
-        IndexingThread th = new IndexingThread();
-        th.w = w;
-        th.base = 1000000*i;
-        th.range = range;
-        th.iterations = iterations;
-        threads[i] = th;
-      }
+    threads = new IndexingThread[nThreads];
+    for (int i=0; i<threads.length; i++) {
+      IndexingThread th = new IndexingThread();
+      th.w = w;
+      th.base = 1000000*i;
+      th.range = range;
+      th.iterations = iterations;
+      threads[i] = th;
+    }
 
-      for (int i=0; i<threads.length; i++) {
-        threads[i].start();
-      }
-      for (int i=0; i<threads.length; i++) {
-        threads[i].join();
-      }
+    for (int i=0; i<threads.length; i++) {
+      threads[i].start();
+    }
+    for (int i=0; i<threads.length; i++) {
+      threads[i].join();
+    }
 
-      //w.optimize();
-      w.close();    
+    //w.optimize();
+    w.close();    
 
-      for (int i=0; i<threads.length; i++) {
-        IndexingThread th = threads[i];
-        synchronized(th) {
-          docs.putAll(th.docs);
-        }
+    for (int i=0; i<threads.length; i++) {
+      IndexingThread th = threads[i];
+      synchronized(th) {
+        docs.putAll(th.docs);
       }
     }
 
