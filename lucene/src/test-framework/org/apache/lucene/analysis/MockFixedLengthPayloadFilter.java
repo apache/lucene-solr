@@ -23,13 +23,13 @@ import java.util.Random;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
 
-final class MockFixedLengthPayloadFilter extends TokenFilter {
+public final class MockFixedLengthPayloadFilter extends TokenFilter {
   private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
   private final Random random;
   private final byte[] bytes;
   private final Payload payload;
 
-  MockFixedLengthPayloadFilter(Random random, TokenStream in, int length) {
+  public MockFixedLengthPayloadFilter(Random random, TokenStream in, int length) {
     super(in);
     this.random = random;
     this.bytes = new byte[length];

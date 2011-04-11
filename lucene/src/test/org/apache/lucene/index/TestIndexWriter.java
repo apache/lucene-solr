@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -486,10 +487,32 @@ public class TestIndexWriter extends LuceneTestCase {
      * measure max temp disk space used.
      */
     public void testCommitOnCloseDiskUsage() throws IOException {
-      MockDirectoryWrapper dir = newDirectory();      
+      MockDirectoryWrapper dir = newDirectory();
+      Analyzer analyzer;
+      if (random.nextBoolean()) {
+        // no payloads
+       analyzer = new Analyzer() {
+          @Override
+          public TokenStream tokenStream(String fieldName, Reader reader) {
+            return new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+          }
+        };
+      } else {
+        // fixed length payloads
+        final int length = random.nextInt(200);
+        analyzer = new Analyzer() {
+          @Override
+          public TokenStream tokenStream(String fieldName, Reader reader) {
+            return new MockFixedLengthPayloadFilter(random,
+                new MockTokenizer(reader, MockTokenizer.WHITESPACE, true),
+                length);
+          }
+        };
+      }
+      
       IndexWriter writer  = new IndexWriter(
           dir,
-          newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+          newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).
               setMaxBufferedDocs(10).
               setReaderPooling(false).
               setMergePolicy(newLogMergePolicy(10))
@@ -504,7 +527,7 @@ public class TestIndexWriter extends LuceneTestCase {
       long startDiskUsage = dir.getMaxUsedSizeInBytes();
       writer = new IndexWriter(
           dir,
-          newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
+          newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
               .setOpenMode(OpenMode.APPEND).
               setMaxBufferedDocs(10).
               setMergeScheduler(new SerialMergeScheduler()).

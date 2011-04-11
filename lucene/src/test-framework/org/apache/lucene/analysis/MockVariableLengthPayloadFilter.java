@@ -23,7 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
 
-final class MockVariableLengthPayloadFilter extends TokenFilter {
+public final class MockVariableLengthPayloadFilter extends TokenFilter {
   private static final int MAXLENGTH = 129;
 
   private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
@@ -31,7 +31,7 @@ final class MockVariableLengthPayloadFilter extends TokenFilter {
   private final byte[] bytes = new byte[MAXLENGTH];
   private final Payload payload;
 
-  MockVariableLengthPayloadFilter(Random random, TokenStream in) {
+  public MockVariableLengthPayloadFilter(Random random, TokenStream in) {
     super(in);
     this.random = random;
     this.payload = new Payload(bytes);
