@@ -199,7 +199,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, false);
     IndexWriter w = new IndexWriter(dir1, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     w.optimize();
     w.close();
     IndexReader reader2 = reader1.clone(true);
@@ -496,7 +496,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergePolicy(newLogMergePolicy(false))
     );
     Document doc = new Document();

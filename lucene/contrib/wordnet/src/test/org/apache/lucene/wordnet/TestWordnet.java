@@ -63,7 +63,7 @@ public class TestWordnet extends LuceneTestCase {
   
   private void assertExpandsTo(String term, String expected[]) throws IOException {
     Query expandedQuery = SynExpand.expand(term, searcher, new 
-        MockAnalyzer(), "field", 1F);
+        MockAnalyzer(random), "field", 1F);
     BooleanQuery expectedQuery = new BooleanQuery();
     for (String t : expected)
       expectedQuery.add(new TermQuery(new Term("field", t)), 

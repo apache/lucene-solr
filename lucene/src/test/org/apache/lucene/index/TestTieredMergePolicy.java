@@ -28,7 +28,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
 
   public void testExpungeDeletes() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     TieredMergePolicy tmp = newTieredMergePolicy();
     conf.setMergePolicy(tmp);
     conf.setMaxBufferedDocs(4);
@@ -71,7 +71,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter);
       }
       Directory dir = newDirectory();
-      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
       conf.setMergeScheduler(new SerialMergeScheduler());
       TieredMergePolicy tmp = newTieredMergePolicy();
       conf.setMergePolicy(tmp);

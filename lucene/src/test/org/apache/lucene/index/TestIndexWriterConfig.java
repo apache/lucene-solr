@@ -49,7 +49,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   @Test
   public void testDefaults() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     assertEquals(MockAnalyzer.class, conf.getAnalyzer().getClass());
     assertNull(conf.getIndexCommit());
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
@@ -129,7 +129,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   
   @Test
   public void testToString() throws Exception {
-    String str = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).toString();
+    String str = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).toString();
     for (Field f : IndexWriterConfig.class.getDeclaredFields()) {
       int modifiers = f.getModifiers();
       if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
@@ -146,7 +146,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   
   @Test
   public void testClone() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     IndexWriterConfig clone = (IndexWriterConfig) conf.clone();
     
     // Clone is shallow since not all parameters are cloneable.
@@ -158,7 +158,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   @Test
   public void testInvalidValues() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     
     // Test IndexDeletionPolicy
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());

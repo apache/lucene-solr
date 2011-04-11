@@ -38,7 +38,7 @@ public class TestCachingSpanFilter extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(
         random,
         dir,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergeScheduler(new SerialMergeScheduler()).
             // asserts below requires no unexpected merges:
             setMergePolicy(newLogMergePolicy(10))

@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase;
  *
  */
 public class TestMatchAllDocsQuery extends LuceneTestCase {
-  private Analyzer analyzer = new MockAnalyzer();
+  private Analyzer analyzer = new MockAnalyzer(random);
   
   public void testQuery() throws Exception {
     Directory dir = newDirectory();

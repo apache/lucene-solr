@@ -123,7 +123,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     doc.add(bodyField);
 
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
-                                                     newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+                                                     newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random))
                                                      .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newLogMergePolicy()));
     _TestUtil.reduceOpenFiles(writer.w);
 

@@ -32,7 +32,7 @@ public class TestFlex extends LuceneTestCase {
 
     IndexWriter w = new IndexWriter(
         d,
-        new IndexWriterConfig(Version.LUCENE_31, new MockAnalyzer()).
+        new IndexWriterConfig(Version.LUCENE_31, new MockAnalyzer(random)).
             setMaxBufferedDocs(7)
     );
 
@@ -64,7 +64,7 @@ public class TestFlex extends LuceneTestCase {
   public void testTermOrd() throws Exception {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                             new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+                                                             new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
     doc.add(newField("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

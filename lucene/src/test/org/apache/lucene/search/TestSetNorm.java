@@ -37,7 +37,7 @@ public class TestSetNorm extends LuceneTestCase {
 
   public void testSetNorm() throws Exception {
     Directory store = newDirectory();
-    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     // add the same document four times
     Fieldable f1 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);

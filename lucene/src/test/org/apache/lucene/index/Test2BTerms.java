@@ -138,7 +138,7 @@ public class Test2BTerms extends LuceneTestCase {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
     IndexWriter w = new IndexWriter(
         dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).
             setRAMBufferSizeMB(256.0).
             setMergeScheduler(new ConcurrentMergeScheduler()).
