@@ -407,7 +407,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // Index the line docs
     String algLines2[] = {
       "# ----- properties ",
-      "analyzer=org.apache.lucene.analysis.MockAnalyzer",
+      "analyzer=org.apache.lucene.analysis.core.WhitespaceAnalyzer",
       "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
       "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
       "content.source.forever=false",
@@ -448,7 +448,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // then build index from the same docs
     String algLines1[] = {
       "# ----- properties ",
-      "analyzer=org.apache.lucene.analysis.MockAnalyzer",
+      "analyzer=org.apache.lucene.analysis.core.WhitespaceAnalyzer",
       "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
       "docs.file=" + getReuters20LinesFile(),
       "# ----- alg ",
@@ -1021,18 +1021,18 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
                                       "two three four", "three four", 
                                       "three four five", "four five",
                                       "four five six", "five six" });
-    // MockAnalyzer, default maxShingleSize and outputUnigrams
+    // WhitespaceAnalyzer, default maxShingleSize and outputUnigrams
     benchmark = execBenchmark
-      (getShingleConfig("analyzer:MockAnalyzer"));
+      (getShingleConfig("analyzer:WhitespaceAnalyzer"));
     assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
                        new String[] { "one,two,three,", "one,two,three, four",
                                       "four", "four five", "five", "five six", 
                                       "six" });
     
-    // MockAnalyzer, maxShingleSize=3 and outputUnigrams=false
+    // WhitespaceAnalyzer, maxShingleSize=3 and outputUnigrams=false
     benchmark = execBenchmark
       (getShingleConfig
-        ("outputUnigrams:false,maxShingleSize:3,analyzer:MockAnalyzer"));
+        ("outputUnigrams:false,maxShingleSize:3,analyzer:WhitespaceAnalyzer"));
     assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
                        new String[] { "one,two,three, four", 
                                       "one,two,three, four five",
