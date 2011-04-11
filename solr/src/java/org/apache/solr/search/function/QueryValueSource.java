@@ -77,6 +77,7 @@ class QueryDocValues extends DocValues {
 
   Scorer scorer;
   int scorerDoc; // the document the scorer is on
+  boolean noMatches = false;
 
   // the last document requested... start off with high value
   // to trigger a scorer reset on first access.
@@ -93,9 +94,12 @@ class QueryDocValues extends DocValues {
   public float floatVal(int doc) {
     try {
       if (doc < lastDocRequested) {
-        // out-of-order access.... reset scorer.
+        if (noMatches) return defVal;
         scorer = weight.scorer(reader, true, false);
-        if (scorer==null) return defVal;
+        if (scorer==null) {
+          noMatches = true;
+          return defVal;
+        }
         scorerDoc = -1;
       }
       lastDocRequested = doc;
