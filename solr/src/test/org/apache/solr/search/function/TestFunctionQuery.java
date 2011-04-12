@@ -71,16 +71,14 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   // replace \0 with the field name and create a parseable string 
   public String func(String field, String template) {
-    StringBuilder sb = new StringBuilder("_val_:\"");
+    StringBuilder sb = new StringBuilder("{!func}");
     for (char ch : template.toCharArray()) {
       if (ch=='\0') {
         sb.append(field);
         continue;
       }
-      if (ch=='"') sb.append('\\');
       sb.append(ch);
     }
-    sb.append('"');
     return sb.toString();
   }
 
@@ -520,5 +518,38 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     dofunc("atan2(.25,.5)", Math.atan2(.25,.5));
   }
 
+  /**
+   * verify that both the field("...") value source parser as well as 
+   * ExternalFileField work with esoteric field names
+   */
+  @Test
+  public void testExternalFieldValueSourceParser() {
+
+    String field = "CoMpleX \" fieldName _extf";
+    String fieldAsFunc = "field(\"CoMpleX \\\" fieldName _extf\")";
+
+    float[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
+
+    createIndex(null,ids);
+
+    // Unsorted field, largest first
+    makeExternalFile(field, "54321=543210\n0=-999\n25=250","UTF-8");
+    // test identity (straight field value)
+    singleTest(fieldAsFunc, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
+    Object orig = FileFloatSource.onlyForTesting;
+    singleTest(fieldAsFunc, "log(\0)");
+    // make sure the values were cached
+    assertTrue(orig == FileFloatSource.onlyForTesting);
+    singleTest(fieldAsFunc, "sqrt(\0)");
+    assertTrue(orig == FileFloatSource.onlyForTesting);
+
+    makeExternalFile(fieldAsFunc, "0=1","UTF-8");
+    assertU(adoc("id", "10000")); // will get same reader if no index change
+    assertU(commit());   
+    singleTest(fieldAsFunc, "sqrt(\0)");
+    assertTrue(orig != FileFloatSource.onlyForTesting);
+
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity    
+  }
 
 }
