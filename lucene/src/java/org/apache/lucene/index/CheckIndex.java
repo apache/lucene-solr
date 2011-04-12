@@ -706,11 +706,11 @@ public class CheckIndex {
           throw new RuntimeException("term " + term + " docFreq=" + 
                                      docFreq + " != num docs seen " + freq0 + " + num docs deleted " + delCount);
         }
+      }
 
-        // Test search on last term:
-        if (lastTerm != null) {
-          is.search(new TermQuery(lastTerm), 1);
-        }
+      // Test search on last term:
+      if (lastTerm != null) {
+        is.search(new TermQuery(lastTerm), 1);
       }
 
       msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");

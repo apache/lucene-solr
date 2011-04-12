@@ -46,8 +46,8 @@ final class TermInfosReader {
 
   // Just adds term's ord to TermInfo
   private final static class TermInfoAndOrd extends TermInfo {
-    final int termOrd;
-    public TermInfoAndOrd(TermInfo ti, int termOrd) {
+    final long termOrd;
+    public TermInfoAndOrd(TermInfo ti, long termOrd) {
       super(ti);
       this.termOrd = termOrd;
     }
@@ -245,7 +245,7 @@ final class TermInfosReader {
             // wipe out the cache when they iterate over a large numbers
             // of terms in order
             if (tiOrd == null) {
-              termsCache.put(cacheKey, new TermInfoAndOrd(ti, (int) enumerator.position));
+              termsCache.put(cacheKey, new TermInfoAndOrd(ti, enumerator.position));
             } else {
               assert sameTermInfo(ti, tiOrd, enumerator);
               assert (int) enumerator.position == tiOrd.termOrd;
@@ -262,7 +262,7 @@ final class TermInfosReader {
     // random-access: must seek
     final int indexPos;
     if (tiOrd != null) {
-      indexPos = tiOrd.termOrd / totalIndexInterval;
+      indexPos = (int) (tiOrd.termOrd / totalIndexInterval);
     } else {
       // Must do binary search:
       indexPos = getIndexOffset(term);
@@ -274,10 +274,10 @@ final class TermInfosReader {
     if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0) {
       ti = enumerator.termInfo();
       if (tiOrd == null) {
-        termsCache.put(cacheKey, new TermInfoAndOrd(ti, (int) enumerator.position));
+        termsCache.put(cacheKey, new TermInfoAndOrd(ti, enumerator.position));
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);
-        assert (int) enumerator.position == tiOrd.termOrd;
+        assert enumerator.position == tiOrd.termOrd;
       }
     } else {
       ti = null;

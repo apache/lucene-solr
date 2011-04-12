@@ -25,6 +25,10 @@ Bug fixes
   indexes, causing existing deletions to be applied on the incoming indexes as 
   well. (Shai Erera, Mike McCandless)
 
+* LUCENE-3024: Index with more than 2.1B terms was hitting AIOOBE when
+  seeking TermEnum (eg used by Solr's faceting) (Tom Burton-West, Mike
+  McCandless)
+
 Test Cases
 
 * LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
