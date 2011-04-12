@@ -842,4 +842,9 @@ public class IndexSearcher extends Searcher {
       return this;
     }
   }
+
+  @Override
+  public String toString() {
+    return "IndexSearcher(" + reader + ")";
+  }
 }
