@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -53,8 +54,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
     super.setUp();
     store = newDirectory();
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)));
+                                                                     TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();

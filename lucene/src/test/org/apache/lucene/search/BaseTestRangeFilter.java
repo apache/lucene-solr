@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -123,8 +124,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     doc.add(bodyField);
 
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
-                                                     newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
-                                                     .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+                                                     newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random))
+                                                     .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newLogMergePolicy()));
     _TestUtil.reduceOpenFiles(writer.w);
     while(true) {
 

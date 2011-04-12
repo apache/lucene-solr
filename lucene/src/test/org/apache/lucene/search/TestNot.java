@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -45,7 +46,7 @@ public class TestNot extends LuceneTestCase {
     IndexReader reader = writer.getReader();
 
     IndexSearcher searcher = newSearcher(reader);
-      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "field", new SimpleAnalyzer(TEST_VERSION_CURRENT));
+      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
     Query query = parser.parse("a NOT b");
     //System.out.println(query);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

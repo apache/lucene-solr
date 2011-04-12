@@ -22,6 +22,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -47,7 +48,13 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
     conf.setMergePolicy(mergePolicy);
 
-    IndexWriter writer = new IndexWriter(dir, conf);
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMaxBufferedDocs(10).
+            setMergePolicy(mergePolicy)
+    );
+
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);
@@ -151,7 +158,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     // Open & close a writer: it should delete the above 4
     // files and nothing more:
-    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     writer.close();
 
     String[] files2 = dir.listAll();

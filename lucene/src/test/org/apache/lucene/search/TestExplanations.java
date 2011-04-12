@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -57,7 +57,7 @@ public class TestExplanations extends LuceneTestCase {
   // same contents, but no field boost
   public static final String ALTFIELD = "alt";
   public static final QueryParser qp =
-    new QueryParser(TEST_VERSION_CURRENT, FIELD, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer(random));
 
   @Override
   public void tearDown() throws Exception {
@@ -71,7 +71,7 @@ public class TestExplanations extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));

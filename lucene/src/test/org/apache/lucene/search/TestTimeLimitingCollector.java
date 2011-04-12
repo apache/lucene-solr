@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.BitSet;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -86,7 +86,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     for (int i = 1; i < docText.length; i++) {
       qtxt += ' ' + docText[i]; // large query so that search will be longer
     }
-    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer(random));
     query = queryParser.parse(qtxt);
     
     // warm the searcher

@@ -20,7 +20,7 @@ package org.apache.lucene.queryParser.complexPhrase;
 import java.util.HashSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -34,7 +34,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestComplexPhraseQuery extends LuceneTestCase {
   Directory rd;
-  Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+  Analyzer analyzer = new MockAnalyzer(random);
 
   DocData docsContent[] = { new DocData("john smith", "1"),
       new DocData("johathon smith", "2"),

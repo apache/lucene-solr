@@ -58,7 +58,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         }
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
         dir.setMaxSizeInBytes(diskFree);
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         writer.setInfoStream(VERBOSE ? System.out : null);
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
         if (ms instanceof ConcurrentMergeScheduler) {
@@ -152,7 +152,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     long inputDiskUsage = 0;
     for(int i=0;i<NUM_DIR;i++) {
       dirs[i] = newDirectory();
-      IndexWriter writer  = new IndexWriter(dirs[i], newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+      IndexWriter writer  = new IndexWriter(dirs[i], newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       for(int j=0;j<25;j++) {
         addDocWithIndex(writer, 25*i+j);
       }
@@ -166,7 +166,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // Now, build a starting index that has START_COUNT docs.  We
     // will then try to addIndexesNoOptimize into a copy of this:
     MockDirectoryWrapper startDir = newDirectory();
-    IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for(int j=0;j<START_COUNT;j++) {
       addDocWithIndex(writer, j);
     }
@@ -232,7 +232,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         // Make a new dir that will enforce disk usage:
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
-        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
         IOException err = null;
         writer.setInfoStream(VERBOSE ? System.out : null);
 
@@ -456,8 +456,15 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   // LUCENE-2593
   public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
-    //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderPooling(true));
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()).setReaderPooling(true));
+    //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setReaderPooling(true));
+    IndexWriter w = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMergeScheduler(new SerialMergeScheduler()).
+            setReaderPooling(true).
+            setMergePolicy(newLogMergePolicy(2))
+    );
+    //_TestUtil.keepFullyDeletedSegments(w);
 
     ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(2);
 
@@ -496,7 +503,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   // OK:
   public void testImmediateDiskFull() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     final Document doc = new Document();

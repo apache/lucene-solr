@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
@@ -41,7 +41,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
   public void testMultiValuedNRQ() throws Exception {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));

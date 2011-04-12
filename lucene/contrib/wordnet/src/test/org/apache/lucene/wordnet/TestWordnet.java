@@ -20,7 +20,7 @@ package org.apache.lucene.wordnet;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -62,7 +62,7 @@ public class TestWordnet extends LuceneTestCase {
   
   private void assertExpandsTo(String term, String expected[]) throws IOException {
     Query expandedQuery = SynExpand.expand(term, searcher, new 
-        WhitespaceAnalyzer(), "field", 1F);
+        MockAnalyzer(random), "field", 1F);
     BooleanQuery expectedQuery = new BooleanQuery();
     for (String t : expected)
       expectedQuery.add(new TermQuery(new Term("field", t)), 

@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 
 import junit.framework.Assert;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -209,7 +210,8 @@ public class QueryUtils {
     throws IOException {
     Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = new IndexWriter(d, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+
       for (int i = 0; i < numDeletedDocs; i++) {
         w.addDocument(new Document());
       }

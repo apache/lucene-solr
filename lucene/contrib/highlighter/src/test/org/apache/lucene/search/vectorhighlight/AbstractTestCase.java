@@ -22,10 +22,9 @@ import java.io.Reader;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
@@ -87,9 +86,9 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzerW = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    analyzerW = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
     analyzerB = new BigramAnalyzer();
-    analyzerK = new KeywordAnalyzer();
+    analyzerK = new MockAnalyzer(random, MockAnalyzer.KEYWORD, false);
     paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
     paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
     dir = newDirectory();

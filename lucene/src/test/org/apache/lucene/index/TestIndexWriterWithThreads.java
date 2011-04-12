@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -109,12 +108,14 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter);
       }
       MockDirectoryWrapper dir = newDirectory();
-      IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler());
-      // We expect disk full exceptions in the merge threads
-      ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
-      IndexWriter writer = new IndexWriter(dir, conf);
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
+      IndexWriter writer = new IndexWriter(
+          dir,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+              setMaxBufferedDocs(2).
+              setMergeScheduler(new ConcurrentMergeScheduler()).
+              setMergePolicy(newLogMergePolicy(4))
+      );
+      ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
       dir.setMaxSizeInBytes(4*1024+20*iter);
       writer.setInfoStream(VERBOSE ? System.out : null);
 
@@ -151,7 +152,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
     for(int iter=0;iter<7;iter++) {
       Directory dir = newDirectory();
-      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler());
       // We expect AlreadyClosedException
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
@@ -211,7 +212,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     for(int iter=0;iter<2;iter++) {
       MockDirectoryWrapper dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT,
-          new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler());
+          new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler());
       // We expect disk full exceptions in the merge threads
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
       IndexWriter writer = new IndexWriter(dir, conf);
@@ -264,7 +265,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void _testSingleThreadFailure(MockDirectoryWrapper.Failure failure) throws IOException {
     MockDirectoryWrapper dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
       .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     final Document doc = new Document();
     doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));

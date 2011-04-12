@@ -40,7 +40,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testDoubleOffsetCounting() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     Field f = newField("field", "abcd", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);
@@ -75,7 +75,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1442
   public void testDoubleOffsetCounting2() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     Field f = newField("field", "abcd", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);
@@ -97,7 +97,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1448
   public void testEndOffsetPositionCharAnalyzer() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     Field f = newField("field", "abcd   ", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);
@@ -119,7 +119,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1448
   public void testEndOffsetPositionWithCachingTokenFilter() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new MockAnalyzer();
+    Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     TokenStream stream = new CachingTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
@@ -193,7 +193,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStandard() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     Field f = newField("field", "abcd the  ", Field.Store.NO,
         Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
@@ -224,7 +224,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStandardEmptyField() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     Field f = newField("field", "", Field.Store.NO,
                         Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
@@ -252,7 +252,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStandardEmptyField2() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
 
     Field f = newField("field", "abcd", Field.Store.NO,
@@ -286,7 +286,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     for(int iter=0;iter<2;iter++) {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer())
+          TEST_VERSION_CURRENT, new MockAnalyzer(random))
           .setMaxBufferedDocs(2).setRAMBufferSizeMB(
               IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergeScheduler(
               new SerialMergeScheduler()).setMergePolicy(
@@ -319,7 +319,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       reader.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
-          new MockAnalyzer()).setMaxBufferedDocs(2)
+          new MockAnalyzer(random)).setMaxBufferedDocs(2)
           .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
           .setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(
               new LogDocMergePolicy()));
@@ -337,7 +337,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     for(int iter=0;iter<2;iter++) {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer())
+          TEST_VERSION_CURRENT, new MockAnalyzer(random))
           .setMaxBufferedDocs(2).setRAMBufferSizeMB(
               IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergeScheduler(
               new SerialMergeScheduler()).setMergePolicy(
@@ -374,7 +374,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testTermVectorCorruption3() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
+        TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
             IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergeScheduler(
             new SerialMergeScheduler()).setMergePolicy(new LogDocMergePolicy()));
@@ -394,7 +394,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     writer.close();
 
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
-        new MockAnalyzer()).setMaxBufferedDocs(2)
+        new MockAnalyzer(random)).setMaxBufferedDocs(2)
         .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
         .setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(
             new LogDocMergePolicy()));
@@ -417,7 +417,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testNoTermVectorAfterTermVector() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document document = new Document();
     document.add(newField("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
@@ -444,7 +444,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testNoTermVectorAfterTermVectorMerge() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document document = new Document();
     document.add(newField("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));

@@ -18,6 +18,7 @@ package org.apache.lucene.queryParser.ext;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
@@ -42,7 +43,7 @@ public class TestExtendableQueryParser extends TestQueryParser {
   public QueryParser getParser(Analyzer a, Extensions extensions)
       throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      a = new MockAnalyzer(random, MockAnalyzer.SIMPLE, true);
     QueryParser qp = extensions == null ? new ExtendableQueryParser(
         TEST_VERSION_CURRENT, "field", a) : new ExtendableQueryParser(
         TEST_VERSION_CURRENT, "field", a, extensions);

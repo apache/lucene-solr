@@ -23,7 +23,7 @@ import java.util.Random;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -68,7 +68,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
-    anlzr = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    anlzr = new MockAnalyzer(random);
   }
   
   /**

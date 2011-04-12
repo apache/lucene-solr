@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -35,12 +35,13 @@ public class TestIndexSplitter extends LuceneTestCase {
     destDir.mkdirs();
     Directory fsDir = newFSDirectory(dir);
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
-        new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        new MockAnalyzer(random))
         .setOpenMode(OpenMode.CREATE);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(true);
     ((LogMergePolicy) conf.getMergePolicy()).setNoCFSRatio(1.0);
 
     IndexWriter iw = new IndexWriter(fsDir, conf);
+
     for (int x=0; x < 100; x++) {
       Document doc = TestIndexWriterReader.createDocument(x, "index", 5);
       iw.addDocument(doc);

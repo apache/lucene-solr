@@ -30,14 +30,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
@@ -106,7 +104,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   throws IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
@@ -142,10 +140,12 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)).setMaxBufferedDocs(4));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(97);
+    IndexWriter writer = new IndexWriter(
+        indexStore,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMaxBufferedDocs(4).
+            setMergePolicy(newLogMergePolicy(97))
+    );
     for (int i=0; i<NUM_STRINGS; i++) {
         Document doc = new Document();
         String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
@@ -1103,7 +1103,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-                        TEST_VERSION_CURRENT, new MockAnalyzer()));
+                        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     doc.add(newField("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
     doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -1129,8 +1129,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   public void testLUCENE2142() throws IOException {
     Directory indexStore = newDirectory();
     IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i=0; i<5; i++) {
         Document doc = new Document();
         doc.add (new Field ("string", "a"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));

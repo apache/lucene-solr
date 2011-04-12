@@ -19,6 +19,7 @@ package org.apache.lucene.search.highlight;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -56,7 +57,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamConcurrent(),
@@ -100,7 +101,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamConcurrent(),
@@ -170,7 +171,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamSparse(),
@@ -213,7 +214,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, TEXT, Store.YES, Index.ANALYZED,
@@ -254,7 +255,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamSparse(),

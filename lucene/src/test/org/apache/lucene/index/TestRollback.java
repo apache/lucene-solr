@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 
 import org.apache.lucene.document.Document;
@@ -40,7 +41,7 @@ public class TestRollback extends LuceneTestCase {
     rw.close();
 
     // If buffer size is small enough to cause a flush, errors ensue...
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer()).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
 
     Term pkTerm = new Term("pk", "");
     for (int i = 0; i < 3; i++) {

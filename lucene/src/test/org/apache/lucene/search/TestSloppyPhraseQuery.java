@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -115,7 +115,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     query.setSlop(slop);
 
     Directory ramDir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
     writer.addDocument(doc);
 
     IndexReader reader = writer.getReader();

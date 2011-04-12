@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -132,7 +133,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     IndexReader reader2 = iw2.getReader();
     iw2.close();
     
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new WhitespaceAnalyzer());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     
     MultiReader multireader = new MultiReader(reader1, reader2);

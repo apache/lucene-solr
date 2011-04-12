@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 
 import java.util.Random;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -54,7 +55,7 @@ public class TestBoolean2 extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
@@ -79,7 +80,7 @@ public class TestBoolean2 extends LuceneTestCase {
     } while(docCount < 3000);
 
     RandomIndexWriter w = new RandomIndexWriter(random, dir2, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
     doc.add(newField("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
@@ -118,7 +119,7 @@ public class TestBoolean2 extends LuceneTestCase {
   };
 
   public Query makeQuery(String queryText) throws ParseException {
-    Query q = (new QueryParser(TEST_VERSION_CURRENT, field, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))).parse(queryText);
+    Query q = (new QueryParser(TEST_VERSION_CURRENT, field, new MockAnalyzer(random))).parse(queryText);
     return q;
   }
 

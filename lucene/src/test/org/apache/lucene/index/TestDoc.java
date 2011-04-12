@@ -29,7 +29,7 @@ import java.util.Collection;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -106,10 +106,13 @@ public class TestDoc extends LuceneTestCase {
       PrintWriter out = new PrintWriter(sw, true);
       
       Directory directory = newFSDirectory(indexDir);
-      IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
-                                           .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+      IndexWriter writer = new IndexWriter(
+          directory,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+              setOpenMode(OpenMode.CREATE).
+              setMaxBufferedDocs(-1).
+              setMergePolicy(newLogMergePolicy(10))
+      );
 
       SegmentInfo si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
@@ -137,10 +140,13 @@ public class TestDoc extends LuceneTestCase {
       out = new PrintWriter(sw, true);
 
       directory = newFSDirectory(indexDir);
-      writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
-                               .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+      writer = new IndexWriter(
+          directory,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+              setOpenMode(OpenMode.CREATE).
+              setMaxBufferedDocs(-1).
+              setMergePolicy(newLogMergePolicy(10))
+      );
 
       si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);

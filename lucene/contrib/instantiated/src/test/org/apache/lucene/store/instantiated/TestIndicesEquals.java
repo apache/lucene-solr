@@ -21,10 +21,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -60,8 +61,8 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -83,11 +84,17 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     Directory dir = newDirectory();
     InstantiatedIndex ii = new InstantiatedIndex();
-
+    
+    // we need to pass the "same" random to both, so they surely index the same payload data.
+    long seed = random.nextLong();
+    
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+                                                                        TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed))).setMergePolicy(newLogMergePolicy()));
+    indexWriter.setInfoStream(VERBOSE ? System.out : null);
+    if (VERBOSE) {
+      System.out.println("TEST: make test index");
+    }
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -96,7 +103,7 @@ public class TestIndicesEquals extends LuceneTestCase {
     indexWriter.close();
 
     // test ii writer
-    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new StandardAnalyzer(TEST_VERSION_CURRENT), true);
+    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new MockAnalyzer(new Random(seed)), true);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);

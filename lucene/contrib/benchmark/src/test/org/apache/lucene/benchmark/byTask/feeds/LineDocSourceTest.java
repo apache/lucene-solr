@@ -26,7 +26,7 @@ import java.io.OutputStreamWriter;
 import java.util.Properties;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.LineDocSource.HeaderLineParser;
@@ -121,7 +121,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     }
     
     // Indexing configuration.
-    props.setProperty("analyzer", SimpleAnalyzer.class.getName());
+    props.setProperty("analyzer", WhitespaceAnalyzer.class.getName());
     props.setProperty("content.source", LineDocSource.class.getName());
     props.setProperty("directory", "RAMDirectory");
     props.setProperty("doc.stored", "true");

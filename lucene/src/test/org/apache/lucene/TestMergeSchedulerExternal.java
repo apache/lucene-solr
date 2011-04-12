@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -90,7 +90,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     doc.add(idField);
     
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMergeScheduler(new MyMergeScheduler())
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergeScheduler(new MyMergeScheduler())
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
             IndexWriterConfig.DISABLE_AUTO_FLUSH));
     LogMergePolicy logMP = (LogMergePolicy) writer.getConfig().getMergePolicy();

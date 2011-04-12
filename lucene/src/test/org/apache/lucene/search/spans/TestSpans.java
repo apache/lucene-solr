@@ -27,16 +27,16 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
-import java.util.Collections;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -49,7 +49,7 @@ public class TestSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
@@ -460,9 +460,8 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   public void testNPESpanQuery() throws Throwable {
     final Directory dir = newDirectory();
-    final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT, Collections.emptySet())));
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     // Add documents
     addDoc(writer, "1", "the big dogs went running to the market");

@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -62,7 +62,7 @@ public class TestSimilarity extends LuceneTestCase {
   public void testSimilarity() throws Exception {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setSimilarity(new SimpleSimilarity()));
     
     Document d1 = new Document();

@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -197,7 +197,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, false);
     IndexWriter w = new IndexWriter(dir1, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     w.optimize();
     w.close();
     IndexReader reader2 = reader1.clone(true);
@@ -484,9 +484,11 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   public void testCloseStoredFields() throws Exception {
     final Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
-    ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    IndexWriter w = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMergePolicy(newLogMergePolicy(false))
+    );
     Document doc = new Document();
     doc.add(newField("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));
     w.addDocument(doc);

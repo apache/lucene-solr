@@ -60,7 +60,7 @@ public class TestNRTThreads extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(random);
     final File tempDir = _TestUtil.getTempDir("nrtopenfiles");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
       @Override
       public void warm(IndexReader reader) throws IOException {

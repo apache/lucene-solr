@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -30,9 +30,13 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
     Directory mainDir = newDirectory();
-    IndexWriter writer = new IndexWriter(mainDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    IndexWriter writer = new IndexWriter(
+        mainDir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMaxBufferedDocs(10).
+            setMergePolicy(newLogMergePolicy(false,2))
+    );
+    writer.setInfoStream(VERBOSE ? System.out : null);
     IndexReader reader = writer.getReader(); // start pooling readers
     reader.close();
     RunThread[] indexThreads = new RunThread[4];

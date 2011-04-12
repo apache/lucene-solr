@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -466,7 +467,7 @@ public class TestPayloads extends LuceneTestCase {
         
         Directory dir = newDirectory();
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-            TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+            TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         final String field = "test";
         
         Thread[] ingesters = new Thread[numThreads];
@@ -582,4 +583,27 @@ public class TestPayloads extends LuceneTestCase {
             return pool.size();
         }
     }
+
+  public void testAcrossFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+                                                     new MockAnalyzer(random, MockAnalyzer.WHITESPACE, true));
+    Document doc = new Document();
+    doc.add(new Field("hasMaybepayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    writer = new RandomIndexWriter(random, dir,
+                                   new MockAnalyzer(random, MockAnalyzer.WHITESPACE, true));
+    doc = new Document();
+    doc.add(new Field("hasMaybepayload2", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.optimize();
+    writer.close();
+
+    _TestUtil.checkIndex(dir);
+
+    dir.close();
+  }
 }

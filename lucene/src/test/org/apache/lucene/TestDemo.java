@@ -20,7 +20,7 @@ package org.apache.lucene;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -41,14 +41,13 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException, ParseException {
-
-    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer(random);
 
     // Store the index in memory:
     Directory directory = newDirectory();
     // To store an index on disk, use this instead:
     //Directory directory = FSDirectory.open("/tmp/testindex");
-    RandomIndexWriter iwriter = new RandomIndexWriter(random, directory);
+    RandomIndexWriter iwriter = new RandomIndexWriter(random, directory, analyzer);
     iwriter.w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     String text = "This is the text to be indexed.";

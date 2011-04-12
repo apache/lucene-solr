@@ -73,7 +73,7 @@ public class TestSearch extends LuceneTestCase {
     private void doTestSearch(Random random, PrintWriter out, boolean useCompoundFile)
     throws Exception {
       Directory directory = newDirectory();
-      Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      Analyzer analyzer = new MockAnalyzer(random);
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);

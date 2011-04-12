@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Arrays;
 import java.io.IOException;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
@@ -344,7 +345,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testGiga() throws Exception {
 
-    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    MockAnalyzer analyzer = new MockAnalyzer(random);
     Directory index = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, index);
 

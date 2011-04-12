@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -91,16 +91,24 @@ public class TestTransactions extends LuceneTestCase {
     @Override
     public void doWork() throws Throwable {
 
-      IndexWriter writer1 = new IndexWriter(dir1, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setMaxBufferedDocs(3).setMergeScheduler(new ConcurrentMergeScheduler()));
-      ((LogMergePolicy) writer1.getConfig().getMergePolicy()).setMergeFactor(2);
+      IndexWriter writer1 = new IndexWriter(
+          dir1,
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+              setMaxBufferedDocs(3).
+              setMergeScheduler(new ConcurrentMergeScheduler()).
+              setMergePolicy(newLogMergePolicy(2))
+      );
       ((ConcurrentMergeScheduler) writer1.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       // Intentionally use different params so flush/merge
       // happen @ different times
-      IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
-      ((LogMergePolicy) writer2.getConfig().getMergePolicy()).setMergeFactor(3);
+      IndexWriter writer2 = new IndexWriter(
+          dir2,
+          newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+              setMaxBufferedDocs(2).
+              setMergeScheduler(new ConcurrentMergeScheduler()).
+              setMergePolicy(newLogMergePolicy(3))
+      );
       ((ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       update(writer1);
@@ -181,7 +189,7 @@ public class TestTransactions extends LuceneTestCase {
   }
 
   public void initIndex(Directory dir) throws Throwable {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for(int j=0; j<7; j++) {
       Document d = new Document();
       int n = random.nextInt();

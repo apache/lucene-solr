@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -40,7 +40,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
 
   public static final String FIELD = "field";
   public static final QueryParser qp =
-    new QueryParser(TEST_VERSION_CURRENT, FIELD, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer(random));
 
   @Override
   public void tearDown() throws Exception {
@@ -54,7 +54,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));

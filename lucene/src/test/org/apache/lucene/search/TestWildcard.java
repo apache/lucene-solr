@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
@@ -272,7 +272,7 @@ public class TestWildcard
    */
   public void testParsingAndSearching() throws Exception {
     String field = "content";
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new MockAnalyzer(random));
     qp.setAllowLeadingWildcard(true);
     String docs[] = {
         "\\ abcdefg1",
@@ -302,7 +302,9 @@ public class TestWildcard
 
     // prepare the index
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(newField(field,docs[i],Store.NO,Index.ANALYZED));

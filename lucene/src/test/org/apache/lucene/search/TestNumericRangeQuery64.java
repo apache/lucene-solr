@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
@@ -49,8 +49,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000))
+        .setMergePolicy(newLogMergePolicy()));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
@@ -297,7 +298,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   public void testInfiniteValues() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
     doc.add(new NumericField("long").setLongValue(Long.MIN_VALUE));

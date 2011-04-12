@@ -37,7 +37,7 @@ public class TestLongPostings extends LuceneTestCase {
   // Produces a realistic unicode random string that
   // survives MockAnalyzer unchanged:
   private String getRandomTerm(String other) throws IOException {
-    Analyzer a = new MockAnalyzer();
+    Analyzer a = new MockAnalyzer(random);
     while(true) {
       String s = _TestUtil.randomRealisticUnicodeString(random);
       if (other != null && s.equals(other)) {
@@ -98,7 +98,7 @@ public class TestLongPostings extends LuceneTestCase {
 
     final IndexReader r;
     if (true) { 
-      final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+      final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         .setMergePolicy(newLogMergePolicy());
       iwc.setRAMBufferSizeMB(16.0 + 16.0 * random.nextDouble());

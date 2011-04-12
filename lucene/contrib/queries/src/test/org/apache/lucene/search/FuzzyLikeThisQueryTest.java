@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.HashSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -34,14 +34,14 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	private Directory directory;
 	private IndexSearcher searcher;
 	private IndexReader reader;
-	private Analyzer analyzer=new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+	private Analyzer analyzer=new MockAnalyzer(random);
 
 
 	@Override
 	public void setUp() throws Exception	{
 	  super.setUp();
 		directory = newDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 		
 		//Add series of docs with misspelt names
 		addDoc(writer, "jonathon smythe","1");
@@ -122,7 +122,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	}
 	
 	public void testFuzzyLikeThisQueryEquals() {
-	  Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+	  Analyzer analyzer = new MockAnalyzer(random);
     FuzzyLikeThisQuery fltq1 = new FuzzyLikeThisQuery(10, analyzer);
     fltq1.addTerms("javi", "subject", 0.5f, 2);
     FuzzyLikeThisQuery fltq2 = new FuzzyLikeThisQuery(10, analyzer);

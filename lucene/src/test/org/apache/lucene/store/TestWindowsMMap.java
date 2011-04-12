@@ -22,6 +22,7 @@ import java.io.File;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -72,7 +73,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     
     // plan to add a set of useful stopwords, consider changing some of the
     // interior filters.
-    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet());
+    MockAnalyzer analyzer = new MockAnalyzer(random);
     // TODO: something about lock timeouts and leftover locks.
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer)

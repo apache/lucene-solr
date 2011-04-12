@@ -21,12 +21,10 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -63,7 +61,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testAddDocument() throws Exception {
     Document testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(testDoc);
     writer.commit();
     SegmentInfo info = writer.newestSegment();
@@ -212,8 +210,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testPreAnalyzedField() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     
     doc.add(new Field("preanalyzed", new TokenStream() {
@@ -273,8 +270,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(doc);
     writer.close();
 
@@ -309,8 +305,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f2", "v2", Store.YES, Index.NO));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(doc);
     writer.optimize(); // be sure to have a single segment
     writer.close();

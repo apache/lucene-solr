@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -46,7 +47,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public static final String INDEX_PATH = "test.snapshots";
   
   protected IndexWriterConfig getConfig(Random random, IndexDeletionPolicy dp) {
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random));
     if (dp != null) {
       conf.setIndexDeletionPolicy(dp);
     }
@@ -107,8 +108,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
     SnapshotDeletionPolicy dp = getDeletionPolicy();
     final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, 
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(dp)
         .setMaxBufferedDocs(2));
     writer.commit();
     

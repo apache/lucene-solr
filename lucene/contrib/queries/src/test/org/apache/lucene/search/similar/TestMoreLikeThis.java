@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -73,7 +73,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     Map<String,Float> originalValues = getOriginalValues();
     
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    mlt.setAnalyzer(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);
@@ -108,7 +108,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   private Map<String,Float> getOriginalValues() throws IOException {
     Map<String,Float> originalValues = new HashMap<String,Float>();
     MoreLikeThis mlt = new MoreLikeThis(reader);
-    mlt.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    mlt.setAnalyzer(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
     mlt.setMinDocFreq(1);
     mlt.setMinTermFreq(1);
     mlt.setMinWordLen(1);

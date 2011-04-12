@@ -17,37 +17,34 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * Analyzer for testing
  */
 public final class MockAnalyzer extends Analyzer {
   private boolean lowerCase;
-  private boolean payloads;
   public static final int KEYWORD = 0;
   public static final int WHITESPACE = 1;
   public static final int SIMPLE = 2;
   private int tokenizer;
+  private final Random random;
+  private Map<String,Integer> previousMappings = new HashMap<String,Integer>();
   
-  public MockAnalyzer() {
-    this(WHITESPACE, true);
+  public MockAnalyzer(Random random) {
+    this(random, WHITESPACE, true);
   }
   
-  public MockAnalyzer(int tokenizer, boolean lowercase) {
-    this(tokenizer, lowercase, true);
-  }
-  
-  public MockAnalyzer(int tokenizer, boolean lowercase, boolean payloads) {
+  public MockAnalyzer(Random random, int tokenizer, boolean lowercase) {
     this.tokenizer = tokenizer;
     this.lowerCase = lowercase;
-    this.payloads = payloads;
+    this.random = random;
   }
 
   @Override
@@ -61,8 +58,7 @@ public final class MockAnalyzer extends Analyzer {
       result = new WhitespaceTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
     if (lowerCase)
       result = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, result);
-    if (payloads)
-      result = new SimplePayloadFilter(result, fieldName);
+    result = maybePayload(result, fieldName);
     return result;
   }
 
@@ -73,7 +69,13 @@ public final class MockAnalyzer extends Analyzer {
 
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    SavedStreams saved = (SavedStreams) getPreviousTokenStream();
+    Map<String,SavedStreams> map = (Map) getPreviousTokenStream();
+    if (map == null) {
+      map = new HashMap<String,SavedStreams>();
+      setPreviousTokenStream(map);
+    }
+    
+    SavedStreams saved = map.get(fieldName);
     if (saved == null){
       saved = new SavedStreams();
       if (tokenizer == KEYWORD)
@@ -85,9 +87,9 @@ public final class MockAnalyzer extends Analyzer {
       saved.filter = saved.upstream;
       if (lowerCase)
         saved.filter = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, saved.filter);
-      if (payloads)
-        saved.filter = new SimplePayloadFilter(saved.filter, fieldName);
-      setPreviousTokenStream(saved);
+
+      saved.filter = maybePayload(saved.filter, fieldName);
+      map.put(fieldName, saved);
       return saved.filter;
     } else {
       saved.upstream.reset(reader);
@@ -95,30 +97,26 @@ public final class MockAnalyzer extends Analyzer {
       return saved.filter;
     }                         
   }
-}
-
-final class SimplePayloadFilter extends TokenFilter {
-  String fieldName;
-  int pos;
-  final PayloadAttribute payloadAttr;
-  final CharTermAttribute termAttr;
-
-  public SimplePayloadFilter(TokenStream input, String fieldName) {
-    super(input);
-    this.fieldName = fieldName;
-    pos = 0;
-    payloadAttr = input.addAttribute(PayloadAttribute.class);
-    termAttr = input.addAttribute(CharTermAttribute.class);
-  }
-
-  @Override
-  public boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      payloadAttr.setPayload(new Payload(("pos: " + pos).getBytes()));
-      pos++;
-      return true;
-    } else {
-      return false;
+  
+  private synchronized TokenStream maybePayload(TokenStream stream, String fieldName) {
+    Integer val = previousMappings.get(fieldName);
+    if (val == null) {
+      switch(random.nextInt(3)) {
+        case 0: val = -1; // no payloads
+                break;
+        case 1: val = Integer.MAX_VALUE; // variable length payload
+                break;
+        case 2: val = random.nextInt(12); // fixed length payload
+                break;
+      }
+      previousMappings.put(fieldName, val); // save it so we are consistent for this field
     }
+    
+    if (val == -1)
+      return stream;
+    else if (val == Integer.MAX_VALUE)
+      return new MockVariableLengthPayloadFilter(random, stream);
+    else
+      return new MockFixedLengthPayloadFilter(random, stream, val);
   }
 }

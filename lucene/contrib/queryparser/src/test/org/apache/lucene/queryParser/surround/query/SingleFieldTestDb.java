@@ -23,7 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -41,7 +41,7 @@ public class SingleFieldTestDb {
       fieldName = fName;
       IndexWriter writer = new IndexWriter(db, new IndexWriterConfig(
           Version.LUCENE_CURRENT,
-          new WhitespaceAnalyzer(Version.LUCENE_CURRENT)));
+          new MockAnalyzer(random)));
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
         d.add(new Field(fieldName, docs[j], Field.Store.NO, Field.Index.ANALYZED));

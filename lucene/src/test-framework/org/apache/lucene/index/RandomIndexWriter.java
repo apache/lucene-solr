@@ -19,14 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.store.Directory;
@@ -72,15 +68,7 @@ public class RandomIndexWriter implements Closeable {
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and Whitespace+LowercasingAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, 
-        new ReusableAnalyzerBase() {
-          @Override
-          protected TokenStreamComponents createComponents(String fieldName,
-              Reader reader) {
-            Tokenizer tokenizer = new WhitespaceTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-            return new TokenStreamComponents(tokenizer, 
-                new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, tokenizer));
-          } }));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(r)));
   }
   
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */

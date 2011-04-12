@@ -34,7 +34,7 @@ public class TestSegmentInfo extends LuceneTestCase {
 
   public void testSizeInBytesCache() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(dir, conf);
     Document doc = new Document();
     doc.add(new Field("a", "value", Store.YES, Index.ANALYZED));
@@ -54,7 +54,7 @@ public class TestSegmentInfo extends LuceneTestCase {
   public void testFilesConcurrency() throws Exception {
     Directory dir = newDirectory();
     // Create many files
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     IndexWriter writer = new IndexWriter(dir, conf);
     Document doc = new Document();
     doc.add(new Field("a", "b", Store.YES, Index.ANALYZED, TermVector.YES));

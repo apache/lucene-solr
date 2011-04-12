@@ -25,13 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -243,10 +242,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       File indexDir = new File(TEMP_DIR, "testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random);
       try {
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.CREATE));
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+        IndexWriter writer = new IndexWriter(
+            dir,
+            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+                setOpenMode(OpenMode.CREATE).
+                setMergePolicy(newLogMergePolicy(false))
+        );
         for(int i=0;i<37;i++) {
           Document doc = new Document();
           doc.add(newField("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.ANALYZED));

@@ -62,7 +62,7 @@ public class TestNorms extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
-    anlzr = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    anlzr = new MockAnalyzer(random);
   }
 
   /**
@@ -251,7 +251,7 @@ public class TestNorms extends LuceneTestCase {
   // LUCENE-1260
   public void testCustomEncoder() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     config.setSimilarity(new CustomNormEncodingSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     Document doc = new Document();

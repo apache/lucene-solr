@@ -285,7 +285,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader.close();
     
     writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
     doc = new Document();
     doc.add(newField("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -335,7 +335,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testSlopScoring() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
     doc.add(newField("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
@@ -596,7 +596,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
   public void testRandomPhrases() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new WhitespaceAnalyzer();
+    Analyzer analyzer = new MockAnalyzer(random);
 
     RandomIndexWriter w  = new RandomIndexWriter(random, dir, analyzer);
     List<List<String>> docs = new ArrayList<List<String>>();
