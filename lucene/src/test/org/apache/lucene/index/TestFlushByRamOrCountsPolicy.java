@@ -68,7 +68,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     Directory dir = newDirectory();
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer()).setFlushPolicy(flushPolicy);
+        new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
 
     final int numDWPT = 1 + random.nextInt(8);
     DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
@@ -125,7 +125,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       Directory dir = newDirectory();
       MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer()).setFlushPolicy(flushPolicy);
+          new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
 
       final int numDWPT = 1 + random.nextInt(8);
       DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
@@ -171,7 +171,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     Directory dir = newDirectory();
     FlushByRamOrCountsPolicy flushPolicy = new FlushByRamOrCountsPolicy();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer()).setFlushPolicy(flushPolicy);
+        new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
 
     final int numDWPT = 1 + random.nextInt(10);
     DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
@@ -195,7 +195,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer());
+        new MockAnalyzer(random));
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     iwc.setFlushPolicy(flushPolicy);
 
@@ -262,7 +262,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       dir.setThrottledIndexOutput(new ThrottledIndexOutput(ThrottledIndexOutput
           .mBitsToBytes(50 + random.nextInt(10)), 5 + random.nextInt(5), null));
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer());
+          new MockAnalyzer(random));
       iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       FlushPolicy flushPolicy = new FlushByRamOrCountsPolicy();

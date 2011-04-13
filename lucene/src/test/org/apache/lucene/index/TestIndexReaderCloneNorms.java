@@ -75,7 +75,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     similarityProviderOne = new SimilarityProviderOne();
-    anlzr = new MockAnalyzer();
+    anlzr = new MockAnalyzer(random);
   }
   
   /**

@@ -857,4 +857,9 @@ public class IndexSearcher {
       this.leaves = leaves;
     }
   }
+
+  @Override
+  public String toString() {
+    return "IndexSearcher(" + reader + ")";
+  }
 }

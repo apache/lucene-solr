@@ -404,6 +404,12 @@ Optimizations
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
   on empty or one-element lists/arrays.  (Uwe Schindler)
 
+Bug fixes
+
+* LUCENE-3024: Index with more than 2.1B terms was hitting AIOOBE when
+  seeking TermEnum (eg used by Solr's faceting) (Tom Burton-West, Mike
+  McCandless)
+
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy

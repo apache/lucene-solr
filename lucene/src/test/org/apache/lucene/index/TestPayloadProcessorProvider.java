@@ -130,7 +130,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
       throws IOException {
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).
             setMergePolicy(newLogMergePolicy(10))
     );
     TokenStream payloadTS1 = new PayloadTokenStream("p1");
@@ -188,7 +188,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     for (Directory d : dirs) {
       processors.put(d, new PerTermPayloadProcessor());
     }
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
 
     IndexReader[] readers = new IndexReader[dirs.length];
@@ -242,7 +242,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     // won't get processed.
     Map<Directory, DirPayloadProcessor> processors = new HashMap<Directory, DirPayloadProcessor>();
     processors.put(dir, new PerTermPayloadProcessor());
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
     writer.optimize();
     writer.close();

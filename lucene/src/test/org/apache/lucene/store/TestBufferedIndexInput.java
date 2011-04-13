@@ -245,7 +245,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       try {
         IndexWriter writer = new IndexWriter(
             dir,
-            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
                 setOpenMode(OpenMode.CREATE).
                 setMergePolicy(newLogMergePolicy(false))
         );

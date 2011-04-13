@@ -112,7 +112,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setMaxBufferedDocs(2).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(4))
@@ -157,7 +157,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setMaxBufferedDocs(10).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(4))
@@ -222,7 +222,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setMaxBufferedDocs(2).
               setMergeScheduler(new ConcurrentMergeScheduler()).
               setMergePolicy(newLogMergePolicy(4))
@@ -277,7 +277,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void _testSingleThreadFailure(MockDirectoryWrapper.Failure failure) throws IOException {
     MockDirectoryWrapper dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
       .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     final Document doc = new Document();
     doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));

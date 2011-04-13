@@ -46,7 +46,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       Directory dir = newDirectory();
       {
         IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer());
+            new MockAnalyzer(random));
         IndexWriter writer = new IndexWriter(dir, config);
         Document d = new Document();
         d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
@@ -83,7 +83,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-            TEST_VERSION_CURRENT, new MockAnalyzer()));
+            TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         Document d = new Document();
         d.add(new Field("f1", "d3 first field", Store.YES, Index.ANALYZED,
             TermVector.NO));
@@ -102,7 +102,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       }
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       writer.optimize();
       assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
@@ -117,7 +117,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       Directory dir = newDirectory();
       {
         IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer());
+            new MockAnalyzer(random));
         IndexWriter writer = new IndexWriter(dir, config);
         Document d = new Document();
         d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
@@ -145,7 +145,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       assertFNXFiles(dir, "2.fnx");
 
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       writer.optimize();
       assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
@@ -160,7 +160,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       Directory dir = newDirectory();
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-            TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(
+            TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(
             new KeepAllDeletionPolicy()));
         Document d = new Document();
         d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
@@ -185,7 +185,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-            TEST_VERSION_CURRENT, new MockAnalyzer()));
+            TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         Document d = new Document();
         d.add(new Field("f1", "d3 first field", Store.YES, Index.ANALYZED,
             TermVector.NO));
@@ -197,7 +197,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         assertFNXFiles(dir, "2.fnx");
       }
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       writer.optimize();
       assertFalse(" field numbers got mixed up", writer.anyNonBulkMerges);
       writer.close();
@@ -210,7 +210,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
     for (int i = 0; i < 39; i++) {
       Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(
           new KeepAllDeletionPolicy()));
       Document d = new Document();
       d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
@@ -232,7 +232,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       List<IndexCommit> listCommits = IndexReader.listCommits(dir);
       assertEquals(2, listCommits.size());
       writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer()).setIndexDeletionPolicy(
+          new MockAnalyzer(random)).setIndexDeletionPolicy(
           new KeepAllDeletionPolicy()).setIndexCommit(listCommits.get(0)));
 
       d = new Document();
@@ -247,7 +247,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       assertFNXFiles(dir, "1.fnx", "2.fnx", "3.fnx");
 
       writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer()));
+          new MockAnalyzer(random)));
       writer.commit();
       listCommits = IndexReader.listCommits(dir);
       assertEquals(1, listCommits.size());
@@ -290,9 +290,9 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       }
       Directory base = buildRandomIndex(fieldNames.toArray(new String[0]),
           20 + random.nextInt(100),
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       IndexWriter writer = new IndexWriter(base, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       FieldNumberBiMap globalFieldMap = writer.segmentInfos
           .getOrLoadGlobalFieldNumberMap(base);
       Set<Entry<String, Integer>> entries = globalFieldMap.entries();
@@ -315,7 +315,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
       Directory base = newDirectory();
       IndexWriter writer = new IndexWriter(base, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
       for (String string : fieldNames) {
         doc.add(newField(string,
@@ -339,9 +339,9 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       for (int j = 0; j < numIndexes; j++) {
         Directory toAdd = buildRandomIndex(fieldNames.toArray(new String[0]),
             1 + random.nextInt(50),
-            newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+            newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         IndexWriter w = new IndexWriter(base, newIndexWriterConfig(
-            TEST_VERSION_CURRENT, new MockAnalyzer()));
+            TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         if (random.nextBoolean()) {
           IndexReader open = IndexReader.open(toAdd);
           w.addIndexes(open);
@@ -357,7 +357,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         toAdd.close();
       }
       IndexWriter w = new IndexWriter(base, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
           new LogByteSizeMergePolicy()));
       w.optimize();
       w.close();
@@ -402,7 +402,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       }
       Directory base = newDirectory();
       IndexWriter writer = new IndexWriter(base, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
           NoMergePolicy.NO_COMPOUND_FILES));
 
       SortedMap<Integer, String> copySortedMap = new TreeMap<Integer, String>(
@@ -428,7 +428,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       writer.close();
 
       writer = new IndexWriter(base, newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer()).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES));
+          new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES));
       writer.commit(); // make sure the old index is the latest segment
       writer.close();
 
@@ -459,7 +459,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
           .unzip(getDataFile("index." + oldNames[i] + ".zip"), oldIndxeDir);
       dir = newFSDirectory(oldIndxeDir);
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(policy));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(policy));
       SegmentInfos segmentInfos = writer.segmentInfos;
       assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
       assertEquals(0, segmentInfos.getGlobalFieldMapVersion());

@@ -134,7 +134,7 @@ public class TestAppendingCodec extends LuceneTestCase {
 
   public void testCodec() throws Exception {
     Directory dir = new AppendingRAMDirectory(random, new RAMDirectory());
-    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer());
+    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random));
     
     cfg.setCodecProvider(new AppendingCodecProvider());
     ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);

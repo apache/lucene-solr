@@ -60,7 +60,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy()));
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     Field field = newField("field", "", Field.Index.ANALYZED);
     doc.add(field);
@@ -228,7 +228,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
 
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {
@@ -331,7 +331,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
 
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
     // Sometimes swap in codec that impls ord():
     if (random.nextInt(10) == 7) {

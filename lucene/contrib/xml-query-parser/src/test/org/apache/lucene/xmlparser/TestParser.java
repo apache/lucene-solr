@@ -49,7 +49,7 @@ public class TestParser extends LuceneTestCase {
 	@BeforeClass
 	public static void beforeClass() throws Exception {
 	  // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-	  Analyzer analyzer=new MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
+	  Analyzer analyzer=new MockAnalyzer(random, MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
     //initialize the parser
 	  builder=new CorePlusExtensionsParser("contents",analyzer);
 		

@@ -132,7 +132,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       try {
         writer = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
@@ -174,7 +174,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory dir = newFSDirectory(oldIndxeDir);
 
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       w.setInfoStream(VERBOSE ? System.out : null);
       w.optimize();
       w.close();
@@ -194,7 +194,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       w.addIndexes(dir);
       w.close();
 
@@ -215,7 +215,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       Directory targetDir = newDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       w.addIndexes(reader);
       w.close();
       reader.close();
@@ -268,7 +268,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void searchIndex(File indexDir, String oldName) throws IOException {
-    //QueryParser parser = new QueryParser("contents", new MockAnalyzer());
+    //QueryParser parser = new QueryParser("contents", new MockAnalyzer(random));
     //Query query = parser.parse("handle:1");
 
     Directory dir = newFSDirectory(indexDir);
@@ -340,7 +340,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     Directory dir = newFSDirectory(oldIndexDir);
     // open writer
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     writer.setInfoStream(VERBOSE ? System.out : null);
     // add 10 docs
     for(int i=0;i<10;i++) {
@@ -385,7 +385,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     writer.optimize();
     writer.close();
 
@@ -430,7 +430,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     writer.optimize();
     writer.close();
 
@@ -451,7 +451,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
     IndexWriter writer = new IndexWriter(dir, conf);
     
@@ -462,7 +462,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.close();
 
     // open fresh writer so we get no prx file in the added segment
-    conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
+    conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
     writer = new IndexWriter(dir, conf);
     addNoProxDoc(writer);
@@ -498,7 +498,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       IndexWriter writer = new IndexWriter(
           dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setMaxBufferedDocs(-1).
               setRAMBufferSizeMB(16.0).
               setMergePolicy(mergePolicy)

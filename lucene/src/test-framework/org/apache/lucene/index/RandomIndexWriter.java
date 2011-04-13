@@ -42,6 +42,7 @@ public class RandomIndexWriter implements Closeable {
   private final Random r;
   int docCount;
   int flushAt;
+  private double flushAtFactor = 1.0;
   private boolean getReaderCalled;
 
   // Randomly calls Thread.yield so we mixup thread scheduling
@@ -67,7 +68,7 @@ public class RandomIndexWriter implements Closeable {
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer()));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(r)));
   }
   
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
@@ -94,13 +95,30 @@ public class RandomIndexWriter implements Closeable {
 
   public void addDocument(Document doc) throws IOException {
     w.addDocument(doc);
+    maybeCommit();
+  }
+
+  private void maybeCommit() throws IOException {
     if (docCount++ == flushAt) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("RIW.addDocument: now doing a commit");
+        System.out.println("RIW.add/updateDocument: now doing a commit at docCount=" + docCount);
       }
       w.commit();
-      flushAt += _TestUtil.nextInt(r, 10, 1000);
+      flushAt += _TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
+      if (flushAtFactor < 2e6) {
+        // gradually but exponentially increase time b/w flushes
+        flushAtFactor *= 1.05;
+      }
     }
+  }
+  
+  /**
+   * Updates a document.
+   * @see IndexWriter#updateDocument(Term, Document)
+   */
+  public void updateDocument(Term t, Document doc) throws IOException {
+    w.updateDocument(t, doc);
+    maybeCommit();
   }
   
   public void addIndexes(Directory... dirs) throws CorruptIndexException, IOException {

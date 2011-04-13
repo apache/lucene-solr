@@ -310,7 +310,7 @@ public final class TermInfosReader {
         }
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);
-        assert (int) enumerator.position == tiOrd.termOrd;
+        assert enumerator.position == tiOrd.termOrd;
       }
     } else {
       ti = null;

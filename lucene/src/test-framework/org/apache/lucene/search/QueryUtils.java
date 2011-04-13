@@ -166,7 +166,7 @@ public class QueryUtils {
     throws IOException {
     Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = new IndexWriter(d, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       for (int i = 0; i < numDeletedDocs; i++) {
         w.addDocument(new Document());
       }

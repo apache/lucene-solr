@@ -335,6 +335,15 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new StringDistanceFunction(str1, str2, dist);
       }
     });
+    addParser("field", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+
+        String fieldName = fp.parseArg();
+        SchemaField f = fp.getReq().getSchema().getField(fieldName);
+        return f.getType().getValueSource(f, fp);
+      }
+    });
 
     addParser(new DoubleParser("rad") {
       @Override

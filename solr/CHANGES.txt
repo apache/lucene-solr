@@ -121,6 +121,8 @@ New Features
 * SOLR-2338: Add support for using <similarity/> in a schema's fieldType,
   for customizing scoring on a per-field basis. (hossman, yonik, rmuir)
   
+* SOLR-2335: New 'field("...")' function syntax for refering to complex 
+  field names (containing whitespace or special characters) in functions.
 
 Optimizations
 ----------------------
@@ -245,6 +247,9 @@ Bug Fixes
 
 * SOLR-2445: Change the default qt to blank in form.jsp, because there is no "standard"
   request handler unless you have it in your solrconfig.xml explicitly. (koji)
+
+* SOLR-2455: Prevent double submit of forms in admin interface.
+  (Jeffrey Chang via uschindler)
 
 Other Changes
 ----------------------

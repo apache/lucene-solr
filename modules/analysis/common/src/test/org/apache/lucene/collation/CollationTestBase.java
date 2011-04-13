@@ -186,7 +186,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                    String dkResult) throws Exception {
     RAMDirectory indexStore = new RAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
 
     // document data:
     // the tracer field is used to determine which document was hit

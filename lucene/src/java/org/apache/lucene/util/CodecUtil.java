@@ -18,8 +18,8 @@ package org.apache.lucene.util;
  */
 
 
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
@@ -35,17 +35,15 @@ public final class CodecUtil {
 
   private final static int CODEC_MAGIC = 0x3fd76c17;
 
-  public static IndexOutput writeHeader(IndexOutput out, String codec, int version)
+  public static DataOutput writeHeader(DataOutput out, String codec, int version)
     throws IOException {
-    final long start = out.getFilePointer();
+    BytesRef bytes = new BytesRef(codec);
+    if (bytes.length != codec.length() || bytes.length >= 128) {
+      throw new IllegalArgumentException("codec must be simple ASCII, less than 128 characters in length [got " + codec + "]");
+    }
     out.writeInt(CODEC_MAGIC);
     out.writeString(codec);
     out.writeInt(version);
-
-    // We require this so we can easily pre-compute header length
-    if (out.getFilePointer()-start != codec.length()+9) {
-      throw new IllegalArgumentException("codec must be simple ASCII, less than 128 characters in length [got " + codec + "]");
-    }
 
     return out;
   }
@@ -54,7 +52,7 @@ public final class CodecUtil {
     return 9+codec.length();
   }
 
-  public static int checkHeader(IndexInput in, String codec, int minVersion, int maxVersion)
+  public static int checkHeader(DataInput in, String codec, int minVersion, int maxVersion)
     throws IOException {
 
     // Safety to guard against reading a bogus string:

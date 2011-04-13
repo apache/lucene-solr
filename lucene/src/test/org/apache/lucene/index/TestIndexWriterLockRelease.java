@@ -75,10 +75,10 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     public void testIndexWriterLockRelease() throws IOException {
       Directory dir = newFSDirectory(this.__test_dir);
       try {
-        new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
       } catch (FileNotFoundException e) {
         try {
-          new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+          new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
         } catch (FileNotFoundException e1) {
         }
       } finally {

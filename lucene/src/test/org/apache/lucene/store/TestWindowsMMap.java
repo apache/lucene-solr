@@ -71,7 +71,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     
     // plan to add a set of useful stopwords, consider changing some of the
     // interior filters.
-    MockAnalyzer analyzer = new MockAnalyzer();
+    MockAnalyzer analyzer = new MockAnalyzer(random);
     // TODO: something about lock timeouts and leftover locks.
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer)

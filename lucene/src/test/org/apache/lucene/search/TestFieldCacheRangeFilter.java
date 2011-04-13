@@ -531,7 +531,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   @Test
   public void testSparseIndex() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();
