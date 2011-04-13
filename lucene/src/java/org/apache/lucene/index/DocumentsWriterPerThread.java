@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
@@ -136,6 +136,7 @@ public class DocumentsWriterPerThread {
       }
 
       pendingDeletes.clear();
+      deleteSlice = deleteQueue.newSlice();
       // Reset all postings data
       doAfterFlush();
 
@@ -165,6 +166,8 @@ public class DocumentsWriterPerThread {
   private final PrintStream infoStream;
   private int numDocsInRAM;
   private int flushedDocCount;
+  DocumentsWriterDeleteQueue deleteQueue;
+  DeleteSlice deleteSlice;
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
       FieldInfos fieldInfos, IndexingChain indexingChain) {
@@ -180,11 +183,19 @@ public class DocumentsWriterPerThread {
     consumer = indexingChain.getChain(this);
     bytesUsed = new AtomicLong(0);
     pendingDeletes = new BufferedDeletes(false);
+    initialize();
   }
   
   public DocumentsWriterPerThread(DocumentsWriterPerThread other, FieldInfos fieldInfos) {
     this(other.directory, other.parent, fieldInfos, other.parent.chain);
-    
+  }
+  
+  void initialize() {
+    deleteQueue = parent.deleteQueue;
+    assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
+    pendingDeletes.clear();
+    deleteSlice = null;
+      
   }
 
   void setAborting() {
@@ -199,13 +210,10 @@ public class DocumentsWriterPerThread {
 
   public void updateDocument(Document doc, Analyzer analyzer, Term delTerm) throws IOException {
     assert writer.testPoint("DocumentsWriterPerThread addDocument start");
+    assert deleteQueue != null;
     docState.doc = doc;
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
-    if (delTerm != null) {
-      pendingDeletes.addTerm(delTerm, numDocsInRAM);
-    }
-
     if (segment == null) {
       // this call is synchronized on IndexWriter.segmentInfos
       segment = writer.newSegmentName();
@@ -219,7 +227,6 @@ public class DocumentsWriterPerThread {
       } finally {
         docState.clear();
       }
-
       success = true;
     } finally {
       if (!success) {
@@ -232,18 +239,44 @@ public class DocumentsWriterPerThread {
         }
       }
     }
-
     success = false;
     try {
-      numDocsInRAM++;
       consumer.finishDocument();
-
       success = true;
     } finally {
       if (!success) {
         abort();
       }
     }
+    finishDocument(delTerm);
+  }
+  
+  private void finishDocument(Term delTerm) throws IOException {
+    /*
+     * here we actually finish the document in two steps 1. push the delete into
+     * the queue and update our slice. 2. increment the DWPT private document
+     * id.
+     * 
+     * the updated slice we get from 1. holds all the deletes that have occurred
+     * since we updated the slice the last time.
+     */
+    if (deleteSlice == null) {
+      deleteSlice = deleteQueue.newSlice();
+      if (delTerm != null) {
+        deleteQueue.add(delTerm, deleteSlice);
+        deleteSlice.reset();
+      }
+      
+    } else {
+      if (delTerm != null) {
+        deleteQueue.add(delTerm, deleteSlice);
+        assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
+        deleteSlice.apply(pendingDeletes, numDocsInRAM);
+      } else if (deleteQueue.updateSlice(deleteSlice)) {
+        deleteSlice.apply(pendingDeletes, numDocsInRAM);
+      }
+    }
+    ++numDocsInRAM;
   }
 
   // Buffer a specific docID for deletion.  Currently only
@@ -261,22 +294,6 @@ public class DocumentsWriterPerThread {
     // confounding exception).
   }
 
-  void deleteQueries(Query... queries) {
-    if (numDocsInRAM > 0) {
-      for (Query query : queries) {
-        pendingDeletes.addQuery(query, numDocsInRAM);
-      }
-    }
-  }
-
-  void deleteTerms(Term... terms) {
-    if (numDocsInRAM > 0) {
-      for (Term term : terms) {
-        pendingDeletes.addTerm(term, numDocsInRAM);
-      }
-    }
-  }
-  
   /**
    * Returns the number of delete terms in this {@link DocumentsWriterPerThread}
    */
@@ -304,6 +321,15 @@ public class DocumentsWriterPerThread {
     fieldInfos = new FieldInfos(fieldInfos);
     parent.subtractFlushedNumDocs(numDocsInRAM);
     numDocsInRAM = 0;
+  }
+  
+  FrozenBufferedDeletes prepareFlush() {
+    assert numDocsInRAM > 0;
+    final FrozenBufferedDeletes globalDeletes = deleteQueue.freezeGlobalBuffer(deleteSlice);
+    // apply all deletes before we flush and release the delete slice
+    deleteSlice.apply(pendingDeletes, numDocsInRAM);
+    deleteSlice = null;
+    return globalDeletes;
   }
 
   /** Flush all pending docs to a new segment */

@@ -16,11 +16,15 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * This class controls {@link DocumentsWriterPerThread} flushing during
@@ -42,6 +46,11 @@ public final class DocumentsWriterFlushControl {
   private volatile int numPending = 0;
   private volatile int numFlushing = 0;
   final AtomicBoolean flushDeletes = new AtomicBoolean(false);
+  private boolean fullFlush = false;
+  private Queue<DocumentsWriterPerThread> flushQueue = new LinkedList<DocumentsWriterPerThread>();
+  // only for safety reasons if a DWPT is close to the RAM limit
+  private Queue<DocumentsWriterPerThread> blockedFlushes = new LinkedList<DocumentsWriterPerThread>();
+
 
   long peakActiveBytes = 0;// only with assert
   long peakFlushBytes = 0;// only with assert
@@ -51,16 +60,15 @@ public final class DocumentsWriterFlushControl {
   private final FlushPolicy flushPolicy;
   private boolean closed = false;
   private final HashMap<DocumentsWriterPerThread, Long> flushingWriters = new HashMap<DocumentsWriterPerThread, Long>();
-  private final BufferedDeletes pendingDeletes;
+  private final DocumentsWriter documentsWriter;
 
-  DocumentsWriterFlushControl(FlushPolicy flushPolicy,
-      DocumentsWriterPerThreadPool threadPool, Healthiness healthiness,
-      BufferedDeletes pendingDeletes, long maxBytesPerDWPT) {
+  DocumentsWriterFlushControl(DocumentsWriter documentsWriter,
+      Healthiness healthiness, long maxBytesPerDWPT) {
     this.healthiness = healthiness;
-    this.perThreadPool = threadPool;
-    this.flushPolicy = flushPolicy;
+    this.perThreadPool = documentsWriter.perThreadPool;
+    this.flushPolicy = documentsWriter.flushPolicy;
     this.maxBytesPerDWPT = maxBytesPerDWPT;
-    this.pendingDeletes = pendingDeletes;
+    this.documentsWriter = documentsWriter;
   }
 
   public synchronized long activeBytes() {
@@ -113,6 +121,11 @@ public final class DocumentsWriterFlushControl {
         // is super
         // important since we can not address more than 2048 MB per DWPT
         setFlushPending(perThread);
+        if (fullFlush) {
+          DocumentsWriterPerThread toBlock = internalTryCheckOutForFlush(perThread, false);
+          assert toBlock != null;
+          blockedFlushes.add(toBlock);
+        }
       }
     }
     final DocumentsWriterPerThread flushingDWPT = getFlushIfPending(perThread);
@@ -122,11 +135,29 @@ public final class DocumentsWriterFlushControl {
 
   synchronized void doAfterFlush(DocumentsWriterPerThread dwpt) {
     assert flushingWriters.containsKey(dwpt);
-    numFlushing--;
-    Long bytes = flushingWriters.remove(dwpt);
-    flushBytes -= bytes.longValue();
-    perThreadPool.recycle(dwpt);
-    healthiness.updateStalled(this);
+    try {
+      numFlushing--;
+      Long bytes = flushingWriters.remove(dwpt);
+      flushBytes -= bytes.longValue();
+      perThreadPool.recycle(dwpt);
+      healthiness.updateStalled(this);
+    } finally {
+      notifyAll();
+    }
+  }
+  
+  public synchronized boolean allFlushesDue() {
+    return numFlushing == 0;
+  }
+  
+  public synchronized void waitForFlush() {
+    if (numFlushing != 0) {
+      try {
+        this.wait();
+      } catch (InterruptedException e) {
+        throw new ThreadInterruptedException(e);
+      }
+    }
   }
 
   /**
@@ -157,6 +188,13 @@ public final class DocumentsWriterFlushControl {
 
   synchronized DocumentsWriterPerThread tryCheckoutForFlush(
       ThreadState perThread, boolean setPending) {
+    if (fullFlush)
+      return null;
+    return internalTryCheckOutForFlush(perThread, setPending);
+  }
+
+  private DocumentsWriterPerThread internalTryCheckOutForFlush(
+      ThreadState perThread, boolean setPending) {
     if (setPending && !perThread.flushPending) {
       setFlushPending(perThread);
     }
@@ -185,7 +223,7 @@ public final class DocumentsWriterFlushControl {
     return null;
   }
 
-  DocumentsWriterPerThread getFlushIfPending(ThreadState perThread) {
+  private DocumentsWriterPerThread getFlushIfPending(ThreadState perThread) {
     if (numPending > 0) {
       final DocumentsWriterPerThread dwpt = perThread == null ? null
           : tryCheckoutForFlush(perThread, false);
@@ -204,6 +242,12 @@ public final class DocumentsWriterFlushControl {
   }
 
   DocumentsWriterPerThread nextPendingFlush() {
+    synchronized (this) {
+      DocumentsWriterPerThread poll = flushQueue.poll();
+      if (poll != null) {
+        return poll;
+      }  
+    }
     if (numPending > 0) {
       final Iterator<ThreadState> allActiveThreads = perThreadPool
           .getActivePerThreadsIterator();
@@ -236,17 +280,16 @@ public final class DocumentsWriterFlushControl {
     return flushPolicy.getMaxNetBytes();
   }
 
-  synchronized void doOnDelete(ThreadState state) {
-    if (!state.flushPending) {
-      flushPolicy.onDelete(this, state);
-    }
+  synchronized void doOnDelete() {
+    // pass null this is a global delete no update
+    flushPolicy.onDelete(this, null);
   }
 
   /**
    * Returns the number of delete terms in the global pool
    */
   public int getNumGlobalTermDeletes() {
-    return pendingDeletes.numTermDeletes.get();
+    return documentsWriter.deleteQueue.numGlobalTermDeletes();
   }
 
   int numFlushingDWPT() {
@@ -259,5 +302,67 @@ public final class DocumentsWriterFlushControl {
   
   int numActiveDWPT() {
     return this.perThreadPool.getMaxThreadStates();
+  }
+  
+  void markForFullFlush() {
+    synchronized (this) {
+      assert !fullFlush;
+      fullFlush = true;
+    }
+    final Iterator<ThreadState> allActiveThreads = perThreadPool
+    .getActivePerThreadsIterator();
+    final ArrayList<DocumentsWriterPerThread> toFlush = new ArrayList<DocumentsWriterPerThread>();
+    while (allActiveThreads.hasNext()) {
+      final ThreadState next = allActiveThreads.next();
+      next.lock();
+      try {
+        if (!next.isActive()) {
+          continue; 
+        }
+        if (next.perThread.getNumDocsInRAM() > 0) {
+          final DocumentsWriterPerThread dwpt = next.perThread; // just for assert
+          final DocumentsWriterPerThread flushingDWPT = internalTryCheckOutForFlush(next, true);
+          assert flushingDWPT != null : "DWPT must never be null here since we hold the lock and it holds documents";
+          assert dwpt == flushingDWPT : "flushControl returned different DWPT";
+          toFlush.add(flushingDWPT);
+        } else {
+          next.perThread.initialize();
+        }
+      } finally {
+        next.unlock();
+      }
+    }
+    synchronized (this) {
+      flushQueue.addAll(blockedFlushes);
+      blockedFlushes.clear();
+      flushQueue.addAll(toFlush);
+    }
+    
+  }
+  
+  synchronized void finishFullFlush() {
+    assert fullFlush;
+    assert flushQueue.isEmpty();
+    try {
+      if (!blockedFlushes.isEmpty()) {
+        flushQueue.addAll(blockedFlushes);
+        blockedFlushes.clear();
+      }
+    } finally {
+      fullFlush = false;
+    }
+  }
+
+  synchronized void abortFullFlushes() {
+    try {
+      for (DocumentsWriterPerThread dwpt : flushQueue) {
+        doAfterFlush(dwpt);
+      }
+      for (DocumentsWriterPerThread dwpt : blockedFlushes) {
+        doAfterFlush(dwpt);
+      }
+    } finally {
+      fullFlush = false;
+    }
   }
 }

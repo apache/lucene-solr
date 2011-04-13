@@ -118,7 +118,10 @@ public abstract class DocumentsWriterPerThreadPool {
 
   public synchronized ThreadState newThreadState() {
     if (numThreadStatesActive < perThreads.length) {
-      return perThreads[numThreadStatesActive++];
+      final ThreadState threadState = perThreads[numThreadStatesActive];
+      threadState.perThread.initialize();
+      numThreadStatesActive++;
+      return threadState;
     }
     return null;
   }
@@ -128,7 +131,9 @@ public abstract class DocumentsWriterPerThreadPool {
     final DocumentsWriterPerThread dwpt = threadState.perThread;
     if (!closed) {
       final FieldInfos infos = globalFieldMap.newFieldInfos(SegmentCodecsBuilder.create(codecProvider));
-      threadState.resetWriter(new DocumentsWriterPerThread(dwpt, infos));
+      final DocumentsWriterPerThread newDwpt = new DocumentsWriterPerThread(dwpt, infos);
+      newDwpt.initialize();
+      threadState.resetWriter(newDwpt);
     } else {
       threadState.resetWriter(null);
     }

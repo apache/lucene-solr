@@ -55,8 +55,8 @@ public abstract class FlushPolicy {
   protected IndexWriterConfig indexWriterConfig;
 
   /**
-   * Called for each delete term applied to the given {@link ThreadState}s
-   * {@link DocumentsWriterPerThread}.
+   * Called for each delete term. If this is a delete triggered due to an update
+   * the given {@link ThreadState} is non-null.
    * <p>
    * Note: This method is synchronized by the given
    * {@link DocumentsWriterFlushControl} and it is guaranteed that the calling

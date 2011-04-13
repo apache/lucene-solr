@@ -47,6 +47,7 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -356,8 +357,8 @@ public class IndexWriter implements Closeable {
     // reader; in theory we could do similar retry logic,
     // just like we do when loading segments_N
     IndexReader r;
+    flush(false, applyAllDeletes); // don't sync on IW here DWPT will deadlock
     synchronized(this) {
-      flush(false, applyAllDeletes);
       r = new DirectoryReader(this, segmentInfos, config.getReaderTermsIndexDivisor(), codecs, applyAllDeletes);
       if (infoStream != null) {
         message("return reader version=" + r.getVersion() + " reader=" + r);
@@ -2026,7 +2027,16 @@ public class IndexWriter implements Closeable {
     deleter.checkpoint(segmentInfos, false);
   }
 
-  void addFlushedSegment(FlushedSegment flushedSegment) throws IOException {
+  /**
+   * Prepares the {@link SegmentInfo} for the new flushed segment and persists
+   * the deleted documents {@link BitVector}. Use
+   * {@link #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes)} to
+   * publish the returned {@link SegmentInfo} together with its segment private
+   * delete packet.
+   * 
+   * @see #publishFlushedSegment(SegmentInfo, FrozenBufferedDeletes)
+   */
+  SegmentInfo prepareFlushedSegment(FlushedSegment flushedSegment) throws IOException {
     assert flushedSegment != null;
 
     SegmentInfo newSegment = flushedSegment.segmentInfo;
@@ -2098,9 +2108,32 @@ public class IndexWriter implements Closeable {
         }
       }
     }
-
-
-    synchronized(this) {
+    return newSegment;
+  }
+  
+  /**
+   * Atomically adds the segment private delete packet and publishes the flushed
+   * segments SegmentInfo to the index writer. NOTE: use
+   * {@link #prepareFlushedSegment(FlushedSegment)} to obtain the
+   * {@link SegmentInfo} for the flushed segment.
+   * 
+   * @see #prepareFlushedSegment(FlushedSegment)
+   */
+  synchronized void publishFlushedSegment(SegmentInfo newSegment,
+      FrozenBufferedDeletes packet) throws IOException {
+    // lock order IW -> BDS
+    synchronized (bufferedDeletesStream) {
+      // publishing the segment must be synched on IW -> BDS to make the sure
+      // that no merge prunes away the seg. private delete packet
+      final long nextGen;
+      if (packet != null && packet.any()) {
+        nextGen = bufferedDeletesStream.push(packet);
+      } else {
+        // since we don't have a delete packet to apply we can get a new
+        // generation right away
+        nextGen = bufferedDeletesStream.getNextGen();
+      }
+      newSegment.setBufferedDeletesGen(nextGen);
       segmentInfos.add(newSegment);
       checkpoint();
     }
@@ -2534,7 +2567,6 @@ public class IndexWriter implements Closeable {
       maybeMerge();
     }
   }
-
   // TODO: this method should not have to be entirely
   // synchronized, ie, merges should be allowed to commit
   // even while a flush is happening
@@ -2602,30 +2634,31 @@ public class IndexWriter implements Closeable {
   }
   
   final synchronized void applyAllDeletes() throws IOException {
-    flushDeletesCount.incrementAndGet();
-    final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, segmentInfos);
-    if (result.anyDeletes) {
-      checkpoint();
-    }
-    if (!keepFullyDeletedSegments && result.allDeleted != null) {
-      if (infoStream != null) {
-        message("drop 100% deleted segments: " + result.allDeleted);
+      flushDeletesCount.incrementAndGet();
+      final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream
+          .applyDeletes(readerPool, segmentInfos);
+      if (result.anyDeletes) {
+        checkpoint();
       }
-      for(SegmentInfo info : result.allDeleted) {
-        // If a merge has already registered for this
-        // segment, we leave it in the readerPool; the
-        // merge will skip merging it and will then drop
-        // it once it's done:
-        if (!mergingSegments.contains(info)) {
-          segmentInfos.remove(info);
-          if (readerPool != null) {
-            readerPool.drop(info);
+      if (!keepFullyDeletedSegments && result.allDeleted != null) {
+        if (infoStream != null) {
+          message("drop 100% deleted segments: " + result.allDeleted);
+        }
+        for (SegmentInfo info : result.allDeleted) {
+          // If a merge has already registered for this
+          // segment, we leave it in the readerPool; the
+          // merge will skip merging it and will then drop
+          // it once it's done:
+          if (!mergingSegments.contains(info)) {
+            segmentInfos.remove(info);
+            if (readerPool != null) {
+              readerPool.drop(info);
+            }
           }
         }
+        checkpoint();
       }
-      checkpoint();
-    }
-    bufferedDeletesStream.prune(segmentInfos);
+      bufferedDeletesStream.prune(segmentInfos);
   }
 
   /** Expert:  Return the total size of all index files currently cached in memory.
@@ -3065,7 +3098,6 @@ public class IndexWriter implements Closeable {
 
     // Lock order: IW -> BD
     bufferedDeletesStream.prune(segmentInfos);
-
     Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", Boolean.toString(merge.optimize));
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
