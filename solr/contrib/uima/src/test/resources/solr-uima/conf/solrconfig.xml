@@ -295,7 +295,7 @@
   <!--
     <indexReaderFactory name="IndexReaderFactory"
     class="org.apache.solr.core.StandardIndexReaderFactory"> <int
-    name="termInfosIndexDivisor">12</int> </indexReaderFactory >
+    name="setTermIndexDivisor">12</int> </indexReaderFactory >
   -->
 
 
