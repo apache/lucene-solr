@@ -253,14 +253,14 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
   public void testHealthyness() throws InterruptedException,
       CorruptIndexException, LockObtainFailedException, IOException {
 
-    int[] numThreads = new int[] { 3 + random.nextInt(8), 1 };
+    int[] numThreads = new int[] { 4 + random.nextInt(8), 1 };
     final int numDocumentsToIndex = 50 + random.nextInt(50);
     for (int i = 0; i < numThreads.length; i++) {
       AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
       MockDirectoryWrapper dir = newDirectory();
       // mock a very slow harddisk here so that flushing is very slow
       dir.setThrottledIndexOutput(new ThrottledIndexOutput(ThrottledIndexOutput
-          .mBitsToBytes(50 + random.nextInt(10)), 5 + random.nextInt(5), null));
+          .mBitsToBytes(40 + random.nextInt(10)), 5 + random.nextInt(5), null));
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
@@ -290,13 +290,10 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertEquals(" all flushes must be due", 0, flushControl.flushBytes());
       assertEquals(numDocumentsToIndex, writer.numDocs());
       assertEquals(numDocumentsToIndex, writer.maxDoc());
-      if (flushControl.peakNetBytes > (long)(iwc.getRAMBufferSizeMB() * 1024d * 1024d * 2d)) {
-        assertTrue("should be unhealthy here numThreads: " + numThreads[i],
+      if (numThreads[i] == 1) {
+        assertFalse(
+            "single thread must not stall",
             docsWriter.healthiness.wasStalled);
-      }
-
-      if (numThreads[i] == 1) { // single thread could be unhealthy is a single
-                                // doc is very large?!
         assertFalse(
             "single thread must not block numThreads: " + numThreads[i],
             docsWriter.healthiness.hasBlocked());
