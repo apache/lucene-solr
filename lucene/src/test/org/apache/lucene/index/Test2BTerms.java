@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +36,7 @@ import org.junit.Ignore;
 //
 //   ant compile-test
 //
-//   java -server -Xmx8g -d64 -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/test-framework:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=SimpleFSDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
+//   java -server -Xmx8g -d64 -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/test-framework:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=MMapDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
 
 public class Test2BTerms extends LuceneTestCase {
@@ -47,7 +48,6 @@ public class Test2BTerms extends LuceneTestCase {
     private final CharTermAttribute charTerm;
     private final static int TOKEN_LEN = 5;
     private final char[] chars;
-    private final byte[] bytes;
     public final List<String> savedTerms = new ArrayList<String>();
     private int nextSave;
 
@@ -57,7 +57,6 @@ public class Test2BTerms extends LuceneTestCase {
       charTerm = addAttribute(CharTermAttribute.class);
       chars = charTerm.resizeBuffer(TOKEN_LEN);
       charTerm.setLength(TOKEN_LEN);
-      bytes = new byte[2*TOKEN_LEN];
       nextSave = _TestUtil.nextInt(random, 500000, 1000000);
     }
     
@@ -66,15 +65,12 @@ public class Test2BTerms extends LuceneTestCase {
       if (tokenCount >= tokensPerDoc) {
         return false;
       }
-      random.nextBytes(bytes);
-      int byteUpto = 0;
-      for(int i=0;i<TOKEN_LEN;i++) {
-        chars[i] = (char) (((bytes[byteUpto]&0xff) + (bytes[byteUpto+1]&0xff)) % UnicodeUtil.UNI_SUR_HIGH_START);
-        byteUpto += 2;
-      }
+      _TestUtil.randomFixedLengthUnicodeString(random, chars, 0, TOKEN_LEN);
       tokenCount++;
       if (--nextSave == 0) {
-        savedTerms.add(new String(chars, 0, TOKEN_LEN));
+        final String s = new String(chars, 0, TOKEN_LEN);
+        System.out.println("TEST: save term=" + s + " [" + toHexString(s) + "]");
+        savedTerms.add(s);
         nextSave = _TestUtil.nextInt(random, 500000, 1000000);
       }
       return true;
@@ -97,13 +93,16 @@ public class Test2BTerms extends LuceneTestCase {
 
     Directory dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
     //Directory dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
+
     if (true) {
+
       IndexWriter w = new IndexWriter(dir,
                                       new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
                                       .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                       .setRAMBufferSizeMB(256.0)
                                       .setMergeScheduler(new ConcurrentMergeScheduler())
-                                      .setMergePolicy(newLogMergePolicy(false, 10)));
+                                      .setMergePolicy(newLogMergePolicy(false, 10))
+                                      .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
 
       MergePolicy mp = w.getConfig().getMergePolicy();
       if (mp instanceof LogByteSizeMergePolicy) {
@@ -112,6 +111,7 @@ public class Test2BTerms extends LuceneTestCase {
       }
 
       Document doc = new Document();
+
       final MyTokenStream ts = new MyTokenStream(TERMS_PER_DOC);
       Field field = new Field("field", ts);
       field.setOmitTermFreqAndPositions(true);
@@ -171,20 +171,47 @@ public class Test2BTerms extends LuceneTestCase {
     return savedTerms;
   }
 
+  private String toHexString(String s) {
+    byte[] bytes;
+    try {
+      bytes = s.getBytes("UTF-8");
+    } catch (UnsupportedEncodingException uee) {
+      throw new RuntimeException(uee);
+    }
+    StringBuilder sb = new StringBuilder();
+    for(byte b : bytes) {
+      if (sb.length() > 0) {
+        sb.append(' ');
+      }
+      sb.append(Integer.toHexString(b&0xFF));
+    }
+    return sb.toString();
+  }
+
   private void testSavedTerms(IndexReader r, List<String> terms) throws IOException {
     System.out.println("TEST: run " + terms.size() + " terms on reader=" + r);
     IndexSearcher s = new IndexSearcher(r);
     Collections.shuffle(terms);
+    boolean failed = false;
     for(int iter=0;iter<10*terms.size();iter++) {
       final String term = terms.get(random.nextInt(terms.size()));
-      System.out.println("TEST: search " + term);
+      System.out.println("TEST: search " + term + " [" + toHexString(term) + "]");
       final long t0 = System.currentTimeMillis();
-      assertTrue(s.search(new TermQuery(new Term("field", term)), 1).totalHits > 0);
+      final int count = s.search(new TermQuery(new Term("field", term)), 1).totalHits;
+      if (count <= 0) {
+        System.out.println("  FAILED: count=" + count);
+        failed = true;
+      }
       final long t1 = System.currentTimeMillis();
       System.out.println("  took " + (t1-t0) + " millis");
 
       final TermEnum termEnum = r.terms(new Term("field", term));
-      assertEquals(term, termEnum.term().text());
+      final String text = termEnum.term().text();
+      if (!term.equals(text)) {
+        System.out.println("  FAILED: wrong term: got " + text + " [" + toHexString(text) + "]");
+        failed = true;
+      }
     }
+    assertFalse(failed);
   }
 }
