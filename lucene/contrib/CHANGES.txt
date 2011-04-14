@@ -7,6 +7,10 @@ Bug fixes
  * LUCENE-3026: SmartChineseAnalyzer's WordTokenFilter threw NullPointerException
    on sentences longer than 32,767 characters.  (wangzhenghang via Robert Muir)
 
+New Features
+
+ * LUCENE-3016: Add analyzer for Latvian.  (Robert Muir)
+
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
