@@ -536,7 +536,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             fail(testName + " hit IOException after disk space was freed up");
           }
         }
-
+        // prevent throwing a random exception here!!
+        final double randomIOExceptionRate = dir.getRandomIOExceptionRate();
+        dir.setRandomIOExceptionRate(0.0);
         if (!success) {
           // Must force the close else the writer can have
           // open files which cause exc in MockRAMDir.close
@@ -549,6 +551,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           _TestUtil.checkIndex(dir);
           TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
         }
+        dir.setRandomIOExceptionRate(randomIOExceptionRate);
 
         // Finally, verify index is not corrupt, and, if
         // we succeeded, we see all docs changed, and if
