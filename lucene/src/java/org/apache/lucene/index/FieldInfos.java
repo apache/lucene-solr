@@ -240,6 +240,7 @@ final class FieldInfos {
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     }
+    assert !fi.omitTermFreqAndPositions || !fi.storePayloads;
     return fi;
   }
 
@@ -321,6 +322,7 @@ final class FieldInfos {
     output.writeVInt(size());
     for (int i = 0; i < size(); i++) {
       FieldInfo fi = fieldInfo(i);
+      assert !fi.omitTermFreqAndPositions || !fi.storePayloads;
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
@@ -367,6 +369,13 @@ final class FieldInfos {
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
       
+      // LUCENE-3027: past indices were able to write
+      // storePayloads=true when omitTFAP is also true,
+      // which is invalid.  We correct that, here:
+      if (omitTermFreqAndPositions) {
+        storePayloads = false;
+      }
+
       addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     }
 

@@ -54,6 +54,7 @@ final class FieldInfo {
       this.omitNorms = true;
       this.omitTermFreqAndPositions = false;
     }
+    assert !omitTermFreqAndPositions || !storePayloads;
   }
 
   @Override
@@ -64,6 +65,7 @@ final class FieldInfo {
 
   void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
               boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+
     if (this.isIndexed != isIndexed) {
       this.isIndexed = true;                      // once indexed, always index
     }
@@ -85,7 +87,9 @@ final class FieldInfo {
       }
       if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
         this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
+        this.storePayloads = false;
       }
     }
+    assert !this.omitTermFreqAndPositions || !this.storePayloads;
   }
 }

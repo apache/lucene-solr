@@ -118,6 +118,7 @@ public class TestOmitTf extends LuceneTestCase {
             setMaxBufferedDocs(3).
             setMergePolicy(newLogMergePolicy(2))
     );
+    writer.setInfoStream(VERBOSE ? System.out : null);
     Document d = new Document();
         
     // this field will have Tf
