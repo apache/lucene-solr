@@ -537,7 +537,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           }
         }
         final double randomIOExceptionRate = dir.getRandomIOExceptionRate();
+        final long maxSizeInBytes = dir.getMaxSizeInBytes();
         dir.setRandomIOExceptionRate(0.0);
+        dir.setMaxSizeInBytes(0);
         if (!success) {
           // Must force the close else the writer can have
           // open files which cause exc in MockRAMDir.close
@@ -552,7 +554,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
         }
         dir.setRandomIOExceptionRate(randomIOExceptionRate);
-
+        dir.setMaxSizeInBytes(maxSizeInBytes);
 
         // Finally, verify index is not corrupt, and, if
         // we succeeded, we see all docs changed, and if
