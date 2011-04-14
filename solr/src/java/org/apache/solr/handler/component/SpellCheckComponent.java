@@ -162,7 +162,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
       } else {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
-            "Specified dictionary does not exist.");
+            "Specified dictionary does not exist: " + getDictionaryName(params));
       }
     }
   }

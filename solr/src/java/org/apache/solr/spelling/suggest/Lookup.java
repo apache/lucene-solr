@@ -12,7 +12,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TermFreqIterator;
 
 public abstract class Lookup {
-  
   /**
    * Result of a lookup.
    */
