@@ -2,7 +2,10 @@ Lucene contrib change Log
 
 ======================= Lucene 3.x (not yet released) =======================
 
-(No changes)
+Bug fixes
+
+ * LUCENE-3026: SmartChineseAnalyzer's WordTokenFilter threw NullPointerException
+   on sentences longer than 32,767 characters.  (wangzhenghang via Robert Muir)
 
 ======================= Lucene 3.1.0 =======================
 
