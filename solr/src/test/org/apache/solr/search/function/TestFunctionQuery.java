@@ -24,6 +24,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -522,7 +523,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
    * verify that both the field("...") value source parser as well as 
    * ExternalFileField work with esoteric field names
    */
-  @Test
+  @Test @Ignore("fails on some platforms: see https://issues.apache.org/jira/browse/SOLR-2468")
   public void testExternalFieldValueSourceParser() {
 
     String field = "CoMpleX \" fieldName _extf";
