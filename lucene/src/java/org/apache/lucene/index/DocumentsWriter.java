@@ -528,13 +528,13 @@ final class DocumentsWriter {
   }
   
   final void finishFullFlush(boolean success) {
+    assert setFlushingDeleteQueue(null);
     if (success) {
       // release the flush lock
       flushControl.finishFullFlush();
     } else {
       flushControl.abortFullFlushes();
     }
-    assert setFlushingDeleteQueue(null);
   }
   
   static final class FlushTicket {
