@@ -81,9 +81,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(random);
     for (int r = 0; r < 3; r++) {
       final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
-          newLogMergePolicy()).setMaxBufferedDocs(2));
-
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
       final int SIZE = 200 * RANDOM_MULTIPLIER;
       final int numUpdates = (int) (SIZE * (2 + random.nextDouble()));
       int numThreads = 3 + random.nextInt(Runtime.getRuntime().availableProcessors());
@@ -120,22 +118,23 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     public void run() {
       try {
-//        IndexReader open = IndexReader.open(writer, true);
+        IndexReader open = null;
         for (int i = 0; i < num; i++) {
           Document doc = new Document();// docs.nextDoc();
           doc.add(newField("id", "test", Index.NOT_ANALYZED));
           writer.updateDocument(new Term("id", "test"), doc);
-//          if (random.nextInt(10) == 0) {
-//            IndexReader reader = open.reopen();
-//            if (reader != open) {
-//              open.close();
-//              open = reader;
-//            }
-//            assertEquals("iter: " + i + " numDocs: "+ open.numDocs() + " del: " + open.numDeletedDocs() + " max: " + open.maxDoc(), 1, open.numDocs());
-//            
-//          }
+          if (random.nextInt(10) == 0) {
+            if (open == null)
+              open = IndexReader.open(writer, true);
+            IndexReader reader = open.reopen();
+            if (reader != open) {
+              open.close();
+              open = reader;
+            }
+            assertEquals("iter: " + i + " numDocs: "+ open.numDocs() + " del: " + open.numDeletedDocs() + " max: " + open.maxDoc(), 1, open.numDocs());
+          }
         }
-//        open.close();
+        open.close();
       } catch (Exception e) {
         fail(e.getMessage());
       }

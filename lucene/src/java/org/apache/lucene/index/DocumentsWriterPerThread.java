@@ -195,7 +195,6 @@ public class DocumentsWriterPerThread {
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
     pendingDeletes.clear();
     deleteSlice = null;
-      
   }
 
   void setAborting() {

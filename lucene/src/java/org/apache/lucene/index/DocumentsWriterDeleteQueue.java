@@ -72,6 +72,10 @@ final class DocumentsWriterDeleteQueue {
   private final BufferedDeletes globalBufferedDeletes;
   /* only acquired to update the global deletes */
   private final ReentrantLock globalBufferLock = new ReentrantLock();
+  
+  DocumentsWriterDeleteQueue() {
+    this(new BufferedDeletes(false));
+  }
 
   DocumentsWriterDeleteQueue(BufferedDeletes globalBufferedDeletes) {
     this.globalBufferedDeletes = globalBufferedDeletes;

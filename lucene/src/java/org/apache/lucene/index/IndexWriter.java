@@ -347,25 +347,50 @@ public class IndexWriter implements Closeable {
     if (infoStream != null) {
       message("flush at getReader");
     }
-
     // Do this up front before flushing so that the readers
     // obtained during this flush are pooled, the first time
     // this method is called:
     poolReaders = true;
-
-    // Prevent segmentInfos from changing while opening the
-    // reader; in theory we could do similar retry logic,
-    // just like we do when loading segments_N
-    IndexReader r;
-    flush(false, applyAllDeletes); // don't sync on IW here DWPT will deadlock
-    synchronized(this) {
-      r = new DirectoryReader(this, segmentInfos, config.getReaderTermsIndexDivisor(), codecs, applyAllDeletes);
-      if (infoStream != null) {
-        message("return reader version=" + r.getVersion() + " reader=" + r);
+    final IndexReader r;
+    doBeforeFlush();
+    final boolean maybeMerge;
+    /*
+     * for releasing a NRT reader we must ensure that 
+     * DW doesn't add any segments or deletes until we are
+     * done with creating the NRT DirectoryReader. 
+     * We release the two stage full flush after we are done opening the
+     * directory reader!
+     */
+    synchronized (fullFlushLock) {
+      boolean success = false;
+      try {
+        maybeMerge = docWriter.flushAllThreads(applyAllDeletes);
+        if (!maybeMerge) {
+          flushCount.incrementAndGet();
+        }
+        success = true;
+        // Prevent segmentInfos from changing while opening the
+        // reader; in theory we could do similar retry logic,
+        // just like we do when loading segments_N
+        synchronized(this) {
+          maybeApplyDeletes(applyAllDeletes);
+          r = new DirectoryReader(this, segmentInfos, config.getReaderTermsIndexDivisor(), codecs, applyAllDeletes);
+          if (infoStream != null) {
+            message("return reader version=" + r.getVersion() + " reader=" + r);
+          }
+        }
+      } finally {
+        if (!success && infoStream != null) {
+          message("hit exception during while NRT reader");
+        }
+        // now we are done - finish the full flush!
+        docWriter.finishFullFlush(success);
+        doAfterFlush();
       }
     }
-    maybeMerge();
-
+    if(maybeMerge) {
+      maybeMerge();
+    }
     if (infoStream != null) {
       message("getReader took " + (System.currentTimeMillis() - tStart) + " msec");
     }
@@ -2120,9 +2145,12 @@ public class IndexWriter implements Closeable {
    * @see #prepareFlushedSegment(FlushedSegment)
    */
   synchronized void publishFlushedSegment(SegmentInfo newSegment,
-      FrozenBufferedDeletes packet) throws IOException {
+      FrozenBufferedDeletes packet, FrozenBufferedDeletes globalPacket) throws IOException {
     // lock order IW -> BDS
     synchronized (bufferedDeletesStream) {
+      if (globalPacket != null && globalPacket.any()) {
+        bufferedDeletesStream.push(globalPacket);
+      } 
       // publishing the segment must be synched on IW -> BDS to make the sure
       // that no merge prunes away the seg. private delete packet
       final long nextGen;
@@ -2544,7 +2572,7 @@ public class IndexWriter implements Closeable {
       message("commit: done");
     }
   }
-
+  private final Object fullFlushLock = new Object();
   /**
    * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory.
@@ -2576,7 +2604,6 @@ public class IndexWriter implements Closeable {
     }
 
     doBeforeFlush();
-
     assert testPoint("startDoFlush");
     boolean success = false;
     try {
@@ -2585,43 +2612,26 @@ public class IndexWriter implements Closeable {
         message("  start flush: applyAllDeletes=" + applyAllDeletes);
         message("  index before flush " + segString());
       }
-
-      boolean maybeMerge = docWriter.flushAllThreads(applyAllDeletes);
-
+      final boolean maybeMerge;
+      
+      synchronized (fullFlushLock) {
+        try {
+          maybeMerge = docWriter.flushAllThreads(applyAllDeletes);
+          success = true;
+        } finally {
+          docWriter.finishFullFlush(success);
+        }
+      }
+      success = false;
       synchronized(this) {
-        if (!applyAllDeletes) {
-          // If deletes alone are consuming > 1/2 our RAM
-          // buffer, force them all to apply now. This is to
-          // prevent too-frequent flushing of a long tail of
-          // tiny segments:
-          if ((config.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
-               bufferedDeletesStream.bytesUsed() > (1024*1024*config.getRAMBufferSizeMB()/2))) {
-            applyAllDeletes = true;
-            if (infoStream != null) {
-              message("force apply deletes bytesUsed=" + bufferedDeletesStream.bytesUsed() + " vs ramBuffer=" + (1024*1024*config.getRAMBufferSizeMB()));
-            }
-          }
-        }
-
-        if (applyAllDeletes) {
-          if (infoStream != null) {
-            message("apply all deletes during flush");
-          }
-          applyAllDeletes();
-        } else if (infoStream != null) {
-          message("don't apply deletes now delTermCount=" + bufferedDeletesStream.numTerms() + " bytesUsed=" + bufferedDeletesStream.bytesUsed());
-        }
-
+        maybeApplyDeletes(applyAllDeletes);
         doAfterFlush();
         if (!maybeMerge) {
           // flushCount is incremented in flushAllThreads
           flushCount.incrementAndGet();
         }
-
         success = true;
-
         return maybeMerge;
-
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "doFlush");
@@ -2631,6 +2641,32 @@ public class IndexWriter implements Closeable {
       if (!success && infoStream != null)
         message("hit exception during flush");
     }
+  }
+  
+  final synchronized void maybeApplyDeletes(boolean applyAllDeletes) throws IOException {
+    if (!applyAllDeletes) {
+      // If deletes alone are consuming > 1/2 our RAM
+      // buffer, force them all to apply now. This is to
+      // prevent too-frequent flushing of a long tail of
+      // tiny segments:
+      if ((config.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
+           bufferedDeletesStream.bytesUsed() > (1024*1024*config.getRAMBufferSizeMB()/2))) {
+        applyAllDeletes = true;
+        if (infoStream != null) {
+          message("force apply deletes bytesUsed=" + bufferedDeletesStream.bytesUsed() + " vs ramBuffer=" + (1024*1024*config.getRAMBufferSizeMB()));
+        }
+      }
+    }
+
+    if (applyAllDeletes) {
+      if (infoStream != null) {
+        message("apply all deletes during flush");
+      }
+      applyAllDeletes();
+    } else if (infoStream != null) {
+      message("don't apply deletes now delTermCount=" + bufferedDeletesStream.numTerms() + " bytesUsed=" + bufferedDeletesStream.bytesUsed());
+    }
+
   }
   
   final synchronized void applyAllDeletes() throws IOException {

@@ -305,9 +305,14 @@ public final class DocumentsWriterFlushControl {
   }
   
   void markForFullFlush() {
+    final DocumentsWriterDeleteQueue flushingQueue;
     synchronized (this) {
       assert !fullFlush;
       fullFlush = true;
+      flushingQueue = documentsWriter.deleteQueue;
+      // set a new delete queue - all subsequent DWPT will use this queue until
+      // we do another full flush
+      documentsWriter.deleteQueue = new DocumentsWriterDeleteQueue(new BufferedDeletes(false));
     }
     final Iterator<ThreadState> allActiveThreads = perThreadPool
     .getActivePerThreadsIterator();
@@ -319,13 +324,18 @@ public final class DocumentsWriterFlushControl {
         if (!next.isActive()) {
           continue; 
         }
-        if (next.perThread.getNumDocsInRAM() > 0) {
+        if (next.perThread.deleteQueue != flushingQueue) {
+          // this one is already a new DWPT
+          continue;
+        }
+        if (next.perThread.getNumDocsInRAM() > 0 ) {
           final DocumentsWriterPerThread dwpt = next.perThread; // just for assert
           final DocumentsWriterPerThread flushingDWPT = internalTryCheckOutForFlush(next, true);
           assert flushingDWPT != null : "DWPT must never be null here since we hold the lock and it holds documents";
           assert dwpt == flushingDWPT : "flushControl returned different DWPT";
           toFlush.add(flushingDWPT);
         } else {
+          // get the new delete queue from DW
           next.perThread.initialize();
         }
       } finally {
@@ -337,7 +347,6 @@ public final class DocumentsWriterFlushControl {
       blockedFlushes.clear();
       flushQueue.addAll(toFlush);
     }
-    
   }
   
   synchronized void finishFullFlush() {
@@ -361,8 +370,15 @@ public final class DocumentsWriterFlushControl {
       for (DocumentsWriterPerThread dwpt : blockedFlushes) {
         doAfterFlush(dwpt);
       }
+      
     } finally {
+      flushQueue.clear();
+      blockedFlushes.clear();
       fullFlush = false;
     }
+  }
+  
+  synchronized boolean isFullFlush() {
+    return fullFlush;
   }
 }
