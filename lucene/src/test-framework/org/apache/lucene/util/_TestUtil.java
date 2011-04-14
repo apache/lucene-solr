@@ -34,8 +34,6 @@ import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.junit.Assert;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CheckIndex;
@@ -188,22 +186,35 @@ public class _TestUtil {
       return "";
     }
     final char[] buffer = new char[end];
-    for (int i = 0; i < end; i++) {
-      int t = r.nextInt(5);
+    randomFixedLengthUnicodeString(r, buffer, 0, buffer.length);
+    return new String(buffer, 0, end);
+  }
 
-      if (0 == t && i < end - 1) {
+  /**
+   * Fills provided char[] with valid random unicode code
+   * unit sequence.
+   */
+  public static void randomFixedLengthUnicodeString(Random random, char[] chars, int offset, int length) {
+    int i = offset;
+    final int end = offset + length;
+    while(i < end) {
+      final int t = random.nextInt(5);
+      if (0 == t && i < length - 1) {
         // Make a surrogate pair
         // High surrogate
-        buffer[i++] = (char) nextInt(r, 0xd800, 0xdbff);
+        chars[i++] = (char) nextInt(random, 0xd800, 0xdbff);
         // Low surrogate
-        buffer[i] = (char) nextInt(r, 0xdc00, 0xdfff);
+        chars[i++] = (char) nextInt(random, 0xdc00, 0xdfff);
+      } else if (t <= 1) {
+        chars[i++] = (char) random.nextInt(0x80);
+      } else if (2 == t) {
+        chars[i++] = (char) nextInt(random, 0x80, 0x800);
+      } else if (3 == t) {
+        chars[i++] = (char) nextInt(random, 0x800, 0xd7ff);
+      } else if (4 == t) {
+        chars[i++] = (char) nextInt(random, 0xe000, 0xffff);
       }
-      else if (t <= 1) buffer[i] = (char) r.nextInt(0x80);
-      else if (2 == t) buffer[i] = (char) nextInt(r, 0x80, 0x800);
-      else if (3 == t) buffer[i] = (char) nextInt(r, 0x800, 0xd7ff);
-      else if (4 == t) buffer[i] = (char) nextInt(r, 0xe000, 0xffff);
     }
-    return new String(buffer, 0, end);
   }
 
   private static final int[] blockStarts = {

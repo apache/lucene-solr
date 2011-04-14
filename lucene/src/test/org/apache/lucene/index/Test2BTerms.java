@@ -26,6 +26,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.codecs.CodecProvider;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -77,6 +78,7 @@ public class Test2BTerms extends LuceneTestCase {
       tokenCount++;
       if (--nextSave == 0) {
         savedTerms.add(new BytesRef(bytes));
+        System.out.println("TEST: save term=" + bytes);
         nextSave = _TestUtil.nextInt(random, 500000, 1000000);
       }
       return true;
@@ -153,13 +155,16 @@ public class Test2BTerms extends LuceneTestCase {
 
     Directory dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
     //Directory dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
+
     if (true) {
+
       IndexWriter w = new IndexWriter(dir,
                                       new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
                                       .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                       .setRAMBufferSizeMB(256.0)
                                       .setMergeScheduler(new ConcurrentMergeScheduler())
-                                      .setMergePolicy(newLogMergePolicy(false, 10)));
+                                      .setMergePolicy(newLogMergePolicy(false, 10))
+                                      .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
 
       MergePolicy mp = w.getConfig().getMergePolicy();
       if (mp instanceof LogByteSizeMergePolicy) {
@@ -211,6 +216,7 @@ public class Test2BTerms extends LuceneTestCase {
     assertTrue("count " + tc + " is not > " + Integer.MAX_VALUE, tc > Integer.MAX_VALUE);
 
     dir.close();
+    System.out.println("TEST: done!");
   }
 
   private List<BytesRef> findTerms(IndexReader r) throws IOException {
@@ -234,15 +240,29 @@ public class Test2BTerms extends LuceneTestCase {
     IndexSearcher s = new IndexSearcher(r);
     Collections.shuffle(terms);
     TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator();
+    boolean failed = false;
     for(int iter=0;iter<10*terms.size();iter++) {
       final BytesRef term = terms.get(random.nextInt(terms.size()));
       System.out.println("TEST: search " + term);
       final long t0 = System.currentTimeMillis();
-      assertTrue(s.search(new TermQuery(new Term("field", term)), 1).totalHits > 0);
+      final int count = s.search(new TermQuery(new Term("field", term)), 1).totalHits;
+      if (count <= 0) {
+        System.out.println("  FAILED: count=" + count);
+        failed = true;
+      }
       final long t1 = System.currentTimeMillis();
       System.out.println("  took " + (t1-t0) + " millis");
 
-      assertEquals(TermsEnum.SeekStatus.FOUND, termsEnum.seek(term));
+      TermsEnum.SeekStatus result = termsEnum.seek(term);
+      if (result != TermsEnum.SeekStatus.FOUND) {
+        if (result == TermsEnum.SeekStatus.END) {
+          System.out.println("  FAILED: got END");
+        } else {
+          System.out.println("  FAILED: wrong term: got " + termsEnum.term());
+        }
+        failed = true;
+      }
     }
+    assertFalse(failed);
   }
 }
