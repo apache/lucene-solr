@@ -104,7 +104,9 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
         // Aggregate the storePayload as seen by the same
         // field across multiple threads
-        fieldInfo.storePayloads |= fields[i-start].hasPayloads;
+        if (!fieldInfo.omitTermFreqAndPositions) {
+          fieldInfo.storePayloads |= fields[i-start].hasPayloads;
+        }
       }
 
       // If this field has postings then add them to the
