@@ -325,9 +325,13 @@ public class DocumentsWriterPerThread {
   FrozenBufferedDeletes prepareFlush() {
     assert numDocsInRAM > 0;
     final FrozenBufferedDeletes globalDeletes = deleteQueue.freezeGlobalBuffer(deleteSlice);
-    // apply all deletes before we flush and release the delete slice
-    deleteSlice.apply(pendingDeletes, numDocsInRAM);
-    deleteSlice = null;
+    /* deleteSlice can possibly be null if we have hit non-aborting exceptions during indexing and never succeeded 
+    adding a document. */
+    if (deleteSlice != null) {
+      // apply all deletes before we flush and release the delete slice
+      deleteSlice.apply(pendingDeletes, numDocsInRAM);
+      deleteSlice = null;
+    }
     return globalDeletes;
   }
 
