@@ -487,6 +487,17 @@ class DateFieldSource extends FieldCacheSource {
       }
 
       @Override
+      public Object objectVal(int doc) {
+        int ord=termsIndex.getOrd(doc);
+        if (ord == 0) {
+          return null;
+        } else {
+          BytesRef br = termsIndex.lookup(ord, new BytesRef());
+          return ft.toObject(null, br);
+        }
+      }
+
+      @Override
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }

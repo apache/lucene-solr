@@ -19,9 +19,11 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
+import org.apache.noggit.CharArr;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.StringIndexDocValues;
+import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -40,30 +42,10 @@ public class StrFieldSource extends FieldCacheSource {
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     return new StringIndexDocValues(this, readerContext, field) {
+
       @Override
       protected String toTerm(String readableValue) {
         return readableValue;
-      }
-
-      @Override
-      public float floatVal(int doc) {
-        return (float)intVal(doc);
-      }
-
-      @Override
-      public int intVal(int doc) {
-        int ord=termsIndex.getOrd(doc);
-        return ord;
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long)intVal(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double)intVal(doc);
       }
 
       @Override
@@ -77,13 +59,8 @@ public class StrFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public String strVal(int doc) {
-        int ord=termsIndex.getOrd(doc);
-        if (ord == 0) {
-          return null;
-        } else {
-          return termsIndex.lookup(ord, new BytesRef()).utf8ToString();
-        }
+      public Object objectVal(int doc) {
+        return strVal(doc);
       }
 
       @Override

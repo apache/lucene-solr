@@ -41,7 +41,7 @@ public class ConstValueSource extends ConstNumberSource {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    return new DocValues() {
+    return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
         return constant;
@@ -59,12 +59,12 @@ public class ConstValueSource extends ConstNumberSource {
         return dv;
       }
       @Override
-      public String strVal(int doc) {
-        return Float.toString(constant);
-      }
-      @Override
       public String toString(int doc) {
         return description();
+      }
+      @Override
+      public Object objectVal(int doc) {
+        return constant;
       }
     };
   }

@@ -18,6 +18,7 @@ package org.apache.solr.search.function.distance;
 
 
 import org.apache.lucene.spatial.DistanceUtils;
+import org.apache.solr.search.function.DoubleDocValues;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -58,32 +59,11 @@ public class GeohashHaversineFunction extends ValueSource {
     final DocValues gh1DV = geoHash1.getValues(context, readerContext);
     final DocValues gh2DV = geoHash2.getValues(context, readerContext);
 
-    return new DocValues() {
-      @Override
-      public float floatVal(int doc) {
-        return (float) doubleVal(doc);
-      }
-
-      @Override
-      public int intVal(int doc) {
-        return (int) doubleVal(doc);
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long) doubleVal(doc);
-      }
-
+    return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {
         return distance(doc, gh1DV, gh2DV);
       }
-
-      @Override
-      public String strVal(int doc) {
-        return Double.toString(doubleVal(doc));
-      }
-
       @Override
       public String toString(int doc) {
         StringBuilder sb = new StringBuilder();

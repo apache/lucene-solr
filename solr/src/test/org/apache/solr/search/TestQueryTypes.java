@@ -43,6 +43,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
 
 
   public void testQueryTypes() {
+    assertU(adoc("id","0"));
     assertU(adoc("id","1", "v_t","Hello Dude"));
     assertU(adoc("id","2", "v_t","Hello Yonik"));
     assertU(adoc("id","3", "v_s","{!literal}"));
@@ -120,6 +121,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
               );
       
       // function query... just make sure it doesn't throw an exception
+      if ("v_s".equals(f)) continue;  // in this context, functions must be able to be interpreted as a float
       assertQ(req( "q", "+id:999 _val_:\"" + f + "\"")
               ,"//result[@numFound='1']"
               );

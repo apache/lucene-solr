@@ -63,53 +63,29 @@ public class OrdFieldSource extends ValueSource {
     final int off = readerContext.docBase;
     final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader;
     final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(topReader, field);
-    return new DocValues() {
+    return new IntDocValues(this) {
       protected String toTerm(String readableValue) {
         return readableValue;
       }
-      
-      @Override
-      public float floatVal(int doc) {
-        return (float)sindex.getOrd(doc+off);
-      }
-
       @Override
       public int intVal(int doc) {
         return sindex.getOrd(doc+off);
       }
-
-      @Override
-      public long longVal(int doc) {
-        return (long)sindex.getOrd(doc+off);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double)sindex.getOrd(doc+off);
-      }
-
       @Override
       public int ordVal(int doc) {
         return sindex.getOrd(doc+off);
       }
-
       @Override
       public int numOrd() {
         return sindex.numOrd();
       }
 
       @Override
-      public String strVal(int doc) {
-        // the string value of the ordinal, not the string itself
-        return Integer.toString(sindex.getOrd(doc+off));
+      public boolean exists(int doc) {
+        return sindex.getOrd(doc+off) != 0;
       }
 
       @Override
-      public String toString(int doc) {
-        return description() + '=' + intVal(doc);
-      }
-
-            @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
           private final MutableValueInt mval = new MutableValueInt();

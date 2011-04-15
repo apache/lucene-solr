@@ -638,7 +638,11 @@ public class QueryParsing {
       }
 
       String v = val.substring(start,pos);
-      return flt ? Double.parseDouble(v) : Long.parseLong(v);
+      if (flt) {
+        return Double.parseDouble(v);
+      } else {
+        return Long.parseLong(v);
+      }
     }
 
     double getDouble() throws ParseException {

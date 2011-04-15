@@ -793,7 +793,7 @@ class LongConstValueSource extends ConstNumberSource {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    return new DocValues() {
+    return new LongDocValues(this) {
       @Override
       public float floatVal(int doc) {
         return fv;
@@ -812,11 +812,6 @@ class LongConstValueSource extends ConstNumberSource {
       @Override
       public double doubleVal(int doc) {
         return dv;
-      }
-
-      @Override
-      public String strVal(int doc) {
-        return Long.toString(constant);
       }
 
       @Override
@@ -901,26 +896,10 @@ abstract class DoubleParser extends NamedParser {
     @Override
     public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
       final DocValues vals =  source.getValues(context, readerContext);
-      return new DocValues() {
-        @Override
-        public float floatVal(int doc) {
-          return (float)doubleVal(doc);
-        }
-        @Override
-        public int intVal(int doc) {
-          return (int)doubleVal(doc);
-        }
-        @Override
-        public long longVal(int doc) {
-          return (long)doubleVal(doc);
-        }
+      return new DoubleDocValues(this) {
         @Override
         public double doubleVal(int doc) {
           return func(doc, vals);
-        }
-        @Override
-        public String strVal(int doc) {
-          return Double.toString(doubleVal(doc));
         }
         @Override
         public String toString(int doc) {
@@ -966,26 +945,10 @@ abstract class Double2Parser extends NamedParser {
     public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
       final DocValues aVals =  a.getValues(context, readerContext);
       final DocValues bVals =  b.getValues(context, readerContext);
-      return new DocValues() {
-        @Override
-        public float floatVal(int doc) {
-          return (float)doubleVal(doc);
-        }
-        @Override
-        public int intVal(int doc) {
-          return (int)doubleVal(doc);
-        }
-        @Override
-        public long longVal(int doc) {
-          return (long)doubleVal(doc);
-        }
-        @Override
+      return new DoubleDocValues(this) {
+         @Override
         public double doubleVal(int doc) {
           return func(doc, aVals, bVals);
-        }
-        @Override
-        public String strVal(int doc) {
-          return Double.toString(doubleVal(doc));
         }
         @Override
         public String toString(int doc) {
