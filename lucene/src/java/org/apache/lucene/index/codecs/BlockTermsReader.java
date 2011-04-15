@@ -151,10 +151,10 @@ public class BlockTermsReader extends FieldsProducer {
   }
 
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(in, BlockTermsWriter.CODEC_NAME,
+    CodecUtil.checkHeader(input, BlockTermsWriter.CODEC_NAME,
                           BlockTermsWriter.VERSION_START,
                           BlockTermsWriter.VERSION_CURRENT);
-    dirOffset = in.readLong();    
+    dirOffset = input.readLong();
   }
   
   protected void seekDir(IndexInput input, long dirOffset)
@@ -842,6 +842,11 @@ public class BlockTermsReader extends FieldsProducer {
       private void decodeMetaData() throws IOException {
         //System.out.println("BTR.decodeMetadata mdUpto=" + metaDataUpto + " vs termCount=" + state.termCount + " state=" + state);
         if (!seekPending) {
+          // TODO: cutover to random-access API
+          // here.... really stupid that we have to decode N
+          // wasted term metadata just to get to the N+1th
+          // that we really need...
+
           // lazily catch up on metadata decode:
           final int limit = state.termCount;
           // We must set/incr state.termCount because

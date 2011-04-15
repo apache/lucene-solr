@@ -536,6 +536,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             fail(testName + " hit IOException after disk space was freed up");
           }
         }
+        // prevent throwing a random exception here!!
         final double randomIOExceptionRate = dir.getRandomIOExceptionRate();
         final long maxSizeInBytes = dir.getMaxSizeInBytes();
         dir.setRandomIOExceptionRate(0.0);

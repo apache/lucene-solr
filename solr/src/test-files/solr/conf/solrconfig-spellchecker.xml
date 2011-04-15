@@ -31,7 +31,7 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler" />
 
   <!-- Suggest component -->
-  <searchComponent class="solr.SpellCheckComponent" name="suggest">
+  <searchComponent class="solr.SpellCheckComponent" name="suggest_jaspell">
     <lst name="spellchecker">
       <str name="name">suggest</str>
       <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
@@ -45,6 +45,38 @@
     </lst>
   </searchComponent>
 
+  <!-- TSTLookup suggest component -->
+  <searchComponent class="solr.SpellCheckComponent" name="suggest_tst">
+    <lst name="spellchecker">
+      <str name="name">suggest_tst</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.tst.TSTLookup</str>
+      <str name="field">suggest</str>
+      <str name="storeDir">suggest_tst</str>
+      <str name="buildOnCommit">true</str>
+
+      <!-- Suggester properties -->
+      <float name="threshold">0.0</float>
+    </lst>
+  </searchComponent>
+
+  <!-- FSTLookup suggest component -->
+  <searchComponent class="solr.SpellCheckComponent" name="suggest_fst">
+    <lst name="spellchecker">
+      <str name="name">suggest_fst</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.FSTLookup</str>
+      <str name="field">suggest</str>
+      <str name="storeDir">suggest_fst</str>
+      <str name="buildOnCommit">true</str>
+
+      <!-- Suggester properties -->
+      <int name="weightBuckets">5</int>
+      <bool name="exactMatchFirst">true</bool>
+    </lst>
+  </searchComponent>
+
+  <!--  The default (jaspell) -->
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest">
     <lst name="defaults">
       <str name="spellcheck">true</str>
@@ -52,8 +84,32 @@
       <str name="spellcheck.collate">true</str>
     </lst>
     <arr name="components">
-      <str>suggest</str>
+      <str>suggest_jaspell</str>
     </arr>
   </requestHandler>
 
+  <!--  tst (ternary tree based) -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest_tst">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">suggest_tst</str>
+      <str name="spellcheck.collate">true</str>
+    </lst>
+    <arr name="components">
+      <str>suggest_tst</str>
+    </arr>
+  </requestHandler>
+  
+  <!--  fst (finite state automaton based) -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest_fst">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">suggest_fst</str>
+      <str name="spellcheck.collate">false</str>
+    </lst>
+    <arr name="components">
+      <str>suggest_fst</str>
+    </arr>
+  </requestHandler>
+  
 </config>

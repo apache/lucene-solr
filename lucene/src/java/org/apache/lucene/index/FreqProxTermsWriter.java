@@ -74,8 +74,13 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     for (int fieldNumber = 0; fieldNumber < numAllFields; fieldNumber++) {
       final FieldInfo fieldInfo = allFields.get(fieldNumber).fieldInfo;
 
-      FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
-      fieldInfo.storePayloads |= fieldWriter.hasPayloads;
+      final FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
+
+      // Aggregate the storePayload as seen by the same
+      // field across multiple threads
+      if (!fieldInfo.omitTermFreqAndPositions) {
+        fieldInfo.storePayloads |= fieldWriter.hasPayloads;
+      }
 
       // If this field has postings then add them to the
       // segment

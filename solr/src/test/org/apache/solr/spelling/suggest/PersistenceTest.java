@@ -19,62 +19,74 @@ package org.apache.solr.spelling.suggest;
 import java.io.File;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.spelling.suggest.fst.FSTLookup;
 import org.apache.solr.spelling.suggest.jaspell.JaspellLookup;
 import org.apache.solr.spelling.suggest.tst.TSTLookup;
 import org.junit.Test;
 
 public class PersistenceTest extends SolrTestCaseJ4 {
-  
-  public static final String[] keys = new String[] {
-    "one",
-    "two",
-    "three",
-    "four",
-    "oneness",
-    "onerous",
-    "onesimus",
-    "twofold",
-    "twonk",
-    "thrive",
-    "through",
-    "threat",
-    "foundation",
-    "fourier",
-    "fourty"
-  };
+  public final String[] keys = new String[] {
+      "one", 
+      "two", 
+      "three", 
+      "four",
+      "oneness", 
+      "onerous", 
+      "onesimus", 
+      "twofold", 
+      "twonk", 
+      "thrive",
+      "through", 
+      "threat", 
+      "foundation", 
+      "fourier", 
+      "fourty"};
 
   @Test
   public void testTSTPersistence() throws Exception {
-    TSTLookup lookup = new TSTLookup();
-    for (String k : keys) {
-      lookup.add(k, new Float(k.length()));
-    }
-    File storeDir = new File(TEST_HOME());
-    lookup.store(storeDir);
-    lookup = new TSTLookup();
-    lookup.load(storeDir);
-    for (String k : keys) {
-      Float val = (Float)lookup.get(k);
-      assertNotNull(k, val);
-      assertEquals(k, k.length(), val.intValue());
-    }
+    runTest(TSTLookup.class, true);
   }
   
   @Test
   public void testJaspellPersistence() throws Exception {
-    JaspellLookup lookup = new JaspellLookup();
-    for (String k : keys) {
-      lookup.add(k, new Float(k.length()));
-    }
-    File storeDir = new File(TEST_HOME());
-    lookup.store(storeDir);
-    lookup = new JaspellLookup();
-    lookup.load(storeDir);
-    for (String k : keys) {
-      Float val = (Float)lookup.get(k);
-      assertNotNull(k, val);
-      assertEquals(k, k.length(), val.intValue());
-    }
+    runTest(JaspellLookup.class, true);
+  }
+
+  @Test
+  public void testFSTPersistence() throws Exception {
+    runTest(FSTLookup.class, false);
   }
   
+  private void runTest(Class<? extends Lookup> lookupClass,
+      boolean supportsExactWeights) throws Exception {
+
+    // Add all input keys.
+    Lookup lookup = lookupClass.newInstance();
+    TermFreq[] keys = new TermFreq[this.keys.length];
+    for (int i = 0; i < keys.length; i++)
+      keys[i] = new TermFreq(this.keys[i], (float) i);
+    lookup.build(new TermFreqArrayIterator(keys));
+
+    // Store the suggester.
+    File storeDir = new File(TEST_HOME());
+    lookup.store(storeDir);
+
+    // Re-read it from disk.
+    lookup = lookupClass.newInstance();
+    lookup.load(storeDir);
+
+    // Assert validity.
+    float previous = Float.NEGATIVE_INFINITY;
+    for (TermFreq k : keys) {
+      Float val = (Float) lookup.get(k.term);
+      assertNotNull(k.term, val);
+
+      if (supportsExactWeights) { 
+        assertEquals(k.term, Float.valueOf(k.v), val);
+      } else {
+        assertTrue(val + ">=" + previous, val >= previous);
+        previous = val.floatValue();
+      }
+    }
+  }
 }

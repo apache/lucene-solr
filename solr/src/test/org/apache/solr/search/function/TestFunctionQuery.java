@@ -24,6 +24,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -524,9 +525,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
    */
   @Test
   public void testExternalFieldValueSourceParser() {
+    clearIndex();
 
-    String field = "CoMpleX \" fieldName _extf";
-    String fieldAsFunc = "field(\"CoMpleX \\\" fieldName _extf\")";
+    String field = "CoMpleX fieldName _extf";
+    String fieldAsFunc = "field(\"CoMpleX fieldName _extf\")";
 
     float[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
 
@@ -543,11 +545,38 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(fieldAsFunc, "sqrt(\0)");
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
-    makeExternalFile(fieldAsFunc, "0=1","UTF-8");
+    makeExternalFile(field, "0=1","UTF-8");
     assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());   
     singleTest(fieldAsFunc, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
+
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity    
+  }
+
+  /**
+   * some platforms don't allow quote characters in filenames, so 
+   * in addition to testExternalFieldValueSourceParser above, test a field 
+   * name with quotes in it that does NOT use ExternalFileField
+   * @see #testExternalFieldValueSourceParser
+   */
+  @Test
+  public void testFieldValueSourceParser() {
+    clearIndex();
+
+    String field = "CoMpleX \" fieldName _f";
+    String fieldAsFunc = "field(\"CoMpleX \\\" fieldName _f\")";
+
+    float[] ids = {100,-4,0,10,25,5,77,1};
+
+    createIndex(field, ids);
+
+    // test identity (straight field value)
+    singleTest(fieldAsFunc, "\0", 
+               100,100,  -4,-4,  0,0,  10,10,  25,25,  5,5,  77,77,  1,1);
+    singleTest(fieldAsFunc, "sqrt(\0)", 
+               100,10,  25,5,  0,0,   1,1);
+    singleTest(fieldAsFunc, "log(\0)",  1,0);
 
     purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity    
   }
