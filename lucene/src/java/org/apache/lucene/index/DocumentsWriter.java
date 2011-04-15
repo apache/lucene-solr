@@ -343,7 +343,9 @@ final class DocumentsWriter {
       perThread.unlock();
     }
     
-    maybeMerge |= doFlush(flushingDWPT);
+    if (flushingDWPT != null) {
+      maybeMerge |= doFlush(flushingDWPT);
+    }
     return maybeMerge;
   }
 
