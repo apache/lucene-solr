@@ -84,7 +84,7 @@ public class TestRollingUpdates extends LuceneTestCase {
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
       final int SIZE = 200 * RANDOM_MULTIPLIER;
       final int numUpdates = (int) (SIZE * (2 + random.nextDouble()));
-      int numThreads = 3 + random.nextInt(Runtime.getRuntime().availableProcessors());
+      int numThreads = 3 + random.nextInt(12);
       IndexingThread[] threads = new IndexingThread[numThreads];
       for (int i = 0; i < numThreads; i++) {
         threads[i] = new IndexingThread(docs, w, numUpdates);
