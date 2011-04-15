@@ -56,6 +56,11 @@ Bug Fixes
 * SOLR-2464: Fix potential slowness in QueryValueSource (the query() function) when
   the query is very sparse and may not match any documents in a segment. (yonik)
 
+* SOLR-2469: When using java replication with replicateAfter=startup, the first
+  commit point on server startup is never removed. (yonik)
+
+
+
 Other Changes
 ----------------------
 
