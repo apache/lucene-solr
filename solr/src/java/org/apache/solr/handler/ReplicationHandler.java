@@ -843,9 +843,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
                 indexCommitPoint = reader.getIndexCommit();
               }
             } finally {
+              // We don't need to save commit points for replication, the SolrDeletionPolicy
+              // always saves the last commit point (and the last optimized commit point, if needed)
+              /***
               if(indexCommitPoint != null){
                 core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
               }
+              ***/
             }
           }
           if (core.getUpdateHandler() instanceof DirectUpdateHandler2) {
