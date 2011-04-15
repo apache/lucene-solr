@@ -132,7 +132,6 @@ public abstract class FlushPolicy {
         }
       }
     }
-    assert maxRamUsingThreadState.perThread.getNumDocsInRAM() > 0;
     assert writer.get().message(
         "set largest ram consuming thread pending on lower watermark");
     return maxRamUsingThreadState;

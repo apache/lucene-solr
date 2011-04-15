@@ -167,12 +167,14 @@ public final class DocumentsWriterFlushControl {
    */
   public synchronized void setFlushPending(ThreadState perThread) {
     assert !perThread.flushPending;
-    assert perThread.perThread.getNumDocsInRAM() > 0;
-    perThread.flushPending = true; // write access synced
-    final long bytes = perThread.perThreadBytes;
-    flushBytes += bytes;
-    activeBytes -= bytes;
-    numPending++; // write access synced
+    if (perThread.perThread.getNumDocsInRAM() > 0) {
+      perThread.flushPending = true; // write access synced
+      final long bytes = perThread.perThreadBytes;
+      flushBytes += bytes;
+      activeBytes -= bytes;
+      numPending++; // write access synced
+    } // don't assert on numDocs since we could hit an abort excp. while selecting that dwpt for flushing
+    
   }
 
   synchronized void doOnAbort(ThreadState state) {
