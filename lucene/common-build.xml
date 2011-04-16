@@ -308,7 +308,7 @@
     </copy>
   </target>
 
-  <target name="compile" depends="compile-core, validate-lucene">
+  <target name="compile" depends="compile-core">
     <!-- convenience target to compile core -->
   </target>
 
@@ -565,7 +565,7 @@
   	</sequential>
   </macrodef>
 	
-  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
+  <target name="test" depends="compile-test,validate-lucene,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
 
   <target name="junit-mkdir">
   	<mkdir dir="${junit.output.dir}"/>
