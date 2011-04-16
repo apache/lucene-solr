@@ -63,6 +63,10 @@ Bug Fixes
   of the configured maxRetries, due to HttpClient having it's own retry mechanism
   by default.  The retryCount of HttpClient is now set to 0, and SolrJ does
   the retry.  (yonik)
+
+* SOLR-2409: edismax parser - treat the text of a fielded query as a literal if the
+  fieldname does not exist.  For example Mission: Impossible should not search on
+  the "Mission" field unless it's a valid field in the schema.  (Ryan McKinley, yonik)
   
 
 

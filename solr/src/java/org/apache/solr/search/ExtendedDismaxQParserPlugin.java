@@ -235,6 +235,7 @@ class ExtendedDismaxQParser extends QParser {
 
       try {
         up.setRemoveStopFilter(!stopwords);
+        up.exceptions = true;
         parsedUserQuery = up.parse(mainUserQuery);
 
         if (stopwords && isEmpty(parsedUserQuery)) {
@@ -244,6 +245,7 @@ class ExtendedDismaxQParser extends QParser {
         }
       } catch (Exception e) {
         // ignore failure and reparse later after escaping reserved chars
+        up.exceptions = false;
       }
 
       if (parsedUserQuery != null && doMinMatched) {
@@ -786,11 +788,18 @@ class ExtendedDismaxQParser extends QParser {
       RANGE
     }
 
+
+  static final RuntimeException unknownField = new RuntimeException("UnknownField");
+  static {
+    unknownField.fillInStackTrace();
+  }
+
   /**
    * A subclass of SolrQueryParser that supports aliasing fields for
    * constructing DisjunctionMaxQueries.
    */
   class ExtendedSolrQueryParser extends SolrQueryParser {
+
 
     /** A simple container for storing alias info
      */
@@ -804,6 +813,7 @@ class ExtendedDismaxQParser extends QParser {
     boolean allowWildcard=true;
     int minClauseSize = 0;    // minimum number of clauses per phrase query...
                               // used when constructing boosting part of query via sloppy phrases
+    boolean exceptions;  //  allow exceptions to be thrown (for example on a missing field)
 
     ExtendedAnalyzer analyzer;
 
@@ -981,6 +991,15 @@ class ExtendedDismaxQParser extends QParser {
           return q;
         }
       } else {
+
+        // verify that a fielded query is actually on a field that exists... if not,
+        // then throw an exception to get us out of here, and we'll treat it like a
+        // literal when we try the escape+re-parse.
+        if (exceptions) {
+          FieldType ft = schema.getFieldTypeNoEx(field);
+          if (ft == null) throw unknownField;
+        }
+
         return getQuery();
       }
     }
