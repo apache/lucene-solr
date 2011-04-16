@@ -59,6 +59,11 @@ Bug Fixes
 * SOLR-2469: When using java replication with replicateAfter=startup, the first
   commit point on server startup is never removed. (yonik)
 
+* SOLR-2466: SolrJ's CommonsHttpSolrServer would retry requests on failure, regardless
+  of the configured maxRetries, due to HttpClient having it's own retry mechanism
+  by default.  The retryCount of HttpClient is now set to 0, and SolrJ does
+  the retry.  (yonik)
+  
 
 
 Other Changes
