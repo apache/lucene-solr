@@ -203,11 +203,37 @@ public class  FacetComponent extends SearchComponent
           sreq.params.remove(paramStart + FacetParams.FACET_MINCOUNT);
           sreq.params.remove(paramStart + FacetParams.FACET_OFFSET);
 
-          dff.initialLimit = dff.offset + dff.limit;
+          dff.initialLimit = dff.limit <= 0 ? dff.limit : dff.offset + dff.limit;
 
-          if(dff.sort.equals(FacetParams.FACET_SORT_COUNT) && dff.limit > 0) {
-            // set the initial limit higher to increase accuracy
-            dff.initialLimit = (int)(dff.initialLimit * 1.5) + 10;
+          if (dff.sort.equals(FacetParams.FACET_SORT_COUNT)) {
+            if (dff.limit > 0) {
+              // set the initial limit higher to increase accuracy
+              dff.initialLimit = (int)(dff.initialLimit * 1.5) + 10;
+              dff.initialMincount = 0;      // TODO: we could change this to 1, but would then need more refinement for small facet result sets?
+            } else {
+              // if limit==-1, then no need to artificially lower mincount to 0 if it's 1
+              dff.initialMincount = Math.min(dff.minCount, 1);
+            }
+          } else {
+            // we're sorting by index order.
+            // if minCount==0, we should always be able to get accurate results w/o over-requesting or refining
+            // if minCount==1, we should be able to get accurate results w/o over-requesting, but we'll need to refine
+            // if minCount==n (>1), we can set the initialMincount to minCount/nShards, rounded up.
+            // For example, we know that if minCount=10 and we have 3 shards, then at least one shard must have a count of 4 for the term
+            // For the minCount>1 case, we can generate too short of a list (miss terms at the end of the list) unless limit==-1
+            // For example: each shard could produce a list of top 10, but some of those could fail to make it into the combined list (i.e.
+            //   we needed to go beyond the top 10 to generate the top 10 combined).  Overrequesting can help a little here, but not as
+            //   much as when sorting by count.
+            if (dff.minCount <= 1) {
+              dff.initialMincount = dff.minCount;
+            } else {
+              dff.initialMincount = (int)Math.ceil((double)dff.minCount / rb.shards.length);
+              // dff.initialMincount = 1;
+            }
+          }
+
+          if (dff.initialMincount != 0) {
+            sreq.params.set(paramStart + FacetParams.FACET_MINCOUNT, dff.initialMincount);
           }
 
           // Currently this is for testing only and allows overriding of the
@@ -275,12 +301,18 @@ public class  FacetComponent extends SearchComponent
     //
 
     for (DistribFieldFacet dff : fi.facets.values()) {
-      if (dff.limit <= 0) continue; // no need to check these facets for refinement
-      if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_INDEX)) continue;
+       // no need to check these facets for refinement
+      if (dff.initialLimit <= 0 && dff.initialMincount == 0) continue;
 
-      dff._toRefine = new List[rb.shards.length];
+      // only other case where index-sort doesn't need refinement is if minCount==0
+      if (dff.minCount == 0 && dff.sort.equals(FacetParams.FACET_SORT_INDEX)) continue;
+
+      @SuppressWarnings("unchecked") // generic array's are annoying
+      List<String>[] tmp = (List<String>[]) new List[rb.shards.length];
+      dff._toRefine = tmp;
+
       ShardFacetCount[] counts = dff.getCountSorted();
-      int ntop = Math.min(counts.length, dff.offset + dff.limit);
+      int ntop = Math.min(counts.length, dff.limit >= 0 ? dff.offset + dff.limit : Integer.MAX_VALUE);
       long smallestCount = counts.length == 0 ? 0 : counts[ntop-1].count;
 
       for (int i=0; i<counts.length; i++) {
@@ -289,8 +321,11 @@ public class  FacetComponent extends SearchComponent
 
         if (i<ntop) {
           // automatically flag the top values for refinement
+          // this should always be true for facet.sort=index
           needRefinement = true;
         } else {
+          // this logic should only be invoked for facet.sort=index (for now)
+
           // calculate the maximum value that this term may have
           // and if it is >= smallestCount, then flag for refinement
           long maxCount = sfc.count;
@@ -396,13 +431,32 @@ public class  FacetComponent extends SearchComponent
           counts = dff.getLexSorted();
       }
 
-      int end = dff.limit < 0 ? counts.length : Math.min(dff.offset + dff.limit, counts.length);
-      for (int i=dff.offset; i<end; i++) {
-        if (counts[i].count < dff.minCount) {
-          if (countSorted) break;  // if sorted by count, we can break out of loop early
-          else continue;
+      if (countSorted) {
+        int end = dff.limit < 0 ? counts.length : Math.min(dff.offset + dff.limit, counts.length);
+        for (int i=dff.offset; i<end; i++) {
+          if (counts[i].count < dff.minCount) {
+            break;
+          }
+          fieldCounts.add(counts[i].name, num(counts[i].count));
         }
-        fieldCounts.add(counts[i].name, num(counts[i].count));
+      } else {
+        int off = dff.offset;
+        int lim = dff.limit >= 0 ? dff.limit : Integer.MAX_VALUE;
+
+        // index order...
+        for (int i=0; i<counts.length; i++) {
+          long count = counts[i].count;
+          if (count < dff.minCount) continue;
+          if (off > 0) {
+            off--;
+            continue;
+          }
+          if (lim <= 0) {
+            break;
+          }
+          lim--;
+          fieldCounts.add(counts[i].name, num(count));
+        }
       }
 
       if (dff.missing) {
@@ -605,7 +659,8 @@ public class  FacetComponent extends SearchComponent
     public HashMap<String,ShardFacetCount> counts = new HashMap<String,ShardFacetCount>(128);
     public int termNum;
 
-    public int initialLimit;  // how many terms requested in first phase
+    public int initialLimit;     // how many terms requested in first phase
+    public int initialMincount;  // mincount param sent to each shard
     public boolean needRefinements;
     public ShardFacetCount[] countSorted;
 
@@ -645,11 +700,10 @@ public class  FacetComponent extends SearchComponent
         }
       }
 
-      // the largest possible missing term is 0 if we received less
-      // than the number requested (provided mincount==0 like it should be for
-      // a shard request)
+      // the largest possible missing term is initialMincount if we received less
+      // than the number requested.
       if (numRequested<0 || numRequested != 0 && numReceived < numRequested) {
-        last = 0;
+        last = initialMincount;
       }
 
       missingMaxPossible += last;

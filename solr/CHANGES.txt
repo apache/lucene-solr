@@ -67,7 +67,12 @@ Bug Fixes
 * SOLR-2409: edismax parser - treat the text of a fielded query as a literal if the
   fieldname does not exist.  For example Mission: Impossible should not search on
   the "Mission" field unless it's a valid field in the schema.  (Ryan McKinley, yonik)
-  
+
+* SOLR-2403: facet.sort=index reported incorrect results for distributed search
+  in a number of scenarios when facet.mincount>0.  This patch also adds some
+  performance/algorithmic improvements when (facet.sort=count && facet.mincount=1
+  && facet.limit=-1) and when (facet.sort=index && facet.mincount>0)  (yonik)
+
 
 
 Other Changes

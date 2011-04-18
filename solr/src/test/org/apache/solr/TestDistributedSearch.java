@@ -47,6 +47,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   @Override
   public void doTest() throws Exception {
+    int backupStress = stress; // make a copy so we can restore
+
+
     del("*:*");
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
@@ -142,23 +145,36 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","matchesnothing","fl","*,score");  
 
 
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count", "facet.mincount",2);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index", "facet.mincount",2);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",10, "facet.limit",1, "facet.sort","index");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.limit",1);
-    query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",1);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.mincount",2);
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1);
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",1);
+    query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1, "facet.mincount",2);
+
+    stress=0;  // turn off stress... we want to tex max combos in min time
+    for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
+      String f = fieldNames[random.nextInt(fieldNames.length)];
+      if (random.nextBoolean()) f = t1;  // the text field is a really interesting one to facet on (and it's multi-valued too)
+
+      // we want a random query and not just *:* so we'll get zero counts in facets also
+      // TODO: do a better random query
+      String q = random.nextBoolean() ? "*:*" : "id:(1 3 5 7 9 11 13) OR id:[100 TO " + random.nextInt(50) + "]";
+
+      int nolimit = random.nextBoolean() ? -1 : 10000;  // these should be equivalent
+
+      // if limit==-1, we should always get exact matches
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","count", "facet.mincount",random.nextInt(5), "facet.offset",random.nextInt(10));
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","index", "facet.mincount",random.nextInt(5), "facet.offset",random.nextInt(10));
+      // for index sort, we should get exact results for mincount <= 1
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.sort","index", "facet.mincount",random.nextInt(2), "facet.offset",random.nextInt(10), "facet.limit",random.nextInt(11)-1);
+    }
+    stress = backupStress;  // restore stress
 
     // test faceting multiple things at once
-    query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
+    query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
     ,"facet.field",t1);
 
     // test filter tagging, facet exclusion, and naming (multi-select facet support)
-    query("q","*:*", "rows",100, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
+    query("q","*:*", "rows",0, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
     ,"facet.field","{!key=mykey ex=a}"+t1
     ,"facet.field","{!key=other ex=b}"+t1
     ,"facet.field","{!key=again ex=a,b}"+t1

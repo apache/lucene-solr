@@ -262,12 +262,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void query(Object... q) throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("reqid",Integer.toString(random.nextInt())); // just to help correlate top-level requests w/ sub requests
 
     for (int i = 0; i < q.length; i += 2) {
       params.add(q[i].toString(), q[i + 1].toString());
     }
 
+    params.add("controlClient","true"); // just to enable easier sorting through log files
     final QueryResponse controlRsp = controlClient.query(params);
+    params.remove("controlClient");
 
     // query a random server
     params.set("shards", shards);
@@ -359,7 +362,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           break;
         }
         if (ordered) {
-          return "." + namea + "!=" + nameb + " (unordered or missing)";
+          return err("." + namea + "!=" + nameb + " (unordered or missing)");
         }
         // if unordered, continue until we find the right field.
       }
@@ -373,7 +376,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
 
     if (a.size() - aSkipped != b.size() - bSkipped) {
-      return ".size()==" + a.size() + "," + b.size() + "skipped=" + aSkipped + "," + bSkipped;
+      return err(".size()==" + a.size() + "," + b.size() + "skipped=" + aSkipped + "," + bSkipped);
     }
 
     return null;
@@ -387,7 +390,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       int flagsa = flags(handle, keya);
       if ((flagsa & SKIP) != 0) continue;
       if (!b.containsKey(keya)) {
-        return "[" + keya + "]==null";
+        return err("[" + keya + "]==null");
       }
       if ((flagsa & SKIPVAL) != 0) continue;
       Object valb = b.get(keya);
@@ -419,7 +422,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     } else {
       if (b.getMaxScore() != null) {
         if (a.getMaxScore() == null) {
-          return ".maxScore missing";
+          return err(".maxScore missing");
         }
       }
     }
@@ -465,7 +468,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public static String compare(Object[] a, Object[] b, int flags, Map<String, Integer> handle) {
     if (a.length != b.length) {
-      return ".length:" + a.length + "!=" + b.length;
+      return err(".length:" + a.length + "!=" + b.length);
     }
     for (int i = 0; i < a.length; i++) {
       String cmp = compare(a[i], b[i], flags, handle);
@@ -476,7 +479,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public static String compare(Object a, Object b, int flags, Map<String, Integer> handle) {
     if (a == b) return null;
-    if (a == null || b == null) return ":" + a + "!=" + b;
+    if (a == null || b == null) return err(":" + a + "!=" + b);
 
     if (a instanceof NamedList && b instanceof NamedList) {
       return compare((NamedList) a, (NamedList) b, flags, handle);
@@ -500,7 +503,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     if (a instanceof byte[] && b instanceof byte[]) {
       if (!Arrays.equals((byte[]) a, (byte[]) b)) {
-        return ":" + a + "!=" + b;
+        return err(":" + a + "!=" + b);
       }
       return null;
     }
@@ -511,10 +514,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     if (!(a.equals(b))) {
-      return ":" + a + "!=" + b;
+      return err(":" + a + "!=" + b);
     }
 
     return null;
+  }
+
+  /** This method is called for root level comparison errors and can be helpful to set a
+   * breakpoint in to debug comparison failures.
+   */
+  public static String err(String msg) {
+    return msg;
   }
 
   protected void compareResponses(QueryResponse a, QueryResponse b) {
