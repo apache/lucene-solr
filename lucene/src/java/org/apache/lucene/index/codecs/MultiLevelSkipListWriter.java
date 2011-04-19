@@ -61,7 +61,8 @@ public abstract class MultiLevelSkipListWriter {
     this.skipInterval = skipInterval;
     
     // calculate the maximum number of skip levels for this document frequency
-    numberOfSkipLevels = df == 0 ? 0 : (int) Math.floor(Math.log(df) / Math.log(skipInterval));
+    // TODO: would be preferable to use integer math here instead.
+    numberOfSkipLevels = df == 0 ? 0 : (int) Math.floor(StrictMath.log(df) / StrictMath.log(skipInterval));
     
     // make sure it does not exceed maxSkipLevels
     if (numberOfSkipLevels > maxSkipLevels) {
