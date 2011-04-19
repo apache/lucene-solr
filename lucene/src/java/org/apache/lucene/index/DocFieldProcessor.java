@@ -50,11 +50,9 @@ final class DocFieldProcessor extends DocConsumer {
   int hashMask = 1;
   int totalFieldCount;
 
-
   float docBoost;
   int fieldGen;
   final DocumentsWriterPerThread.DocState docState;
-
 
   public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
     this.docState = docWriter.docState;
@@ -253,7 +251,6 @@ final class DocFieldProcessor extends DocConsumer {
       consumer.finishDocument();
     }
   }
-
 
   void quickSort(DocFieldProcessorPerField[] array, int lo, int hi) {
     if (lo >= hi)

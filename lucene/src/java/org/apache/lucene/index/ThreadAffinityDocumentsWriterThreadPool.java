@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 
+// nocommit jdoc
+// nocommit -- can/should apps set this via IWC
 public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPool {
   private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
 
@@ -37,8 +39,12 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
       }
     }
     ThreadState minThreadState = null;
-    // find the state that has minimum amount of threads waiting
+
+    // Find the state that has minimum number of threads waiting
+    // noocommit -- can't another thread lock the
+    // minThreadState we just got?
     minThreadState = minContendedThreadState();
+
     if (minThreadState == null || minThreadState.hasQueuedThreads()) {
       ThreadState newState = newThreadState();
       if (newState != null) {
@@ -59,6 +65,7 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
     return minThreadState;
   }
 
+  /*
   @Override
   public void clearThreadBindings(ThreadState perThread) {
     threadBindings.clear();
@@ -68,5 +75,5 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
   public void clearAllThreadBindings() {
     threadBindings.clear();
   }
-  
+  */
 }

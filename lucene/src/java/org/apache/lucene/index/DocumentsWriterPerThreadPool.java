@@ -44,7 +44,7 @@ public abstract class DocumentsWriterPerThreadPool {
     // write access guarded by DocumentsWriterFlushControl
     volatile boolean flushPending = false;
     // write access guarded by DocumentsWriterFlushControl
-    long perThreadBytes = 0;
+    long bytesUsed = 0;
     
     // guarded by Reentrant lock
     private boolean isActive = true;
@@ -65,7 +65,7 @@ public abstract class DocumentsWriterPerThreadPool {
         isActive = false;
       }
       this.perThread = perThread;
-      this.perThreadBytes = 0;
+      this.bytesUsed = 0;
       this.flushPending = false;
     }
     
@@ -86,7 +86,7 @@ public abstract class DocumentsWriterPerThreadPool {
     public long getBytesUsedPerThread() {
       assert this.isHeldByCurrentThread();
       // public for FlushPolicy
-      return perThreadBytes;
+      return bytesUsed;
     }
     
     /**
@@ -162,9 +162,9 @@ public abstract class DocumentsWriterPerThreadPool {
   
   public abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter, Document doc);
 
-  public abstract void clearThreadBindings(ThreadState perThread);
+  //public abstract void clearThreadBindings(ThreadState perThread);
 
-  public abstract void clearAllThreadBindings();
+  // public abstract void clearAllThreadBindings();
 
   /**
    * Returns an iterator providing access to all {@link ThreadState}

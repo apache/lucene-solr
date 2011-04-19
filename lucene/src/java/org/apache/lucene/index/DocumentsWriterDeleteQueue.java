@@ -23,15 +23,15 @@ import org.apache.lucene.search.Query;
 
 /**
  * {@link DocumentsWriterDeleteQueue} is a non-blocking linked pending deletes
- * queue. In contrast to other queue implementation we only maintain only the
+ * queue. In contrast to other queue implementation we only maintain the
  * tail of the queue. A delete queue is always used in a context of a set of
- * DWPT and a global delete pool. Each of the DWPT and the global pool need to
- * maintain their 'own' head of the queue. The difference between the DWPT and
- * the global pool is that the DWPT starts maintaining a head once it has added
- * its first document since for its segments private deletes only the deletes
- * after that document are relevant. The global pool instead starts maintaining
- * the head once this instance is created by taking the sentinel instance as its
- * initial head.
+ * DWPTs and a global delete pool. Each of the DWPT and the global pool need to
+ * maintain their 'own' head of the queue (as a DeleteSlice instance per DWPT).
+ * The difference between the DWPT and the global pool is that the DWPT starts
+ * maintaining a head once it has added its first document since for its segments
+ * private deletes only the deletes after that document are relevant. The global
+ * pool instead starts maintaining the head once this instance is created by
+ * taking the sentinel instance as its initial head.
  * <p>
  * Since each {@link DeleteSlice} maintains its own head and the list is only
  * single linked the garbage collector takes care of pruning the list for us.
@@ -41,12 +41,12 @@ import org.apache.lucene.search.Query;
  * <p>
  * Each DWPT as well as the global delete pool maintain their private
  * DeleteSlice instance. In the DWPT case updating a slice is equivalent to
- * atomically finishing the document. The slice update guarantees a happens
- * before relationship to all other updates in the same indexing session. When a
- * DWPT updates a document it
+ * atomically finishing the document. The slice update guarantees a "happens
+ * before" relationship to all other updates in the same indexing session. When a
+ * DWPT updates a document it:
  * 
  * <ol>
- * <li>consumes a document finishes its processing</li>
+ * <li>consumes a document and finishes its processing</li>
  * <li>updates its private {@link DeleteSlice} either by calling
  * {@link #updateSlice(DeleteSlice)} or {@link #add(Term, DeleteSlice)} (if the
  * document has a delTerm)</li>
@@ -56,7 +56,7 @@ import org.apache.lucene.search.Query;
  * </ol>
  * 
  * The DWPT also doesn't apply its current documents delete term until it has
- * updated its delete slice which ensures the consistency of the update. if the
+ * updated its delete slice which ensures the consistency of the update. If the
  * update fails before the DeleteSlice could have been updated the deleteTerm
  * will also not be added to its private deletes neither to the global deletes.
  * 
@@ -167,7 +167,7 @@ final class DocumentsWriterDeleteQueue {
   void tryApplyGlobalSlice() {
     if (globalBufferLock.tryLock()) {
       /*
-       * the global buffer must be locked but we don't need to upate them if
+       * The global buffer must be locked but we don't need to upate them if
        * there is an update going on right now. It is sufficient to apply the
        * deletes that have been added after the current in-flight global slices
        * tail the next time we can get the lock!
@@ -175,7 +175,6 @@ final class DocumentsWriterDeleteQueue {
       try {
         if (updateSlice(globalSlice)) {
           globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
-
         }
       } finally {
         globalBufferLock.unlock();
@@ -186,15 +185,15 @@ final class DocumentsWriterDeleteQueue {
   FrozenBufferedDeletes freezeGlobalBuffer(DeleteSlice callerSlice) {
     globalBufferLock.lock();
     /*
-     * here we are freezing the global buffer so we need to lock it, apply all
+     * Here we freeze the global buffer so we need to lock it, apply all
      * deletes in the queue and reset the global slice to let the GC prune the
      * queue.
      */
     final Node currentTail = tail; // take the current tail make this local any
-    // changes after this call are applied later
+    // Changes after this call are applied later
     // and not relevant here
     if (callerSlice != null) {
-      // update the callers slices so we are on the same page
+      // Update the callers slices so we are on the same page
       callerSlice.sliceTail = currentTail;
     }
     try {
@@ -217,7 +216,7 @@ final class DocumentsWriterDeleteQueue {
   }
 
   boolean updateSlice(DeleteSlice slice) {
-    if (slice.sliceTail != tail) { // if we are the same just
+    if (slice.sliceTail != tail) { // If we are the same just
       slice.sliceTail = tail;
       return true;
     }
@@ -225,7 +224,7 @@ final class DocumentsWriterDeleteQueue {
   }
 
   static class DeleteSlice {
-    // no need to be volatile, slices are only access by one thread!
+    // No need to be volatile, slices are thread captive (only accessed by one thread)!
     Node sliceHead; // we don't apply this one
     Node sliceTail;
 
@@ -245,7 +244,7 @@ final class DocumentsWriterDeleteQueue {
         return;
       }
       /*
-       * when we apply a slice we take the head and get its next as our first
+       * When we apply a slice we take the head and get its next as our first
        * item to apply and continue until we applied the tail. If the head and
        * tail in this slice are not equal then there will be at least one more
        * non-null node in the slice!
@@ -260,7 +259,7 @@ final class DocumentsWriterDeleteQueue {
     }
 
     void reset() {
-      // resetting to a 0 length slice
+      // Reset to a 0 length slice
       sliceHead = sliceTail;
     }
 
@@ -322,7 +321,6 @@ final class DocumentsWriterDeleteQueue {
     void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
       bufferedDeletes.addTerm((Term) item, docIDUpto);
     }
-
   }
 
   private static final class QueryArrayNode extends Node {
@@ -376,6 +374,5 @@ final class DocumentsWriterDeleteQueue {
     } finally {
       globalBufferLock.unlock();
     }
-
   }
 }

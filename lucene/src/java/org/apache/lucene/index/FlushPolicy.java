@@ -32,16 +32,16 @@ import org.apache.lucene.util.SetOnce;
  * {@link IndexWriterConfig#setRAMBufferSizeMB(double)}</li>
  * <li>Number of RAM resident documents - configured via
  * {@link IndexWriterConfig#setMaxBufferedDocs(int)}</li>
- * <li>Number of buffered delete terms - configured via
+ * <li>Number of buffered delete terms/queries - configured via
  * {@link IndexWriterConfig#setMaxBufferedDeleteTerms(int)}</li>
  * </ul>
  * 
- * The {@link IndexWriter} uses a provided {@link FlushPolicy} to control the
- * flushing process during indexing. The policy is informed for each added or
+ * The {@link IndexWriter} consults a provided {@link FlushPolicy} to control the
+ * flushing process. The policy is informed for each added or
  * updated document as well as for each delete term. Based on the
- * {@link FlushPolicy} the information provided via {@link ThreadState} and
- * {@link DocumentsWriterFlushControl} the {@link FlushPolicy} can decide if a
- * {@link DocumentsWriterPerThread} needs flushing and can mark it as
+ * {@link FlushPolicy}, the information provided via {@link ThreadState} and
+ * {@link DocumentsWriterFlushControl}, the {@link FlushPolicy} decides if a
+ * {@link DocumentsWriterPerThread} needs flushing and mark it as
  * flush-pending via
  * {@link DocumentsWriterFlushControl#setFlushPending(ThreadState)}.
  * 
@@ -58,6 +58,7 @@ public abstract class FlushPolicy {
    * Called for each delete term. If this is a delete triggered due to an update
    * the given {@link ThreadState} is non-null.
    * <p>
+   * nocommit: what does this note mean...?
    * Note: This method is synchronized by the given
    * {@link DocumentsWriterFlushControl} and it is guaranteed that the calling
    * thread holds the lock on the given {@link ThreadState}
@@ -66,9 +67,10 @@ public abstract class FlushPolicy {
       ThreadState state);
 
   /**
-   * Called for each document update on the given {@link ThreadState}s
+   * Called for each document update on the given {@link ThreadState}'s
    * {@link DocumentsWriterPerThread}.
    * <p>
+   * nocommit: what does this note mean...?
    * Note: This method is synchronized by the given
    * {@link DocumentsWriterFlushControl} and it is guaranteed that the calling
    * thread holds the lock on the given {@link ThreadState}
@@ -103,6 +105,7 @@ public abstract class FlushPolicy {
    * Marks the most ram consuming active {@link DocumentsWriterPerThread} flush
    * pending
    */
+  // nocommit -- move to default policy?
   protected void markLargestWriterPending(DocumentsWriterFlushControl control,
       ThreadState perThreadState, final long currentBytesPerThread) {
     control
@@ -117,7 +120,8 @@ public abstract class FlushPolicy {
    */
   protected ThreadState findLargestNonPendingWriter(
       DocumentsWriterFlushControl control, ThreadState perThreadState) {
-    long maxRamSoFar = perThreadState.perThreadBytes;
+    assert perThreadState.perThread.getNumDocsInRAM() > 0;
+    long maxRamSoFar = perThreadState.bytesUsed;
     // the dwpt which needs to be flushed eventually
     ThreadState maxRamUsingThreadState = perThreadState;
     assert !perThreadState.flushPending : "DWPT should have flushed";
@@ -125,7 +129,7 @@ public abstract class FlushPolicy {
     while (activePerThreadsIterator.hasNext()) {
       ThreadState next = activePerThreadsIterator.next();
       if (!next.flushPending) {
-        final long nextRam = next.perThreadBytes;
+        final long nextRam = next.bytesUsed;
         if (nextRam > maxRamSoFar && next.perThread.getNumDocsInRAM() > 0) {
           maxRamSoFar = nextRam;
           maxRamUsingThreadState = next;
@@ -137,6 +141,8 @@ public abstract class FlushPolicy {
     return maxRamUsingThreadState;
   }
 
+  // nocommit -- I thought we pause based on "too many flush
+  // states pending"?
   /**
    * Returns the max net memory which marks the upper watermark for the
    * DocumentsWriter to be healthy. If all flushing and active
@@ -154,6 +160,7 @@ public abstract class FlushPolicy {
    */
   public long getMaxNetBytes() {
     if (!flushOnRAM()) {
+      // nocommit explain that returning -1 is allowed?
       return -1;
     }
     final double ramBufferSizeMB = indexWriterConfig.getRAMBufferSizeMB();
@@ -165,6 +172,8 @@ public abstract class FlushPolicy {
    * {@link IndexWriterConfig#getMaxBufferedDocs()}, otherwise
    * <code>false</code>.
    */
+  // nocommit who needs this?  policy shouldn't have to impl
+  // this?  our default policy should?
   protected boolean flushOnDocCount() {
     return indexWriterConfig.getMaxBufferedDocs() != IndexWriterConfig.DISABLE_AUTO_FLUSH;
   }
@@ -174,6 +183,8 @@ public abstract class FlushPolicy {
    * {@link IndexWriterConfig#getMaxBufferedDeleteTerms()}, otherwise
    * <code>false</code>.
    */
+  // nocommit who needs this?  policy shouldn't have to impl
+  // this?  our default policy should?
   protected boolean flushOnDeleteTerms() {
     return indexWriterConfig.getMaxBufferedDeleteTerms() != IndexWriterConfig.DISABLE_AUTO_FLUSH;
   }
@@ -183,6 +194,8 @@ public abstract class FlushPolicy {
    * {@link IndexWriterConfig#getRAMBufferSizeMB()}, otherwise
    * <code>false</code>.
    */
+  // nocommit who needs this?  policy shouldn't have to impl
+  // this?  our default policy should?
   protected boolean flushOnRAM() {
     return indexWriterConfig.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH;
   }

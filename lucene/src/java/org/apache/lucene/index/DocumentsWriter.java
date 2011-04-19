@@ -39,10 +39,7 @@ import org.apache.lucene.store.Directory;
 
 /**
  * This class accepts multiple added documents and directly
- * writes a single segment file.  It does this more
- * efficiently than creating a single segment per document
- * (with DocumentWriter) and doing standard merges on those
- * segments.
+ * writes segment files.
  *
  * Each added document is passed to the {@link DocConsumer},
  * which in turn processes the document and interacts with
@@ -152,8 +149,11 @@ final class DocumentsWriter {
   }
 
   synchronized boolean deleteQueries(final Query... queries) throws IOException {
-    final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     deleteQueue.addDelete(queries);
+    // nocommit -- shouldn't we check for doApplyAllDeletes
+    // here too?
+    // nocommit shouldn't this consult flush policy?  or
+    // should this return void now?
     return false;
   }
 
@@ -165,9 +165,11 @@ final class DocumentsWriter {
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     deleteQueue.addDelete(terms);
     flushControl.doOnDelete();
-    if (flushControl.flushDeletes.getAndSet(false)) {
-      flushDeletes(deleteQueue);
+    if (flushControl.doApplyAllDeletes()) {
+      applyAllDeletes(deleteQueue);
     }
+    // nocommit shouldn't this consult flush policy?  or
+    // should this return void now?
     return false;
   }
 
@@ -182,13 +184,13 @@ final class DocumentsWriter {
     return deleteQueue;
   }
   
-  private void flushDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
+  private void applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
     if (deleteQueue != null) {
       synchronized (ticketQueue) {
-        // freeze and insert the delete flush ticket in the queue
+        // Freeze and insert the delete flush ticket in the queue
         ticketQueue.add(new FlushTicket(deleteQueue.freezeGlobalBuffer(null), false));
         applyFlushTickets(null, null);
-       }
+      }
     }
     indexWriter.applyAllDeletes();
     indexWriter.flushCount.incrementAndGet();
@@ -196,14 +198,9 @@ final class DocumentsWriter {
 
   synchronized void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
-    pushConfigChange();
-  }
-
-  private final void pushConfigChange() {
     final Iterator<ThreadState> it = perThreadPool.getAllPerThreadsIterator();
     while (it.hasNext()) {
-      DocumentsWriterPerThread perThread = it.next().perThread;
-      perThread.docState.infoStream = this.infoStream;
+      it.next().perThread.docState.infoStream = infoStream;
     }
   }
 
@@ -218,8 +215,9 @@ final class DocumentsWriter {
 
   // returns boolean for asserts
   boolean message(String message) {
-    if (infoStream != null)
+    if (infoStream != null) {
       indexWriter.message("DW: " + message);
+    }
     return true;
   }
 
@@ -297,45 +295,52 @@ final class DocumentsWriter {
     ensureOpen();
     boolean maybeMerge = false;
     final boolean isUpdate = delTerm != null;
-    if (healthiness.isStalled()) {
-      /*
-       * if we are allowed to hijack threads for flushing we try to flush out 
-       * as many pending DWPT to release memory and get back healthy status.
-       */
+    if (healthiness.anyStalledThreads()) {
+
+      // Help out flushing any pending DWPTs so we can un-stall:
       if (infoStream != null) {
-        message("WARNING DocumentsWriter is stalled try to hijack thread to flush pending segment");
+        message("WARNING DocumentsWriter has stalled threads; will hijack this thread to flush pending segment(s)");
       }
-      // try pick up pending threads here if possile
+
+      // Try pick up pending threads here if possible
       DocumentsWriterPerThread flushingDWPT;
-      while ( (flushingDWPT = flushControl.nextPendingFlush()) != null){
-       // don't push the delete here since the update could fail!
+      while ((flushingDWPT = flushControl.nextPendingFlush()) != null) {
+        // Don't push the delete here since the update could fail!
         maybeMerge = doFlush(flushingDWPT);
-        if (!healthiness.isStalled()) {
+        if (!healthiness.anyStalledThreads()) {
           break;
         }
       }
-      if (infoStream != null && healthiness.isStalled()) {
-        message("WARNING DocumentsWriter is stalled might block thread until DocumentsWriter is not stalled anymore");
+
+      if (infoStream != null && healthiness.anyStalledThreads()) {
+        message("WARNING DocumentsWriter still has stalled threads; waiting");
       }
+
       healthiness.waitIfStalled(); // block if stalled
+
+      if (infoStream != null && healthiness.anyStalledThreads()) {
+        message("WARNING DocumentsWriter done waiting");
+      }
     }
+
     final ThreadState perThread = perThreadPool.getAndLock(Thread.currentThread(),
         this, doc);
     final DocumentsWriterPerThread flushingDWPT;
-    final DocumentsWriterPerThread dwpt;
+    
     try {
+
       if (!perThread.isActive()) {
         ensureOpen();
         assert false: "perThread is not active but we are still open";
       }
        
-      dwpt = perThread.perThread;
+      final DocumentsWriterPerThread dwpt = perThread.perThread;
       try {
         dwpt.updateDocument(doc, analyzer, delTerm); 
         numDocsInRAM.incrementAndGet();
       } finally {
-        if(dwpt.checkAndResetHasAborted()) {
-            flushControl.doOnAbort(perThread);
+        if (dwpt.checkAndResetHasAborted()) {
+          flushControl.doOnAbort(perThread);
         }
       }
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
@@ -376,46 +381,53 @@ final class DocumentsWriter {
          * might miss to deletes documents in 'A'.
          */
         synchronized (ticketQueue) {
-         // each flush is assigned a ticket in the order they accquire the ticketQueue lock
-         ticket =  new FlushTicket(flushingDWPT.prepareFlush(), true);
-         ticketQueue.add(ticket);
+          // Each flush is assigned a ticket in the order they accquire the ticketQueue lock
+          ticket =  new FlushTicket(flushingDWPT.prepareFlush(), true);
+          ticketQueue.add(ticket);
         }
+
         // flush concurrently without locking
         final FlushedSegment newSegment = flushingDWPT.flush();
+
+        // nocommit -- should this success = true be moved
+        // under the applyFlushTickets?
         success = true;
+
         /*
-         * now we are done and try to flush the ticket queue if the head of the
+         * Now we are done and try to flush the ticket queue if the head of the
          * queue has already finished the flush.
          */
         applyFlushTickets(ticket, newSegment);
       } finally {
-          flushControl.doAfterFlush(flushingDWPT);
-          flushingDWPT.checkAndResetHasAborted();
-          indexWriter.flushCount.incrementAndGet();
-          if (!success && ticket != null) {
-            synchronized (ticketQueue) {
-              // in the case of a failure make sure we are making progress and
-              // apply all the deletes since the segment flush failed
-              ticket.isSegmentFlush = false;
-             
-            }
+        flushControl.doAfterFlush(flushingDWPT);
+        flushingDWPT.checkAndResetHasAborted();
+        indexWriter.flushCount.incrementAndGet();
+        if (!success && ticket != null) {
+          synchronized (ticketQueue) {
+            // nocommit -- shouldn't we drop the ticket in
+            // this case?
+            // In the case of a failure make sure we are making progress and
+            // apply all the deletes since the segment flush failed
+            ticket.isSegmentFlush = false;
           }
+        }
       }
-      flushingDWPT =  flushControl.nextPendingFlush() ;
+      flushingDWPT = flushControl.nextPendingFlush();
     }
     return maybeMerge;
   }
-  
 
   private void applyFlushTickets(FlushTicket current, FlushedSegment segment) throws IOException {
     synchronized (ticketQueue) {
       if (current != null) {
-        // this is a segment FlushTicket so assign the flushed segment so we can make progress.
+        // nocommit -- can't caller set current.segment = segment?
+        // nocommit -- confused by this comment:
+        // This is a segment FlushTicket so assign the flushed segment so we can make progress.
         assert segment != null;
         current.segment = segment;
       }
       while (true) {
-        // while we can publish flushes keep on making the queue empty.
+        // Keep publishing eligible flushed segments:
         final FlushTicket head = ticketQueue.peek();
         if (head != null && head.canPublish()) {
           ticketQueue.poll();
@@ -426,11 +438,10 @@ final class DocumentsWriter {
       }
     }
   }
-  
 
   private void finishFlush(FlushedSegment newSegment, FrozenBufferedDeletes bufferedDeletes)
       throws IOException {
-    // this is eventually finishing the flushed segment and publishing it to the IndexWriter
+    // Finish the flushed segment and publish it to IndexWriter
     if (newSegment == null) {
       assert bufferedDeletes != null;
       if (bufferedDeletes != null && bufferedDeletes.any()) {
@@ -442,9 +453,6 @@ final class DocumentsWriter {
     } else {
       publishFlushedSegment(newSegment, bufferedDeletes);  
     }
-    
-    
-
   }
 
   final void subtractFlushedNumDocs(int numFlushed) {
@@ -455,10 +463,10 @@ final class DocumentsWriter {
   }
   
   /**
-   * publishes the flushed segment, segment private deletes if any and its
-   * associated global delete if present to the index writer. the actual
-   * publishing operation is synced on IW -> BDS so that the {@link SegmentInfo}
-   * 's delete generation is always GlobalPacket_deleteGeneration + 1
+   * Publishes the flushed segment, segment private deletes (if any) and its
+   * associated global delete (if present) to IndexWriter.  The actual
+   * publishing operation is synced on IW -> BDS so that the {@link SegmentInfo}'s
+   * delete generation is always GlobalPacket_deleteGeneration + 1
    */
   private void publishFlushedSegment(FlushedSegment newSegment, FrozenBufferedDeletes globalPacket)
       throws IOException {
@@ -467,12 +475,13 @@ final class DocumentsWriter {
     final BufferedDeletes deletes = newSegment.segmentDeletes;
     FrozenBufferedDeletes packet = null;
     if (deletes != null && deletes.any()) {
-      // segment private delete
+      // Segment private delete
       packet = new FrozenBufferedDeletes(deletes, true);
       if (infoStream != null) {
         message("flush: push buffered seg private deletes: " + packet);
       }
     }
+
     // now publish!
     indexWriter.publishFlushedSegment(segInfo, packet, globalPacket);
   }
@@ -486,10 +495,9 @@ final class DocumentsWriter {
   }
   
   /*
-   * flushAllThreads is synced by IW fullFlushLock. Flushing all threads is a
-   * two stage operations, the caller must ensure that #finishFlush is called
-   * after this method to release the flush lock in DWFlushControl - use try /
-   * finally!
+   * FlushAllThreads is synced by IW fullFlushLock. Flushing all threads is a
+   * two stage operation; the caller must ensure (in try/finally) that finishFlush
+   * is called after this method, to release the flush lock in DWFlushControl
    */
   final boolean flushAllThreads(final boolean flushDeletes)
     throws IOException {
@@ -497,9 +505,11 @@ final class DocumentsWriter {
 
     synchronized (this) {
       flushingDeleteQueue = deleteQueue;
-      /* sets a new delete queue - this must be synced on the flush control
+      /* Cutover to a new delete queue.  This must be synced on the flush control
        * otherwise a new DWPT could sneak into the loop with an already flushing
        * delete queue */
+      // nocommit -- shouldn't we do this?:
+      // assert Thread.holdsLock(flushControl);
       flushControl.markForFullFlush();
       assert setFlushingDeleteQueue(flushingDeleteQueue);
     }
@@ -509,18 +519,18 @@ final class DocumentsWriter {
     boolean anythingFlushed = false;
     try {
       DocumentsWriterPerThread flushingDWPT;
-      // now try help out with flushing
+      // Help out with flushing:
       while ((flushingDWPT = flushControl.nextPendingFlush()) != null) {
         anythingFlushed |= doFlush(flushingDWPT);
       }
-      // if a concurrent flush is still in flight wait for it
-      while (!flushControl.allFlushesDue()) {
+      // If a concurrent flush is still in flight wait for it
+      while (flushControl.anyFlushing()) {
         flushControl.waitForFlush();  
       }
       if (!anythingFlushed && flushDeletes) {
         synchronized (ticketQueue) {
           ticketQueue.add(new FlushTicket(flushingDeleteQueue.freezeGlobalBuffer(null), false));
-         }
+        }
         applyFlushTickets(null, null);
       }
     } finally {
@@ -532,13 +542,16 @@ final class DocumentsWriter {
   final void finishFullFlush(boolean success) {
     assert setFlushingDeleteQueue(null);
     if (success) {
-      // release the flush lock
+      // Release the flush lock
       flushControl.finishFullFlush();
     } else {
       flushControl.abortFullFlushes();
     }
   }
-  
+
+  // nocommit -- can we add comment justifying that these
+  // fields are safely changed across threads because they
+  // are always accessed in sync(ticketQueue)?
   static final class FlushTicket {
     final FrozenBufferedDeletes frozenDeletes;
     FlushedSegment segment;

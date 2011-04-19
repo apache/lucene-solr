@@ -383,7 +383,7 @@ public class IndexWriter implements Closeable {
         if (!success && infoStream != null) {
           message("hit exception during while NRT reader");
         }
-        // now we are done - finish the full flush!
+        // Done: finish the full flush!
         docWriter.finishFullFlush(success);
         doAfterFlush();
       }
@@ -2073,7 +2073,7 @@ public class IndexWriter implements Closeable {
       if (useCompoundFile(newSegment)) {
         String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
         message("creating compound file " + compoundFileName);
-      // Now build compound file
+        // Now build compound file
         CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
         for(String fileName : newSegment.files()) {
           cfsWriter.addFile(fileName);
@@ -2146,18 +2146,18 @@ public class IndexWriter implements Closeable {
    */
   synchronized void publishFlushedSegment(SegmentInfo newSegment,
       FrozenBufferedDeletes packet, FrozenBufferedDeletes globalPacket) throws IOException {
-    // lock order IW -> BDS
+    // Lock order IW -> BDS
     synchronized (bufferedDeletesStream) {
       if (globalPacket != null && globalPacket.any()) {
         bufferedDeletesStream.push(globalPacket);
       } 
-      // publishing the segment must be synched on IW -> BDS to make the sure
+      // Publishing the segment must be synched on IW -> BDS to make the sure
       // that no merge prunes away the seg. private delete packet
       final long nextGen;
       if (packet != null && packet.any()) {
         nextGen = bufferedDeletesStream.push(packet);
       } else {
-        // since we don't have a delete packet to apply we can get a new
+        // Since we don't have a delete packet to apply we can get a new
         // generation right away
         nextGen = bufferedDeletesStream.getNextGen();
       }
@@ -2572,7 +2572,11 @@ public class IndexWriter implements Closeable {
       message("commit: done");
     }
   }
+
+  // Ensures only one flush() is actually flushing segments
+  // at a time:
   private final Object fullFlushLock = new Object();
+
   /**
    * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory.
@@ -2595,9 +2599,7 @@ public class IndexWriter implements Closeable {
       maybeMerge();
     }
   }
-  // TODO: this method should not have to be entirely
-  // synchronized, ie, merges should be allowed to commit
-  // even while a flush is happening
+
   private boolean doFlush(boolean applyAllDeletes) throws CorruptIndexException, IOException {
     if (hitOOM) {
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot flush");
@@ -2645,6 +2647,8 @@ public class IndexWriter implements Closeable {
   
   final synchronized void maybeApplyDeletes(boolean applyAllDeletes) throws IOException {
     if (!applyAllDeletes) {
+      // nocommit -- shouldn't this move into the default
+      // flush policy?
       // If deletes alone are consuming > 1/2 our RAM
       // buffer, force them all to apply now. This is to
       // prevent too-frequent flushing of a long tail of
@@ -2670,31 +2674,31 @@ public class IndexWriter implements Closeable {
   }
   
   final synchronized void applyAllDeletes() throws IOException {
-      flushDeletesCount.incrementAndGet();
-      final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream
-          .applyDeletes(readerPool, segmentInfos);
-      if (result.anyDeletes) {
-        checkpoint();
+    flushDeletesCount.incrementAndGet();
+    final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream
+      .applyDeletes(readerPool, segmentInfos);
+    if (result.anyDeletes) {
+      checkpoint();
+    }
+    if (!keepFullyDeletedSegments && result.allDeleted != null) {
+      if (infoStream != null) {
+        message("drop 100% deleted segments: " + result.allDeleted);
       }
-      if (!keepFullyDeletedSegments && result.allDeleted != null) {
-        if (infoStream != null) {
-          message("drop 100% deleted segments: " + result.allDeleted);
-        }
-        for (SegmentInfo info : result.allDeleted) {
-          // If a merge has already registered for this
-          // segment, we leave it in the readerPool; the
-          // merge will skip merging it and will then drop
-          // it once it's done:
-          if (!mergingSegments.contains(info)) {
-            segmentInfos.remove(info);
-            if (readerPool != null) {
-              readerPool.drop(info);
-            }
+      for (SegmentInfo info : result.allDeleted) {
+        // If a merge has already registered for this
+        // segment, we leave it in the readerPool; the
+        // merge will skip merging it and will then drop
+        // it once it's done:
+        if (!mergingSegments.contains(info)) {
+          segmentInfos.remove(info);
+          if (readerPool != null) {
+            readerPool.drop(info);
           }
         }
-        checkpoint();
       }
-      bufferedDeletesStream.prune(segmentInfos);
+      checkpoint();
+    }
+    bufferedDeletesStream.prune(segmentInfos);
   }
 
   /** Expert:  Return the total size of all index files currently cached in memory.

@@ -83,10 +83,10 @@ final class Healthiness {
     }
   }
 
-  private final Healthiness.Sync sync = new Sync();
+  private final Sync sync = new Sync();
   volatile boolean wasStalled = false; // only with asserts
 
-  boolean isStalled() {
+  boolean anyStalledThreads() {
     return !sync.isHealthy();
   }
 

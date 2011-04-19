@@ -40,7 +40,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public final class DocumentsWriterFlushControl {
 
-  private final long maxBytesPerDWPT;
+  private final long hardMaxBytesPerDWPT;
   private long activeBytes = 0;
   private long flushBytes = 0;
   private volatile int numPending = 0;
@@ -63,11 +63,11 @@ public final class DocumentsWriterFlushControl {
   private final DocumentsWriter documentsWriter;
 
   DocumentsWriterFlushControl(DocumentsWriter documentsWriter,
-      Healthiness healthiness, long maxBytesPerDWPT) {
+      Healthiness healthiness, long hardMaxBytesPerDWPT) {
     this.healthiness = healthiness;
     this.perThreadPool = documentsWriter.perThreadPool;
     this.flushPolicy = documentsWriter.flushPolicy;
-    this.maxBytesPerDWPT = maxBytesPerDWPT;
+    this.hardMaxBytesPerDWPT = hardMaxBytesPerDWPT;
     this.documentsWriter = documentsWriter;
   }
 
@@ -85,8 +85,8 @@ public final class DocumentsWriterFlushControl {
 
   private void commitPerThreadBytes(ThreadState perThread) {
     final long delta = perThread.perThread.bytesUsed()
-        - perThread.perThreadBytes;
-    perThread.perThreadBytes += delta;
+        - perThread.bytesUsed;
+    perThread.bytesUsed += delta;
     /*
      * We need to differentiate here if we are pending since setFlushPending
      * moves the perThread memory to the flushBytes and we could be set to
@@ -100,6 +100,7 @@ public final class DocumentsWriterFlushControl {
     assert updatePeaks(delta);
   }
 
+  // only for asserts
   private boolean updatePeaks(long delta) {
     peakActiveBytes = Math.max(peakActiveBytes, activeBytes);
     peakFlushBytes = Math.max(peakFlushBytes, flushBytes);
@@ -116,10 +117,9 @@ public final class DocumentsWriterFlushControl {
       } else {
         flushPolicy.onInsert(this, perThread);
       }
-      if (!perThread.flushPending && perThread.perThreadBytes > maxBytesPerDWPT) {
-        // safety check to prevent a single DWPT exceeding its RAM limit. This
-        // is super
-        // important since we can not address more than 2048 MB per DWPT
+      if (!perThread.flushPending && perThread.bytesUsed > hardMaxBytesPerDWPT) {
+        // Safety check to prevent a single DWPT exceeding its RAM limit. This
+        // is super important since we can not address more than 2048 MB per DWPT
         setFlushPending(perThread);
         if (fullFlush) {
           DocumentsWriterPerThread toBlock = internalTryCheckOutForFlush(perThread, false);
@@ -146,8 +146,8 @@ public final class DocumentsWriterFlushControl {
     }
   }
   
-  public synchronized boolean allFlushesDue() {
-    return numFlushing == 0;
+  public synchronized boolean anyFlushing() {
+    return numFlushing != 0;
   }
   
   public synchronized void waitForFlush() {
@@ -169,7 +169,7 @@ public final class DocumentsWriterFlushControl {
     assert !perThread.flushPending;
     if (perThread.perThread.getNumDocsInRAM() > 0) {
       perThread.flushPending = true; // write access synced
-      final long bytes = perThread.perThreadBytes;
+      final long bytes = perThread.bytesUsed;
       flushBytes += bytes;
       activeBytes -= bytes;
       numPending++; // write access synced
@@ -179,19 +179,20 @@ public final class DocumentsWriterFlushControl {
 
   synchronized void doOnAbort(ThreadState state) {
     if (state.flushPending) {
-      flushBytes -= state.perThreadBytes;
+      flushBytes -= state.bytesUsed;
     } else {
-      activeBytes -= state.perThreadBytes;
+      activeBytes -= state.bytesUsed;
     }
-    // take it out of the loop this DWPT is stale
+    // Take it out of the loop this DWPT is stale
     perThreadPool.replaceForFlush(state, closed);
     healthiness.updateStalled(this);
   }
 
   synchronized DocumentsWriterPerThread tryCheckoutForFlush(
       ThreadState perThread, boolean setPending) {
-    if (fullFlush)
+    if (fullFlush) {
       return null;
+    }
     return internalTryCheckOutForFlush(perThread, setPending);
   }
 
@@ -201,17 +202,17 @@ public final class DocumentsWriterFlushControl {
       setFlushPending(perThread);
     }
     if (perThread.flushPending) {
-      // we are pending so all memory is already moved to flushBytes
+      // We are pending so all memory is already moved to flushBytes
       if (perThread.tryLock()) {
         try {
           if (perThread.isActive()) {
             assert perThread.isHeldByCurrentThread();
             final DocumentsWriterPerThread dwpt;
-            final long bytes = perThread.perThreadBytes; // do that before
+            final long bytes = perThread.bytesUsed; // do that before
                                                          // replace!
             dwpt = perThreadPool.replaceForFlush(perThread, closed);
             assert !flushingWriters.containsKey(dwpt) : "DWPT is already flushing";
-            // record the flushing DWPT to reduce flushBytes in doAfterFlush
+            // Record the flushing DWPT to reduce flushBytes in doAfterFlush
             flushingWriters.put(dwpt, Long.valueOf(bytes));
             numPending--; // write access synced
             numFlushing++;
@@ -298,8 +299,12 @@ public final class DocumentsWriterFlushControl {
     return numFlushing;
   }
   
-  public void setFlushDeletes() {	
-	  flushDeletes.set(true);
+  public boolean doApplyAllDeletes() {	
+    return flushDeletes.getAndSet(false);
+  }
+
+  public void setApplyAllDeletes() {	
+    flushDeletes.set(true);
   }
   
   int numActiveDWPT() {
@@ -312,7 +317,7 @@ public final class DocumentsWriterFlushControl {
       assert !fullFlush;
       fullFlush = true;
       flushingQueue = documentsWriter.deleteQueue;
-      // set a new delete queue - all subsequent DWPT will use this queue until
+      // Set a new delete queue - all subsequent DWPT will use this queue until
       // we do another full flush
       documentsWriter.deleteQueue = new DocumentsWriterDeleteQueue(new BufferedDeletes(false));
     }
@@ -374,9 +379,9 @@ public final class DocumentsWriterFlushControl {
       }
       
     } finally {
+      fullFlush = false;
       flushQueue.clear();
       blockedFlushes.clear();
-      fullFlush = false;
     }
   }
   

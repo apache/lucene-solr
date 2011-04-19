@@ -21,16 +21,16 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 
 /**
  * Default {@link FlushPolicy} implementation that flushes based on RAM
- * Consumption, document count and number of buffered deletes depending on the
- * IndexWriters {@link IndexWriterConfig}. This {@link FlushPolicy} will only
+ * used, document count and number of buffered deletes depending on the
+ * IndexWriter's {@link IndexWriterConfig}. This {@link FlushPolicy} will only
  * respect settings which are not disabled during initialization (
- * {@link #init(DocumentsWriter)}). All enabled {@link IndexWriterConfig}
+ * {@link #init(DocumentsWriter)}) (nocommit what does that mean?). All enabled {@link IndexWriterConfig}
  * settings are used to mark {@link DocumentsWriterPerThread} as flush pending
- * during indexing with respect to thier live updates.
+ * during indexing with respect to their live updates.
  * <p>
- * If {@link IndexWriterConfig#setRAMBufferSizeMB(double)} is enabled always the
+ * If {@link IndexWriterConfig#setRAMBufferSizeMB(double)} is enabled, the
  * largest ram consuming {@link DocumentsWriterPerThread} will be marked as
- * pending iff the global active RAM consumption is equals or higher the
+ * pending iff the global active RAM consumption is >= the
  * configured max RAM buffer.
  */
 public class FlushByRamOrCountsPolicy extends FlushPolicy {
@@ -38,10 +38,11 @@ public class FlushByRamOrCountsPolicy extends FlushPolicy {
   @Override
   public void onDelete(DocumentsWriterFlushControl control, ThreadState state) {
     if (flushOnDeleteTerms()) {
+      // Flush this state by num del terms
       final int maxBufferedDeleteTerms = indexWriterConfig
           .getMaxBufferedDeleteTerms();
       if (control.getNumGlobalTermDeletes() >= maxBufferedDeleteTerms) {
-        control.setFlushDeletes();
+        control.setApplyAllDeletes();
       }
     }
   }
@@ -51,12 +52,12 @@ public class FlushByRamOrCountsPolicy extends FlushPolicy {
     if (flushOnDocCount()
         && state.perThread.getNumDocsInRAM() >= indexWriterConfig
             .getMaxBufferedDocs()) {
-      control.setFlushPending(state); // flush by num docs
+      // Flush this state by num docs
+      control.setFlushPending(state);
     } else {// flush by RAM
       if (flushOnRAM()) {
-        final double ramBufferSizeMB = indexWriterConfig.getRAMBufferSizeMB();
+        final long limit = (long) (indexWriterConfig.getRAMBufferSizeMB() * 1024.d * 1024.d);
         final long totalRam = control.activeBytes();
-        final long limit = (long) (ramBufferSizeMB * 1024.d * 1024.d);
         if (totalRam >= limit) {
           markLargestWriterPending(control, state, totalRam);
         }
