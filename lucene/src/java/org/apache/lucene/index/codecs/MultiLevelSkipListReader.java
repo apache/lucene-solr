@@ -184,10 +184,19 @@ public abstract class MultiLevelSkipListReader {
     }
   }
   
+  /** returns x == 0 ? 0 : Math.floor(Math.log(x) / Math.log(base)) */
+  static int log(int x, int base) {
+    int ret = 0;
+    while (x >= base) {
+      x /= base;
+      ret++;
+    }
+    return ret;
+  }
+  
   /** Loads the skip levels  */
   private void loadSkipLevels() throws IOException {
-    // TODO: would be preferable to use integer math here instead.
-    numberOfSkipLevels = docCount == 0 ? 0 : (int) Math.floor(StrictMath.log(docCount) / StrictMath.log(skipInterval[0]));
+    numberOfSkipLevels = log(docCount, skipInterval[0]);
     if (numberOfSkipLevels > maxNumberOfSkipLevels) {
       numberOfSkipLevels = maxNumberOfSkipLevels;
     }
