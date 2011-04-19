@@ -186,9 +186,11 @@ public abstract class MultiLevelSkipListReader {
   
   /** returns x == 0 ? 0 : Math.floor(Math.log(x) / Math.log(base)) */
   static int log(int x, int base) {
+    assert base >= 2;
     int ret = 0;
-    while (x >= base) {
-      x /= base;
+    long n = base; // needs to be a long to avoid overflow
+    while (x >= n) {
+      n *= base;
       ret++;
     }
     return ret;
