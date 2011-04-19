@@ -110,6 +110,10 @@ public class TestSolrProperties extends LuceneTestCase {
   protected SolrServer getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");
   }
+  
+  protected SolrServer getRenamedSolrAdmin() {
+    return new EmbeddedSolrServer(cores, "renamed_core");
+  }
 
   protected SolrServer getSolrCore(String name) {
     return new EmbeddedSolrServer(cores, name);
@@ -197,7 +201,17 @@ public class TestSolrProperties extends LuceneTestCase {
     } finally {
       fis.close();
     }
- 
+    
+    CoreAdminRequest.renameCore(name, "renamed_core", coreadmin);
+    mcr = CoreAdminRequest.persist("solr-persist.xml", getRenamedSolrAdmin());
+    
+    fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+    try {
+      Document document = builder.parse(fis);
+      assertTrue(exists("/solr/cores/core[@name='renamed_core']", document));
+    } finally {
+      fis.close();
+    }
   }
   
   public static boolean exists(String xpathStr, Node node)

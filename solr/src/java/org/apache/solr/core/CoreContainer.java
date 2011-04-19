@@ -381,7 +381,12 @@ public class CoreContainer
     SolrCore old = null;
     synchronized (cores) {
       old = cores.put(name, core);
+      /*
+      * set both the name of the descriptor and the name of the
+      * core, since the descriptors name is used for persisting.
+      */
       core.setName(name);
+      core.getCoreDescriptor().name = name;
     }
 
 
