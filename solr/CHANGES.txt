@@ -276,7 +276,8 @@ Bug Fixes
   performance/algorithmic improvements when (facet.sort=count && facet.mincount=1
   && facet.limit=-1) and when (facet.sort=index && facet.mincount>0)  (yonik)
 
-
+* SOLR-2333: The "rename" core admin action does not persist the new name to solr.xml
+  (Rasmus Hahn, Paul R. Brown via Mark Miller)
 
 Other Changes
 ----------------------
