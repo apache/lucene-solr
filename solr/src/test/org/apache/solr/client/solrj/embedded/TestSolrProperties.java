@@ -70,11 +70,13 @@ public class TestSolrProperties extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    System.setProperty("solr.solr.home", getSolrHome());
+    
     File home = SolrTestCaseJ4.getFile(getSolrHome());
     System.setProperty("solr.solr.home", home.getAbsolutePath());
 
     log.info("pwd: " + (new File(".")).getAbsolutePath());
-    solrXml = new File(home, "solr.xml");
+    solrXml = new File(home, getSolrXml());
     cores = new CoreContainer(home.getAbsolutePath(), solrXml);
   }
 
@@ -191,12 +193,17 @@ public class TestSolrProperties extends LuceneTestCase {
 
     mcr = CoreAdminRequest.persist("solr-persist.xml", coreadmin);
     
-    // System.out.println(IOUtils.toString(new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"))));
+    //System.out.println(IOUtils.toString(new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"))));
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     FileInputStream fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
     try {
       Document document = builder.parse(fis);
       assertTrue(exists("/solr/cores[@defaultCoreName='core0']", document));
+      assertTrue(exists("/solr/cores[@host='127.0.0.1']", document));
+      assertTrue(exists("/solr/cores[@hostPort='8983']", document));
+      assertTrue(exists("/solr/cores[@zkClientTimeout='8000']", document));
+      assertTrue(exists("/solr/cores[@hostContext='solr']", document));
+      
     } finally {
       fis.close();
     }
