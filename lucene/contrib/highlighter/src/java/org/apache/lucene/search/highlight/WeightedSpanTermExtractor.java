@@ -57,6 +57,7 @@ public class WeightedSpanTermExtractor {
   private boolean expandMultiTermQuery;
   private boolean cachedTokenStream;
   private boolean wrapToCaching = true;
+  private int maxDocCharsToAnalyze;
 
   public WeightedSpanTermExtractor() {
   }
@@ -323,13 +324,13 @@ public class WeightedSpanTermExtractor {
 
   private IndexReader getReaderForField(String field) throws IOException {
     if(wrapToCaching && !cachedTokenStream && !(tokenStream instanceof CachingTokenFilter)) {
-      tokenStream = new CachingTokenFilter(tokenStream);
+      tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
       cachedTokenStream = true;
     }
     IndexReader reader = readers.get(field);
     if (reader == null) {
       MemoryIndex indexer = new MemoryIndex();
-      indexer.addField(field, tokenStream);
+      indexer.addField(field, new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
       tokenStream.reset();
       IndexSearcher searcher = indexer.createSearcher();
       reader = searcher.getIndexReader();
@@ -573,6 +574,10 @@ public class WeightedSpanTermExtractor {
     }
 
 
+  }
+
+  protected final void setMaxDocCharsToAnalyze(int maxDocCharsToAnalyze) {
+    this.maxDocCharsToAnalyze = maxDocCharsToAnalyze;
   }
 
 }

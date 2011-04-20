@@ -2,10 +2,15 @@ Lucene contrib change Log
 
 ======================= Lucene 3.x (not yet released) =======================
 
-Bug fixes
+Bug Fixes
 
  * LUCENE-3026: SmartChineseAnalyzer's WordTokenFilter threw NullPointerException
    on sentences longer than 32,767 characters.  (wangzhenghang via Robert Muir)
+   
+ * LUCENE-2939: Highlighter should try and use maxDocCharsToAnalyze in 
+   WeightedSpanTermExtractor when adding a new field to MemoryIndex as well as 
+   when using CachingTokenStream. This can be a significant performance bug for
+   large documents. (Mark Miller)
 
 New Features
 

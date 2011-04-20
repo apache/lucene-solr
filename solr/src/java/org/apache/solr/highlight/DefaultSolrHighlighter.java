@@ -431,12 +431,20 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         // fall back to analyzer
         tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
       }
-                   
+      
+      int maxCharsToAnalyze = params.getFieldInt(fieldName,
+          HighlightParams.MAX_CHARS,
+          Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
+      
       Highlighter highlighter;
       if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true"))) {
         // TODO: this is not always necessary - eventually we would like to avoid this wrap
         //       when it is not needed.
-        tstream = new CachingTokenFilter(tstream);
+        if (maxCharsToAnalyze < 0) {
+          tstream = new CachingTokenFilter(tstream);
+        } else {
+          tstream = new CachingTokenFilter(new OffsetLimitTokenFilter(tstream, maxCharsToAnalyze));
+        }
         
         // get highlighter
         highlighter = getPhraseHighlighter(query, fieldName, req, (CachingTokenFilter) tstream);
@@ -449,9 +457,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         highlighter = getHighlighter(query, fieldName, req);
       }
       
-      int maxCharsToAnalyze = params.getFieldInt(fieldName,
-          HighlightParams.MAX_CHARS,
-          Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
       if (maxCharsToAnalyze < 0) {
         highlighter.setMaxDocCharsToAnalyze(docTexts[j].length());
       } else {
