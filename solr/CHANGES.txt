@@ -131,6 +131,9 @@ New Features
 * SOLR-2335: New 'field("...")' function syntax for refering to complex 
   field names (containing whitespace or special characters) in functions.
 
+* SOLR-1709: Distributed support for Date and Numeric Range Faceting
+  (Peter Sturge, David Smiley, hossman)
+
 Optimizations
 ----------------------
 
