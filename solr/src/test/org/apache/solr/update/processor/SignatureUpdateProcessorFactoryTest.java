@@ -43,7 +43,7 @@ import org.junit.Test;
 public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   /** modified by tests as needed */
-  private String processor = "dedupe";
+  private String chain = "dedupe";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -56,7 +56,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    processor = "dedupe"; // set the default that most tests expect
+    chain = "dedupe"; // set the default that most tests expect
   }
 
   void checkNumDocs(int n) {
@@ -203,7 +203,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     checkNumDocs(0);    
 
-    processor = "stored_sig";
+    chain = "stored_sig";
     addDoc(adoc("id", "2a", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(adoc("id", "2b", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(commit());
@@ -232,7 +232,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   private void addDoc(String doc) throws Exception {
     Map<String, String[]> params = new HashMap<String, String[]>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    params.put(UpdateParams.UPDATE_PROCESSOR, new String[] { processor });
+    params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
         (SolrParams) mmparams) {
     };

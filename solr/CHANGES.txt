@@ -237,6 +237,10 @@ Carrot2 3.4.2
 
 Upgrading from Solr 3.1
 ----------------------
+  
+* The updateRequestProcessorChain for a RequestHandler is now defined
+  with update.chain rather than update.processor. The latter still works,
+  but has been deprecated.
 
 Detailed Change List
 ----------------------
@@ -284,6 +288,9 @@ Bug Fixes
 
 Other Changes
 ----------------------
+
+* SOLR-2105: Rename RequestHandler param 'update.processor' to 'update.chain'.
+	(Jan Høydahl via Mark Miller)
 
 Build
 ----------------------

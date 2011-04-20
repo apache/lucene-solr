@@ -194,7 +194,7 @@ public class DataImportHandler extends RequestHandlerBase implements
               IMPORT_CMD.equals(command)) {
 
         UpdateRequestProcessorChain processorChain =
-                req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
+                req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         SolrWriter sw = getSolrWriter(processor, loader, requestParams, req);
