@@ -278,6 +278,9 @@ Bug Fixes
 
 * SOLR-2333: The "rename" core admin action does not persist the new name to solr.xml
   (Rasmus Hahn, Paul R. Brown via Mark Miller)
+  
+* SOLR-2390: Performance of usePhraseHighlighter is terrible on very large Documents, 
+  regardless of hl.maxDocCharsToAnalyze. (Mark Miller)
 
 Other Changes
 ----------------------
