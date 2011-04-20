@@ -223,6 +223,8 @@ Other Changes
   and publish binary, javadoc, and source test-framework jars. 
   (Drew Farris, Robert Muir, Steve Rowe)
 
+* SOLR-2461: QuerySenderListener and AbstractSolrEventListener are 
+  now public (hossman)
 
 Documentation
 ----------------------

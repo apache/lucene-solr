@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * @version $Id$
  */
-class QuerySenderListener extends AbstractSolrEventListener {
+public class QuerySenderListener extends AbstractSolrEventListener {
   public QuerySenderListener(SolrCore core) {
     super(core);
   }
