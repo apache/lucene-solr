@@ -80,7 +80,7 @@
 	<strong>Output Type</strong>
   </td>
   <td>
-	<input name="wt" type="text" value="standard">
+	<input name="wt" type="text" value="">
   </td>
 </tr>
 <tr>
