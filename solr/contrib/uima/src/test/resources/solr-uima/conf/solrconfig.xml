@@ -862,7 +862,7 @@
   -->
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler">
     <lst name="defaults">
-      <str name="update.processor">uima</str>
+      <str name="update.chain">uima</str>
     </lst>
   </requestHandler>
 
@@ -1004,7 +1004,7 @@
     anyway. You have to link the chain to an update handler above to use
     it ie: <requestHandler name="/update
     "class="solr.XmlUpdateRequestHandler"> <lst name="defaults"> <str
-    name="update.processor">dedupe</str> </lst> </requestHandler>
+    name="update.chain">dedupe</str> </lst> </requestHandler>
   -->
 
   <updateRequestProcessorChain name="uima">

@@ -848,7 +848,7 @@
       -->
     <!--
        <lst name="defaults">
-         <str name="update.processor">dedupe</str>
+         <str name="update.chain">dedupe</str>
        </lst>
        -->
     </requestHandler>

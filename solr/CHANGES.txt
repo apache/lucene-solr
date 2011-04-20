@@ -34,6 +34,10 @@ Carrot2 3.4.2
 
 Upgrading from Solr 3.1
 ----------------------
+  
+* The updateRequestProcessorChain for a RequestHandler is now defined
+  with update.chain rather than update.processor. The latter still works,
+  but has been deprecated.
 
 Detailed Change List
 ----------------------
@@ -85,6 +89,9 @@ Other Changes
 * SOLR-2061: Pull base tests out into a new Solr Test Framework module,
   and publish binary, javadoc, and source test-framework jars. 
   (Drew Farris, Robert Muir, Steve Rowe)
+
+* SOLR-2105: Rename RequestHandler param 'update.processor' to 'update.chain'.
+	(Jan Høydahl via Mark Miller)
 
 Build
 ----------------------

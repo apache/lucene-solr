@@ -192,7 +192,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   private void addDoc(String doc) throws Exception {
     Map<String, String[]> params = new HashMap<String, String[]>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    params.put(UpdateParams.UPDATE_PROCESSOR, new String[] { "dedupe" });
+    params.put(UpdateParams.UPDATE_CHAIN, new String[] { "dedupe" });
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
         (SolrParams) mmparams) {
     };
