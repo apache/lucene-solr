@@ -83,6 +83,10 @@ Bug Fixes
 * SOLR-2390: Performance of usePhraseHighlighter is terrible on very large Documents, 
   regardless of hl.maxDocCharsToAnalyze. (Mark Miller)
 
+* SOLR-2474: The helper TokenStreams in analysis.jsp and AnalysisRequestHandlerBase
+  did not clear all attributes so they displayed incorrect attribute values for tokens
+  in later filter stages. (uschindler, rmuir, yonik)
+
 Other Changes
 ----------------------
 

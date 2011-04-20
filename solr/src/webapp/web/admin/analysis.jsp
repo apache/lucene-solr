@@ -220,6 +220,7 @@
            
            public boolean incrementToken() throws IOException {
              if (iter.hasNext()) {
+               clearAttributes();
                AttributeSource token = iter.next();
                Iterator<Class<? extends Attribute>> atts = token.getAttributeClassesIterator();
                while (atts.hasNext()) // make sure all att impls in the token exist here
