@@ -42,7 +42,7 @@ public class TestDirectory extends LuceneTestCase {
   // Test that different instances of FSDirectory can coexist on the same
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
-    File path = new File(TEMP_DIR, "testDirectInstantiation");
+    File path = _TestUtil.getTempDir("testDirectInstantiation");
 
     int sz = 3;
     Directory[] dirs = new Directory[sz];
@@ -134,7 +134,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testFSDirectoryFilter() throws IOException {
-    checkDirectoryFilter(newFSDirectory(new File(TEMP_DIR,"test")));
+    checkDirectoryFilter(newFSDirectory(_TestUtil.getTempDir("test")));
   }
 
   // LUCENE-1468
@@ -151,7 +151,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testCopySubdir() throws Throwable {
-    File path = new File(TEMP_DIR, "testsubdir");
+    File path = _TestUtil.getTempDir("testsubdir");
     try {
       path.mkdirs();
       new File(path, "subdir").mkdirs();
@@ -164,7 +164,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testNotDirectory() throws Throwable {
-    File path = new File(TEMP_DIR, "testnotdir");
+    File path = _TestUtil.getTempDir("testnotdir");
     Directory fsDir = new SimpleFSDirectory(path, null);
     try {
       IndexOutput out = fsDir.createOutput("afile");

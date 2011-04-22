@@ -66,7 +66,7 @@ public class TestLongPostings extends LuceneTestCase {
   public void testLongPostings() throws Exception {
     // Don't use _TestUtil.getTempDir so that we own the
     // randomness (ie same seed will point to same dir):
-    Directory dir = newFSDirectory(new File(LuceneTestCase.TEMP_DIR, "longpostings" + "." + random.nextLong()));
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("longpostings" + "." + random.nextLong()));
 
     final int NUM_DOCS = (int) ((TEST_NIGHTLY ? 4e6 : (RANDOM_MULTIPLIER*2e4)) * (1+random.nextDouble()));
 
