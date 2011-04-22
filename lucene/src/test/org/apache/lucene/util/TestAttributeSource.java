@@ -178,6 +178,16 @@ public class TestAttributeSource extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {}
   }
   
+  public void testLUCENE_3042() throws Exception {
+    final AttributeSource src1 = new AttributeSource();
+    src1.addAttribute(CharTermAttribute.class).append("foo");
+    int hash1 = src1.hashCode(); // this triggers a cached state
+    final AttributeSource src2 = new AttributeSource(src1);
+    src2.addAttribute(TypeAttribute.class).setType("bar");
+    assertTrue("The hashCode is identical, so the captured state was preserved.", hash1 != src1.hashCode());
+    assertEquals(src2.hashCode(), src1.hashCode());
+  }
+  
   // this class is included in external class check, so no assertion errors occur
   @Deprecated
   static class TestAttributeImpl extends AttributeImpl implements FlagsAttribute {
