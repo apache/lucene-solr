@@ -24,6 +24,7 @@ import java.io.ObjectOutputStream;
 import java.io.ByteArrayOutputStream;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -49,7 +50,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    indexDir = new File(TEMP_DIR, "RAMDirIndex");
+    indexDir = _TestUtil.getTempDir("RAMDirIndex");
     
     Directory dir = newFSDirectory(indexDir);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(

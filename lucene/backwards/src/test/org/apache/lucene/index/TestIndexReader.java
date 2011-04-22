@@ -1110,7 +1110,7 @@ public class TestIndexReader extends LuceneTestCase {
     }
 
     public void testOpenReaderAfterDelete() throws IOException {
-      File dirFile = new File(TEMP_DIR, "deletetest");
+      File dirFile = _TestUtil.getTempDir("deletetest");
       Directory dir = newFSDirectory(dirFile);
       try {
         IndexReader.open(dir, false);

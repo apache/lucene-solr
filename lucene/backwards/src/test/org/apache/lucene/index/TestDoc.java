@@ -35,6 +35,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /** JUnit adaptation of an older test case DocTest. */
 public class TestDoc extends LuceneTestCase {
@@ -54,10 +55,10 @@ public class TestDoc extends LuceneTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        workDir = new File(TEMP_DIR,"TestDoc");
+        workDir = _TestUtil.getTempDir("TestDoc");
         workDir.mkdirs();
 
-        indexDir = new File(workDir, "testIndex");
+        indexDir = _TestUtil.getTempDir("testIndex");
         indexDir.mkdirs();
 
         Directory directory = newFSDirectory(indexDir);
