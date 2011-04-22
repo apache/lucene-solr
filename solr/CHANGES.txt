@@ -134,6 +134,11 @@ New Features
 * SOLR-1709: Distributed support for Date and Numeric Range Faceting
   (Peter Sturge, David Smiley, hossman)
 
+* SOLR-2383: /browse improvements: generalize range and date facet display
+  (Jan Høydahl via yonik)
+
+
+
 Optimizations
 ----------------------
 
