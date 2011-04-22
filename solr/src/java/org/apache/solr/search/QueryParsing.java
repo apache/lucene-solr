@@ -306,7 +306,7 @@ public class QueryParsing {
         Boolean top = sp.getSortDirection();
         if (null == top) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                                    "Can't determine Sort Order: " + sp);
+                                    "Can't determine a Sort Order (asc or desc) in sort spec " + sp);
         }
         
         if (SCORE.equals(field)) {
