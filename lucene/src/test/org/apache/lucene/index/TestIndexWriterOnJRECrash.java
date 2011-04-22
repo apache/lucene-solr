@@ -41,7 +41,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    tempDir = File.createTempFile("jrecrash", "tmp", TEMP_DIR);
+    tempDir = _TestUtil.getTempDir("jrecrash");
     tempDir.delete();
     tempDir.mkdir();
   }

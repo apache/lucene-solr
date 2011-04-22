@@ -41,7 +41,7 @@ public class TestMultiMMap extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
       super.setUp();
-      workDir = new File(TEMP_DIR, "TestMultiMMap");
+      workDir = _TestUtil.getTempDir("TestMultiMMap");
       workDir.mkdirs();
   }
   

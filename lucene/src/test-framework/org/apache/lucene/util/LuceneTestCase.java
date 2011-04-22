@@ -128,6 +128,9 @@ public abstract class LuceneTestCase extends Assert {
     TEMP_DIR = new File(s);
     TEMP_DIR.mkdirs();
   }
+  
+  /** set of directories we created, in afterclass we try to clean these up */
+  static final Set<String> tempDirs = Collections.synchronizedSet(new HashSet<String>());
 
   // by default we randomly pick a different codec for
   // each test case (non-J4 tests) and each test class (J4
@@ -323,6 +326,7 @@ public abstract class LuceneTestCase extends Assert {
   public static void beforeClassLuceneTestCaseJ4() {
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
+    tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     savedCodecProvider = CodecProvider.getDefault();
     if ("randomPerField".equals(TEST_CODEC)) {
@@ -410,6 +414,16 @@ public abstract class LuceneTestCase extends Assert {
           + "threads=" + Thread.activeCount() + ","
           + "free=" + Runtime.getRuntime().freeMemory() + ","
           + "total=" + Runtime.getRuntime().totalMemory());
+    }
+    // clear out any temp directories if we can
+    if (!testsFailed) {
+      for (String path : tempDirs) {
+        try {
+          _TestUtil.rmDir(new File(path));
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
     }
   }
 
@@ -1063,6 +1077,7 @@ public abstract class LuceneTestCase extends Assert {
         final File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
         tmpFile.delete();
         tmpFile.mkdir();
+        tempDirs.add(tmpFile.getAbsolutePath());
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile, null);
       }
 
