@@ -539,6 +539,11 @@ class TrieDateFieldSource extends LongFieldSource {
   }
 
   @Override
+  public Object longToObject(long val) {
+    return new Date(val);
+  }
+
+  @Override
   public long externalToLong(String extVal) {
     return TrieField.dateField.parseMath(null, extVal).getTime();
   }

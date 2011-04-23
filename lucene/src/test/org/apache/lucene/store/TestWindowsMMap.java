@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.File;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -59,7 +60,7 @@ public class TestWindowsMMap extends LuceneTestCase {
   }
   
   private final static String storePathname = 
-    new File(TEMP_DIR,"testLuceneMmap").getAbsolutePath();
+   _TestUtil.getTempDir("testLuceneMmap").getAbsolutePath();
 
   public void testMmapIndex() throws Exception {
     // sometimes the directory is not cleaned by rmDir, because on Windows it

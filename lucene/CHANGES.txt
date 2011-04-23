@@ -387,8 +387,8 @@ Test Cases
 
 Build
 
-* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
-
+* LUCENE-3006: Building javadocs will fail on warnings by default. 
+  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
 
 ======================= Lucene 3.x (not yet released) =======================
 
@@ -409,6 +409,14 @@ Bug fixes
 * LUCENE-3024: Index with more than 2.1B terms was hitting AIOOBE when
   seeking TermEnum (eg used by Solr's faceting) (Tom Burton-West, Mike
   McCandless)
+
+* LUCENE-3042: When a filter or consumer added Attributes to a TokenStream
+  chain after it was already (partly) consumed [or clearAttributes(),
+  captureState(), cloneAttributes(),... was called by the Tokenizer],
+  the Tokenizer calling clearAttributes() or capturing state after addition 
+  may not do this on the newly added Attribute. This bug affected only
+  very special use cases of the TokenStream-API, most users would not
+  have recognized it.  (Uwe Schindler, Robert Muir)
 
 ======================= Lucene 3.1.0 =======================
 

@@ -93,10 +93,33 @@ public class AttributeSource {
     }
   }
       
+  /**
+   * This class holds the state of an AttributeSource.
+   * @see #captureState
+   * @see #restoreState
+   */
+  public static final class State implements Cloneable {
+    AttributeImpl attribute;
+    State next;
+    
+    @Override
+    public Object clone() {
+      State clone = new State();
+      clone.attribute = (AttributeImpl) attribute.clone();
+      
+      if (next != null) {
+        clone.next = (State) next.clone();
+      }
+      
+      return clone;
+    }
+  }
+    
   // These two maps must always be in sync!!!
   // So they are private, final and read-only from the outside (read-only iterators)
   private final Map<Class<? extends Attribute>, AttributeImpl> attributes;
   private final Map<Class<? extends AttributeImpl>, AttributeImpl> attributeImpls;
+  private final State[] currentState;
 
   private AttributeFactory factory;
   
@@ -116,6 +139,7 @@ public class AttributeSource {
     }
     this.attributes = input.attributes;
     this.attributeImpls = input.attributeImpls;
+    this.currentState = input.currentState;
     this.factory = input.factory;
   }
   
@@ -125,6 +149,7 @@ public class AttributeSource {
   public AttributeSource(AttributeFactory factory) {
     this.attributes = new LinkedHashMap<Class<? extends Attribute>, AttributeImpl>();
     this.attributeImpls = new LinkedHashMap<Class<? extends AttributeImpl>, AttributeImpl>();
+    this.currentState = new State[1];
     this.factory = factory;
   }
   
@@ -147,11 +172,8 @@ public class AttributeSource {
    * if one instance implements more than one Attribute interface.
    */
   public final Iterator<AttributeImpl> getAttributeImplsIterator() {
-    if (hasAttributes()) {
-      if (currentState == null) {
-        computeCurrentState();
-      }
-      final State initState = currentState;
+    final State initState = getCurrentState();
+    if (initState != null) {
       return new Iterator<AttributeImpl>() {
         private State state = initState;
       
@@ -225,7 +247,7 @@ public class AttributeSource {
       // Attribute is a superclass of this interface
       if (!attributes.containsKey(curInterface)) {
         // invalidate state to force recomputation in captureState()
-        this.currentState = null;
+        this.currentState[0] = null;
         attributes.put(curInterface, att);
         attributeImpls.put(clazz, att);
       }
@@ -283,41 +305,21 @@ public class AttributeSource {
     }
     return attClass.cast(attImpl);
   }
-  
-  /**
-   * This class holds the state of an AttributeSource.
-   * @see #captureState
-   * @see #restoreState
-   */
-  public static final class State implements Cloneable {
-    AttributeImpl attribute;
-    State next;
     
-    @Override
-    public Object clone() {
-      State clone = new State();
-      clone.attribute = (AttributeImpl) attribute.clone();
-      
-      if (next != null) {
-        clone.next = (State) next.clone();
-      }
-      
-      return clone;
+  private State getCurrentState() {
+    State s  = currentState[0];
+    if (s != null || !hasAttributes()) {
+      return s;
     }
-  }
-  
-  private State currentState = null;
-  
-  private void computeCurrentState() {
-    currentState = new State();
-    State c = currentState;
+    State c = s = currentState[0] = new State();
     final Iterator<AttributeImpl> it = attributeImpls.values().iterator();
     c.attribute = it.next();
     while (it.hasNext()) {
       c.next = new State();
       c = c.next;
       c.attribute = it.next();
-    }        
+    }
+    return s;
   }
   
   /**
@@ -325,13 +327,8 @@ public class AttributeSource {
    * {@link AttributeImpl#clear()} on each Attribute implementation.
    */
   public final void clearAttributes() {
-    if (hasAttributes()) {
-      if (currentState == null) {
-        computeCurrentState();
-      }
-      for (State state = currentState; state != null; state = state.next) {
-        state.attribute.clear();
-      }
+    for (State state = getCurrentState(); state != null; state = state.next) {
+      state.attribute.clear();
     }
   }
   
@@ -340,14 +337,8 @@ public class AttributeSource {
    * {@link #restoreState} to restore the state of this or another AttributeSource.
    */
   public final State captureState() {
-    if (!hasAttributes()) {
-      return null;
-    }
-      
-    if (currentState == null) {
-      computeCurrentState();
-    }
-    return (State) this.currentState.clone();
+    final State state = this.getCurrentState();
+    return (state == null) ? null : (State) state.clone();
   }
   
   /**
@@ -382,15 +373,9 @@ public class AttributeSource {
   @Override
   public int hashCode() {
     int code = 0;
-    if (hasAttributes()) {
-      if (currentState == null) {
-        computeCurrentState();
-      }
-      for (State state = currentState; state != null; state = state.next) {
-        code = code * 31 + state.attribute.hashCode();
-      }
+    for (State state = getCurrentState(); state != null; state = state.next) {
+      code = code * 31 + state.attribute.hashCode();
     }
-    
     return code;
   }
   
@@ -413,14 +398,8 @@ public class AttributeSource {
         }
   
         // it is only equal if all attribute impls are the same in the same order
-        if (this.currentState == null) {
-          this.computeCurrentState();
-        }
-        State thisState = this.currentState;
-        if (other.currentState == null) {
-          other.computeCurrentState();
-        }
-        State otherState = other.currentState;
+        State thisState = this.getCurrentState();
+        State otherState = other.getCurrentState();
         while (thisState != null && otherState != null) {
           if (otherState.attribute.getClass() != thisState.attribute.getClass() || !otherState.attribute.equals(thisState.attribute)) {
             return false;
@@ -473,13 +452,8 @@ public class AttributeSource {
    * @see AttributeImpl#reflectWith
    */
   public final void reflectWith(AttributeReflector reflector) {
-    if (hasAttributes()) {
-      if (currentState == null) {
-        computeCurrentState();
-      }
-      for (State state = currentState; state != null; state = state.next) {
-        state.attribute.reflectWith(reflector);
-      }
+    for (State state = getCurrentState(); state != null; state = state.next) {
+      state.attribute.reflectWith(reflector);
     }
   }
 
@@ -495,10 +469,7 @@ public class AttributeSource {
     
     if (hasAttributes()) {
       // first clone the impls
-      if (currentState == null) {
-        computeCurrentState();
-      }
-      for (State state = currentState; state != null; state = state.next) {
+      for (State state = getCurrentState(); state != null; state = state.next) {
         clone.attributeImpls.put(state.attribute.getClass(), (AttributeImpl) state.attribute.clone());
       }
       
@@ -520,18 +491,13 @@ public class AttributeSource {
    * {@link #cloneAttributes} instead of {@link #captureState}.
    */
   public final void copyTo(AttributeSource target) {
-    if (hasAttributes()) {
-      if (currentState == null) {
-        computeCurrentState();
+    for (State state = getCurrentState(); state != null; state = state.next) {
+      final AttributeImpl targetImpl = target.attributeImpls.get(state.attribute.getClass());
+      if (targetImpl == null) {
+        throw new IllegalArgumentException("This AttributeSource contains AttributeImpl of type " +
+          state.attribute.getClass().getName() + " that is not in the target");
       }
-      for (State state = currentState; state != null; state = state.next) {
-        final AttributeImpl targetImpl = target.attributeImpls.get(state.attribute.getClass());
-        if (targetImpl == null) {
-          throw new IllegalArgumentException("This AttributeSource contains AttributeImpl of type " +
-            state.attribute.getClass().getName() + " that is not in the target");
-        }
-        state.attribute.copyTo(targetImpl);
-      }
+      state.attribute.copyTo(targetImpl);
     }
   }
 

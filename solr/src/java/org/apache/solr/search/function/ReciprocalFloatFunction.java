@@ -60,26 +60,10 @@ public class ReciprocalFloatFunction extends ValueSource {
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final DocValues vals = source.getValues(context, readerContext);
-    return new DocValues() {
+    return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
         return a/(m*vals.floatVal(doc) + b);
-      }
-      @Override
-      public int intVal(int doc) {
-        return (int)floatVal(doc);
-      }
-      @Override
-      public long longVal(int doc) {
-        return (long)floatVal(doc);
-      }
-      @Override
-      public double doubleVal(int doc) {
-        return (double)floatVal(doc);
-      }
-      @Override
-      public String strVal(int doc) {
-        return Float.toString(floatVal(doc));
       }
       @Override
       public String toString(int doc) {

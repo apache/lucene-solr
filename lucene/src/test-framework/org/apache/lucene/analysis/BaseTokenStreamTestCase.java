@@ -117,11 +117,24 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         assertEquals("type "+i, types[i], typeAtt.type());
       if (posIncrements != null)
         assertEquals("posIncrement "+i, posIncrements[i], posIncrAtt.getPositionIncrement());
+      
+      // we can enforce some basic things about a few attributes even if the caller doesn't check:
+      if (offsetAtt != null) {
+        assertTrue("startOffset must be >= 0", offsetAtt.startOffset() >= 0);
+        assertTrue("endOffset must be >= 0", offsetAtt.endOffset() >= 0);
+        assertTrue("endOffset must be >= startOffset", offsetAtt.endOffset() >= offsetAtt.startOffset());
+      }
+      if (posIncrAtt != null) {
+        assertTrue("posIncrement must be >= 0", posIncrAtt.getPositionIncrement() >= 0);
+      }
     }
     assertFalse("end of stream", ts.incrementToken());
     ts.end();
     if (finalOffset != null)
       assertEquals("finalOffset ", finalOffset.intValue(), offsetAtt.endOffset());
+    if (offsetAtt != null) {
+      assertTrue("finalOffset must be >= 0", offsetAtt.endOffset() >= 0);
+    }
     ts.close();
   }
   

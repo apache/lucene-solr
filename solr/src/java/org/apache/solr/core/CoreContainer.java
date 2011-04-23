@@ -79,6 +79,7 @@ public class CoreContainer
   protected Map<String ,IndexSchema> indexSchemaCache;
   protected String adminHandler;
   protected boolean shareSchema;
+  protected Integer zkClientTimeout;
   protected String solrHome;
   protected String defaultCoreName = "";
   private ZkController zkController;
@@ -313,7 +314,7 @@ public class CoreContainer
     zkHost = cfg.get("solr/@zkHost" , null);
     adminPath = cfg.get("solr/cores/@adminPath", null);
     shareSchema = cfg.getBool("solr/cores/@shareSchema", false);
-    int zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
+    zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
 
     hostPort = System.getProperty("hostPort");
     if (hostPort == null) {
@@ -500,7 +501,12 @@ public class CoreContainer
     SolrCore old = null;
     synchronized (cores) {
       old = cores.put(name, core);
+      /*
+      * set both the name of the descriptor and the name of the
+      * core, since the descriptors name is used for persisting.
+      */
       core.setName(name);
+      core.getCoreDescriptor().name = name;
     }
 
     if (zkController != null) {
@@ -884,6 +890,7 @@ public class CoreContainer
     if (this.libDir != null) {
       writeAttribute(w,"sharedLib",libDir);
     }
+    if(zkHost != null) writeAttribute(w, "zkHost", zkHost);
     writeAttribute(w,"persistent",isPersistent());
     w.write(">\n");
 
@@ -892,9 +899,13 @@ public class CoreContainer
     }
     w.write("  <cores");
     writeAttribute(w, "adminPath",adminPath);
-    if(adminHandler != null) writeAttribute(w, "adminHandler",adminHandler);
-    if(shareSchema) writeAttribute(w, "shareSchema","true");
-    if(!defaultCoreName.equals("")) writeAttribute(w, "defaultCoreName",defaultCoreName);
+    if(adminHandler != null) writeAttribute(w, "adminHandler", adminHandler);
+    if(shareSchema) writeAttribute(w, "shareSchema", "true");
+    if(!defaultCoreName.equals("")) writeAttribute(w, "defaultCoreName", defaultCoreName);
+    if(host != null) writeAttribute(w, "host", host);
+    if(hostPort != null) writeAttribute(w, "hostPort", hostPort);
+    if(zkClientTimeout != null) writeAttribute(w, "zkClientTimeout", zkClientTimeout);
+    if(hostContext != null) writeAttribute(w, "hostContext", hostContext);
     w.write(">\n");
 
     synchronized(cores) {

@@ -23,6 +23,8 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueFloat;
 
 import java.io.IOException;
 import java.util.Map;
@@ -49,7 +51,7 @@ public class QueryValueSource extends ValueSource {
 
   @Override
   public DocValues getValues(Map fcontext, AtomicReaderContext readerContext) throws IOException {
-    return new QueryDocValues(readerContext, q, defVal, fcontext);
+    return new QueryDocValues(this, readerContext, fcontext);
   }
 
   @Override
@@ -72,31 +74,31 @@ public class QueryValueSource extends ValueSource {
 }
 
 
-class QueryDocValues extends DocValues {
-  final Query q;
-//  final IndexReader reader;
+class QueryDocValues extends FloatDocValues {
   final AtomicReaderContext readerContext;
   final Weight weight;
   final float defVal;
   final Map fcontext;
+  final Query q;
 
   Scorer scorer;
   int scorerDoc; // the document the scorer is on
+  boolean noMatches=false;
 
   // the last document requested... start off with high value
   // to trigger a scorer reset on first access.
   int lastDocRequested=Integer.MAX_VALUE;
   
 
-  public QueryDocValues(AtomicReaderContext readerContext, Query q, float defVal, Map fcontext) throws IOException {
-    IndexReader reader = readerContext.reader;
+  public QueryDocValues(QueryValueSource vs, AtomicReaderContext readerContext, Map fcontext) throws IOException {
+    super(vs);
+
     this.readerContext = readerContext;
-    this.q = q;
-    this.defVal = defVal;
+    this.defVal = vs.defVal;
+    this.q = vs.q;
     this.fcontext = fcontext;
 
     Weight w = fcontext==null ? null : (Weight)fcontext.get(q);
-    // TODO: sort by function doesn't weight (SOLR-1297 is open because of this bug)... so weightSearcher will currently be null
     if (w == null) {
       IndexSearcher weightSearcher;
       if(fcontext == null) {
@@ -116,8 +118,12 @@ class QueryDocValues extends DocValues {
   public float floatVal(int doc) {
     try {
       if (doc < lastDocRequested) {
+        if (noMatches) return defVal;
         scorer = weight.scorer(readerContext, ScorerContext.def());
-        if (scorer==null) return defVal;
+        if (scorer==null) {
+          noMatches = true;
+          return defVal;
+        }
         scorerDoc = -1;
       }
       lastDocRequested = doc;
@@ -137,24 +143,104 @@ class QueryDocValues extends DocValues {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "caught exception in QueryDocVals("+q+") doc="+doc, e);
     }
-  }  
+  }
 
   @Override
-  public int intVal(int doc) {
-    return (int)floatVal(doc);
+  public boolean exists(int doc) {
+    try {
+      if (doc < lastDocRequested) {
+        if (noMatches) return false;
+        scorer = weight.scorer(readerContext, ScorerContext.def());
+        scorerDoc = -1;
+        if (scorer==null) {
+          noMatches = true;
+          return false;
+        }
+      }
+      lastDocRequested = doc;
+
+      if (scorerDoc < doc) {
+        scorerDoc = scorer.advance(doc);
+      }
+
+      if (scorerDoc > doc) {
+        // query doesn't match this document... either because we hit the
+        // end, or because the next doc is after this doc.
+        return false;
+      }
+
+      // a match!
+      return true;
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "caught exception in QueryDocVals("+q+") doc="+doc, e);
+    }
   }
+
+   @Override
+  public Object objectVal(int doc) {
+     try {
+       return exists(doc) ? scorer.score() : null;
+     } catch (IOException e) {
+       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "caught exception in QueryDocVals("+q+") doc="+doc, e);
+     }
+   }
+
   @Override
-  public long longVal(int doc) {
-    return (long)floatVal(doc);
+  public ValueFiller getValueFiller() {
+    //
+    // TODO: if we want to support more than one value-filler or a value-filler in conjunction with
+    // the DocValues, then members like "scorer" should be per ValueFiller instance.
+    // Or we can say that the user should just instantiate multiple DocValues.
+    //
+    return new ValueFiller() {
+      private final MutableValueFloat mval = new MutableValueFloat();
+
+      @Override
+      public MutableValue getValue() {
+        return mval;
+      }
+
+      @Override
+      public void fillValue(int doc) {
+        try {
+          if (noMatches) {
+            mval.value = defVal;
+            mval.exists = false;
+            return;
+          }
+          scorer = weight.scorer(readerContext, ScorerContext.def());
+          scorerDoc = -1;
+          if (scorer==null) {
+            noMatches = true;
+            mval.value = defVal;
+            mval.exists = false;
+            return;
+          }
+          lastDocRequested = doc;
+
+          if (scorerDoc < doc) {
+            scorerDoc = scorer.advance(doc);
+          }
+
+          if (scorerDoc > doc) {
+            // query doesn't match this document... either because we hit the
+            // end, or because the next doc is after this doc.
+            mval.value = defVal;
+            mval.exists = false;
+            return;
+          }
+
+          // a match!
+          mval.value = scorer.score();
+          mval.exists = true;
+          return;
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "caught exception in QueryDocVals("+q+") doc="+doc, e);
+        }
+      }
+    };
   }
-  @Override
-  public double doubleVal(int doc) {
-    return (double)floatVal(doc);
-  }
-  @Override
-  public String strVal(int doc) {
-    return Float.toString(floatVal(doc));
-  }
+
   @Override
   public String toString(int doc) {
     return "query(" + q + ",def=" + defVal + ")=" + floatVal(doc);

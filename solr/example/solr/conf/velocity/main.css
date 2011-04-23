@@ -18,6 +18,18 @@
   margin-left: 20px;
 }
 
+.parsed_query_header {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  font-weight: bold;
+}
+
+.parsed_query {
+  font-family: Courier, Courier New, monospaced;
+  font-size: 10pt;
+  font-weight: normal;
+}
+
 body {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;

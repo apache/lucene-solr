@@ -21,14 +21,13 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.search.MutableValueInt;
-import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.*;
 
 import java.io.IOException;
 import java.util.Map;
 
 
-class ConstIntDocValues extends DocValues {
+class ConstIntDocValues extends IntDocValues {
   final int ival;
   final float fval;
   final double dval;
@@ -37,6 +36,7 @@ class ConstIntDocValues extends DocValues {
   final ValueSource parent;
 
   ConstIntDocValues(int val, ValueSource parent) {
+    super(parent);
     ival = val;
     fval = val;
     dval = val;
@@ -71,7 +71,7 @@ class ConstIntDocValues extends DocValues {
   }
 }
 
-class ConstDoubleDocValues extends DocValues {
+class ConstDoubleDocValues extends DoubleDocValues {
   final int ival;
   final float fval;
   final double dval;
@@ -80,6 +80,7 @@ class ConstDoubleDocValues extends DocValues {
   final ValueSource parent;
 
   ConstDoubleDocValues(double val, ValueSource parent) {
+    super(parent);
     ival = (int)val;
     fval = (float)val;
     dval = val;
@@ -111,115 +112,6 @@ class ConstDoubleDocValues extends DocValues {
   @Override
   public String toString(int doc) {
     return parent.description() + '=' + sval;
-  }
-}
-
-abstract class FloatDocValues extends DocValues {
-  protected final ValueSource vs;
-
-  public FloatDocValues(ValueSource vs) {
-    this.vs = vs;    
-  }
-
-  @Override
-  public byte byteVal(int doc) {
-    return (byte)floatVal(doc);
-  }
-
-  @Override
-  public short shortVal(int doc) {
-    return (short)floatVal(doc);
-  }
-
-  @Override
-  public abstract float floatVal(int doc);
-
-  @Override
-  public int intVal(int doc) {
-    return (int)floatVal(doc);
-  }
-
-  @Override
-  public long longVal(int doc) {
-    return (long)floatVal(doc);
-  }
-
-  @Override
-  public double doubleVal(int doc) {
-    return (double)floatVal(doc);
-  }
-
-  @Override
-  public String strVal(int doc) {
-    return Float.toString(floatVal(doc));
-  }
-
-  @Override
-  public String toString(int doc) {
-    return vs.description() + '=' + strVal(doc);
-  }
-}
-
-abstract class IntDocValues extends DocValues {
-  protected final ValueSource vs;
-
-  public IntDocValues(ValueSource vs) {
-    this.vs = vs;
-  }
-
-  @Override
-  public byte byteVal(int doc) {
-    return (byte)intVal(doc);
-  }
-
-  @Override
-  public short shortVal(int doc) {
-    return (short)intVal(doc);
-  }
-
-  @Override
-  public float floatVal(int doc) {
-    return (float)intVal(doc);
-  }
-
-  @Override
-  public abstract int intVal(int doc);
-
-  @Override
-  public long longVal(int doc) {
-    return (long)intVal(doc);
-  }
-
-  @Override
-  public double doubleVal(int doc) {
-    return (double)intVal(doc);
-  }
-
-  @Override
-  public String strVal(int doc) {
-    return Integer.toString(intVal(doc));
-  }
-
-  @Override
-  public String toString(int doc) {
-    return vs.description() + '=' + strVal(doc);
-  }
-
-  @Override
-  public ValueFiller getValueFiller() {
-    return new ValueFiller() {
-      private final MutableValueInt mval = new MutableValueInt();
-
-      @Override
-      public MutableValue getValue() {
-        return mval;
-      }
-
-      @Override
-      public void fillValue(int doc) {
-        mval.value = intVal(doc);
-      }
-    };
   }
 }
 

@@ -2756,7 +2756,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Tests that if FSDir is opened w/ a NoLockFactory (or SingleInstanceLF),
     // then IndexWriter ctor succeeds. Previously (LUCENE-2386) it failed
     // when listAll() was called in IndexFileDeleter.
-    Directory dir = newFSDirectory(new File(TEMP_DIR, "emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
     new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))).close();
     dir.close();
   }

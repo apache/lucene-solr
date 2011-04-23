@@ -120,7 +120,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="validate-solr, compile-solrj">
+          depends="compile-solrj">
 
     <solr-javac destdir="${dest}/solr"
                 classpathref="compile.classpath.solrj">
@@ -394,7 +394,7 @@
   <!-- Run contrib unit tests. -->
   <target name="test"
         description="Runs the core unit tests."
-        depends="test-core, test-contrib, test-jsp" />
+        depends="validate-solr, test-core, test-contrib, test-jsp" />
 
   <target name="junit" depends="compileTests,junit-mkdir,junit-sequential,junit-parallel"/>
 

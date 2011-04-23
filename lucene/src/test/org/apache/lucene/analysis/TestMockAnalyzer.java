@@ -1,5 +1,6 @@
 package org.apache.lucene.analysis;
 
+import java.io.StringReader;
 import java.util.Arrays;
 
 import org.apache.lucene.util.automaton.Automaton;
@@ -95,4 +96,19 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "ok", "fine" },
         new int[] { 1, 2 });
   }
+  
+  public void testLUCENE_3042() throws Exception {
+    String testString = "t";
+    
+    Analyzer analyzer = new MockAnalyzer(random);
+    TokenStream stream = analyzer.reusableTokenStream("dummy", new StringReader(testString));
+    stream.reset();
+    while (stream.incrementToken()) {
+      // consume
+    }
+    stream.end();
+    
+    assertAnalyzesToReuse(analyzer, testString, new String[] { "t" });
+  }
+
 }

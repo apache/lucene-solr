@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueFloat;
 
@@ -46,6 +47,28 @@ public abstract class DocValues {
   public double doubleVal(int doc) { throw new UnsupportedOperationException(); }
   // TODO: should we make a termVal, returns BytesRef?
   public String strVal(int doc) { throw new UnsupportedOperationException(); }
+
+  /** returns the bytes representation of the string val - TODO: should this return the indexed raw bytes not? */
+  public boolean bytesVal(int doc, BytesRef target) {
+    String s = strVal(doc);
+    if (s==null) {
+      target.length = 0;
+      return false;
+    }
+    target.copy(s);
+    return true;
+  };
+
+  /** Native Java Object representation of the value */
+  public Object objectVal(int doc) {
+    // most DocValues are functions, so by default return a Float()
+    return floatVal(doc);
+  }
+
+  /** Returns true if there is a value for this document */
+  public boolean exists(int doc) {
+    return true;
+  }
 
   /**
    * @param doc The doc to retrieve to sort ordinal for

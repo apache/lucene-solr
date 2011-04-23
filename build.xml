@@ -19,7 +19,7 @@
 
 <project name="lucene-solr" default="test" basedir=".">
   <import file="common-build.xml"/>
-  <target name="test" description="Test both Lucene and Solr">
+  <target name="test" description="Test both Lucene and Solr" depends="validate">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
@@ -35,7 +35,7 @@
         <fileset dir="solr" includes="build.xml" />
       </subant></sequential>
   </target>
-  <target name="compile" depends="validate" description="Compile Lucene and Solr">
+  <target name="compile" description="Compile Lucene and Solr">
     <sequential>
 
       <subant target="compile" inheritall="false" failonerror="true">
