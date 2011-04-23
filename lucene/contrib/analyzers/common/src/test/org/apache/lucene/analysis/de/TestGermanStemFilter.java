@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.junit.Ignore;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -36,20 +37,25 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  *
  */
 public class TestGermanStemFilter extends BaseTokenStreamTestCase {
+  Analyzer analyzer = new ReusableAnalyzerBase() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName,
+        Reader reader) {
+      Tokenizer t = new KeywordTokenizer(reader);
+      return new TokenStreamComponents(t,
+          new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, t)));
+    }
+  };
 
-  public void testStemming() throws Exception {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName,
-          Reader reader) {
-        Tokenizer t = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(t,
-            new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, t)));
-      }
-    };
-    
+  public void testStemming() throws Exception {  
     InputStream vocOut = getClass().getResourceAsStream("data.txt");
     assertVocabulary(analyzer, vocOut);
     vocOut.close();
+  }
+  
+  /** blast some random strings through the analyzer */
+  @Ignore("bugs!")
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
   }
 }

@@ -142,5 +142,10 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
             analyzer,
             "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
             new String[] { "บริษัท", "ชื่อ", "xy&z", "คุย", "กับ", "xyz@demo.com" });
-    }
+  }
+	
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new ThaiAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

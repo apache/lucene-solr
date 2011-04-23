@@ -98,4 +98,9 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 	  Analyzer a = new GreekAnalyzer(Version.LUCENE_30);
 	  assertAnalyzesTo(a, "Α.Π.Τ.", new String[] { "α.π.τ." });
 	}
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new GreekAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

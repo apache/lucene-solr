@@ -59,4 +59,9 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("frminimaltestdata.zip"), "frminimal.txt");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
 }

@@ -221,7 +221,13 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
         new String [] { "abac\uDC16adaba" });
   }
-  
+
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  } 
 }
 
 final class PayloadSetter extends TokenFilter {

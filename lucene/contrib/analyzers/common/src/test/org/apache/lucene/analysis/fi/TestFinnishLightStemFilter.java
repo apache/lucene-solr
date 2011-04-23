@@ -45,4 +45,9 @@ public class TestFinnishLightStemFilter extends BaseTokenStreamTestCase {
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("filighttestdata.zip"), "filight.txt");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
 }

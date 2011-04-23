@@ -50,4 +50,9 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "quilométricas", "quilométricas");
     checkOneTermReuse(a, "quilométricos", "quilométr");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new PortugueseAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

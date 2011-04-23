@@ -32,20 +32,20 @@ import static org.apache.lucene.analysis.VocabularyAssert.*;
  * Test the PorterStemFilter with Martin Porter's test data.
  */
 public class TestPorterStemFilter extends BaseTokenStreamTestCase {  
+  Analyzer a = new ReusableAnalyzerBase() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName,
+        Reader reader) {
+      Tokenizer t = new KeywordTokenizer(reader);
+      return new TokenStreamComponents(t, new PorterStemFilter(t));
+    }
+  };
+
   /**
    * Run the stemmer against all strings in voc.txt
    * The output should be the same as the string in output.txt
    */
   public void testPorterStemFilter() throws Exception {
-    Analyzer a = new ReusableAnalyzerBase() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName,
-          Reader reader) {
-        Tokenizer t = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(t, new PorterStemFilter(t));
-      }
-    };
-
     assertVocabulary(a, getDataFile("porterTestData.zip"), "voc.txt", "output.txt");
   }
   
@@ -55,5 +55,10 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("yourselves yours"));
     TokenStream filter = new PorterStemFilter(new KeywordMarkerFilter(tokenizer, set));   
     assertTokenStreamContents(filter, new String[] {"yourselves", "your"});
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

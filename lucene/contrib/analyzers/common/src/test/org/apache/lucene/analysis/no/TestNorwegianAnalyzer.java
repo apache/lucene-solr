@@ -50,4 +50,9 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "havnedistriktene", "havnedistriktene");
     checkOneTermReuse(a, "havnedistrikter", "havnedistrikt");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new NorwegianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

@@ -1,5 +1,6 @@
 package org.apache.lucene.analysis;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.IOException;
@@ -214,5 +215,10 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "仮名遣い カタカナ",
         new String[] { "仮", "名", "遣", "い", "カタカナ" },
         new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<HIRAGANA>", "<KATAKANA>" });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new StandardAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
   }
 }
