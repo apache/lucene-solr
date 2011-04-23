@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.hu.HungarianAnalyzer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
 import static org.apache.lucene.analysis.util.VocabularyAssert.*;
