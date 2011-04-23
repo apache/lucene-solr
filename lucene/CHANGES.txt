@@ -8,6 +8,14 @@ Bug fixes
   indexes, causing existing deletions to be applied on the incoming indexes as 
   well. (Shai Erera, Mike McCandless)
 
+* LUCENE-3042: When a filter or consumer added Attributes to a TokenStream
+  chain after it was already (partly) consumed [or clearAttributes(),
+  captureState(), cloneAttributes(),... was called by the Tokenizer],
+  the Tokenizer calling clearAttributes() or capturing state after addition 
+  may not do this on the newly added Attribute. This bug affected only
+  very special use cases of the TokenStream-API, most users would not
+  have recognized it.  (Uwe Schindler, Robert Muir)
+
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
