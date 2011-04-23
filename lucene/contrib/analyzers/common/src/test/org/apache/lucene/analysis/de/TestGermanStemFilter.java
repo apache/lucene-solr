@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.junit.Ignore;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
@@ -53,8 +52,13 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     vocOut.close();
   }
   
+  // LUCENE-3043: we use keywordtokenizer in this test,
+  // so ensure the stemmer does not crash on zero-length strings.
+  public void testEmpty() throws Exception {
+    assertAnalyzesTo(analyzer, "", new String[] { "" });
+  }
+  
   /** blast some random strings through the analyzer */
-  @Ignore("bugs!")
   public void testRandomStrings() throws Exception {
     checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
   }

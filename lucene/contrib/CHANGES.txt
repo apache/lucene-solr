@@ -12,6 +12,9 @@ Bug Fixes
    when using CachingTokenStream. This can be a significant performance bug for
    large documents. (Mark Miller)
 
+ * LUCENE-3043: GermanStemmer threw IndexOutOfBoundsException if it encountered
+   a zero-length token.  (Robert Muir)
+
 New Features
 
  * LUCENE-3016: Add analyzer for Latvian.  (Robert Muir)
