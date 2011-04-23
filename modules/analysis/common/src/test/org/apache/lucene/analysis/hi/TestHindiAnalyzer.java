@@ -47,4 +47,9 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
         HindiAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "हिंदी", "हिंदी");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new HindiAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

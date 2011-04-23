@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.hu.HungarianAnalyzer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
 import static org.apache.lucene.analysis.util.VocabularyAssert.*;
@@ -44,5 +45,10 @@ public class TestGermanLightStemFilter extends BaseTokenStreamTestCase {
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("delighttestdata.zip"), "delight.txt");
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
   }
 }

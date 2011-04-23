@@ -195,4 +195,9 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     while (stream.incrementToken()) {
     }
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }
