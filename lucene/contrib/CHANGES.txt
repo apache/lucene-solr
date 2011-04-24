@@ -57,6 +57,10 @@ Bug Fixes
 
  * LUCENE-3043: GermanStemmer threw IndexOutOfBoundsException if it encountered
    a zero-length token.  (Robert Muir)
+   
+ * LUCENE-3044: ThaiWordFilter didn't reset its cached state correctly, this only
+   caused a problem if you consumed a tokenstream, then reused it, added different
+   attributes to it, and consumed it again.  (Robert Muir, Uwe Schindler)
 
 New Features
 
