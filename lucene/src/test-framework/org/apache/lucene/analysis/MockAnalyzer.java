@@ -69,7 +69,7 @@ public final class MockAnalyzer extends Analyzer {
 
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    Map<String,SavedStreams> map = (Map) getPreviousTokenStream();
+    @SuppressWarnings("unchecked") Map<String,SavedStreams> map = (Map) getPreviousTokenStream();
     if (map == null) {
       map = new HashMap<String,SavedStreams>();
       setPreviousTokenStream(map);
