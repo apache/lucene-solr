@@ -50,4 +50,9 @@ public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "chicana", "chican");
     checkOneTermReuse(a, "chicano", "chicano");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new SpanishAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

@@ -309,4 +309,9 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     dir.close();
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new ClassicAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

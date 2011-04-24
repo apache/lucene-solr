@@ -50,4 +50,9 @@ public class TestBasqueAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "zaldiak", "zaldiak");
     checkOneTermReuse(a, "mendiari", "mendi");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new BasqueAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

@@ -100,7 +100,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     cmd.add("org.junit.runner.JUnitCore");
     cmd.add(getClass().getName());
     ProcessBuilder pb = new ProcessBuilder(cmd);
-    pb.directory(TEMP_DIR);
+    pb.directory(tempDir);
     pb.redirectErrorStream(true);
     Process p = pb.start();
     InputStream is = p.getInputStream();

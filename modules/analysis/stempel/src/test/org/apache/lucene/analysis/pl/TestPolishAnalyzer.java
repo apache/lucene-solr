@@ -50,4 +50,9 @@ public class TestPolishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "studenta", "studenta");
     checkOneTermReuse(a, "studenci", "student");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new PolishAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

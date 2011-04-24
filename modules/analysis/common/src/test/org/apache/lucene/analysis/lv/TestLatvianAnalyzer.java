@@ -50,4 +50,9 @@ public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "tirgiem", "tirgiem");
     checkOneTermReuse(a, "tirgus", "tirg");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new LatvianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

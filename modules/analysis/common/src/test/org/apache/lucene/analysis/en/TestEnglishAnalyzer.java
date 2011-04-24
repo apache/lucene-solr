@@ -52,4 +52,9 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "books", "books");
     checkOneTermReuse(a, "book", "book");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new EnglishAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

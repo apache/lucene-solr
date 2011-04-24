@@ -50,4 +50,9 @@ public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "արծիվներ", "արծիվներ");
     checkOneTermReuse(a, "արծիվ", "արծ");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new ArmenianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }
