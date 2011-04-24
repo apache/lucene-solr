@@ -31,16 +31,15 @@ import com.ibm.icu.text.Normalizer2;
  * Tests the ICUNormalizer2Filter
  */
 public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
+  Analyzer a = new Analyzer() {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new ICUNormalizer2Filter(
+          new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
+    }
+  };
 
   public void testDefaults() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new ICUNormalizer2Filter(
-            new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
-      }
-    };
-
     // case folding
     assertAnalyzesTo(a, "This is a test", new String[] { "this", "is", "a", "test" });
 
@@ -74,5 +73,10 @@ public class TestICUNormalizer2Filter extends BaseTokenStreamTestCase {
     
     // decompose EAcute into E + combining Acute
     assertAnalyzesTo(a, "\u00E9", new String[] { "\u0065\u0301" });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }
