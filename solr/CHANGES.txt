@@ -137,6 +137,12 @@ New Features
 * SOLR-2383: /browse improvements: generalize range and date facet display
   (Jan Høydahl via yonik)
 
+* SOLR-2272: Pseudo-join queries / filters.  Examples:
+  To restrict to the set of parents with at least one blue-eyed child:
+    fq={!join from=parent to=name}eyes:blue
+  To restrict to the set of children with at least one blue-eyed parent:
+    fq={!join from=name to=parent}eyes:blue
+  (yonik)
 
 
 Optimizations

@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
+import org.junit.Test;
 
 
 /**
@@ -65,8 +66,8 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   protected abstract SolrServer getSolrCore1();
   protected abstract SolrServer getSolrAdmin();
   protected abstract SolrServer getSolrCore(String name);
-  
 
+  @Test
   public void testMultiCore() throws Exception
   {
     UpdateRequest up = new UpdateRequest();
@@ -79,6 +80,8 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     // Add something to each core
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField( "id", "AAA" );
+    doc.setField( "name", "AAA1" );
+    doc.setField( "type", "BBB1" );
     doc.setField( "core0", "yup" );
    
     // Add to core0
@@ -96,6 +99,8 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
     // Add to core1
     doc.setField( "id", "BBB" );
+    doc.setField( "name", "BBB1" );
+    doc.setField( "type", "AAA1" );
     doc.setField( "core1", "yup" );
     doc.removeField( "core0" );
     up.add( doc );
@@ -123,6 +128,12 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
     assertEquals( 0, getSolrCore1().query( new SolrQuery( "id:AAA" ) ).getResults().size() );
     assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+
+    // cross-core join
+    assertEquals( 0, getSolrCore0().query( new SolrQuery( "{!join from=type to=name}*:*" ) ).getResults().size() );  // normal join
+    assertEquals( 1, getSolrCore0().query( new SolrQuery( "{!join from=type to=name fromIndex=core1}id:BBB" ) ).getResults().size() );
+    assertEquals( 1, getSolrCore1().query( new SolrQuery( "{!join from=type to=name fromIndex=core0}id:AAA" ) ).getResults().size() );
+
 
     // Now test reloading it should have a newer open time
     String name = "core0";
