@@ -23,7 +23,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.StringHelper;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -123,15 +122,11 @@ public class UnInvertedField extends DocTermOrds {
 
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
-        deState.fieldName = StringHelper.intern(field);
-        // deState.termsEnum = te.tenum;
-        deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
-        deState.docsEnum = docsEnum;
-        deState.minSetSizeCached = maxTermDocFreq;
+        deState.termsEnum = te;
       }
-      docsEnum = deState.docsEnum;
-      DocSet set = searcher.getDocSet(deState);
-      maxTermCounts[termNum] = set.size();
+
+      maxTermCounts[termNum] = searcher.getDocSet(new TermQuery(new Term(field, topTerm.term)), deState).size();
+      //System.out.println("  big term termNum=" + termNum + " term=" + topTerm.term.utf8ToString() + " size=" + maxTermCounts[termNum] + " dF=" + te.docFreq());
     }
   }
 
@@ -163,10 +158,10 @@ public class UnInvertedField extends DocTermOrds {
     super(field,
           // threshold, over which we use set intersections instead of counting
           // to (1) save memory, and (2) speed up faceting.
-          // Add 2 for testing purposes so that there will always be some terms under
+          // Add 1 for testing purposes so that there will always be some terms under
           // the threshold even when the index is very
           // small.
-          searcher.maxDoc()/20 + 2,
+          searcher.maxDoc()/20 + 1,
           DEFAULT_INDEX_INTERVAL_BITS);
     //System.out.println("maxTermDocFreq=" + maxTermDocFreq + " maxDoc=" + searcher.maxDoc());
 

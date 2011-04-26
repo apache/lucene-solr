@@ -161,16 +161,6 @@ public class BitDocSet extends DocSetBase {
   }
 
   @Override
-  public boolean intersects(DocSet other) {
-    if (other instanceof BitDocSet) {
-      return bits.intersects(((BitDocSet)other).bits);
-    } else {
-      // they had better not call us back!
-      return other.intersects(this);
-    }
-  }
-
-  @Override
   public int unionSize(DocSet other) {
     if (other instanceof BitDocSet) {
       // if we don't know our current size, this is faster than
@@ -191,11 +181,6 @@ public class BitDocSet extends DocSetBase {
     } else {
       return super.andNotSize(other);
     }
-  }
-
-  @Override
-  public void setBitsOn(OpenBitSet target) {
-    target.union(bits);
   }
 
   @Override
@@ -225,10 +210,5 @@ public class BitDocSet extends DocSetBase {
 
   public long memSize() {
     return (bits.getBits().length << 3) + 16;
-  }
-
-  @Override
-  protected BitDocSet clone() {
-    return new BitDocSet((OpenBitSet)bits.clone(), size);
   }
 }

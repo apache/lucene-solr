@@ -17,15 +17,11 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
 
-import java.io.Closeable;
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 
 
 public class SolrRequestInfo {
@@ -35,8 +31,6 @@ public class SolrRequestInfo {
   protected SolrQueryResponse rsp;
   protected Date now;
   protected ResponseBuilder rb;
-  protected List<Closeable> closeHooks;
-
 
   public static SolrRequestInfo getRequestInfo() {
     return threadLocal.get();
@@ -54,20 +48,7 @@ public class SolrRequestInfo {
   }
 
   public static void clearRequestInfo() {
-    try {
-      SolrRequestInfo info = threadLocal.get();
-      if (info != null && info.closeHooks != null) {
-        for (Closeable hook : info.closeHooks) {
-          try {
-            hook.close();
-          } catch (Throwable throwable) {
-            SolrException.log(SolrCore.log, "Exception during close hook", throwable);
-          }
-        }
-      }
-    } finally {
-      threadLocal.remove();
-    }
+    threadLocal.remove();
   }
 
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -106,15 +87,5 @@ public class SolrRequestInfo {
 
   public void setResponseBuilder(ResponseBuilder rb) {
     this.rb = rb;
-  }
-
-  public void addCloseHook(Closeable hook) {
-    // is this better here, or on SolrQueryRequest?
-    synchronized (this) {
-      if (closeHooks == null) {
-        closeHooks = new LinkedList<Closeable>();
-      }
-      closeHooks.add(hook);
-    }
   }
 }
