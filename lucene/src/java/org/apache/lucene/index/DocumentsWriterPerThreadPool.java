@@ -204,6 +204,7 @@ public abstract class DocumentsWriterPerThreadPool {
    * Returns an iterator providing access to all {@link ThreadState}
    * instances. 
    */
+  // TODO: new Iterator per indexed doc is overkill...?
   public Iterator<ThreadState> getAllPerThreadsIterator() {
     return getPerThreadsIterator(this.perThreads.length);
   }
@@ -217,6 +218,7 @@ public abstract class DocumentsWriterPerThreadPool {
    * has been called.
    * 
    */
+  // TODO: new Iterator per indexed doc is overkill...?
   public Iterator<ThreadState> getActivePerThreadsIterator() {
     return getPerThreadsIterator(numThreadStatesActive);
   }
@@ -246,6 +248,7 @@ public abstract class DocumentsWriterPerThreadPool {
    */
   protected ThreadState minContendedThreadState() {
     ThreadState minThreadState = null;
+    // TODO: new Iterator per indexed doc is overkill...?
     final Iterator<ThreadState> it = getActivePerThreadsIterator();
     while (it.hasNext()) {
       final ThreadState state = it.next();
