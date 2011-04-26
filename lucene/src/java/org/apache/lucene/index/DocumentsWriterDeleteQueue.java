@@ -64,7 +64,7 @@ import org.apache.lucene.search.Query;
 final class DocumentsWriterDeleteQueue {
 
   private volatile Node tail;
-
+  
   private static final AtomicReferenceFieldUpdater<DocumentsWriterDeleteQueue, Node> tailUpdater = AtomicReferenceFieldUpdater
       .newUpdater(DocumentsWriterDeleteQueue.class, Node.class, "tail");
 

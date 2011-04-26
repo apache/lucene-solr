@@ -128,7 +128,7 @@ public final class DocumentsWriterFlushControl {
         }
       }
     }
-    final DocumentsWriterPerThread flushingDWPT = getFlushIfPending(perThread);
+    final DocumentsWriterPerThread flushingDWPT = tryCheckoutForFlush(perThread, false);
     healthiness.updateStalled(this);
     return flushingDWPT;
   }
@@ -226,18 +226,6 @@ public final class DocumentsWriterFlushControl {
     return null;
   }
 
-  private DocumentsWriterPerThread getFlushIfPending(ThreadState perThread) {
-    if (numPending > 0) {
-      final DocumentsWriterPerThread dwpt = perThread == null ? null
-          : tryCheckoutForFlush(perThread, false);
-      if (dwpt == null) {
-        return nextPendingFlush();
-      }
-      return dwpt;
-    }
-    return null;
-  }
-
   @Override
   public String toString() {
     return "DocumentsWriterFlushControl [activeBytes=" + activeBytes
@@ -257,7 +245,7 @@ public final class DocumentsWriterFlushControl {
       while (allActiveThreads.hasNext() && numPending > 0) {
         ThreadState next = allActiveThreads.next();
         if (next.flushPending) {
-          DocumentsWriterPerThread dwpt = tryCheckoutForFlush(next, false);
+          final DocumentsWriterPerThread dwpt = tryCheckoutForFlush(next, false);
           if (dwpt != null) {
             return dwpt;
           }
@@ -327,6 +315,7 @@ public final class DocumentsWriterFlushControl {
         if (!next.isActive()) {
           continue; 
         }
+        assert next.perThread.deleteQueue == flushingQueue || next.perThread.deleteQueue == documentsWriter.deleteQueue;
         if (next.perThread.deleteQueue != flushingQueue) {
           // this one is already a new DWPT
           continue;
@@ -346,6 +335,7 @@ public final class DocumentsWriterFlushControl {
       }
     }
     synchronized (this) {
+      assert assertBlockedFlushes(flushingQueue);
       flushQueue.addAll(blockedFlushes);
       blockedFlushes.clear();
       flushQueue.addAll(toFlush);
@@ -357,12 +347,21 @@ public final class DocumentsWriterFlushControl {
     assert flushQueue.isEmpty();
     try {
       if (!blockedFlushes.isEmpty()) {
+        assert assertBlockedFlushes(documentsWriter.deleteQueue);
         flushQueue.addAll(blockedFlushes);
         blockedFlushes.clear();
       }
     } finally {
       fullFlush = false;
     }
+  }
+  
+  boolean assertBlockedFlushes(DocumentsWriterDeleteQueue flushingQueue) {
+    Queue<DocumentsWriterPerThread> flushes = this.blockedFlushes;
+    for (DocumentsWriterPerThread documentsWriterPerThread : flushes) {
+      assert documentsWriterPerThread.deleteQueue == flushingQueue;
+    }
+    return true;
   }
 
   synchronized void abortFullFlushes() {

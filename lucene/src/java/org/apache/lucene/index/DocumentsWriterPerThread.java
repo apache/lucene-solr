@@ -322,6 +322,11 @@ public class DocumentsWriterPerThread {
     numDocsInRAM = 0;
   }
   
+  /**
+   * Prepares this DWPT for flushing. This method will freeze and return the
+   * {@link DocumentsWriterDeleteQueue}s global buffer and apply all pending
+   * deletes to this DWPT.
+   */
   FrozenBufferedDeletes prepareFlush() {
     assert numDocsInRAM > 0;
     final FrozenBufferedDeletes globalDeletes = deleteQueue.freezeGlobalBuffer(deleteSlice);
@@ -330,6 +335,7 @@ public class DocumentsWriterPerThread {
     if (deleteSlice != null) {
       // apply all deletes before we flush and release the delete slice
       deleteSlice.apply(pendingDeletes, numDocsInRAM);
+      assert deleteSlice.isEmpty();
       deleteSlice = null;
     }
     return globalDeletes;
@@ -338,6 +344,7 @@ public class DocumentsWriterPerThread {
   /** Flush all pending docs to a new segment */
   FlushedSegment flush() throws IOException {
     assert numDocsInRAM > 0;
+    assert deleteSlice == null : "all deletes must be applied in prepareFlush";
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
         fieldInfos.buildSegmentCodecs(true), pendingDeletes);

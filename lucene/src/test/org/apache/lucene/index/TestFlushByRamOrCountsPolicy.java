@@ -199,7 +199,6 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     for (int x = 0; x < threads.length; x++) {
       threads[x].join();
     }
-
     assertEquals(" all flushes must be due", 0, flushControl.flushBytes());
     assertEquals(numDocumentsToIndex, writer.numDocs());
     assertEquals(numDocumentsToIndex, writer.maxDoc());
@@ -334,6 +333,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
             }
           }
         }
+        writer.commit();
       } catch (Throwable ex) {
         throw new RuntimeException(ex);
       }

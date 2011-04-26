@@ -338,6 +338,11 @@ final class DocumentsWriter {
     
     if (flushingDWPT != null) {
       maybeMerge |= doFlush(flushingDWPT);
+    } else {
+      final DocumentsWriterPerThread nextPendingFlush = flushControl.nextPendingFlush();
+      if (nextPendingFlush != null) {
+        maybeMerge |= doFlush(nextPendingFlush);
+      }
     }
     return maybeMerge;
   }
