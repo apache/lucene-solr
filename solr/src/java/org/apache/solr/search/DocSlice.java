@@ -17,6 +17,8 @@
 
 package org.apache.solr.search;
 
+import java.util.Arrays;
+
 /**
  * <code>DocSlice</code> implements DocList as an array of docids and optional scores.
  *
@@ -140,5 +142,23 @@ public class DocSlice extends DocSetBase implements DocList {
     }
     HashDocSet h = new HashDocSet(docs,offset,len);
     return h.intersectionSize(other);  
+  }
+
+  @Override
+  public boolean intersects(DocSet other) {
+    if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
+      return other.intersects(this);
+    }
+    HashDocSet h = new HashDocSet(docs,offset,len);
+    return h.intersects(other);
+  }
+
+  @Override
+  protected DocSlice clone() {
+    try {
+      // DocSlice is not currently mutable
+      DocSlice slice = (DocSlice) super.clone();
+    } catch (CloneNotSupportedException e) {}
+    return null;
   }
 }

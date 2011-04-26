@@ -722,6 +722,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static final IRange ZERO_ONE = new IRange(0,1);
+  public static final IRange ZERO_TWO = new IRange(0,2);
   public static final IRange ONE_ONE = new IRange(1,1);
 
   public static class Doc implements Comparable{
@@ -1039,6 +1040,29 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return out.toString();
   }
+
+  /** Return a Map from field value to a list of document ids */
+  Map<Comparable, List<Comparable>> invertField(Map<Comparable, Doc> model, String field) {
+    Map<Comparable, List<Comparable>> value_to_id = new HashMap<Comparable, List<Comparable>>();
+
+    // invert field
+    for (Comparable key : model.keySet()) {
+      Doc doc = model.get(key);
+      List<Comparable> vals = doc.getValues(field);
+      if (vals == null) continue;
+      for (Comparable val : vals) {
+        List<Comparable> ids = value_to_id.get(val);
+        if (ids == null) {
+          ids = new ArrayList<Comparable>(2);
+          value_to_id.put(val, ids);
+        }
+        ids.add(key);
+      }
+    }
+
+    return value_to_id;
+  }
+
 
   /** Gets a resource from the context classloader as {@link File}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer
