@@ -279,10 +279,6 @@ public final class DocumentsWriterFlushControl {
     return perThreadPool.getActivePerThreadsIterator();
   }
 
-  long maxNetBytes() {
-    return flushPolicy.getMaxNetBytes();
-  }
-
   synchronized void doOnDelete() {
     // pass null this is a global delete no update
     flushPolicy.onDelete(this, null);

@@ -58,8 +58,7 @@ public abstract class FlushPolicy {
    * Called for each delete term. If this is a delete triggered due to an update
    * the given {@link ThreadState} is non-null.
    * <p>
-   * nocommit: what does this note mean...?
-   * Note: This method is synchronized by the given
+   * Note: This method is called synchronized on the given
    * {@link DocumentsWriterFlushControl} and it is guaranteed that the calling
    * thread holds the lock on the given {@link ThreadState}
    */
@@ -70,8 +69,7 @@ public abstract class FlushPolicy {
    * Called for each document update on the given {@link ThreadState}'s
    * {@link DocumentsWriterPerThread}.
    * <p>
-   * nocommit: what does this note mean...?
-   * Note: This method is synchronized by the given
+   * Note: This method is called  synchronized on the given
    * {@link DocumentsWriterFlushControl} and it is guaranteed that the calling
    * thread holds the lock on the given {@link ThreadState}
    */
@@ -102,17 +100,6 @@ public abstract class FlushPolicy {
   }
 
   /**
-   * Marks the most ram consuming active {@link DocumentsWriterPerThread} flush
-   * pending
-   */
-  // nocommit -- move to default policy?
-  protected void markLargestWriterPending(DocumentsWriterFlushControl control,
-      ThreadState perThreadState, final long currentBytesPerThread) {
-    control
-        .setFlushPending(findLargestNonPendingWriter(control, perThreadState));
-  }
-
-  /**
    * Returns the current most RAM consuming non-pending {@link ThreadState} with
    * at least one indexed document.
    * <p>
@@ -139,65 +126,6 @@ public abstract class FlushPolicy {
     assert writer.get().message(
         "set largest ram consuming thread pending on lower watermark");
     return maxRamUsingThreadState;
-  }
-
-  // nocommit -- I thought we pause based on "too many flush
-  // states pending"?
-  /**
-   * Returns the max net memory which marks the upper watermark for the
-   * DocumentsWriter to be healthy. If all flushing and active
-   * {@link DocumentsWriterPerThread} consume more memory than the upper
-   * watermark all incoming threads should be stalled and blocked until the
-   * memory drops below this.
-   * <p>
-   * Note: the upper watermark is only taken into account if this
-   * {@link FlushPolicy} flushes by ram usage.
-   * 
-   * <p>
-   * The default for the max net memory is set to 2 x
-   * {@link IndexWriterConfig#getRAMBufferSizeMB()}
-   * 
-   */
-  public long getMaxNetBytes() {
-    if (!flushOnRAM()) {
-      // nocommit explain that returning -1 is allowed?
-      return -1;
-    }
-    final double ramBufferSizeMB = indexWriterConfig.getRAMBufferSizeMB();
-    return (long) (ramBufferSizeMB * 1024.d * 1024.d * 2);
-  }
-
-  /**
-   * Returns <code>true</code> if this {@link FlushPolicy} flushes on
-   * {@link IndexWriterConfig#getMaxBufferedDocs()}, otherwise
-   * <code>false</code>.
-   */
-  // nocommit who needs this?  policy shouldn't have to impl
-  // this?  our default policy should?
-  protected boolean flushOnDocCount() {
-    return indexWriterConfig.getMaxBufferedDocs() != IndexWriterConfig.DISABLE_AUTO_FLUSH;
-  }
-
-  /**
-   * Returns <code>true</code> if this {@link FlushPolicy} flushes on
-   * {@link IndexWriterConfig#getMaxBufferedDeleteTerms()}, otherwise
-   * <code>false</code>.
-   */
-  // nocommit who needs this?  policy shouldn't have to impl
-  // this?  our default policy should?
-  protected boolean flushOnDeleteTerms() {
-    return indexWriterConfig.getMaxBufferedDeleteTerms() != IndexWriterConfig.DISABLE_AUTO_FLUSH;
-  }
-
-  /**
-   * Returns <code>true</code> if this {@link FlushPolicy} flushes on
-   * {@link IndexWriterConfig#getRAMBufferSizeMB()}, otherwise
-   * <code>false</code>.
-   */
-  // nocommit who needs this?  policy shouldn't have to impl
-  // this?  our default policy should?
-  protected boolean flushOnRAM() {
-    return indexWriterConfig.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH;
   }
 
 }

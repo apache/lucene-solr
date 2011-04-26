@@ -375,4 +375,8 @@ final class DocumentsWriterDeleteQueue {
       globalBufferLock.unlock();
     }
   }
+  
+  public long bytesUsed() {
+    return globalBufferedDeletes.bytesUsed.get();
+  }
 }

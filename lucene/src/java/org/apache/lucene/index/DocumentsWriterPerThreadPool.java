@@ -23,7 +23,23 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.util.SetOnce;
 
+/**
+ * {@link DocumentsWriterPerThreadPool} controls {@link ThreadState} instances
+ * and their thread assignments during indexing. Each {@link ThreadState} holds
+ * a reference to a {@link DocumentsWriterPerThread} that is once a
+ * {@link ThreadState} is obtained from the pool exclusively used for indexing a
+ * single document by the obtaining thread. Each indexing thread must obtain
+ * such a {@link ThreadState} to make progress. Depending on the
+ * {@link DocumentsWriterPerThreadPool} implementation {@link ThreadState}
+ * assignments might differ from document to document.
+ * <p>
+ * Once a {@link DocumentsWriterPerThread} is selected for flush the thread pool
+ * is reusing the flushing {@link DocumentsWriterPerThread}s ThreadState with a
+ * new {@link DocumentsWriterPerThread} instance.
+ * </p>
+ */
 public abstract class DocumentsWriterPerThreadPool {
   
   /**
@@ -39,7 +55,7 @@ public abstract class DocumentsWriterPerThreadPool {
    */
   @SuppressWarnings("serial")
   public final static class ThreadState extends ReentrantLock {
-    // public for FlushPolicy
+    // package private for FlushPolicy
     DocumentsWriterPerThread perThread;
     // write access guarded by DocumentsWriterFlushControl
     volatile boolean flushPending = false;
@@ -111,6 +127,7 @@ public abstract class DocumentsWriterPerThreadPool {
   private volatile int numThreadStatesActive;
   private CodecProvider codecProvider;
   private FieldNumberBiMap globalFieldMap;
+  private final SetOnce<DocumentsWriter> documentsWriter = new SetOnce<DocumentsWriter>();
 
   public DocumentsWriterPerThreadPool(int maxNumPerThreads) {
     maxNumPerThreads = (maxNumPerThreads < 1) ? IndexWriterConfig.DEFAULT_MAX_THREAD_STATES : maxNumPerThreads;
@@ -120,23 +137,40 @@ public abstract class DocumentsWriterPerThreadPool {
   }
 
   public void initialize(DocumentsWriter documentsWriter, FieldNumberBiMap globalFieldMap, IndexWriterConfig config) {
-    codecProvider = config.getCodecProvider();
+    this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
+    final CodecProvider codecs = config.getCodecProvider();
+    this.codecProvider = codecs;
     this.globalFieldMap = globalFieldMap;
     for (int i = 0; i < perThreads.length; i++) {
-      final FieldInfos infos = globalFieldMap.newFieldInfos(SegmentCodecsBuilder.create(codecProvider));
+      final FieldInfos infos = globalFieldMap.newFieldInfos(SegmentCodecsBuilder.create(codecs));
       perThreads[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
     }
   }
 
+  /**
+   * Returns the max number of {@link ThreadState} instances available in this
+   * {@link DocumentsWriterPerThreadPool}
+   */
   public int getMaxThreadStates() {
     return perThreads.length;
   }
 
-  public synchronized ThreadState newThreadState() {
+  /**
+   * Returns a new {@link ThreadState} iff any new state is available otherwise
+   * <code>null</code>.
+   * 
+   * @param lock
+   *          <code>true</code> iff the new {@link ThreadState} should be locked
+   *          before published otherwise <code>false</code>.
+   * @return a new {@link ThreadState} iff any new state is available otherwise
+   *         <code>null</code>
+   */
+  public synchronized ThreadState newThreadState(boolean lock) {
     if (numThreadStatesActive < perThreads.length) {
       final ThreadState threadState = perThreads[numThreadStatesActive];
+      threadState.lock();
       threadState.perThread.initialize();
-      numThreadStatesActive++;
+      numThreadStatesActive++; // increment will publish the ThreadState
       return threadState;
     }
     return null;
@@ -164,7 +198,7 @@ public abstract class DocumentsWriterPerThreadPool {
 
   //public abstract void clearThreadBindings(ThreadState perThread);
 
-  // public abstract void clearAllThreadBindings();
+  //public abstract void clearAllThreadBindings();
 
   /**
    * Returns an iterator providing access to all {@link ThreadState}

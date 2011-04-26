@@ -167,28 +167,6 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     }
   }
 
-  public void testFlushPolicySetup() throws IOException {
-    Directory dir = newDirectory();
-    FlushByRamOrCountsPolicy flushPolicy = new FlushByRamOrCountsPolicy();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
-
-    final int numDWPT = 1 + random.nextInt(10);
-    DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
-        numDWPT);
-    iwc.setIndexerThreadPool(threadPool);
-    double maxMB = 1.0 + Math.ceil(random.nextDouble());
-    iwc.setRAMBufferSizeMB(maxMB);
-    iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-
-    IndexWriter writer = new IndexWriter(dir, iwc);
-    assertEquals((long) (maxMB * 1024. * 1024. * 2.),
-        flushPolicy.getMaxNetBytes());
-
-    writer.close();
-    dir.close();
-  }
-
   public void testRandom() throws IOException, InterruptedException {
     final int numThreads = 1 + random.nextInt(8);
     final int numDocumentsToIndex = 100 + random.nextInt(300);

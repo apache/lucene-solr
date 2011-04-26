@@ -20,8 +20,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 
-// nocommit jdoc
-// nocommit -- can/should apps set this via IWC
+/**
+ * A {@link DocumentsWriterPerThreadPool} implementation that tries to assign an
+ * indexing thread to the same {@link ThreadState} each time the thread tries to
+ * obtain a {@link ThreadState}. Once a new {@link ThreadState} is created it is
+ * associated with the creating thread. Subsequently, if the threads associated
+ * {@link ThreadState} is not in use it will be associated with the requesting
+ * thread. Otherwise, if the {@link ThreadState} is used by another thread
+ * {@link ThreadAffinityDocumentsWriterThreadPool} tries to find the currently
+ * minimal contended {@link ThreadState}.
+ */
 public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPool {
   private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
 
@@ -40,16 +48,17 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
     }
     ThreadState minThreadState = null;
 
+    
+    /* TODO -- another thread could lock the minThreadState we just got while 
+     we should somehow prevent this. */
     // Find the state that has minimum number of threads waiting
-    // noocommit -- can't another thread lock the
-    // minThreadState we just got?
     minThreadState = minContendedThreadState();
-
     if (minThreadState == null || minThreadState.hasQueuedThreads()) {
-      ThreadState newState = newThreadState();
+      final ThreadState newState = newThreadState(true);
       if (newState != null) {
-        minThreadState = newState;
+        assert newState.isHeldByCurrentThread();
         threadBindings.put(requestingThread, newState);
+        return newState;
       } else if (minThreadState == null) {
         /*
          * no new threadState available we just take the minContented one

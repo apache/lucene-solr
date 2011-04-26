@@ -1239,9 +1239,7 @@ public class IndexWriter implements Closeable {
   public void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     ensureOpen();
     try {
-      if (docWriter.deleteTerm(term)) {
-        flush(true, false);
-      }
+      docWriter.deleteTerms(term);
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteDocuments(Term)");
     }
@@ -1263,9 +1261,7 @@ public class IndexWriter implements Closeable {
   public void deleteDocuments(Term... terms) throws CorruptIndexException, IOException {
     ensureOpen();
     try {
-      if (docWriter.deleteTerms(terms)) {
-        flush(true, false);
-      }
+      docWriter.deleteTerms(terms);
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteDocuments(Term..)");
     }
@@ -1285,9 +1281,7 @@ public class IndexWriter implements Closeable {
   public void deleteDocuments(Query query) throws CorruptIndexException, IOException {
     ensureOpen();
     try {
-      if (docWriter.deleteQuery(query)) {
-        flush(true, false);
-      }
+      docWriter.deleteQueries(query);
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteDocuments(Query)");
     }
@@ -1309,9 +1303,7 @@ public class IndexWriter implements Closeable {
   public void deleteDocuments(Query... queries) throws CorruptIndexException, IOException {
     ensureOpen();
     try {
-      if (docWriter.deleteQueries(queries)) {
-        flush(true, false);
-      }
+      docWriter.deleteQueries(queries);
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteDocuments(Query..)");
     }
@@ -2646,22 +2638,6 @@ public class IndexWriter implements Closeable {
   }
   
   final synchronized void maybeApplyDeletes(boolean applyAllDeletes) throws IOException {
-    if (!applyAllDeletes) {
-      // nocommit -- shouldn't this move into the default
-      // flush policy?
-      // If deletes alone are consuming > 1/2 our RAM
-      // buffer, force them all to apply now. This is to
-      // prevent too-frequent flushing of a long tail of
-      // tiny segments:
-      if ((config.getRAMBufferSizeMB() != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
-           bufferedDeletesStream.bytesUsed() > (1024*1024*config.getRAMBufferSizeMB()/2))) {
-        applyAllDeletes = true;
-        if (infoStream != null) {
-          message("force apply deletes bytesUsed=" + bufferedDeletesStream.bytesUsed() + " vs ramBuffer=" + (1024*1024*config.getRAMBufferSizeMB()));
-        }
-      }
-    }
-
     if (applyAllDeletes) {
       if (infoStream != null) {
         message("apply all deletes during flush");
