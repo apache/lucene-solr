@@ -36,27 +36,25 @@ import org.junit.Before;
 public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   private LineFileDocs lineDocFile;
-  private int numCPUs;
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
     lineDocFile = new LineFileDocs(random);
-    numCPUs = Runtime.getRuntime().availableProcessors();
   }
 
   public void testFlushByRam() throws CorruptIndexException,
       LockObtainFailedException, IOException, InterruptedException {
-    int[] numThreads = new int[] { numCPUs + random.nextInt(numCPUs + 1), 1 };
+    int[] numThreads = new int[] { 3 + random.nextInt(12), 1 };
     for (int i = 0; i < numThreads.length; i++) {
       runFlushByRam(numThreads[i],
           1 + random.nextInt(10) + random.nextDouble(), false);
     }
 
     for (int i = 0; i < numThreads.length; i++) {
-      // with a 250 mb ram buffer we should never stall
-      runFlushByRam(numThreads[i], 250.d, true);
+      // with a 512 mb ram buffer we should never stall
+      runFlushByRam(numThreads[i], 512.d, true);
     }
   }
 
@@ -117,7 +115,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   public void testFlushDocCount() throws CorruptIndexException,
       LockObtainFailedException, IOException, InterruptedException {
-    int[] numThreads = new int[] { numCPUs + random.nextInt(numCPUs + 1), 1 };
+    int[] numThreads = new int[] { 3 + random.nextInt(12), 1 };
     for (int i = 0; i < numThreads.length; i++) {
 
       final int numDocumentsToIndex = 50 + random.nextInt(150);
