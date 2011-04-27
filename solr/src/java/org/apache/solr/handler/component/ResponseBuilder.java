@@ -163,6 +163,25 @@ public class ResponseBuilder
     debugInfo.add( name, val );
   }
 
+  public void addDebug(Object val, String... path) {
+    if( debugInfo == null ) {
+      debugInfo = new SimpleOrderedMap<Object>();
+    }
+
+    NamedList<Object> target = debugInfo;
+    for (int i=0; i<path.length-1; i++) {
+      String elem = path[i];
+      NamedList<Object> newTarget = (NamedList<Object>)debugInfo.get(elem);
+      if (newTarget == null) {
+        newTarget = new SimpleOrderedMap<Object>();
+        target.add(elem, newTarget);
+      }
+      target = newTarget;
+    }
+
+    target.add(path[path.length-1], val);
+  }
+
   //-------------------------------------------------------------------------
   //-------------------------------------------------------------------------
 
