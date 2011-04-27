@@ -42,10 +42,18 @@ API Changes
    Instead, use SimilarityProvider to return different SweetSpotSimilaritys
    for different fields, this way all parameters (such as TF factors) can be 
    customized on a per-field basis.  (Robert Muir)
+   
+Bug Fixes
+
+ * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+   not lowercasing the key before checking for the tag (Adriano Crestani)
 
 ======================= Lucene 3.x (not yet released) =======================
 
 Bug Fixes
+
+ * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+   not lowercasing the key before checking for the tag (Adriano Crestani)
 
  * LUCENE-3026: SmartChineseAnalyzer's WordTokenFilter threw NullPointerException
    on sentences longer than 32,767 characters.  (wangzhenghang via Robert Muir)
