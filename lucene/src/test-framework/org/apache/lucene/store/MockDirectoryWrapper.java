@@ -40,6 +40,18 @@ import org.apache.lucene.util._TestUtil;
 /**
  * This is a Directory Wrapper that adds methods
  * intended to be used only by unit tests.
+ * It also adds a number of features useful for testing:
+ * <ul>
+ *   <li> Instances created by {@link LuceneTestCase#newDirectory()} are tracked 
+ *        to ensure they are closed by the test.
+ *   <li> When a MockDirectoryWrapper is closed, it will throw an exception if 
+ *        it has any open files against it (with a stacktrace indicating where 
+ *        they were opened from).
+ *   <li> When a MockDirectoryWrapper is closed, it runs CheckIndex to test if
+ *        the index was corrupted.
+ *   <li> MockDirectoryWrapper simulates some "features" of Windows, such as
+ *        refusing to write/delete to open files.
+ * </ul>
  */
 
 public class MockDirectoryWrapper extends Directory {

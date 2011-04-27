@@ -31,9 +31,9 @@ import java.util.Random;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
-// Minimal port of contrib/benchmark's LneDocSource +
-// DocMaker, so tests can enum docs from a line file created
-// by contrib/benchmark's WriteLineDoc task
+/** Minimal port of contrib/benchmark's LneDocSource +
+ * DocMaker, so tests can enum docs from a line file created
+ * by contrib/benchmark's WriteLineDoc task */
 public class LineFileDocs implements Closeable {
 
   private BufferedReader reader;
@@ -41,8 +41,8 @@ public class LineFileDocs implements Closeable {
   private final AtomicInteger id = new AtomicInteger();
   private final String path;
 
-  // If forever is true, we rewind the file at EOF (repeat
-  // the docs over and over)
+  /** If forever is true, we rewind the file at EOF (repeat
+   * the docs over and over) */
   public LineFileDocs(Random random, String path) throws IOException {
     this.path = path;
     open(random);
@@ -136,7 +136,7 @@ public class LineFileDocs implements Closeable {
 
   private final ThreadLocal<DocState> threadDocs = new ThreadLocal<DocState>();
 
-  // Document instance is re-used per-thread
+  /** Note: Document instance is re-used per-thread */
   public Document nextDoc() throws IOException {
     String line;
     synchronized(this) {

@@ -864,6 +864,10 @@ public abstract class LuceneTestCase extends Assert {
     return newDirectory(random);
   }
 
+  /**
+   * Returns a new Directory instance, using the specified random.
+   * See {@link #newDirectory()} for more information.
+   */
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
@@ -918,6 +922,11 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  /**
+   * Returns a new Directory instance, using the specified random
+   * with contents copied from the provided directory. See 
+   * {@link #newDirectory()} for more information.
+   */
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
@@ -1083,7 +1092,8 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  /** create a new searcher over the reader */
+  /** create a new searcher over the reader.
+   * This searcher might randomly use threads. */
   public static IndexSearcher newSearcher(IndexReader r) throws IOException {
     if (random.nextBoolean()) {
       return new IndexSearcher(r);
