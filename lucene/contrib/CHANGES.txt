@@ -1,5 +1,12 @@
 Lucene contrib change Log
 
+======================= Lucene 3.1.x (not yet released) =======================
+
+Bug fixes
+
+ * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+   not lowercasing the key before checking for the tag (Adriano Crestani)
+
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
