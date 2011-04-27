@@ -61,7 +61,6 @@ public abstract class DocumentsWriterPerThreadPool {
     volatile boolean flushPending = false;
     // write access guarded by DocumentsWriterFlushControl
     long bytesUsed = 0;
-    
     // guarded by Reentrant lock
     private boolean isActive = true;
 
@@ -131,8 +130,7 @@ public abstract class DocumentsWriterPerThreadPool {
 
   public DocumentsWriterPerThreadPool(int maxNumPerThreads) {
     maxNumPerThreads = (maxNumPerThreads < 1) ? IndexWriterConfig.DEFAULT_MAX_THREAD_STATES : maxNumPerThreads;
-    this.perThreads = new ThreadState[maxNumPerThreads];
-
+    perThreads = new ThreadState[maxNumPerThreads];
     numThreadStatesActive = 0;
   }
 
