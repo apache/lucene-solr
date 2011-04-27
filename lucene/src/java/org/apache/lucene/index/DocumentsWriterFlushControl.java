@@ -303,8 +303,7 @@ public final class DocumentsWriterFlushControl {
       flushingQueue = documentsWriter.deleteQueue;
       // Set a new delete queue - all subsequent DWPT will use this queue until
       // we do another full flush
-      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue();
-      newQueue.generation = flushingQueue.generation + 1;
+      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1);
       documentsWriter.deleteQueue = newQueue;
     }
     final Iterator<ThreadState> allActiveThreads = perThreadPool

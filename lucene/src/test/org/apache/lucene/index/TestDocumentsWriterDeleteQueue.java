@@ -33,8 +33,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
 
   public void testUpdateDelteSlices() {
-    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue(
-        new BufferedDeletes(false));
+    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
     final int size = 200 + random.nextInt(500) * RANDOM_MULTIPLIER;
     Integer[] ids = new Integer[size];
     for (int i = 0; i < ids.length; i++) {
@@ -88,8 +87,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
   }
   
   public void testClear() {
-    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue(
-        new BufferedDeletes(false));
+    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
     Term template = new Term("id");
     assertFalse(queue.anyChanges());
     queue.clear();
@@ -117,8 +115,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
   }
 
   public void testAnyChanges() {
-    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue(
-        new BufferedDeletes(false));
+    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
     Term template = new Term("id");
     final int size = 200 + random.nextInt(500) * RANDOM_MULTIPLIER;
     int termsSinceFreeze = 0;
@@ -146,8 +143,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
   }
 
   public void testStressDeleteQueue() throws InterruptedException {
-    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue(
-        new BufferedDeletes(false));
+    DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
     Set<Term> uniqueValues = new HashSet<Term>();
     final int size = 10000 + random.nextInt(500) * RANDOM_MULTIPLIER;
     Integer[] ids = new Integer[size];

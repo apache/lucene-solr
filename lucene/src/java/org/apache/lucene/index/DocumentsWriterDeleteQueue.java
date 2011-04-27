@@ -73,14 +73,19 @@ final class DocumentsWriterDeleteQueue {
   /* only acquired to update the global deletes */
   private final ReentrantLock globalBufferLock = new ReentrantLock();
 
-  long generation;
+  final long generation;
   
   DocumentsWriterDeleteQueue() {
-    this(new BufferedDeletes(false));
+    this(0);
+  }
+  
+  DocumentsWriterDeleteQueue(long generation) {
+    this(new BufferedDeletes(false), generation);
   }
 
-  DocumentsWriterDeleteQueue(BufferedDeletes globalBufferedDeletes) {
+  DocumentsWriterDeleteQueue(BufferedDeletes globalBufferedDeletes,long generation) {
     this.globalBufferedDeletes = globalBufferedDeletes;
+    this.generation = generation;
     /*
      * we use a sentinel instance as our initial tail. No slice will ever try to
      * apply this tail since the head is always omitted.

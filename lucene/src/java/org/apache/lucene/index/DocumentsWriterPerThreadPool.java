@@ -158,19 +158,19 @@ public abstract class DocumentsWriterPerThreadPool {
   /**
    * Returns a new {@link ThreadState} iff any new state is available otherwise
    * <code>null</code>.
+   * <p>
+   * NOTE: the returned {@link ThreadState} is already locked iff non-
+   * <code>null</code>.
    * 
-   * @param lock
-   *          <code>true</code> iff the new {@link ThreadState} should be locked
-   *          before published otherwise <code>false</code>.
    * @return a new {@link ThreadState} iff any new state is available otherwise
    *         <code>null</code>
    */
-  public synchronized ThreadState newThreadState(boolean lock) {
+  public synchronized ThreadState newThreadState() {
     if (numThreadStatesActive < perThreads.length) {
       final ThreadState threadState = perThreads[numThreadStatesActive];
-      threadState.lock();
-      threadState.perThread.initialize();
+      threadState.lock(); // lock so nobody else will get this ThreadState
       numThreadStatesActive++; // increment will publish the ThreadState
+      threadState.perThread.initialize();
       return threadState;
     }
     return null;

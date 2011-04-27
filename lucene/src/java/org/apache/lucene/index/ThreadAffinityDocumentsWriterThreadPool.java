@@ -54,7 +54,7 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
     // Find the state that has minimum number of threads waiting
     minThreadState = minContendedThreadState();
     if (minThreadState == null || minThreadState.hasQueuedThreads()) {
-      final ThreadState newState = newThreadState(true);
+      final ThreadState newState = newThreadState(); // state is already locked if non-null
       if (newState != null) {
         assert newState.isHeldByCurrentThread();
         threadBindings.put(requestingThread, newState);
