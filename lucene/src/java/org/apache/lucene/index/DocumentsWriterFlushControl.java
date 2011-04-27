@@ -303,7 +303,9 @@ public final class DocumentsWriterFlushControl {
       flushingQueue = documentsWriter.deleteQueue;
       // Set a new delete queue - all subsequent DWPT will use this queue until
       // we do another full flush
-      documentsWriter.deleteQueue = new DocumentsWriterDeleteQueue(new BufferedDeletes(false));
+      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue();
+      newQueue.generation = flushingQueue.generation + 1;
+      documentsWriter.deleteQueue = newQueue;
     }
     final Iterator<ThreadState> allActiveThreads = perThreadPool
     .getActivePerThreadsIterator();
@@ -315,7 +317,14 @@ public final class DocumentsWriterFlushControl {
         if (!next.isActive()) {
           continue; 
         }
-        assert next.perThread.deleteQueue == flushingQueue || next.perThread.deleteQueue == documentsWriter.deleteQueue;
+        assert next.perThread.deleteQueue == flushingQueue
+            || next.perThread.deleteQueue == documentsWriter.deleteQueue : " flushingQueue: "
+            + flushingQueue
+            + " currentqueue: "
+            + documentsWriter.deleteQueue
+            + " perThread queue: "
+            + next.perThread.deleteQueue
+            + " numDocsInRam: " + next.perThread.getNumDocsInRAM();
         if (next.perThread.deleteQueue != flushingQueue) {
           // this one is already a new DWPT
           continue;

@@ -72,6 +72,8 @@ final class DocumentsWriterDeleteQueue {
   private final BufferedDeletes globalBufferedDeletes;
   /* only acquired to update the global deletes */
   private final ReentrantLock globalBufferLock = new ReentrantLock();
+
+  long generation;
   
   DocumentsWriterDeleteQueue() {
     this(new BufferedDeletes(false));
@@ -379,4 +381,11 @@ final class DocumentsWriterDeleteQueue {
   public long bytesUsed() {
     return globalBufferedDeletes.bytesUsed.get();
   }
+
+  @Override
+  public String toString() {
+    return "DWDQ: [ generation: " + generation + " ]";
+  }
+  
+  
 }
