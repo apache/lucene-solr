@@ -129,6 +129,8 @@ public class DocTermOrds {
   protected BytesRef prefix;
   protected int ordBase;
 
+  protected DocsEnum docsEnum; //used while uninverting
+
   public long ramUsedInBytes() {
     // can cache the mem size since it shouldn't change
     if (memsz!=0) return memsz;
@@ -270,7 +272,7 @@ public class DocTermOrds {
     // frequent terms ahead of time.
 
     int termNum = 0;
-    DocsEnum docsEnum = null;
+    docsEnum = null;
 
     // Loop begins with te positioned to first term (we call
     // seek above):

@@ -15,19 +15,34 @@
     limitations under the License.
   -->
 
-<uimaConfig>
-  <runtimeParameters>
-    <keyword_apikey>VALID_ALCHEMYAPI_KEY</keyword_apikey>
-    <concept_apikey>VALID_ALCHEMYAPI_KEY</concept_apikey>
-    <lang_apikey>VALID_ALCHEMYAPI_KEY</lang_apikey>
-    <cat_apikey>VALID_ALCHEMYAPI_KEY</cat_apikey>
-    <oc_licenseID>VALID_OPENCALAIS_KEY</oc_licenseID>
-  </runtimeParameters>
-  <analysisEngine>/org/apache/uima/desc/OverridingParamsExtServicesAE.xml</analysisEngine>
-  <analyzeFields merge="false">text,title</analyzeFields>
-  <fieldMapping>
-    <type name="org.apache.uima.jcas.tcas.Annotation">
-      <map feature="coveredText" field="tag"/>
-    </type>
-  </fieldMapping>
-</uimaConfig>
+  <updateRequestProcessorChain name="uima">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <str name="keyword_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="concept_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="lang_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="cat_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="entities_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="oc_licenseID">VALID_OPENCALAIS_KEY</str>
+        </lst>
+        <str name="analysisEngine">/org/apache/uima/desc/OverridingParamsExtServicesAE.xml</str>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+            <str>title</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings">
+          <lst name="mapping">
+            <str name="type">org.apache.uima.jcas.tcas.Annotation</str>
+            <str name="feature">convertText</str>
+            <str name="field">tag</str>
+          </lst>
+        </lst>
+      </lst>
+    </processor>
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>

@@ -1233,17 +1233,15 @@ public abstract class LuceneTestCase extends Assert {
       
       // only print iteration info if the user requested more than one iterations
       boolean verbose = VERBOSE && TEST_ITER > 1;
-      int lastIterFailed = -1;
       for (int i = 0; i < TEST_ITER; i++) {
         if (verbose) {
           System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
         }
         super.runChild(arg0, arg1);
         if (testsFailed) {
-          lastIterFailed = i;
-          if (i == TEST_ITER_MIN - 1) {
+          if (i >= TEST_ITER_MIN - 1) {
             if (verbose) {
-              System.out.println("\nNOTE: iteration " + lastIterFailed + " failed !");
+              System.out.println("\nNOTE: iteration " + i + " failed !");
             }
             break;
           }

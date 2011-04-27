@@ -160,7 +160,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   /** verify if a node contains a tag */
   public boolean containsTag(String tagName) {
-    return this.tags.containsKey(tagName);
+    return this.tags.containsKey(tagName.toLowerCase());
   }
 
   public Object getTag(String tagName) {
