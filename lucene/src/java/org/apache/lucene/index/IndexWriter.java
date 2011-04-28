@@ -393,7 +393,7 @@ public class IndexWriter implements Closeable {
         doAfterFlush();
       }
     }
-    if(anySegmentFlushed) {
+    if (anySegmentFlushed) {
       maybeMerge();
     }
     if (infoStream != null) {
@@ -1360,16 +1360,16 @@ public class IndexWriter implements Closeable {
     ensureOpen();
     try {
       boolean success = false;
-      boolean maybeMerge = false;
+      boolean anySegmentFlushed = false;
       try {
-        maybeMerge = docWriter.updateDocument(doc, analyzer, term);
+        anySegmentFlushed = docWriter.updateDocument(doc, analyzer, term);
         success = true;
       } finally {
         if (!success && infoStream != null)
           message("hit exception updating document");
       }
 
-      if (maybeMerge) {
+      if (anySegmentFlushed) {
         maybeMerge();
       }
     } catch (OutOfMemoryError oom) {
@@ -2612,11 +2612,11 @@ public class IndexWriter implements Closeable {
         message("  start flush: applyAllDeletes=" + applyAllDeletes);
         message("  index before flush " + segString());
       }
-      final boolean maybeMerge;
+      final boolean anySegmentFlushed;
       
       synchronized (fullFlushLock) {
         try {
-          maybeMerge = docWriter.flushAllThreads();
+          anySegmentFlushed = docWriter.flushAllThreads();
           success = true;
         } finally {
           docWriter.finishFullFlush(success);
@@ -2626,12 +2626,12 @@ public class IndexWriter implements Closeable {
       synchronized(this) {
         maybeApplyDeletes(applyAllDeletes);
         doAfterFlush();
-        if (!maybeMerge) {
+        if (!anySegmentFlushed) {
           // flushCount is incremented in flushAllThreads
           flushCount.incrementAndGet();
         }
         success = true;
-        return maybeMerge;
+        return anySegmentFlushed;
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "doFlush");

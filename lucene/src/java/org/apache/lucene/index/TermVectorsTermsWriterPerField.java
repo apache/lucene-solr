@@ -71,13 +71,13 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     if (doVectors) {
       termsWriter.hasVectors = true;
-        if (termsHashPerField.bytesHash.size() != 0) {
-          // Only necessary if previous doc hit a
-          // non-aborting exception while writing vectors in
-          // this field:
-          termsHashPerField.reset();
-        }
+      if (termsHashPerField.bytesHash.size() != 0) {
+        // Only necessary if previous doc hit a
+        // non-aborting exception while writing vectors in
+        // this field:
+        termsHashPerField.reset();
       }
+    }
 
     // TODO: only if needed for performance
     //perThread.postingsCount = 0;
