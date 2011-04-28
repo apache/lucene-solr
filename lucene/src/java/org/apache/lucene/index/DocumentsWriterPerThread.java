@@ -168,6 +168,8 @@ public class DocumentsWriterPerThread {
   private int flushedDocCount;
   DocumentsWriterDeleteQueue deleteQueue;
   DeleteSlice deleteSlice;
+  private final NumberFormat nf = NumberFormat.getInstance();
+
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
       FieldInfos fieldInfos, IndexingChain indexingChain) {
@@ -348,7 +350,7 @@ public class DocumentsWriterPerThread {
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
         fieldInfos.buildSegmentCodecs(true), pendingDeletes);
-
+    final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
@@ -398,8 +400,17 @@ public class DocumentsWriterPerThread {
         pendingDeletes = new BufferedDeletes(false);
       }
 
+      if (infoStream != null) {
+        final double newSegmentSizeNoStore = newSegment.sizeInBytes(false)/1024./1024.;
+        final double newSegmentSize = newSegment.sizeInBytes(true)/1024./1024.;
+        message("flushed: segment=" + newSegment + 
+                " ramUsed=" + nf.format(startMBUsed) + " MB" +
+                " newFlushedSize=" + nf.format(newSegmentSize) + " MB" +
+                " (" + nf.format(newSegmentSizeNoStore) + " MB w/o doc stores)" +
+                " docs/MB=" + nf.format(flushedDocCount / newSegmentSize) +
+                " new/old=" + nf.format(100.0 * newSegmentSizeNoStore / startMBUsed) + "%");
+      }
       doAfterFlush();
-
       success = true;
 
       return new FlushedSegment(newSegment, segmentDeletes, flushState.deletedDocs);
@@ -429,10 +440,8 @@ public class DocumentsWriterPerThread {
   }
 
   void message(String message) {
-    writer.message("DW: " + message);
+    writer.message("DWPT: " + message);
   }
-
-  NumberFormat nf = NumberFormat.getInstance();
 
   /* Initial chunks size of the shared byte[] blocks used to
      store postings data */
@@ -484,8 +493,4 @@ public class DocumentsWriterPerThread {
     }
     
   };
-
-  String toMB(long v) {
-    return nf.format(v/1024./1024.);
-  }
 }
