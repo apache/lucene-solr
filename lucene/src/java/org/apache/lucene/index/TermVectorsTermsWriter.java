@@ -57,9 +57,10 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       tvx.close();
       tvf.close();
       tvd.close();
-      tvx = null;
-      if (4+((long) state.numDocs)*16 != state.directory.fileLength(idxName))
+      tvx = tvd = tvf = null;
+      if (4+((long) state.numDocs)*16 != state.directory.fileLength(idxName)) {
         throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
+      }
 
       lastDocID = 0;
       state.hasVectors = hasVectors;
