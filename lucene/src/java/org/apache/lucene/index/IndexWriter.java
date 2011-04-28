@@ -356,7 +356,7 @@ public class IndexWriter implements Closeable {
     poolReaders = true;
     final IndexReader r;
     doBeforeFlush();
-    final boolean maybeMerge;
+    final boolean anySegmentFlushed;
     /*
      * for releasing a NRT reader we must ensure that 
      * DW doesn't add any segments or deletes until we are
@@ -367,8 +367,10 @@ public class IndexWriter implements Closeable {
     synchronized (fullFlushLock) {
       boolean success = false;
       try {
-        maybeMerge = docWriter.flushAllThreads(applyAllDeletes);
-        if (!maybeMerge) {
+        anySegmentFlushed = docWriter.flushAllThreads();
+        if (!anySegmentFlushed) {
+          // prevent double increment since docWriter#doFlush increments the flushcount
+          // if we flushed anything.
           flushCount.incrementAndGet();
         }
         success = true;
@@ -391,7 +393,7 @@ public class IndexWriter implements Closeable {
         doAfterFlush();
       }
     }
-    if(maybeMerge) {
+    if(anySegmentFlushed) {
       maybeMerge();
     }
     if (infoStream != null) {
@@ -2614,7 +2616,7 @@ public class IndexWriter implements Closeable {
       
       synchronized (fullFlushLock) {
         try {
-          maybeMerge = docWriter.flushAllThreads(applyAllDeletes);
+          maybeMerge = docWriter.flushAllThreads();
           success = true;
         } finally {
           docWriter.finishFullFlush(success);

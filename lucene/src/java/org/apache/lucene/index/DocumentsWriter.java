@@ -488,7 +488,7 @@ final class DocumentsWriter {
    * two stage operation; the caller must ensure (in try/finally) that finishFlush
    * is called after this method, to release the flush lock in DWFlushControl
    */
-  final boolean flushAllThreads(final boolean flushDeletes)
+  final boolean flushAllThreads()
     throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
 
@@ -514,7 +514,7 @@ final class DocumentsWriter {
       while (flushControl.anyFlushing()) {
         flushControl.waitForFlush();  
       }
-      if (!anythingFlushed && flushDeletes) {
+      if (!anythingFlushed) { // apply deletes if we did not flush any document
         synchronized (ticketQueue) {
           ticketQueue.add(new FlushTicket(flushingDeleteQueue.freezeGlobalBuffer(null), false));
         }
