@@ -200,6 +200,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
   @Override
   FieldInfo getFieldInfo() {
-    return this.fieldInfo;
+    return fieldInfo;
   }
 }

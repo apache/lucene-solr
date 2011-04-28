@@ -726,7 +726,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Convinience method for logging an iterator.
+   * Convenience method for logging an iterator.
    *
    * @param label  String logged before/after the items in the iterator
    * @param iter   Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
@@ -746,7 +746,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Convinience method for logging an array.  Wraps the array in an iterator and delegates
+   * Convenience method for logging an array.  Wraps the array in an iterator and delegates
    *
    * @see #dumpIterator(String,Iterator,PrintStream)
    */
@@ -760,7 +760,8 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexWriterConfig newIndexWriterConfig(Version v, Analyzer a) {
     return newIndexWriterConfig(random, v, a);
   }
-
+  
+  /** create a new index writer config with random defaults using the specified random */
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
     if (r.nextBoolean()) {
@@ -936,14 +937,12 @@ public abstract class LuceneTestCase extends Assert {
     stores.put(dir, Thread.currentThread().getStackTrace());
     return dir;
   }
-
   
   /** Returns a new field instance. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(String name, String value, Index index) {
     return newField(random, name, value, index);
   }
-
   
   /** Returns a new field instance. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
@@ -963,21 +962,18 @@ public abstract class LuceneTestCase extends Assert {
   public static Field newField(String name, String value, Store store, Index index, TermVector tv) {
     return newField(random, name, value, store, index, tv);
   }
-
   
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Index index) {
     return newField(random, name, value, Store.NO, index);
   }
-
   
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index, TermVector.NO);
   }
-
   
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
@@ -1318,7 +1314,7 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     @Override
-    public String toString() {
+    public synchronized String toString() {
       return "RandomCodecProvider: " + previousMappings.toString();
     }
   }

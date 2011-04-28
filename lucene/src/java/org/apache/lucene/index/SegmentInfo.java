@@ -73,11 +73,11 @@ public final class SegmentInfo {
   private volatile long sizeInBytesNoStore = -1;           // total byte size of all but the store files (computed on demand)
   private volatile long sizeInBytesWithStore = -1;         // total byte size of all of our files (computed on demand)
 
-  @Deprecated private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
+  private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
-  @Deprecated private String docStoreSegment;                 // name used to derive fields/vectors file we share with
+  private String docStoreSegment;                 // name used to derive fields/vectors file we share with
                                                   // other segments
-  @Deprecated private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
+  private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
   private int delCount;                           // How many deleted docs in this segment
 
@@ -467,23 +467,19 @@ public final class SegmentInfo {
     assert delCount <= docCount;
   }
 
-  @Deprecated
   public int getDocStoreOffset() {
     return docStoreOffset;
   }
 
-  @Deprecated
   public boolean getDocStoreIsCompoundFile() {
     return docStoreIsCompoundFile;
   }
 
-  @Deprecated
   public void setDocStoreIsCompoundFile(boolean docStoreIsCompoundFile) {
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     clearFilesCache();
   }
 
-  @Deprecated
   void setDocStore(int offset, String segment, boolean isCompoundFile) {
     docStoreOffset = offset;
     docStoreSegment = segment;
@@ -491,18 +487,15 @@ public final class SegmentInfo {
     clearFilesCache();
   }
 
-  @Deprecated
   public String getDocStoreSegment() {
     return docStoreSegment;
   }
 
-  @Deprecated
   void setDocStoreOffset(int offset) {
     docStoreOffset = offset;
     clearFilesCache();
   }
 
-  @Deprecated
   public void setDocStoreSegment(String docStoreSegment) {
     this.docStoreSegment = docStoreSegment;
   }
@@ -516,13 +509,11 @@ public final class SegmentInfo {
     output.writeString(name);
     output.writeInt(docCount);
     output.writeLong(delGen);
-
     output.writeInt(docStoreOffset);
     if (docStoreOffset != -1) {
       output.writeString(docStoreSegment);
       output.writeByte((byte) (docStoreIsCompoundFile ? 1:0));
     }
-
 
     if (normGen == null) {
       output.writeInt(NO);
