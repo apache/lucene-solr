@@ -2679,20 +2679,8 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  private static class FlushCountingIndexWriter extends IndexWriter {
-    int flushCount;
-    public FlushCountingIndexWriter(Directory dir, IndexWriterConfig iwc) throws IOException {
-      super(dir, iwc);
-    }
-    @Override
-    public void doAfterFlush() {
-      flushCount++;
-    }
-  }
-
-  public void _testIndexingThenDeleting() throws Exception {
+  public void testIndexingThenDeleting() throws Exception {
     final Random r = random;
-
     Directory dir = newDirectory();
     // note this test explicitly disables payloads
     final Analyzer analyzer = new Analyzer() {
@@ -2701,7 +2689,7 @@ public class TestIndexWriter extends LuceneTestCase {
         return new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
       }
     };
-    FlushCountingIndexWriter w = new FlushCountingIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(-1).setMaxBufferedDeleteTerms(-1));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
@@ -2715,15 +2703,15 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       if (doIndexing) {
         // Add docs until a flush is triggered
-        final int startFlushCount = w.flushCount;
-        while(w.flushCount == startFlushCount) {
+        final int startFlushCount = w.getFlushCount();
+        while(w.getFlushCount() == startFlushCount) {
           w.addDocument(doc);
           count++;
         }
       } else {
         // Delete docs until a flush is triggered
-        final int startFlushCount = w.flushCount;
-        while(w.flushCount == startFlushCount) {
+        final int startFlushCount = w.getFlushCount();
+        while(w.getFlushCount() == startFlushCount) {
           w.deleteDocuments(new Term("foo", ""+count));
           count++;
         }
