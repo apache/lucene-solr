@@ -771,11 +771,11 @@ public class TestAddIndexes extends LuceneTestCase {
     c.joinThreads();
 
     int expectedNumDocs = 100+NUM_COPY*(4*NUM_ITER/5)*RunAddIndexesThreads.NUM_THREADS*RunAddIndexesThreads.NUM_INIT_DOCS;
-    assertEquals(expectedNumDocs, c.writer2.numDocs());
+    assertEquals("expected num docs don't match - failures: " + c.failures, expectedNumDocs, c.writer2.numDocs());
 
     c.close(true);
 
-    assertTrue(c.failures.size() == 0);
+    assertTrue("found unexpected failures: " + c.failures, c.failures.isEmpty());
 
     _TestUtil.checkIndex(c.dir2);
 
