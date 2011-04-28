@@ -82,12 +82,6 @@ public final class IndexWriterConfig implements Cloneable {
    */
   public static long WRITE_LOCK_TIMEOUT = 1000;
 
-  /** The maximum number of simultaneous threads that may be
-   *  indexing documents at once in IndexWriter; if more
-   *  than this many threads arrive they will wait for
-   *  others to finish. */
-  public final static int DEFAULT_MAX_THREAD_STATES = 8;
-
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
 
@@ -162,7 +156,7 @@ public final class IndexWriterConfig implements Cloneable {
     codecProvider = CodecProvider.getDefault();
     mergePolicy = new TieredMergePolicy();
     readerPooling = DEFAULT_READER_POOLING;
-    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(DEFAULT_MAX_THREAD_STATES);
+    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool();
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
     perThreadHardLimitMB = DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
   }
@@ -544,8 +538,8 @@ public final class IndexWriterConfig implements Cloneable {
    * IndexWriter to assign thread-states to incoming indexing threads. If no
    * {@link DocumentsWriterPerThreadPool} is set {@link IndexWriter} will use
    * {@link ThreadAffinityDocumentsWriterThreadPool} with max number of
-   * thread-states set to {@value #DEFAULT_MAX_THREAD_STATES} (see
-   * {@link #DEFAULT_MAX_THREAD_STATES}).
+   * thread-states set to {@value DocumentsWriterPerThreadPool#DEFAULT_MAX_THREAD_STATES} (see
+   * {@link DocumentsWriterPerThreadPool#DEFAULT_MAX_THREAD_STATES}).
    * </p>
    * <p>
    * NOTE: The given {@link DocumentsWriterPerThreadPool} instance must not be used with
@@ -567,18 +561,6 @@ public final class IndexWriterConfig implements Cloneable {
    * @return the configured {@link DocumentsWriterPerThreadPool} instance.*/
   public DocumentsWriterPerThreadPool getIndexerThreadPool() {
     return this.indexerThreadPool;
-  }
-
-  /** Returns the max number of simultaneous threads that may be indexing
-   * documents at once in IndexWriter.
-   * <p>
-   * To modify the max number of thread-states a new
-   * {@link DocumentsWriterPerThreadPool} must be set via
-   * {@link #setIndexerThreadPool(DocumentsWriterPerThreadPool)}.
-   * </p>
-   * @see #setIndexerThreadPool(DocumentsWriterPerThreadPool) */
-  public int getMaxThreadStates() {
-    return indexerThreadPool.getMaxThreadStates();
   }
 
   /** By default, IndexWriter does not pool the
@@ -705,7 +687,6 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("codecProvider=").append(codecProvider).append("\n");
     sb.append("mergePolicy=").append(mergePolicy).append("\n");
     sb.append("indexerThreadPool=").append(indexerThreadPool).append("\n");
-    sb.append("maxThreadStates=").append(indexerThreadPool.getMaxThreadStates()).append("\n");
     sb.append("readerPooling=").append(readerPooling).append("\n");
     sb.append("readerTermsIndexDivisor=").append(readerTermsIndexDivisor).append("\n");
     sb.append("flushPolicy=").append(flushPolicy).append("\n");

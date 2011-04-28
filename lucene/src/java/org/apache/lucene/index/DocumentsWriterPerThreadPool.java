@@ -41,6 +41,11 @@ import org.apache.lucene.util.SetOnce;
  * </p>
  */
 public abstract class DocumentsWriterPerThreadPool {
+  /** The maximum number of simultaneous threads that may be
+   *  indexing documents at once in IndexWriter; if more
+   *  than this many threads arrive they will wait for
+   *  others to finish. */
+  public final static int DEFAULT_MAX_THREAD_STATES = 8;
   
   /**
    * {@link ThreadState} references and guards a
@@ -127,9 +132,17 @@ public abstract class DocumentsWriterPerThreadPool {
   private CodecProvider codecProvider;
   private FieldNumberBiMap globalFieldMap;
   private final SetOnce<DocumentsWriter> documentsWriter = new SetOnce<DocumentsWriter>();
+  
+  /**
+   * Creates a new {@link DocumentsWriterPerThreadPool} with max.
+   * {@link #DEFAULT_MAX_THREAD_STATES} thread states.
+   */
+  public DocumentsWriterPerThreadPool() {
+    this(DEFAULT_MAX_THREAD_STATES);
+  }
 
   public DocumentsWriterPerThreadPool(int maxNumPerThreads) {
-    maxNumPerThreads = (maxNumPerThreads < 1) ? IndexWriterConfig.DEFAULT_MAX_THREAD_STATES : maxNumPerThreads;
+    maxNumPerThreads = (maxNumPerThreads < 1) ? DEFAULT_MAX_THREAD_STATES : maxNumPerThreads;
     perThreads = new ThreadState[maxNumPerThreads];
     numThreadStatesActive = 0;
   }

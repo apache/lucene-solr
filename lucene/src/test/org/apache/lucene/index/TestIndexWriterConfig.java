@@ -66,7 +66,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
     assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
-    assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     assertEquals(ThreadAffinityDocumentsWriterThreadPool.class, conf.getIndexerThreadPool().getClass());
@@ -132,7 +131,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
     assertEquals(16.0, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 0.0);
     assertEquals(false, IndexWriterConfig.DEFAULT_READER_POOLING);
-    assertEquals(8, IndexWriterConfig.DEFAULT_MAX_THREAD_STATES);
     assertEquals(IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR);
   }
 
@@ -262,12 +260,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
       // this is expected
     }
     
-    assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
-    conf.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(5));
-    assertEquals(5, conf.getMaxThreadStates());
-    conf.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(0));
-    assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
-
     // Test MergePolicy
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     conf.setMergePolicy(new LogDocMergePolicy());

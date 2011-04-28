@@ -32,7 +32,15 @@ import org.apache.lucene.document.Document;
  */
 public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPool {
   private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
-
+  
+  /**
+   * Creates a new {@link DocumentsWriterPerThreadPool} with max.
+   * {@link #DEFAULT_MAX_THREAD_STATES} thread states.
+   */
+  public ThreadAffinityDocumentsWriterThreadPool() {
+    this(DEFAULT_MAX_THREAD_STATES);
+  }
+  
   public ThreadAffinityDocumentsWriterThreadPool(int maxNumPerThreads) {
     super(maxNumPerThreads);
     assert getMaxThreadStates() >= 1;
