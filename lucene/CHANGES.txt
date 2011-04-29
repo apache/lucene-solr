@@ -141,6 +141,7 @@ Changes in backwards compatibility policy
 * LUCENE-2315: AttributeSource's methods for accessing attributes are now final,
   else its easy to corrupt the internal states.  (Uwe Schindler)
 
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -168,6 +169,70 @@ Changes in Runtime Behavior
   globally across IndexWriter sessions and persisted into a X.fnx file on
   successful commit. The corresponding file format changes are backwards-
   compatible. (Michael Busch, Simon Willnauer)
+  
+* LUCENE-2956, LUCENE-2573, LUCENE-2324, LUCENE-2555: Changes from 
+  DocumentsWriterPerThread:
+
+  - IndexWriter now uses a DocumentsWriter per thread when indexing documents.
+    Each DocumentsWriterPerThread indexes documents in its own private segment,
+    and the in memory segments are no longer merged on flush.  Instead, each
+    segment is separately flushed to disk and subsequently merged with normal
+    segment merging.
+
+  - DocumentsWriterPerThread (DWPT) is now flushed concurrently based on a
+    FlushPolicy.  When a DWPT is flushed, a fresh DWPT is swapped in so that
+    indexing may continue concurrently with flushing.  The selected
+    DWPT flushes all its RAM resident documents do disk.  Note: Segment flushes
+    don't flush all RAM resident documents but only the documents private to
+    the DWPT selected for flushing. 
+  
+  - Flushing is now controlled by FlushPolicy that is called for every add,
+    update or delete on IndexWriter. By default DWPTs are flushed either on
+    maxBufferedDocs per DWPT or the global active used memory. Once the active
+    memory exceeds ramBufferSizeMB only the largest DWPT is selected for
+    flushing and the memory used by this DWPT is substracted from the active
+    memory and added to a flushing memory pool, which can lead to temporarily
+    higher memory usage due to ongoing indexing.
+    
+  - IndexWriter now can utilize ramBufferSize > 2048 MB. Each DWPT can address
+    up to 2048 MB memory such that the ramBufferSize is now bounded by the max
+    number of DWPT avaliable in the used DocumentsWriterPerThreadPool.
+    IndexWriters net memory consumption can grow far beyond the 2048 MB limit if
+    the applicatoin can use all available DWPTs. To prevent a DWPT from
+    exhausting its address space IndexWriter will forcefully flush a DWPT if its
+    hard memory limit is exceeded. The RAMPerThreadHardLimitMB can be controlled
+    via IndexWriterConfig and defaults to 1945 MB. 
+    Since IndexWriter flushes DWPT concurrently not all memory is released
+    immediately. Applications should still use a ramBufferSize significantly
+    lower than the JVMs avaliable heap memory since under high load multiple
+    flushing DWPT can consume substantial transient memory when IO performance
+    is slow relative to indexing rate.
+    
+  - IndexWriter#commit now doesn't block concurrent indexing while flushing all
+    'currently' RAM resident documents to disk. Yet, flushes that occur while a
+    a full flush is running are queued and will happen after all DWPT involved
+    in the full flush are done flushing. Applications using multiple threads
+    during indexing and trigger a full flush (eg call commmit() or open a new
+    NRT reader) can use significantly more transient memory.
+    
+  - IndexWriter#addDocument and IndexWriter.updateDocument can block indexing
+    threads if the number of active + number of flushing DWPT exceed a
+    safety limit. By default this happens if 2 * max number available thread
+    states (DWPTPool) is exceeded. This safety limit prevents applications from
+    exhausting their available memory if flushing can't keep up with
+    concurrently indexing threads.  
+    
+  - IndexWriter only applies and flushes deletes if the maxBufferedDelTerms
+    limit is reached during indexing. No segment flushes will be triggered
+    due to this setting.
+    
+  - IndexWriter#flush(boolean, boolean) doesn't synchronized on IndexWriter
+    anymore. A dedicated flushLock has been introduced to prevent multiple full-
+    flushes happening concurrently. 
+    
+  - DocumentsWriter doesn't write shared doc stores anymore. 
+  
+  (Mike McCandless, Michael Busch, Simon Willnauer)
 
 API Changes
 
