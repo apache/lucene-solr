@@ -73,10 +73,13 @@ public final class SegmentInfo {
   private volatile long sizeInBytesNoStore = -1;           // total byte size of all but the store files (computed on demand)
   private volatile long sizeInBytesWithStore = -1;         // total byte size of all of our files (computed on demand)
 
+  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
+  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private String docStoreSegment;                 // name used to derive fields/vectors file we share with
                                                   // other segments
+  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
   private int delCount;                           // How many deleted docs in this segment
@@ -467,36 +470,71 @@ public final class SegmentInfo {
     assert delCount <= docCount;
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   public int getDocStoreOffset() {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     return docStoreOffset;
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   public boolean getDocStoreIsCompoundFile() {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     return docStoreIsCompoundFile;
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   public void setDocStoreIsCompoundFile(boolean docStoreIsCompoundFile) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     clearFilesCache();
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   void setDocStore(int offset, String segment, boolean isCompoundFile) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     docStoreOffset = offset;
     docStoreSegment = segment;
     docStoreIsCompoundFile = isCompoundFile;
     clearFilesCache();
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   public String getDocStoreSegment() {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     return docStoreSegment;
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   void setDocStoreOffset(int offset) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     docStoreOffset = offset;
     clearFilesCache();
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in 4.0
+   */
+  @Deprecated
   public void setDocStoreSegment(String docStoreSegment) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     this.docStoreSegment = docStoreSegment;
   }
 
@@ -509,11 +547,13 @@ public final class SegmentInfo {
     output.writeString(name);
     output.writeInt(docCount);
     output.writeLong(delGen);
+
     output.writeInt(docStoreOffset);
     if (docStoreOffset != -1) {
       output.writeString(docStoreSegment);
       output.writeByte((byte) (docStoreIsCompoundFile ? 1:0));
     }
+
 
     if (normGen == null) {
       output.writeInt(NO);
