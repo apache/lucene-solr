@@ -484,7 +484,9 @@ public class TestExternalCodecs extends LuceneTestCase {
     public FieldsProducer fieldsProducer(SegmentReadState readState)
       throws IOException {
     
-      return state.get(readState.segmentInfo.name);
+      synchronized(state) {
+        return state.get(readState.segmentInfo.name);
+      }
     }
 
     @Override
