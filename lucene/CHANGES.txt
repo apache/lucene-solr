@@ -141,6 +141,10 @@ Changes in backwards compatibility policy
 * LUCENE-2315: AttributeSource's methods for accessing attributes are now final,
   else its easy to corrupt the internal states.  (Uwe Schindler)
 
+* LUCENE-2814: The IndexWriter.flush method no longer takes "boolean
+  flushDocStores" argument, as we now always flush doc stores (index
+  files holding stored fields and term vectors) while flushing a
+  segment.  (Mike McCandless)
 
 Changes in Runtime Behavior
 

@@ -635,12 +635,13 @@ public class TestDeletionPolicy extends LuceneTestCase {
         }
         conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, new MockAnalyzer(random))
-            .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
+          .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy).setMergePolicy(newLogMergePolicy());
         mp = conf.getMergePolicy();
         if (mp instanceof LogMergePolicy) {
           ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
         }
         writer = new IndexWriter(dir, conf);
+        writer.setInfoStream(VERBOSE ? System.out : null);
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }
