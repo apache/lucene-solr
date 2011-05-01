@@ -309,7 +309,7 @@ public class QueryUtils {
           // confirm that skipping beyond the last doc, on the
           // previous reader, hits NO_MORE_DOCS
           final IndexReader previousReader = lastReader[0];
-          IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+          IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           Weight w = q.weight(indexSearcher);
           Scorer scorer = w.scorer((AtomicReaderContext)previousReader.getTopReaderContext(), ScorerContext.def());
           if (scorer != null) {

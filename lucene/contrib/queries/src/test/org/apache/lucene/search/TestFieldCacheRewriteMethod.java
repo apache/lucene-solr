@@ -36,8 +36,8 @@ public class TestFieldCacheRewriteMethod extends TestRegexpRandom2 {
     RegexpQuery filter = new RegexpQuery(new Term("field", regexp), RegExp.NONE);
     filter.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     
-    TopDocs fieldCacheDocs = searcher.search(fieldCache, 25);
-    TopDocs filterDocs = searcher.search(filter, 25);
+    TopDocs fieldCacheDocs = searcher1.search(fieldCache, 25);
+    TopDocs filterDocs = searcher2.search(filter, 25);
 
     CheckHits.checkEqual(fieldCache, fieldCacheDocs.scoreDocs, filterDocs.scoreDocs);
   }

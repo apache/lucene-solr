@@ -154,7 +154,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       assertEquals("First doc"+type, 2*distance+startOffset, Long.parseLong(doc.get(field)) );
       doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, Long.parseLong(doc.get(field)) );
-      if (i>0 && searcher.getIndexReader().getSequentialSubReaders().length == 1) {
+      if (i>0 && 
+          (searcher.getIndexReader().getSequentialSubReaders() == null || 
+           searcher.getIndexReader().getSequentialSubReaders().length == 1)) {
         assertEquals("Distinct term number is equal for all query types", lastTerms, terms);
       }
       lastTerms = terms;
@@ -395,7 +397,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
     }
-    if (precisionStep == Integer.MAX_VALUE && searcher.getIndexReader().getSequentialSubReaders().length == 1) {
+    if (precisionStep == Integer.MAX_VALUE && 
+        (searcher.getIndexReader().getSequentialSubReaders() == null || 
+         searcher.getIndexReader().getSequentialSubReaders().length == 1)) {
       assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
     } else if (VERBOSE) {
       System.out.println("Average number of terms during random search on '" + field + "':");

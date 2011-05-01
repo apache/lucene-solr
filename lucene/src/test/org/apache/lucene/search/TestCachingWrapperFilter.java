@@ -171,7 +171,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // but we use .reopen on this reader below and expect to
     // (must) get an NRT reader:
     IndexReader reader = IndexReader.open(writer.w, true);
-    IndexSearcher searcher = newSearcher(reader);
+    // same reason we don't wrap?
+    IndexSearcher searcher = newSearcher(reader, false);
 
     // add a doc, refresh the reader, and check that its there
     Document doc = new Document();
@@ -180,7 +181,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     reader = refreshReader(reader);
     searcher.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
 
     TopDocs docs = searcher.search(new MatchAllDocsQuery(), 1);
     assertEquals("Should find a hit...", 1, docs.totalHits);
@@ -202,7 +203,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     reader = refreshReader(reader);
     searcher.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
@@ -218,7 +219,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     reader = refreshReader(reader);
     searcher.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
         
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
 
@@ -238,7 +239,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     reader = refreshReader(reader);
     assertTrue(reader != oldReader);
     searcher.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
     int missCount = filter.missCount;
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
@@ -249,7 +250,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     reader = refreshReader(reader);
     searcher.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
 
     missCount = filter.missCount;
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
@@ -265,7 +266,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     writer.addDocument(doc);
     reader = refreshReader(reader);
     searcher.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
         
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
@@ -278,7 +279,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     reader = refreshReader(reader);
     searcher.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);

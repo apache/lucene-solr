@@ -54,9 +54,9 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
     assertEquals(3, hits.length);
-    assertEquals("one", ir.document(hits[0].doc).get("key"));
-    assertEquals("two", ir.document(hits[1].doc).get("key"));
-    assertEquals("three four", ir.document(hits[2].doc).get("key"));
+    assertEquals("one", is.doc(hits[0].doc).get("key"));
+    assertEquals("two", is.doc(hits[1].doc).get("key"));
+    assertEquals("three four", is.doc(hits[2].doc).get("key"));
 
     // assert with norms scoring turned on
 
@@ -64,19 +64,19 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     hits = is.search(normsQuery, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
 
-    assertEquals("three four", ir.document(hits[0].doc).get("key"));    
-    assertEquals("two", ir.document(hits[1].doc).get("key"));
-    assertEquals("one", ir.document(hits[2].doc).get("key"));
+    assertEquals("three four", is.doc(hits[0].doc).get("key"));    
+    assertEquals("two", is.doc(hits[1].doc).get("key"));
+    assertEquals("one", is.doc(hits[2].doc).get("key"));
 
     // change norm & retest
-    ir.setNorm(0, "key", is.getSimilarityProvider().get("key").encodeNormValue(400f));
+    is.getIndexReader().setNorm(0, "key", is.getSimilarityProvider().get("key").encodeNormValue(400f));
     normsQuery = new MatchAllDocsQuery("key");
     hits = is.search(normsQuery, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
 
-    assertEquals("one", ir.document(hits[0].doc).get("key"));
-    assertEquals("three four", ir.document(hits[1].doc).get("key"));    
-    assertEquals("two", ir.document(hits[2].doc).get("key"));
+    assertEquals("one", is.doc(hits[0].doc).get("key"));
+    assertEquals("three four", is.doc(hits[1].doc).get("key"));    
+    assertEquals("two", is.doc(hits[2].doc).get("key"));
     
     // some artificial queries to trigger the use of skipTo():
     
@@ -93,7 +93,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(1, hits.length);
 
     // delete a document:
-    ir.deleteDocument(0);
+    is.getIndexReader().deleteDocument(0);
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
     assertEquals(2, hits.length);
     

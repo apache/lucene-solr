@@ -1091,8 +1091,21 @@ public abstract class LuceneTestCase extends Assert {
   /** create a new searcher over the reader.
    * This searcher might randomly use threads. */
   public static IndexSearcher newSearcher(IndexReader r) throws IOException {
+    return newSearcher(r, true);
+  }
+  
+  /** create a new searcher over the reader.
+   * This searcher might randomly use threads.
+   * if <code>maybeWrap</code> is true, this searcher might wrap the reader
+   * with one that returns null for getSequentialSubReaders.
+   */
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
     if (random.nextBoolean()) {
-      return new IndexSearcher(r);
+      if (maybeWrap && random.nextBoolean()) {
+        return new IndexSearcher(new SlowMultiReaderWrapper(r));
+      } else {
+        return new IndexSearcher(r);
+      }
     } else {
       int threads = 0;
       final ExecutorService ex = (random.nextBoolean()) ? null 
