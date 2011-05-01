@@ -1057,7 +1057,6 @@ public abstract class LuceneTestCase extends Assert {
       // LockFactory too, so setting it afterwards.
       Constructor<? extends FSDirectory> ctor = clazz.getConstructor(File.class);
       d = ctor.newInstance(file);
-      return d;
     } catch (Exception e) {
       d = FSDirectory.open(file);
     }
