@@ -71,8 +71,9 @@ public class TestTermScorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(allTerm);
     
     Weight weight = termQuery.weight(indexSearcher);
-    
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader().getSequentialSubReaders()[0], true, true);
+    IndexReader sub = indexSearcher.getIndexReader().getSequentialSubReaders() == null ?
+                indexSearcher.getIndexReader() : indexSearcher.getIndexReader().getSequentialSubReaders()[0];
+    Scorer ts = weight.scorer(sub, true, true);
     // we have 2 documents with the term all in them, one document for all the
     // other values
     final List<TestHit> docs = new ArrayList<TestHit>();
@@ -133,7 +134,9 @@ public class TestTermScorer extends LuceneTestCase {
     
     Weight weight = termQuery.weight(indexSearcher);
     
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader().getSequentialSubReaders()[0], true, true);
+    IndexReader sub = indexSearcher.getIndexReader().getSequentialSubReaders() == null ?
+        indexSearcher.getIndexReader() : indexSearcher.getIndexReader().getSequentialSubReaders()[0];
+    Scorer ts = weight.scorer(sub, true, true);
     assertTrue("next did not return a doc",
         ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertTrue("score is not correct", ts.score() == 1.6931472f);
