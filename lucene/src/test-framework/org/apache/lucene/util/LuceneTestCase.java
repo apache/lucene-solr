@@ -1051,18 +1051,20 @@ public abstract class LuceneTestCase extends Assert {
   private static Directory newFSDirectoryImpl(
       Class<? extends FSDirectory> clazz, File file, LockFactory lockFactory)
       throws IOException {
+    FSDirectory d = null;
     try {
       // Assuming every FSDirectory has a ctor(File), but not all may take a
       // LockFactory too, so setting it afterwards.
       Constructor<? extends FSDirectory> ctor = clazz.getConstructor(File.class);
-      FSDirectory d = ctor.newInstance(file);
-      if (lockFactory != null) {
-        d.setLockFactory(lockFactory);
-      }
+      d = ctor.newInstance(file);
       return d;
     } catch (Exception e) {
-      return FSDirectory.open(file);
+      d = FSDirectory.open(file);
     }
+    if (lockFactory != null) {
+      d.setLockFactory(lockFactory);
+    }
+    return d;
   }
   
   static Directory newDirectoryImpl(Random random, String clazzName) {
