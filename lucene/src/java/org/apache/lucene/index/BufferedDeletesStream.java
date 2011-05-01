@@ -33,8 +33,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
-/* Tracks the stream of {@link BuffereDeletes}.
- * When DocumensWriter flushes, its buffered
+/* Tracks the stream of {@link BufferedDeletes}.
+ * When DocumentsWriterPerThread flushes, its buffered
  * deletes are appended to this stream.  We later
  * apply these deletes (resolve them to the actual
  * docIDs, per segment) when a merge is started
@@ -60,7 +60,7 @@ class BufferedDeletesStream {
 
   // used only by assert
   private Term lastDeleteTerm;
-  
+
   private PrintStream infoStream;
   private final AtomicLong bytesUsed = new AtomicLong();
   private final AtomicInteger numTerms = new AtomicInteger();
@@ -75,26 +75,36 @@ class BufferedDeletesStream {
       infoStream.println("BD " + messageID + " [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
     }
   }
-  
+
   public synchronized void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
   }
 
   // Appends a new packet of buffered deletes to the stream,
   // setting its generation:
-  public synchronized void push(FrozenBufferedDeletes packet) {
+  public synchronized long push(FrozenBufferedDeletes packet) {
+    /*
+     * The insert operation must be atomic. If we let threads increment the gen
+     * and push the packet afterwards we risk that packets are out of order.
+     * With DWPT this is possible if two or more flushes are racing for pushing
+     * updates. If the pushed packets get our of order would loose documents
+     * since deletes are applied to the wrong segments.
+     */
+    packet.setDelGen(nextGen++);
     assert packet.any();
-    assert checkDeleteStats();    
-    assert packet.gen < nextGen;
+    assert checkDeleteStats();
+    assert packet.delGen() < nextGen;
+    assert deletes.isEmpty() || deletes.get(deletes.size()-1).delGen() < packet.delGen() : "Delete packets must be in order";
     deletes.add(packet);
     numTerms.addAndGet(packet.numTermDeletes);
     bytesUsed.addAndGet(packet.bytesUsed);
     if (infoStream != null) {
-      message("push deletes " + packet + " delGen=" + packet.gen + " packetCount=" + deletes.size());
+      message("push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size());
     }
-    assert checkDeleteStats();    
+    assert checkDeleteStats();
+    return packet.delGen();
   }
-    
+
   public synchronized void clear() {
     deletes.clear();
     nextGen = 1;
@@ -132,7 +142,7 @@ class BufferedDeletesStream {
   }
 
   // Sorts SegmentInfos from smallest to biggest bufferedDelGen:
-  private static final Comparator<SegmentInfo> sortByDelGen = new Comparator<SegmentInfo>() {
+  private static final Comparator<SegmentInfo> sortSegInfoByDelGen = new Comparator<SegmentInfo>() {
     // @Override -- not until Java 1.6
     public int compare(SegmentInfo si1, SegmentInfo si2) {
       final long cmp = si1.getBufferedDeletesGen() - si2.getBufferedDeletesGen();
@@ -147,10 +157,10 @@ class BufferedDeletesStream {
 
     @Override
     public boolean equals(Object other) {
-      return sortByDelGen == other;
+      return sortSegInfoByDelGen == other;
     }
   };
-
+  
   /** Resolves the buffered deleted Term/Query/docIDs, into
    *  actual deleted docIDs in the deletedDocs BitVector for
    *  each SegmentReader. */
@@ -174,7 +184,7 @@ class BufferedDeletesStream {
 
     SegmentInfos infos2 = new SegmentInfos();
     infos2.addAll(infos);
-    Collections.sort(infos2, sortByDelGen);
+    Collections.sort(infos2, sortSegInfoByDelGen);
 
     BufferedDeletes coalescedDeletes = null;
     boolean anyNewDeletes = false;
@@ -191,19 +201,30 @@ class BufferedDeletesStream {
       final SegmentInfo info = infos2.get(infosIDX);
       final long segGen = info.getBufferedDeletesGen();
 
-      if (packet != null && segGen < packet.gen) {
+      if (packet != null && segGen < packet.delGen()) {
         //System.out.println("  coalesce");
         if (coalescedDeletes == null) {
           coalescedDeletes = new BufferedDeletes(true);
         }
-        coalescedDeletes.update(packet);
+        if (!packet.isSegmentPrivate) {
+          /*
+           * Only coalesce if we are NOT on a segment private del packet: the segment private del packet
+           * must only applied to segments with the same delGen.  Yet, if a segment is already deleted
+           * from the SI since it had no more documents remaining after some del packets younger than
+           * its segPrivate packet (higher delGen) have been applied, the segPrivate packet has not been
+           * removed.
+           */
+          coalescedDeletes.update(packet);
+        }
+
         delIDX--;
-      } else if (packet != null && segGen == packet.gen) {
+      } else if (packet != null && segGen == packet.delGen()) {
+        assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet";
         //System.out.println("  eq");
 
         // Lock order: IW -> BD -> RP
         assert readerPool.infoIsLive(info);
-        SegmentReader reader = readerPool.get(info, false);
+        final SegmentReader reader = readerPool.get(info, false);
         int delCount = 0;
         final boolean segAllDeletes;
         try {
@@ -213,7 +234,7 @@ class BufferedDeletesStream {
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), reader);
           }
           //System.out.println("    del exact");
-          // Don't delete by Term here; DocumentsWriter
+          // Don't delete by Term here; DocumentsWriterPerThread
           // already did that on flush:
           delCount += applyQueryDeletes(packet.queriesIterable(), reader);
           segAllDeletes = reader.numDocs() == 0;
@@ -236,7 +257,12 @@ class BufferedDeletesStream {
         if (coalescedDeletes == null) {
           coalescedDeletes = new BufferedDeletes(true);
         }
-        coalescedDeletes.update(packet);
+        
+        /*
+         * Since we are on a segment private del packet we must not
+         * update the coalescedDeletes here! We can simply advance to the 
+         * next packet and seginfo.
+         */
         delIDX--;
         infosIDX--;
         info.setBufferedDeletesGen(nextGen);
@@ -281,11 +307,11 @@ class BufferedDeletesStream {
       message("applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
-    
+
     return new ApplyDeletesResult(anyNewDeletes, nextGen++, allDeleted);
   }
 
-  public synchronized long getNextGen() {
+  synchronized long getNextGen() {
     return nextGen++;
   }
 
@@ -303,10 +329,9 @@ class BufferedDeletesStream {
     if (infoStream != null) {
       message("prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + deletes.size());
     }
-
     final int limit = deletes.size();
     for(int delIDX=0;delIDX<limit;delIDX++) {
-      if (deletes.get(delIDX).gen >= minGen) {
+      if (deletes.get(delIDX).delGen() >= minGen) {
         prune(delIDX);
         assert checkDeleteStats();
         return;
@@ -345,10 +370,10 @@ class BufferedDeletesStream {
     }
 
     TermsEnum termsEnum = null;
-        
+
     String currentField = null;
     DocsEnum docs = null;
-        
+
     assert checkDeleteTerm(null);
 
     for (Term term : termsIter) {
@@ -372,10 +397,10 @@ class BufferedDeletesStream {
       assert checkDeleteTerm(term);
 
       // System.out.println("  term=" + term);
-          
+
       if (termsEnum.seek(term.bytes(), false) == TermsEnum.SeekStatus.FOUND) {
         DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
-            
+
         if (docsEnum != null) {
           while (true) {
             final int docID = docsEnum.nextDoc();
@@ -401,7 +426,7 @@ class BufferedDeletesStream {
     public final Query query;
     public final int limit;
     public QueryAndLimit(Query query, int limit) {
-      this.query = query;       
+      this.query = query;
       this.limit = limit;
     }
   }
@@ -449,7 +474,7 @@ class BufferedDeletesStream {
     lastDeleteTerm = term;
     return true;
   }
-  
+
   // only for assert
   private boolean checkDeleteStats() {
     int numTerms2 = 0;

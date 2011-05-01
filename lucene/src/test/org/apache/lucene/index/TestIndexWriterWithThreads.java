@@ -143,7 +143,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       dir.close();
     }
   }
-  
+
 
   // LUCENE-1130: make sure we can close() even while
   // threads are trying to add documents.  Strictly
@@ -206,7 +206,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       }
       assertTrue(count > 0);
       reader.close();
-      
+
       dir.close();
     }
   }
@@ -314,7 +314,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         boolean sawClose = false;
         for (int i = 0; i < trace.length; i++) {
           if ("abort".equals(trace[i].getMethodName()) ||
-              "flushDocument".equals(trace[i].getMethodName())) {
+              "finishDocument".equals(trace[i].getMethodName())) {
             sawAbortOrFlushDoc = true;
           }
           if ("close".equals(trace[i].getMethodName())) {

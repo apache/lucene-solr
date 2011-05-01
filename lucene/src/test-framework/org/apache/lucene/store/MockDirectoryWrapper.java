@@ -34,6 +34,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ThrottledIndexOutput;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -69,6 +70,7 @@ public class MockDirectoryWrapper extends Directory {
   private Set<String> createdFiles;
   Set<String> openFilesForWrite = new HashSet<String>();
   volatile boolean crashed;
+  private ThrottledIndexOutput throttledOutput;
 
   // use this for tracking files for crash.
   // additionally: provides debugging information in case you leave one open
@@ -113,6 +115,10 @@ public class MockDirectoryWrapper extends Directory {
    *  file is opened by createOutput, ever. */
   public void setPreventDoubleWrite(boolean value) {
     preventDoubleWrite = value;
+  }
+  
+  public void setThrottledIndexOutput(ThrottledIndexOutput throttledOutput) {
+    this.throttledOutput = throttledOutput;
   }
 
   @Override
@@ -348,7 +354,7 @@ public class MockDirectoryWrapper extends Directory {
     IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
     openFileHandles.put(io, new RuntimeException("unclosed IndexOutput"));
     openFilesForWrite.add(name);
-    return io;
+    return throttledOutput == null ? io : throttledOutput.newFromDelegate(io);
   }
 
   @Override
@@ -578,4 +584,5 @@ public class MockDirectoryWrapper extends Directory {
     maybeYield();
     delegate.copy(to, src, dest);
   }
+  
 }

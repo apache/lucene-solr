@@ -52,9 +52,15 @@ class FrozenBufferedDeletes {
   final int[] queryLimits;
   final int bytesUsed;
   final int numTermDeletes;
-  final long gen;
+  private long gen = -1; // assigned by BufferedDeletesStream once pushed
+  final boolean isSegmentPrivate;  // set to true iff this frozen packet represents 
+                                   // a segment private deletes. in that case is should
+                                   // only have Queries 
 
-  public FrozenBufferedDeletes(BufferedDeletes deletes, long gen) {
+
+  public FrozenBufferedDeletes(BufferedDeletes deletes, boolean isSegmentPrivate) {
+    this.isSegmentPrivate = isSegmentPrivate;
+    assert !isSegmentPrivate || deletes.terms.size() == 0 : "segment private package should only have del queries"; 
     terms = deletes.terms.keySet().toArray(new Term[deletes.terms.size()]);
     queries = new Query[deletes.queries.size()];
     queryLimits = new int[deletes.queries.size()];
@@ -66,7 +72,16 @@ class FrozenBufferedDeletes {
     }
     bytesUsed = terms.length * BYTES_PER_DEL_TERM + queries.length * BYTES_PER_DEL_QUERY;
     numTermDeletes = deletes.numTermDeletes.get();
+  }
+  
+  public void setDelGen(long gen) {
+    assert this.gen == -1;
     this.gen = gen;
+  }
+  
+  public long delGen() {
+    assert gen != -1;
+    return gen;
   }
 
   public Iterable<Term> termsIterable() {

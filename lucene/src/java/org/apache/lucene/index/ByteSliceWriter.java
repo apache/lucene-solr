@@ -81,6 +81,6 @@ final class ByteSliceWriter extends DataOutput {
   }
 
   public int getAddress() {
-    return upto + (offset0 & DocumentsWriter.BYTE_BLOCK_NOT_MASK);
+    return upto + (offset0 & DocumentsWriterPerThread.BYTE_BLOCK_NOT_MASK);
   }
 }

@@ -27,9 +27,8 @@ import org.apache.lucene.util.ArrayUtil;
 
 final class NormsWriterPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsWriterPerField> {
 
-  final NormsWriterPerThread perThread;
   final FieldInfo fieldInfo;
-  final DocumentsWriter.DocState docState;
+  final DocumentsWriterPerThread.DocState docState;
   final Similarity similarity;
   
   // Holds all docID/norm pairs we've seen
@@ -46,10 +45,9 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
     upto = 0;
   }
 
-  public NormsWriterPerField(final DocInverterPerField docInverterPerField, final NormsWriterPerThread perThread, final FieldInfo fieldInfo) {
-    this.perThread = perThread;
+  public NormsWriterPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
-    docState = perThread.docState;
+    docState = docInverterPerField.docState;
     fieldState = docInverterPerField.fieldState;
     similarity = docState.similarityProvider.get(fieldInfo.name);
   }

@@ -18,17 +18,39 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import org.apache.lucene.document.Fieldable;
 
-abstract class DocConsumerPerThread {
+final class DocFieldConsumersPerField extends DocFieldConsumerPerField {
 
-  /** Process the document. If there is
-   *  something for this document to be done in docID order,
-   *  you should encapsulate that as a
-   *  DocumentsWriter.DocWriter and return it.
-   *  DocumentsWriter then calls finish() on this object
-   *  when it's its turn. */
-  abstract DocumentsWriter.DocWriter processDocument(FieldInfos fieldInfos) throws IOException;
+  final DocFieldConsumerPerField one;
+  final DocFieldConsumerPerField two;
+  final DocFieldConsumers parent;
+  final FieldInfo fieldInfo;
 
-  abstract void doAfterFlush();
-  abstract void abort();
+  public DocFieldConsumersPerField(DocFieldConsumers parent, FieldInfo fi, DocFieldConsumerPerField one, DocFieldConsumerPerField two) {
+    this.parent = parent;
+    this.one = one;
+    this.two = two;
+    this.fieldInfo = fi;
+  }
+
+  @Override
+  public void processFields(Fieldable[] fields, int count) throws IOException {
+    one.processFields(fields, count);
+    two.processFields(fields, count);
+  }
+
+  @Override
+  public void abort() {
+    try {
+      one.abort();
+    } finally {
+      two.abort();
+    }
+  }
+
+  @Override
+  FieldInfo getFieldInfo() {
+    return fieldInfo;
+  }
 }

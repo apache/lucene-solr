@@ -28,7 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 
 /**
- * Test demonstrating EOF bug on the last field of the last doc 
+ * Test demonstrating EOF bug on the last field of the last doc
  * if other docs have allready been accessed.
  */
 public class TestLazyBug extends LuceneTestCase {
@@ -47,9 +47,9 @@ public class TestLazyBug extends LuceneTestCase {
   };
 
   private static Set<String> dataset = asSet(data);
-  
+
   private static String MAGIC_FIELD = "f"+(NUM_FIELDS/3);
-  
+
   private static FieldSelector SELECTOR = new FieldSelector() {
       public FieldSelectorResult accept(String f) {
         if (f.equals(MAGIC_FIELD)) {
@@ -58,22 +58,21 @@ public class TestLazyBug extends LuceneTestCase {
         return FieldSelectorResult.LAZY_LOAD;
       }
     };
-  
-  private Directory makeIndex() throws Exception { 
+
+  private Directory makeIndex() throws Exception {
     Directory dir = newDirectory();
     try {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
                                                                      TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
-
       for (int d = 1; d <= NUM_DOCS; d++) {
         Document doc = new Document();
         for (int f = 1; f <= NUM_FIELDS; f++ ) {
-          doc.add(newField("f"+f, 
-                            data[f % data.length] 
-                            + '#' + data[random.nextInt(data.length)], 
-                            Field.Store.YES, 
+          doc.add(newField("f"+f,
+                            data[f % data.length]
+                            + '#' + data[random.nextInt(data.length)],
+                            Field.Store.YES,
                             Field.Index.ANALYZED));
         }
         writer.addDocument(doc);
@@ -84,14 +83,14 @@ public class TestLazyBug extends LuceneTestCase {
     }
     return dir;
   }
-  
+
   public void doTest(int[] docs) throws Exception {
     Directory dir = makeIndex();
     IndexReader reader = IndexReader.open(dir, true);
     for (int i = 0; i < docs.length; i++) {
       Document d = reader.document(docs[i], SELECTOR);
       d.get(MAGIC_FIELD);
-      
+
       List<Fieldable> fields = d.getFields();
       for (Iterator<Fieldable> fi = fields.iterator(); fi.hasNext(); ) {
         Fieldable f=null;
@@ -101,7 +100,7 @@ public class TestLazyBug extends LuceneTestCase {
           String fval = f.stringValue();
           assertNotNull(docs[i]+" FIELD: "+fname, fval);
           String[] vals = fval.split("#");
-          if (!dataset.contains(vals[0]) || !dataset.contains(vals[1])) {        
+          if (!dataset.contains(vals[0]) || !dataset.contains(vals[1])) {
             fail("FIELD:"+fname+",VAL:"+fval);
           }
         } catch (Exception e) {
@@ -116,7 +115,7 @@ public class TestLazyBug extends LuceneTestCase {
   public void testLazyWorks() throws Exception {
     doTest(new int[] { 399 });
   }
-  
+
   public void testLazyAlsoWorks() throws Exception {
     doTest(new int[] { 399, 150 });
   }

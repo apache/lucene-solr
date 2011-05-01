@@ -17,12 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Collection;
-import java.util.Map;
 import java.io.IOException;
+import java.util.Map;
 
 abstract class InvertedDocEndConsumer {
-  abstract InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread);
-  abstract void flush(Map<InvertedDocEndConsumerPerThread,Collection<InvertedDocEndConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException;
+  abstract void flush(Map<FieldInfo, InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
   abstract void abort();
+  abstract InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField, FieldInfo fieldInfo);
+  abstract void startDocument() throws IOException;
+  abstract void finishDocument() throws IOException;
 }

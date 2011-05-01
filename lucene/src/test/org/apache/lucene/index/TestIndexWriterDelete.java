@@ -33,7 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestIndexWriterDelete extends LuceneTestCase {
-  
+
   // test the simple case
   public void testSimpleCase() throws IOException {
     String[] keywords = { "1", "2" };
@@ -124,7 +124,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-
+  
   // test when delete terms only apply to ram segments
   public void testRAMDeletes() throws IOException {
     for(int t=0;t<2;t++) {
@@ -220,7 +220,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir, true);
     assertEquals(7, reader.numDocs());
     reader.close();
-      
+
     id = 0;
     modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
     modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
@@ -297,33 +297,33 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
-    
+
     int id = 0;
     int value = 100;
-    
+
     for (int i = 0; i < 7; i++) {
       addDoc(modifier, ++id, value);
     }
     modifier.commit();
-    
+
     addDoc(modifier, ++id, value);
 
     IndexReader reader = IndexReader.open(dir, true);
     assertEquals(7, reader.numDocs());
     reader.close();
-    
+
     // Delete all
-    modifier.deleteAll(); 
+    modifier.deleteAll();
 
     // Roll it back
     modifier.rollback();
     modifier.close();
-    
+
     // Validate that the docs are still there
     reader = IndexReader.open(dir, true);
     assertEquals(7, reader.numDocs());
     reader.close();
-    
+
     dir.close();
   }
 
@@ -334,10 +334,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
-    
+
     int id = 0;
     int value = 100;
-    
+
     for (int i = 0; i < 7; i++) {
       addDoc(modifier, ++id, value);
     }
@@ -349,24 +349,24 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     addDoc(modifier, ++id, value);
     addDoc(modifier, ++id, value);
-    
+
     // Delete all
-    modifier.deleteAll(); 
+    modifier.deleteAll();
 
     reader = modifier.getReader();
     assertEquals(0, reader.numDocs());
     reader.close();
-    
+
 
     // Roll it back
     modifier.rollback();
     modifier.close();
-    
+
     // Validate that the docs are still there
     reader = IndexReader.open(dir, true);
     assertEquals(7, reader.numDocs());
     reader.close();
-    
+
     dir.close();
   }
 
@@ -538,10 +538,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
         // prevent throwing a random exception here!!
         final double randomIOExceptionRate = dir.getRandomIOExceptionRate();
+        final long maxSizeInBytes = dir.getMaxSizeInBytes();
         dir.setRandomIOExceptionRate(0.0);
+        dir.setMaxSizeInBytes(0);
         if (!success) {
           // Must force the close else the writer can have
           // open files which cause exc in MockRAMDir.close
+         
           modifier.rollback();
         }
 
@@ -552,6 +555,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
         }
         dir.setRandomIOExceptionRate(randomIOExceptionRate);
+        dir.setMaxSizeInBytes(maxSizeInBytes);
 
         // Finally, verify index is not corrupt, and, if
         // we succeeded, we see all docs changed, and if
@@ -622,7 +626,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   // This test tests that buffered deletes are cleared when
   // an Exception is hit during flush.
   public void testErrorAfterApplyDeletes() throws IOException {
-    
+
     MockDirectoryWrapper.Failure failure = new MockDirectoryWrapper.Failure() {
         boolean sawMaybe = false;
         boolean failed = false;
@@ -786,7 +790,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   // a segment is written are cleaned up if there's an i/o error
 
   public void testErrorInDocsWriterAdd() throws IOException {
-    
+
     MockDirectoryWrapper.Failure failure = new MockDirectoryWrapper.Failure() {
         boolean failed = false;
         @Override

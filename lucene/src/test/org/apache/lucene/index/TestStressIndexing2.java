@@ -201,7 +201,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Map<String,Document> docs = new HashMap<String,Document>();
     IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE)
-             .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
+             .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(maxThreadStates))
              .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()));
     w.setInfoStream(VERBOSE ? System.out : null);
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();

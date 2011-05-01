@@ -2,13 +2,13 @@ package org.apache.lucene.index;
 
 /**
  * Copyright 2004 The Apache Software Foundation
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -22,15 +22,14 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 final class FieldsWriter {
   static final byte FIELD_IS_TOKENIZED = 0x1;
   static final byte FIELD_IS_BINARY = 0x2;
-  
+
   // Lucene 3.0: Removal of compressed fields
   static final int FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS = 2;
 
@@ -38,7 +37,7 @@ final class FieldsWriter {
   // than the current one, and always change this if you
   // switch to a new format!
   static final int FORMAT_CURRENT = FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
-  
+
   // when removing support for old versions, leave the last supported version here
   static final int FORMAT_MINIMUM = FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
 
@@ -83,10 +82,9 @@ final class FieldsWriter {
   // and adds a new entry for this document into the index
   // stream.  This assumes the buffer was already written
   // in the correct fields format.
-  void flushDocument(int numStoredFields, RAMOutputStream buffer) throws IOException {
+  void startDocument(int numStoredFields) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
     fieldsStream.writeVInt(numStoredFields);
-    buffer.writeTo(fieldsStream);
   }
 
   void skipDocument() throws IOException {
@@ -121,8 +119,8 @@ final class FieldsWriter {
     }
   }
 
-  final void writeField(FieldInfo fi, Fieldable field) throws IOException {
-    fieldsStream.writeVInt(fi.number);
+  final void writeField(int fieldNumber, Fieldable field) throws IOException {
+    fieldsStream.writeVInt(fieldNumber);
     byte bits = 0;
     if (field.isTokenized())
       bits |= FieldsWriter.FIELD_IS_TOKENIZED;
@@ -175,10 +173,9 @@ final class FieldsWriter {
     fieldsStream.writeVInt(storedCount);
 
 
-
     for (Fieldable field : fields) {
       if (field.isStored())
-        writeField(fieldInfos.fieldInfo(field.name()), field);
+        writeField(fieldInfos.fieldNumber(field.name()), field);
     }
   }
 }

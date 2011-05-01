@@ -50,7 +50,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         boolean isClose = false;
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("doFlush".equals(trace[i].getMethodName())) {
+          if ("flush".equals(trace[i].getMethodName())) {
             isDoFlush = true;
           }
           if ("close".equals(trace[i].getMethodName())) {
