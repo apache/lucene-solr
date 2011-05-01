@@ -151,7 +151,10 @@ public class TestTermScorer extends LuceneTestCase {
     
     Weight weight = termQuery.weight(indexSearcher);
     
-    Scorer ts = weight.scorer(indexSearcher.getIndexReader().getSequentialSubReaders()[0], true, true);
+    IndexReader sub = indexSearcher.getIndexReader().getSequentialSubReaders() == null ? 
+        indexSearcher.getIndexReader() : indexSearcher.getIndexReader().getSequentialSubReaders()[0];
+        
+    Scorer ts = weight.scorer(sub, true, true);
     assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     // The next doc should be doc 5
     assertTrue("doc should be number 5", ts.docID() == 5);
