@@ -68,15 +68,8 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public Object clone() {
-      PulsingTermState clone;
-      clone = (PulsingTermState) super.clone();
-      if (postingsSize != -1) {
-        clone.postings = new byte[postingsSize];
-        System.arraycopy(postings, 0, clone.postings, 0, postingsSize);
-      } else {
-        assert wrappedTermState != null;
-        clone.wrappedTermState = (BlockTermState) wrappedTermState.clone();
-      }
+      PulsingTermState clone = new PulsingTermState();
+      clone.copyFrom(this);
       return clone;
     }
 
@@ -90,8 +83,10 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           postings = new byte[ArrayUtil.oversize(other.postingsSize, 1)];
         }
         System.arraycopy(other.postings, 0, postings, 0, other.postingsSize);
-      } else {
+      } else if (wrappedTermState != null) {
         wrappedTermState.copyFrom(other.wrappedTermState);
+      } else {
+        wrappedTermState = (BlockTermState) other.wrappedTermState.clone();
       }
 
       // NOTE: we do not copy the

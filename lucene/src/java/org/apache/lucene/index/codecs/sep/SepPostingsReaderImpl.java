@@ -151,14 +151,8 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public Object clone() {
-      SepTermState other = (SepTermState) super.clone();
-      other.docIndex = (IntIndexInput.Index) docIndex.clone();
-      if (freqIndex != null) {
-        other.freqIndex = (IntIndexInput.Index) freqIndex.clone();
-      }
-      if (posIndex != null) {
-        other.posIndex = (IntIndexInput.Index) posIndex.clone();
-      }
+      SepTermState other = new SepTermState();
+      other.copyFrom(this);
       return other;
     }
 
@@ -166,12 +160,28 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     public void copyFrom(TermState _other) {
       super.copyFrom(_other);
       SepTermState other = (SepTermState) _other;
-      docIndex.set(other.docIndex);
-      if (freqIndex != null && other.freqIndex != null) {
-        freqIndex.set(other.freqIndex);
+      if (docIndex == null) {
+        docIndex = (IntIndexInput.Index) other.docIndex.clone();
+      } else {
+        docIndex.set(other.docIndex);
       }
-      if (posIndex != null && other.posIndex != null) {
-        posIndex.set(other.posIndex);
+      if (other.freqIndex != null) {
+        if (freqIndex == null) {
+          freqIndex = (IntIndexInput.Index) other.freqIndex.clone();
+        } else {
+          freqIndex.set(other.freqIndex);
+        }
+      } else {
+        freqIndex = null;
+      }
+      if (other.posIndex != null) {
+        if (posIndex == null) {
+          posIndex = (IntIndexInput.Index) other.posIndex.clone();
+        } else {
+          posIndex.set(other.posIndex);
+        }
+      } else {
+        posIndex = null;
       }
       payloadFP = other.payloadFP;
       skipFP = other.skipFP;
