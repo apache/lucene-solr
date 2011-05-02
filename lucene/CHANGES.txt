@@ -1477,6 +1477,10 @@ Bug fixes
   that warming is free to do whatever it needs to.  (Earwin Burrfoot
   via Mike McCandless)
 
+* LUCENE-3029: Fix corner case when MultiPhraseQuery is used with zero
+  position-increment tokens that would sometimes assign different
+  scores to identical docs.  (Mike McCandless)
+
 * LUCENE-2486: Fixed intermittent FileNotFoundException on doc store
   files when a mergedSegmentWarmer is set on IndexWriter.  (Mike
   McCandless)

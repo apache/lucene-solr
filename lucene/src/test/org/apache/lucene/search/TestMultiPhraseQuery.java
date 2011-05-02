@@ -25,14 +25,22 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.io.Reader;
 
 /**
  * This class tests the MultiPhraseQuery class.
@@ -332,5 +340,98 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     searcher.close();
     reader.close();
     indexStore.close();
+  }
+
+  private static class TokenAndPos {
+    public final String token;
+    public final int pos;
+    public TokenAndPos(String token, int pos) {
+      this.token = token;
+      this.pos = pos;
+    }
+  }
+
+  private static class CannedAnalyzer extends Analyzer {
+    private final TokenAndPos[] tokens;
+    
+    public CannedAnalyzer(TokenAndPos[] tokens) {
+      this.tokens = tokens;
+    }
+
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new CannedTokenizer(tokens);
+    }
+  }
+
+  private static class CannedTokenizer extends Tokenizer {
+    private final TokenAndPos[] tokens;
+    private int upto = 0;
+    private int lastPos = 0;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+
+    public CannedTokenizer(TokenAndPos[] tokens) {
+      this.tokens = tokens;
+    }
+
+    @Override
+    public final boolean incrementToken() throws IOException {
+      clearAttributes();      
+      if (upto < tokens.length) {
+        final TokenAndPos token = tokens[upto++];
+        termAtt.setEmpty();
+        termAtt.append(token.token);
+        posIncrAtt.setPositionIncrement(token.pos - lastPos);
+        lastPos = token.pos;
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  public void testZeroPosIncr() throws IOException {
+    Directory dir = new RAMDirectory();
+    final TokenAndPos[] tokens = new TokenAndPos[3];
+    tokens[0] = new TokenAndPos("a", 0);
+    tokens[1] = new TokenAndPos("b", 0);
+    tokens[2] = new TokenAndPos("c", 0);
+
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new CannedAnalyzer(tokens));
+    Document doc = new Document();
+    doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = new IndexSearcher(r);
+    MultiPhraseQuery mpq = new MultiPhraseQuery();
+    //mpq.setSlop(1);
+
+    // NOTE: not great that if we do the else clause here we
+    // get different scores!  MultiPhraseQuery counts that
+    // phrase as occurring twice per doc (it should be 1, I
+    // think?).  This is because MultipleTermPositions is able to
+    // return the same position more than once (0, in this
+    // case):
+    if (true) {
+      mpq.add(new Term[] {new Term("field", "b"), new Term("field", "c")}, 0);
+      mpq.add(new Term[] {new Term("field", "a")}, 0);
+    } else {
+      mpq.add(new Term[] {new Term("field", "a")}, 0);
+      mpq.add(new Term[] {new Term("field", "b"), new Term("field", "c")}, 0);
+    }
+    TopDocs hits = s.search(mpq, 2);
+    assert hits.totalHits == 2;
+    assertEquals(hits.scoreDocs[0].score, hits.scoreDocs[1].score, 1e-5);
+    /*
+    for(int hit=0;hit<hits.totalHits;hit++) {
+      ScoreDoc sd = hits.scoreDocs[hit];
+      System.out.println("  hit doc=" + sd.doc + " score=" + sd.score);
+    }
+    */
+    r.close();
+    dir.close();
   }
 }
