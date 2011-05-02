@@ -9,6 +9,12 @@ Changes in backwards compatibility policy
   a method getHeapArray() was added to retrieve the internal heap array as a
   non-generic Object[].  (Uwe Schindler, Yonik Seeley)
 
+API Changes
+
+* LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
+  (though @lucene.experimental), allowing for custom MergeScheduler 
+  implementations. (Shai Erera)
+
 Optimizations
 
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
