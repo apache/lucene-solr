@@ -293,7 +293,6 @@ final class PerFieldCodecWrapper extends Codec {
       return perDocProducer.docValues(field);
     }
     
-    @Override
     public void close() throws IOException {
       final Iterator<PerDocValues> it = codecs.values().iterator();
       IOException err = null;
@@ -325,7 +324,6 @@ final class PerFieldCodecWrapper extends Codec {
       }
     }
 
-    @Override
     public void close() throws IOException {
       Iterator<PerDocConsumer> it = consumers.iterator();
       IOException err = null;

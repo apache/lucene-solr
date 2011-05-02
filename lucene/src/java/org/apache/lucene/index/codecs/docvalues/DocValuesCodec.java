@@ -58,8 +58,6 @@ public class DocValuesCodec extends Codec {
   public PerDocConsumer docsConsumer(final PerDocWriteState state)
       throws IOException {
     return new PerDocConsumer() {
-
-      @Override
       public void close() throws IOException {
       }
 

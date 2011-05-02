@@ -130,7 +130,6 @@ public class DocValuesProducerBase extends PerDocValues {
     }
   }
 
-  @Override
   public void close() throws IOException {
     Collection<DocValues> values = docValues.values();
     IOException ex = null;

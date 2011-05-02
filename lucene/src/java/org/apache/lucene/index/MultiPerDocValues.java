@@ -133,7 +133,6 @@ public class MultiPerDocValues extends PerDocValues {
     return result;
   }
 
-  @Override
   public void close() throws IOException {
     PerDocValues[] perDocValues = this.subs;
     for (PerDocValues values : perDocValues) {
