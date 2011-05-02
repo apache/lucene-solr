@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.ResourceLoader;
 
-import visad.UnimplementedException;
 
 public class TestSynonymMap extends LuceneTestCase {
 
