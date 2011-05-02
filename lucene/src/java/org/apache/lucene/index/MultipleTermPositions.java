@@ -119,8 +119,10 @@ public class MultipleTermPositions implements TermPositions {
     do {
       tp = _termPositionsQueue.peek();
 
-      for (int i = 0; i < tp.freq(); i++)
+      for (int i = 0; i < tp.freq(); i++) {
+        // NOTE: this can result in dup positions being added!
         _posList.add(tp.nextPosition());
+      }
 
       if (tp.next())
         _termPositionsQueue.updateTop();
@@ -137,6 +139,8 @@ public class MultipleTermPositions implements TermPositions {
   }
 
   public final int nextPosition() {
+    // NOTE: this may return the same position more than
+    // once (see TestMultiPhraseQuery.testZeroPosIncr)
     return _posList.next();
   }
 

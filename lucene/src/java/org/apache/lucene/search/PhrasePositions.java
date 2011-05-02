@@ -28,13 +28,15 @@ final class PhrasePositions {
   int position;					  // position in doc
   int count;					  // remaining pos in this doc
   int offset;					  // position in phrase
+  final int ord;                                  // unique across all PhrasePositions instances
   TermPositions tp;				  // stream of positions
   PhrasePositions next;				  // used to make lists
   boolean repeats;       // there's other pp for same term (e.g. query="1st word 2nd word"~1) 
 
-  PhrasePositions(TermPositions t, int o) {
+  PhrasePositions(TermPositions t, int o, int ord) {
     tp = t;
     offset = o;
+    this.ord = ord;
   }
 
   final boolean next() throws IOException {	  // increments to next doc
