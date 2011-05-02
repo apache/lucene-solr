@@ -83,8 +83,7 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
   public void testThreadSafe() throws Exception {
     int iters = 20 * RANDOM_MULTIPLIER;
     for (int i = 0; i < iters; i++) {
-      Locale locale = randomLocale(random);
-      Collator collator = Collator.getInstance(locale);
+      Collator collator = Collator.getInstance(Locale.GERMAN);
       collator.setStrength(Collator.PRIMARY);
       assertThreadSafe(new CollationKeyAnalyzer(collator));
     }
