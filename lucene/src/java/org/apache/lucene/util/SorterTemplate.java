@@ -30,6 +30,7 @@ package org.apache.lucene.util;
 public abstract class SorterTemplate {
 
   private static final int MERGESORT_THRESHOLD = 12;
+  private static final int MERGE_TO_QUICKSORT_THRESHOLD = 40;
   private static final int QUICKSORT_THRESHOLD = 7;
 
   /** Implement this method, that swaps slots {@code i} and {@code j} in your data */
@@ -63,6 +64,10 @@ public abstract class SorterTemplate {
   /** Sorts via in-place, but unstable, QuickSort algorithm.
    * For small collections falls back to {@link #insertionSort(int,int)}. */
   public final void quickSort(int lo, int hi) {
+    quickSort(lo, hi, MERGE_TO_QUICKSORT_THRESHOLD);
+  }
+  
+  private void quickSort(int lo, int hi, int maxDepth) {
     final int diff = hi - lo;
     if (diff <= QUICKSORT_THRESHOLD) {
       insertionSort(lo, hi);
@@ -101,8 +106,16 @@ public abstract class SorterTemplate {
       }
     }
 
-    quickSort(lo, left);
-    quickSort(left + 1, hi);
+    // fall back to merge sort when recursion depth gets too big
+    if (maxDepth == 0) {
+      // for testing: new Exception("Hit recursion depth limit").printStackTrace();
+      mergeSort(lo, left);
+      mergeSort(left + 1, hi);
+    } else {
+      --maxDepth;
+      quickSort(lo, left, maxDepth);
+      quickSort(left + 1, hi, maxDepth);
+    }
   }
   
   /** Sorts via stable in-place MergeSort algorithm

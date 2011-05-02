@@ -491,6 +491,11 @@ Bug fixes
   very special use cases of the TokenStream-API, most users would not
   have recognized it.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-3054: PhraseQuery can in some cases stack overflow in
+  SorterTemplate.quickSort(). This fix also adds an optimization to
+  PhraseQuery as term with lower doc freq will also have less positions.
+  (Uwe Schindler, Robert Muir, Otis Gospodnetic)
+
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy

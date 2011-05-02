@@ -124,15 +124,47 @@ public class PhraseQuery extends Query {
     final DocsAndPositionsEnum postings;
     final int docFreq;
     final int position;
+    final Term term;
 
-    public PostingsAndFreq(DocsAndPositionsEnum postings, int docFreq, int position) {
+    public PostingsAndFreq(DocsAndPositionsEnum postings, int docFreq, int position, Term term) {
       this.postings = postings;
       this.docFreq = docFreq;
       this.position = position;
+      this.term = term;
     }
 
     public int compareTo(PostingsAndFreq other) {
+      if (docFreq == other.docFreq) {
+        if (position == other.position) {
+          return term.compareTo(other.term);
+        }
+        return position - other.position;
+      }
       return docFreq - other.docFreq;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + docFreq;
+      result = prime * result + position;
+      result = prime * result + ((term == null) ? 0 : term.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      PostingsAndFreq other = (PostingsAndFreq) obj;
+      if (docFreq != other.docFreq) return false;
+      if (position != other.position) return false;
+      if (term == null) {
+        if (other.term != null) return false;
+      } else if (!term.equals(other.term)) return false;
+      return true;
     }
   }
 
@@ -197,7 +229,7 @@ public class PhraseQuery extends Query {
             return null;
           }
         }
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, reader.docFreq(t.field(), t.bytes()), positions.get(i).intValue());
+        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, reader.docFreq(t.field(), t.bytes()), positions.get(i).intValue(), t);
       }
 
       // sort by increasing docFreq order

@@ -214,7 +214,7 @@ public class MultiPhraseQuery extends Query {
           docFreq = reader.docFreq(term.field(), term.bytes());
         }
 
-        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue());
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue(), terms[0]);
       }
 
       // sort by increasing docFreq order

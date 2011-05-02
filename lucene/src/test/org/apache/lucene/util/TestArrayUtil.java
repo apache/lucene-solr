@@ -144,6 +144,24 @@ public class TestArrayUtil extends LuceneTestCase {
     }
   }
   
+  private Integer[] createSparseRandomArray(int maxSize) {
+    final Integer[] a = new Integer[random.nextInt(maxSize) + 1];
+    for (int i = 0; i < a.length; i++) {
+      a[i] = Integer.valueOf(random.nextInt(2));
+    }
+    return a;
+  }
+  
+  // This is a test for LUCENE-3054 (which fails without the merge sort fall back with stack overflow in most cases)
+  public void testQuickToMergeSortFallback() {
+    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+      Integer[] a1 = createSparseRandomArray(40000), a2 = a1.clone();
+      ArrayUtil.quickSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+    }
+  }
+  
   public void testMergeSort() {
     for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
       Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
