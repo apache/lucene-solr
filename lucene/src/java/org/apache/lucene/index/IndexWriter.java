@@ -3133,6 +3133,16 @@ public class IndexWriter implements Closeable {
       message("merge seg=" + merge.info.name);
     }
 
+    assert merge.estimatedMergeBytes == 0;
+    for(SegmentInfo info : merge.segments) {
+      if (info.docCount > 0) {
+        final int delCount = numDeletedDocs(info);
+        assert delCount <= info.docCount;
+        final double delRatio = ((double) delCount)/info.docCount;
+        merge.estimatedMergeBytes += info.sizeInBytes(true) * (1.0 - delRatio);
+      }
+    }
+
     // TODO: I think this should no longer be needed (we
     // now build CFS before adding segment to the infos);
     // however, on removing it, tests fail for some reason!
@@ -3258,8 +3268,6 @@ public class IndexWriter implements Closeable {
     merge.readers = new ArrayList<SegmentReader>();
     merge.readerClones = new ArrayList<SegmentReader>();
 
-    merge.estimatedMergeBytes = 0;
-
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
@@ -3276,13 +3284,6 @@ public class IndexWriter implements Closeable {
                                                     MERGE_READ_BUFFER_SIZE,
                                                     -config.getReaderTermsIndexDivisor());
         merge.readers.add(reader);
-
-        final int readerMaxDoc = reader.maxDoc();
-        if (readerMaxDoc > 0) {
-          final int delCount = reader.numDeletedDocs();
-          final double delRatio = ((double) delCount)/readerMaxDoc;
-          merge.estimatedMergeBytes += info.sizeInBytes(true) * (1.0 - delRatio);
-        }
 
         // We clone the segment readers because other
         // deletes may come in while we're merging so we
