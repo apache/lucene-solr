@@ -198,6 +198,9 @@ Bug Fixes
   initialization if the schema.xml contains an analyzer configuration
   for a fieldType that does not use TextField.  (hossman) 
 
+* SOLR-2467: Fix <analyzer class="..." /> initialization so any errors 
+  are logged properly.  (hossman)
+
 Other Changes
 ----------------------
 
