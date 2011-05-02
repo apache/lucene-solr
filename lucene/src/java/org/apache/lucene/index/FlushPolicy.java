@@ -43,7 +43,7 @@ import org.apache.lucene.util.SetOnce;
  * {@link DocumentsWriterFlushControl}, the {@link FlushPolicy} decides if a
  * {@link DocumentsWriterPerThread} needs flushing and mark it as
  * flush-pending via
- * {@link DocumentsWriterFlushControl#setFlushPending(ThreadState)}.
+ * {@link DocumentsWriterFlushControl#setFlushPending(DocumentsWriterPerThreadPool.ThreadState)}.
  * 
  * @see ThreadState
  * @see DocumentsWriterFlushControl
@@ -92,7 +92,7 @@ public abstract class FlushPolicy {
       ThreadState state);
 
   /**
-   * Called by {@link DocumentsWriter} to initialize the FlushPolicy
+   * Called by DocumentsWriter to initialize the FlushPolicy
    */
   protected synchronized void init(DocumentsWriter docsWriter) {
     writer.set(docsWriter);

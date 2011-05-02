@@ -82,7 +82,7 @@ import org.apache.lucene.util.MapBackedSet;
   documents (see {@link IndexWriterConfig#setRAMBufferSizeMB}) or the
   number of added documents (see {@link IndexWriterConfig#setMaxBufferedDocs(int)}).
   The default is to flush when RAM usage hits
-  {@value IndexWriterConfig#DEFAULT_RAM_BUFFER_SIZE_MB} MB. For
+  {@link IndexWriterConfig#DEFAULT_RAM_BUFFER_SIZE_MB} MB. For
   best indexing speed you should flush by RAM usage with a
   large RAM buffer. Additionally, if IndexWriter reaches the configured number of
   buffered deletes (see {@link IndexWriterConfig#setMaxBufferedDeleteTerms})

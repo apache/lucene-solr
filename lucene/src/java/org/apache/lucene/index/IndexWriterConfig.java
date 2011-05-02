@@ -538,7 +538,7 @@ public final class IndexWriterConfig implements Cloneable {
    * IndexWriter to assign thread-states to incoming indexing threads. If no
    * {@link DocumentsWriterPerThreadPool} is set {@link IndexWriter} will use
    * {@link ThreadAffinityDocumentsWriterThreadPool} with max number of
-   * thread-states set to {@value DocumentsWriterPerThreadPool#DEFAULT_MAX_THREAD_STATES} (see
+   * thread-states set to {@link DocumentsWriterPerThreadPool#DEFAULT_MAX_THREAD_STATES} (see
    * {@link DocumentsWriterPerThreadPool#DEFAULT_MAX_THREAD_STATES}).
    * </p>
    * <p>

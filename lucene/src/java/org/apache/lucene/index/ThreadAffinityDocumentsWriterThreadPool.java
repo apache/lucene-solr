@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState; //javadoc
 
 /**
  * A {@link DocumentsWriterPerThreadPool} implementation that tries to assign an
