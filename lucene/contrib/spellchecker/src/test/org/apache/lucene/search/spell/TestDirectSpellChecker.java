@@ -35,7 +35,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     spellChecker.setMinQueryLength(0);
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(MockTokenizer.SIMPLE, true));
+        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
@@ -93,7 +93,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
   public void testOptions() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new MockAnalyzer(MockTokenizer.SIMPLE, true));
+        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
 
     Document doc = new Document();
     doc.add(newField("text", "foobar", Field.Store.NO, Field.Index.ANALYZED));

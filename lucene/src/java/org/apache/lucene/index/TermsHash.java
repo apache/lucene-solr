@@ -18,11 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
+
+import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRef;
 
 /** This class implements {@link InvertedDocConsumer}, which
  *  is passed each token produced by the analyzer on each
@@ -36,78 +36,118 @@ final class TermsHash extends InvertedDocConsumer {
 
   final TermsHashConsumer consumer;
   final TermsHash nextTermsHash;
-  final DocumentsWriter docWriter;
+  final DocumentsWriterPerThread docWriter;
 
-  boolean trackAllocations;
+  final IntBlockPool intPool;
+  final ByteBlockPool bytePool;
+  ByteBlockPool termBytePool;
 
-  public TermsHash(final DocumentsWriter docWriter, boolean trackAllocations, final TermsHashConsumer consumer, final TermsHash nextTermsHash) {
+  final boolean primary;
+  final DocumentsWriterPerThread.DocState docState;
+
+  // Used when comparing postings via termRefComp, in TermsHashPerField
+  final BytesRef tr1 = new BytesRef();
+  final BytesRef tr2 = new BytesRef();
+
+  // Used by perField to obtain terms from the analysis chain
+  final BytesRef termBytesRef = new BytesRef(10);
+
+  final boolean trackAllocations;
+
+
+  public TermsHash(final DocumentsWriterPerThread docWriter, final TermsHashConsumer consumer, boolean trackAllocations, final TermsHash nextTermsHash) {
+    this.docState = docWriter.docState;
     this.docWriter = docWriter;
     this.consumer = consumer;
+    this.trackAllocations = trackAllocations; 
     this.nextTermsHash = nextTermsHash;
-    this.trackAllocations = trackAllocations;
-  }
+    intPool = new IntBlockPool(docWriter);
+    bytePool = new ByteBlockPool(docWriter.byteBlockAllocator);
 
-  @Override
-  InvertedDocConsumerPerThread addThread(DocInverterPerThread docInverterPerThread) {
-    return new TermsHashPerThread(docInverterPerThread, this, nextTermsHash, null);
-  }
-
-  TermsHashPerThread addThread(DocInverterPerThread docInverterPerThread, TermsHashPerThread primaryPerThread) {
-    return new TermsHashPerThread(docInverterPerThread, this, nextTermsHash, primaryPerThread);
+    if (nextTermsHash != null) {
+      // We are primary
+      primary = true;
+      termBytePool = bytePool;
+      nextTermsHash.termBytePool = bytePool;
+    } else {
+      primary = false;
+    }
   }
 
   @Override
   public void abort() {
-    consumer.abort();
-    if (nextTermsHash != null)
-      nextTermsHash.abort();
-  }
-
-  @Override
-  synchronized void flush(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
-    Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> childThreadsAndFields = new HashMap<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>>();
-    Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> nextThreadsAndFields;
-
-    if (nextTermsHash != null)
-      nextThreadsAndFields = new HashMap<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>>();
-    else
-      nextThreadsAndFields = null;
-
-    for (final Map.Entry<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> entry : threadsAndFields.entrySet()) {
-
-      TermsHashPerThread perThread = (TermsHashPerThread) entry.getKey();
-
-      Collection<InvertedDocConsumerPerField> fields = entry.getValue();
-
-      Iterator<InvertedDocConsumerPerField> fieldsIt = fields.iterator();
-      Collection<TermsHashConsumerPerField> childFields = new HashSet<TermsHashConsumerPerField>();
-      Collection<InvertedDocConsumerPerField> nextChildFields;
-
-      if (nextTermsHash != null)
-        nextChildFields = new HashSet<InvertedDocConsumerPerField>();
-      else
-        nextChildFields = null;
-
-      while(fieldsIt.hasNext()) {
-        TermsHashPerField perField = (TermsHashPerField) fieldsIt.next();
-        childFields.add(perField.consumer);
-        if (nextTermsHash != null)
-          nextChildFields.add(perField.nextPerField);
+    reset();
+    try {
+      consumer.abort();
+    } finally {
+      if (nextTermsHash != null) {
+        nextTermsHash.abort();
       }
-
-      childThreadsAndFields.put(perThread.consumer, childFields);
-      if (nextTermsHash != null)
-        nextThreadsAndFields.put(perThread.nextPerThread, nextChildFields);
     }
-    
-    consumer.flush(childThreadsAndFields, state);
+  }
 
-    if (nextTermsHash != null)
-      nextTermsHash.flush(nextThreadsAndFields, state);
+  // Clear all state
+  void reset() {
+    intPool.reset();
+    bytePool.reset();
+
+    if (primary) {
+      bytePool.reset();
+    }
   }
 
   @Override
-  synchronized public boolean freeRAM() {
+  void flush(Map<FieldInfo,InvertedDocConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+    Map<FieldInfo,TermsHashConsumerPerField> childFields = new HashMap<FieldInfo,TermsHashConsumerPerField>();
+    Map<FieldInfo,InvertedDocConsumerPerField> nextChildFields;
+
+    if (nextTermsHash != null) {
+      nextChildFields = new HashMap<FieldInfo,InvertedDocConsumerPerField>();
+    } else {
+      nextChildFields = null;
+    }
+
+    for (final Map.Entry<FieldInfo,InvertedDocConsumerPerField> entry : fieldsToFlush.entrySet()) {
+        TermsHashPerField perField = (TermsHashPerField) entry.getValue();
+        childFields.put(entry.getKey(), perField.consumer);
+        if (nextTermsHash != null) {
+          nextChildFields.put(entry.getKey(), perField.nextPerField);
+        }
+    }
+
+    consumer.flush(childFields, state);
+
+    if (nextTermsHash != null) {
+      nextTermsHash.flush(nextChildFields, state);
+    }
+  }
+
+  @Override
+  InvertedDocConsumerPerField addField(DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
+    return new TermsHashPerField(docInverterPerField, this, nextTermsHash, fieldInfo);
+  }
+
+  @Override
+  public boolean freeRAM() {
     return false;
+  }
+
+  @Override
+  void finishDocument() throws IOException {
+    try {
+      consumer.finishDocument(this);
+    } finally {
+      if (nextTermsHash != null) {
+        nextTermsHash.consumer.finishDocument(nextTermsHash);
+      }
+    }
+  }
+
+  @Override
+  void startDocument() throws IOException {
+    consumer.startDocument();
+    if (nextTermsHash != null) {
+      nextTermsHash.consumer.startDocument();
+    }
   }
 }

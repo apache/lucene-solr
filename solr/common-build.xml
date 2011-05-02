@@ -330,6 +330,7 @@
     </sequential>
   </macrodef>
 
+  <property name="failonjavadocwarning" value="true"/>
   <macrodef name="invoke-javadoc">
     <element name="sources" optional="yes"/>
     <attribute name="destdir"/>
@@ -339,6 +340,7 @@
       <copy todir="@{destdir}/prettify" overwrite="false">
         <fileset dir="${prettify.dir}"/>
       </copy>
+      <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           packagenames="org.apache.solr.*"
           failonerror="true"
@@ -373,6 +375,24 @@
 
         <classpath refid="javadoc.classpath"/>
       </javadoc>
+      <record name="@{destdir}/log_javadoc.txt" action="stop"/>
+
+      <delete>
+        <fileset file="@{destdir}/log_javadoc.txt">
+          <not>
+           <containsregexp expression="\[javadoc\]\s*[1-9][0-9]*[\s]*warning"/>
+          </not>
+        </fileset>
+      </delete>
+
+      <fail message="Javadocs warnings were found!" >
+        <condition>
+          <and>
+            <available file="@{destdir}/log_javadoc.txt"/>
+            <istrue value="${failonjavadocwarning}"/>
+          </and>
+        </condition>
+      </fail>
    </sequential>
   </macrodef>
 
@@ -414,6 +434,8 @@
     </sequential>
   </macrodef>
 
+  <property name="gpg.exe" value="gpg" />
+  <property name="gpg.key" value="CODE SIGNING KEY" />
   <macrodef name="sign-artifact" description="Signs the artifact">
     <attribute name="input.file"/>
     <attribute name="output.file" default="@{input.file}.asc"/>
@@ -421,10 +443,13 @@
     <sequential>
       <echo >Signing @{input.file} Sig File: @{output.file}</echo>
 
-      <exec executable="gpg" >
+      <exec executable="${gpg.exe}" >
+        <arg value="--batch"/>
         <arg value="--armor"/>
         <arg value="--output"/>
         <arg value="@{output.file}"/>
+        <arg value="--default-key"/>
+        <arg value="${gpg.key}"/>
         <arg value="--passphrase"/>
         <arg value="@{gpg.passphrase}"/>
         <arg value="--detach-sig"/>

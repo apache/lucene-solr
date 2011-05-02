@@ -43,8 +43,11 @@ public interface UpdateParams
   /** Rollback update commands */
   public static String ROLLBACK = "rollback";
 
-  /** Select the update processor to use.  A RequestHandler may or may not respect this parameter */
-  public static final String UPDATE_PROCESSOR = "update.processor";
+  /** Select the update processor chain to use.  A RequestHandler may or may not respect this parameter */
+  public static final String UPDATE_CHAIN = "update.chain";
+  // TODO: Include the old deprecated param, for removal in Solr 4.0
+  public static final String UPDATE_CHAIN_DEPRECATED = "update.processor";
+
   /**
    * If optimizing, set the maximum number of segments left in the index after optimization.  1 is the default (and is equivalent to calling IndexWriter.optimize() in Lucene).
    */

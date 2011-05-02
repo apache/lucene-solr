@@ -88,13 +88,13 @@
     <ul>
     #foreach ($facet in $field)
       #set($theDate = $date.toDate("yyyy-MM-dd'T'HH:mm:ss'Z'", $facet.key))
-      #set($value = '["' + $facet.key + '" TO "' + $facet.key + $gap + '"]')
+      #set($value = '["' + $facet.key + '" TO "' + $facet.key + $gap + '"}')
 
       #set($facetURL = "#url_for_facet_date_filter($fieldName, $value)")
       #if ($facetURL != '')
         #if ($facet.key != "gap" && $facet.key != "start" && $facet.key != "end" && $facet.key != "before" && $facet.key != "after")
 
-          <li><a href="$facetURL">$date.format('MMM yyyy', $theDate)</a> ($facet.value)</li>
+          <li><a href="$facetURL">$date.format('MMM yyyy', $theDate) $gap</a> ($facet.value)</li>
         #end
         #if ($facet.key == "before" && $facet.value > 0)
           <li><a href="$facetURL">Before</a> ($facet.value)</li>
@@ -113,20 +113,20 @@
   <span class="facet-field">$display</span>
     <ul>
     #if($before && $before != "")
-      #set($value = "[* TO " + $start + "]")
+      #set($value = "[* TO " + $start + "}")
       #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
       <li><a href="$facetURL">Less than $start</a> ($before)</li>
     #end
     #foreach ($facet in $field)
       #set($rangeEnd = $math.add($facet.key, $gap))
-      #set($value = "[" + $facet.key + " TO " + $rangeEnd + "]")
+      #set($value = "[" + $facet.key + " TO " + $rangeEnd + "}")
       #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
       #if ($facetURL != '')
-        <li><a href="$facetURL">$facet.key</a> ($facet.value)</li>
+        <li><a href="$facetURL">$facet.key - $rangeEnd</a> ($facet.value)</li>
       #end
     #end
-    #if($end && $end != "")
-      #set($value = "[" + $end + " TO *]")
+    #if($end && $end != "" && $after > 0)
+      #set($value = "[" + $end + " TO *}")
       #set($facetURL = "#url_for_facet_range_filter($fieldName, $value)")
       <li><a href="$facetURL">More than $math.toNumber($end)</a> ($after)</li>
     #end
@@ -181,3 +181,7 @@
     #end
   #end
 #end  
+
+#macro(capitalize $name)
+  ${name.substring(0,1).toUpperCase()}${name.substring(1)}
+#end

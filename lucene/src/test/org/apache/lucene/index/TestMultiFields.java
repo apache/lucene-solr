@@ -31,7 +31,7 @@ public class TestMultiFields extends LuceneTestCase {
     for (int iter = 0; iter < num; iter++) {
       Directory dir = newDirectory();
 
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
       _TestUtil.keepFullyDeletedSegments(w);
 
       Map<BytesRef,List<Integer>> docs = new HashMap<BytesRef,List<Integer>>();
@@ -134,7 +134,7 @@ public class TestMultiFields extends LuceneTestCase {
 
   public void testSeparateEnums() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d = new Document();
     d.add(newField("f", "j", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(d);

@@ -43,8 +43,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     dirA = newDirectory();
     dirB = newDirectory();
 
-    IndexWriter wA = new IndexWriter(dirA, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexWriter wB = new IndexWriter(dirB, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter wA = new IndexWriter(dirA, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter wB = new IndexWriter(dirB, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;

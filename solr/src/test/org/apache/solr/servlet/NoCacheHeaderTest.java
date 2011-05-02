@@ -31,7 +31,7 @@ import org.junit.Test;
 public class NoCacheHeaderTest extends CacheHeaderTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(TEST_HOME, "solr/conf/solrconfig-nocache.xml", null);
+    createJetty(TEST_HOME(), "solr/conf/solrconfig-nocache.xml", null);
   }
 
   // The tests

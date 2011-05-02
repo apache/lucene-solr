@@ -322,7 +322,7 @@ public class TestCodecs extends LuceneTestCase {
   public void testSepPositionAfterMerge() throws IOException {
     final Directory dir = newDirectory();
     final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
-      new MockAnalyzer());
+      new MockAnalyzer(random));
     config.setCodecProvider(new MockSepCodecs());
     final IndexWriter writer = new IndexWriter(dir, config);
 
@@ -593,7 +593,7 @@ public class TestCodecs extends LuceneTestCase {
 
     final int termIndexInterval = _TestUtil.nextInt(random, 13, 27);
     final SegmentCodecs codecInfo =  fieldInfos.buildSegmentCodecs(false);
-    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo, null, new AtomicLong(0));
+    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo, null);
 
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
     Arrays.sort(fields);

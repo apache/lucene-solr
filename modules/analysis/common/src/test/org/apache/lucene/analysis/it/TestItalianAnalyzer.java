@@ -50,4 +50,9 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "abbandonata", "abbandonata");
     checkOneTermReuse(a, "abbandonati", "abbandon");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new ItalianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

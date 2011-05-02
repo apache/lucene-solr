@@ -115,6 +115,9 @@ public interface DocSet /* extends Collection<Integer> */ {
    */
   public int intersectionSize(DocSet other);
 
+  /** Returns true if these sets have any elements in common */
+  public boolean intersects(DocSet other);
+
   /**
    * Returns the union of this set with another set.  Neither set is modified - a new DocSet is
    * created and returned.
@@ -146,6 +149,14 @@ public interface DocSet /* extends Collection<Integer> */ {
    * methods will be invoked with.
    */
   public Filter getTopFilter();
+
+  /**
+   * Takes the docs from this set and sets those bits on the target OpenBitSet.
+   * The target should be sized large enough to accommodate all of the documents before calling this method.
+   */
+  public void setBitsOn(OpenBitSet target);
+
+  public static DocSet EMPTY = new SortedIntDocSet(new int[0], 0);
 }
 
 /** A base class that may be usefull for implementing DocSets */
@@ -212,6 +223,17 @@ abstract class DocSetBase implements DocSet {
     newbits.and(other.getBits());
     return new BitDocSet(newbits);
   }
+
+  public boolean intersects(DocSet other) {
+    // intersection is overloaded in the smaller DocSets to be more
+    // efficient, so dispatch off of it instead.
+    if (!(other instanceof BitDocSet)) {
+      return other.intersects(this);
+    }
+    // less efficient way: get the intersection size
+    return intersectionSize(other) > 0;
+  }
+
 
   public DocSet union(DocSet other) {
     OpenBitSet newbits = (OpenBitSet)(this.getBits().clone());
@@ -295,6 +317,14 @@ abstract class DocSetBase implements DocSet {
       }
     };
   }
+
+  public void setBitsOn(OpenBitSet target) {
+    DocIterator iter = iterator();
+    while (iter.hasNext()) {
+      target.fastSet(iter.nextDoc());
+    }
+  }
+
 }
 
 

@@ -37,7 +37,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
@@ -235,12 +234,6 @@ public class PreFlexFields extends FieldsProducer {
     public TermsEnum terms() throws IOException {
       termsEnum.reset(current);
       return termsEnum;
-    }
-
-    @Override
-    public DocValues docValues() throws IOException {
-      //DocValues are not available on PreFlex indices
-      return null;
     }
   }
   

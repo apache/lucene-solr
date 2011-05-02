@@ -20,12 +20,13 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 
 final class TermVectorsWriter {
-  
+
   private IndexOutput tvx = null, tvd = null, tvf = null;
   private FieldInfos fieldInfos;
 
@@ -46,7 +47,7 @@ final class TermVectorsWriter {
   /**
    * Add a complete document specified by all its term vectors. If document has no
    * term vectors, add value for tvx.
-   * 
+   *
    * @param vectors
    * @throws IOException
    */
@@ -99,7 +100,7 @@ final class TermVectorsWriter {
         final int[] freqs = vectors[i].getTermFrequencies();
 
         for (int j=0; j<numTerms; j++) {
-          
+
           int start = j == 0 ? 0 : StringHelper.bytesDifference(terms[j-1].bytes,
                                                    terms[j-1].length,
                                                    terms[j].bytes,
@@ -181,30 +182,11 @@ final class TermVectorsWriter {
     assert tvd.getFilePointer() == tvdPosition;
     assert tvf.getFilePointer() == tvfPosition;
   }
-  
+
   /** Close all streams. */
   final void close() throws IOException {
     // make an effort to close all streams we can but remember and re-throw
     // the first exception encountered in this process
-    IOException keep = null;
-    if (tvx != null)
-      try {
-        tvx.close();
-      } catch (IOException e) {
-        keep = e;
-      }
-    if (tvd != null)
-      try {
-        tvd.close();
-      } catch (IOException e) {
-        if (keep == null) keep = e;
-      }
-    if (tvf != null)
-      try {
-        tvf.close();
-      } catch (IOException e) {
-        if (keep == null) keep = e;
-      }
-    if (keep != null) throw (IOException) keep.fillInStackTrace();
+    IOUtils.closeSafely(tvx, tvd, tvf);
   }
 }

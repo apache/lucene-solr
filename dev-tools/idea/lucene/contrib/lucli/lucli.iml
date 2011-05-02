@@ -8,10 +8,6 @@
       <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
     </content>
-    <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="lucene" />
-    <orderEntry type="module" module-name="queries" />
-    <orderEntry type="module" module-name="misc" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
@@ -24,5 +20,9 @@
         <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="queries" />
+    <orderEntry type="module" module-name="misc" />
+    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="lucene" />
   </component>
 </module>

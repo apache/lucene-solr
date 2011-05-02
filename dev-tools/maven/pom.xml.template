@@ -133,6 +133,11 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>r05</version>
+      </dependency>
+      <dependency>
         <groupId>com.sleepycat</groupId>
         <artifactId>berkeleydb</artifactId>
         <version>4.7.25</version>

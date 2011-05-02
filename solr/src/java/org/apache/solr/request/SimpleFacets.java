@@ -21,6 +21,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
@@ -682,14 +683,15 @@ public class SimpleFacets {
 
             if (deState==null) {
               deState = new SolrIndexSearcher.DocsEnumState();
+              deState.fieldName = StringHelper.intern(field);
               deState.deletedDocs = MultiFields.getDeletedDocs(r);
               deState.termsEnum = termsEnum;
-              deState.reuse = docsEnum;
+              deState.docsEnum = docsEnum;
             }
 
-            c = searcher.numDocs(new TermQuery(t), docs, deState);
+            c = searcher.numDocs(docs, deState);
 
-            docsEnum = deState.reuse;
+            docsEnum = deState.docsEnum;
           } else {
             // iterate over TermDocs to calculate the intersection
 

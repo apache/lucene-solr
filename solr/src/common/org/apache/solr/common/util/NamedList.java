@@ -43,7 +43,7 @@ import java.io.Serializable;
  * by key, so ResponseWriters that output to a format such as JSON will normally
  * choose a data structure that allows order to be easily preserved in various
  * clients (i.e. not a straight map).
- * If access by key is more important, see {@link SimpleOrderedMap},
+ * If access by key is more important for serialization, see {@link SimpleOrderedMap},
  * or simply use a regular {@link Map}
  * </p>
  *
@@ -200,10 +200,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   /**
    * Gets the value for the first instance of the specified name
    * found.
-   *
+   * <p>
+   * NOTE: this runs in linear time (it scans starting at the
+   * beginning of the list until it finds the first pair with
+   * the specified name).
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    * @see #get(String,int)
+   * 
    */
   public T get(String name) {
     return get(name,0);
@@ -212,7 +216,10 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   /**
    * Gets the value for the first instance of the specified name
    * found starting at the specified index.
-   *
+   * <p>
+   * NOTE: this runs in linear time (it scans starting at the
+   * specified position until it finds the first pair with
+   * the specified name).
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    */
@@ -377,6 +384,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return iter;
   }
 
+  /** 
+   * NOTE: this runs in linear time (it scans starting at the
+   * beginning of the list until it finds the first pair with
+   * the specified name).
+   */
   public T remove(String name) {
     int idx = indexOf(name, 0);
     if(idx != -1) return remove(idx);

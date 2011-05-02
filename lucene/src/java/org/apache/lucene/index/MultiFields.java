@@ -51,7 +51,6 @@ public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderUtil.Slice[] subSlices;
   private final Map<String,Terms> terms = new ConcurrentHashMap<String,Terms>();
-  private final Map<String,DocValues> docValues = new ConcurrentHashMap<String,DocValues>();
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
@@ -193,12 +192,6 @@ public final class MultiFields extends Fields {
     }
   }
   
-  /**  This method may return null if the field does not exist.*/
-  public static DocValues getDocValues(IndexReader r, String field) throws IOException {
-    final Fields fields = getFields(r);
-    return fields == null? null: fields.docValues(field);
-  }
-
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null if the term does not
    *  exist. */
@@ -283,41 +276,5 @@ public final class MultiFields extends Fields {
     return result;
   }
   
-  @Override
-  public DocValues docValues(String field) throws IOException {
-    DocValues result = docValues.get(field);
-    if (result == null) {
-      // Lazy init: first time this field is requested, we
-      // create & add to docValues:
-      final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
-      int docsUpto = 0;
-      Type type = null;
-      // Gather all sub-readers that share this field
-      for(int i=0;i<subs.length;i++) {
-         DocValues values = subs[i].docValues(field);
-         final int start = subSlices[i].start;
-         final int length = subSlices[i].length;
-        if (values != null) {
-          if (docsUpto != start) {
-            type = values.type();
-            docValuesIndex.add(new MultiDocValues.DocValuesIndex(new MultiDocValues.DummyDocValues(start, type), docsUpto, start - docsUpto));
-          }
-          docValuesIndex.add(new MultiDocValues.DocValuesIndex(values, start, length));
-          docsUpto = start+length;
-
-        } else if (i+1 == subs.length && !docValuesIndex.isEmpty()) {
-          docValuesIndex.add(new MultiDocValues.DocValuesIndex(
-              new MultiDocValues.DummyDocValues(start, type), docsUpto, start
-                  - docsUpto));
-        }
-      }
-      if (docValuesIndex.isEmpty()) {
-        return null;
-      }
-      result = new MultiDocValues(docValuesIndex.toArray(DocValuesIndex.EMPTY_ARRAY));
-      docValues.put(field, result);
-    } 
-    return result; 
-  }
 }
 

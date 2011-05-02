@@ -180,6 +180,14 @@ public class DateField extends FieldType {
                                "Invalid Date Math String:'" +val+'\'',e);
     }
   }
+
+  public Fieldable createField(SchemaField field, Object value, float boost) {
+    // Convert to a string before indexing
+    if(value instanceof Date) {
+      value = toInternal( (Date)value ) + 'Z';
+    }
+    return super.createField(field, value, boost);
+  }
   
   public String toInternal(Date val) {
     return formatDate(val);
@@ -475,6 +483,17 @@ class DateFieldSource extends FieldCacheSource {
           CharArr spare = new CharArr();
           ft.indexedToReadable(br, spare);
           return spare.toString();
+        }
+      }
+
+      @Override
+      public Object objectVal(int doc) {
+        int ord=termsIndex.getOrd(doc);
+        if (ord == 0) {
+          return null;
+        } else {
+          BytesRef br = termsIndex.lookup(ord, new BytesRef());
+          return ft.toObject(null, br);
         }
       }
 

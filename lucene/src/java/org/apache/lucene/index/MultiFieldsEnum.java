@@ -17,12 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.MultiDocValues;
-import org.apache.lucene.index.values.Type;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.ReaderUtil.Slice;
 
 import java.io.IOException;
 import java.util.List;
@@ -153,37 +150,37 @@ public final  class MultiFieldsEnum extends FieldsEnum {
     }
   }
 
-  @Override
-  public DocValues docValues() throws IOException {
-    final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
-    int docsUpto = 0;
-    Type type = null;
-    final int numEnums = enumWithSlices.length;
-    for (int i = 0; i < numEnums; i++) {
-      FieldsEnumWithSlice withSlice = enumWithSlices[i];
-      Slice slice = withSlice.slice;
-      final DocValues values = withSlice.fields.docValues();
-      final int start = slice.start;
-      final int length = slice.length;
-      if (values != null && currentField.equals(withSlice.current)) {
-        if (docsUpto != start) {
-          type = values.type();
-          docValuesIndex.add(new MultiDocValues.DocValuesIndex(
-              new MultiDocValues.DummyDocValues(start, type), docsUpto, start
-                  - docsUpto));
-        }
-        docValuesIndex.add(new MultiDocValues.DocValuesIndex(values, start,
-            length));
-        docsUpto = start + length;
-
-      } else if (i + 1 == numEnums && !docValuesIndex.isEmpty()) {
-        docValuesIndex.add(new MultiDocValues.DocValuesIndex(
-            new MultiDocValues.DummyDocValues(start, type), docsUpto, start
-                - docsUpto));
-      }
-    }
-    return docValuesIndex.isEmpty() ? null : docValues.reset(docValuesIndex
-        .toArray(MultiDocValues.DocValuesIndex.EMPTY_ARRAY));
-  }
+//  @Override
+//  public DocValues docValues() throws IOException {
+//    final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
+//    int docsUpto = 0;
+//    Type type = null;
+//    final int numEnums = enumWithSlices.length;
+//    for (int i = 0; i < numEnums; i++) {
+//      FieldsEnumWithSlice withSlice = enumWithSlices[i];
+//      Slice slice = withSlice.slice;
+//      final DocValues values = withSlice.fields.docValues();
+//      final int start = slice.start;
+//      final int length = slice.length;
+//      if (values != null && currentField.equals(withSlice.current)) {
+//        if (docsUpto != start) {
+//          type = values.type();
+//          docValuesIndex.add(new MultiDocValues.DocValuesIndex(
+//              new MultiDocValues.DummyDocValues(start, type), docsUpto, start
+//                  - docsUpto));
+//        }
+//        docValuesIndex.add(new MultiDocValues.DocValuesIndex(values, start,
+//            length));
+//        docsUpto = start + length;
+//
+//      } else if (i + 1 == numEnums && !docValuesIndex.isEmpty()) {
+//        docValuesIndex.add(new MultiDocValues.DocValuesIndex(
+//            new MultiDocValues.DummyDocValues(start, type), docsUpto, start
+//                - docsUpto));
+//      }
+//    }
+//    return docValuesIndex.isEmpty() ? null : docValues.reset(docValuesIndex
+//        .toArray(MultiDocValues.DocValuesIndex.EMPTY_ARRAY));
+//  }
 }
 

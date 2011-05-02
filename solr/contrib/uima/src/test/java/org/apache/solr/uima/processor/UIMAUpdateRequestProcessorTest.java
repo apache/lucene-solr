@@ -108,7 +108,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 
   private void addDoc(String doc) throws Exception {
     Map<String, String[]> params = new HashMap<String, String[]>();
-    params.put(UpdateParams.UPDATE_PROCESSOR, new String[] { "uima" });
+    params.put(UpdateParams.UPDATE_CHAIN, new String[] { "uima" });
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), (SolrParams) mmparams) {
     };

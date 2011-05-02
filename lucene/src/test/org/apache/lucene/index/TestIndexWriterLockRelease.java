@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -39,7 +40,7 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     public void setUp() throws Exception {
         super.setUp();
         if (this.__test_dir == null) {
-            this.__test_dir = new File(TEMP_DIR, "testIndexWriter");
+            this.__test_dir = _TestUtil.getTempDir("testIndexWriter");
 
             if (this.__test_dir.exists()) {
                 throw new IOException("test directory \"" + this.__test_dir.getPath() + "\" already exists (please remove by hand)");
@@ -75,10 +76,10 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     public void testIndexWriterLockRelease() throws IOException {
       Directory dir = newFSDirectory(this.__test_dir);
       try {
-        new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
       } catch (FileNotFoundException e) {
         try {
-          new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+          new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
         } catch (FileNotFoundException e1) {
         }
       } finally {

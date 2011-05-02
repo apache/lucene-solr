@@ -50,4 +50,9 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "ağacı", "ağacı");
     checkOneTermReuse(a, "ağaç", "ağaç");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new TurkishAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

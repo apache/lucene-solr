@@ -78,6 +78,7 @@
   <property name="tests.directory" value="random" />
   <property name="tests.linedocsfile" value="europarl.lines.txt.gz" />
   <property name="tests.iter" value="1" />
+  <property name="tests.iter.min" value="${tests.iter}" />
   <property name="tests.seed" value="random" />
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
@@ -102,6 +103,7 @@
     <path refid="classpath"/>
     <pathelement location="${ant.home}/lib/ant.jar"/>
     <fileset dir=".">
+      <exclude name="build/**/*.jar"/>
       <include name="**/lib/*.jar"/>
     </fileset>
   </path>
@@ -306,7 +308,7 @@
     </copy>
   </target>
 
-  <target name="compile" depends="compile-core, validate-lucene">
+  <target name="compile" depends="compile-core">
     <!-- convenience target to compile core -->
   </target>
 
@@ -507,6 +509,8 @@
               <sysproperty key="tests.linedocsfile" value="${tests.linedocsfile}"/>
               <!-- set the number of times tests should run -->
               <sysproperty key="tests.iter" value="${tests.iter}"/>
+              <!-- set the minimum number of times tests should run unless failure -->
+              <sysproperty key="tests.iter.min" value="${tests.iter.min}"/>
               <!-- set the test seed -->
               <sysproperty key="tests.seed" value="${tests.seed}"/>
               <!-- set the Version that tests should run against -->
@@ -561,7 +565,7 @@
   	</sequential>
   </macrodef>
 	
-  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
+  <target name="test" depends="compile-test,validate-lucene,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
 
   <target name="junit-mkdir">
   	<mkdir dir="${junit.output.dir}"/>
@@ -759,7 +763,8 @@
       </fixcrlf>
     </sequential>
   </macrodef>
-	
+
+  <property name="failonjavadocwarning" value="true"/>
   <macrodef name="invoke-javadoc">
     <element name="sources" optional="yes"/>
     <attribute name="destdir"/>
@@ -769,6 +774,7 @@
       <copy todir="@{destdir}/../prettify" overwrite="false">
         <fileset dir="${prettify.dir}"/>
       </copy>
+      <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           overview="@{overview}"
           packagenames="org.apache.lucene.*"
@@ -780,6 +786,7 @@
           author="true"
           version="true"
           use="true"
+          failonerror="true"
           source="${ant.java.version}"
           link="${javadoc.link}"
           windowtitle="${Name} ${version} API"
@@ -801,6 +808,26 @@
       	      	
         <classpath refid="javadoc.classpath"/>
       </javadoc>
+      <record name="@{destdir}/log_javadoc.txt" action="stop"/>
+
+      <delete>
+        <fileset file="@{destdir}/log_javadoc.txt">
+          <not>
+           <containsregexp expression="\[javadoc\]\s*[1-9][0-9]*[\s]*warning"/>
+          </not>
+        </fileset>
+      </delete>
+
+      <fail message="Javadocs warnings were found!">
+        <condition>
+          <and>
+            <available file="@{destdir}/log_javadoc.txt"/>
+            <istrue value="${failonjavadocwarning}"/>
+          </and>
+        </condition>
+      </fail>
+
+
    </sequential>
   </macrodef>
 

@@ -40,7 +40,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
   public static void setUpClass() throws Exception {
     dir = newDirectory();
     writer = new IndexWriter(dir, newIndexWriterConfig(random,
-       TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false))
+       TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false))
        .setMaxBufferedDocs(2));
     writer.setInfoStream(VERBOSE ? System.out : null);
     indexDocs(writer);

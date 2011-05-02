@@ -39,7 +39,7 @@ public class TestElevationComparator extends LuceneTestCase {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(
         directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMaxBufferedDocs(2).
             setMergePolicy(newLogMergePolicy(1000))
     );

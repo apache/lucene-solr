@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,6 +29,8 @@ import java.util.TreeSet;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.index.values.DocValues;
@@ -75,12 +78,6 @@ final class PerFieldCodecWrapper extends Codec {
     }
 
     @Override
-    public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
-      final FieldsConsumer fields = consumers.get(field.getCodecId());
-      return fields.addValuesField(field);
-    }
-
-    @Override
     public void close() throws IOException {
       Iterator<FieldsConsumer> it = consumers.iterator();
       IOException err = null;
@@ -113,7 +110,7 @@ final class PerFieldCodecWrapper extends Codec {
       boolean success = false;
       try {
         for (FieldInfo fi : fieldInfos) {
-          if (fi.isIndexed || fi.hasDocValues()) { // TODO this does not work for non-indexed fields
+          if (fi.isIndexed) { 
             fields.add(fi.name);
             assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
             Codec codec = segmentCodecs.codecs[fi.getCodecId()];
@@ -171,11 +168,6 @@ final class PerFieldCodecWrapper extends Codec {
           return TermsEnum.EMPTY;
         }
       }
-
-      @Override
-      public DocValues docValues() throws IOException {
-        return codecs.get(current).docValues(current);
-      }
     }
 
     @Override
@@ -189,12 +181,6 @@ final class PerFieldCodecWrapper extends Codec {
       return fields == null ? null : fields.terms(field);
     }
     
-    @Override
-    public DocValues docValues(String field) throws IOException {
-      FieldsProducer fieldsProducer = codecs.get(field);
-      return fieldsProducer == null? null: fieldsProducer.docValues(field);
-    }
-
     @Override
     public void close() throws IOException {
       Iterator<FieldsProducer> it = codecs.values().iterator();
@@ -243,5 +229,134 @@ final class PerFieldCodecWrapper extends Codec {
     for (Codec codec : segmentCodecs.codecs) {
       codec.getExtensions(extensions);
     }
+  }
+
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new PerDocConsumers(state);
+  }
+
+  @Override
+  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    return new PerDocProducers(state.dir, state.fieldInfos, state.segmentInfo,
+    state.readBufferSize, state.termsIndexDivisor);
+  }
+  
+  private final class PerDocProducers extends PerDocValues {
+    private final Set<String> fields = new TreeSet<String>();
+    private final Map<String, PerDocValues> codecs = new HashMap<String, PerDocValues>();
+
+    public PerDocProducers(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
+        int readBufferSize, int indexDivisor) throws IOException {
+      final Map<Codec, PerDocValues> producers = new HashMap<Codec, PerDocValues>();
+      boolean success = false;
+      try {
+        for (FieldInfo fi : fieldInfos) {
+          if (fi.hasDocValues()) { 
+            fields.add(fi.name);
+            assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
+            Codec codec = segmentCodecs.codecs[fi.getCodecId()];
+            if (!producers.containsKey(codec)) {
+              producers.put(codec, codec.docsProducer(new SegmentReadState(dir,
+                si, fieldInfos, readBufferSize, indexDivisor, fi.getCodecId())));
+            }
+            codecs.put(fi.name, producers.get(codec));
+          }
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          // If we hit exception (eg, IOE because writer was
+          // committing, or, for any other reason) we must
+          // go back and close all FieldsProducers we opened:
+          for(PerDocValues producer : producers.values()) {
+            try {
+              producer.close();
+            } catch (Throwable t) {
+              // Suppress all exceptions here so we continue
+              // to throw the original one
+            }
+          }
+        }
+      }
+    }
+    @Override
+    public Collection<String> fields() {
+      return fields;
+    }
+    @Override
+    public DocValues docValues(String field) throws IOException {
+      final PerDocValues perDocProducer = codecs.get(field);
+      if (perDocProducer == null) {
+        return null;
+      }
+      return perDocProducer.docValues(field);
+    }
+    
+    @Override
+    public void close() throws IOException {
+      final Iterator<PerDocValues> it = codecs.values().iterator();
+      IOException err = null;
+      while (it.hasNext()) {
+        try {
+          it.next().close();
+        } catch (IOException ioe) {
+          // keep first IOException we hit but keep
+          // closing the rest
+          if (err == null) {
+            err = ioe;
+          }
+        }
+      }
+      if (err != null) {
+        throw err;
+      }
+    }
+  }
+  
+  private final class PerDocConsumers extends PerDocConsumer {
+    private final ArrayList<PerDocConsumer> consumers = new ArrayList<PerDocConsumer>();
+
+    public PerDocConsumers(PerDocWriteState state) throws IOException {
+      assert segmentCodecs == state.segmentCodecs;
+      final Codec[] codecs = segmentCodecs.codecs;
+      for (int i = 0; i < codecs.length; i++) {
+        consumers.add(codecs[i].docsConsumer(new PerDocWriteState(state, i)));
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      Iterator<PerDocConsumer> it = consumers.iterator();
+      IOException err = null;
+      while (it.hasNext()) {
+        try {
+          PerDocConsumer next = it.next();
+          if (next != null) {
+            next.close();
+          }
+        } catch (IOException ioe) {
+          // keep first IOException we hit but keep
+          // closing the rest
+          if (err == null) {
+            err = ioe;
+          }
+        }
+      }
+      if (err != null) {
+        throw err;
+      }
+    }
+
+    @Override
+    public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
+      assert field.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
+      final PerDocConsumer perDoc = consumers.get(field.getCodecId());
+      if (perDoc == null) {
+        return null;
+      }
+      return perDoc.addValuesField(field);
+    }
+    
   }
 }

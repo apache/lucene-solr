@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 
@@ -32,7 +33,7 @@ import org.junit.BeforeClass;
 public class SolrExampleBinaryTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(EXAMPLE_HOME, null, null);
+    createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
   }
 
   @Override

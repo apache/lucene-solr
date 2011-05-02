@@ -306,7 +306,7 @@ public class QueryParsing {
         Boolean top = sp.getSortDirection();
         if (null == top) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                                    "Can't determine Sort Order: " + sp);
+                                    "Can't determine a Sort Order (asc or desc) in sort spec " + sp);
         }
         
         if (SCORE.equals(field)) {
@@ -638,7 +638,11 @@ public class QueryParsing {
       }
 
       String v = val.substring(start,pos);
-      return flt ? Double.parseDouble(v) : Long.parseLong(v);
+      if (flt) {
+        return Double.parseDouble(v);
+      } else {
+        return Long.parseLong(v);
+      }
     }
 
     double getDouble() throws ParseException {
@@ -693,7 +697,8 @@ public class QueryParsing {
         pos++;
         while (pos < end) {
           ch = val.charAt(pos);
-          if (!Character.isJavaIdentifierPart(ch) && ch != '.' && ch != ':') {
+//          if (!Character.isJavaIdentifierPart(ch) && ch != '.' && ch != ':') {
+          if (!Character.isJavaIdentifierPart(ch) && ch != '.') {
             break;
           }
           pos++;

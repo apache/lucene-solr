@@ -40,7 +40,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   String nlong = "n_l";
   String tlong = "other_tl1";
   String ndate = "n_dt";
-  String tdate = "n_tdt";
+  String tdate_a = "a_n_tdt";
+  String tdate_b = "b_n_tdt";
   
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
@@ -48,25 +49,40 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   @Override
   public void doTest() throws Exception {
+    int backupStress = stress; // make a copy so we can restore
+
+
     del("*:*");
-    indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
-            ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
-    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country."
-    );
-    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow"
-    );
-    indexr(id,4, i1, -100 ,tlong, 101,t1,"the quick fox jumped over the lazy dog"
-    );
-    indexr(id,5, i1, 500, tlong, 500 ,t1,"the quick fox jumped way over the lazy dog"
-    );
+    indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men", 
+           tdate_a, "2010-04-20T11:00:00Z",
+           tdate_b, "2009-08-20T11:00:00Z",
+           "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
+    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.", 
+           tdate_a, "2010-05-02T11:00:00Z",
+           tdate_b, "2009-11-02T11:00:00Z");
+    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow", 
+           tdate_a, "2010-05-03T11:00:00Z");
+    indexr(id,4, i1, -100 ,tlong, 101,
+           t1,"the quick fox jumped over the lazy dog", 
+           tdate_a, "2010-05-03T11:00:00Z",
+           tdate_b, "2010-05-03T11:00:00Z");
+    indexr(id,5, i1, 500, tlong, 500 ,
+           t1,"the quick fox jumped way over the lazy dog", 
+           tdate_a, "2010-05-05T11:00:00Z");
     indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
     indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
-    indexr(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men");
+    indexr(id,8, i1, 876, tlong, 876,
+           tdate_b, "2010-01-05T11:00:00Z",
+           t1,"all the kings horses and all the kings men");
     indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
     indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
-    indexr(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind.");
-    indexr(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.");
-    indexr(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
+    indexr(id,11, i1, -987, tlong, 987,
+           t1,"An eye for eye only ends up making the whole world blind.");
+    indexr(id,12, i1, 379, tlong, 379,
+           t1,"Great works are performed, not by strength, but by perseverance.");
+    indexr(id,13, i1, 232, tlong, 232,
+           t1,"no eggs on wall, lesson learned", 
+           oddField, "odd man out");
 
     indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
@@ -132,23 +148,73 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // then the primary sort should always be a tie and then the secondary should always decide
     query("q","{!func}ms(NOW)", "sort","score desc,"+i1+" desc","fl","id");    
 
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count", "facet.mincount",2);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index", "facet.mincount",2);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",10, "facet.limit",1, "facet.sort","index");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.limit",1);
-    query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",1);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.mincount",2);
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1);
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",1);
+    query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1, "facet.mincount",2);
+
+    // simple date facet on one field
+    query("q","*:*", "rows",100, "facet","true", 
+          "facet.date",tdate_a, 
+          "facet.date.other", "all", 
+          "facet.date.start","2010-05-01T11:00:00Z", 
+          "facet.date.gap","+1DAY", 
+          "facet.date.end","2010-05-20T11:00:00Z");
+
+    // date facet on multiple fields
+    query("q","*:*", "rows",100, "facet","true", 
+          "facet.date",tdate_a, 
+          "facet.date",tdate_b, 
+          "facet.date.other", "all", 
+          "f."+tdate_b+".facet.date.start","2009-05-01T11:00:00Z", 
+          "f."+tdate_b+".facet.date.gap","+3MONTHS", 
+          "facet.date.start","2010-05-01T11:00:00Z", 
+          "facet.date.gap","+1DAY", 
+          "facet.date.end","2010-05-20T11:00:00Z");
+
+    // simple range facet on one field
+    query("q","*:*", "rows",100, "facet","true", 
+          "facet.range",tlong, 
+          "facet.range.start",200, 
+          "facet.range.gap",100, 
+          "facet.range.end",900);
+
+    // range facet on multiple fields
+    query("q","*:*", "rows",100, "facet","true", 
+          "facet.range",tlong, 
+          "facet.range",i1, 
+          "f."+i1+".facet.range.start",300, 
+          "f."+i1+".facet.range.gap",87, 
+          "facet.range.end",900,
+          "facet.range.start",200, 
+          "facet.range.gap",100, 
+          "f."+tlong+".facet.range.end",900);
+
+    stress=0;  // turn off stress... we want to tex max combos in min time
+    for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
+      String f = fieldNames[random.nextInt(fieldNames.length)];
+      if (random.nextBoolean()) f = t1;  // the text field is a really interesting one to facet on (and it's multi-valued too)
+
+      // we want a random query and not just *:* so we'll get zero counts in facets also
+      // TODO: do a better random query
+      String q = random.nextBoolean() ? "*:*" : "id:(1 3 5 7 9 11 13) OR id:[100 TO " + random.nextInt(50) + "]";
+
+      int nolimit = random.nextBoolean() ? -1 : 10000;  // these should be equivalent
+
+      // if limit==-1, we should always get exact matches
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","count", "facet.mincount",random.nextInt(5), "facet.offset",random.nextInt(10));
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.limit",nolimit, "facet.sort","index", "facet.mincount",random.nextInt(5), "facet.offset",random.nextInt(10));
+      // for index sort, we should get exact results for mincount <= 1
+      query("q",q, "rows",0, "facet","true", "facet.field",f, "facet.sort","index", "facet.mincount",random.nextInt(2), "facet.offset",random.nextInt(10), "facet.limit",random.nextInt(11)-1);
+    }
+    stress = backupStress;  // restore stress
 
     // test faceting multiple things at once
-    query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
+    query("q","*:*", "rows",0, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
     ,"facet.field",t1);
 
     // test filter tagging, facet exclusion, and naming (multi-select facet support)
-    query("q","*:*", "rows",100, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
+    query("q","*:*", "rows",0, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
     ,"facet.field","{!key=mykey ex=a}"+t1
     ,"facet.field","{!key=other ex=b}"+t1
     ,"facet.field","{!key=again ex=a,b}"+t1

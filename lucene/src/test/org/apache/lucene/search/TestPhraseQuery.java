@@ -212,7 +212,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     Directory directory = newDirectory();
-    Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    Analyzer stopAnalyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig( Version.LUCENE_40, stopAnalyzer));
     Document doc = new Document();
@@ -285,7 +285,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader.close();
     
     writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
     doc = new Document();
     doc.add(newField("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -335,7 +335,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testSlopScoring() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
     doc.add(newField("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
@@ -374,7 +374,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer);
     qp.setEnablePositionIncrements(true);
     PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");
@@ -596,9 +596,9 @@ public class TestPhraseQuery extends LuceneTestCase {
 
   public void testRandomPhrases() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new MockAnalyzer();
+    Analyzer analyzer = new MockAnalyzer(random);
 
-    RandomIndexWriter w  = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter w  = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
     Field f = newField("f", "", Field.Store.NO, Field.Index.ANALYZED);

@@ -418,4 +418,9 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
         new String[] { "仮", "名", "遣", "い", "カタカナ" },
         new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<HIRAGANA>", "<KATAKANA>" });
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
+  }
 }

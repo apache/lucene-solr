@@ -356,3 +356,9 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   field as a parameter, this is removed due to the fact the entire Similarity (all methods)
   can now be configured per-field.
   Methods that apply to the entire query such as coord() and queryNorm() exist in SimilarityProvider.
+
+* LUCENE-1076: TieredMergePolicy is now the default merge policy.
+  It's able to merge non-contiguous segments; this may cause problems
+  for applications that rely on Lucene's internal document ID
+  assigment.  If so, you should instead use LogByteSize/DocMergePolicy
+  during indexing.

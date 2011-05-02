@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
@@ -96,7 +96,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
@@ -183,7 +183,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals("100 docs were added to the index, this is what we expect to find!",100,ir.numDocs());
@@ -222,7 +222,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
@@ -295,7 +295,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
@@ -407,7 +407,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // Index the line docs
     String algLines2[] = {
       "# ----- properties ",
-      "analyzer=org.apache.lucene.analysis.MockAnalyzer",
+      "analyzer=org.apache.lucene.analysis.core.WhitespaceAnalyzer",
       "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
       "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
       "content.source.forever=false",
@@ -425,7 +425,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
 
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
             .setOpenMode(OpenMode.APPEND));
     iw.close();
 
@@ -448,7 +448,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // then build index from the same docs
     String algLines1[] = {
       "# ----- properties ",
-      "analyzer=org.apache.lucene.analysis.MockAnalyzer",
+      "analyzer=org.apache.lucene.analysis.core.WhitespaceAnalyzer",
       "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
       "docs.file=" + getReuters20LinesFile(),
       "# ----- alg ",
@@ -934,24 +934,24 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   public void testCollator() throws Exception {
     // ROOT locale
     Benchmark benchmark = execBenchmark(getCollatorConfig("ROOT", "impl:jdk"));
-    CollationKeyAnalyzer expected = new CollationKeyAnalyzer(Collator
+    CollationKeyAnalyzer expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator
         .getInstance(new Locale("")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
     
     // specify just a language
     benchmark = execBenchmark(getCollatorConfig("de", "impl:jdk"));
-    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("de")));
+    expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("de")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
     
     // specify language + country
     benchmark = execBenchmark(getCollatorConfig("en,US", "impl:jdk"));
-    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("en",
+    expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("en",
         "US")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
     
     // specify language + country + variant
     benchmark = execBenchmark(getCollatorConfig("no,NO,NY", "impl:jdk"));
-    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("no",
+    expected = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("no",
         "NO", "NY")));
     assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
   }
@@ -962,11 +962,15 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     TokenStream ts2 = a2.tokenStream("bogus", new StringReader(text));
     ts1.reset();
     ts2.reset();
-    CharTermAttribute termAtt1 = ts1.addAttribute(CharTermAttribute.class);
-    CharTermAttribute termAtt2 = ts2.addAttribute(CharTermAttribute.class);
+    TermToBytesRefAttribute termAtt1 = ts1.addAttribute(TermToBytesRefAttribute.class);
+    TermToBytesRefAttribute termAtt2 = ts2.addAttribute(TermToBytesRefAttribute.class);
     assertTrue(ts1.incrementToken());
     assertTrue(ts2.incrementToken());
-    assertEquals(termAtt1.toString(), termAtt2.toString());
+    BytesRef bytes1 = termAtt1.getBytesRef();
+    BytesRef bytes2 = termAtt2.getBytesRef();
+    termAtt1.fillBytesRef();
+    termAtt2.fillBytesRef();
+    assertEquals(bytes1, bytes2);
     assertFalse(ts1.incrementToken());
     assertFalse(ts2.incrementToken());
     ts1.close();
@@ -1017,18 +1021,18 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
                                       "two three four", "three four", 
                                       "three four five", "four five",
                                       "four five six", "five six" });
-    // MockAnalyzer, default maxShingleSize and outputUnigrams
+    // WhitespaceAnalyzer, default maxShingleSize and outputUnigrams
     benchmark = execBenchmark
-      (getShingleConfig("analyzer:MockAnalyzer"));
+      (getShingleConfig("analyzer:WhitespaceAnalyzer"));
     assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
                        new String[] { "one,two,three,", "one,two,three, four",
                                       "four", "four five", "five", "five six", 
                                       "six" });
     
-    // MockAnalyzer, maxShingleSize=3 and outputUnigrams=false
+    // WhitespaceAnalyzer, maxShingleSize=3 and outputUnigrams=false
     benchmark = execBenchmark
       (getShingleConfig
-        ("outputUnigrams:false,maxShingleSize:3,analyzer:MockAnalyzer"));
+        ("outputUnigrams:false,maxShingleSize:3,analyzer:WhitespaceAnalyzer"));
     assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
                        new String[] { "one,two,three, four", 
                                       "one,two,three, four five",

@@ -9,14 +9,14 @@
       <sourceFolder url="file://$MODULE_DIR$/test/java" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/test/resources" isTestSource="true" />
     </content>
-    <orderEntry type="module" module-name="solr" />
-    <orderEntry type="module" module-name="dataimporthandler" />
-    <orderEntry type="module" module-name="lucene" scope="TEST" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Solr library" level="project" />
     <orderEntry type="library" name="Solr DIH library" level="project" />
     <orderEntry type="library" name="Solr extraction library" level="project" />
+    <orderEntry type="module" module-name="solr" />
+    <orderEntry type="module" module-name="dataimporthandler" />
+    <orderEntry type="module" module-name="lucene" scope="TEST" />
   </component>
 </module>
 

@@ -141,6 +141,11 @@ Changes in backwards compatibility policy
 * LUCENE-2315: AttributeSource's methods for accessing attributes are now final,
   else its easy to corrupt the internal states.  (Uwe Schindler)
 
+* LUCENE-2814: The IndexWriter.flush method no longer takes "boolean
+  flushDocStores" argument, as we now always flush doc stores (index
+  files holding stored fields and term vectors) while flushing a
+  segment.  (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -157,11 +162,10 @@ Changes in Runtime Behavior
 * LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
   than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
 
-* LUCENE-1076: The default merge policy is now able to merge
-  non-contiguous segments, which means docIDs no longer necessarily
-  say "in order".  If this is a problem then you can use either of the
-  LogMergePolicy impls, and call setRequireContiguousMerge(true).
-  (Mike McCandless)
+* LUCENE-1076: The default merge policy (TieredMergePolicy) is now
+  able to merge non-contiguous segments, which means docIDs no longer
+  necessarily say "in order".  If this is a problem then you can use
+  either of the LogMergePolicy impls.  (Mike McCandless)
   
 * LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
   per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
@@ -169,6 +173,70 @@ Changes in Runtime Behavior
   globally across IndexWriter sessions and persisted into a X.fnx file on
   successful commit. The corresponding file format changes are backwards-
   compatible. (Michael Busch, Simon Willnauer)
+  
+* LUCENE-2956, LUCENE-2573, LUCENE-2324, LUCENE-2555: Changes from 
+  DocumentsWriterPerThread:
+
+  - IndexWriter now uses a DocumentsWriter per thread when indexing documents.
+    Each DocumentsWriterPerThread indexes documents in its own private segment,
+    and the in memory segments are no longer merged on flush.  Instead, each
+    segment is separately flushed to disk and subsequently merged with normal
+    segment merging.
+
+  - DocumentsWriterPerThread (DWPT) is now flushed concurrently based on a
+    FlushPolicy.  When a DWPT is flushed, a fresh DWPT is swapped in so that
+    indexing may continue concurrently with flushing.  The selected
+    DWPT flushes all its RAM resident documents do disk.  Note: Segment flushes
+    don't flush all RAM resident documents but only the documents private to
+    the DWPT selected for flushing. 
+  
+  - Flushing is now controlled by FlushPolicy that is called for every add,
+    update or delete on IndexWriter. By default DWPTs are flushed either on
+    maxBufferedDocs per DWPT or the global active used memory. Once the active
+    memory exceeds ramBufferSizeMB only the largest DWPT is selected for
+    flushing and the memory used by this DWPT is substracted from the active
+    memory and added to a flushing memory pool, which can lead to temporarily
+    higher memory usage due to ongoing indexing.
+    
+  - IndexWriter now can utilize ramBufferSize > 2048 MB. Each DWPT can address
+    up to 2048 MB memory such that the ramBufferSize is now bounded by the max
+    number of DWPT avaliable in the used DocumentsWriterPerThreadPool.
+    IndexWriters net memory consumption can grow far beyond the 2048 MB limit if
+    the applicatoin can use all available DWPTs. To prevent a DWPT from
+    exhausting its address space IndexWriter will forcefully flush a DWPT if its
+    hard memory limit is exceeded. The RAMPerThreadHardLimitMB can be controlled
+    via IndexWriterConfig and defaults to 1945 MB. 
+    Since IndexWriter flushes DWPT concurrently not all memory is released
+    immediately. Applications should still use a ramBufferSize significantly
+    lower than the JVMs avaliable heap memory since under high load multiple
+    flushing DWPT can consume substantial transient memory when IO performance
+    is slow relative to indexing rate.
+    
+  - IndexWriter#commit now doesn't block concurrent indexing while flushing all
+    'currently' RAM resident documents to disk. Yet, flushes that occur while a
+    a full flush is running are queued and will happen after all DWPT involved
+    in the full flush are done flushing. Applications using multiple threads
+    during indexing and trigger a full flush (eg call commmit() or open a new
+    NRT reader) can use significantly more transient memory.
+    
+  - IndexWriter#addDocument and IndexWriter.updateDocument can block indexing
+    threads if the number of active + number of flushing DWPT exceed a
+    safety limit. By default this happens if 2 * max number available thread
+    states (DWPTPool) is exceeded. This safety limit prevents applications from
+    exhausting their available memory if flushing can't keep up with
+    concurrently indexing threads.  
+    
+  - IndexWriter only applies and flushes deletes if the maxBufferedDelTerms
+    limit is reached during indexing. No segment flushes will be triggered
+    due to this setting.
+    
+  - IndexWriter#flush(boolean, boolean) doesn't synchronized on IndexWriter
+    anymore. A dedicated flushLock has been introduced to prevent multiple full-
+    flushes happening concurrently. 
+    
+  - DocumentsWriter doesn't write shared doc stores anymore. 
+  
+  (Mike McCandless, Michael Busch, Simon Willnauer)
 
 API Changes
 
@@ -334,6 +402,16 @@ New features
 * LUCENE-2862: Added TermsEnum.totalTermFreq() and
   Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
 
+* LUCENE-3001: Added TrieFieldHelper to write solr compatible numeric
+  fields without the solr dependency. (ryan)
+  
+* LUCENE-3003: Added new expert class oal.index.DocTermsOrd,
+  refactored from Solr's UnInvertedField, for accessing term ords for
+  multi-valued fields, per document.  This is similar to FieldCache in
+  that it inverts the index to compute the ords, but differs in that
+  it's able to handle multi-valued fields and does not hold the term
+  bytes in RAM. (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -366,6 +444,21 @@ Bug fixes
 * LUCENE-2936: PhraseQuery score explanations were not correctly 
   identifying matches vs non-matches.  (hossman)
 
+* LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
+  indexes, causing existing deletions to be applied on the incoming indexes as 
+  well. (Shai Erera, Mike McCandless)
+
+Test Cases
+
+* LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
+  stop iterating if at least 'tests.iter.min' ran and a failure occured. 
+  (Shai Erera, Chris Hostetter)
+
+Build
+
+* LUCENE-3006: Building javadocs will fail on warnings by default. 
+  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -380,7 +473,21 @@ Optimizations
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
   on empty or one-element lists/arrays.  (Uwe Schindler)
 
-======================= Lucene 3.1 (not yet released) =======================
+Bug fixes
+
+* LUCENE-3024: Index with more than 2.1B terms was hitting AIOOBE when
+  seeking TermEnum (eg used by Solr's faceting) (Tom Burton-West, Mike
+  McCandless)
+
+* LUCENE-3042: When a filter or consumer added Attributes to a TokenStream
+  chain after it was already (partly) consumed [or clearAttributes(),
+  captureState(), cloneAttributes(),... was called by the Tokenizer],
+  the Tokenizer calling clearAttributes() or capturing state after addition 
+  may not do this on the newly added Attribute. This bug affected only
+  very special use cases of the TokenStream-API, most users would not
+  have recognized it.  (Uwe Schindler, Robert Muir)
+
+======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -396,7 +503,7 @@ Changes in backwards compatibility policy
 
 * LUCENE-2190: Removed deprecated customScore() and customExplain()
   methods from experimental CustomScoreQuery.  (Uwe Schindler)
-  
+
 * LUCENE-2286: Enabled DefaultSimilarity.setDiscountOverlaps by default.
   This means that terms with a position increment gap of zero do not
   affect the norms calculation by default.  (Robert Muir)
@@ -434,10 +541,10 @@ Changes in backwards compatibility policy
   actual file's length if the file exists, and throws FileNotFoundException
   otherwise. Returning length=0 for a non-existent file is no longer allowed. If
   you relied on that, make sure to catch the exception. (Shai Erera)
-  
+
 * LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
   creation. Previously, if you passed an empty Directory and set OpenMode to
-  CREATE*, IndexWriter would make a first empty commit. If you need that 
+  CREATE*, IndexWriter would make a first empty commit. If you need that
   behavior you can call writer.commit()/close() immediately after you create it.
   (Shai Erera, Mike McCandless)
 
@@ -453,10 +560,10 @@ Changes in backwards compatibility policy
   values in multi-valued field has been changed for some cases in index.
   If you index empty fields and uses positions/offsets information on that
   fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
-  
+
 * LUCENE-2804: Directory.setLockFactory new declares throwing an IOException.
   (Shai Erera, Robert Muir)
-  
+
 * LUCENE-2837: Added deprecations noting that in 4.0, Searcher and
   Searchable are collapsed into IndexSearcher; contrib/remote and
   MultiSearcher have been removed.  (Mike McCandless)
@@ -483,7 +590,7 @@ Changes in runtime behavior
 * LUCENE-2179: CharArraySet.clear() is now functional.
   (Robert Muir, Uwe Schindler)
 
-* LUCENE-2455: IndexWriter.addIndexes no longer optimizes the target index 
+* LUCENE-2455: IndexWriter.addIndexes no longer optimizes the target index
   before it adds the new ones. Also, the existing segments are not merged and so
   the index will not end up with a single segment (unless it was empty before).
   In addition, addIndexesNoOptimize was renamed to addIndexes and no longer
@@ -502,9 +609,9 @@ Changes in runtime behavior
   usage, allowing applications to accidentally open two writers on the
   same directory.  (Mike McCandless)
 
-* LUCENE-2701: maxMergeMBForOptimize and maxMergeDocs constraints set on 
-  LogMergePolicy now affect optimize() as well (as opposed to only regular 
-  merges). This means that you can run optimize() and too large segments won't 
+* LUCENE-2701: maxMergeMBForOptimize and maxMergeDocs constraints set on
+  LogMergePolicy now affect optimize() as well (as opposed to only regular
+  merges). This means that you can run optimize() and too large segments won't
   be merged. (Shai Erera)
 
 * LUCENE-2753: IndexReader and DirectoryReader .listCommits() now return a List,
@@ -514,9 +621,9 @@ Changes in runtime behavior
   the IndexSearcher search methods that take an int nDocs will now
   throw IllegalArgumentException if nDocs is 0.  Instead, you should
   use the newly added TotalHitCountCollector.  (Mike McCandless)
-  
-* LUCENE-2790: LogMergePolicy.useCompoundFile's logic now factors in noCFSRatio 
-  to determine whether the passed in segment should be compound. 
+
+* LUCENE-2790: LogMergePolicy.useCompoundFile's logic now factors in noCFSRatio
+  to determine whether the passed in segment should be compound.
   (Shai Erera, Earwin Burrfoot)
 
 * LUCENE-2805: IndexWriter now increments the index version on every change to
@@ -536,7 +643,7 @@ Changes in runtime behavior
 
 * LUCENE-2010: Segments with 100% deleted documents are now removed on
   IndexReader or IndexWriter commit.   (Uwe Schindler, Mike McCandless)
-  
+
 * LUCENE-2960: Allow some changes to IndexWriterConfig to take effect
   "live" (after an IW is instantiated), via
   IndexWriter.getConfig().setXXX(...) (Shay Banon, Mike McCandless)
@@ -554,7 +661,7 @@ API Changes
 
 * LUCENE-2103: NoLockFactory should have a private constructor;
   until Lucene 4.0 the default one will be deprecated.
-  (Shai Erera via Uwe Schindler) 
+  (Shai Erera via Uwe Schindler)
 
 * LUCENE-2177: Deprecate the Field ctors that take byte[] and Store.
   Since the removal of compressed fields, Store can only be YES, so
@@ -574,30 +681,30 @@ API Changes
   files are no longer open by IndexReaders. (luocanrao via Mike
   McCandless)
 
-* LUCENE-2282: IndexFileNames is exposed as a public class allowing for easier 
-  use by external code. In addition it offers a matchExtension method which 
+* LUCENE-2282: IndexFileNames is exposed as a public class allowing for easier
+  use by external code. In addition it offers a matchExtension method which
   callers can use to query whether a certain file matches a certain extension.
-  (Shai Erera via Mike McCandless)  
+  (Shai Erera via Mike McCandless)
 
 * LUCENE-124: Add a TopTermsBoostOnlyBooleanQueryRewrite to MultiTermQuery.
   This rewrite method is similar to TopTermsScoringBooleanQueryRewrite, but
-  only scores terms by their boost values. For example, this can be used 
-  with FuzzyQuery to ensure that exact matches are always scored higher, 
+  only scores terms by their boost values. For example, this can be used
+  with FuzzyQuery to ensure that exact matches are always scored higher,
   because only the boost will be used in scoring.  (Robert Muir)
-  
-* LUCENE-2015: Add a static method foldToASCII to ASCIIFoldingFilter to 
+
+* LUCENE-2015: Add a static method foldToASCII to ASCIIFoldingFilter to
   expose its folding logic.  (Cédrik Lime via Robert Muir)
-  
-* LUCENE-2294: IndexWriter constructors have been deprecated in favor of a 
+
+* LUCENE-2294: IndexWriter constructors have been deprecated in favor of a
   single ctor which accepts IndexWriterConfig and a Directory. You can set all
-  the parameters related to IndexWriter on IndexWriterConfig. The different 
-  setter/getter methods were deprecated as well. One should call 
+  the parameters related to IndexWriter on IndexWriterConfig. The different
+  setter/getter methods were deprecated as well. One should call
   writer.getConfig().getXYZ() to query for a parameter XYZ.
-  Additionally, the setter/getter related to MergePolicy were deprecated as 
+  Additionally, the setter/getter related to MergePolicy were deprecated as
   well. One should interact with the MergePolicy directly.
   (Shai Erera via Mike McCandless)
-  
-* LUCENE-2320: IndexWriter's MergePolicy configuration was moved to 
+
+* LUCENE-2320: IndexWriter's MergePolicy configuration was moved to
   IndexWriterConfig and the respective methods on IndexWriter were deprecated.
   (Shai Erera via Mike McCandless)
 
@@ -621,14 +728,14 @@ API Changes
 * LUCENE-2402: IndexWriter.deleteUnusedFiles now deletes unreferenced commit
   points too. If you use an IndexDeletionPolicy which holds onto index commits
   (such as SnapshotDeletionPolicy), you can call this method to remove those
-  commit points when they are not needed anymore (instead of waiting for the 
+  commit points when they are not needed anymore (instead of waiting for the
   next commit). (Shai Erera)
-  
+
 * LUCENE-2481: SnapshotDeletionPolicy.snapshot() and release() were replaced
   with equivalent ones that take a String (id) as argument. You can pass
-  whatever ID you want, as long as you use the same one when calling both. 
+  whatever ID you want, as long as you use the same one when calling both.
   (Shai Erera)
-  
+
 * LUCENE-2356: Add IndexWriterConfig.set/getReaderTermIndexDivisor, to
   set what IndexWriter passes for termsIndexDivisor to the readers it
   opens internally when apply deletions or creating a near-real-time
@@ -638,7 +745,7 @@ API Changes
   in common/standard/ now implement the Word Break rules from the Unicode 6.0.0
   Text Segmentation algorithm (UAX#29), covering the full range of Unicode code
   points, including values from U+FFFF to U+10FFFF
-   
+
   ClassicTokenizer/Analyzer retains the old (pre-Lucene 3.1) StandardTokenizer/
   Analyzer implementation and behavior.  Only the Unicode Basic Multilingual
   Plane (code points from U+0000 to U+FFFF) is covered.
@@ -646,16 +753,16 @@ API Changes
   UAX29URLEmailTokenizer tokenizes URLs and E-mail addresses according to the
   relevant RFCs, in addition to implementing the UAX#29 Word Break rules.
   (Steven Rowe, Robert Muir, Uwe Schindler)
-   
+
 * LUCENE-2778: RAMDirectory now exposes newRAMFile() which allows to override
   and return a different RAMFile implementation. (Shai Erera)
-  
+
 * LUCENE-2785: Added TotalHitCountCollector whose sole purpose is to
   count the number of hits matching the query.  (Mike McCandless)
 
-* LUCENE-2846: Deprecated IndexReader.setNorm(int, String, float). This method 
-  is only syntactic sugar for setNorm(int, String, byte), but  using the global 
-  Similarity.getDefault().encodeNormValue().  Use the byte-based method instead 
+* LUCENE-2846: Deprecated IndexReader.setNorm(int, String, float). This method
+  is only syntactic sugar for setNorm(int, String, byte), but  using the global
+  Similarity.getDefault().encodeNormValue().  Use the byte-based method instead
   to ensure that the norm is encoded with your Similarity.
   (Robert Muir, Mike McCandless)
 
@@ -676,6 +783,9 @@ API Changes
   for AttributeImpls, but can still be provided (if needed).
   (Uwe Schindler)
 
+* LUCENE-2691: Deprecate IndexWriter.getReader in favor of
+  IndexReader.open(IndexWriter) (Grant Ingersoll, Mike McCandless)
+
 * LUCENE-2876: Deprecated Scorer.getSimilarity(). If your Scorer uses a Similarity,
   it should keep it itself. Fixed Scorers to pass their parent Weight, so that
   Scorer.visitSubScorers (LUCENE-2590) will work correctly.
@@ -687,7 +797,7 @@ API Changes
   expert use cases can handle seeing deleted documents returned.  The
   deletes remain buffered so that the next time you open an NRT reader
   and pass true, all deletes will be a applied.  (Mike McCandless)
-  
+
 * LUCENE-1253: LengthFilter (and Solr's KeepWordTokenFilter) now
   require up front specification of enablePositionIncrement. Together with
   StopFilter they have a common base class (FilteringTokenFilter) that handles
@@ -698,7 +808,7 @@ Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
   close.  (Martin Traverso via Uwe Schindler)
-  
+
 * LUCENE-2273: FieldCacheImpl.getCacheEntries() used WeakHashMap
   incorrectly and lead to ConcurrentModificationException.
   (Uwe Schindler, Robert Muir)
@@ -709,7 +819,7 @@ Bug fixes
 
 * LUCENE-2074: Reduce buffer size of lexer back to default on reset.
   (Ruben Laguna, Shai Erera via Uwe Schindler)
-  
+
 * LUCENE-2496: Don't throw NPE if IndexWriter is opened with CREATE on
   a prior (corrupt) index missing its segments_N file.  (Mike
   McCandless)
@@ -718,10 +828,10 @@ Bug fixes
   assuming whitespace tokenization. Previously all CJK queries, for example,
   would be turned into phrase queries. The old behavior is preserved with
   the matchVersion parameter for previous versions. Additionally, you can
-  explicitly enable the old behavior with setAutoGeneratePhraseQueries(true) 
+  explicitly enable the old behavior with setAutoGeneratePhraseQueries(true)
   (Robert Muir)
-  
-* LUCENE-2537: FSDirectory.copy() implementation was unsafe and could result in 
+
+* LUCENE-2537: FSDirectory.copy() implementation was unsafe and could result in
   OOM if a large file was copied. (Shai Erera)
 
 * LUCENE-2580: MultiPhraseQuery throws AIOOBE if number of positions
@@ -739,14 +849,14 @@ Bug fixes
 
 * LUCENE-2802: NRT DirectoryReader returned incorrect values from
   getVersion, isOptimized, getCommitUserData, getIndexCommit and isCurrent due
-  to a mutable reference to the IndexWriters SegmentInfos. 
+  to a mutable reference to the IndexWriters SegmentInfos.
   (Simon Willnauer, Earwin Burrfoot)
 
 * LUCENE-2852: Fixed corner case in RAMInputStream that would hit a
   false EOF after seeking to EOF then seeking back to same block you
   were just in and then calling readBytes (Robert Muir, Mike McCandless)
 
-* LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it 
+* LUCENE-2860: Fixed SegmentInfo.sizeInBytes to factor includeDocStores when it
   decides whether to return the cached computed size or not. (Shai Erera)
 
 * LUCENE-2584: SegmentInfo.files() could hit ConcurrentModificationException if
@@ -759,7 +869,7 @@ Bug fixes
   internally, it now calls Similarity.idfExplain(Collection, IndexSearcher).
   (Robert Muir)
 
-* LUCENE-2693: RAM used by IndexWriter was slightly incorrectly computed. 
+* LUCENE-2693: RAM used by IndexWriter was slightly incorrectly computed.
   (Jason Rutherglen via Shai Erera)
 
 * LUCENE-1846: DateTools now uses the US locale everywhere, so DateTools.round()
@@ -775,6 +885,9 @@ Bug fixes
   been rounded down to 0 instead of being rounded up to the smallest
   positive number.  (yonik)
 
+* LUCENE-2936: PhraseQuery score explanations were not correctly
+  identifying matches vs non-matches.  (hossman)
+
 * LUCENE-2975: A hotspot bug corrupts IndexInput#readVInt()/readVLong() if
   the underlying readByte() is inlined (which happens e.g. in MMapDirectory).
   The loop was unwinded which makes the hotspot bug disappear.
@@ -783,30 +896,30 @@ Bug fixes
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
-  creation. (Israel Tsadok, Simon Willnauer via Uwe Schindler) 
+  creation. (Israel Tsadok, Simon Willnauer via Uwe Schindler)
 
 * LUCENE-2069: Added Unicode 4 support to CharArraySet. Due to the switch
   to Java 5, supplementary characters are now lowercased correctly if the
   set is created as case insensitive.
-  CharArraySet now requires a Version argument to preserve 
-  backwards compatibility. If Version < 3.1 is passed to the constructor, 
+  CharArraySet now requires a Version argument to preserve
+  backwards compatibility. If Version < 3.1 is passed to the constructor,
   CharArraySet yields the old behavior. (Simon Willnauer)
-  
+
 * LUCENE-2069: Added Unicode 4 support to LowerCaseFilter. Due to the switch
   to Java 5, supplementary characters are now lowercased correctly.
-  LowerCaseFilter now requires a Version argument to preserve 
-  backwards compatibility. If Version < 3.1 is passed to the constructor, 
-  LowerCaseFilter yields the old behavior. (Simon Willnauer, Robert Muir)  
+  LowerCaseFilter now requires a Version argument to preserve
+  backwards compatibility. If Version < 3.1 is passed to the constructor,
+  LowerCaseFilter yields the old behavior. (Simon Willnauer, Robert Muir)
 
 * LUCENE-2034: Added ReusableAnalyzerBase, an abstract subclass of Analyzer
   that makes it easier to reuse TokenStreams correctly. This issue also added
   StopwordAnalyzerBase, which improves consistency of all Analyzers that use
-  stopwords, and implement many analyzers in contrib with it.  
+  stopwords, and implement many analyzers in contrib with it.
   (Simon Willnauer via Robert Muir)
-  
+
 * LUCENE-2198, LUCENE-2901: Support protected words in stemming TokenFilters using a
   new KeywordAttribute.  (Simon Willnauer, Drew Farris via Uwe Schindler)
-  
+
 * LUCENE-2183, LUCENE-2240, LUCENE-2241: Added Unicode 4 support
   to CharTokenizer and its subclasses. CharTokenizer now has new
   int-API which is conditionally preferred to the old char-API depending
@@ -815,8 +928,8 @@ New features
 
 * LUCENE-2247: Added a CharArrayMap<V> for performance improvements
   in some stemmers and synonym filters. (Uwe Schindler)
-  
-* LUCENE-2320: Added SetOnce which wraps an object and allows it to be set 
+
+* LUCENE-2320: Added SetOnce which wraps an object and allows it to be set
   exactly once. (Shai Erera via Mike McCandless)
 
 * LUCENE-2314: Added AttributeSource.copyTo(AttributeSource) that
@@ -843,19 +956,19 @@ New features
   Directory.copyTo, and use nio's FileChannel.transferTo when copying
   files between FSDirectory instances.  (Earwin Burrfoot via Mike
   McCandless).
-  
+
 * LUCENE-2074: Make StandardTokenizer fit for Unicode 4.0, if the
   matchVersion parameter is Version.LUCENE_31. (Uwe Schindler)
 
 * LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
   can be used to prevent commits from ever getting deleted from the index.
   (Shai Erera)
-  
-* LUCENE-1585: IndexWriter now accepts a PayloadProcessorProvider which can 
-  return a DirPayloadProcessor for a given Directory, which returns a 
-  PayloadProcessor for a given Term. The PayloadProcessor will be used to 
+
+* LUCENE-1585: IndexWriter now accepts a PayloadProcessorProvider which can
+  return a DirPayloadProcessor for a given Directory, which returns a
+  PayloadProcessor for a given Term. The PayloadProcessor will be used to
   process the payloads of the segments as they are merged (e.g. if one wants to
-  rewrite payloads of external indexes as they are added, or of local ones). 
+  rewrite payloads of external indexes as they are added, or of local ones).
   (Shai Erera, Michael Busch, Mike McCandless)
 
 * LUCENE-2440: Add support for custom ExecutorService in
@@ -868,7 +981,7 @@ New features
 
 * LUCENE-2526: Don't throw NPE from MultiPhraseQuery.toString when
   it's empty.  (Ross Woolf via Mike McCandless)
-  
+
 * LUCENE-2559: Added SegmentReader.reopen methods (John Wang via Mike
   McCandless)
 
@@ -884,16 +997,19 @@ New features
   to add span support: SpanMultiTermQueryWrapper<Q extends MultiTermQuery>.
   Using this wrapper its easy to add fuzzy/wildcard to e.g. a SpanNearQuery.
   (Robert Muir, Uwe Schindler)
-  
+
 * LUCENE-2838: ConstantScoreQuery now directly supports wrapping a Query
   instance for stripping off scores. The use of a QueryWrapperFilter
   is no longer needed and discouraged for that use case. Directly wrapping
   Query improves performance, as out-of-order collection is now supported.
   (Uwe Schindler)
 
-* LUCENE-2864: Add getMaxTermFrequency (maximum within-document TF) to 
+* LUCENE-2864: Add getMaxTermFrequency (maximum within-document TF) to
   FieldInvertState so that it can be used in Similarity.computeNorm.
   (Robert Muir)
+
+* LUCENE-2720: Segments now record the code version which created them.
+  (Shai Erera, Mike McCandless, Uwe Schindler)
 
 * LUCENE-2474: Added expert ReaderFinishedListener API to
   IndexReader, to allow apps that maintain external per-segment caches
@@ -903,8 +1019,8 @@ New features
 * LUCENE-2911: The new StandardTokenizer, UAX29URLEmailTokenizer, and
   the ICUTokenizer in contrib now all tag types with a consistent set
   of token types (defined in StandardTokenizer). Tokens in the major
-  CJK types are explicitly marked to allow for custom downstream handling: 
-  <IDEOGRAPHIC>, <HANGUL>, <KATAKANA>, and <HIRAGANA>.  
+  CJK types are explicitly marked to allow for custom downstream handling:
+  <IDEOGRAPHIC>, <HANGUL>, <KATAKANA>, and <HIRAGANA>.
   (Robert Muir, Steven Rowe)
 
 * LUCENE-2913: Add missing getters to Numeric* classes. (Uwe Schindler)
@@ -929,7 +1045,7 @@ Optimizations
 * LUCENE-2137: Switch to AtomicInteger for some ref counting (Earwin
   Burrfoot via Mike McCandless)
 
-* LUCENE-2123, LUCENE-2261: Move FuzzyQuery rewrite to separate RewriteMode 
+* LUCENE-2123, LUCENE-2261: Move FuzzyQuery rewrite to separate RewriteMode
   into MultiTermQuery. The number of fuzzy expansions can be specified with
   the maxExpansions parameter to FuzzyQuery.
   (Uwe Schindler, Robert Muir, Mike McCandless)
@@ -963,12 +1079,12 @@ Optimizations
   TermAttributeImpl, move DEFAULT_TYPE constant to TypeInterface, improve
   null-handling for TypeAttribute.  (Uwe Schindler)
 
-* LUCENE-2329: Switch TermsHash* from using a PostingList object per unique 
+* LUCENE-2329: Switch TermsHash* from using a PostingList object per unique
   term to parallel arrays, indexed by termID. This reduces garbage collection
   overhead significantly, which results in great indexing performance wins
   when the available JVM heap space is low. This will become even more
   important when the DocumentsWriter RAM buffer is searchable in the future,
-  because then it will make sense to make the RAM buffers as large as 
+  because then it will make sense to make the RAM buffers as large as
   possible. (Mike McCandless, Michael Busch)
 
 * LUCENE-2380: The terms field cache methods (getTerms,
@@ -983,7 +1099,7 @@ Optimizations
   causing too many fallbacks to compare-by-value (instead of by-ord).
   (Mike McCandless)
 
-* LUCENE-2574: IndexInput exposes copyBytes(IndexOutput, long) to allow for 
+* LUCENE-2574: IndexInput exposes copyBytes(IndexOutput, long) to allow for
   efficient copying by sub-classes. Optimized copy is implemented for RAM and FS
   streams. (Shai Erera)
 
@@ -1006,15 +1122,15 @@ Optimizations
 
 * LUCENE-2010: Segments with 100% deleted documents are now removed on
   IndexReader or IndexWriter commit.  (Uwe Schindler, Mike McCandless)
-  
+
 * LUCENE-1472: Removed synchronization from static DateTools methods
   by using a ThreadLocal. Also converted DateTools.Resolution to a
   Java 5 enum (this should not break backwards).  (Uwe Schindler)
 
 Build
 
-* LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
-  into core, and moved the ICU-based collation support into contrib/icu.  
+* LUCENE-2124: Moved the JDK-based collation support from contrib/collation
+  into core, and moved the ICU-based collation support into contrib/icu.
   (Robert Muir)
 
 * LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards
@@ -1026,14 +1142,14 @@ Build
 
 * LUCENE-1709: Tests are now parallelized by default (except for benchmark). You
   can force them to run sequentially by passing -Drunsequential=1 on the command
-  line. The number of threads that are spawned per CPU defaults to '1'. If you 
+  line. The number of threads that are spawned per CPU defaults to '1'. If you
   wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
   (Robert Muir, Shai Erera, Peter Kofler)
 
 * LUCENE-2516: Backwards tests are now compiled against released lucene-core.jar
   from tarball of previous version. Backwards tests are now packaged together
   with src distribution.  (Uwe Schindler)
-  
+
 * LUCENE-2611: Added Ant target to install IntelliJ IDEA configuration:
   "ant idea".  See http://wiki.apache.org/lucene-java/HowtoConfigureIntelliJ
   (Steven Rowe)
@@ -1042,8 +1158,8 @@ Build
   generating Maven artifacts (Steven Rowe)
 
 * LUCENE-2609: Added jar-test-framework Ant target which packages Lucene's
-  tests' framework classes. (Drew Farris, Grant Ingersoll, Shai Erera, Steven 
-  Rowe)
+  tests' framework classes. (Drew Farris, Grant Ingersoll, Shai Erera,
+  Steven Rowe)
 
 Test Cases
 
@@ -1079,18 +1195,18 @@ Test Cases
   access to "real" files from the test folder itself, can use
   LuceneTestCase(J4).getDataFile().  (Uwe Schindler)
 
-* LUCENE-2398, LUCENE-2611: Improve tests to work better from IDEs such 
+* LUCENE-2398, LUCENE-2611: Improve tests to work better from IDEs such
   as Eclipse and IntelliJ.
   (Paolo Castagna, Steven Rowe via Robert Muir)
 
 * LUCENE-2804: add newFSDirectory to LuceneTestCase to create a FSDirectory at
   random. (Shai Erera, Robert Muir)
-  
+
 Documentation
 
 * LUCENE-2579: Fix oal.search's package.html description of abstract
   methods.  (Santiago M. Mola via Mike McCandless)
-   
+
 * LUCENE-2625: Add a note to IndexReader.termDocs() with additional verbiage
   that the TermEnum must be seeked since it is unpositioned.
   (Adriano Crestani via Robert Muir)

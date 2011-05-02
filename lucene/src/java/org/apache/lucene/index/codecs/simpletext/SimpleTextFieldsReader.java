@@ -19,7 +19,6 @@ package org.apache.lucene.index.codecs.simpletext;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
@@ -112,12 +111,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public TermsEnum terms() throws IOException {
       return SimpleTextFieldsReader.this.terms(current).iterator();
-    }
-
-    @Override
-    public DocValues docValues() throws IOException {
-      // TODO Auto-generated method stub
-      return null;
     }
   }
 

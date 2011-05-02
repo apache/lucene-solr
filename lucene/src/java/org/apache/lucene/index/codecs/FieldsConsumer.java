@@ -21,8 +21,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
-import org.apache.lucene.index.values.DocValues;
 
 import java.io.IOException;
 import java.io.Closeable;
@@ -39,11 +37,6 @@ public abstract class FieldsConsumer implements Closeable {
   /** Add a new field */
   public abstract TermsConsumer addField(FieldInfo field) throws IOException;
   
-  /** Adds a new DocValuesField */
-  public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
-    throw new UnsupportedOperationException("docvalues are not supported");
-  }
-
   /** Called when we are done adding everything. */
   public abstract void close() throws IOException;
 
@@ -58,18 +51,6 @@ public abstract class FieldsConsumer implements Closeable {
       if(terms != null) {
         final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
         termsConsumer.merge(mergeState, terms);
-      }
-      if (mergeState.fieldInfo.hasDocValues()) {
-        final DocValues docValues = fieldsEnum.docValues();
-        if(docValues == null) { 
-          /* It is actually possible that a fieldInfo has a values type but no values are actually available.
-           * this can happen if there are already segments without values around.
-           */
-          continue; 
-        }
-        final DocValuesConsumer docValuesConsumer = addValuesField(mergeState.fieldInfo);
-        assert docValuesConsumer != null;
-        docValuesConsumer.merge(mergeState, docValues);
       }
     }
   }

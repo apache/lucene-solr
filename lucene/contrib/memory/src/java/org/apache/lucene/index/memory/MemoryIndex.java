@@ -52,7 +52,7 @@ import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -807,12 +807,6 @@ public class MemoryIndex {
             public TermsEnum terms() {
               return new MemoryTermsEnum(sortedFields[upto].getValue());
             }
-
-            @Override
-            public DocValues docValues() throws IOException {
-              // TODO 
-              throw new UnsupportedOperationException("not implemented");
-            }
           };
         }
 
@@ -847,12 +841,6 @@ public class MemoryIndex {
               }
             };
           }
-        }
-
-        @Override
-        public DocValues docValues(String field) throws IOException {
-          // TODO 
-          throw new UnsupportedOperationException("not implemented");
         }
       };
     }
@@ -1286,6 +1274,11 @@ public class MemoryIndex {
         return Collections.<String>emptySet();
       
       return Collections.unmodifiableSet(fields.keySet());
+    }
+
+    @Override
+    public PerDocValues perDocValues() throws IOException {
+      return null;
     }
   }
 

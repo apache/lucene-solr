@@ -122,9 +122,9 @@ public class SolrQueryParser extends QueryParser {
     SchemaField sf = schema.getFieldOrNull(field);
     if (sf != null) {
       FieldType ft = sf.getType();
-      // delegate to type for everything except TextField
-      if (ft instanceof TextField) {
-        return super.getFieldQuery(field, queryText, quoted || ((TextField)ft).getAutoGeneratePhraseQueries());
+      // delegate to type for everything except tokenized fields
+      if (ft.isTokenized()) {
+        return super.getFieldQuery(field, queryText, quoted || (ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries()));
       } else {
         return sf.getType().getFieldQuery(parser, sf, queryText);
       }

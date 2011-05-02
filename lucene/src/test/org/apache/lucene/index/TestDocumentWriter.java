@@ -62,7 +62,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testAddDocument() throws Exception {
     Document testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(testDoc);
     writer.commit();
     SegmentInfo info = writer.newestSegment();
@@ -211,7 +211,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testPreAnalyzedField() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     
     doc.add(new Field("preanalyzed", new TokenStream() {
@@ -271,7 +271,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(doc);
     writer.close();
 
@@ -306,7 +306,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f2", "v2", Store.YES, Index.NO));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     writer.addDocument(doc);
     writer.optimize(); // be sure to have a single segment
     writer.close();

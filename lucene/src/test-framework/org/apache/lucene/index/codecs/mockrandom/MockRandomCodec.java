@@ -120,7 +120,14 @@ public class MockRandomCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-
+    // we pull this before the seed intentionally: because its not consumed at runtime
+    // (the skipInterval is written into postings header)
+    int skipInterval = _TestUtil.nextInt(seedRandom, 2, 10);
+    
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("MockRandomCodec: skipInterval=" + skipInterval);
+    }
+    
     final long seed = seedRandom.nextLong();
 
     if (LuceneTestCase.VERBOSE) {
@@ -136,12 +143,12 @@ public class MockRandomCodec extends Codec {
     PostingsWriterBase postingsWriter;
 
     if (random.nextBoolean()) {
-      postingsWriter = new SepPostingsWriterImpl(state, new MockIntStreamFactory(random));
+      postingsWriter = new SepPostingsWriterImpl(state, new MockIntStreamFactory(random), skipInterval);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing Standard postings");
       }
-      postingsWriter = new StandardPostingsWriter(state);
+      postingsWriter = new StandardPostingsWriter(state, skipInterval);
     }
 
     if (random.nextBoolean()) {

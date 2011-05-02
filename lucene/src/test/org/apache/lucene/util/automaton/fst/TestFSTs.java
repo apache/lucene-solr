@@ -191,7 +191,7 @@ public class TestFSTs extends LuceneTestCase {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(random, 97, 102);
+      buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
     }
     return new String(buffer, 0, end);
   }
@@ -942,7 +942,7 @@ public class TestFSTs extends LuceneTestCase {
 
     final LineFileDocs docs = new LineFileDocs(random);
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 100 : 1;
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
     final IndexWriter writer = new IndexWriter(dir, conf);
@@ -1420,5 +1420,74 @@ public class TestFSTs extends LuceneTestCase {
     FST<Object> fst = s.compile(input);
     FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<Object>());
     s.verifyStateAndBelow(fst, arc, 1);
+  }
+
+  // Make sure raw FST can differentiate between final vs
+  // non-final end nodes
+  public void testNonFinalStopNodes() throws Exception {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final Long nothing = outputs.getNoOutput();
+    final Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+
+    final FST<Long> fst = new FST<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    final Builder.UnCompiledNode<Long> rootNode = new Builder.UnCompiledNode<Long>(b, 0);
+
+    // Add final stop node
+    {
+      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<Long>(b, 0);
+      node.isFinal = true;
+      rootNode.addArc('a', node);
+      final Builder.CompiledNode frozen = new Builder.CompiledNode();
+      frozen.address = fst.addNode(node);
+      rootNode.arcs[0].nextFinalOutput = outputs.get(17);
+      rootNode.arcs[0].isFinal = true;
+      rootNode.arcs[0].output = nothing;
+      rootNode.arcs[0].target = frozen;
+    }
+
+    // Add non-final stop node
+    {
+      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<Long>(b, 0);
+      rootNode.addArc('b', node);
+      final Builder.CompiledNode frozen = new Builder.CompiledNode();
+      frozen.address = fst.addNode(node);
+      rootNode.arcs[1].nextFinalOutput = nothing;
+      rootNode.arcs[1].output = outputs.get(42);
+      rootNode.arcs[1].target = frozen;
+    }
+
+    fst.finish(fst.addNode(rootNode));
+    
+    checkStopNodes(fst, outputs);
+
+    // Make sure it still works after save/load:
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createOutput("fst");
+    fst.save(out);
+    out.close();
+
+    IndexInput in = dir.openInput("fst");
+    final FST<Long> fst2 = new FST<Long>(in, outputs);
+    checkStopNodes(fst2, outputs);
+    in.close();
+    dir.close();
+  }
+
+  private void checkStopNodes(FST<Long> fst, PositiveIntOutputs outputs) throws Exception {
+    final Long nothing = outputs.getNoOutput();
+    FST.Arc<Long> startArc = fst.getFirstArc(new FST.Arc<Long>());
+    assertEquals(nothing, startArc.output);
+    assertEquals(nothing, startArc.nextFinalOutput);
+
+    FST.Arc<Long> arc = fst.readFirstTargetArc(startArc, new FST.Arc<Long>());
+    assertEquals('a', arc.label);
+    assertEquals(17, arc.nextFinalOutput.longValue());
+    assertTrue(arc.isFinal());
+
+    arc = fst.readNextArc(arc);
+    assertEquals('b', arc.label);
+    assertFalse(arc.isFinal());
+    assertEquals(42, arc.output.longValue());
   }
 }

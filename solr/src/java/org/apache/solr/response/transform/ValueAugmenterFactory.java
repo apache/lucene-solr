@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * @version $Id$
@@ -60,7 +61,7 @@ public class ValueAugmenterFactory extends TransformerFactory
   }
 
   @Override
-  public DocTransformer create(String field, String arg) {
+  public DocTransformer create(String field, String arg, SolrQueryRequest req) {
     Object val = value;
     if( val == null ) {
       val = (arg==null)?defaultValue:getObjectFrom(arg);

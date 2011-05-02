@@ -20,12 +20,19 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.store.Directory;
+
 
 /**
  * This is a DocConsumer that gathers all fields under the
@@ -37,66 +44,39 @@ import org.apache.lucene.store.Directory;
 
 final class DocFieldProcessor extends DocConsumer {
 
-  final DocumentsWriter docWriter;
   final DocFieldConsumer consumer;
   final StoredFieldsWriter fieldsWriter;
-  final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
-  private FieldsConsumer fieldsConsumer; // TODO this should be encapsulated in DocumentsWriter
-  private SegmentWriteState docValuesConsumerState; // TODO this should be encapsulated in DocumentsWriter
 
+  // Holds all fields seen in current doc
+  DocFieldProcessorPerField[] fields = new DocFieldProcessorPerField[1];
+  int fieldCount;
 
-  synchronized DocValuesConsumer docValuesConsumer(Directory dir,
-      String segment, String name, PerDocFieldValues values, FieldInfo fieldInfo)
-      throws IOException {
-    DocValuesConsumer valuesConsumer;
-    if ((valuesConsumer = docValues.get(name)) == null) {
-      fieldInfo.setDocValues(values.type());
+  // Hash table for all fields ever seen
+  DocFieldProcessorPerField[] fieldHash = new DocFieldProcessorPerField[2];
+  int hashMask = 1;
+  int totalFieldCount;
 
-      if(fieldsConsumer == null) {
-        /* TODO (close to no commit) -- this is a hack and only works since DocValuesCodec supports initializing the FieldsConsumer twice.
-         * we need to find a way that allows us to obtain a FieldsConsumer per DocumentsWriter. Currently some codecs rely on 
-         * the SegmentsWriteState passed in right at the moment when the segment is flushed (doccount etc) but we need the consumer earlier 
-         * to support docvalues and later on stored fields too.  
-         */
-      docValuesConsumerState = docWriter.segWriteState(false);
-      fieldsConsumer = docValuesConsumerState.segmentCodecs.codec().fieldsConsumer(docValuesConsumerState);
-      }
-      valuesConsumer = fieldsConsumer.addValuesField(fieldInfo);
-      docValues.put(name, valuesConsumer);
-    }
-    return valuesConsumer;
+  float docBoost;
+  int fieldGen;
+  final DocumentsWriterPerThread.DocState docState;
 
-  }
-
- 
-  public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
-    this.docWriter = docWriter;
+  public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
+    this.docState = docWriter.docState;
     this.consumer = consumer;
     fieldsWriter = new StoredFieldsWriter(docWriter);
   }
 
   @Override
-  public void flush(Collection<DocConsumerPerThread> threads, SegmentWriteState state) throws IOException {
+  public void flush(SegmentWriteState state) throws IOException {
 
-    Map<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>> childThreadsAndFields = new HashMap<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>>();
-    for ( DocConsumerPerThread thread : threads) {
-      DocFieldProcessorPerThread perThread = (DocFieldProcessorPerThread) thread;
-      childThreadsAndFields.put(perThread.consumer, perThread.fields());
+    Map<FieldInfo, DocFieldConsumerPerField> childFields = new HashMap<FieldInfo, DocFieldConsumerPerField>();
+    Collection<DocFieldConsumerPerField> fields = fields();
+    for (DocFieldConsumerPerField f : fields) {
+      childFields.put(f.getFieldInfo(), f);
     }
+
     fieldsWriter.flush(state);
-    consumer.flush(childThreadsAndFields, state);
-
-    for(DocValuesConsumer p : docValues.values()) {
-      if (p != null) {
-        p.finish(state.numDocs);
-      }
-    }
-    docValues.clear();
-    if(fieldsConsumer != null) {
-      fieldsConsumer.close(); // TODO remove this once docvalues are fully supported by codecs
-      docValuesConsumerState = null;
-      fieldsConsumer = null;
-    }
+    consumer.flush(childFields, state);
 
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
@@ -104,12 +84,35 @@ final class DocFieldProcessor extends DocConsumer {
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
     state.fieldInfos.write(state.directory, fileName);
+    for (DocValuesConsumer consumers : docValues.values()) {
+      consumers.finish(state.numDocs);
+    };
   }
 
   @Override
   public void abort() {
-    fieldsWriter.abort();
-    consumer.abort();
+    for(int i=0;i<fieldHash.length;i++) {
+      DocFieldProcessorPerField field = fieldHash[i];
+      while(field != null) {
+        final DocFieldProcessorPerField next = field.next;
+        field.abort();
+        field = next;
+      }
+    }
+    
+    for(PerDocConsumer consumer : perDocConsumers.values()) {
+      try {
+        consumer.close();  // TODO add abort to PerDocConsumer!
+      } catch (IOException e) {
+        // nocommit handle exce
+      }
+    }
+
+    try {
+      fieldsWriter.abort();
+    } finally {
+      consumer.abort();
+    }
   }
 
   @Override
@@ -117,8 +120,250 @@ final class DocFieldProcessor extends DocConsumer {
     return consumer.freeRAM();
   }
 
-  @Override
-  public DocConsumerPerThread addThread(DocumentsWriterThreadState threadState) throws IOException {
-    return new DocFieldProcessorPerThread(threadState, this);
+  public Collection<DocFieldConsumerPerField> fields() {
+    Collection<DocFieldConsumerPerField> fields = new HashSet<DocFieldConsumerPerField>();
+    for(int i=0;i<fieldHash.length;i++) {
+      DocFieldProcessorPerField field = fieldHash[i];
+      while(field != null) {
+        fields.add(field.consumer);
+        field = field.next;
+      }
+    }
+    assert fields.size() == totalFieldCount;
+    return fields;
   }
+
+  /** In flush we reset the fieldHash to not maintain per-field state
+   *  across segments */
+  @Override
+  void doAfterFlush() {
+    fieldHash = new DocFieldProcessorPerField[2];
+    hashMask = 1;
+    totalFieldCount = 0;
+    for(PerDocConsumer consumer : perDocConsumers.values()) {
+      try {
+        consumer.close();  
+      } catch (IOException e) {
+        // nocommit handle exce
+      }
+    }
+    perDocConsumers.clear();
+    docValues.clear();
+  }
+
+  private void rehash() {
+    final int newHashSize = (fieldHash.length*2);
+    assert newHashSize > fieldHash.length;
+
+    final DocFieldProcessorPerField newHashArray[] = new DocFieldProcessorPerField[newHashSize];
+
+    // Rehash
+    int newHashMask = newHashSize-1;
+    for(int j=0;j<fieldHash.length;j++) {
+      DocFieldProcessorPerField fp0 = fieldHash[j];
+      while(fp0 != null) {
+        final int hashPos2 = fp0.fieldInfo.name.hashCode() & newHashMask;
+        DocFieldProcessorPerField nextFP0 = fp0.next;
+        fp0.next = newHashArray[hashPos2];
+        newHashArray[hashPos2] = fp0;
+        fp0 = nextFP0;
+      }
+    }
+
+    fieldHash = newHashArray;
+    hashMask = newHashMask;
+  }
+
+  @Override
+  public void processDocument(FieldInfos fieldInfos) throws IOException {
+
+    consumer.startDocument();
+    fieldsWriter.startDocument();
+
+    final Document doc = docState.doc;
+
+    fieldCount = 0;
+
+    final int thisFieldGen = fieldGen++;
+
+    final List<Fieldable> docFields = doc.getFields();
+    final int numDocFields = docFields.size();
+
+    // Absorb any new fields first seen in this document.
+    // Also absorb any changes to fields we had already
+    // seen before (eg suddenly turning on norms or
+    // vectors, etc.):
+
+    for(int i=0;i<numDocFields;i++) {
+      Fieldable field = docFields.get(i);
+      final String fieldName = field.name();
+
+      // Make sure we have a PerField allocated
+      final int hashPos = fieldName.hashCode() & hashMask;
+      DocFieldProcessorPerField fp = fieldHash[hashPos];
+      while(fp != null && !fp.fieldInfo.name.equals(fieldName)) {
+        fp = fp.next;
+      }
+
+      if (fp == null) {
+
+        // TODO FI: we need to genericize the "flags" that a
+        // field holds, and, how these flags are merged; it
+        // needs to be more "pluggable" such that if I want
+        // to have a new "thing" my Fields can do, I can
+        // easily add it
+        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
+                                      field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
+                                      field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
+
+        fp = new DocFieldProcessorPerField(this, fi);
+        fp.next = fieldHash[hashPos];
+        fieldHash[hashPos] = fp;
+        totalFieldCount++;
+
+        if (totalFieldCount >= fieldHash.length/2)
+          rehash();
+      } else {
+        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
+                            field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
+                            field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
+      }
+
+      if (thisFieldGen != fp.lastGen) {
+
+        // First time we're seeing this field for this doc
+        fp.fieldCount = 0;
+
+        if (fieldCount == fields.length) {
+          final int newSize = fields.length*2;
+          DocFieldProcessorPerField newArray[] = new DocFieldProcessorPerField[newSize];
+          System.arraycopy(fields, 0, newArray, 0, fieldCount);
+          fields = newArray;
+        }
+
+        fields[fieldCount++] = fp;
+        fp.lastGen = thisFieldGen;
+      }
+
+      fp.addField(field);
+
+      if (field.isStored()) {
+        fieldsWriter.addField(field, fp.fieldInfo);
+      }
+      if (field.hasDocValues()) {
+        final DocValuesConsumer docValuesConsumer = docValuesConsumer(docState, fp.fieldInfo, fieldInfos);
+        docValuesConsumer.add(docState.docID, field.getDocValues());
+      }
+    }
+
+    // If we are writing vectors then we must visit
+    // fields in sorted order so they are written in
+    // sorted order.  TODO: we actually only need to
+    // sort the subset of fields that have vectors
+    // enabled; we could save [small amount of] CPU
+    // here.
+    quickSort(fields, 0, fieldCount-1);
+
+    for(int i=0;i<fieldCount;i++)
+      fields[i].consumer.processFields(fields[i].fields, fields[i].fieldCount);
+
+    if (docState.maxTermPrefix != null && docState.infoStream != null) {
+      docState.infoStream.println("WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'");
+      docState.maxTermPrefix = null;
+    }
+  }
+
+  @Override
+  void finishDocument() throws IOException {
+    try {
+      fieldsWriter.finishDocument();
+    } finally {
+      consumer.finishDocument();
+    }
+  }
+
+  void quickSort(DocFieldProcessorPerField[] array, int lo, int hi) {
+    if (lo >= hi)
+      return;
+    else if (hi == 1+lo) {
+      if (array[lo].fieldInfo.name.compareTo(array[hi].fieldInfo.name) > 0) {
+        final DocFieldProcessorPerField tmp = array[lo];
+        array[lo] = array[hi];
+        array[hi] = tmp;
+      }
+      return;
+    }
+
+    int mid = (lo + hi) >>> 1;
+
+    if (array[lo].fieldInfo.name.compareTo(array[mid].fieldInfo.name) > 0) {
+      DocFieldProcessorPerField tmp = array[lo];
+      array[lo] = array[mid];
+      array[mid] = tmp;
+    }
+
+    if (array[mid].fieldInfo.name.compareTo(array[hi].fieldInfo.name) > 0) {
+      DocFieldProcessorPerField tmp = array[mid];
+      array[mid] = array[hi];
+      array[hi] = tmp;
+
+      if (array[lo].fieldInfo.name.compareTo(array[mid].fieldInfo.name) > 0) {
+        DocFieldProcessorPerField tmp2 = array[lo];
+        array[lo] = array[mid];
+        array[mid] = tmp2;
+      }
+    }
+
+    int left = lo + 1;
+    int right = hi - 1;
+
+    if (left >= right)
+      return;
+
+    DocFieldProcessorPerField partition = array[mid];
+
+    for (; ;) {
+      while (array[right].fieldInfo.name.compareTo(partition.fieldInfo.name) > 0)
+        --right;
+
+      while (left < right && array[left].fieldInfo.name.compareTo(partition.fieldInfo.name) <= 0)
+        ++left;
+
+      if (left < right) {
+        DocFieldProcessorPerField tmp = array[left];
+        array[left] = array[right];
+        array[right] = tmp;
+        --right;
+      } else {
+        break;
+      }
+    }
+
+    quickSort(array, lo, left);
+    quickSort(array, left + 1, hi);
+  }
+  final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
+  final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
+
+  DocValuesConsumer docValuesConsumer(DocState docState, FieldInfo fieldInfo, FieldInfos infos) 
+      throws IOException {
+    DocValuesConsumer docValuesConsumer = docValues.get(fieldInfo.name);
+    if (docValuesConsumer != null) {
+      return docValuesConsumer;
+    }
+    PerDocConsumer perDocConsumer = perDocConsumers.get(fieldInfo.getCodecId());
+    if (perDocConsumer == null) {
+      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState(fieldInfo.getCodecId());
+      SegmentCodecs codecs = perDocWriteState.segmentCodecs;
+      assert codecs.codecs.length > fieldInfo.getCodecId();
+      
+      Codec codec = codecs.codecs[fieldInfo.getCodecId()];
+      perDocConsumer = codec.docsConsumer(perDocWriteState);
+      perDocConsumers.put(Integer.valueOf(fieldInfo.getCodecId()), perDocConsumer);
+    }
+    docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
+    docValues.put(fieldInfo.name, docValuesConsumer);
+    return docValuesConsumer;
+  }
+
 }

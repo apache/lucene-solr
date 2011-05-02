@@ -33,7 +33,6 @@ public class SegmentWriteState {
   public final FieldInfos fieldInfos;
   public final int numDocs;
   public boolean hasVectors;
-  public final AtomicLong bytesUsed;
 
   // Deletes to apply while we are flushing the segment.  A
   // Term is enrolled in here if it was deleted at one
@@ -56,7 +55,7 @@ public class SegmentWriteState {
   public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-      int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes, AtomicLong bytesUsed) {
+      int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
@@ -66,7 +65,6 @@ public class SegmentWriteState {
     this.termIndexInterval = termIndexInterval;
     this.segmentCodecs = segmentCodecs;
     codecId = -1;
-    this.bytesUsed = bytesUsed;
   }
   
   /**
@@ -82,7 +80,6 @@ public class SegmentWriteState {
     segmentCodecs = state.segmentCodecs;
     this.codecId = codecId;
     segDeletes = state.segDeletes;
-    bytesUsed = state.bytesUsed;
   }
   
   public String codecIdAsString() {

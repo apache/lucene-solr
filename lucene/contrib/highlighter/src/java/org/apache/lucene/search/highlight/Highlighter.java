@@ -197,6 +197,11 @@ public class Highlighter
 	    tokenStream.reset();
 	    
 		TextFragment currentFrag =	new TextFragment(newText,newText.length(), docFrags.size());
+		
+    if (fragmentScorer instanceof QueryScorer) {
+      ((QueryScorer) fragmentScorer).setMaxDocCharsToAnalyze(maxDocCharsToAnalyze);
+    }
+    
 		TokenStream newStream = fragmentScorer.init(tokenStream);
 		if(newStream != null) {
 		  tokenStream = newStream;

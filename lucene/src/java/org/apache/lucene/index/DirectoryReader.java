@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MapBackedSet;
@@ -1023,5 +1024,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
     public void delete() {
       throw new UnsupportedOperationException("This IndexCommit does not support deletions");
     }
+  }
+
+  @Override
+  public PerDocValues perDocValues() throws IOException {
+    throw new UnsupportedOperationException("please use MultiPerDoc#getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
   }
 }

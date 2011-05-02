@@ -44,8 +44,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     doc2 = new Document();
     DocHelper.setupDoc(doc1);
     DocHelper.setupDoc(doc2);
-    DocHelper.writeDoc(dir, doc1);
-    DocHelper.writeDoc(dir, doc2);
+    DocHelper.writeDoc(random, dir, doc1);
+    DocHelper.writeDoc(random, dir, doc2);
     sis = new SegmentInfos();
     sis.read(dir);
   }
@@ -199,7 +199,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   private void addDoc(Random random, Directory ramDir1, String s, boolean create) throws IOException {
     IndexWriter iw = new IndexWriter(ramDir1, newIndexWriterConfig( 
         TEST_VERSION_CURRENT, 
-        new MockAnalyzer()).setOpenMode(
+        new MockAnalyzer(random)).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));
     Document doc = new Document();
     doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));

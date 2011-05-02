@@ -23,7 +23,7 @@ import java.util.TreeMap;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.Bytes;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.Floats;
@@ -37,7 +37,7 @@ import org.apache.lucene.store.Directory;
  * 
  * @lucene.experimental
  */
-public abstract class DocValuesProducerBase extends FieldsProducer {
+public class DocValuesProducerBase extends PerDocValues {
 
   protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();
 
@@ -144,5 +144,10 @@ public abstract class DocValuesProducerBase extends FieldsProducer {
     if (ex != null) {
       throw ex;
     }
+  }
+
+  @Override
+  public Collection<String> fields() {
+    return docValues.keySet();
   }
 }

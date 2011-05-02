@@ -23,6 +23,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
@@ -923,6 +924,22 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
   }
 
+  /**
+   * Returns <code>true</code> if an index exists at the specified directory.
+   * @param  directory the directory to check for an index
+   * @param  codecProvider provides a CodecProvider in case the index uses non-core codecs
+   * @return <code>true</code> if an index exists; <code>false</code> otherwise
+   * @throws IOException if there is a problem with accessing the index
+   */
+  public static boolean indexExists(Directory directory, CodecProvider codecProvider) throws IOException {
+    try {
+      new SegmentInfos().read(directory, codecProvider);
+      return true;
+    } catch (IOException ioe) {
+      return false;
+    }
+  }
+
   /** Returns the number of documents in this index. */
   public abstract int numDocs();
 
@@ -1051,6 +1068,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * using {@link ReaderUtil#gatherSubReaders} and iterate
    * through them yourself. */
   public abstract Fields fields() throws IOException;
+  
+  // nocommit javadoc
+  public abstract PerDocValues perDocValues() throws IOException;
 
   public int docFreq(Term term) throws IOException {
     return docFreq(term.field(), term.bytes());
@@ -1554,11 +1574,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
   
   public DocValues docValues(String field) throws IOException {
-    final Fields fields = fields();
-    if (fields == null) {
+    final PerDocValues perDoc = perDocValues();
+    if (perDoc == null) {
       return null;
     }
-    return fields.docValues(field);
+    return perDoc.docValues(field);
   }
 
   private volatile Fields fields;
@@ -1572,6 +1592,19 @@ public abstract class IndexReader implements Cloneable,Closeable {
   Fields retrieveFields() {
     return fields;
   }
+  
+  private volatile PerDocValues perDocValues;
+  
+  /** @lucene.internal */
+  void storePerDoc(PerDocValues perDocValues) {
+    this.perDocValues = perDocValues;
+  }
+
+  /** @lucene.internal */
+  PerDocValues retrievePerDoc() {
+    return perDocValues;
+  }  
+  
 
   /**
    * A struct like class that represents a hierarchical relationship between

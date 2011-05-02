@@ -39,7 +39,7 @@ public class TestQueryTermVector extends LuceneTestCase {
     result = new QueryTermVector(null);
     assertTrue(result.getTerms().length == 0);
     
-    result = new QueryTermVector("foo bar foo again foo bar go go go", new MockAnalyzer());
+    result = new QueryTermVector("foo bar foo again foo bar go go go", new MockAnalyzer(random));
     terms = result.getTerms();
     assertTrue(terms.length == 4);
     freq = result.getTermFrequencies();

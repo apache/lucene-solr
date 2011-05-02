@@ -69,7 +69,9 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  * @see Locale
  * @see RuleBasedCollator
  * @since solr 3.1
+ * @deprecated use {@link org.apache.solr.schema.CollationField} instead.
  */
+@Deprecated
 public class CollationKeyFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   private Collator collator;
 

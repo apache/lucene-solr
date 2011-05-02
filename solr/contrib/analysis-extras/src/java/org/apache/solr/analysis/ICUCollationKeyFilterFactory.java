@@ -57,7 +57,9 @@ import com.ibm.icu.util.ULocale;
  * @see Collator
  * @see ULocale
  * @see RuleBasedCollator
+ * @deprecated use {@link org.apache.solr.schema.ICUCollationField} instead.
  */
+@Deprecated
 public class ICUCollationKeyFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   private Collator collator;
 

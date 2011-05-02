@@ -50,7 +50,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         boolean isClose = false;
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("doFlush".equals(trace[i].getMethodName())) {
+          if ("flush".equals(trace[i].getMethodName())) {
             isDoFlush = true;
           }
           if ("close".equals(trace[i].getMethodName())) {
@@ -72,7 +72,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
     writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
@@ -130,7 +130,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     // start:
     mp.setMinMergeDocs(1000);
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
+        TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMergePolicy(mp));
     writer.setInfoStream(VERBOSE ? System.out : null);
 
@@ -169,7 +169,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   public void testNoExtraFiles() throws IOException {
     MockDirectoryWrapper directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
+        TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(2));
     writer.setInfoStream(VERBOSE ? System.out : null);
 
@@ -189,7 +189,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       // Reopen
       writer = new IndexWriter(directory, newIndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer())
+          TEST_VERSION_CURRENT, new MockAnalyzer(random))
           .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(2));
       writer.setInfoStream(VERBOSE ? System.out : null);
     }
@@ -207,7 +207,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(
         directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMaxBufferedDocs(2).
             setMergePolicy(newLogMergePolicy(100))
     );
@@ -240,7 +240,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       // Reopen
       writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setOpenMode(OpenMode.APPEND).
               setMergePolicy(newLogMergePolicy(100))
       );

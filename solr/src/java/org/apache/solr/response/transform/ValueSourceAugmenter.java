@@ -16,9 +16,18 @@
  */
 package org.apache.solr.response.transform;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * Add values from a ValueSource (function query etc)
@@ -32,13 +41,15 @@ public class ValueSourceAugmenter extends DocTransformer
 {
   public final String name;
   public final QParser qparser;
-  public final ValueSource values;
+  public final ValueSource valueSource;
 
-  public ValueSourceAugmenter( String name, QParser qparser, ValueSource values )
+
+
+  public ValueSourceAugmenter( String name, QParser qparser, ValueSource valueSource )
   {
     this.name = name;
     this.qparser = qparser;
-    this.values = values;
+    this.valueSource = valueSource;
   }
 
   @Override
@@ -49,14 +60,42 @@ public class ValueSourceAugmenter extends DocTransformer
 
   @Override
   public void setContext( TransformContext context ) {
-    // maybe we do something here?
+    IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
+    readerContexts = reader.getTopReaderContext().leaves();
+    docValuesArr = new DocValues[readerContexts.length];
+
+    searcher = qparser.getReq().getSearcher();
+    this.fcontext = valueSource.newContext(searcher);
   }
+
+
+  Map fcontext;
+  SolrIndexSearcher searcher;
+  IndexReader.AtomicReaderContext[] readerContexts;
+  DocValues docValuesArr[];
+
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    // TODO, should know what the real type is -- not always string
-    // how do we get to docvalues?
-    Object v = "now what..."; //values.g.strVal( docid );
-    doc.setField( name, v );
+    // This is only good for random-access functions
+
+    try {
+
+      // TODO: calculate this stuff just once across diff functions
+      int idx = ReaderUtil.subIndex(docid, readerContexts);
+      IndexReader.AtomicReaderContext rcontext = readerContexts[idx];
+      DocValues values = docValuesArr[idx];
+      if (values == null) {
+        docValuesArr[idx] = values = valueSource.getValues(fcontext, rcontext);
+      }
+
+      int localId = docid - rcontext.docBase;
+      Object val = values.objectVal(localId);
+      if (val != null) {
+        doc.setField( name, val );
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "exception at docid " + docid + " for valuesource " + valueSource, e, false);
+    }
   }
 }

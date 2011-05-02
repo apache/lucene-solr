@@ -42,12 +42,13 @@ See http://forrest.apache.org/docs/linking.html for more info
   </about>
 
   <docs label="Documentation">
-    <features    label="Features"         href="features.html" />
-    <tutorial    label="Tutorial"         href="tutorial.html" />
-    <wiki        label="Docs (Wiki)" href="ext:wiki" />
-    <faq         label="FAQ"              href="ext:faq" />
-    <apidocs     label="All Javadoc"     href="api/index.html" />
-    <apidocs     label="SolrJ Javadoc"     href="api/solrj/index.html" />
+    <features    label="Features"                href="features.html" />
+    <tutorial    label="Tutorial"                href="tutorial.html" />
+    <wiki        label="Docs (Wiki)"             href="ext:wiki" />
+    <faq         label="FAQ"                     href="ext:faq" />
+    <apidocs     label="All Javadoc"             href="api/index.html" />
+    <apidocs     label="SolrJ Javadoc"           href="api/solrj/index.html" />
+    <apidocs     label="Test Framework Javadoc"  href="api/test-framework/index.html" />
   </docs>
 
   <resources label="Resources">

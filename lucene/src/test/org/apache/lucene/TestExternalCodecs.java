@@ -26,8 +26,6 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.codecs.*;
 import org.apache.lucene.index.codecs.standard.*;
 import org.apache.lucene.index.codecs.pulsing.*;
-import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.store.*;
 import java.util.*;
 import java.io.*;
@@ -174,13 +172,6 @@ public class TestExternalCodecs extends LuceneTestCase {
       public void close() {
         // TODO: finalize stuff
       }
-
-      @Override
-      public DocValuesConsumer addValuesField(FieldInfo field)
-          throws IOException {
-      //TODO(simonw): can we fix this easily?
-        throw new UnsupportedOperationException("no implemented");
-      }
     }
 
     private static class RAMTermsConsumer extends TermsConsumer {
@@ -280,11 +271,6 @@ public class TestExternalCodecs extends LuceneTestCase {
       public TermsEnum terms() {
         return new RAMTermsEnum(postings.fieldToTerms.get(current));
       }
-
-      @Override
-      public DocValues docValues() throws IOException {
-        throw new UnsupportedOperationException("not implemented");
-       }
     }
 
     static class RAMTermsEnum extends TermsEnum {
@@ -498,7 +484,9 @@ public class TestExternalCodecs extends LuceneTestCase {
     public FieldsProducer fieldsProducer(SegmentReadState readState)
       throws IOException {
     
-      return state.get(readState.segmentInfo.name);
+      synchronized(state) {
+        return state.get(readState.segmentInfo.name);
+      }
     }
 
     @Override
@@ -523,7 +511,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setCodecProvider(provider).
             setMergePolicy(newLogMergePolicy(3))
     );

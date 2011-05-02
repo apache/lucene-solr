@@ -111,7 +111,7 @@ public class TestSort extends LuceneTestCase {
   throws IOException {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
@@ -149,7 +149,7 @@ public class TestSort extends LuceneTestCase {
     dirs.add(indexStore);
     IndexWriter writer = new IndexWriter(
         indexStore,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMaxBufferedDocs(4).
             setMergePolicy(newLogMergePolicy(97))
     );
@@ -961,7 +961,7 @@ public class TestSort extends LuceneTestCase {
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
-                        TEST_VERSION_CURRENT, new MockAnalyzer()));
+                        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     doc.add(newField("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
     doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -987,7 +987,7 @@ public class TestSort extends LuceneTestCase {
   public void testLUCENE2142() throws IOException {
     Directory indexStore = newDirectory();
     IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i=0; i<5; i++) {
         Document doc = new Document();
         doc.add (new Field ("string", "a"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));

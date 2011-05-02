@@ -49,7 +49,8 @@ import org.apache.lucene.util.automaton.RegExp;
  * Generates random regexps, and validates against a simple impl.
  */
 public class TestRegexpRandom2 extends LuceneTestCase {
-  protected IndexSearcher searcher;
+  protected IndexSearcher searcher1;
+  protected IndexSearcher searcher2;
   private IndexReader reader;
   private Directory dir;
   
@@ -58,7 +59,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
     Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
@@ -82,14 +83,16 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     }
     
     reader = writer.getReader();
-    searcher = newSearcher(reader);
+    searcher1 = newSearcher(reader);
+    searcher2 = newSearcher(reader);
     writer.close();
   }
 
   @Override
   public void tearDown() throws Exception {
     reader.close();
-    searcher.close();
+    searcher1.close();
+    searcher2.close();
     dir.close();
     super.tearDown();
   }
@@ -157,12 +160,12 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     // automatically comparable.
     
     // TODO: does this check even matter anymore?!
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "field");
+    Terms terms = MultiFields.getTerms(searcher1.getIndexReader(), "field");
     if (!(smart.getTermsEnum(terms) instanceof AutomatonTermsEnum))
       return;
     
-    TopDocs smartDocs = searcher.search(smart, 25);
-    TopDocs dumbDocs = searcher.search(dumb, 25);
+    TopDocs smartDocs = searcher1.search(smart, 25);
+    TopDocs dumbDocs = searcher2.search(dumb, 25);
 
     CheckHits.checkEqual(smart, smartDocs.scoreDocs, dumbDocs.scoreDocs);
   }

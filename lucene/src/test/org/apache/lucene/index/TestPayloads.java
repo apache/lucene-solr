@@ -164,7 +164,7 @@ public class TestPayloads extends LuceneTestCase {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer)
             .setOpenMode(OpenMode.CREATE)
-            .setMergePolicy(newInOrderLogMergePolicy()));
+            .setMergePolicy(newLogMergePolicy()));
         
         // should be in sync with value in TermInfosWriter
         final int skipInterval = 16;
@@ -479,7 +479,7 @@ public class TestPayloads extends LuceneTestCase {
         
         Directory dir = newDirectory();
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-            TEST_VERSION_CURRENT, new MockAnalyzer()));
+            TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         final String field = "test";
         
         Thread[] ingesters = new Thread[numThreads];
@@ -600,16 +600,16 @@ public class TestPayloads extends LuceneTestCase {
   public void testAcrossFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-                                                     new MockAnalyzer(MockTokenizer.WHITESPACE, true, true));
+                                                     new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     Document doc = new Document();
-    doc.add(new Field("haspayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("hasMaybepayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
 
     writer = new RandomIndexWriter(random, dir,
-                                   new MockAnalyzer(MockTokenizer.WHITESPACE, true, false));
+                                   new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     doc = new Document();
-    doc.add(new Field("nopayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("hasMaybepayload2", "here we go", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.optimize();

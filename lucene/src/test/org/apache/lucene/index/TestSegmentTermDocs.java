@@ -36,7 +36,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
-    info = DocHelper.writeDoc(dir, testDoc);
+    info = DocHelper.writeDoc(random, dir, testDoc);
   }
   
   @Override
@@ -105,7 +105,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testSkipTo(int indexDivisor) throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     
     Term ta = new Term("content","aaa");
     for(int i = 0; i < 10; i++)
@@ -251,7 +251,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void testIndexDivisor() throws IOException {
     testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    DocHelper.writeDoc(dir, testDoc);
+    DocHelper.writeDoc(random, dir, testDoc);
     testTermDocs(2);
     testBadSeek(2);
     testSkipTo(2);

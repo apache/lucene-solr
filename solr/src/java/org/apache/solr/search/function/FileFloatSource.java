@@ -65,35 +65,15 @@ public class FileFloatSource extends ValueSource {
     final int off = offset;
 
     final float[] arr = getCachedFloats(topLevelContext.reader);
-    return new DocValues() {
+    return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
         return arr[doc + off];
       }
 
       @Override
-      public int intVal(int doc) {
-        return (int)arr[doc + off];
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long)arr[doc + off];
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double)arr[doc + off];
-      }
-
-      @Override
-      public String strVal(int doc) {
-        return Float.toString(arr[doc + off]);
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + floatVal(doc);
+      public Object objectVal(int doc) {
+        return floatVal(doc);   // TODO: keep track of missing values
       }
     };
   }

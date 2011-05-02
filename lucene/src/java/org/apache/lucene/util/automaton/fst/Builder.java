@@ -180,7 +180,13 @@ public class Builder<T> {
           compileAllTargets(node);
         }
         final T nextFinalOutput = node.output;
-        final boolean isFinal = node.isFinal;
+
+        // We "fake" the node as being final if it has no
+        // outgoing arcs; in theory we could leave it
+        // as non-final (the FST can represent this), but
+        // FSTEnum, Util, etc., have trouble w/ non-final
+        // dead-end states:
+        final boolean isFinal = node.isFinal || node.numArcs == 0;
 
         if (doCompile) {
           // this node makes it and we now compile it.  first,
@@ -219,7 +225,7 @@ public class Builder<T> {
     add(scratchIntsRef, output);
   }
 
-  /** Sugar: adds the UTF32 chars from char[] slice.  FST
+  /** Sugar: adds the UTF32 codepoints from char[] slice.  FST
    *  must be FST.INPUT_TYPE.BYTE4! */
   public void add(char[] s, int offset, int length, T output) throws IOException {
     assert fst.getInputType() == FST.INPUT_TYPE.BYTE4;
@@ -237,7 +243,7 @@ public class Builder<T> {
     add(scratchIntsRef, output);
   }
 
-  /** Sugar: adds the UTF32 chars from CharSequence.  FST
+  /** Sugar: adds the UTF32 codepoints from CharSequence.  FST
    *  must be FST.INPUT_TYPE.BYTE4! */
   public void add(CharSequence s, T output) throws IOException {
     assert fst.getInputType() == FST.INPUT_TYPE.BYTE4;
@@ -268,6 +274,7 @@ public class Builder<T> {
       // 'finalness' is stored on the incoming arc, not on
       // the node
       frontier[0].inputCount++;
+      frontier[0].isFinal = true;
       fst.setEmptyOutput(output);
       return;
     }
@@ -388,6 +395,10 @@ public class Builder<T> {
       if (!arc.target.isCompiled()) {
         // not yet compiled
         @SuppressWarnings("unchecked") final UnCompiledNode<T> n = (UnCompiledNode<T>) arc.target;
+        if (n.numArcs == 0) {
+          //System.out.println("seg=" + segment + "        FORCE final arc=" + (char) arc.label);
+          arc.isFinal = n.isFinal = true;
+        }
         arc.target = compileNode(n);
       }
     }

@@ -17,7 +17,11 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
+import java.io.StringReader;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.util.Version;
 
 /**
@@ -142,5 +146,23 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
             analyzer,
             "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
             new String[] { "บริษัท", "ชื่อ", "xy&z", "คุย", "กับ", "xyz@demo.com" });
-    }
+  }
+	
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new ThaiAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
+  
+  // LUCENE-3044
+  public void testAttributeReuse() throws Exception {
+    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
+    ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_30);
+    // just consume
+    TokenStream ts = analyzer.reusableTokenStream("dummy", new StringReader("ภาษาไทย"));
+    assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
+    // this consumer adds flagsAtt, which this analyzer does not use. 
+    ts = analyzer.reusableTokenStream("dummy", new StringReader("ภาษาไทย"));
+    ts.addAttribute(FlagsAttribute.class);
+    assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
+  }
 }

@@ -32,7 +32,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // omitNorms bit in the FieldInfo
   public void testOmitNorms() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer();
+    Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
         
@@ -79,7 +79,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // omitNorms for the same field works
   public void testMixedMerge() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer();
+    Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter writer = new IndexWriter(
         ram,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
@@ -137,7 +137,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // field, 
   public void testMixedRAM() throws Exception {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer();
+    Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter writer = new IndexWriter(
         ram,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
@@ -191,7 +191,7 @@ public class TestOmitNorms extends LuceneTestCase {
   // Verifies no *.nrm exists when all fields omit norms:
   public void testNoNrmFile() throws Throwable {
     Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer();
+    Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     writer.setInfoStream(VERBOSE ? System.out : null);
@@ -264,7 +264,7 @@ public class TestOmitNorms extends LuceneTestCase {
    */
   static byte[] getNorms(String field, Field f1, Field f2) throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy());
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy());
     RandomIndexWriter riw = new RandomIndexWriter(random, dir, iwc);
     
     // add f1

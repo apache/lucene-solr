@@ -28,20 +28,16 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.index.values.Bytes;
-import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.values.Floats;
-import org.apache.lucene.index.values.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
 
@@ -61,6 +57,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   AtomicInteger deletedDocsRef = null;
   private boolean deletedDocsDirty = false;
   private boolean normsDirty = false;
+
+  // TODO: we should move this tracking into SegmentInfo;
+  // this way SegmentInfo.toString shows pending deletes
   private int pendingDeleteCount;
 
   private boolean rollbackHasChanges = false;
@@ -91,6 +90,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     final FieldInfos fieldInfos;
 
     final FieldsProducer fields;
+    final PerDocValues perDocProducer;
     
     final Directory dir;
     final Directory cfsDir;
@@ -130,8 +130,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
         this.termsIndexDivisor = termsIndexDivisor;
         
         // Ask codec for its Fields
-        fields = segmentCodecs.codec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
+        final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor);
+        fields = segmentCodecs.codec().fieldsProducer(segmentReadState);
         assert fields != null;
+        perDocProducer = segmentCodecs.codec().docsProducer(segmentReadState);
         success = true;
       } finally {
         if (!success) {
@@ -168,6 +170,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
       if (ref.decrementAndGet() == 0) {
         if (fields != null) {
           fields.close();
+        }
+        
+        if (perDocProducer != null) {
+          perDocProducer.close();
         }
 
         if (termVectorsReaderOrig != null) {
@@ -808,8 +814,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
       oldRef.decrementAndGet();
     }
     deletedDocsDirty = true;
-    if (!deletedDocs.getAndSet(docNum))
+    if (!deletedDocs.getAndSet(docNum)) {
       pendingDeleteCount++;
+    }
   }
 
   @Override
@@ -1211,6 +1218,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
   
   @Override
   public DocValues docValues(String field) throws IOException {
-    return core.fields.docValues(field);
+    return core.perDocProducer.docValues(field);
+  }
+
+  @Override
+  public PerDocValues perDocValues() throws IOException {
+    return core.perDocProducer;
   }
 }

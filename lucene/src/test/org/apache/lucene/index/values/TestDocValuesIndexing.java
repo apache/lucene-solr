@@ -26,23 +26,21 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.AbstractField;
+import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiPerDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.docvalues.DocValuesCodecProvider;
 import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.Source;
@@ -111,6 +109,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
+    for (int i = 0; i < 5; i++) {
+      Document doc = new Document();
+      DocValuesField valuesField = new DocValuesField("docId1");
+      valuesField.setFloat(i);
+      doc.add(valuesField);
+      doc.add(new Field("docId1", "" + i, Store.NO, Index.ANALYZED));
+      writer.addDocument(doc);
+    }
+    writer.commit();
     writer.optimize(true);
 
     writer.close(true);
@@ -120,11 +127,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(reader);
     QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "docId",
-        new MockAnalyzer());
+        new MockAnalyzer(random));
     TopDocs search = searcher.search(parser.parse("0 OR 1 OR 2 OR 3 OR 4"), 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
-    DocValues docValues = MultiFields.getDocValues(reader, "docId");
+    DocValues docValues = MultiPerDocValues.getPerDocs(reader).docValues("docId");
     Source source = docValues.getSource();
     for (int i = 0; i < scoreDocs.length; i++) {
       assertEquals(i, scoreDocs[i].doc);
@@ -249,19 +256,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   private IndexWriterConfig writerConfig(boolean useCompoundFile) {
     final IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer());
+        new MockAnalyzer(random));
     cfg.setMergePolicy(newLogMergePolicy(random));
-    MergePolicy mergePolicy = cfg.getMergePolicy();
-    if (mergePolicy instanceof LogMergePolicy) {
-      LogMergePolicy policy = ((LogMergePolicy) mergePolicy);
-      policy.setUseCompoundFile(useCompoundFile);
-      policy.setRequireContiguousMerge(true);
-    } else if (useCompoundFile) {
-      LogMergePolicy policy = new LogDocMergePolicy();
-      policy.setUseCompoundFile(useCompoundFile);
-      policy.setRequireContiguousMerge(true);
-      cfg.setMergePolicy(policy);
-    }
+    LogMergePolicy policy = new LogDocMergePolicy();
+    cfg.setMergePolicy(policy);
+    policy.setUseCompoundFile(useCompoundFile);
     cfg.setCodecProvider(provider);
     return cfg;
   }
@@ -471,17 +470,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   private DocValues getDocValues(IndexReader reader, String field)
       throws IOException {
     boolean optimized = reader.isOptimized();
-    Fields fields = optimized ? reader.getSequentialSubReaders()[0].fields()
-        : MultiFields.getFields(reader);
+    PerDocValues perDoc = optimized ? reader.getSequentialSubReaders()[0].perDocValues()
+        : MultiPerDocValues.getPerDocs(reader);
     switch (random.nextInt(optimized ? 3 : 2)) { // case 2 only if optimized
     case 0:
-      return fields.docValues(field);
+      return perDoc.docValues(field);
     case 1:
-      FieldsEnum iterator = fields.iterator();
-      String name;
-      while ((name = iterator.next()) != null) {
-        if (name.equals(field))
-          return iterator.docValues();
+      DocValues docValues = perDoc.docValues(field);
+      if (docValues != null) {
+        return docValues;
       }
       throw new RuntimeException("no such field " + field);
     case 2:// this only works if we are on an optimized index!

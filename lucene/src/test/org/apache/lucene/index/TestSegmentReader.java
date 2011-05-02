@@ -40,7 +40,7 @@ public class TestSegmentReader extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
-    SegmentInfo info = DocHelper.writeDoc(dir, testDoc);
+    SegmentInfo info = DocHelper.writeDoc(random, dir, testDoc);
     reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
   }
   
@@ -76,7 +76,7 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testDelete() throws IOException {
     Document docToDelete = new Document();
     DocHelper.setupDoc(docToDelete);
-    SegmentInfo info = DocHelper.writeDoc(dir, docToDelete);
+    SegmentInfo info = DocHelper.writeDoc(random, dir, docToDelete);
     SegmentReader deleteReader = SegmentReader.get(false, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);

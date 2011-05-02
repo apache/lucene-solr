@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.index.codecs.CodecProvider;
 
 
@@ -60,10 +61,10 @@ public class TestDoc extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: setUp");
         }
-        workDir = new File(TEMP_DIR,"TestDoc");
+        workDir = _TestUtil.getTempDir("TestDoc");
         workDir.mkdirs();
 
-        indexDir = new File(workDir, "testIndex");
+        indexDir = _TestUtil.getTempDir("testIndex");
         indexDir.mkdirs();
 
         Directory directory = newFSDirectory(indexDir);
@@ -114,7 +115,7 @@ public class TestDoc extends LuceneTestCase {
       Directory directory = newFSDirectory(indexDir);
       IndexWriter writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))
@@ -148,7 +149,7 @@ public class TestDoc extends LuceneTestCase {
       directory = newFSDirectory(indexDir);
       writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))

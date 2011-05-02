@@ -39,7 +39,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     mergePolicy.setNoCFSRatio(1);
     IndexWriter iw = new IndexWriter(
         fsDir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setOpenMode(OpenMode.CREATE).
             setMergePolicy(mergePolicy)
     );

@@ -51,7 +51,7 @@ public class TestFieldsReader extends LuceneTestCase {
     DocHelper.setupDoc(testDoc);
     _TestUtil.add(testDoc, fieldInfos);
     dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
@@ -286,12 +286,11 @@ public class TestFieldsReader extends LuceneTestCase {
    */
   public void testLazyPerformance() throws Exception {
     String userName = System.getProperty("user.name");
-    File file = new File(TEMP_DIR, "lazyDir" + userName);
-    _TestUtil.rmDir(file);
+    File file = _TestUtil.getTempDir("lazyDir" + userName);
     Directory tmpDir = newFSDirectory(file);
     assertTrue(tmpDir != null);
 
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(tmpDir, conf);
     writer.addDocument(testDoc);
@@ -473,12 +472,12 @@ public class TestFieldsReader extends LuceneTestCase {
 
   // LUCENE-1262
   public void testExceptions() throws Throwable {
-    File indexDir = new File(TEMP_DIR, "testfieldswriterexceptions");
+    File indexDir = _TestUtil.getTempDir("testfieldswriterexceptions");
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
       writer.optimize();

@@ -18,9 +18,12 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.document.Field;
@@ -67,10 +70,17 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     private void createIndex(int numHits) throws IOException {
         int numDocs = 500;
         
+        final Analyzer analyzer = new Analyzer() {
+          @Override
+          public TokenStream tokenStream(String fieldName, Reader reader) {
+            return new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+          }
+        };
         Directory directory = new SeekCountingDirectory(new RAMDirectory());
+        // note: test explicitly disables payloads
         IndexWriter writer = new IndexWriter(
             directory,
-            newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, false)).
+            newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
                 setMaxBufferedDocs(10).
                 setMergePolicy(newLogMergePolicy(false))
         );
@@ -133,7 +143,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     
     public void testSeek() throws IOException {
         Directory directory = newDirectory();
-        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
             doc.add(newField(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));

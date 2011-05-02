@@ -143,9 +143,9 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    */
   private Analyzer randomAnalyzer() {
     switch(random.nextInt(3)) {
-      case 0: return new MockAnalyzer(MockTokenizer.SIMPLE, true);
-      case 1: return new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
-      default: return new MockAnalyzer(MockTokenizer.WHITESPACE, false);
+      case 0: return new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
+      case 1: return new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+      default: return new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     }
   }
   

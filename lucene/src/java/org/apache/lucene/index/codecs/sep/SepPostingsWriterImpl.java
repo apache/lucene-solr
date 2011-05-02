@@ -69,12 +69,13 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
    * smaller indexes, greater acceleration, but fewer accelerable cases, while
    * smaller values result in bigger indexes, less acceleration and more
    * accelerable cases. More detailed experiments would be useful here. */
-  final int skipInterval = 16;
+  final int skipInterval;
+  static final int DEFAULT_SKIP_INTERVAL = 16;
   
   /**
    * Expert: minimum docFreq to write any skip data at all
    */
-  final int skipMinimum = skipInterval;
+  final int skipMinimum;
 
   /** Expert: The maximum number of skip levels. Smaller values result in 
    * slightly smaller indexes, but slower skipping in big posting lists.
@@ -102,8 +103,14 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   private final RAMOutputStream indexBytesWriter = new RAMOutputStream();
 
   public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory) throws IOException {
+    this(state, factory, DEFAULT_SKIP_INTERVAL);
+  }
+
+  public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory, int skipInterval) throws IOException {
     super();
     final String codecIdAsString = state.codecIdAsString();
+    this.skipInterval = skipInterval;
+    this.skipMinimum = skipInterval; /* set to the same for now */
     final String docFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, DOC_EXTENSION);
     docOut = factory.createOutput(state.directory, docFileName);
     docIndex = docOut.index();

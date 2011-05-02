@@ -17,14 +17,17 @@
 
 package org.apache.solr.request;
 
+import java.util.Locale;
+import java.util.Random;
+
+import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.util.Locale;
-import java.util.Random;
 
 /**
  * @version $Id$
@@ -62,43 +65,47 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   void doTermEnum(int size) throws Exception {
+    //System.out.println("doTermEnum size=" + size);
     close();
     createIndex(size);
     req = lrf.makeRequest("q","*:*");
 
-    TermIndex ti = new TermIndex(proto.field());
-    NumberedTermsEnum te = ti.getEnumerator(req.getSearcher().getIndexReader());
+    UnInvertedField uif = new UnInvertedField(proto.field(), req.getSearcher());
 
-    // iterate through first
-    while(te.term() != null) te.next();
-    assertEquals(size, te.getTermNumber());
-    te.close();
+    assertEquals(size, uif.getNumTerms());
 
-    te = ti.getEnumerator(req.getSearcher().getIndexReader());
+    TermsEnum te = uif.getOrdTermsEnum(req.getSearcher().getIndexReader());
+    assertEquals(size == 0, te == null);
 
     Random r = new Random(size);
     // test seeking by term string
     for (int i=0; i<size*2+10; i++) {
       int rnum = r.nextInt(size+2);
       String s = t(rnum);
-      BytesRef br = te.skipTo(new BytesRef(s));
+      //System.out.println("s=" + s);
+      final BytesRef br;
+      if (te == null) {
+        br = null;
+      } else {
+        TermsEnum.SeekStatus status = te.seek(new BytesRef(s));
+        if (status == TermsEnum.SeekStatus.END) {
+          br = null;
+        } else {
+          br = te.term();
+        }
+      }
       assertEquals(br != null, rnum < size);
       if (rnum < size) {
-        assertEquals(rnum, te.pos);
+        assertEquals(rnum, (int) te.ord());
         assertEquals(s, te.term().utf8ToString());
-      } else {
-        assertEquals(null, te.term());
-        assertEquals(size, te.getTermNumber());
       }
     }
 
     // test seeking before term
-    assertEquals(size>0, te.skipTo(new BytesRef("000")) != null);
-    assertEquals(0, te.getTermNumber());
     if (size>0) {
+      assertEquals(size>0, te.seek(new BytesRef("000"), true) != TermsEnum.SeekStatus.END);
+      assertEquals(0, te.ord());
       assertEquals(t(0), te.term().utf8ToString());
-    } else {
-      assertEquals(null, te.term());
     }
 
     if (size>0) {
@@ -106,9 +113,10 @@ public class TestFaceting extends SolrTestCaseJ4 {
       for (int i=0; i<size*2+10; i++) {
         int rnum = r.nextInt(size);
         String s = t(rnum);
-        BytesRef br = te.skipTo(rnum);
+        assertTrue(te.seek((long) rnum) != TermsEnum.SeekStatus.END);
+        BytesRef br = te.term();
         assertNotNull(br);
-        assertEquals(rnum, te.pos);
+        assertEquals(rnum, (int) te.ord());
         assertEquals(s, te.term().utf8ToString());
       }
     }
@@ -118,11 +126,12 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testTermEnum() throws Exception {
     doTermEnum(0);
     doTermEnum(1);
-    doTermEnum(TermIndex.interval - 1);  // test boundaries around the block size
-    doTermEnum(TermIndex.interval);
-    doTermEnum(TermIndex.interval + 1);
-    doTermEnum(TermIndex.interval * 2 + 2);    
-    // doTermEnum(TermIndex.interval * 3 + 3);    
+    final int DEFAULT_INDEX_INTERVAL = 1 << DocTermOrds.DEFAULT_INDEX_INTERVAL_BITS;
+    doTermEnum(DEFAULT_INDEX_INTERVAL - 1);  // test boundaries around the block size
+    doTermEnum(DEFAULT_INDEX_INTERVAL);
+    doTermEnum(DEFAULT_INDEX_INTERVAL + 1);
+    doTermEnum(DEFAULT_INDEX_INTERVAL * 2 + 2);    
+    // doTermEnum(DEFAULT_INDEX_INTERVAL * 3 + 3);    
   }
 
   @Test

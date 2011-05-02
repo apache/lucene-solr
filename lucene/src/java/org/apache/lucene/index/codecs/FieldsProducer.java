@@ -37,11 +37,6 @@ public abstract class FieldsProducer extends Fields implements Closeable {
   public abstract void close() throws IOException;
   public abstract void loadTermsIndex(int indexDivisor) throws IOException;
 
-  @Override
-  public DocValues docValues(String field) throws IOException {
-    return null;
-  }
-  
   public static final FieldsProducer EMPTY = new FieldsProducer() {
     
     @Override

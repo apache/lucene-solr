@@ -18,6 +18,9 @@ package org.apache.lucene.index.codecs;
  */
 
 import java.io.IOException;
+import java.io.FileOutputStream;   // for toDot
+import java.io.OutputStreamWriter; // for toDot
+import java.io.Writer;             // for toDot
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,6 +37,7 @@ import org.apache.lucene.util.automaton.fst.Builder;
 import org.apache.lucene.util.automaton.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.automaton.fst.FST;
 import org.apache.lucene.util.automaton.fst.PositiveIntOutputs;
+import org.apache.lucene.util.automaton.fst.Util; // for toDot
 
 /** See {@link VariableGapTermsIndexWriter}
  * 
@@ -52,11 +56,12 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   // start of the field info data
   protected long dirOffset;
 
+  final String segment;
   public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, int codecId)
     throws IOException {
 
     in = dir.openInput(IndexFileNames.segmentFileName(segment, ""+codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
-    
+    this.segment = segment;
     boolean success = false;
 
     try {
@@ -153,15 +158,11 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   private final class FieldIndexData {
 
-    private final FieldInfo fieldInfo;
     private final long indexStart;
-
     // Set only if terms index is loaded:
     private volatile FST<Long> fst;
 
     public FieldIndexData(FieldInfo fieldInfo, long indexStart) throws IOException {
-
-      this.fieldInfo = fieldInfo;
       this.indexStart = indexStart;
 
       if (indexDivisor > 0) {
@@ -175,6 +176,14 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         clone.seek(indexStart);
         fst = new FST<Long>(clone, fstOutputs);
         clone.close();
+
+        /*
+        final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
+        Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
+        Util.toDot(fst, w, false, false);
+        System.out.println("FST INDEX: SAVED to " + dotFileName);
+        w.close();
+        */
 
         if (indexDivisor > 1) {
           // subsample
