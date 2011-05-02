@@ -87,6 +87,10 @@ Bug Fixes
   did not clear all attributes so they displayed incorrect attribute values for tokens
   in later filter stages. (uschindler, rmuir, yonik)
 
+* SOLR-2467: Fix <analyzer class="..." /> initialization so any errors 
+  are logged properly.  (hossman)
+
+
 Other Changes
 ----------------------
 
