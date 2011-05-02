@@ -1813,10 +1813,13 @@ public class IndexWriter implements Closeable {
     return mergingSegments;
   }
 
-  /** Expert: the {@link MergeScheduler} calls this method
-   *  to retrieve the next merge requested by the
-   *  MergePolicy */
-  synchronized MergePolicy.OneMerge getNextMerge() {
+  /**
+   * Expert: the {@link MergeScheduler} calls this method to retrieve the next
+   * merge requested by the MergePolicy
+   * 
+   * @lucene.experimental
+   */
+  public synchronized MergePolicy.OneMerge getNextMerge() {
     if (pendingMerges.size() == 0)
       return null;
     else {
@@ -2936,9 +2939,10 @@ public class IndexWriter implements Closeable {
   /**
    * Merges the indicated segments, replacing them in the stack with a
    * single segment.
+   * 
+   * @lucene.experimental
    */
-
-  final void merge(MergePolicy.OneMerge merge)
+  public final void merge(MergePolicy.OneMerge merge)
     throws CorruptIndexException, IOException {
 
     boolean success = false;

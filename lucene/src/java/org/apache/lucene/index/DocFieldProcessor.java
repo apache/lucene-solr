@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,8 +31,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
-import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 
 
 /**
@@ -262,7 +262,7 @@ final class DocFieldProcessor extends DocConsumer {
     // sort the subset of fields that have vectors
     // enabled; we could save [small amount of] CPU
     // here.
-    quickSort(fields, 0, fieldCount-1);
+    ArrayUtil.quickSort(fields, 0, fieldCount, fieldsComp);
 
     for(int i=0;i<fieldCount;i++)
       fields[i].consumer.processFields(fields[i].fields, fields[i].fieldCount);
@@ -273,6 +273,12 @@ final class DocFieldProcessor extends DocConsumer {
     }
   }
 
+  private static final Comparator<DocFieldProcessorPerField> fieldsComp = new Comparator<DocFieldProcessorPerField>() {
+    public int compare(DocFieldProcessorPerField o1, DocFieldProcessorPerField o2) {
+      return o1.fieldInfo.name.compareTo(o2.fieldInfo.name);
+    }
+  };
+  
   @Override
   void finishDocument() throws IOException {
     try {
@@ -282,66 +288,6 @@ final class DocFieldProcessor extends DocConsumer {
     }
   }
 
-  void quickSort(DocFieldProcessorPerField[] array, int lo, int hi) {
-    if (lo >= hi)
-      return;
-    else if (hi == 1+lo) {
-      if (array[lo].fieldInfo.name.compareTo(array[hi].fieldInfo.name) > 0) {
-        final DocFieldProcessorPerField tmp = array[lo];
-        array[lo] = array[hi];
-        array[hi] = tmp;
-      }
-      return;
-    }
-
-    int mid = (lo + hi) >>> 1;
-
-    if (array[lo].fieldInfo.name.compareTo(array[mid].fieldInfo.name) > 0) {
-      DocFieldProcessorPerField tmp = array[lo];
-      array[lo] = array[mid];
-      array[mid] = tmp;
-    }
-
-    if (array[mid].fieldInfo.name.compareTo(array[hi].fieldInfo.name) > 0) {
-      DocFieldProcessorPerField tmp = array[mid];
-      array[mid] = array[hi];
-      array[hi] = tmp;
-
-      if (array[lo].fieldInfo.name.compareTo(array[mid].fieldInfo.name) > 0) {
-        DocFieldProcessorPerField tmp2 = array[lo];
-        array[lo] = array[mid];
-        array[mid] = tmp2;
-      }
-    }
-
-    int left = lo + 1;
-    int right = hi - 1;
-
-    if (left >= right)
-      return;
-
-    DocFieldProcessorPerField partition = array[mid];
-
-    for (; ;) {
-      while (array[right].fieldInfo.name.compareTo(partition.fieldInfo.name) > 0)
-        --right;
-
-      while (left < right && array[left].fieldInfo.name.compareTo(partition.fieldInfo.name) <= 0)
-        ++left;
-
-      if (left < right) {
-        DocFieldProcessorPerField tmp = array[left];
-        array[left] = array[right];
-        array[right] = tmp;
-        --right;
-      } else {
-        break;
-      }
-    }
-
-    quickSort(array, lo, left);
-    quickSort(array, left + 1, hi);
-  }
   final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
   final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
 

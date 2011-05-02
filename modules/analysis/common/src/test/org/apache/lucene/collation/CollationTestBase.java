@@ -257,27 +257,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
     }
     assertEquals(expectedResult, buff.toString());
   }
-  
-  private String randomString() {
-    // ideally we could do this!
-    // return _TestUtil.randomUnicodeString(random);
-    //
-    // http://bugs.icu-project.org/trac/ticket/8060
-    // http://bugs.icu-project.org/trac/ticket/7732
-    // ...
-    // 
-    // as a workaround, just test the BMP for now (and avoid 0xFFFF etc)
-    int length = _TestUtil.nextInt(random, 0, 10);
-    char chars[] = new char[length];
-    for (int i = 0; i < length; i++) {
-      if (random.nextBoolean()) {
-        chars[i] = (char) _TestUtil.nextInt(random, 0, 0xD7FF);
-      } else {
-        chars[i] = (char) _TestUtil.nextInt(random, 0xE000, 0xFFFD);
-      }
-    }
-    return new String(chars, 0, length);
-  }
 
   public void assertThreadSafe(final Analyzer analyzer) throws Exception {
     int numTestPoints = 100;
@@ -289,7 +268,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // and ensure they are the same as the ones we produced in serial fashion.
 
     for (int i = 0; i < numTestPoints; i++) {
-      String term = randomString();
+      String term = _TestUtil.randomSimpleString(random);
       TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();

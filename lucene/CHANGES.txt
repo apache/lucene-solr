@@ -280,6 +280,10 @@ API Changes
 * LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
   function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
 
+* LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
+  (though @lucene.experimental), allowing for custom MergeScheduler 
+  implementations. (Shai Erera)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
