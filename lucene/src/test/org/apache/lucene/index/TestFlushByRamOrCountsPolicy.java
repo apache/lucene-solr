@@ -53,12 +53,12 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     }
 
     for (int i = 0; i < numThreads.length; i++) {
-      // with a 512 mb ram buffer we should never stall
-      runFlushByRam(numThreads[i], 512.d, true);
+      // with a 256 mb ram buffer we should never stall
+      runFlushByRam(numThreads[i], 256.d, true);
     }
   }
 
-  protected void runFlushByRam(int numThreads, double maxRam,
+  protected void runFlushByRam(int numThreads, double maxRamMB,
       boolean ensureNotStalled) throws IOException, CorruptIndexException,
       LockObtainFailedException, InterruptedException {
     final int numDocumentsToIndex = 50 + random.nextInt(150);
@@ -67,12 +67,11 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
-
     final int numDWPT = 1 + random.nextInt(8);
     DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
         numDWPT);
     iwc.setIndexerThreadPool(threadPool);
-    iwc.setRAMBufferSizeMB(1 + random.nextInt(10) + random.nextDouble());
+    iwc.setRAMBufferSizeMB(maxRamMB);
     iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     IndexWriter writer = new IndexWriter(dir, iwc);
@@ -272,13 +271,6 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
         assertFalse(
             "single thread must not block numThreads: " + numThreads[i],
             docsWriter.healthiness.hasBlocked());
-        // this assumption is too strict in this test
-//      } else {
-//        if (docsWriter.healthiness.wasStalled) {
-//          // TODO maybe this assumtion is too strickt
-//          assertTrue(" we should have blocked here numThreads: "
-//              + numThreads[i], docsWriter.healthiness.hasBlocked());
-//        }
       }
       assertActiveBytesAfter(flushControl);
       writer.close(true);

@@ -82,16 +82,4 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
     minThreadState.lock();
     return minThreadState;
   }
-
-  /*
-  @Override
-  public void clearThreadBindings(ThreadState perThread) {
-    threadBindings.clear();
-  }
-
-  @Override
-  public void clearAllThreadBindings() {
-    threadBindings.clear();
-  }
-  */
 }

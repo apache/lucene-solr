@@ -207,10 +207,6 @@ public abstract class DocumentsWriterPerThreadPool {
   
   public abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter, Document doc);
 
-  //public abstract void clearThreadBindings(ThreadState perThread);
-
-  //public abstract void clearAllThreadBindings();
-
   /**
    * Returns an iterator providing access to all {@link ThreadState}
    * instances. 
