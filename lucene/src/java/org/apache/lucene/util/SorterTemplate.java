@@ -30,7 +30,6 @@ package org.apache.lucene.util;
 public abstract class SorterTemplate {
 
   private static final int MERGESORT_THRESHOLD = 12;
-  private static final int MERGE_TO_QUICKSORT_THRESHOLD = 40;
   private static final int QUICKSORT_THRESHOLD = 7;
 
   /** Implement this method, that swaps slots {@code i} and {@code j} in your data */
@@ -63,14 +62,23 @@ public abstract class SorterTemplate {
 
   /** Sorts via in-place, but unstable, QuickSort algorithm.
    * For small collections falls back to {@link #insertionSort(int,int)}. */
-  public final void quickSort(int lo, int hi) {
-    quickSort(lo, hi, MERGE_TO_QUICKSORT_THRESHOLD);
+  public final void quickSort(final int lo, final int hi) {
+    if (hi <= lo) return;
+    // from Integer's Javadocs: ceil(log2(x)) = 32 - numberOfLeadingZeros(x - 1)
+    quickSort(lo, hi, (Integer.SIZE - Integer.numberOfLeadingZeros(hi - lo)) << 1);
   }
   
   private void quickSort(int lo, int hi, int maxDepth) {
+    // fall back to insertion when array has short length
     final int diff = hi - lo;
     if (diff <= QUICKSORT_THRESHOLD) {
       insertionSort(lo, hi);
+      return;
+    }
+    
+    // fall back to merge sort when recursion depth gets too big
+    if (--maxDepth == 0) {
+      mergeSort(lo, hi);
       return;
     }
     
@@ -106,16 +114,8 @@ public abstract class SorterTemplate {
       }
     }
 
-    // fall back to merge sort when recursion depth gets too big
-    if (maxDepth == 0) {
-      // for testing: new Exception("Hit recursion depth limit").printStackTrace();
-      mergeSort(lo, left);
-      mergeSort(left + 1, hi);
-    } else {
-      --maxDepth;
-      quickSort(lo, left, maxDepth);
-      quickSort(left + 1, hi, maxDepth);
-    }
+    quickSort(lo, left, maxDepth);
+    quickSort(left + 1, hi, maxDepth);
   }
   
   /** Sorts via stable in-place MergeSort algorithm
