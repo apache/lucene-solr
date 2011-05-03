@@ -78,7 +78,7 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    synchronized public void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0)
         return; // default - skip it
       if (size == -1) {
@@ -103,7 +103,7 @@ class FixedSortedBytesImpl {
     // Important that we get docCount, in case there were
     // some last docs that we didn't see
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (size == -1) {// no data added
           datOut.writeInt(size);

@@ -76,11 +76,7 @@ public class DocValuesCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    try {
     return new DocValuesProducerBase(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
-    }catch (IOException e) {
-      return new DocValuesProducerBase(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
-    }
   }
 
   @Override

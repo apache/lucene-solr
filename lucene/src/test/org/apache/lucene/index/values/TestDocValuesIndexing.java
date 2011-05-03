@@ -51,7 +51,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
@@ -73,9 +72,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    *  - DocValues 
    * - Add @lucene.experimental to all necessary classes 
    * - add test for unoptimized case with deletes
+   * - add multithreaded tests / integrate into stress indexing?
    * - run RAT
-   * - add tests for FieldComparator FloatIndexValuesComparator vs. FloatValuesComparator etc.
-   * 
    */
 
   private CodecProvider provider;
@@ -87,18 +85,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     provider.copyFrom(CodecProvider.getDefault());
   }
   
-  private Directory newDirectory2() throws IOException {
-    MockDirectoryWrapper newDirectory = newDirectory();
-    newDirectory.setCheckIndexOnClose(false);
-    return newDirectory;
-  }
-
   /*
    * Simple test case to show how to use the API
    */
   public void testDocValuesSimple() throws CorruptIndexException, IOException,
       ParseException {
-    Directory dir = newDirectory2();
+    Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
@@ -106,15 +98,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       valuesField.setInt(i);
       doc.add(valuesField);
       doc.add(new Field("docId", "" + i, Store.NO, Index.ANALYZED));
-      writer.addDocument(doc);
-    }
-    writer.commit();
-    for (int i = 0; i < 5; i++) {
-      Document doc = new Document();
-      DocValuesField valuesField = new DocValuesField("docId1");
-      valuesField.setFloat(i);
-      doc.add(valuesField);
-      doc.add(new Field("docId1", "" + i, Store.NO, Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.commit();
@@ -189,7 +172,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Type second = values.get(1);
     String msg = "[first=" + first.name() + ", second=" + second.name() + "]";
     // index first index
-    Directory d_1 = newDirectory2();
+    Directory d_1 = newDirectory();
     IndexWriter w_1 = new IndexWriter(d_1, writerConfig(random.nextBoolean()));
     indexValues(w_1, valuesPerIndex, first, values, false, 7);
     w_1.commit();
@@ -197,14 +180,14 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     _TestUtil.checkIndex(d_1, w_1.getConfig().getCodecProvider());
 
     // index second index
-    Directory d_2 = newDirectory2();
+    Directory d_2 = newDirectory();
     IndexWriter w_2 = new IndexWriter(d_2, writerConfig(random.nextBoolean()));
     indexValues(w_2, valuesPerIndex, second, values, false, 7);
     w_2.commit();
     assertEquals(valuesPerIndex, w_2.maxDoc());
     _TestUtil.checkIndex(d_2, w_2.getConfig().getCodecProvider());
 
-    Directory target = newDirectory2();
+    Directory target = newDirectory();
     IndexWriter w = new IndexWriter(target, writerConfig(random.nextBoolean()));
     IndexReader r_1 = IndexReader.open(w_1, true);
     IndexReader r_2 = IndexReader.open(w_2, true);
@@ -267,7 +250,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void runTestNumerics(IndexWriterConfig cfg, boolean withDeletions)
       throws IOException {
-    Directory d = newDirectory2();
+    Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final int numValues = 179 + random.nextInt(151);
     final List<Type> numVariantList = new ArrayList<Type>(NUMERICS);
@@ -359,7 +342,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void runTestIndexBytes(IndexWriterConfig cfg, boolean withDeletions)
       throws CorruptIndexException, LockObtainFailedException, IOException {
-    final Directory d = newDirectory2();
+    final Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final List<Type> byteVariantList = new ArrayList<Type>(BYTES);
     // run in random order to test if fill works correctly during merges
@@ -430,7 +413,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       for (int i = base; i < r.numDocs(); i++) {
         String msg = " field: " + byteIndexValue.name() + " at index: " + i
             + " base: " + base + " numDocs:" + r.numDocs() + " bytesSize: "
-            + bytesSize;
+            + bytesSize + " src: " + bytes;
         while (withDeletions && deleted.get(v++)) {
           upto += bytesSize;
         }

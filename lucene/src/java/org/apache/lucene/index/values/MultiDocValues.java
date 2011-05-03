@@ -191,8 +191,9 @@ public class MultiDocValues extends DocValues {
     }
 
     private final int ensureSource(int docID) {
-      int n = docID - start;
-      if (n >= numDocs) {
+      if (docID >= start && docID < start+numDocs) {
+        return docID - start;
+      } else {
         final int idx = ReaderUtil.subIndex(docID, starts);
         assert idx >= 0 && idx < docValuesIdx.length : "idx was " + idx
             + " for doc id: " + docID + " slices : " + Arrays.toString(starts);
@@ -207,9 +208,8 @@ public class MultiDocValues extends DocValues {
 
         start = docValuesIdx[idx].start;
         numDocs = docValuesIdx[idx].length;
-        n = docID - start;
+        return docID - start;
       }
-      return n;
     }
 
     public double getFloat(int docID) {

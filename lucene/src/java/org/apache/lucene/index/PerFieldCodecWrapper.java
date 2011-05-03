@@ -298,7 +298,10 @@ final class PerFieldCodecWrapper extends Codec {
       IOException err = null;
       while (it.hasNext()) {
         try {
-          it.next().close();
+          PerDocValues next = it.next();
+          if (next != null) {
+            next.close();
+          }
         } catch (IOException ioe) {
           // keep first IOException we hit but keep
           // closing the rest

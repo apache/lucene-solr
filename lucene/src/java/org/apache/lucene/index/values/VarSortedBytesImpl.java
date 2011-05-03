@@ -78,7 +78,7 @@ class VarSortedBytesImpl {
     }
 
     @Override
-    synchronized public void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0)
         return;// default
       if (docID >= docToEntry.length) {
@@ -97,7 +97,7 @@ class VarSortedBytesImpl {
     // Important that we get docCount, in case there were
     // some last docs that we didn't see
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       final int count = hash.size();
       try {
         final int[] sortedEntries = hash.sort(comp);

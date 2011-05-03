@@ -388,7 +388,7 @@ public final class Bytes {
     public abstract void add(int docID, BytesRef bytes) throws IOException;
 
     @Override
-    public synchronized void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (datOut != null)
           datOut.close();

@@ -71,7 +71,7 @@ class FixedDerefBytesImpl {
     }
 
     @Override
-    synchronized public void add(int docID, BytesRef bytes) throws IOException {
+     public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0) // default value - skip it
         return;
       if (size == -1) {
@@ -102,7 +102,7 @@ class FixedDerefBytesImpl {
     // Important that we get docCount, in case there were
     // some last docs that we didn't see
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (size == -1) {
           datOut.writeInt(size);

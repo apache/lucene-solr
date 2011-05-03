@@ -130,7 +130,7 @@ class VarDerefBytesImpl {
     }
 
     @Override
-    synchronized public void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0)
         return; // default
       final int e = hash.add(bytes);
@@ -168,7 +168,7 @@ class VarDerefBytesImpl {
     // Important that we get docCount, in case there were
     // some last docs that we didn't see
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         idxOut.writeInt(address - 1);
         // write index

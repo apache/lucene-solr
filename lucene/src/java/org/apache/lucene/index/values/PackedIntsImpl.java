@@ -70,7 +70,7 @@ class PackedIntsImpl {
     }
 
     @Override
-    public synchronized void add(int docID, long v) throws IOException {
+    public void add(int docID, long v) throws IOException {
       assert lastDocId < docID;
       if (!started) {
         started = true;
@@ -96,7 +96,7 @@ class PackedIntsImpl {
     }
 
     @Override
-    public synchronized void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (!started) {
           minValue = maxValue = 0;
@@ -118,8 +118,8 @@ class PackedIntsImpl {
 
           for (int i = firstDoc; i < lastDocId;) {
             w.add(docToValue[i] - minValue);
-            final int nextValue = defaultValues.nextSetBit(i);
-            for (i++; i < nextValue; i++) {
+            final int nextValue = defaultValues.nextSetBit(++i);
+            for (; i < nextValue; i++) {
               w.add(defaultValue); // fill all gaps
             }
           }
@@ -198,6 +198,7 @@ class PackedIntsImpl {
         // TODO -- can we somehow avoid 2X method calls
         // on each get? must push minValue down, and make
         // PackedInts implement Ints.Source
+        assert docID >= 0;
         return minValue + values.get(docID);
       }
 

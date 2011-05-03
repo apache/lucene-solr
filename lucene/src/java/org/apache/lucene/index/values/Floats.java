@@ -153,7 +153,7 @@ public class Floats {
     }
 
     @Override
-    synchronized public void add(final int docID, final double v)
+    public void add(final int docID, final double v)
         throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
@@ -167,7 +167,7 @@ public class Floats {
     }
 
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (docCount > lastDocId + 1)
           for (int i = lastDocId; i < docCount; i++) {
@@ -196,7 +196,7 @@ public class Floats {
     }
 
     @Override
-    synchronized public void add(int docID, double v) throws IOException {
+    public void add(int docID, double v) throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
       if (docID - lastDocId > 1) {
@@ -209,7 +209,7 @@ public class Floats {
     }
 
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (docCount > lastDocId + 1)
           for (int i = lastDocId; i < docCount; i++) {

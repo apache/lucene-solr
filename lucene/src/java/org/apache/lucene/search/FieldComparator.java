@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -334,10 +336,13 @@ public abstract class FieldComparator {
     private Source currentReaderValues;
     private final String field;
     private double bottom;
+    private final float missingValue;
+    private MissingValue missing;
 
-    FloatDocValuesComparator(int numHits, String field) {
+    FloatDocValuesComparator(int numHits, String field, Float missingValue) {
       values = new double[numHits];
       this.field = field;
+      this.missingValue = missingValue == null ? 0 : missingValue.floatValue();
     }
 
     @Override
@@ -367,12 +372,17 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      values[slot] = currentReaderValues.getFloat(doc);
+      final double value = currentReaderValues.getFloat(doc);
+      values[slot] = value == missing.doubleValue ? missingValue : value; 
     }
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      currentReaderValues = context.reader.docValues(field).getSource();
+      final DocValues docValues = context.reader.docValues(field);
+      if (docValues != null) {
+        currentReaderValues = docValues.getSource(); 
+        missing = currentReaderValues.getMissing();
+      }
       return this;
     }
     
@@ -601,10 +611,13 @@ public abstract class FieldComparator {
     private Source currentReaderValues;
     private final String field;
     private long bottom;
+    private int missingValue;
+    private MissingValue missing;
 
-    IntDocValuesComparator(int numHits, String field) {
+    IntDocValuesComparator(int numHits, String field, Integer missingValue) {
       values = new long[numHits];
       this.field = field;
+      this.missingValue = missingValue == null ? 0 : missingValue.intValue();
     }
 
     @Override
@@ -638,12 +651,17 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      values[slot] = currentReaderValues.getInt(doc);
+      final long value = currentReaderValues.getInt(doc);
+      values[slot] = value == missing.longValue ? missingValue : value; 
     }
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      currentReaderValues = context.reader.docValues(field).getSource();
+      DocValues docValues = context.reader.docValues(field);
+      if (docValues != null) {
+        currentReaderValues = docValues.getSource();
+        missing = currentReaderValues.getMissing();
+      }
       return this;
     }
     

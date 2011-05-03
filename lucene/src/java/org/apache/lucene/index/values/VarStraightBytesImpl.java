@@ -75,7 +75,7 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    synchronized public void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0)
         return; // default
       fill(docID);
@@ -85,7 +85,7 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (lastDocID == -1) {
           idxOut.writeVLong(0);

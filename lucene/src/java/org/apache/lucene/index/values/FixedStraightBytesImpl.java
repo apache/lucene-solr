@@ -52,7 +52,7 @@ class FixedStraightBytesImpl {
     // TODO - impl bulk copy here!
 
     @Override
-    synchronized public void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, BytesRef bytes) throws IOException {
       if (size == -1) {
         size = bytes.length;
         datOut.writeInt(size);
@@ -103,7 +103,7 @@ class FixedStraightBytesImpl {
     }
 
     @Override
-    synchronized public void finish(int docCount) throws IOException {
+    public void finish(int docCount) throws IOException {
       try {
         if (size == -1) {// no data added
           datOut.writeInt(0);
