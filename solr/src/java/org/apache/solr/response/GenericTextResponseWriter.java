@@ -37,6 +37,7 @@ import org.apache.solr.response.BaseResponseWriter.SingleResponseWriter; // java
  * @since 1.5
  * @version $Id$
  * 
+ * @deprecated use {@link TextResponseWriter} see SOLR-2485
  */
 public abstract class GenericTextResponseWriter extends BaseResponseWriter
     implements QueryResponseWriter {

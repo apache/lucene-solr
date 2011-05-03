@@ -54,6 +54,7 @@ import java.util.ArrayList;
  * @version $Id$
  * @since 1.5
  * 
+ * @deprecated use {@link TextResponseWriter} or {@link BinaryResponseWriter} see SOLR-2485
  */
 public abstract class BaseResponseWriter {
 
