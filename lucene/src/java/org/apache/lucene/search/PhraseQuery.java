@@ -234,7 +234,7 @@ public class PhraseQuery extends Query {
 
       // sort by increasing docFreq order
       if (slop == 0) {
-        ArrayUtil.quickSort(postingsFreqs);
+        ArrayUtil.mergeSort(postingsFreqs);
       }
 
       if (slop == 0) {				  // optimize exact case
