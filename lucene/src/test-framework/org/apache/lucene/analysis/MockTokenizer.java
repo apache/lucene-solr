@@ -20,14 +20,15 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
  * Automaton-based tokenizer for testing. Optionally lowercases.
  */
-public class MockTokenizer extends CharTokenizer {
+public class MockTokenizer extends Tokenizer {
   /** Acts Similar to WhitespaceTokenizer */
   public static final CharacterRunAutomaton WHITESPACE = 
     new CharacterRunAutomaton(new RegExp("[^ \t\r\n]+").toAutomaton());
@@ -45,21 +46,67 @@ public class MockTokenizer extends CharTokenizer {
   private final boolean lowerCase;
   private int state;
 
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  int off = 0;
+
   public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    super(LuceneTestCase.TEST_VERSION_CURRENT, factory, input);
+    super(factory, input);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
   }
 
   public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    super(LuceneTestCase.TEST_VERSION_CURRENT, input);
+    super(input);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
   }
   
   @Override
+  public final boolean incrementToken() throws IOException {
+    clearAttributes();
+    for (;;) {
+      int startOffset = off;
+      int cp = readCodePoint();
+      if (cp < 0) {
+        break;
+      } else if (isTokenChar(cp)) {
+        int endOffset;
+        do {
+          char chars[] = Character.toChars(normalize(cp));
+          for (int i = 0; i < chars.length; i++)
+            termAtt.append(chars[i]);
+          endOffset = off;
+          cp = readCodePoint();
+        } while (cp >= 0 && isTokenChar(cp));
+        offsetAtt.setOffset(startOffset, endOffset);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  protected int readCodePoint() throws IOException {
+    int ch = input.read();
+    if (ch < 0) {
+      return ch;
+    } else {
+      assert !Character.isLowSurrogate((char) ch);
+      off++;
+      if (Character.isHighSurrogate((char) ch)) {
+        int ch2 = input.read();
+        if (ch2 >= 0) {
+          off++;
+          assert Character.isLowSurrogate((char) ch2);
+          return Character.toCodePoint((char) ch, (char) ch2);
+        }
+      }
+      return ch;
+    }
+  }
+
   protected boolean isTokenChar(int c) {
     state = runAutomaton.step(state, c);
     if (state < 0) {
@@ -70,7 +117,6 @@ public class MockTokenizer extends CharTokenizer {
     }
   }
   
-  @Override
   protected int normalize(int c) {
     return lowerCase ? Character.toLowerCase(c) : c;
   }
@@ -79,5 +125,12 @@ public class MockTokenizer extends CharTokenizer {
   public void reset() throws IOException {
     super.reset();
     state = runAutomaton.getInitialState();
+    off = 0;
+  }
+
+  @Override
+  public void end() throws IOException {
+    int finalOffset = correctOffset(off);
+    offsetAtt.setOffset(finalOffset, finalOffset);
   }
 }

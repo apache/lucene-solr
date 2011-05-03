@@ -1603,7 +1603,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-510
   public void testInvalidUTF16() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new StringSplitAnalyzer()));
     Document doc = new Document();
 
     final int count = utf8Data.length/2;
