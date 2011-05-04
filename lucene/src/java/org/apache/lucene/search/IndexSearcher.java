@@ -400,7 +400,7 @@ public class IndexSearcher extends Searcher {
     
       for (int i = 0; i < subReaders.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, nDocs, hq, i, docStarts));
+                      new MultiSearcherCallableNoSort(lock, subSearchers[i], weight, filter, nDocs, hq, docStarts[i]));
       }
 
       int totalHits = 0;
@@ -476,7 +476,7 @@ public class IndexSearcher extends Searcher {
       final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<TopFieldDocs>(executor);
       for (int i = 0; i < subReaders.length; i++) { // search each sub
         runner.submit(
-                      new MultiSearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, topCollector, sort, i, docStarts));
+                      new MultiSearcherCallableWithSort(lock, subSearchers[i], weight, filter, nDocs, topCollector, sort, docStarts[i]));
       }
       int totalHits = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -673,20 +673,18 @@ public class IndexSearcher extends Searcher {
     private final Weight weight;
     private final Filter filter;
     private final int nDocs;
-    private final int i;
     private final HitQueue hq;
-    private final int[] starts;
+    private final int docBase;
 
     public MultiSearcherCallableNoSort(Lock lock, IndexSearcher searchable, Weight weight,
-        Filter filter, int nDocs, HitQueue hq, int i, int[] starts) {
+        Filter filter, int nDocs, HitQueue hq, int docBase) {
       this.lock = lock;
       this.searchable = searchable;
       this.weight = weight;
       this.filter = filter;
       this.nDocs = nDocs;
       this.hq = hq;
-      this.i = i;
-      this.starts = starts;
+      this.docBase = docBase;
     }
 
     public TopDocs call() throws IOException {
@@ -694,7 +692,7 @@ public class IndexSearcher extends Searcher {
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
         final ScoreDoc scoreDoc = scoreDocs[j];
-        scoreDoc.doc += starts[i]; // convert doc 
+        scoreDoc.doc += docBase; // convert doc 
         //it would be so nice if we had a thread-safe insert 
         lock.lock();
         try {
@@ -719,21 +717,19 @@ public class IndexSearcher extends Searcher {
     private final Weight weight;
     private final Filter filter;
     private final int nDocs;
-    private final int i;
     private final TopFieldCollector hq;
-    private final int[] starts;
+    private final int docBase;
     private final Sort sort;
 
     public MultiSearcherCallableWithSort(Lock lock, IndexSearcher searchable, Weight weight,
-        Filter filter, int nDocs, TopFieldCollector hq, Sort sort, int i, int[] starts) {
+                                         Filter filter, int nDocs, TopFieldCollector hq, Sort sort, int docBase) {
       this.lock = lock;
       this.searchable = searchable;
       this.weight = weight;
       this.filter = filter;
       this.nDocs = nDocs;
       this.hq = hq;
-      this.i = i;
-      this.starts = starts;
+      this.docBase = docBase;
       this.sort = sort;
     }
 
@@ -783,7 +779,7 @@ public class IndexSearcher extends Searcher {
           // iterate over the score docs and change their fields value
           for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
             FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
-            fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + starts[i]);
+            fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + docBase);
           }
           break;
         }
@@ -791,7 +787,7 @@ public class IndexSearcher extends Searcher {
 
       lock.lock();
       try {
-        hq.setNextReader(searchable.getIndexReader(), starts[i]);
+        hq.setNextReader(searchable.getIndexReader(), docBase);
         hq.setScorer(fakeScorer);
         for(ScoreDoc scoreDoc : docs.scoreDocs) {
           fakeScorer.doc = scoreDoc.doc;
@@ -801,6 +797,7 @@ public class IndexSearcher extends Searcher {
       } finally {
         lock.unlock();
       }
+
       return docs;
     }
   }
