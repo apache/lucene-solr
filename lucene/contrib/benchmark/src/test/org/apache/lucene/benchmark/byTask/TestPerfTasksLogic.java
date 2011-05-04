@@ -28,7 +28,6 @@ import java.util.Locale;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
@@ -607,6 +606,40 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
       super();
       called = true;
     }
+  }
+
+  public void testDeleteByPercent() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "docs.file=" + getReuters20LinesFile(),
+        "ram.flush.mb=-1",
+        "max.buffered=2",
+        "content.source.log.step=3",
+        "doc.term.vector=false",
+        "content.source.forever=false",
+        "directory=RAMDirectory",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "CreateIndex",
+        "{ \"AddDocs\"  AddDoc > : * ",
+        "CloseIndex()",
+        "OpenReader(false)",
+        "DeleteByPercent(20)",
+        "CloseReader"
+    };
+    
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 3. test number of docs in the index
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
+    int ndocsExpected = 16; // first 20 reuters docs, minus 20%
+    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+    ir.close();
   }
 
   /**
