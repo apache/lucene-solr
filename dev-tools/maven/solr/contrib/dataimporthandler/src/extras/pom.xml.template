@@ -103,8 +103,8 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/extras/classes</outputDirectory>
-    <testOutputDirectory>${build-directory}/extras/test-classes</testOutputDirectory>
+    <outputDirectory>${build-directory}/classes</outputDirectory>
+    <testOutputDirectory>${build-directory}/test-classes</testOutputDirectory>
     <sourceDirectory>main/java</sourceDirectory>
     <testSourceDirectory>test/java</testSourceDirectory>
     <testResources>
