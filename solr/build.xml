@@ -1020,7 +1020,7 @@
                                    jar.file="lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
 
       <m2-deploy-with-pom-template pom.xml="lib/apache-solr-noggit-pom.xml.template"
-                                   jar.file="lib/apache-solr-noggit-r944541.jar" />
+                                   jar.file="lib/apache-solr-noggit-r1099557.jar" />
       
       <m2-deploy-with-pom-template pom.xml="contrib/uima/lib/solr-uima-an-alchemy-pom.xml.template"
                                    jar.file="contrib/uima/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar" />

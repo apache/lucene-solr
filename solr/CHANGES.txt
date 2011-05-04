@@ -315,6 +315,10 @@ Bug Fixes
 * SOLR-2493: SolrQueryParser was fixed to not parse the SolrConfig DOM tree on each
   instantiation which is a huge slowdown.  (Stephane Bailliez via uschindler)
 
+* SOLR-2495: The JSON parser could hang on corrupted input and could fail
+  to detect numbers that were too large to fit in a long.  (yonik)
+
+
 Other Changes
 ----------------------
 

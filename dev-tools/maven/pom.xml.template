@@ -699,7 +699,7 @@
                   <artifactId>solr-noggit</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/lib/apache-solr-noggit-r944541.jar</file>
+                  <file>solr/lib/apache-solr-noggit-r1099557.jar</file>
                 </configuration>  
               </execution>
               <execution>
