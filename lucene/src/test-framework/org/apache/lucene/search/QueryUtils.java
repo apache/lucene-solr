@@ -370,7 +370,7 @@ public class QueryUtils {
                 Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
               }
             }
-            this.reader = reader;
+            this.reader = lastReader[0] = reader;
             this.scorer = null;
             lastDoc[0] = -1;
           }
