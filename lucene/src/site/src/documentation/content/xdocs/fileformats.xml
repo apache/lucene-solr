@@ -90,6 +90,9 @@
         <p>
             In version 3.1, segments records the code version
             that created them. See LUCENE-2720 for details.
+            
+            Additionally segments track explicitly whether or
+            not they have term vectors. See LUCENE-2811 for details.
            </p>
         </section>
 
@@ -935,7 +938,7 @@
                     <b>3.1</b>
                     Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegVersion, SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
                     NormGen<sup>NumField</sup>,
-                    IsCompoundFile, DeletionCount, HasProx, Diagnostics&gt;<sup>SegCount</sup>, CommitUserData, Checksum
+                    IsCompoundFile, DeletionCount, HasProx, Diagnostics, HasVectors&gt;<sup>SegCount</sup>, CommitUserData, Checksum
                 </p>
 
                 <p>
@@ -957,7 +960,7 @@
 
                 <p>
                     IsCompoundFile, HasSingleNormFile,
-                    DocStoreIsCompoundFile, HasProx --&gt; Int8
+                    DocStoreIsCompoundFile, HasProx, HasVectors --&gt; Int8
                 </p>
 
 		<p>
@@ -1082,6 +1085,10 @@
 		    it creates.  It includes metadata like the current
 		    Lucene version, OS, Java version, why the segment
 		    was created (merge, flush, addIndexes), etc.
+                </p>
+         
+        <p> HasVectors is 1 if this segment stores term vectors,
+            else it's 0.
                 </p>
 
             </section>
