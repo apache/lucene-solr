@@ -2337,7 +2337,7 @@ public class TestIndexWriter extends LuceneTestCase {
     volatile boolean failed;
     volatile boolean finish;
 
-    boolean allowInterrupt = false;
+    volatile boolean allowInterrupt = false;
 
     @Override
     public void run() {
@@ -2450,7 +2450,6 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
     t.finish = true;
-    t.interrupt();
     t.join();
     assertFalse(t.failed);
   }
