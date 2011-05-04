@@ -2614,7 +2614,7 @@ public class TestIndexWriter extends LuceneTestCase {
                   assertTrue(r2 != r);
                   r.close();
                   r = r2;
-                  assertEquals("term=f:" + s, 1, r.docFreq(new Term("f", s)));
+                  assertEquals("term=f:" + s + "; r=" + r, 1, r.docFreq(new Term("f", s)));
                 }
               } while(System.currentTimeMillis() < endTime);
               r.close();
