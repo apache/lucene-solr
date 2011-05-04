@@ -93,7 +93,7 @@
 	<classpathentry kind="lib" path="lucene/contrib/icu/lib/icu4j-4_6.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/lucli/lib/jline.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
-	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r944541.jar"/>
+	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1099557.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-collections-3.2.1.jar"/>
