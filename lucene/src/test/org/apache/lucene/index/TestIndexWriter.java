@@ -2777,7 +2777,7 @@ public class TestIndexWriter extends LuceneTestCase {
           count++;
         }
       }
-      assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 1500);
+      assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 3000);
     }
     w.close();
     dir.close();
