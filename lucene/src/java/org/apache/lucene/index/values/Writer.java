@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;

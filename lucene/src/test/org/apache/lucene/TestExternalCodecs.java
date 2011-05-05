@@ -490,6 +490,16 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
+    public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+      return null;
+    }
+
+    @Override
+    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+      return null;
+    }
+
+    @Override
     public void getExtensions(Set<String> extensions) {
     }
 

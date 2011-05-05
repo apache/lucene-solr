@@ -52,13 +52,9 @@ public abstract class Codec {
    *  use; else, those files may be deleted. */
   public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
   
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return null;
-  }
+  public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
   
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return null;
-  }
+  public abstract PerDocValues docsProducer(SegmentReadState state) throws IOException;
 
   /**
    * Gathers files associated with this segment

@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.docvalues;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

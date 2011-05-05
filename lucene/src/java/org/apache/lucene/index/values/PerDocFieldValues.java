@@ -20,7 +20,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.util.BytesRef;
 
 /**

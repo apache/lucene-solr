@@ -30,7 +30,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
 
 

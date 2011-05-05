@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.docvalues;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,87 +16,50 @@ package org.apache.lucene.index.codecs.docvalues;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * A codec that adds DocValues support to a given codec transparently.
- * @lucene.experimental
- */
-public class DocValuesCodec extends Codec {
-  private final Codec other;
+public class DefaultDocValuesConsumer extends PerDocConsumer {
+  private final String segmentName;
+  private final int codecId;
+  private final Directory directory;
+  private final AtomicLong bytesUsed;
   private final Comparator<BytesRef> comparator;
 
-  public DocValuesCodec(Codec other, Comparator<BytesRef> comparator) {
-    this.name = other.name;
-    this.other = other;
+  public DefaultDocValuesConsumer(PerDocWriteState state, Comparator<BytesRef> comparator) {
+    this.segmentName = state.segmentName;
+    this.codecId = state.codecId;
+    this.bytesUsed = state.bytesUsed;
+    this.directory = state.directory;
     this.comparator = comparator;
   }
-
-  public DocValuesCodec(Codec other) {
-    this(other, null);
+  
+  @Override
+  public void close() throws IOException {
   }
 
   @Override
-  public PerDocConsumer docsConsumer(final PerDocWriteState state)
-      throws IOException {
-    return new PerDocConsumer() {
-      public void close() throws IOException {
-      }
-
-      @Override
-      public DocValuesConsumer addValuesField(FieldInfo field)
-          throws IOException {
-        final DocValuesConsumer consumer = Writer.create(field.getDocValues(),
-            docValuesId(state.segmentName, state.codecId, field.number),
-            // TODO can we have a compound file per segment and codec for
-            // docvalues?
-            state.directory, comparator, state.bytesUsed);
-        return consumer;
-      }
-    };
-  }
-
-  @Override
-  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DocValuesProducerBase(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
-  }
-
-  @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state)
-      throws IOException {
-    return other.fieldsConsumer(state);
-  }
-
-  @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state)
-      throws IOException {
-    return other.fieldsProducer(state);
+  public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
+    return Writer.create(field.getDocValues(),
+        docValuesId(segmentName, codecId, field.number),
+        // TODO can we have a compound file per segment and codec for
+        // docvalues?
+        directory, comparator, bytesUsed);
   }
   
-  static String docValuesId(String segmentsName, int codecID, int fieldId) {
-    return segmentsName + "_" + codecID + "-" + fieldId;
-  }
-
-  @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int codecId,
+  public static void files(Directory dir, SegmentInfo segmentInfo, int codecId,
       Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     boolean indexed = false;
@@ -131,14 +94,13 @@ public class DocValuesCodec extends Codec {
 
       }
     }
-    if (indexed) {
-      other.files(dir, segmentInfo, codecId, files);
-    }
+  }
+  
+  static String docValuesId(String segmentsName, int codecID, int fieldId) {
+    return segmentsName + "_" + codecID + "-" + fieldId;
   }
 
-  @Override
-  public void getExtensions(Set<String> extensions) {
-    other.getExtensions(extensions);
+  public static void getDocValuesExtensions(Set<String> extensions) {
     extensions.add(Writer.DATA_EXTENSION);
     extensions.add(Writer.INDEX_EXTENSION);
   }

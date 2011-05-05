@@ -20,12 +20,17 @@ package org.apache.lucene.index.codecs.standard;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
@@ -34,7 +39,10 @@ import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
+import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
+import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 
 /** Default codec. 
  *  @lucene.experimental */
@@ -135,11 +143,13 @@ public class StandardCodec extends Codec {
     StandardPostingsReader.files(dir, segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     getStandardExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
   }
 
   public static void getStandardExtensions(Set<String> extensions) {
@@ -147,5 +157,15 @@ public class StandardCodec extends Codec {
     extensions.add(PROX_EXTENSION);
     BlockTermsReader.getExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
+  }
+
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+  }
+
+  @Override
+  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
   }
 }

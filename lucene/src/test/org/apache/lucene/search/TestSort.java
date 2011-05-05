@@ -37,7 +37,6 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.docvalues.DocValuesCodecProvider;
 import org.apache.lucene.index.values.Type;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -228,10 +227,8 @@ public class TestSort extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     
-    //nocommit - enable doc values by default for all tests
-    DocValuesCodecProvider provider = new DocValuesCodecProvider();
-    provider.copyFrom(CodecProvider.getDefault());
-    CodecProvider.setDefault(provider);
+    //nocommit - we need to be able to run this test with preflex, but without docvalues!!!!
+    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex"));
     full = getFullIndex();
     searchX = getXIndex();
     searchY = getYIndex();

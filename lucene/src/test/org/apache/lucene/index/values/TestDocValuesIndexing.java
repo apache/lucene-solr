@@ -41,7 +41,6 @@ import org.apache.lucene.index.MultiPerDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.docvalues.DocValuesCodecProvider;
 import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.queryParser.ParseException;
@@ -76,13 +75,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * - run RAT
    */
 
-  private CodecProvider provider;
-
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    provider = new DocValuesCodecProvider();
-    provider.copyFrom(CodecProvider.getDefault());
+    assumeFalse("cannot work with preflex codec", CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex"));
   }
   
   /*
@@ -105,7 +101,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     writer.close(true);
 
-    IndexReader reader = IndexReader.open(dir, null, true, 1, provider);
+    IndexReader reader = IndexReader.open(dir, null, true, 1);
     assertTrue(reader.isOptimized());
 
     IndexSearcher searcher = new IndexSearcher(reader);
@@ -244,7 +240,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     LogMergePolicy policy = new LogDocMergePolicy();
     cfg.setMergePolicy(policy);
     policy.setUseCompoundFile(useCompoundFile);
-    cfg.setCodecProvider(provider);
     return cfg;
   }
 

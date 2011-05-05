@@ -32,7 +32,7 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.Directory;
 

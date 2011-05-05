@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.docvalues;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,12 +37,12 @@ import org.apache.lucene.store.Directory;
  * 
  * @lucene.experimental
  */
-public class DocValuesProducerBase extends PerDocValues {
+public class DefaultDocValuesProducer extends PerDocValues {
 
   protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();
 
   /**
-   * Creates a new {@link DocValuesProducerBase} instance and loads all
+   * Creates a new {@link DefaultDocValuesProducer} instance and loads all
    * {@link DocValues} instances for this segment and codec.
    * 
    * @param si
@@ -56,7 +56,7 @@ public class DocValuesProducerBase extends PerDocValues {
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  protected DocValuesProducerBase(SegmentInfo si, Directory dir,
+  public DefaultDocValuesProducer(SegmentInfo si, Directory dir,
       FieldInfos fieldInfo, int codecId) throws IOException {
     load(fieldInfo, si.name, si.docCount, dir, codecId);
   }
@@ -77,7 +77,7 @@ public class DocValuesProducerBase extends PerDocValues {
       if (codecId == fieldInfo.getCodecId() && fieldInfo.hasDocValues()) {
         final String field = fieldInfo.name;
         // TODO can we have a compound file per segment and codec for docvalues?
-        final String id = DocValuesCodec.docValuesId(segment, codecId, fieldInfo.number);
+        final String id = DefaultDocValuesConsumer.docValuesId(segment, codecId, fieldInfo.number);
         docValues.put(field, loadDocValues(docCount, dir, id, fieldInfo
             .getDocValues()));
       }
