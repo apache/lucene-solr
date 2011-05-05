@@ -67,7 +67,8 @@ public class MockRandomMergePolicy extends MergePolicy {
       Collections.shuffle(segmentInfos2, random);
       int upto = 0;
       while(upto < segmentInfos.size()) {
-        int inc = _TestUtil.nextInt(random, 1, segmentInfos.size()-upto);
+        int max = Math.min(10, segmentInfos.size()-upto);
+        int inc = max <= 2 ? max : _TestUtil.nextInt(random, 2, max);
         mergeSpec.add(new OneMerge(segmentInfos2.range(upto, upto+inc)));
         upto += inc;
       }
@@ -88,6 +89,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
   @Override
   public boolean useCompoundFile(SegmentInfos infos, SegmentInfo mergedInfo) throws IOException {
-    return random.nextBoolean();
+    // 80% of the time we create CFS:
+    return random.nextInt(5) != 1;
   }
 }
