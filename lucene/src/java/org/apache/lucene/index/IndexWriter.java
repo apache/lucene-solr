@@ -4025,10 +4025,10 @@ public class IndexWriter implements Closeable {
         final SegmentReader clone = (SegmentReader) reader.clone(true);
         merge.readerClones.add(clone);
 
-        if (reader.numDocs() > 0) {
+        if (clone.numDocs() > 0) {
           merger.add(clone);
+          totDocCount += clone.numDocs();
         }
-        totDocCount += clone.numDocs();
         segUpto++;
       }
 
